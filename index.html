@@ -929,6 +929,3136 @@ dialog{border-radius:18px;border-color:var(--line);box-shadow:0 24px 100px #0b23
 <meta name="theme-color" content="#f6f7f4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1520" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Portfolio%20Ledger%22%2C%22short_name%22%3A%22Ledger%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f7fb%22%2C%22theme_color%22%3A%22%231766a3%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%2520viewBox%3D%270%25200%2520192%2520192%27%253E%253Crect%2520width%3D%27192%27%2520height%3D%27192%27%2520rx%3D%2732%27%2520fill%3D%27%25232b59c3%27%2F%253E%253Ctext%2520x%3D%2796%27%2520y%3D%27132%27%2520font-size%3D%27110%27%2520text-anchor%3D%27middle%27%2520fill%3D%27white%27%2520font-family%3D%27system-ui%27%253E%25F0%259F%2593%258A%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<style id="ledger-workspace">
+/* The workspace uses the ledger's theme tokens and has no external assets. */
+:root {
+  --mp-spent: #258779;
+  --mp-committed: #c89542;
+  --mp-committed-ink: #8b5f21;
+  --mp-available: #dbe9e6;
+  --mp-violet: #807baf;
+  --mp-panel-shadow: 0 2px 4px #163c3603, 0 15px 28px -25px #163c3620;
+}
+:root[data-theme="dark"] {
+  --mp-spent: #78d3b7;
+  --mp-committed: #e8bd78;
+  --mp-committed-ink: #e8bd78;
+  --mp-available: #304f55;
+  --mp-violet: #b7addd;
+  --mp-panel-shadow: none;
+}
+.mp-workspace {
+  --mp-radius: 17px;
+  min-width: 0;
+}
+.mp-workspace button,
+.mp-table-root button {
+  font-family: var(--font);
+}
+.mp-workspace .negative,
+.mp-table-root .negative {
+  color: var(--bad);
+}
+.mp-page .top {
+  padding-bottom: 18px;
+}
+.mp-page .top h1 {
+  font-size: 31px;
+}
+.mp-page .bar-wrap {
+  margin-bottom: 23px;
+}
+.mp-page[data-page="overview"] > .bar-wrap {
+  display: block;
+}
+.mp-page[data-page="overview"] > #view > .evidence-compact {
+  display: none;
+}
+.mp-executive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 24px 27px;
+  border: 1px solid color-mix(in srgb, var(--brand) 16%, var(--line));
+  border-radius: var(--mp-radius);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--brand) 4%, var(--surface)),
+    var(--surface)
+  );
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.mp-executive:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--brand);
+}
+.mp-eyebrow {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--brand);
+  display: block;
+  line-height: 1.6;
+}
+.mp-executive h2 {
+  font-family: var(--heading);
+  font-size: 29px;
+  font-weight: 400;
+  letter-spacing: -0.75px;
+  line-height: 1.2;
+  margin: 7px 0 9px;
+}
+.mp-executive p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--mute);
+  margin: 0;
+  max-width: 540px;
+}
+.mp-executive-facts {
+  display: flex;
+  gap: 22px;
+  flex: none;
+}
+.mp-executive-facts > a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  border-left: 1px solid var(--line);
+  padding-left: 22px;
+}
+.mp-executive-facts b {
+  font-family: var(--heading);
+  font-size: 33px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  display: block;
+}
+.mp-executive-facts b small {
+  font-family: var(--font);
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--mute);
+}
+.mp-executive-facts span {
+  display: block;
+  font-size: 11px;
+  margin-top: 9px;
+  color: var(--mute);
+}
+.mp-executive-facts .attention b {
+  color: var(--bad);
+}
+.mp-executive-facts > a:hover span {
+  color: var(--brand);
+}
+.mp-evidence-strip {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  flex-wrap: wrap;
+  margin: 0 0 22px;
+  font-size: 11px;
+  color: var(--mute);
+  padding: 0 3px;
+}
+.mp-evidence-strip > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mp-evidence-strip b {
+  font-weight: 500;
+  color: var(--ink);
+}
+.mp-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--brand);
+  display: inline-block;
+}
+.mp-scenario-flag {
+  color: var(--warn) !important;
+  font-weight: 600;
+}
+.mp-workspace .home-metrics.strip {
+  margin-bottom: 10px;
+}
+.mp-workspace .home-metrics.strip > * {
+  min-height: 150px;
+}
+.mp-workspace .home-metrics .metric-label {
+  font-size: 13px;
+}
+.mp-workspace .home-metrics.strip .ks {
+  font-size: 12px;
+}
+.mp-workspace .operational-details {
+  margin-bottom: 23px;
+}
+.mp-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 22px 0 18px;
+  position: relative;
+  z-index: 6;
+}
+.mp-profile-switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: color-mix(in srgb, var(--surface) 65%, var(--bg));
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.mp-profile-switch button {
+  font-size: 12px;
+  font-weight: 550;
+  border: 0;
+  background: transparent;
+  color: var(--mute);
+  border-radius: 6px;
+  padding: 9px 12px;
+  min-height: 34px;
+  white-space: nowrap;
+}
+.mp-profile-switch button.on {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: 0 1px 4px #1839390b;
+}
+.mp-profile-switch button:hover {
+  color: var(--brand);
+}
+.mp-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.mp-toolbar .btn {
+  font-size: 12px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 8px 12px;
+  min-height: 36px;
+}
+.mp-toolbar .btn svg {
+  width: 14px;
+  height: 14px;
+}
+.mp-layout-state {
+  font-size: 11px;
+  color: var(--mute);
+  margin-right: 6px;
+  max-width: 200px;
+}
+.mp-more-tools {
+  position: relative;
+}
+.mp-more-tools summary {
+  list-style: none;
+  cursor: pointer;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.mp-more-tools summary::-webkit-details-marker {
+  display: none;
+}
+.mp-more-tools > div {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 6px;
+  width: 205px;
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 15px 45px #142c3a20;
+  z-index: 12;
+}
+.mp-more-tools > div button,
+.mp-more-tools > div a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 10px;
+  color: var(--ink);
+  border-radius: 7px;
+  text-decoration: none;
+}
+.mp-more-tools > div button:hover,
+.mp-more-tools > div a:hover {
+  background: var(--soft);
+}
+.mp-more-tools svg {
+  width: 15px;
+  height: 15px;
+}
+.mp-edit-notice {
+  padding: 12px 16px;
+  margin: 0 0 18px;
+  background: var(--soft);
+  border: 1px dashed color-mix(in srgb, var(--brand) 30%, var(--line));
+  border-radius: 11px;
+  font-size: 13px;
+  color: var(--mute);
+  line-height: 1.65;
+}
+.mp-edit-notice b {
+  color: var(--ink);
+  margin-right: 6px;
+}
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.mp-panel {
+  grid-column: span 6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--mp-radius);
+  box-shadow: var(--mp-panel-shadow);
+  min-width: 0;
+  position: relative;
+  scroll-margin-top: 25px;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
+}
+.mp-panel.mp-width-third {
+  grid-column: span 4;
+}
+.mp-panel.mp-width-half {
+  grid-column: span 6;
+}
+.mp-panel.mp-width-wide {
+  grid-column: span 8;
+}
+.mp-panel.mp-width-full {
+  grid-column: 1/-1;
+}
+.mp-panel-head {
+  padding: 23px 23px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+}
+.mp-panel-head .mp-eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.25px;
+  color: var(--mute);
+}
+.mp-panel-head h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.35;
+  margin: 5px 0 6px;
+  color: var(--ink);
+  display: block;
+}
+.mp-panel-head p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--mute);
+  margin: 0;
+  max-width: 530px;
+}
+.mp-panel-tools {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  margin-top: 0;
+}
+.mp-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--mute);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 5px;
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+.mp-icon-button svg {
+  width: 15px;
+  height: 15px;
+}
+.mp-icon-button:hover {
+  color: var(--brand);
+  background: var(--soft);
+  border-color: var(--line);
+}
+.mp-handle {
+  cursor: grab;
+  touch-action: none;
+}
+.mp-handle:active {
+  cursor: grabbing;
+}
+.mp-panel-body {
+  padding: 0 23px 22px;
+  min-width: 0;
+}
+.mp-collapsed .mp-panel-head {
+  padding-bottom: 22px;
+}
+.mp-pinned .mp-panel-head:before {
+  content: "Pinned";
+  font-size: 9px;
+  position: absolute;
+  right: 23px;
+  top: -7px;
+  background: var(--surface);
+  padding: 0 6px;
+  color: var(--brand);
+  letter-spacing: 0.5px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.mp-panel-edit {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 15px;
+  margin: 0 15px 15px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  background: var(--bg);
+}
+.mp-panel-edit label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--mute);
+}
+.mp-panel-edit select {
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 4px;
+  color: var(--ink);
+  border-radius: 5px;
+}
+.mp-mini {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  background: transparent;
+  color: var(--mute);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 5px 6px;
+  min-height: 28px;
+}
+.mp-mini svg {
+  width: 12px;
+  height: 12px;
+}
+.mp-mini:hover,
+.mp-mini.on {
+  background: var(--surface);
+  color: var(--brand);
+  border-color: var(--line);
+}
+.mp-customizing .mp-panel {
+  border-style: dashed;
+}
+.mp-customizing .mp-panel:hover {
+  border-color: var(--brand);
+}
+.mp-dragging {
+  opacity: 0.4;
+  box-shadow: none;
+  user-select: none;
+}
+.mp-drop-before:before,
+.mp-drop-after:after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--brand);
+  z-index: 9;
+}
+.mp-drop-before:before {
+  top: -12px;
+}
+.mp-drop-after:after {
+  bottom: -12px;
+}
+.mp-is-dragging {
+  cursor: grabbing;
+}
+.mp-workspace-compact .mp-panel-head {
+  padding: 17px 18px 11px;
+}
+.mp-workspace-compact .mp-panel-body {
+  padding: 0 18px 16px;
+}
+.mp-workspace-compact .mp-grid {
+  gap: 14px;
+}
+.mp-chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 1px 0 16px;
+  justify-content: space-between;
+}
+.mp-chart-controls > span {
+  color: var(--mute);
+  font-size: 11px;
+}
+.mp-chart-controls label {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--mute);
+  min-width: 0;
+  flex: 1;
+}
+.mp-chart-controls select {
+  width: 100%;
+  max-width: 100%;
+  font-size: 12px;
+  padding: 8px 9px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.mp-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg);
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.mp-toggle button {
+  background: none;
+  border: 0;
+  color: var(--mute);
+  font-size: 11px;
+  font-weight: 550;
+  padding: 6px 9px;
+  border-radius: 4px;
+  min-height: 28px;
+}
+.mp-toggle button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: 0 1px 3px #17372f05;
+}
+.mp-toggle button:hover {
+  color: var(--brand);
+}
+.mp-legend {
+  display: flex;
+  align-items: center;
+  gap: 9px 16px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--mute);
+  margin: 11px 0 15px;
+}
+.mp-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.mp-legend > span:before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--mp-spent);
+}
+.mp-legend > .committed:before {
+  background: var(--mp-committed);
+}
+.mp-legend > .available:before {
+  background: var(--mp-available);
+  border: 1px solid var(--line);
+}
+.mp-legend > .unknown:before {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--line),
+    var(--line) 2px,
+    var(--surface) 2px,
+    var(--surface) 4px
+  );
+  border: 1px solid var(--line);
+}
+.mp-legend > .signal-good:before {
+  background: var(--good);
+}
+.mp-legend > .signal-warn:before {
+  background: var(--warn);
+}
+.mp-legend > .signal-bad:before {
+  background: var(--bad);
+}
+.mp-footnote {
+  font-size: 11px;
+  color: var(--mute);
+  line-height: 1.8;
+  margin: 16px 0 0;
+  max-width: 95ch;
+}
+.mp-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.mp-chart text {
+  font: 14px var(--font);
+  fill: var(--mute);
+}
+.mp-chart .mp-gridline {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+.mp-chart .mp-selection-line {
+  stroke: var(--brand);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.3;
+}
+.mp-chart .mp-annotation {
+  font-size: 11px;
+  fill: var(--mute);
+}
+.mp-point {
+  cursor: pointer;
+}
+.mp-point:hover > circle:last-child,
+.mp-point:focus > circle:last-child {
+  r: 6;
+  stroke-width: 2.5;
+}
+.mp-point:focus {
+  outline: none;
+}
+.mp-point:focus > circle:last-child {
+  stroke: var(--ink);
+}
+.mp-pace-chart a:hover > circle,
+.mp-pace-chart a:focus > circle {
+  fill-opacity: 0.4;
+  stroke-width: 2.5;
+}
+.mp-chart .mp-bubble-label {
+  font-size: 10px;
+  font-weight: 550;
+  fill: var(--ink);
+  pointer-events: none;
+}
+.mp-trend-chart {
+  margin: 8px 0 0;
+}
+.mp-trend-readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.mp-trend-readout > div {
+  min-width: 0;
+}
+.mp-trend-readout small {
+  font-size: 10px;
+  color: var(--mute);
+  display: block;
+  margin-bottom: 6px;
+}
+.mp-trend-readout b {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.mp-trend-readout > div:nth-child(2) b {
+  color: var(--mp-spent);
+}
+.mp-trend-readout > div:nth-child(3) b {
+  color: var(--mp-committed-ink);
+}
+.mp-data-disclosure {
+  font-size: 12px;
+  margin: 15px 0 0;
+}
+.mp-data-disclosure > summary {
+  cursor: pointer;
+  padding: 7px 0;
+  color: var(--brand);
+  font-weight: 550;
+}
+.mp-data-disclosure[open] > summary {
+  margin-bottom: 10px;
+}
+.mp-allocation-list {
+  max-height: 380px;
+  overflow: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+.mp-allocation-row {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mp-allocation-row:first-child {
+  padding-top: 0;
+}
+.mp-allocation-row:last-child {
+  border-bottom: 0;
+}
+.mp-allocation-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  margin-bottom: 11px;
+}
+.mp-allocation-label > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.mp-allocation-label i {
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  flex: none;
+}
+.mp-allocation-label b {
+  font-size: 13px;
+  font-weight: 600;
+}
+.mp-allocation-label small {
+  color: var(--mute);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.mp-allocation-label strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+.mp-allocation-track {
+  height: 13px;
+  display: flex;
+  border-radius: 4px;
+  position: relative;
+  background: var(--bg);
+  padding-right: 1px;
+}
+.mp-allocation-track i {
+  display: block;
+  min-width: 0;
+}
+.mp-allocation-track i:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.mp-allocation-track i:last-of-type {
+  border-radius: 0 4px 4px 0;
+}
+.mp-allocation-track .spent {
+  background: var(--mp-spent);
+}
+.mp-allocation-track .committed {
+  background: var(--mp-committed);
+}
+.mp-allocation-track .available {
+  background: var(--mp-available);
+}
+.mp-allocation-track .unknown {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--line),
+    var(--line) 4px,
+    var(--surface) 4px,
+    var(--surface) 7px
+  );
+  border: 1px solid var(--line);
+  border-radius: 4px !important;
+}
+.mp-budget-marker {
+  width: 2px;
+  height: 19px;
+  position: absolute;
+  top: -3px;
+  background: var(--mute);
+  transform: translateX(-2px);
+  opacity: 0.55;
+}
+.mp-allocation-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--mute);
+  margin-top: 8px;
+}
+.mp-allocation-row:hover .mp-allocation-label b {
+  color: var(--brand);
+}
+.mp-allocation-row:hover .mp-allocation-track {
+  filter: brightness(0.98);
+}
+.mp-composition {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.9fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 275px;
+}
+.mp-donut {
+  max-width: 260px;
+  margin: auto;
+}
+.mp-donut .mp-donut-number {
+  font-family: var(--heading);
+  font-size: 29px;
+  font-weight: 400;
+  fill: var(--ink);
+  letter-spacing: -0.5px;
+}
+.mp-donut text:not(.mp-donut-number) {
+  font-size: 12px;
+}
+.mp-composition-list {
+  min-width: 0;
+}
+.mp-composition-list details {
+  border-bottom: 1px solid var(--line);
+}
+.mp-composition-list summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mp-composition-list summary::-webkit-details-marker {
+  display: none;
+}
+.mp-composition-list summary > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mp-composition-list summary i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.mp-composition-list summary b {
+  font-weight: 500;
+}
+.mp-composition-list summary strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+.mp-composition-list details > div {
+  padding: 0 0 12px;
+}
+.mp-composition-list p {
+  font-size: 11px;
+  color: var(--mute);
+  margin: 0 0 8px;
+}
+.mp-composition-list a {
+  display: block;
+  font-size: 11px;
+  color: var(--brand);
+  text-decoration: none;
+  padding: 5px 0;
+}
+.mp-composition-list a span {
+  display: block;
+  color: var(--mute);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+.mp-composition-list summary:hover {
+  color: var(--brand);
+}
+.mp-panel[data-mp-panel="map"] .mp-panel-body > .card {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.mp-panel[data-mp-panel="map"] .mtools h2 {
+  display: none;
+}
+.mp-panel[data-mp-panel="map"] .mtools {
+  margin-bottom: 12px;
+}
+.mp-panel[data-mp-panel="map"] .mtools p {
+  font-size: 11px !important;
+  max-width: 220px;
+}
+.mp-panel[data-mp-panel="map"] #map {
+  min-height: 250px;
+  max-height: 370px;
+  aspect-ratio: 1200/620;
+}
+.mp-panel[data-mp-panel="map"] .mleg {
+  font-size: 10px;
+}
+.mp-panel[data-mp-panel="map"] .mapwrap {
+  background: radial-gradient(
+    ellipse at 45% 50%,
+    color-mix(in srgb, var(--brand) 5%, var(--surface)),
+    var(--bg)
+  );
+}
+.mp-action-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mp-action-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mp-action-list li:last-child {
+  border-bottom: 0;
+}
+.mp-action-list a {
+  min-width: 0;
+  flex: 1;
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+}
+.mp-action-list a b {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.65;
+  display: block;
+}
+.mp-action-list a small {
+  font-size: 11px;
+  display: block;
+  color: var(--mute);
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.mp-action-list a:hover b {
+  color: var(--brand);
+}
+.mp-action-symbol {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--brand);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  flex: none;
+  margin-top: 2px;
+}
+.mp-action-symbol.bad {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 7%, var(--surface));
+}
+.mp-action-symbol.warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface));
+}
+.mp-action-type {
+  font-size: 10px;
+  white-space: nowrap;
+  color: var(--mute);
+  margin-top: 6px;
+}
+.mp-action-type.bad {
+  color: var(--bad);
+}
+.mp-action-type.warn {
+  color: var(--warn);
+}
+.mp-panel-footer {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--mute);
+}
+.mp-panel-footer a,
+.mp-text-button {
+  color: var(--brand);
+  text-decoration: none;
+  font-size: 11px;
+}
+.mp-text-button {
+  background: none;
+  padding: 0;
+  border: 0;
+}
+.mp-panel-footer a:hover,
+.mp-text-button:hover {
+  text-decoration: underline;
+}
+.mp-deadline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mp-deadline-list li {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mp-deadline-list li:last-child {
+  border-bottom: 0;
+}
+.mp-deadline-list time {
+  display: grid;
+  gap: 3px;
+  text-align: center;
+  min-width: 54px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 6px;
+}
+.mp-deadline-list time b {
+  font-family: var(--heading);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+}
+.mp-deadline-list time span {
+  font-size: 10px;
+  color: var(--mute);
+}
+.mp-deadline-list a {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.mp-deadline-list a b {
+  font-size: 13px;
+  font-weight: 550;
+  display: block;
+}
+.mp-deadline-list a small {
+  font-size: 11px;
+  display: block;
+  color: var(--mute);
+  margin-top: 4px;
+}
+.mp-deadline-list li > span {
+  font-size: 11px;
+  flex: none;
+  color: var(--brand);
+}
+.mp-coverage-meters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+  margin: 4px 0 20px;
+}
+.mp-coverage-meters > div {
+  padding: 11px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+}
+.mp-coverage-meters span {
+  font-size: 10px;
+  color: var(--mute);
+  display: block;
+  min-height: 24px;
+}
+.mp-coverage-meters b {
+  font-family: var(--heading);
+  font-size: 25px;
+  font-weight: 400;
+  display: block;
+  margin: 5px 0 9px;
+  white-space: nowrap;
+}
+.mp-coverage-meters b small {
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--mute);
+}
+.mp-coverage-meters i {
+  display: block;
+  height: 3px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mp-coverage-meters em {
+  height: 100%;
+  background: var(--brand);
+  display: block;
+  border-radius: 3px;
+}
+.mp-source-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  background: var(--soft);
+  color: var(--brand);
+}
+.mp-source-status svg {
+  width: 13px;
+  height: 13px;
+}
+.mp-source-status.missing {
+  background: var(--bg);
+  color: var(--mute);
+}
+.mp-coverage-table td {
+  text-align: center !important;
+}
+.mp-coverage-table td:first-child {
+  text-align: left !important;
+}
+.mp-coverage-table td small {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.mp-coverage-table th {
+  font-size: 10px !important;
+  white-space: normal;
+  min-width: 65px;
+}
+.mp-coverage-table td {
+  padding: 10px 8px;
+  font-size: 12px;
+}
+.mp-coverage-table a {
+  color: var(--ink);
+  font-weight: 550;
+  text-decoration: none;
+}
+.mp-coverage-table a:hover {
+  color: var(--brand);
+}
+.mp-forecast-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 3px 0 22px;
+}
+.mp-forecast-overview > div {
+  padding: 16px 18px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.mp-forecast-overview span {
+  color: var(--mute);
+  font-size: 12px;
+  display: block;
+  margin-bottom: 10px;
+}
+.mp-forecast-overview b {
+  font-family: var(--heading);
+  font-size: 29px;
+  font-weight: 400;
+}
+.mp-scenario-control {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+}
+.mp-scenario-control label {
+  font-size: 13px;
+  color: var(--mute);
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.mp-scenario-control label b {
+  color: var(--brand);
+  min-width: 40px;
+}
+.mp-scenario-control input {
+  flex: 1;
+  min-width: 50px;
+  accent-color: var(--brand);
+}
+.mp-scenario-control .btn {
+  font-size: 12px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+.mp-forecast-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 25px;
+  margin-top: 23px;
+}
+.mp-forecast-list > a {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mp-forecast-list > a > div:first-child,
+.mp-forecast-list > a > div:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+.mp-forecast-list b {
+  font-weight: 600;
+}
+.mp-forecast-list span {
+  font-size: 11px;
+  color: var(--mute);
+}
+.mp-forecast-list strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.mp-forecast-track {
+  height: 9px;
+  background: var(--bg);
+  position: relative;
+  margin: 13px 0;
+}
+.mp-forecast-track i {
+  height: 100%;
+  display: block;
+  border-radius: 3px;
+}
+.mp-forecast-track em {
+  height: 15px;
+  width: 2px;
+  background: var(--ink);
+  position: absolute;
+  top: -3px;
+  transform: translateX(-1px);
+  opacity: 0.65;
+}
+.mp-scroll {
+  overflow: auto;
+  max-width: 100%;
+  scrollbar-width: thin;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.mp-scroll table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.mp-scroll caption {
+  font-size: 11px;
+  text-align: left;
+  background: var(--bg);
+  padding: 11px 13px;
+  line-height: 1.65;
+  color: var(--mute);
+}
+.mp-scroll th {
+  font-size: 11px;
+  font-weight: 550;
+  cursor: default;
+  background: var(--bg);
+  color: var(--mute);
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.mp-scroll td {
+  font-size: 13px;
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.mp-scroll tbody tr:last-child td {
+  border-bottom: 0;
+}
+.mp-scroll tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+}
+.mp-scroll tbody tr:hover td {
+  background: var(--soft);
+}
+.mp-table-root {
+  min-width: 0;
+}
+.mp-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 2px 0 14px;
+}
+.mp-register-search {
+  position: relative;
+  flex: 1;
+  max-width: 330px;
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+}
+.mp-register-search > svg {
+  position: absolute;
+  left: 12px;
+  width: 14px;
+  height: 14px;
+  color: var(--mute);
+  pointer-events: none;
+}
+.mp-register-search input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 10px 12px 10px 34px;
+  font-size: 13px;
+  min-height: 38px;
+}
+.mp-register-search input::placeholder {
+  color: var(--mute);
+}
+.mp-table-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.mp-table-toolbar .btn {
+  min-height: 36px;
+  font-size: 12px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mp-table-toolbar .btn svg {
+  width: 14px;
+  height: 14px;
+}
+.mp-table-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--mute);
+}
+.mp-table-control select,
+.mp-table-pagination select {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  min-height: 34px;
+}
+.mp-columns {
+  position: relative;
+  z-index: 7;
+}
+.mp-columns summary {
+  cursor: pointer;
+  list-style: none;
+}
+.mp-columns summary::-webkit-details-marker {
+  display: none;
+}
+.mp-columns summary span {
+  color: var(--mute);
+  font-size: 11px;
+}
+.mp-columns > div {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 7px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 15px 35px #142c3a20;
+  min-width: 210px;
+  display: grid;
+  max-height: 350px;
+  overflow: auto;
+}
+.mp-columns label {
+  font-size: 13px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: var(--ink);
+}
+.mp-columns label:hover {
+  background: var(--soft);
+}
+.mp-columns input {
+  accent-color: var(--brand);
+}
+.mp-table-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--mute);
+  margin-bottom: 11px;
+}
+.mp-register-scroll {
+  max-height: 650px;
+  overscroll-behavior: contain;
+}
+.mp-register {
+  min-width: 100%;
+  width: max-content;
+  table-layout: auto;
+  font-variant-numeric: tabular-nums;
+}
+.mp-register .mp-select-cell {
+  width: 38px;
+  min-width: 38px;
+  padding-inline: 11px;
+}
+.mp-register input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.mp-register th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  font-weight: 500;
+  padding: 0;
+  background: var(--bg);
+  text-align: right;
+}
+.mp-register th > button {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 14px 13px;
+  font-size: 12px;
+  font-weight: 550;
+  text-align: right;
+  white-space: nowrap;
+  min-height: 44px;
+}
+.mp-register th > button span {
+  font-size: 12px;
+  opacity: 0.45;
+}
+.mp-register th[aria-sort="ascending"] > button,
+.mp-register th[aria-sort="descending"] > button {
+  color: var(--brand);
+}
+.mp-register th > button:hover {
+  background: var(--soft);
+  color: var(--brand);
+}
+.mp-register th.mp-col-name > button {
+  justify-content: flex-start;
+}
+.mp-register th.mp-col-name,
+.mp-register td.mp-col-name {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  text-align: left;
+  box-shadow: 8px 0 13px -12px #163e4140;
+  min-width: 230px;
+  max-width: 340px;
+  width: 260px;
+  white-space: normal;
+}
+.mp-register th.mp-col-name {
+  z-index: 5;
+}
+.mp-register td.mp-col-name {
+  padding-right: 20px;
+}
+.mp-register td {
+  font-size: 13px;
+  padding: 16px 13px;
+  vertical-align: middle;
+}
+.mp-register .mp-col-country {
+  min-width: 90px;
+  text-align: left;
+}
+.mp-register th.mp-col-country > button {
+  justify-content: flex-start;
+}
+.mp-register td.mp-col-budget,
+.mp-register td.mp-col-spent,
+.mp-register td.mp-col-exposure,
+.mp-register td.mp-col-available,
+.mp-register td.mp-col-committed,
+.mp-register td.mp-col-forecast,
+.mp-register td.mp-col-variance {
+  min-width: 105px;
+}
+.mp-register-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.mp-register-name > i {
+  height: 7px;
+  width: 7px;
+  border-radius: 3px;
+  flex: none;
+  margin-top: 5px;
+}
+.mp-register-name a {
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.55;
+  text-decoration: none;
+  color: var(--ink);
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.mp-register-name a:hover {
+  color: var(--brand);
+}
+.mp-register-name small {
+  font-size: 10px;
+  color: var(--mute);
+  display: block;
+  line-height: 1.55;
+  margin-top: 4px;
+  white-space: normal;
+}
+.mp-money {
+  font-size: 13px;
+  font-weight: 500;
+}
+.mp-missing {
+  color: var(--mute);
+}
+.mp-use-cell {
+  display: inline-grid;
+  gap: 5px;
+  text-align: right;
+  min-width: 55px;
+}
+.mp-use-cell b {
+  font-size: 13px;
+  font-weight: 550;
+}
+.mp-use-cell i {
+  width: 55px;
+  height: 3px;
+  background: var(--line);
+  border-radius: 3px;
+  display: block;
+}
+.mp-use-cell em {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+.mp-register tbody .mp-selected-row td {
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface)) !important;
+}
+.mp-register tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--bg);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+  vertical-align: top;
+  padding: 13px;
+}
+.mp-register tfoot td.mp-col-name {
+  z-index: 4;
+}
+.mp-register tfoot td b {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mp-register tfoot td small {
+  display: block;
+  font-size: 10px;
+  margin-top: 5px;
+  color: var(--mute);
+}
+.mp-register .mp-register-group th {
+  position: static;
+  text-align: left;
+  font-size: 12px;
+  color: var(--brand);
+  padding: 10px 15px;
+  letter-spacing: 0.1px;
+  background: var(--soft);
+}
+.mp-register-group span {
+  margin-left: 15px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--mute);
+}
+.mp-register-detail td {
+  white-space: normal !important;
+  padding: 19px !important;
+  background: var(--bg) !important;
+}
+.mp-register-detail td > div {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr;
+  gap: 22px;
+  max-width: 1050px;
+  position: sticky;
+  left: 20px;
+}
+.mp-register-detail section > span {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--mute);
+  display: block;
+  margin-bottom: 8px;
+}
+.mp-register-detail b {
+  font-size: 13px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.mp-register-detail p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 5px 0;
+  color: var(--mute);
+}
+.mp-register-detail a {
+  color: var(--brand);
+  font-size: 12px;
+  display: block;
+  text-decoration: none;
+  margin: 6px 0;
+}
+.mp-register-detail .mp-adjustment {
+  color: var(--warn);
+}
+.mp-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--mute);
+  padding: 16px 0 0;
+}
+.mp-table-pagination label,
+.mp-table-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mp-table-pagination .btn {
+  padding: 5px 10px;
+  font-size: 13px;
+  min-height: 31px;
+}
+.mp-density-compact .mp-register td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+.mp-density-compact .mp-register th > button {
+  padding-block: 9px;
+  min-height: 35px;
+}
+.mp-density-compact .mp-register-name a {
+  font-size: 12px;
+}
+.mp-density-compact .mp-register-name small {
+  font-size: 10px;
+}
+.mp-empty {
+  padding: 30px 20px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 13px;
+  color: var(--mute);
+  line-height: 1.75;
+}
+.mp-empty > span {
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--soft);
+  border-radius: 50%;
+  margin: 0 auto 12px;
+}
+.mp-empty svg {
+  width: 18px;
+  height: 18px;
+}
+.mp-empty > b {
+  font-family: var(--heading);
+  font-size: 21px;
+  font-weight: 400;
+  display: block;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.mp-empty p {
+  max-width: 360px;
+  margin: 9px auto 14px;
+}
+.mp-empty .btn {
+  font-size: 12px;
+}
+.mp-method {
+  border-top: 1px solid var(--line);
+  margin: 27px 0 0;
+  padding-top: 9px;
+  color: var(--mute);
+  font-size: 12px;
+}
+.mp-method summary {
+  padding: 10px 0;
+  cursor: pointer;
+}
+.mp-method > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  padding: 10px 0 15px;
+}
+.mp-method h3 {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.mp-method p {
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 0;
+}
+.mp-dialog {
+  width: min(680px, calc(100vw - 30px));
+  max-height: calc(100dvh - 40px);
+  padding: 26px;
+  background: var(--surface);
+  overflow: auto;
+}
+.mp-dialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 14px;
+}
+.mp-dialog h2 {
+  font-family: var(--heading);
+  font-size: 29px;
+  font-weight: 400;
+  margin: 5px 0 0;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+}
+.mp-dialog > p {
+  font-size: 13px;
+  color: var(--mute);
+  line-height: 1.8;
+  margin: 10px 0 20px;
+}
+.mp-dialog header > .mp-icon-button {
+  border: 1px solid var(--line);
+  width: 32px;
+  height: 32px;
+  margin-top: 3px;
+}
+.mp-manager-list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  max-height: 55vh;
+  overflow: auto;
+  padding-right: 5px;
+}
+.mp-manager-list > label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.mp-manager-list input {
+  accent-color: var(--brand);
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.mp-manager-list span {
+  flex: 1;
+  min-width: 0;
+}
+.mp-manager-list b {
+  font-size: 13px;
+  font-weight: 550;
+  display: block;
+}
+.mp-manager-list small {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--mute);
+  display: block;
+  margin-top: 4px;
+}
+.mp-manager-list em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--mute);
+  text-transform: capitalize;
+}
+.mp-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.mp-dialog footer label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--mute);
+}
+.mp-dialog select {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 7px;
+  padding: 8px;
+  font-size: 13px;
+}
+.mp-dialog .btn {
+  font-size: 13px;
+}
+.mp-confirm-dialog {
+  width: min(470px, calc(100vw - 30px));
+}
+.mp-confirm-dialog .acts {
+  justify-content: flex-end;
+}
+.mp-export-dialog {
+  width: min(520px, calc(100vw - 30px));
+}
+.mp-export-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.mp-export-options > .btn {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+  padding: 18px;
+  font-size: 18px;
+}
+.mp-export-options small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.mp-export-status {
+  min-height: 20px;
+  margin-bottom: 0 !important;
+}
+@media (min-width: 1700px) {
+  .mp-panel-head {
+    padding: 25px 28px 17px;
+  }
+  .mp-panel-body {
+    padding: 0 28px 25px;
+  }
+  .mp-panel-head h2 {
+    font-size: 20px;
+  }
+  .mp-panel-head p {
+    font-size: 13px;
+  }
+  .mp-chart-controls label {
+    font-size: 12px;
+  }
+  .mp-chart-controls select {
+    font-size: 13px;
+  }
+}
+@media (max-width: 1250px) {
+  .mp-grid {
+    gap: 16px;
+  }
+  .mp-panel-head {
+    padding: 19px 18px 13px;
+    gap: 10px;
+  }
+  .mp-panel-head h2 {
+    font-size: 16px;
+  }
+  .mp-panel-head p {
+    font-size: 11px;
+  }
+  .mp-panel-body {
+    padding: 0 18px 19px;
+  }
+  .mp-panel-tools {
+    gap: 0;
+  }
+  .mp-icon-button {
+    width: 24px;
+    height: 25px;
+    padding: 4px;
+  }
+  .mp-executive {
+    padding: 21px;
+  }
+  .mp-executive h2 {
+    font-size: 25px;
+  }
+  .mp-executive-facts {
+    gap: 17px;
+  }
+  .mp-executive-facts > a {
+    padding-left: 17px;
+  }
+  .mp-toolbar {
+    gap: 10px;
+  }
+  .mp-profile-switch button {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .mp-layout-state {
+    display: none;
+  }
+  .mp-panel-edit {
+    padding: 8px;
+    margin-inline: 10px;
+  }
+  .mp-panel-edit label {
+    margin-left: 0;
+  }
+  .mp-coverage-meters {
+    gap: 7px;
+  }
+  .mp-coverage-meters > div {
+    padding: 9px;
+  }
+  .mp-coverage-meters span {
+    font-size: 9px;
+  }
+  .mp-action-type {
+    display: none;
+  }
+  .mp-action-list li {
+    gap: 9px;
+  }
+  .mp-action-list a b {
+    font-size: 12px;
+  }
+  .mp-composition {
+    gap: 10px;
+    grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1fr);
+  }
+  .mp-composition-list summary {
+    font-size: 12px;
+  }
+  .mp-allocation-label small {
+    display: none;
+  }
+}
+@media (max-width: 1050px) {
+  .mp-panel.mp-width-half,
+  .mp-panel.mp-width-wide {
+    grid-column: 1/-1;
+  }
+  .mp-panel.mp-width-third {
+    grid-column: span 6;
+  }
+  .mp-executive-facts {
+    display: none;
+  }
+  .mp-executive h2 {
+    font-size: 27px;
+  }
+  .mp-executive p {
+    max-width: none;
+  }
+  .mp-panel-head h2 {
+    font-size: 18px;
+  }
+  .mp-panel-head p {
+    font-size: 12px;
+  }
+  .mp-panel-tools {
+    gap: 4px;
+  }
+  .mp-icon-button {
+    width: 28px;
+    height: 28px;
+  }
+  .mp-panel-body {
+    padding: 0 23px 22px;
+  }
+  .mp-panel-head {
+    padding: 23px 23px 15px;
+  }
+  .mp-chart-controls label {
+    font-size: 12px;
+  }
+  .mp-chart-controls select {
+    font-size: 13px;
+  }
+  .mp-trend-chart {
+    max-height: 370px;
+  }
+  .mp-action-list a b {
+    font-size: 13px;
+  }
+  .mp-action-type {
+    display: block;
+  }
+  .mp-toolbar-actions {
+    margin-left: auto;
+  }
+  .mp-composition {
+    grid-template-columns: 220px 1fr;
+    min-height: 270px;
+  }
+  .mp-coverage-meters span {
+    font-size: 11px;
+  }
+  .mp-coverage-meters b {
+    font-size: 29px;
+  }
+  .mp-method > div {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .mp-register-search {
+    max-width: none;
+  }
+  .mp-forecast-list {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 720px) {
+  .mp-page .top h1 {
+    font-size: 29px;
+  }
+  .mp-page .bar-wrap {
+    margin-bottom: 19px;
+  }
+  .mp-page .top {
+    padding-bottom: 17px;
+  }
+  .mp-executive {
+    padding: 20px 18px;
+    border-radius: 13px;
+    margin-bottom: 11px;
+    gap: 12px;
+  }
+  .mp-executive h2 {
+    font-size: 25px;
+    letter-spacing: -0.65px;
+    margin: 8px 0 10px;
+  }
+  .mp-executive p {
+    font-size: 12px;
+  }
+  .mp-executive .mp-eyebrow {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+  }
+  .mp-evidence-strip {
+    gap: 6px 15px;
+    font-size: 10px;
+    margin-bottom: 17px;
+  }
+  .mp-evidence-strip > span:nth-child(2) {
+    order: 3;
+    width: 100%;
+    font-size: 10px;
+    flex-wrap: wrap;
+  }
+  .mp-evidence-strip > span:nth-child(2) b {
+    font-size: 10px;
+  }
+  .mp-workspace .home-metrics.strip > * {
+    min-height: 139px;
+  }
+  .mp-workspace .home-metrics .metric-label {
+    font-size: 11px;
+  }
+  .mp-workspace .home-metrics.strip .ks {
+    font-size: 11px;
+  }
+  .mp-workspace .operational-details {
+    margin-bottom: 17px;
+  }
+  .mp-toolbar {
+    margin: 16px 0 16px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mp-profile-switch {
+    width: 100%;
+    padding: 3px;
+    gap: 2px;
+  }
+  .mp-profile-switch button {
+    flex: 1;
+    padding: 7px 5px;
+    font-size: 10px;
+    min-height: 33px;
+  }
+  .mp-toolbar-actions {
+    margin: 0;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .mp-toolbar .btn {
+    font-size: 12px;
+    min-height: 35px;
+  }
+  .mp-toolbar-actions > .btn:first-of-type {
+    margin-right: auto;
+  }
+  .mp-layout-state {
+    display: none;
+  }
+  .mp-edit-notice {
+    font-size: 12px;
+    padding: 11px 13px;
+    margin-bottom: 14px;
+  }
+  .mp-edit-notice b {
+    display: block;
+    margin-bottom: 4px;
+  }
+  .mp-grid {
+    display: block;
+  }
+  .mp-panel {
+    margin-bottom: 16px;
+    border-radius: 13px;
+    scroll-margin-top: 14px;
+  }
+  .mp-panel-head {
+    padding: 18px 16px 13px;
+    gap: 10px;
+  }
+  .mp-panel-head h2 {
+    font-size: 17px;
+    letter-spacing: -0.4px;
+    line-height: 1.4;
+    margin: 5px 0 6px;
+  }
+  .mp-panel-head p {
+    font-size: 11px;
+    line-height: 1.8;
+    max-width: 265px;
+  }
+  .mp-panel-head .mp-eyebrow {
+    font-size: 9px;
+    letter-spacing: 1.15px;
+  }
+  .mp-panel-tools {
+    gap: 0;
+    margin-right: -3px;
+  }
+  .mp-icon-button {
+    width: 27px;
+    height: 28px;
+  }
+  .mp-icon-button svg {
+    width: 14px;
+    height: 14px;
+  }
+  .mp-panel-body {
+    padding: 0 16px 18px;
+  }
+  .mp-panel-edit {
+    margin: 0 11px 13px;
+    padding: 8px;
+    gap: 3px;
+  }
+  .mp-mini {
+    font-size: 10px;
+    padding: 4px 5px;
+    min-height: 30px;
+  }
+  .mp-panel-edit label {
+    font-size: 10px;
+    margin-left: auto;
+  }
+  .mp-panel-edit select {
+    font-size: 11px;
+    min-height: 28px;
+  }
+  .mp-panel-edit label ~ button {
+    margin-left: 0;
+  }
+  .mp-pinned .mp-panel-head:before {
+    right: 18px;
+  }
+  .mp-customizing .mp-panel-head h2 {
+    font-size: 15px;
+  }
+  .mp-customizing .mp-panel-head p {
+    font-size: 10px;
+  }
+  .mp-collapsed .mp-panel-head {
+    padding-bottom: 18px;
+  }
+  .mp-workspace-compact .mp-panel-head {
+    padding: 16px 14px 10px;
+  }
+  .mp-workspace-compact .mp-panel-body {
+    padding: 0 14px 15px;
+  }
+  .mp-chart-controls {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .mp-chart-controls label {
+    font-size: 10px;
+    gap: 4px;
+  }
+  .mp-chart-controls select {
+    font-size: 11px;
+    min-height: 33px;
+    padding: 7px;
+  }
+  .mp-chart-controls > label:first-child {
+    flex: 1.4;
+  }
+  .mp-toggle button {
+    font-size: 10px;
+    padding: 5px 7px;
+    min-height: 28px;
+  }
+  .mp-chart-controls > span {
+    font-size: 10px;
+  }
+  .mp-legend {
+    font-size: 10px;
+    gap: 8px 10px;
+    margin-bottom: 14px;
+  }
+  .mp-legend > span:before {
+    width: 6px;
+    height: 6px;
+  }
+  .mp-footnote {
+    font-size: 10px;
+    line-height: 1.85;
+    margin-top: 14px;
+  }
+  .mp-allocation-list {
+    max-height: none;
+    padding-right: 0;
+  }
+  .mp-allocation-row {
+    padding: 12px 0;
+  }
+  .mp-allocation-label b {
+    font-size: 12px;
+  }
+  .mp-allocation-label strong {
+    font-size: 12px;
+  }
+  .mp-allocation-label small {
+    display: inline;
+    font-size: 10px;
+  }
+  .mp-allocation-label > span {
+    gap: 6px;
+  }
+  .mp-allocation-meta {
+    font-size: 10px;
+  }
+  .mp-allocation-track {
+    height: 12px;
+  }
+  .mp-budget-marker {
+    height: 18px;
+  }
+  .mp-chart text {
+    font-size: 12px;
+  }
+  .mp-chart .mp-bubble-label {
+    font-size: 10px;
+  }
+  .mp-chart .mp-annotation {
+    font-size: 11px;
+  }
+  .mp-trend-chart {
+    min-height: 160px;
+  }
+  .mp-trend-readout {
+    gap: 7px;
+    padding-block: 12px;
+  }
+  .mp-trend-readout small {
+    font-size: 9px;
+    line-height: 1.6;
+    min-height: 23px;
+    margin-bottom: 3px;
+  }
+  .mp-trend-readout b {
+    font-size: 12px;
+  }
+  .mp-data-disclosure {
+    font-size: 11px;
+    margin-top: 10px;
+  }
+  .mp-composition {
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 9px;
+    min-height: 230px;
+  }
+  .mp-donut .mp-donut-number {
+    font-size: 29px;
+  }
+  .mp-composition-list summary {
+    font-size: 11px;
+    padding: 13px 0;
+    gap: 8px;
+  }
+  .mp-composition-list summary strong {
+    font-size: 12px;
+  }
+  .mp-composition-list summary > span {
+    gap: 6px;
+  }
+  .mp-composition-list p,
+  .mp-composition-list a {
+    font-size: 10px;
+  }
+  .mp-composition-list summary i {
+    width: 6px;
+    height: 6px;
+  }
+  .mp-panel[data-mp-panel="map"] #map {
+    min-height: 220px;
+  }
+  .mp-panel[data-mp-panel="map"] .mtools p {
+    font-size: 10px !important;
+    max-width: 150px;
+  }
+  .mp-panel[data-mp-panel="map"] .mtools {
+    gap: 10px;
+  }
+  .mp-panel[data-mp-panel="map"] .seg button {
+    font-size: 10px;
+    padding: 5px 6px;
+  }
+  .mp-action-list li {
+    gap: 9px;
+    padding: 12px 0;
+  }
+  .mp-action-list a b {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .mp-action-list a small {
+    font-size: 10px;
+    line-height: 1.7;
+  }
+  .mp-action-symbol {
+    width: 23px;
+    height: 23px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+  .mp-action-type {
+    font-size: 9px;
+  }
+  .mp-panel-footer {
+    font-size: 10px;
+    gap: 9px;
+  }
+  .mp-panel-footer a,
+  .mp-text-button {
+    font-size: 10px;
+  }
+  .mp-deadline-list li {
+    gap: 10px;
+  }
+  .mp-deadline-list time {
+    min-width: 45px;
+    padding: 7px 5px;
+  }
+  .mp-deadline-list time b {
+    font-size: 19px;
+  }
+  .mp-deadline-list time span {
+    font-size: 9px;
+  }
+  .mp-deadline-list a b {
+    font-size: 12px;
+  }
+  .mp-deadline-list a small,
+  .mp-deadline-list li > span {
+    font-size: 10px;
+  }
+  .mp-coverage-meters {
+    gap: 6px;
+    margin-bottom: 15px;
+  }
+  .mp-coverage-meters > div {
+    padding: 9px 7px;
+    border-radius: 8px;
+  }
+  .mp-coverage-meters span {
+    font-size: 9px;
+    min-height: 25px;
+    line-height: 1.6;
+  }
+  .mp-coverage-meters b {
+    font-size: 22px;
+    margin-top: 4px;
+  }
+  .mp-coverage-meters b small {
+    font-size: 10px;
+  }
+  .mp-coverage-table {
+    min-width: 440px;
+  }
+  .mp-coverage-table td {
+    font-size: 11px;
+    padding: 9px 7px;
+  }
+  .mp-source-status {
+    width: 22px;
+    height: 22px;
+  }
+  .mp-coverage-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 75px;
+  }
+  .mp-coverage-table th:first-child {
+    left: 0;
+    z-index: 3;
+  }
+  .mp-forecast-overview {
+    gap: 7px;
+    margin-bottom: 15px;
+  }
+  .mp-forecast-overview > div {
+    padding: 12px 10px;
+    border-radius: 9px;
+  }
+  .mp-forecast-overview span {
+    font-size: 10px;
+    line-height: 1.6;
+    min-height: 25px;
+    margin-bottom: 5px;
+  }
+  .mp-forecast-overview b {
+    font-size: 21px;
+  }
+  .mp-scenario-control {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+  }
+  .mp-scenario-control label {
+    font-size: 12px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .mp-scenario-control .btn {
+    font-size: 10px;
+    min-height: 31px;
+    padding: 7px;
+  }
+  .mp-forecast-list {
+    margin-top: 17px;
+    gap: 9px;
+  }
+  .mp-forecast-list > a > div:first-child,
+  .mp-forecast-list > a > div:last-child {
+    font-size: 11px;
+  }
+  .mp-forecast-list span {
+    font-size: 10px;
+  }
+  .mp-forecast-list strong {
+    font-size: 11px;
+  }
+  .mp-table-toolbar {
+    gap: 10px;
+    align-items: stretch;
+  }
+  .mp-register-search {
+    max-width: none;
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .mp-register-search input {
+    font-size: 12px;
+    padding: 10px 11px 10px 31px;
+    min-height: 38px;
+  }
+  .mp-register-search > svg {
+    width: 13px;
+    height: 13px;
+    left: 11px;
+  }
+  .mp-table-toolbar > div {
+    width: 100%;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .mp-table-control {
+    font-size: 10px;
+    gap: 5px;
+    margin-right: auto;
+  }
+  .mp-table-control select {
+    font-size: 11px;
+    padding: 6px;
+    max-width: 104px;
+    min-height: 32px;
+  }
+  .mp-table-toolbar .btn {
+    font-size: 10px;
+    min-height: 32px;
+    padding: 6px 8px;
+    gap: 5px;
+  }
+  .mp-table-toolbar .btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .mp-table-info {
+    font-size: 10px;
+    align-items: flex-start;
+    line-height: 1.6;
+    margin-bottom: 9px;
+  }
+  .mp-table-info > span:last-child {
+    text-align: right;
+    max-width: 45%;
+  }
+  .mp-register-scroll {
+    max-height: 560px;
+  }
+  .mp-register th.mp-col-name,
+  .mp-register td.mp-col-name {
+    min-width: 160px;
+    width: 160px;
+    max-width: 160px;
+  }
+  .mp-register th > button {
+    font-size: 11px;
+    padding: 12px 10px;
+    min-height: 39px;
+    gap: 6px;
+  }
+  .mp-register td {
+    font-size: 12px;
+    padding: 13px 10px;
+  }
+  .mp-register-name {
+    gap: 6px;
+  }
+  .mp-register-name a {
+    font-size: 11px;
+  }
+  .mp-register-name > i {
+    height: 5px;
+    width: 5px;
+  }
+  .mp-register-name small {
+    font-size: 9px;
+    line-height: 1.7;
+  }
+  .mp-register .mp-select-cell {
+    width: 31px;
+    min-width: 31px;
+    padding-inline: 8px;
+  }
+  .mp-register input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+  }
+  .mp-register th.mp-col-name {
+    left: 0;
+  }
+  .mp-money {
+    font-size: 12px;
+  }
+  .mp-use-cell b {
+    font-size: 12px;
+  }
+  .mp-register td.mp-col-budget,
+  .mp-register td.mp-col-spent,
+  .mp-register td.mp-col-exposure,
+  .mp-register td.mp-col-available,
+  .mp-register td.mp-col-committed,
+  .mp-register td.mp-col-forecast,
+  .mp-register td.mp-col-variance {
+    min-width: 95px;
+  }
+  .mp-register .tag {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  .mp-register tfoot td {
+    font-size: 11px;
+    padding: 11px 9px;
+  }
+  .mp-register tfoot td b {
+    font-size: 11px;
+  }
+  .mp-register tfoot td small {
+    font-size: 9px;
+  }
+  .mp-table-pagination {
+    gap: 10px;
+    font-size: 10px;
+    padding-top: 13px;
+  }
+  .mp-table-pagination label {
+    gap: 5px;
+  }
+  .mp-table-pagination select {
+    font-size: 11px;
+    min-height: 30px;
+    padding: 5px;
+  }
+  .mp-table-pagination > div {
+    gap: 7px;
+  }
+  .mp-table-pagination .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-height: 28px;
+  }
+  .mp-register-detail td > div {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+    gap: 14px;
+    left: 12px;
+  }
+  .mp-register-detail p {
+    font-size: 11px;
+  }
+  .mp-register-detail b,
+  .mp-register-detail a {
+    font-size: 12px;
+  }
+  .mp-register-group span {
+    font-size: 10px;
+    display: block;
+    margin: 4px 0 0;
+  }
+  .mp-scroll caption {
+    font-size: 10px;
+  }
+  .mp-scroll td {
+    font-size: 12px;
+  }
+  .mp-method {
+    margin-top: 20px;
+    font-size: 11px;
+  }
+  .mp-method > div {
+    padding-top: 5px;
+    gap: 15px;
+  }
+  .mp-method h3 {
+    font-size: 13px;
+  }
+  .mp-method p {
+    font-size: 11px;
+  }
+  .mp-dialog {
+    padding: 22px 19px;
+    border-radius: 15px;
+  }
+  .mp-dialog h2 {
+    font-size: 26px;
+  }
+  .mp-dialog .mp-eyebrow {
+    font-size: 10px;
+  }
+  .mp-dialog > p {
+    font-size: 12px;
+  }
+  .mp-manager-list {
+    max-height: 52vh;
+    gap: 7px;
+    padding-right: 2px;
+  }
+  .mp-manager-list > label {
+    padding: 11px 10px;
+    gap: 10px;
+  }
+  .mp-manager-list b {
+    font-size: 12px;
+  }
+  .mp-manager-list small {
+    font-size: 10px;
+  }
+  .mp-manager-list em {
+    font-size: 9px;
+  }
+  .mp-dialog footer label {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .mp-dialog footer select {
+    font-size: 12px;
+    max-width: 130px;
+    padding: 7px;
+  }
+  .mp-dialog footer .btn {
+    font-size: 12px;
+  }
+  .mp-dialog .acts {
+    gap: 8px;
+  }
+  .mp-dialog .acts .btn {
+    font-size: 12px;
+  }
+  .mp-export-options > .btn {
+    padding: 16px;
+    font-size: 16px;
+  }
+  .mp-export-options small {
+    font-size: 11px;
+  }
+}
+@media (max-width: 720px) {
+  .mp-trend-chart text,
+  .mp-pace-chart text {
+    font-size: 22px;
+  }
+  .mp-pace-chart .mp-bubble-label {
+    font-size: 16px;
+  }
+  .mp-pace-chart .mp-annotation {
+    font-size: 17px;
+  }
+  .mp-donut text:not(.mp-donut-number) {
+    font-size: 18px;
+  }
+  .mp-trend-chart {
+    margin-bottom: 12px;
+  }
+  .mp-trend-readout small {
+    font-size: 10px;
+  }
+  .mp-icon-button {
+    min-width: 30px;
+    min-height: 32px;
+  }
+  .mp-handle {
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .mp-mini {
+    min-height: 36px;
+  }
+  .mp-toggle button {
+    min-height: 34px;
+  }
+  .mp-register-search input,
+  .mp-chart-controls select {
+    font-size: 16px;
+  }
+  .mp-table-control select,
+  .mp-table-pagination select {
+    font-size: 12px;
+  }
+}
+@media (max-width: 370px) {
+  .mp-panel-head h2 {
+    font-size: 15px;
+  }
+  .mp-panel-head p {
+    font-size: 10px;
+  }
+  .mp-panel-head {
+    padding-inline: 13px;
+  }
+  .mp-panel-body {
+    padding-inline: 13px;
+  }
+  .mp-panel-tools {
+    gap: 0;
+  }
+  .mp-icon-button {
+    width: 24px;
+  }
+  .mp-composition {
+    grid-template-columns: 115px 1fr;
+  }
+  .mp-profile-switch button {
+    font-size: 10px;
+    padding: 6px 3px;
+  }
+  .mp-coverage-meters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mp-coverage-meters span {
+    min-height: 0;
+  }
+  .mp-forecast-overview b {
+    font-size: 19px;
+  }
+  .mp-table-toolbar > div {
+    justify-content: flex-start;
+  }
+  .mp-table-control {
+    margin-right: 0;
+  }
+  .mp-table-toolbar .btn {
+    font-size: 10px;
+  }
+  .mp-register-search input {
+    font-size: 11px;
+  }
+  .mp-executive h2 {
+    font-size: 24px;
+  }
+  .mp-panel-head h2 {
+    overflow-wrap: anywhere;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  #view.anim .mp-panel {
+    animation: mp-enter 0.35s both;
+  }
+  .mp-panel:nth-child(2) {
+    animation-delay: 0.04s;
+  }
+  .mp-panel:nth-child(3) {
+    animation-delay: 0.08s;
+  }
+  .mp-panel:nth-child(4) {
+    animation-delay: 0.12s;
+  }
+  @keyframes mp-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+@media print {
+  .mp-executive {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .mp-toolbar,
+  .mp-edit-notice,
+  .mp-panel-tools,
+  .mp-panel-edit,
+  .mp-columns,
+  .mp-register-search,
+  .mp-table-toolbar,
+  .mp-table-pagination,
+  .mp-more-tools,
+  .mp-panel-footer button {
+    display: none !important;
+  }
+  .mp-grid {
+    display: block;
+  }
+  .mp-panel {
+    margin: 0 0 18px;
+    box-shadow: none;
+    break-inside: avoid;
+    border-radius: 8px;
+  }
+  .mp-panel.mp-collapsed {
+    display: none;
+  }
+  .mp-panel-head {
+    padding: 16px 17px 10px;
+  }
+  .mp-panel-body {
+    padding: 0 17px 17px;
+  }
+  .mp-chart {
+    max-height: 300px;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .mp-scroll {
+    overflow: visible;
+    max-height: none;
+    border: 1px solid var(--line);
+  }
+  .mp-register {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .mp-register th,
+  .mp-register td {
+    position: static !important;
+    padding: 7px !important;
+    min-width: 0 !important;
+    width: auto !important;
+    white-space: normal;
+    font-size: 9px;
+    box-shadow: none !important;
+  }
+  .mp-register th > button {
+    font-size: 9px;
+    padding: 0 !important;
+    min-height: 0;
+    white-space: normal;
+  }
+  .mp-register-name a {
+    font-size: 9px;
+  }
+  .mp-register-name small {
+    font-size: 6px;
+  }
+  .mp-register .mp-select-cell,
+  .mp-register .mp-detail-cell {
+    display: none;
+  }
+  .mp-register th:last-child,
+  .mp-register tfoot td:last-child,
+  .mp-register tfoot td:first-child {
+    display: none;
+  }
+  .mp-register th.mp-col-name,
+  .mp-register td.mp-col-name {
+    width: 20% !important;
+    max-width: none;
+  }
+  .mp-register tfoot td b {
+    font-size: 9px;
+    white-space: normal;
+  }
+  .mp-register tfoot td small {
+    font-size: 6px;
+  }
+  .mp-register-name > i {
+    display: none;
+  }
+  .mp-allocation-list {
+    max-height: none;
+    overflow: visible;
+  }
+  .mp-allocation-track,
+  .mp-donut,
+  .mp-coverage-meters {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .mp-method > div {
+    display: block;
+  }
+  .mp-method section {
+    margin-bottom: 15px;
+  }
+  .mp-dialog {
+    display: none !important;
+  }
+  .mp-workspace .home-metrics.strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  .mp-workspace .home-metrics.strip > * {
+    min-height: 100px;
+  }
+  .mp-workspace .home-metrics.strip b {
+    font-size: 27px;
+  }
+  .mp-evidence-strip {
+    font-size: 10px;
+  }
+}
+
+.mp-allocation-track .adjusted {
+  background: var(--line);
+  border: 1px solid var(--mute);
+  border-radius: 4px !important;
+}
+.mp-grid > .mp-empty {
+  grid-column: 1/-1;
+}
+.mp-mobile-hint {
+  display: none;
+}
+@media (max-width: 720px) {
+  .mp-mobile-hint {
+    display: block;
+    color: var(--brand);
+    font-size: 11px;
+    margin: 0 0 14px;
+  }
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.mp-legend > .signal-neutral:before {
+  background: var(--mute);
+}
+
+@media (max-width: 720px) {
+  .mp-panel[data-mp-panel="trend"] .mp-chart-controls > label:first-child {
+    flex: 1 0 100%;
+  }
+  .mp-table-control select,
+  .mp-table-pagination select {
+    font-size: 16px;
+  }
+}
+.mp-scroll {
+  position: relative;
+}
+#mp-live {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+}
+
+</style>
 </head>
 <body>
 <a href="#view" class="skip" aria-label="Skip to main content">Skip to content</a>
@@ -1104,7 +4234,7 @@ function timeline(R){
  const track=(s,e,color,url,title,small=false)=>{const left=pct(s),right=pct(e);return`<div class="timeline-track">${grid}${todayLine}<a class="timeline-duration ${small?'activity':''}" href="${url}" style="left:${left}%;width:${Math.max(.3,right-left)}%;--timeline-color:${color}" title="${h(title)}" aria-label="${h(title)}"></a></div>`};
  const rows=valid.slice().sort((a,b)=>a.e-b.e).map(r=>{const p=r.p,evidence=r.evidence||projectFinancialEvidence(p),known=evidence.exposure&&r.b>0,acts=activities(r),open=TLEXP.has(p.id),color=entityColor('project',p.id),url=projectUrl(p),signal=known?SG[r.g]:['Not assessed','neutral'];
  return`<div class="timeline-project-row"><div class="timeline-project-label"><div>${acts.length?`<button type="button" class="timeline-toggle" data-act="tlexp" data-id="${h(p.id)}" aria-expanded="${open}" aria-label="${open?'Collapse':'Expand'} activities for ${h(p.name)}">${open?'−':'+'}</button>`:'<span class="timeline-toggle-space"></span>'}<a href="${url}"><b>${h(p.code||'Project')}</b><span>${h(p.name)}</span></a></div><small>${h(p.start)} → ${h(p.end)}</small></div>${track(r.s,r.e,color,url,p.name+' · '+p.start+' to '+p.end)}<div class="timeline-finance"><b>${known?pc(r.util):'—'}</b>${known?`<span class="timeline-finance-track"><i style="width:${cl(r.util,0,1)*100}%;background:${SCOL[r.g]}"></i></span>`:''}<small>${known?'Spent + committed':!evidence.exposure?'No exposure evidence':'Budget not established'}</small></div><div class="timeline-signal"><span class="tag ${signal[1]}">${signal[0]}</span></div></div>${open?acts.map(({a,s,e})=>`<div class="timeline-activity-row"><div class="timeline-activity-label"><b>${h(a.code||'Activity')}</b><span>${h(a.name||'Planned activity')}</span></div>${track(s,e,color,url+'/delivery/plan',(a.name||a.code||'Activity')+' · '+shortDate(s)+' to '+shortDate(e-864e5),true)}<div class="timeline-activity-status">${h(a.status||'Status not reported')}</div><div></div></div>`).join(''):''}`}).join('');
- return`<div class="timeline-toolbar"><span><b>${valid.length}</b> projects · ${startYear}–${endYear}</span><span>Duration and financial use shown separately</span></div><div class="portfolio-timeline-scroll" tabindex="0" role="region" aria-label="Project schedule and financial use"><div class="portfolio-timeline"><div class="timeline-column-head"><span>Project / dates</span><div class="timeline-axis">${years.filter((y,i)=>i%step===0).map(y=>`<span style="left:${pct(Date.UTC(y,0,1))}%">${y}</span>`).join('')}${today===null?'':`<b class="timeline-today-label" style="left:${cl(today,4,96)}%">Today</b>`}</div><span>Budget used</span><span>Financial signal</span></div>${rows}</div></div><p class="timeline-footnote">Coloured bars show scheduled project duration, not delivery completion. Budget used = spent + committed ÷ approved budget. — means sufficient source evidence is unavailable.${valid.some(r=>activities(r).length)?' Select + to expand planned activities.':''}${today===null?' Today is outside the displayed project dates.':''}</p>${invalid.length?`<p class="note warn">${invalid.length} project(s) cannot be plotted until their dates are corrected: ${invalid.map(r=>`<a href="${projectUrl(r.p)}">${h(r.p.code||r.p.name)}</a>`).join(', ')}.</p>`:''}`;
+ return`<div class="timeline-toolbar"><span><b>${valid.length}</b> projects · ${startYear}–${endYear}</span><span>Duration and financial use shown separately</span></div><div class="portfolio-timeline-scroll" tabindex="0" role="region" aria-label="Project schedule and financial use"><div class="portfolio-timeline"><div class="timeline-column-head"><span>Project / dates</span><div class="timeline-axis">${years.filter((y,i)=>i%step===0).map(y=>`<span style="left:${pct(Date.UTC(y,0,1))}%">${y}</span>`).join('')}${today===null?'':`<b class="timeline-today-label" style="left:${cl(today,4,96)}%">Today</b>`}</div><span>Budget used</span><span>Financial signal</span></div>${rows}</div></div><p class="timeline-footnote">Coloured bars show scheduled project duration, not delivery completion. Budget used = (spent + committed) ÷ approved budget. — means sufficient source evidence is unavailable.${valid.some(r=>activities(r).length)?' Select + to expand planned activities.':''}${today===null?' Today is outside the displayed project dates.':''}</p>${invalid.length?`<p class="note warn">${invalid.length} project(s) cannot be plotted until their dates are corrected: ${invalid.map(r=>`<a href="${projectUrl(r.p)}">${h(r.p.code||r.p.name)}</a>`).join(', ')}.</p>`:''}`;
 }
 function structure(R,large=false){const mx=Math.max(...R.map(r=>r.b),1),W=large?470:380,rh=large?34:28,L=large?136:86,BH=large?22:16,TY=large?17:13;return`${large?'<div class="budget-structure-viewport">':''}<svg class="ch${large?' budget-structure-svg':''}" viewBox="0 0 ${large?720:560} ${R.length*rh+6}" role="img" aria-label="Spent, committed and available by project">${R.map((r,i)=>{const y=i*rh+4,w=v=>v/mx*W;return`<g data-pid="${h(r.p.id)}" data-tip="${h(r.p.name)}|Spent ${eur(r.sp)}|Committed ${eur(r.co)}|Available ${eur(r.av)}"><text x="0" y="${y+TY}">${h(r.p.code)}</text><g transform="translate(${L} ${y})"><rect width="${w(r.b)}" height="${BH}" rx="4" fill="var(--soft)"/><rect class="grow" style="--i:${i}" width="${w(r.sp)}" height="${BH}" rx="4" fill="var(--brand)"></rect><rect class="grow" style="--i:${i}" x="${w(r.sp)}" width="${w(r.co)}" height="${BH}" fill="var(--brand)" opacity=".45"></rect></g><text x="${L+6+w(r.b)}" y="${y+TY}" class="m">${eur(r.b)}</text></g>`}).join('')}</svg>${large?'</div>':''}<div class="leg"><span><i style="background:var(--brand)"></i>Spent</span><span><i style="background:var(--brand);opacity:.45"></i>Committed</span><span><i style="background:var(--soft)"></i>Available</span></div>`}
 function scatter(R){const X=v=>46+v*400,Y=v=>14+(1-v/1.3)*220,mb=Math.max(...R.map(r=>r.b),1),col={r:'var(--bad)',o:'var(--warn)',g:'var(--good)',n:'var(--neutral)'};
@@ -2500,7 +5630,7 @@ function render(){NOW=Date.now();const[,r='home',id,tab,sub2]=(location.hash||'#
  $('#bar').hidden=route==='data'||route==='project'||route==='monitoring'||(route==='country'&&(tab==='monitoring'||tab==='history'||tab==='sources'));$('#add').textContent=route==='countries'?'Add country':route==='country'?'Add project here':'Add project';
  if(fresh&&!RM.matches){v.querySelectorAll('.card,.strip').forEach((c,i)=>c.style.setProperty('--i',i));void v.offsetWidth;v.classList.add('anim')}
  const rl=v.querySelector('.cal-rl.on');if(rl&&rl.parentElement)rl.parentElement.scrollLeft=Math.max(0,rl.offsetLeft-rl.parentElement.clientWidth/2+rl.offsetWidth/2);
- syncBarVis();count(fresh);wireMap();restore?.();$('#ubtn').disabled=!H.past.length;$('#rbtn').disabled=!H.fut.length;if(fresh){scrollTo(0,0);lastRoute=key}}
+ syncBarVis();count(fresh);wireMap();restore?.();$('#ubtn').disabled=!H.past.length;$('#rbtn').disabled=!H.fut.length;if(fresh){scrollTo(0,0);lastRoute=key}Masterpiece.afterRender(route)}
 function count(fresh){document.querySelectorAll('#view .strip b').forEach(b=>{const lab=b.previousElementSibling?.textContent||'',m=b.textContent.match(/^(-?)(€?)([\d.,]+)([MK%]?)$/);if(!m)return;
  const money=m[2]==='€',mul=money?(m[4]==='M'?1e6:m[4]==='K'?1e3:1):1,to=parseFloat(m[3].replace(/,/g,''))*mul*(m[1]?-1:1),dec=(m[3].split('.')[1]||'').length,orig=b.textContent,key=lab+(money?'€':m[4]),from=fresh?0:(prevN.has(key)?prevN.get(key):to);prevN.set(key,to);if(RM.matches||from===to)return;
  const fmt=x=>money?eur(x):(x<0?'-':'')+Math.abs(x).toFixed(dec)+m[4],t0=performance.now();(function step(t){const k=Math.min(1,(t-t0)/700),e=1-Math.pow(1-k,3);b.textContent=k<1?fmt(from+(to-from)*e):orig;if(k<1)requestAnimationFrame(step)})(t0)})}
@@ -2784,6 +5914,1674 @@ addEventListener('keydown',e=>{const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCas
  else if(!typing&&!dlg&&e.key==='Enter'){const sel=view.querySelector('.pcard.ksel');if(sel&&sel.dataset.href){e.preventDefault();location.hash=sel.dataset.href}}
  else if(!typing&&!dlg&&k==='e'){const sel=view.querySelector('.pcard.ksel');if(sel){const href=sel.dataset.href;if(href){e.preventDefault();const id=decodeURIComponent(href.split('/project/')[1]||'').split('/')[0];if(id)act('edit',id)}}}
  else if(!typing&&!dlg&&e.key==='?'){e.preventDefault();$('#kbdlg').showModal()}});
+/* Workspace presentation layer. Portfolio records remain owned by the ledger engine. */
+const Masterpiece = (() => {
+  "use strict";
+  const KEY = "ledger.workspace.v2";
+  const PANELS = {
+    allocation: {
+      title: "Where the budget stands",
+      eyebrow: "01 / Financial position",
+      width: "half",
+      desc: "Approved funding, expenditure and commitments on one scale.",
+    },
+    trend: {
+      title: "The story in the reports",
+      eyebrow: "02 / Report history",
+      width: "half",
+      desc: "Dated snapshots, with source coverage at every point.",
+    },
+    actions: {
+      title: "Decisions that need attention",
+      eyebrow: "03 / Action queue",
+      width: "half",
+      desc: "Recorded deadlines, financial pace and delivery observations.",
+    },
+    map: {
+      title: "A portfolio without borders",
+      eyebrow: "04 / Geography",
+      width: "half",
+      desc: "Explore the countries behind your project portfolio.",
+    },
+    pace: {
+      title: "Financial pace, in context",
+      eyebrow: "05 / Pace comparison",
+      width: "half",
+      desc: "Budget exposure against elapsed project time.",
+    },
+    composition: {
+      title: "How the portfolio is shaped",
+      eyebrow: "06 / Composition",
+      width: "half",
+      desc: "Compare current approved funding by country or sector.",
+    },
+    coverage: {
+      title: "How much of the picture is known?",
+      eyebrow: "07 / Evidence coverage",
+      width: "half",
+      desc: "Missing records are visible, rather than treated as zero.",
+    },
+    deadlines: {
+      title: "What comes next",
+      eyebrow: "08 / Recorded deadlines",
+      width: "half",
+      desc: "Upcoming dates and overdue items from project records.",
+    },
+    forecast: {
+      title: "The outlook, with its assumptions",
+      eyebrow: "09 / Forecast",
+      width: "full",
+      desc: "Estimates remain separate from approved budget and actuals.",
+    },
+    timeline: {
+      title: "Projects on one time axis",
+      eyebrow: "10 / Schedule",
+      width: "full",
+      desc: "Scheduled duration and financial utilization are different measures.",
+    },
+    register: {
+      title: "The project register",
+      eyebrow: "11 / Portfolio detail",
+      width: "full",
+      desc: "A searchable, sortable view with explicit source coverage.",
+    },
+    findings: {
+      title: "Evidence into action",
+      eyebrow: "12 / Source observations",
+      width: "full",
+      desc: "Review the findings linked to their underlying project records.",
+    },
+  };
+  const PROFILES = {
+    overview: {
+      name: "Portfolio overview",
+      visible: [
+        "allocation",
+        "trend",
+        "actions",
+        "map",
+        "composition",
+        "coverage",
+        "timeline",
+        "register",
+      ],
+    },
+    finance: {
+      name: "Finance focus",
+      visible: [
+        "allocation",
+        "trend",
+        "pace",
+        "coverage",
+        "forecast",
+        "register",
+      ],
+    },
+    delivery: {
+      name: "Delivery focus",
+      visible: [
+        "actions",
+        "deadlines",
+        "map",
+        "timeline",
+        "findings",
+        "register",
+      ],
+    },
+  };
+  const WIDTHS = ["third", "half", "wide", "full"];
+  const DEFAULT_COLUMNS = [
+    "name",
+    "country",
+    "budget",
+    "spent",
+    "exposure",
+    "available",
+    "used",
+    "signal",
+    "date",
+  ];
+  const COLUMNS = {
+    name: { label: "Project", kind: "text" },
+    country: { label: "Country", kind: "text" },
+    budget: { label: "Approved", kind: "money" },
+    spent: { label: "Spent", kind: "money" },
+    committed: { label: "Committed", kind: "money" },
+    exposure: { label: "Spent + committed", kind: "money" },
+    available: { label: "Available", kind: "money" },
+    used: { label: "Budget used", kind: "percent" },
+    elapsed: { label: "Time elapsed", kind: "percent" },
+    forecast: { label: "Estimate at end", kind: "money" },
+    variance: { label: "Projected variance", kind: "money" },
+    date: { label: "Report date", kind: "text" },
+    signal: { label: "Financial signal", kind: "text" },
+  };
+  const uniq = (items) => [...new Set(items)];
+  const own = (object, key) =>
+    Object.prototype.hasOwnProperty.call(object, key);
+  const ids = Object.keys(PANELS);
+  const list = (value) => (Array.isArray(value) ? value : []);
+  const money = (n) => (Number.isFinite(n) ? cmMoney(n) : "—");
+  const compact = (n) => (Number.isFinite(n) ? eur(n) : "—");
+  const countText = (n, noun) =>
+    n + " " + (n === 1 ? noun : noun === "country" ? "countries" : noun + "s");
+  const url = (r, tab = "overview") =>
+    "#/project/" +
+    encodeURIComponent(r.p.id) +
+    (tab === "overview" ? "" : "/" + tab);
+  const icons = {
+    sliders: '<path d="M4 7h16M4 17h16M8 4v6M16 14v6"/>',
+    drag: '<circle cx="8" cy="5" r="1"/><circle cx="16" cy="5" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="8" cy="19" r="1"/><circle cx="16" cy="19" r="1"/>',
+    up: '<path d="m6 14 6-6 6 6"/>',
+    down: '<path d="m6 10 6 6 6-6"/>',
+    expand: '<path d="M9 4H4v5M15 4h5v5M4 15v5h5M20 15v5h-5"/>',
+    close: '<path d="m6 6 12 12M18 6 6 18"/>',
+    export: '<path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    print: '<path d="M6 9V3h12v6M6 17H3V9h18v8h-3M6 14h12v7H6z"/>',
+    search: '<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>',
+    restore: '<path d="M4 9a8 8 0 1 1-1 7M4 3v6h6"/>',
+    pin: '<path d="m8 3 8 0-1 6 3 3v2H6v-2l3-3-1-6ZM12 14v7"/>',
+  };
+  const icon = (key) =>
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    (icons[key] || icons.sliders) +
+    "</svg>";
+  function defaultLayout(profile = "overview") {
+    return {
+      order: uniq([...PROFILES[profile].visible, ...ids]),
+      hidden: ids.filter((id) => !PROFILES[profile].visible.includes(id)),
+      widths: {},
+      collapsed: [],
+      pinned: [],
+      density: "comfortable",
+    };
+  }
+  function cleanLayout(value, profile) {
+    const base = defaultLayout(profile),
+      v = value && typeof value === "object" ? value : {};
+    return {
+      order: uniq([
+        ...list(v.order).filter((id) => own(PANELS, id)),
+        ...base.order,
+      ]),
+      hidden: uniq(
+        list(v.hidden ?? base.hidden).filter((id) => own(PANELS, id)),
+      ),
+      widths: Object.fromEntries(
+        Object.entries(v.widths || {}).filter(
+          ([id, width]) => own(PANELS, id) && WIDTHS.includes(width),
+        ),
+      ),
+      collapsed: uniq(list(v.collapsed).filter((id) => own(PANELS, id))),
+      pinned: uniq(list(v.pinned).filter((id) => own(PANELS, id))),
+      density: v.density === "compact" ? "compact" : "comfortable",
+    };
+  }
+  function cleanSettings(value) {
+    const v = value && typeof value === "object" ? value : {},
+      profile = own(PROFILES, v.profile) ? v.profile : "overview",
+      profiles = {};
+    for (const key of Object.keys(PROFILES))
+      profiles[key] = cleanLayout(v.profiles?.[key], key);
+    const charts = v.charts || {},
+      table = v.table || {};
+    return {
+      version: 2,
+      profile,
+      profiles,
+      charts: {
+        allocation: charts.allocation === "percent" ? "percent" : "amount",
+        composition: charts.composition === "sector" ? "sector" : "country",
+        series: ["both", "spent", "exposure"].includes(charts.series)
+          ? charts.series
+          : "both",
+        history: typeof charts.history === "string" ? charts.history : "all",
+        window: charts.window === "12" ? "12" : "all",
+      },
+      table: {
+        columns: uniq([
+          "name",
+          ...list(table.columns ?? DEFAULT_COLUMNS).filter((id) =>
+            own(COLUMNS, id),
+          ),
+        ]),
+        sort: own(COLUMNS, table.sort) ? table.sort : "budget",
+        direction: table.direction === 1 ? 1 : -1,
+        density: table.density === "compact" ? "compact" : "comfortable",
+        group: ["country", "signal"].includes(table.group)
+          ? table.group
+          : "none",
+        pageSize: [10, 25, 50].includes(Number(table.pageSize))
+          ? Number(table.pageSize)
+          : 10,
+      },
+    };
+  }
+  let settings = cleanSettings(ls.get(KEY)),
+    customizing = false,
+    layoutSaved = true;
+  const ui = {
+    query: "",
+    page: 0,
+    selected: new Set(),
+    expanded: new Set(),
+    pickedDate: "",
+    deadlineTab: "upcoming",
+    actionTab: "all",
+    exportPanel: "",
+    managerReturn: null,
+    drag: null,
+  };
+  const layout = () => settings.profiles[settings.profile];
+  const visiblePanels = () => {
+    const l = layout(),
+      shown = l.order.filter((id) => !l.hidden.includes(id));
+    return [
+      ...shown.filter((id) => l.pinned.includes(id)),
+      ...shown.filter((id) => !l.pinned.includes(id)),
+    ];
+  };
+  function persist() {
+    layoutSaved = ls.set(KEY, settings);
+    return layoutSaved;
+  }
+  const live = document.createElement("div");
+  live.className = "sr-only";
+  live.id = "mp-live";
+  live.setAttribute("role", "status");
+  live.setAttribute("aria-live", "polite");
+  document.body.append(live);
+  function announce(message) {
+    live.textContent = "";
+    requestAnimationFrame(() => (live.textContent = message));
+  }
+  function empty(title, copy, link = "") {
+    return `<div class="mp-empty"><span aria-hidden="true">${icon("search")}</span><b>${h(title)}</b><p>${h(copy)}</p>${link}</div>`;
+  }
+  function legend() {
+    return '<div class="mp-legend"><span class="spent">Spent</span><span class="committed">Committed</span><span class="available">Available</span><span class="unknown">No exposure evidence</span></div>';
+  }
+  function chartMenu(id) {
+    return `<button class="mp-icon-button" data-mp="chart-export" data-panel="${id}" aria-label="Export ${h(PANELS[id].title)} chart" title="Export chart">${icon("export")}</button>`;
+  }
+  function panel(id, body) {
+    const spec = PANELS[id],
+      l = layout(),
+      collapsed = l.collapsed.includes(id),
+      pinned = l.pinned.includes(id),
+      width = l.widths[id] || spec.width;
+    return `<section class="mp-panel mp-width-${width}${collapsed ? " mp-collapsed" : ""}${pinned ? " mp-pinned" : ""}" data-mp-panel="${id}" aria-labelledby="mp-title-${id}"><header class="mp-panel-head"><div><span class="mp-eyebrow">${spec.eyebrow}</span><h2 id="mp-title-${id}">${spec.title}</h2><p>${spec.desc}</p></div><div class="mp-panel-tools">${["trend", "pace", "composition"].includes(id) ? chartMenu(id) : ""}<button class="mp-icon-button mp-collapse" data-mp="collapse" data-panel="${id}" aria-expanded="${!collapsed}" aria-controls="mp-body-${id}" aria-label="${collapsed ? "Expand" : "Collapse"} ${spec.title}" title="${collapsed ? "Expand" : "Collapse"} panel">${icon(collapsed ? "down" : "up")}</button><button class="mp-icon-button mp-handle" draggable="${customizing}" data-mp-handle="${id}" aria-label="Move ${spec.title}. Alt and arrow keys reorder this panel." title="Drag to move · Alt + ↑ / ↓" ${customizing ? "" : "hidden"}>${icon("drag")}</button></div></header><div class="mp-panel-edit" ${customizing ? "" : "hidden"}><button data-mp="move-up" data-panel="${id}" class="mp-mini">${icon("up")}Earlier</button><button data-mp="move-down" data-panel="${id}" class="mp-mini">${icon("down")}Later</button><label>Width<select data-mp-width="${id}" aria-label="Width of ${spec.title}">${WIDTHS.map((w) => `<option value="${w}" ${w === width ? "selected" : ""}>${w === "third" ? "Third" : w === "half" ? "Half" : w === "wide" ? "Wide" : "Full"}</option>`).join("")}</select></label><button class="mp-mini ${pinned ? "on" : ""}" data-mp="pin" data-panel="${id}" aria-pressed="${pinned}">${icon("pin")}${pinned ? "Pinned" : "Pin"}</button><button class="mp-mini" data-mp="hide" data-panel="${id}">Hide</button></div><div id="mp-body-${id}" class="mp-panel-body" ${collapsed ? "hidden" : ""}>${body}</div></section>`;
+  }
+  function toolbar(analysis = false) {
+    return `<div class="mp-toolbar"><div class="mp-profile-switch" role="group" aria-label="Workspace profile">${Object.entries(
+      PROFILES,
+    )
+      .map(
+        ([id, p]) =>
+          `<button data-mp="profile" data-profile="${id}" class="${settings.profile === id ? "on" : ""}" aria-pressed="${settings.profile === id}">${p.name}</button>`,
+      )
+      .join(
+        "",
+      )}</div><div class="mp-toolbar-actions"><span class="mp-layout-state">${customizing ? (layoutSaved ? "Layout saved on this device" : "Layout not saved · storage unavailable") : countText(visiblePanels().length, "panel")}</span><button class="btn ${customizing ? "pri" : ""}" data-mp="customize" aria-pressed="${customizing}">${icon("sliders")}${customizing ? "Done arranging" : "Customize"}</button><button class="btn mp-manager" data-mp="manage">Panels</button><details class="mp-more-tools"><summary class="btn" aria-label="Workspace tools">•••</summary><div><button data-mp="print">${icon("print")}Print / save PDF</button><button data-act="export">${icon("export")}Portfolio backup</button><button data-mp="export-layout">Export layout</button><button data-mp="import-layout">Import layout</button><button data-mp="reset-layout">${icon("restore")}Reset this layout</button><a href="#/data">Open data tools</a></div></details></div></div>${customizing ? '<div class="mp-edit-notice"><b>Make the workspace yours.</b> Drag a handle to reorder panels. On phones, drag vertically or use Earlier / Later. Alt + ↑ / ↓ works from a focused handle. Panel changes do not alter portfolio data.</div>' : ""}`;
+  }
+  function summary(R) {
+    const covered = R.filter((r) => r.evidence.exposure).length,
+      off = R.filter((r) => ["r", "o"].includes(r.g)).length,
+      overdue = portfolioEvents(R).filter(
+        (e) => !e.done && e.kind === "report" && e.date < TODAY(),
+      ).length;
+    const dates = R.map((r) => r.evidence.latest?.date)
+        .filter(Boolean)
+        .sort(),
+      dateRange = dates.length
+        ? dates[0] === dates.at(-1)
+          ? dates[0]
+          : dates[0] + " — " + dates.at(-1)
+        : "No dated financial reports";
+    return `<div class="mp-executive"><div class="mp-executive-copy"><span class="mp-eyebrow">Evidence, before conclusions</span><h2>${off ? countText(off, "project") + " need" + (off === 1 ? "s" : "") + " a closer look." : "Your portfolio, seen clearly."}</h2><p>${off ? "Financial pace differs from elapsed time. Review the project context before deciding." : "Explore funding, recorded dates and the evidence behind each figure."}</p></div><div class="mp-executive-facts"><a href="#/calendar" class="${overdue ? "attention" : ""}"><b>${overdue}</b><span>overdue report${overdue === 1 ? "" : "s"}</span></a><a href="#mp-title-coverage" data-mp="reveal" data-panel="coverage"><b>${covered}<small> / ${R.length}</small></b><span>exposure sources</span></a></div></div><div class="mp-evidence-strip"><span><i class="mp-status-dot"></i>${DEMO_MODE ? "Sample portfolio" : "Current portfolio records"}</span><span>Latest financial report dates <b>${h(dateRange)}</b></span><span>Currency <b>EUR</b></span>${F.k ? `<span class="mp-scenario-flag">Scenario ${F.k > 0 ? "+" : ""}${F.k}% · estimates only</span>` : ""}</div>`;
+  }
+  function allocation(R) {
+    const percent = settings.charts.allocation === "percent",
+      known = R.filter((r) => r.b > 0),
+      sorted = [...R].sort((a, b) => b.b - a.b),
+      max = percent
+        ? Math.max(
+            1,
+            ...known.filter((r) => r.evidence.exposure).map((r) => r.u / r.b),
+          )
+        : Math.max(
+            1,
+            ...R.map((r) => Math.max(r.b, r.evidence.exposure ? r.u : 0)),
+          ),
+      scale = (n) => Math.max(0, (n / max) * 100);
+    return `<div class="mp-chart-controls"><div class="mp-toggle" role="group" aria-label="Allocation scale">${[
+      ["amount", "EUR"],
+      ["percent", "% of budget"],
+    ]
+      .map(
+        ([k, l]) =>
+          `<button data-mp="allocation-scale" data-value="${k}" aria-pressed="${settings.charts.allocation === k}">${l}</button>`,
+      )
+      .join(
+        "",
+      )}</div><span>${percent ? "Common percentage scale" : "Common EUR scale"}</span></div>${legend()}<div class="mp-allocation-list">${sorted
+      .map((r) => {
+        const e = r.evidence,
+          has = e.exposure && r.b > 0,
+          signed = has && (r.sp < 0 || r.co < 0),
+          den = percent ? r.b : 1,
+          budget = den > 0 ? r.b / den : 0,
+          spent = has ? Math.max(0, r.sp) / den : 0,
+          commit = has ? Math.max(0, r.co) / den : 0,
+          available = has ? Math.max(0, r.b - r.u) / den : 0,
+          over = has && r.u > r.b;
+        return `<a class="mp-allocation-row" href="${url(r, "finance/budget")}" aria-label="${h(r.p.name)}. Approved ${money(r.b)}. ${e.exposure ? "Exposure " + money(r.u) : "Exposure evidence missing"}"><div class="mp-allocation-label"><span><i style="background:${entityColor("project", r.p.id)}"></i><b>${h(r.p.code || r.p.name)}</b><small>${h(r.cn)}</small></span><strong>${compact(r.b)}</strong></div><div class="mp-allocation-track" role="img" aria-label="${h(r.p.name)}: ${has ? "spent " + money(r.sp) + ", committed " + money(r.co) + ", " + (over ? money(r.u - r.b) + " over budget" : money(r.b - r.u) + " available") : e.exposure ? "budget " + money(r.b) + "; positive budget required to plot exposure " + money(r.u) : "budget " + money(r.b) + ", exposure unknown"}">${signed ? `<i class="adjusted" style="width:${scale(budget)}%"></i>` : has ? `<i class="spent" style="width:${scale(spent)}%"></i><i class="committed" style="width:${scale(commit)}%"></i><i class="available" style="width:${scale(available)}%"></i>` : `<i class="unknown" style="width:${scale(budget)}%"></i>`}${r.b > 0 ? `<span class="mp-budget-marker" style="left:${scale(budget)}%" title="Approved budget"></span>` : ""}</div><div class="mp-allocation-meta"><span class="${over ? "negative" : ""}">${signed ? "Signed adjustment · exposure " + compact(r.u) : has ? (over ? compact(r.u - r.b) + " over budget" : pc(r.u / r.b) + " used · " + compact(r.b - r.u) + " available") : e.exposure ? "Positive budget required" : "Exposure not recorded"}</span><span>${h(e.latest?.date || (e.exposure ? "Manual / undated" : "Awaiting actuals"))}</span></div></a>`;
+      })
+      .join(
+        "",
+      )}</div><p class="mp-footnote">Committed excludes spent. The vertical tick marks approved funding. Hatched bars have no exposure evidence; ${percent ? "each percentage uses its own project budget" : "bar lengths use one EUR scale"}. Signed adjustments are shown numerically, rather than stacked. Open any row to inspect its source.</p>`;
+  }
+  function trendData(R) {
+    const reports = R.map((r) => ({
+      index: -1,
+      Q: historyReports(r.p)
+        .filter(
+          (q) =>
+            /^\d{4}-\d{2}-\d{2}$/.test(q.date) &&
+            Number.isFinite(Date.parse(q.date)),
+        )
+        .map((q) => {
+          const f = finAt(r.p, q);
+          return {
+            date: q.date,
+            spent: cmSourceAmountKnown(q, "actual") ? f.actual : null,
+            exposure: cmSourceAmountKnown(q, "spentCommitted") ? f.sc : null,
+          };
+        }),
+    }));
+    const dates = uniq(reports.flatMap(({ Q }) => Q.map((q) => q.date))).sort();
+    return dates.map((date) => {
+      let spent = 0,
+        exposure = 0,
+        actualCount = 0,
+        exposureCount = 0;
+      for (const history of reports) {
+        while (history.Q[history.index + 1]?.date <= date) history.index++;
+        const q = history.Q[history.index];
+        if (!q) continue;
+        if (q.spent !== null) {
+          spent += q.spent;
+          actualCount++;
+        }
+        if (q.exposure !== null) {
+          exposure += q.exposure;
+          exposureCount++;
+        }
+      }
+      return {
+        date,
+        t: Date.parse(date),
+        spent: actualCount ? spent : null,
+        exposure: exposureCount ? exposure : null,
+        actualCount,
+        exposureCount,
+        total: R.length,
+      };
+    });
+  }
+  function trend(R) {
+    if (
+      settings.charts.history !== "all" &&
+      !R.some((r) => r.p.id === settings.charts.history)
+    )
+      settings.charts.history = "all";
+    const scope =
+        settings.charts.history === "all"
+          ? R
+          : R.filter((r) => r.p.id === settings.charts.history),
+      all = trendData(scope),
+      points = settings.charts.window === "12" ? all.slice(-12) : all;
+    const controls = `<div class="mp-chart-controls"><label>Scope<select data-mp-chart="history"><option value="all">Selected portfolio (${R.length})</option>${R.map((r) => `<option value="${h(r.p.id)}" ${settings.charts.history === r.p.id ? "selected" : ""}>${h(r.p.code || r.p.name)}</option>`).join("")}</select></label><label>Series<select data-mp-chart="series">${[
+      ["both", "Both series"],
+      ["spent", "Spent"],
+      ["exposure", "Exposure"],
+    ]
+      .map(
+        ([v, l]) =>
+          `<option value="${v}" ${settings.charts.series === v ? "selected" : ""}>${l}</option>`,
+      )
+      .join(
+        "",
+      )}</select></label><label>History<select data-mp-chart="window"><option value="all" ${settings.charts.window === "all" ? "selected" : ""}>All dates</option><option value="12" ${settings.charts.window === "12" ? "selected" : ""}>Last 12 dates</option></select></label></div>`;
+    if (!points.length)
+      return (
+        controls +
+        empty(
+          "No dated expenditure yet",
+          "Add a financial report with a date and actuals to see a report history.",
+          '<a class="btn" href="#/data">Add source reports</a>',
+        )
+      );
+    const selected =
+        points.find((p) => p.date === ui.pickedDate) || points.at(-1),
+      L = 65,
+      W = 650,
+      T = 22,
+      B = 245,
+      t0 = points[0].t,
+      t1 = points.at(-1).t,
+      vals = points.flatMap((p) =>
+        ["spent", "exposure"]
+          .filter(
+            (k) =>
+              settings.charts.series === "both" || settings.charts.series === k,
+          )
+          .map((k) => p[k])
+          .filter(Number.isFinite),
+      ),
+      min = Math.min(0, ...vals),
+      max = Math.max(1, ...vals),
+      span = max - min,
+      X = (t) => L + ((t - t0) / (t1 - t0 || 1)) * W,
+      Y = (v) => B - ((v - min) / span) * (B - T),
+      stroke = { spent: "var(--mp-spent)", exposure: "var(--mp-committed)" };
+    const path = (k) => {
+      let start = true;
+      return points
+        .map((p) => {
+          if (p[k] === null) {
+            start = true;
+            return "";
+          }
+          const cmd = start ? "M" : "L";
+          start = false;
+          return `${cmd}${X(p.t).toFixed(2)} ${Y(p[k]).toFixed(2)}`;
+        })
+        .join(" ");
+    };
+    const series = ["spent", "exposure"].filter(
+        (k) =>
+          settings.charts.series === "both" || settings.charts.series === k,
+      ),
+      ticks = [points[0]];
+    for (const p of points.slice(1, -1)) {
+      if (
+        X(p.t) - X(ticks.at(-1).t) >= (ticks.length === 1 ? 190 : 125) &&
+        X(points.at(-1).t) - X(p.t) >= 190
+      )
+        ticks.push(p);
+    }
+    if (points.length > 1) ticks.push(points.at(-1));
+    const chart = `<svg class="mp-chart mp-trend-chart" viewBox="0 0 760 292" role="group" aria-labelledby="mp-trend-title mp-trend-desc"><title id="mp-trend-title">Cumulative expenditure by financial report date</title><desc id="mp-trend-desc">Actual dates determine spacing. Each point uses one latest known report per project, rather than adding snapshots. Select a point to review amounts and source counts.</desc><defs><linearGradient id="mp-trend-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mp-spent)" stop-opacity=".18"/><stop offset="1" stop-color="var(--mp-spent)" stop-opacity="0"/></linearGradient></defs>${[0, 0.25, 0.5, 0.75, 1].map((f) => `<line x1="${L}" x2="${L + W}" y1="${Y(min + span * f)}" y2="${Y(min + span * f)}" class="mp-gridline"/><text x="${L - 9}" y="${Y(min + span * f) + 4}" text-anchor="end">${compact(min + span * f)}</text>`).join("")}${series.includes("spent") && points.every((p) => p.spent !== null) ? `<path d="${path("spent")} L${X(points.at(-1).t)} ${Y(0)} L${X(points[0].t)} ${Y(0)} Z" fill="url(#mp-trend-area)"/>` : ""}<line x1="${X(selected.t)}" x2="${X(selected.t)}" y1="${T}" y2="${B}" class="mp-selection-line"/>${series
+      .map(
+        (k) =>
+          `<path d="${path(k)}" fill="none" stroke="${stroke[k]}" stroke-width="2.6" ${k === "exposure" ? 'stroke-dasharray="5 4"' : ""}/>${points
+            .filter((p) => p[k] !== null)
+            .map(
+              (p) =>
+                `<g class="mp-point" role="button" tabindex="0" data-mp="pick-date" data-value="${p.date}" aria-label="${p.date}: ${k === "spent" ? "spent" : "spent plus committed"} ${money(p[k])}; ${k === "spent" ? p.actualCount : p.exposureCount} of ${p.total} projects" data-tip="${p.date}|${k === "spent" ? "Spent" : "Spent + committed"} ${money(p[k])}|${p.actualCount}/${p.total} actuals · ${p.exposureCount}/${p.total} exposure sources"><circle cx="${X(p.t)}" cy="${Y(p[k])}" r="11" fill="transparent"/><circle cx="${X(p.t)}" cy="${Y(p[k])}" r="${p.date === selected.date ? 5 : 3.5}" fill="${stroke[k]}" stroke="var(--surface)" stroke-width="2"/></g>`,
+            )
+            .join("")}`,
+      )
+      .join(
+        "",
+      )}${ticks.map((p) => `<text x="${X(p.t)}" y="${B + 25}" text-anchor="${p === points[0] ? "start" : p === points.at(-1) ? "end" : "middle"}">${h(p.date)}</text>`).join("")}</svg>`;
+    return (
+      controls +
+      chart +
+      `<div class="mp-trend-readout" aria-live="polite"><div><small>Selected report date</small><b>${selected.date}</b></div><div><small>Spent · ${selected.actualCount}/${selected.total} sources</small><b>${compact(selected.spent)}</b></div><div><small>Spent + committed · ${selected.exposureCount}/${selected.total} sources</small><b>${compact(selected.exposure)}</b></div></div><div class="mp-legend"><span class="spent">Cumulative spent</span><span class="committed">Spent + committed</span></div><details class="mp-data-disclosure"><summary>Read the chart as a table</summary><div class="mp-scroll" tabindex="0" role="region" aria-label="Report history values"><table><caption>Latest known report per project at each date. Missing amounts stay unknown.</caption><thead><tr><th scope="col">Date</th><th scope="col">Spent</th><th scope="col">Exposure</th><th scope="col">Actuals coverage</th><th scope="col">Exposure coverage</th></tr></thead><tbody>${points.map((p) => `<tr><td>${p.date}</td><td>${money(p.spent)}</td><td>${money(p.exposure)}</td><td>${p.actualCount}/${p.total}</td><td>${p.exposureCount}/${p.total}</td></tr>`).join("")}</tbody></table></div></details><p class="mp-footnote">Spacing represents actual time. Coverage can change between snapshots; changes are not necessarily spending by the same projects. Historical reports are shown as recorded; current administrator adjustments belong in the register.</p>`
+    );
+  }
+  function pace(R) {
+    const valid = R.filter(
+        (r) =>
+          r.evidence.exposure &&
+          r.b > 0 &&
+          r.util >= 0 &&
+          Number.isFinite(r.el) &&
+          r.s < r.e,
+      ),
+      excluded = R.length - valid.length;
+    if (!valid.length)
+      return empty(
+        "Pace cannot be assessed yet",
+        "Add valid project dates, a positive budget and exposure evidence.",
+      );
+    const L = 52,
+      W = 545,
+      T = 24,
+      B = 255,
+      ceiling = Math.max(1.15, ...valid.map((r) => r.util)) * 1.08,
+      X = (v) => L + v * W,
+      Y = (v) => B - (v / ceiling) * (B - T),
+      color = (g) =>
+        g === "r"
+          ? "var(--bad)"
+          : g === "o"
+            ? "var(--warn)"
+            : g === "g"
+              ? "var(--good)"
+              : "var(--mute)",
+      maxBudget = Math.max(...valid.map((r) => r.b));
+    const svg = `<svg class="mp-chart mp-pace-chart" viewBox="0 0 635 312" role="group" aria-labelledby="mp-pace-title mp-pace-desc"><title id="mp-pace-title">Financial utilization compared with elapsed project time</title><desc id="mp-pace-desc">Each circle is a project. Larger circles have larger budgets. The dashed line shows equal financial use and elapsed time. ${excluded} projects cannot be assessed.</desc><path d="M${L} ${B}L${X(1)} ${Y(1)}L${X(1)} ${B}Z" fill="var(--mp-spent)" opacity=".045"/>${[0, 0.25, 0.5, 0.75, 1].map((f) => `<line x1="${X(f)}" x2="${X(f)}" y1="${T}" y2="${B}" class="mp-gridline"/><text x="${X(f)}" y="${B + 20}" text-anchor="middle">${pc(f)}</text>`).join("")}${[
+      0, 0.25, 0.5, 0.75, 1,
+    ]
+      .filter((f) => f <= ceiling)
+      .map(
+        (f) =>
+          `<line x1="${L}" x2="${L + W}" y1="${Y(f)}" y2="${Y(f)}" class="mp-gridline"/><text x="${L - 9}" y="${Y(f) + 4}" text-anchor="end">${pc(f)}</text>`,
+      )
+      .join(
+        "",
+      )}<path d="M${X(0)} ${Y(0)}L${X(1)} ${Y(1)}" stroke="var(--mute)" stroke-dasharray="5 5" fill="none"/><text x="${X(0.67)}" y="${Y(0.67) - 9}" class="mp-annotation">Equal time and exposure</text>${valid.map((r) => `<a href="${url(r)}" tabindex="0" aria-label="${h(r.p.name)}: ${pc(r.el)} time elapsed, ${pc(r.util)} budget used" data-tip="${h(r.p.name)}|${pc(r.util)} budget exposure · ${pc(r.el)} elapsed time|${r.pace === null ? "Pace not yet assessed" : r.pace.toFixed(2) + "× pace"} · ${SG[r.g][0]}"><circle cx="${X(r.el)}" cy="${Y(r.util)}" r="${7 + Math.sqrt(r.b / maxBudget) * 12}" fill="${color(r.g)}" fill-opacity=".2" stroke="${color(r.g)}" stroke-width="1.5"/><text x="${X(r.el)}" y="${Y(r.util) + 3}" text-anchor="middle" class="mp-bubble-label">${h(r.p.code?.split("-").at(-1) || "")}</text></a>`).join("")}<text x="${L + W / 2}" y="${B + 48}" text-anchor="middle">Elapsed project time →</text><text transform="translate(12 148) rotate(-90)" text-anchor="middle">Budget used →</text></svg>`;
+    return (
+      svg +
+      `<div class="mp-legend"><span class="signal-good">On pace</span><span class="signal-warn">Slow absorption</span><span class="signal-bad">Fast burn</span><span class="signal-neutral">Not assessed</span></div><p class="mp-footnote">${valid.length}/${R.length} projects plotted${excluded ? " · " + excluded + " lack valid dates, positive budget or non-negative exposure" : ""}. Circle size reflects approved budget. Financial pace is not delivery completion; the reference is a straight-line timing assumption.</p>`
+    );
+  }
+  function composition(R) {
+    const mode = settings.charts.composition,
+      groups = new Map();
+    for (const r of R) {
+      const key = mode === "country" ? r.p.country : r.p.sector || "Unassigned",
+        label = mode === "country" ? r.cn : key;
+      if (!groups.has(key))
+        groups.set(key, { key, label, budget: 0, rows: [] });
+      const g = groups.get(key);
+      g.budget += Math.max(0, r.b);
+      g.rows.push(r);
+    }
+    const all = [...groups.values()].sort((a, b) => b.budget - a.budget),
+      total = all.reduce((a, g) => a + g.budget, 0),
+      C = 2 * Math.PI * 79;
+    let offset = 0;
+    const controls = `<div class="mp-chart-controls"><div class="mp-toggle" role="group" aria-label="Portfolio composition">${[
+      ["country", "By country"],
+      ["sector", "By sector"],
+    ]
+      .map(
+        ([v, l]) =>
+          `<button data-mp="composition" data-value="${v}" aria-pressed="${mode === v}">${l}</button>`,
+      )
+      .join("")}</div><span>Current approved budgets</span></div>`;
+    if (!total)
+      return (
+        controls +
+        empty(
+          "No positive approved budgets",
+          "Record a budget to show funding composition. Project records remain in the register.",
+        )
+      );
+    return (
+      controls +
+      `<div class="mp-composition"><svg class="mp-chart mp-donut" viewBox="0 0 240 240" role="img" aria-labelledby="mp-composition-title"><title id="mp-composition-title">Approved budget by ${mode}. Total ${money(total)}.</title><circle cx="120" cy="120" r="79" fill="none" stroke="var(--line)" stroke-width="19"/>${all
+        .map((g) => {
+          const d = (g.budget / total) * C,
+            o = offset;
+          offset += d;
+          return `<circle cx="120" cy="120" r="79" transform="rotate(-90 120 120)" fill="none" stroke="${entityColor(mode === "country" ? "country" : "sector", g.key)}" stroke-width="19" stroke-dasharray="${d} ${Math.max(0, C - d)}" stroke-dashoffset="${-o}" data-tip="${h(g.label)}|${money(g.budget)} approved · ${pc(g.budget / total)}|${countText(g.rows.length, "project")}"/>`;
+        })
+        .join(
+          "",
+        )}<text x="120" y="115" text-anchor="middle" class="mp-donut-number">${compact(total)}</text><text x="120" y="140" text-anchor="middle">approved budget</text></svg><div class="mp-composition-list">${all.map((g) => `<details><summary><span><i style="background:${entityColor(mode === "country" ? "country" : "sector", g.key)}"></i><b>${h(g.label)}</b></span><strong>${pc(g.budget / total)}</strong></summary><div><p>${money(g.budget)} · ${countText(g.rows.length, "project")}</p>${g.rows.map((r) => `<a href="${url(r)}">${h(r.p.code)} <span>${h(r.p.name)}</span></a>`).join("")}</div></details>`).join("")}</div></div><p class="mp-footnote">Shares describe funding allocation, not expenditure or delivery. Expand a group to inspect its projects.</p>`
+    );
+  }
+  function coverage(R) {
+    const metrics = [
+        ["Actuals", (r) => r.evidence.actual],
+        ["Exposure", (r) => r.evidence.exposure],
+        ["Forecast basis", (r) => tableEvidence(r).forecast],
+        ["Dated report", (r) => !!r.evidence.latest?.date],
+      ],
+      n = R.length;
+    return `<div class="mp-coverage-meters">${metrics
+      .map(([l, test]) => {
+        const k = R.filter(test).length;
+        return `<div><span>${l}</span><b>${k}<small> / ${n}</small></b><i role="img" aria-label="${k} of ${n} projects with ${l.toLowerCase()}"><em style="width:${n ? (k / n) * 100 : 0}%"></em></i></div>`;
+      })
+      .join(
+        "",
+      )}</div><div class="mp-scroll" tabindex="0" role="region" aria-label="Source coverage by project"><table class="mp-coverage-table"><caption>Coverage records availability. It is not a quality or delivery score.</caption><thead><tr><th scope="col">Project</th>${metrics.map(([l]) => `<th scope="col">${l}</th>`).join("")}<th scope="col">Latest actuals</th></tr></thead><tbody>${R.map((r) => `<tr><td><a href="${url(r, "finance/reports")}">${h(r.p.code || r.p.name)}</a><small>${h(r.cn)}</small></td>${metrics.map(([label, test]) => `<td><span class="mp-source-status ${test(r) ? "known" : "missing"}" title="${label}: ${test(r) ? "recorded" : "not recorded"}">${test(r) ? icon("check") : "—"}<span class="sr-only">${test(r) ? "Recorded" : "Not recorded"}</span></span></td>`).join("")}<td>${h(r.evidence.latest?.date || (r.evidence.actual ? "Manual / undated" : "No actuals"))}</td></tr>`).join("")}</tbody></table></div><p class="mp-footnote">A blank value is not zero. Forecast availability can mean a model-derived estimate, not a team-approved forecast. Use the source link to inspect the method and reporting date.</p>`;
+  }
+  function actions(R) {
+    const all = todayActions(R),
+      filtered = all.filter(
+        (a) => ui.actionTab === "all" || a[1] === ui.actionTab,
+      ),
+      shown = filtered.slice(0, 5);
+    return `<div class="mp-chart-controls"><div class="mp-toggle" role="group" aria-label="Action severity">${[
+      ["all", "All"],
+      ["bad", "Act now"],
+      ["warn", "Review"],
+    ]
+      .map(
+        ([v, l]) =>
+          `<button data-mp="action-tab" data-value="${v}" aria-pressed="${ui.actionTab === v}">${l}</button>`,
+      )
+      .join(
+        "",
+      )}</div><span>${filtered.length} observations</span></div>${shown.length ? `<ul class="mp-action-list">${shown.map(([, tone, text, p, link, date]) => `<li><span class="mp-action-symbol ${tone}" aria-hidden="true">${tone === "bad" ? "!" : tone === "warn" ? "↗" : "i"}</span><a href="${link}"><b>${h(text)}</b><small>${h(p.code)} · ${h(p.name)}${date ? " · " + h(date) : ""}</small></a><span class="mp-action-type ${tone}">${tone === "bad" ? "Act now" : tone === "warn" ? "Review" : "Update"}</span></li>`).join("")}</ul>` : empty("No matching observations", "Missing evidence is listed separately; absence of an observation does not confirm project performance.")}<div class="mp-panel-footer"><span>Showing ${shown.length} of ${filtered.length}</span><a href="#/calendar">Open calendar ↗</a><button data-mp="reveal" data-panel="findings" class="mp-text-button">Review all findings</button></div>`;
+  }
+  function deadlines(R) {
+    const events = portfolioEvents(R).filter(
+        (e) => !e.done && Number.isFinite(Date.parse(e.date)),
+      ),
+      overdue = events.filter((e) => e.date < TODAY()),
+      upcoming = events.filter((e) => e.date >= TODAY() && dd(e.date) <= 90),
+      list = (ui.deadlineTab === "overdue" ? overdue : upcoming).slice(0, 7);
+    return `<div class="mp-chart-controls"><div class="mp-toggle" role="group" aria-label="Deadline range"><button data-mp="deadline-tab" data-value="upcoming" aria-pressed="${ui.deadlineTab === "upcoming"}">Next 90 days · ${upcoming.length}</button><button data-mp="deadline-tab" data-value="overdue" aria-pressed="${ui.deadlineTab === "overdue"}">Overdue · ${overdue.length}</button></div></div>${
+      list.length
+        ? `<ol class="mp-deadline-list">${list
+            .map((e) => {
+              const date = new Date(e.date + "T12:00:00Z"),
+                days = dd(e.date);
+              return `<li><time datetime="${e.date}"><b>${date.getUTCDate()}</b><span>${date.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })} ${date.getUTCFullYear()}</span></time><a href="${e.link}"><b>${h(e.label)}</b><small>${h(e.p.code)} · ${h(e.kind)}</small></a><span class="${days < 0 ? "negative" : ""}">${days < 0 ? Math.abs(days) + "d overdue" : days === 0 ? "Today" : "In " + days + "d"}</span></li>`;
+            })
+            .join("")}</ol>`
+        : empty(
+            ui.deadlineTab === "overdue"
+              ? "No recorded overdue dates"
+              : "No recorded dates in the next 90 days",
+            "These dates come from project records; they do not infer completion or confirm that an activity took place.",
+          )
+    }<p class="mp-footnote">Only dates marked complete in their source records are excluded. Dates alone do not confirm delivery or payment.</p>`;
+  }
+  function forecast(R) {
+    const known = R.filter((r) => tableEvidence(r).forecast),
+      budget = known.reduce((a, r) => a + r.b, 0),
+      estimate = known.reduce((a, r) => a + r.eac, 0),
+      max = Math.max(1, ...known.map((r) => Math.max(r.b, r.eac))),
+      variance = budget - estimate;
+    return `<div class="mp-forecast-overview"><div><span>Supported estimates</span><b>${known.length}/${R.length}</b></div><div><span>Estimate at completion</span><b>${known.length ? compact(estimate) : "—"}</b></div><div><span>Projected ${variance < 0 ? "overrun" : "unspent"}</span><b class="${variance < 0 ? "negative" : ""}">${known.length ? compact(Math.abs(variance)) : "—"}</b></div></div><div class="mp-scenario-control"><label for="mp-scenario">Spending pace scenario <b id="mp-scenario-value">${F.k > 0 ? "+" : ""}${F.k}%</b></label><input type="range" id="mp-scenario" min="-80" max="80" step="5" value="${F.k}" data-mp-scenario aria-describedby="mp-scenario-help"><button data-act="resetk" class="btn">Reset scenario</button></div><p id="mp-scenario-help" class="mp-footnote">Changes estimates using the current forecast method. Approved budget, spent and committed are unchanged. The engine may use a different supported method for each project.</p>${known.length ? `<div class="mp-forecast-list">${known.map((r) => `<a href="${url(r, "finance/budget")}"><div><b>${h(r.p.code || r.p.name)}</b><span>${h(BL[r.basis] || r.basis)}</span></div><div class="mp-forecast-track"><i style="width:${(Math.max(0, r.eac) / max) * 100}%;background:${r.eac > r.b ? "var(--bad)" : "var(--brand)"}"></i><em style="left:${(r.b / max) * 100}%"></em></div><div><span>Approved ${compact(r.b)}</span><strong>${compact(r.eac)} estimated</strong></div></a>`).join("")}</div>` : empty("No supported forecast basis", "Add dated expenditure, team forecasts or activity evidence.")}<p class="mp-footnote">Only ${known.length}/${R.length} projects contribute to these totals. Unspent estimates are not savings or approved budget revisions. The tick marks current approved budget.</p>`;
+  }
+  function tableValue(r, key) {
+    const e = tableEvidence(r);
+    switch (key) {
+      case "name":
+        return r.p.name;
+      case "country":
+        return r.cn;
+      case "budget":
+        return r.b;
+      case "spent":
+        return e.actual ? r.sp : null;
+      case "committed":
+        return e.committed ? r.co : null;
+      case "exposure":
+        return e.exposure ? r.u : null;
+      case "available":
+        return e.exposure ? r.b - r.u : null;
+      case "used":
+        return e.exposure && r.b > 0 ? r.u / r.b : null;
+      case "elapsed":
+        return Number.isFinite(r.s) && Number.isFinite(r.e) && r.s < r.e
+          ? r.el
+          : null;
+      case "forecast":
+        return e.forecast ? r.eac : null;
+      case "variance":
+        return e.forecast ? r.b - r.eac : null;
+      case "date":
+        return r.evidence.latest?.date || null;
+      case "signal":
+        return e.exposure && r.pace !== null ? SG[r.g][0] : null;
+      default:
+        return null;
+    }
+  }
+  function filteredRows(R) {
+    const q = ui.query.trim().toLocaleLowerCase(),
+      t = settings.table;
+    const filtered = R.filter(
+      (r) =>
+        !q ||
+        [r.p.name, r.p.code, r.cn, r.p.sector, r.p.funding]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(q),
+    );
+    return filtered.sort((a, b) => {
+      if (t.group !== "none") {
+        const x =
+            t.group === "country"
+              ? a.cn
+              : tableValue(a, "signal") || "Not assessed",
+          y =
+            t.group === "country"
+              ? b.cn
+              : tableValue(b, "signal") || "Not assessed",
+          group = x.localeCompare(y);
+        if (group) return group;
+      }
+      const x = tableValue(a, t.sort),
+        y = tableValue(b, t.sort);
+      if (x === null || y === null)
+        return x === null
+          ? y === null
+            ? a.p.name.localeCompare(b.p.name)
+            : 1
+          : -1;
+      return (
+        (typeof x === "string" ? x.localeCompare(String(y)) : x - y) *
+          t.direction || a.p.name.localeCompare(b.p.name)
+      );
+    });
+  }
+  function tableCell(r, key) {
+    const value = tableValue(r, key);
+    if (key === "name")
+      return `<div class="mp-register-name"><i style="background:${entityColor("project", r.p.id)}"></i><div><a href="${url(r)}">${h(r.p.name)}</a><small>${h(r.p.code)} · ${h(r.p.sector || "No sector")}</small></div></div>`;
+    if (value === null)
+      return '<span class="mp-missing" title="Required source evidence is not recorded">—<span class="sr-only">Not recorded</span></span>';
+    if (key === "signal")
+      return `<span class="tag ${SG[r.g][1]}">${h(value)}</span>`;
+    if (COLUMNS[key].kind === "money")
+      return `<span class="mp-money ${["available", "variance"].includes(key) && value < 0 ? "negative" : ""}">${money(value)}</span>`;
+    if (key === "used")
+      return `<span class="mp-use-cell"><b>${pc(value)}</b><i><em style="width:${cl(value, 0, 1) * 100}%;background:${r.g === "r" ? "var(--bad)" : r.g === "o" ? "var(--warn)" : "var(--brand)"}"></em></i></span>`;
+    if (COLUMNS[key].kind === "percent") return pc(value);
+    return h(value);
+  }
+  function tableTotal(R, key) {
+    if (key === "name")
+      return `<b>Filtered totals</b><small>${countText(R.length, "project")} · EUR</small>`;
+    if (COLUMNS[key].kind === "money") {
+      const known = R.map((r) => tableValue(r, key)).filter(Number.isFinite);
+      return `<b>${known.length ? money(known.reduce((a, b) => a + b, 0)) : "—"}</b><small>${known.length}/${R.length} sources</small>`;
+    }
+    if (key === "used") {
+      const complete =
+          R.length && R.every((r) => tableValue(r, "used") !== null),
+        budget = R.reduce((a, r) => a + r.b, 0);
+      return complete && budget > 0
+        ? pc(R.reduce((a, r) => a + r.u, 0) / budget)
+        : "—";
+    }
+    return "—";
+  }
+  function tableDetail(r, columns) {
+    const latest = r.evidence.latest,
+      e = tableEvidence(r),
+      source = latest?.fileName || latest?.name || "Manual project record";
+    return `<tr class="mp-register-detail"><td colspan="${columns.length + 2}"><div><section><span>Source &amp; context</span><b>${h(source)}</b><p>${h(latest?.date || "No dated financial report")} · ${h(r.cn)} · ${h(r.p.funding || "Funding not recorded")}</p>${Object.keys(r.p.adminOverrides || {}).length ? '<p class="mp-adjustment">Current figures include administrator adjustments. Report history remains as recorded.</p>' : ""}</section><section><span>Financial evidence</span><p>Actuals ${e.actual ? "recorded" : "missing"} · commitments ${e.committed ? "recorded" : "missing"} · exposure ${e.exposure ? "recorded" : "missing"}</p><p>${e.forecast ? "Estimate: " + h(BL[r.basis] || r.basis) : "No supported estimate"}${F.k ? " · " + h(F.k) + "% scenario" : ""}</p></section><section><span>Inspect the source</span><a href="${url(r, "finance/reports")}">Financial reports ↗</a><a href="${url(r, "finance/budget")}">Budget &amp; comparisons ↗</a>${projectPmmLink(r.p)}</section></div></td></tr>`;
+  }
+  function table(R) {
+    const t = settings.table,
+      filtered = filteredRows(R),
+      columns = t.columns,
+      pages = Math.max(1, Math.ceil(filtered.length / t.pageSize));
+    ui.page = Math.min(ui.page, pages - 1);
+    const page = filtered.slice(
+        ui.page * t.pageSize,
+        (ui.page + 1) * t.pageSize,
+      ),
+      filteredIds = new Set(filtered.map((r) => r.p.id));
+    ui.selected = new Set([...ui.selected].filter((id) => filteredIds.has(id)));
+    const selected = filtered.filter((r) => ui.selected.has(r.p.id)),
+      allSelected =
+        page.length > 0 && page.every((r) => ui.selected.has(r.p.id));
+    let lastGroup = "";
+    const rowsHTML = page
+      .map((r) => {
+        let group = "";
+        if (t.group !== "none") {
+          const label =
+            t.group === "country"
+              ? r.cn
+              : tableValue(r, "signal") || "Not assessed";
+          if (label !== lastGroup) {
+            lastGroup = label;
+            const n = filtered.filter(
+              (x) =>
+                (t.group === "country"
+                  ? x.cn
+                  : tableValue(x, "signal") || "Not assessed") === label,
+            ).length;
+            group = `<tr class="mp-register-group"><th colspan="${columns.length + 2}" scope="rowgroup">${h(label)} <span>${countText(n, "project")} in filtered results</span></th></tr>`;
+          }
+        }
+        return (
+          group +
+          `<tr class="${ui.selected.has(r.p.id) ? "mp-selected-row" : ""}"><td class="mp-select-cell"><input type="checkbox" data-mp-row-select="${h(r.p.id)}" aria-label="Select ${h(r.p.name)}" ${ui.selected.has(r.p.id) ? "checked" : ""}></td>${columns.map((key) => `<td class="mp-col-${key}">${tableCell(r, key)}</td>`).join("")}<td class="mp-detail-cell"><button class="mp-icon-button" data-mp="row-detail" data-row="${h(r.p.id)}" aria-expanded="${ui.expanded.has(r.p.id)}" aria-label="${ui.expanded.has(r.p.id) ? "Hide" : "Show"} source details for ${h(r.p.name)}">${icon(ui.expanded.has(r.p.id) ? "up" : "down")}</button></td></tr>` +
+          (ui.expanded.has(r.p.id) ? tableDetail(r, columns) : "")
+        );
+      })
+      .join("");
+    return `<div class="mp-table-root mp-density-${t.density}" data-mp-source="${h(JSON.stringify(R.map((r) => r.p.id)))}"><div class="mp-table-toolbar"><label class="mp-register-search"><span class="sr-only">Search this table</span>${icon("search")}<input id="mp-register-query" type="search" placeholder="Find a project, code or country…" value="${h(ui.query)}" data-mp-table-query></label><div><label class="mp-table-control">Group<select data-mp-table="group" aria-label="Group table rows"><option value="none" ${t.group === "none" ? "selected" : ""}>No grouping</option><option value="country" ${t.group === "country" ? "selected" : ""}>Country</option><option value="signal" ${t.group === "signal" ? "selected" : ""}>Financial signal</option></select></label><details class="mp-columns"><summary class="btn">Columns <span>${columns.length}</span></summary><div>${Object.entries(
+      COLUMNS,
+    )
+      .map(
+        ([key, c]) =>
+          `<label><input type="checkbox" data-mp-column="${key}" ${columns.includes(key) ? "checked" : ""} ${key === "name" ? "disabled" : ""}>${c.label}</label>`,
+      )
+      .join(
+        "",
+      )}</div></details><button class="btn" data-mp="table-density" aria-label="Switch to ${t.density === "compact" ? "comfortable" : "compact"} table density" title="Table density">${icon("sliders")}</button><button class="btn" data-mp="table-export" ${!filtered.length ? "disabled" : ""}>${icon("export")}${selected.length ? "Export selected (" + selected.length + ")" : "Export CSV"}</button></div></div><div class="mp-table-info" role="status"><span>${countText(filtered.length, "project")} ${ui.query ? "match" : "in this view"}${filtered.length !== R.length ? " · " + R.length + " in the workspace selection" : ""}</span><span>${selected.length ? "Selected " + selected.length + " · " : ""}Unknown values stay last when sorting</span></div><p class="mp-mobile-hint">Swipe horizontally for more columns.</p><div class="mp-scroll mp-register-scroll" tabindex="0" role="region" aria-label="Project register, scroll horizontally for more columns"><table class="mp-register"><caption class="sr-only">Project register in EUR. Totals cover all filtered rows, not only this page. Source counts are shown for each total.</caption><thead><tr><th class="mp-select-cell" scope="col"><input type="checkbox" data-mp-page-select aria-label="Select all projects on this page" ${allSelected ? "checked" : ""} ${!page.length ? "disabled" : ""}></th>${columns.map((key) => `<th class="mp-col-${key}" scope="col" aria-sort="${t.sort === key ? (t.direction === 1 ? "ascending" : "descending") : "none"}"><button data-mp="sort" data-column="${key}" aria-label="Sort by ${COLUMNS[key].label}">${COLUMNS[key].label}<span aria-hidden="true">${t.sort === key ? (t.direction === 1 ? "↑" : "↓") : "↕"}</span></button></th>`).join("")}<th scope="col"><span class="sr-only">Source details</span></th></tr></thead><tbody>${rowsHTML || `<tr><td colspan="${columns.length + 2}">${empty("No matching projects", "Try a shorter search or clear the table search.", '<button class="btn" data-mp="clear-table">Clear table search</button>')}</td></tr>`}</tbody><tfoot><tr><td></td>${columns.map((key) => `<td class="mp-col-${key}">${tableTotal(filtered, key)}</td>`).join("")}<td></td></tr></tfoot></table></div><div class="mp-table-pagination"><label>Rows per page<select data-mp-table="pageSize">${[10, 25, 50].map((n) => `<option ${t.pageSize === n ? "selected" : ""}>${n}</option>`).join("")}</select></label><span>${filtered.length ? ui.page * t.pageSize + 1 : 0}–${Math.min((ui.page + 1) * t.pageSize, filtered.length)} of ${filtered.length}</span><div><button class="btn" data-mp="page-prev" ${ui.page === 0 ? "disabled" : ""} aria-label="Previous table page">←</button><span>Page ${ui.page + 1} / ${pages}</span><button class="btn" data-mp="page-next" ${ui.page >= pages - 1 ? "disabled" : ""} aria-label="Next table page">→</button></div></div><p class="mp-footnote">Available = approved − spent − committed. Totals use only recorded values and can have different source counts and dates. A dash means insufficient evidence. Estimates and financial pace do not measure delivery.</p></div>`;
+  }
+  function panelBody(id, R) {
+    switch (id) {
+      case "allocation":
+        return allocation(R);
+      case "trend":
+        return trend(R);
+      case "pace":
+        return pace(R);
+      case "composition":
+        return composition(R);
+      case "coverage":
+        return coverage(R);
+      case "actions":
+        return actions(R);
+      case "deadlines":
+        return deadlines(R);
+      case "forecast":
+        return forecast(R);
+      case "map":
+        return mapCard(R);
+      case "timeline":
+        return (
+          '<p class="mp-mobile-hint">Swipe horizontally to compare dates and budget use.</p>' +
+          timeline(R)
+        );
+      case "register":
+        return table(R);
+      case "findings":
+        return (
+          portfolioAutoRiskPanel(R) +
+          `<details class="mp-data-disclosure"><summary>Financial observations &amp; methods</summary>${analyticsFindings(R)}</details>`
+        );
+      default:
+        return "";
+    }
+  }
+  function workspace(R, analysis = false) {
+    if (!R.length)
+      return `<div class="mp-workspace">${empty("No projects match this selection", "Broaden the workspace filters to bring your projects back.", '<button class="btn" data-act="reset">Clear filters</button>')}</div>`;
+    return `<div class="mp-workspace ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${summary(R)}${strip(R, "home")}${toolbar(analysis)}<div class="mp-grid">${
+      visiblePanels()
+        .map((id) => panel(id, panelBody(id, R)))
+        .join("") ||
+      empty(
+        "Your workspace is ready to arrange",
+        "Choose the panels you want to see in this profile.",
+        '<button class="btn" data-mp="manage">Choose panels</button>',
+      )
+    }</div><details class="mp-method"><summary>Understand the figures &amp; how this workspace works</summary><div><section><h3>Financial position</h3><p>Spent is cumulative expenditure. Committed excludes spent. Exposure adds both. Current approved budgets and latest financial reports can have different effective dates. Availability for the whole portfolio is withheld when exposure evidence is incomplete.</p></section><section><h3>Historical reports &amp; estimates</h3><p>The history uses the latest known report per project at each date; snapshots are never added together. Forecasts use the ledger engine and the selected scenario. They are estimates, not revised budgets or promised savings.</p></section><section><h3>Personal workspace</h3><p>Each profile keeps its own panel order, widths, collapsed panels and visibility on this device. Customize to drag a handle, or use Earlier / Later and Alt + arrow keys. Layout export is separate from a portfolio backup.</p></section></div></details></div>`;
+  }
+  function afterRender(route) {
+    document
+      .querySelector("main")
+      .classList.toggle("mp-page", ["home", "overview"].includes(route));
+    view.querySelectorAll(".mp-table-root").forEach((root) => {
+      const boxes = [...root.querySelectorAll("[data-mp-row-select]")],
+        selected = boxes.filter((e) => e.checked).length,
+        all = root.querySelector("[data-mp-page-select]");
+      if (all) all.indeterminate = selected > 0 && selected < boxes.length;
+    });
+  }
+  function home(R) {
+    return {
+      t: "Portfolio overview",
+      s:
+        countText(R.length, "project") +
+        " across " +
+        countText(new Set(R.map((r) => r.p.country)).size, "country") +
+        " · " +
+        new Date().toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+      html: workspace(R),
+    };
+  }
+  function analytics(R) {
+    return {
+      t: "Analytics studio",
+      s: "A workspace for financial evidence, comparisons and decisions",
+      html: workspace(R, true),
+    };
+  }
+  function sourceRows(root) {
+    let recordIds;
+    try {
+      recordIds = JSON.parse(root.dataset.mpSource);
+    } catch {
+      return [];
+    }
+    return S.projects.filter((p) => recordIds.includes(p.id)).map(model);
+  }
+  function redrawTable(root, focusId = "") {
+    const scroll = root.querySelector(".mp-register-scroll")?.scrollLeft || 0,
+      active = document.activeElement,
+      caret = active?.selectionStart,
+      columnsOpen = !!root.querySelector(".mp-columns")?.open;
+    const selector = focusId
+      ? "#" + CSS.escape(focusId)
+      : active && root.contains(active)
+        ? [
+            "data-mp-column",
+            "data-mp-row-select",
+            "data-mp-page-select",
+            "data-mp-table",
+            "data-mp",
+          ]
+            .filter((a) => active.hasAttribute(a))
+            .map(
+              (a) => "[" + a + '="' + CSS.escape(active.getAttribute(a)) + '"]',
+            )[0]
+        : "";
+    root.outerHTML = table(sourceRows(root));
+    const next = view.querySelector(".mp-table-root");
+    if (next) {
+      next.querySelector(".mp-register-scroll").scrollLeft = scroll;
+      next.querySelector(".mp-columns").open = columnsOpen;
+      afterRender(document.querySelector("main").dataset.page);
+      if (selector) {
+        const input = next.querySelector(selector);
+        input?.focus({ preventScroll: true });
+        if (Number.isFinite(caret) && input?.type === "search")
+          input.setSelectionRange(caret, caret);
+      }
+    }
+  }
+  function setPanel(id, key, value) {
+    const l = layout();
+    if (key === "width") l.widths[id] = value;
+    else {
+      l[key] = l[key].filter((x) => x !== id);
+      if (value) l[key].push(id);
+    }
+    persist();
+    render();
+  }
+  function move(id, to, after = false) {
+    const l = layout(),
+      shown = visiblePanels();
+    if (!own(PANELS, id) || !shown.includes(id)) return;
+    if (typeof to === "number") after = to > 0;
+    let target = typeof to === "number" ? shown[shown.indexOf(id) + to] : to;
+    if (!target || id === target) return;
+    // A move respects pinned / unpinned groups rather than silently unpinning.
+    if (l.pinned.includes(id) !== l.pinned.includes(target)) {
+      announce("Unpin the panel to move it between groups.");
+      return;
+    }
+    const order = l.order.filter((x) => x !== id),
+      at = order.indexOf(target);
+    order.splice(at + (after ? 1 : 0), 0, id);
+    l.order = order;
+    persist();
+    render();
+    view
+      .querySelector(`[data-mp-handle="${id}"]`)
+      ?.focus({ preventScroll: true });
+    announce(PANELS[id].title + " moved. Layout saved.");
+  }
+  const manager = document.createElement("dialog");
+  manager.id = "mp-manager";
+  manager.className = "mp-dialog";
+  manager.setAttribute("aria-labelledby", "mp-manager-title");
+  document.body.append(manager);
+  const resetDialog = document.createElement("dialog");
+  resetDialog.className = "mp-dialog mp-confirm-dialog";
+  resetDialog.setAttribute("aria-labelledby", "mp-reset-title");
+  resetDialog.innerHTML =
+    '<h2 id="mp-reset-title">Restore the default layout?</h2><p>This resets panel order, widths, visibility and density for this profile. Portfolio records, source files and the other profiles are preserved.</p><div class="acts"><button class="btn" data-mp="cancel-reset">Keep my layout</button><button class="btn pri" data-mp="confirm-reset">Restore layout</button></div>';
+  document.body.append(resetDialog);
+  const exportDialog = document.createElement("dialog");
+  exportDialog.className = "mp-dialog mp-export-dialog";
+  exportDialog.setAttribute("aria-labelledby", "mp-export-title");
+  exportDialog.innerHTML =
+    '<header><div><span class="mp-eyebrow">A chart you can keep</span><h2 id="mp-export-title">Export chart</h2></div><button class="mp-icon-button" data-mp="close-export" aria-label="Close chart export">' +
+    icon("close") +
+    '</button></header><p>Export the current scope and theme. Data and source descriptions stay available in the workspace.</p><div class="mp-export-options"><button class="btn pri" data-mp="export-svg">SVG <small>Scalable vector</small></button><button class="btn" data-mp="export-png">PNG <small>High resolution image</small></button></div><p class="mp-export-status" role="status"></p>';
+  document.body.append(exportDialog);
+  const layoutInput = document.createElement("input");
+  layoutInput.id = "mp-layout-import";
+  layoutInput.type = "file";
+  layoutInput.accept = ".json,application/json";
+  layoutInput.hidden = true;
+  document.body.append(layoutInput);
+  function drawManager() {
+    const l = layout();
+    manager.innerHTML = `<header><div><span class="mp-eyebrow">${PROFILES[settings.profile].name}</span><h2 id="mp-manager-title">Make room for what matters</h2></div><button class="mp-icon-button" data-mp="close-manager" aria-label="Close panel manager">${icon("close")}</button></header><p>Choose the panels in this profile. Adjust their order and size with Customize.</p><div class="mp-manager-list">${l.order.map((id) => `<label><input type="checkbox" data-mp-visibility="${id}" ${!l.hidden.includes(id) ? "checked" : ""}><span><b>${PANELS[id].title}</b><small>${PANELS[id].desc}</small></span><em>${l.widths[id] || PANELS[id].width}</em></label>`).join("")}</div><footer><label>Workspace density<select data-mp-density><option value="comfortable" ${l.density === "comfortable" ? "selected" : ""}>Comfortable</option><option value="compact" ${l.density === "compact" ? "selected" : ""}>Compact</option></select></label><button class="btn pri" data-mp="close-manager">Done</button></footer>`;
+  }
+  manager.addEventListener("close", () =>
+    view.querySelector('[data-mp="manage"]')?.focus({ preventScroll: true }),
+  );
+  resetDialog.addEventListener("close", () =>
+    view.querySelector('[data-mp="customize"]')?.focus({ preventScroll: true }),
+  );
+  exportDialog.addEventListener("close", () =>
+    view
+      .querySelector(`[data-mp="chart-export"][data-panel="${ui.exportPanel}"]`)
+      ?.focus({ preventScroll: true }),
+  );
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || document.querySelector("dialog[open]"))
+      return;
+    const menus = [
+      ...view.querySelectorAll(".mp-more-tools[open],.mp-columns[open]"),
+    ];
+    if (!menus.length) return;
+    menus.forEach((menu) => (menu.open = false));
+    menus[0].querySelector("summary")?.focus({ preventScroll: true });
+    event.preventDefault();
+  });
+  for (const dlg of [manager, resetDialog, exportDialog])
+    dlg.addEventListener("click", (event) => {
+      if (event.target === dlg) dlg.close();
+    });
+  function csvExport(root) {
+    const filtered = filteredRows(sourceRows(root)),
+      selected = filtered.filter((r) => ui.selected.has(r.p.id)),
+      R = selected.length ? selected : filtered,
+      columns = settings.table.columns;
+    const escape = (v) => {
+      let text = String(v ?? "");
+      if (typeof v === "string" && /^[\s]*[=+@-]/.test(text)) text = "'" + text;
+      return '"' + text.replace(/"/g, '""') + '"';
+    };
+    const lines = [
+      columns.map(
+        (k) =>
+          COLUMNS[k].label +
+          (COLUMNS[k].kind === "percent"
+            ? " (fraction)"
+            : COLUMNS[k].kind === "money"
+              ? " (EUR)"
+              : ""),
+      ),
+      ...R.map((r) => columns.map((k) => tableValue(r, k))),
+    ];
+    download(
+      "portfolio-register-" + TODAY() + ".csv",
+      "\ufeff" + lines.map((row) => row.map(escape).join(",")).join("\r\n"),
+      "text/csv;charset=utf-8",
+    );
+    announce(countText(R.length, "project") + " exported.");
+  }
+  async function exportChart(format) {
+    const svg = view.querySelector(
+        `[data-mp-panel="${ui.exportPanel}"] svg.mp-chart`,
+      ),
+      status = exportDialog.querySelector(".mp-export-status");
+    if (!svg) return;
+    const buttons = exportDialog.querySelectorAll(
+      '[data-mp="export-svg"],[data-mp="export-png"]',
+    );
+    buttons.forEach((b) => (b.disabled = true));
+    status.textContent = "Preparing " + format.toUpperCase() + "…";
+    let objectURL;
+    try {
+      const clone = svg.cloneNode(true),
+        source = [svg, ...svg.querySelectorAll("*")],
+        copies = [clone, ...clone.querySelectorAll("*")],
+        box = svg.viewBox.baseVal;
+      for (let i = 0; i < source.length; i++) {
+        const style = getComputedStyle(source[i]);
+        for (const property of [
+          "fill",
+          "stroke",
+          "color",
+          "font-family",
+          "font-size",
+          "font-weight",
+          "opacity",
+          "fill-opacity",
+          "stroke-opacity",
+          "stroke-width",
+          "stroke-dasharray",
+          "stop-color",
+          "stop-opacity",
+        ])
+          copies[i].style.setProperty(
+            property,
+            style
+              .getPropertyValue(property)
+              .replace(/url\(["']?[^)"']*#([^)'"]+)["']?\)/g, "url(#$1)"),
+          );
+        copies[i].removeAttribute("tabindex");
+        copies[i].removeAttribute("data-mp");
+        copies[i].removeAttribute("role");
+      }
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clone.setAttribute("width", String(box.width));
+      clone.setAttribute("height", String(box.height));
+      const back = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect",
+      );
+      back.setAttribute("width", String(box.width));
+      back.setAttribute("height", String(box.height));
+      back.setAttribute(
+        "fill",
+        getComputedStyle(svg.closest(".mp-panel")).backgroundColor,
+      );
+      clone.insertBefore(back, clone.firstChild);
+      const xml = new XMLSerializer().serializeToString(clone),
+        blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" }),
+        name = "portfolio-" + ui.exportPanel + "-" + TODAY();
+      if (format === "svg") download2(name + ".svg", blob);
+      else {
+        objectURL = URL.createObjectURL(blob);
+        const image = new Image();
+        await new Promise((resolve, reject) => {
+          image.onload = resolve;
+          image.onerror = () =>
+            reject(
+              new Error("The browser could not render this chart. Try SVG."),
+            );
+          image.src = objectURL;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = 1800;
+        canvas.height = Math.round((1800 * box.height) / box.width);
+        canvas
+          .getContext("2d")
+          .drawImage(image, 0, 0, canvas.width, canvas.height);
+        const png = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/png"),
+        );
+        if (!png) throw new Error("PNG export is unavailable. Try SVG.");
+        download2(name + ".png", png);
+      }
+      status.textContent = format.toUpperCase() + " exported.";
+    } catch (error) {
+      status.textContent = error.message || "Chart export failed. Try SVG.";
+    } finally {
+      if (objectURL) URL.revokeObjectURL(objectURL);
+      buttons.forEach((b) => (b.disabled = false));
+    }
+  }
+  function reveal(id) {
+    const l = layout();
+    l.hidden = l.hidden.filter((x) => x !== id);
+    l.collapsed = l.collapsed.filter((x) => x !== id);
+    persist();
+    render();
+    const panel = view.querySelector(`[data-mp-panel="${id}"]`);
+    panel?.scrollIntoView({
+      block: "start",
+      behavior: RM.matches ? "auto" : "smooth",
+    });
+    panel?.querySelector(".mp-collapse")?.focus({ preventScroll: true });
+  }
+  function control(action, button) {
+    const id = button.dataset.panel,
+      root = button.closest(".mp-table-root");
+    switch (action) {
+      case "customize":
+        customizing = !customizing;
+        render();
+        view
+          .querySelector('[data-mp="customize"]')
+          ?.focus({ preventScroll: true });
+        return;
+      case "profile":
+        if (!own(PROFILES, button.dataset.profile)) return;
+        settings.profile = button.dataset.profile;
+        ui.page = 0;
+        persist();
+        render();
+        announce(PROFILES[settings.profile].name + " opened.");
+        return;
+      case "manage":
+        drawManager();
+        manager.showModal();
+        return;
+      case "close-manager":
+        manager.close();
+        return;
+      case "collapse":
+        if (own(PANELS, id))
+          setPanel(id, "collapsed", !layout().collapsed.includes(id));
+        return;
+      case "hide":
+        if (own(PANELS, id)) {
+          setPanel(id, "hidden", true);
+          announce(PANELS[id].title + " hidden. Restore it from Panels.");
+        }
+        return;
+      case "pin":
+        if (own(PANELS, id))
+          setPanel(id, "pinned", !layout().pinned.includes(id));
+        return;
+      case "move-up":
+        return move(id, -1);
+      case "move-down":
+        return move(id, 1);
+      case "reveal":
+        return own(PANELS, id) ? reveal(id) : undefined;
+      case "allocation-scale":
+        settings.charts.allocation =
+          button.dataset.value === "percent" ? "percent" : "amount";
+        persist();
+        render();
+        return;
+      case "composition":
+        settings.charts.composition =
+          button.dataset.value === "sector" ? "sector" : "country";
+        persist();
+        render();
+        return;
+      case "pick-date":
+        ui.pickedDate = button.dataset.value;
+        announce(button.getAttribute("aria-label") || "Report date " + ui.pickedDate);
+        render();
+        view
+          .querySelector(
+            `[data-mp="pick-date"][data-value="${CSS.escape(ui.pickedDate)}"]`,
+          )
+          ?.focus({ preventScroll: true });
+        return;
+      case "action-tab":
+        ui.actionTab = ["bad", "warn"].includes(button.dataset.value)
+          ? button.dataset.value
+          : "all";
+        render();
+        return;
+      case "deadline-tab":
+        ui.deadlineTab =
+          button.dataset.value === "overdue" ? "overdue" : "upcoming";
+        render();
+        return;
+      case "sort":
+        if (!root || !own(COLUMNS, button.dataset.column)) return;
+        settings.table.direction =
+          settings.table.sort === button.dataset.column
+            ? -settings.table.direction
+            : 1;
+        settings.table.sort = button.dataset.column;
+        ui.page = 0;
+        persist();
+        redrawTable(root);
+        view
+          .querySelector(
+            `[data-mp="sort"][data-column="${settings.table.sort}"]`,
+          )
+          ?.focus({ preventScroll: true });
+        return;
+      case "clear-table":
+        if (root) {
+          ui.query = "";
+          ui.page = 0;
+          redrawTable(root, "mp-register-query");
+        }
+        return;
+      case "row-detail":
+        if (root) {
+          ui.expanded.has(button.dataset.row)
+            ? ui.expanded.delete(button.dataset.row)
+            : ui.expanded.add(button.dataset.row);
+          redrawTable(root);
+          view
+            .querySelector(
+              `[data-mp="row-detail"][data-row="${CSS.escape(button.dataset.row)}"]`,
+            )
+            ?.focus({ preventScroll: true });
+        }
+        return;
+      case "table-density":
+        if (root) {
+          settings.table.density =
+            settings.table.density === "compact" ? "comfortable" : "compact";
+          persist();
+          redrawTable(root);
+        }
+        return;
+      case "table-export":
+        return root ? csvExport(root) : undefined;
+      case "page-prev":
+        if (root) {
+          ui.page = Math.max(0, ui.page - 1);
+          redrawTable(root);
+        }
+        return;
+      case "page-next":
+        if (root) {
+          ui.page++;
+          redrawTable(root);
+        }
+        return;
+      case "print":
+        window.print();
+        return;
+      case "export-layout":
+        download(
+          "portfolio-layout.json",
+          JSON.stringify(
+            { app: "Portfolio Ledger workspace", ...settings },
+            null,
+            2,
+          ),
+          "application/json",
+        );
+        return;
+      case "import-layout":
+        layoutInput.click();
+        return;
+      case "reset-layout":
+        resetDialog.showModal();
+        return;
+      case "cancel-reset":
+        resetDialog.close();
+        return;
+      case "confirm-reset":
+        settings.profiles[settings.profile] = defaultLayout(settings.profile);
+        persist();
+        resetDialog.close();
+        render();
+        announce(
+          "This profile’s layout was reset. Portfolio records are unchanged.",
+        );
+        return;
+      case "chart-export":
+        if (own(PANELS, id)) {
+          ui.exportPanel = id;
+          exportDialog.querySelector(".mp-export-status").textContent = "";
+          exportDialog.showModal();
+        }
+        return;
+      case "close-export":
+        exportDialog.close();
+        return;
+      case "export-svg":
+        exportChart("svg");
+        return;
+      case "export-png":
+        exportChart("png");
+        return;
+    }
+  }
+  document.addEventListener(
+    "click",
+    (event) => {
+      for (const menu of view.querySelectorAll(
+        ".mp-more-tools[open],.mp-columns[open]",
+      )) {
+        if (
+          !menu.contains(event.target) ||
+          (menu.matches(".mp-more-tools") && event.target.closest("button,a"))
+        )
+          menu.open = false;
+      }
+      const button = event.target.closest("[data-mp]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      control(button.dataset.mp, button);
+    },
+    true,
+  );
+  document.addEventListener("change", (event) => {
+    const el = event.target,
+      root = el.closest(".mp-table-root");
+    if (el.dataset.mpWidth) {
+      if (own(PANELS, el.dataset.mpWidth) && WIDTHS.includes(el.value))
+        setPanel(el.dataset.mpWidth, "width", el.value);
+      return;
+    }
+    if (el.dataset.mpVisibility) {
+      const id = el.dataset.mpVisibility;
+      if (!own(PANELS, id)) return;
+      const hidden = layout().hidden.filter((x) => x !== id);
+      if (!el.checked) hidden.push(id);
+      layout().hidden = hidden;
+      persist();
+      render();
+      return;
+    }
+    if (el.hasAttribute("data-mp-density")) {
+      layout().density = el.value === "compact" ? "compact" : "comfortable";
+      persist();
+      render();
+      return;
+    }
+    if (el.dataset.mpChart) {
+      const key = el.dataset.mpChart;
+      settings = cleanSettings({
+        ...settings,
+        charts: { ...settings.charts, [key]: el.value },
+      });
+      ui.pickedDate = "";
+      persist();
+      render();
+      return;
+    }
+    if (el.hasAttribute("data-mp-scenario")) {
+      $("#fk").value = el.value;
+      setF("k", Number(el.value));
+      return;
+    }
+    if (root && el.dataset.mpColumn) {
+      const key = el.dataset.mpColumn;
+      if (key === "name" || !own(COLUMNS, key)) return;
+      const chosen = new Set(settings.table.columns);
+      el.checked ? chosen.add(key) : chosen.delete(key);
+      settings.table.columns = Object.keys(COLUMNS).filter((k) =>
+        chosen.has(k),
+      );
+      persist();
+      redrawTable(root);
+      return;
+    }
+    if (root && el.dataset.mpTable) {
+      const key = el.dataset.mpTable;
+      settings = cleanSettings({
+        ...settings,
+        table: { ...settings.table, [key]: el.value },
+      });
+      ui.page = 0;
+      persist();
+      redrawTable(root);
+      return;
+    }
+    if (root && el.dataset.mpRowSelect) {
+      el.checked
+        ? ui.selected.add(el.dataset.mpRowSelect)
+        : ui.selected.delete(el.dataset.mpRowSelect);
+      redrawTable(root);
+      return;
+    }
+    if (root && el.hasAttribute("data-mp-page-select")) {
+      const filtered = filteredRows(sourceRows(root)),
+        page = filtered.slice(
+          ui.page * settings.table.pageSize,
+          (ui.page + 1) * settings.table.pageSize,
+        );
+      page.forEach((r) =>
+        el.checked ? ui.selected.add(r.p.id) : ui.selected.delete(r.p.id),
+      );
+      redrawTable(root);
+      return;
+    }
+  });
+  view.addEventListener("input", (event) => {
+    const el = event.target;
+    if (el.hasAttribute("data-mp-table-query")) {
+      ui.query = el.value;
+      ui.page = 0;
+      redrawTable(el.closest(".mp-table-root"), "mp-register-query");
+    } else if (el.hasAttribute("data-mp-scenario"))
+      $("#mp-scenario-value").textContent =
+        (Number(el.value) > 0 ? "+" : "") + el.value + "%";
+  });
+  layoutInput.addEventListener("change", async () => {
+    const file = layoutInput.files[0];
+    if (!file) return;
+    try {
+      if (file.size > 256 * 1024)
+        throw new Error(
+          "This file is too large for a layout. Choose a layout export.",
+        );
+      const imported = JSON.parse(await file.text());
+      if (
+        imported.app !== "Portfolio Ledger workspace" ||
+        imported.version !== 2 ||
+        !imported.profiles
+      )
+        throw new Error(
+          "Choose a Portfolio Ledger layout export. Portfolio backups belong in Data tools.",
+        );
+      settings = cleanSettings(imported);
+      persist();
+      render();
+      toast("Workspace layout imported. Portfolio data is unchanged.");
+    } catch (error) {
+      toast(error.message || "The layout could not be imported.");
+    } finally {
+      layoutInput.value = "";
+    }
+  });
+  view.addEventListener(
+    "keydown",
+    (event) => {
+      const handle = event.target.closest("[data-mp-handle]");
+      if (
+        handle &&
+        customizing &&
+        event.altKey &&
+        ["ArrowUp", "ArrowDown"].includes(event.key)
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        move(handle.dataset.mpHandle, event.key === "ArrowUp" ? -1 : 1);
+        return;
+      }
+      const point = event.target.closest(".mp-point[data-mp]");
+      if (point && ["Enter", " "].includes(event.key)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        control(point.dataset.mp, point);
+      }
+    },
+    true,
+  );
+  function dragTarget(x, y) {
+    const target = document.elementFromPoint(x, y)?.closest("[data-mp-panel]");
+    view
+      .querySelectorAll(".mp-drop-before,.mp-drop-after")
+      .forEach((e) => e.classList.remove("mp-drop-before", "mp-drop-after"));
+    if (target && ui.drag && target.dataset.mpPanel !== ui.drag.id) {
+      const rect = target.getBoundingClientRect(),
+        after = y > rect.top + rect.height / 2;
+      ui.drag.target = target.dataset.mpPanel;
+      ui.drag.after = after;
+      target.classList.add(after ? "mp-drop-after" : "mp-drop-before");
+    } else if (ui.drag) ui.drag.target = null;
+  }
+  function endDrag(cancel = false) {
+    const drag = ui.drag;
+    if (!drag) return;
+    ui.drag = null;
+    cancelAnimationFrame(drag.raf);
+    view
+      .querySelectorAll(".mp-dragging,.mp-drop-before,.mp-drop-after")
+      .forEach((e) =>
+        e.classList.remove("mp-dragging", "mp-drop-before", "mp-drop-after"),
+      );
+    document.body.classList.remove("mp-is-dragging");
+    if (!cancel && drag.target) move(drag.id, drag.target, drag.after);
+  }
+  view.addEventListener(
+    "dragstart",
+    (event) => {
+      const handle = event.target.closest("[data-mp-handle]");
+      if (!handle || !customizing) return;
+      event.stopImmediatePropagation();
+      ui.drag = { id: handle.dataset.mpHandle };
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("application/x-portfolio-panel", ui.drag.id);
+      event.dataTransfer.setData("text/plain", ui.drag.id);
+      handle.closest(".mp-panel").classList.add("mp-dragging");
+      document.body.classList.add("mp-is-dragging");
+    },
+    true,
+  );
+  view.addEventListener(
+    "dragover",
+    (event) => {
+      if (!ui.drag) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.dataTransfer.dropEffect = "move";
+      dragTarget(event.clientX, event.clientY);
+    },
+    true,
+  );
+  view.addEventListener(
+    "drop",
+    (event) => {
+      if (!ui.drag) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      dragTarget(event.clientX, event.clientY);
+      endDrag();
+    },
+    true,
+  );
+  view.addEventListener("dragend", () => endDrag(true), true);
+  view.addEventListener(
+    "pointerdown",
+    (event) => {
+      const handle = event.target.closest("[data-mp-handle]");
+      if (!handle || !customizing || event.pointerType === "mouse") return;
+      event.preventDefault();
+      ui.drag = {
+        id: handle.dataset.mpHandle,
+        pointer: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        originY: event.clientY,
+        active: false,
+      };
+      handle.setPointerCapture(event.pointerId);
+    },
+    true,
+  );
+  window.addEventListener(
+    "pointermove",
+    (event) => {
+      const drag = ui.drag;
+      if (!drag || drag.pointer !== event.pointerId) return;
+      drag.x = event.clientX;
+      drag.y = event.clientY;
+      if (!drag.active && Math.abs(event.clientY - drag.originY) < 7) return;
+      event.preventDefault();
+      if (!drag.active) {
+        drag.active = true;
+        view
+          .querySelector(`[data-mp-panel="${drag.id}"]`)
+          ?.classList.add("mp-dragging");
+        document.body.classList.add("mp-is-dragging");
+        const scroll = () => {
+          if (ui.drag !== drag) return;
+          if (drag.y < 80) window.scrollBy(0, -8);
+          else if (drag.y > innerHeight - 120) window.scrollBy(0, 8);
+          dragTarget(drag.x, drag.y);
+          drag.raf = requestAnimationFrame(scroll);
+        };
+        drag.raf = requestAnimationFrame(scroll);
+      }
+      dragTarget(drag.x, drag.y);
+    },
+    { passive: false },
+  );
+  window.addEventListener("pointerup", (event) => {
+    if (ui.drag?.pointer === event.pointerId) endDrag();
+  });
+  window.addEventListener("pointercancel", (event) => {
+    if (ui.drag?.pointer === event.pointerId) endDrag(true);
+  });
+  return { home, analytics, table, afterRender };
+})();
+V.home = () => Masterpiece.home(rows());
+V.overview = () => Masterpiece.analytics(rows());
+table = (R) => Masterpiece.table(R);
+
 S.projects.forEach(p=>{try{resolveProject(p)}catch(e){}});
 syncBar();render();setInterval(()=>{if(!document.hidden&&!document.querySelector('dialog[open],#asSide.open')&&!document.activeElement?.closest('#view input,#view select,#view textarea,#view button,#view summary'))render()},60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!document.querySelector('dialog[open],#asSide.open')&&!document.activeElement?.closest('#view input,#view select,#view textarea,#view button,#view summary'))render()});try{checkReminders()}catch(e){}
 IDB.open().then(()=>IDB.get(KEY)).then(async d=>{if(valid(d)&&(d.savedAt||0)>(S.savedAt||0)){S=migrate(d);S.projects.forEach(p=>{try{resolveProject(p)}catch(e){}});syncBar();lastRoute='';render();try{checkReminders()}catch(e){}}await autoStaffFromSavedFiles()});

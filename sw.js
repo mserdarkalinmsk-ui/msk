@@ -1,5 +1,5 @@
 /* Optional offline shell for hosted use; the exported HTML also works alone. */
-const CACHE = 'portfolio-ledger-refined-v1';
+const CACHE = 'portfolio-ledger-workspace-v2';
 const ROOT = new URL('./', self.location.href).href;
 const INDEX = new URL('index.html', ROOT).href;
 
@@ -10,7 +10,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.filter(key => key.startsWith('portfolio-ledger-refined-') && key !== CACHE)
+      keys.filter(key => (key.startsWith('portfolio-ledger-refined-') || key.startsWith('portfolio-ledger-workspace-')) && key !== CACHE)
         .map(key => caches.delete(key))
     )).then(() => self.clients.claim())
   );
