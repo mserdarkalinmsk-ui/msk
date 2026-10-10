@@ -219,6 +219,7 @@ async function main() {
     seed.on("pageerror", (error) => errors.push(error.message));
     await seed.goto(base);
     await seed.locator('[data-mp-panel="register"]').waitFor();
+    await openDetails(seed.locator(".studio-workspace-settings"));
     await openDetails(seed.locator(".mp-more-tools"));
     const backup = JSON.parse(
       (
@@ -246,6 +247,8 @@ async function main() {
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(base);
       await page.locator('[data-mp-panel="register"]').waitFor();
+      await openDetails(page.locator(".studio-scope"));
+      await openDetails(page.locator(".studio-workspace-settings"));
       return page;
     }
     async function untouched(page, expected = original) {
@@ -469,6 +472,7 @@ async function main() {
     );
 
     const initialOrder = await panelOrder(page);
+    await openDetails(page.locator(".studio-workspace-settings"));
     await page.locator('[data-mp="customize"]').click();
     await page
       .locator('[data-mp="move-down"][data-panel="allocation"]')
@@ -604,6 +608,7 @@ async function main() {
       "none",
     );
     await visual.reload();
+    await openDetails(visual.locator(".studio-workspace-settings"));
     assert.equal(
       await visual.locator("[data-studio-palette-select]").inputValue(),
       "contrast",

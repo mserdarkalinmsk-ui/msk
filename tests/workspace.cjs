@@ -26,6 +26,11 @@ async function download(page, action) {
   await action();
   return fs.readFile(await (await waiting).path());
 }
+async function openWorkspace(page) {
+  const section = page.locator(".studio-workspace-settings");
+  if (!(await section.evaluate((node) => node.open)))
+    await section.locator(":scope > summary").click();
+}
 async function tools(page, action) {
   if (!(await page.locator(".mp-more-tools").evaluate((e) => e.open)))
     await page.locator(".mp-more-tools summary").click();
@@ -67,6 +72,7 @@ async function main() {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base);
     await page.locator('[data-mp-panel="register"]').waitFor();
+    await openWorkspace(page);
     await page.locator(".mp-more-tools summary").click();
     const backup = JSON.parse(
       (
@@ -81,6 +87,7 @@ async function main() {
       data: originalState,
     });
     await page.reload();
+    await openWorkspace(page);
 
     const initial = await order(page);
     await page.locator('[data-mp="customize"]').click();
@@ -118,6 +125,7 @@ async function main() {
     await page.locator('[data-mp="hide"][data-panel="map"]').click();
     assert.equal(await page.locator('[data-mp-panel="map"]').count(), 0);
     await page.reload();
+    await openWorkspace(page);
     assert.equal(await page.locator("#mp-body-allocation").isVisible(), false);
     assert.equal(await page.locator('[data-mp-panel="map"]').count(), 0);
     assert.equal(
@@ -408,6 +416,7 @@ async function main() {
       { key: PORTFOLIO, data: fixture, layoutKey: KEY },
     );
     await page.reload();
+    await openWorkspace(page);
     await page
       .locator('[data-mp-panel="trend"] .mp-data-disclosure summary')
       .click();
@@ -461,6 +470,7 @@ async function main() {
       { key: PORTFOLIO, data: fixture },
     );
     await page.reload();
+    await openWorkspace(page);
     await page
       .locator(
         '[data-cs-action="option"][data-cs-key="bridge"][data-cs-value="coverage"]',
@@ -514,6 +524,7 @@ async function main() {
     await page.locator('[data-mp-visibility="register"]').check();
     await page.keyboard.press("Escape");
     await page.locator('[data-mp-panel="register"]').waitFor();
+    await openWorkspace(page);
     pass(
       "Signed corrections and overspend stay explicit; an empty layout can restore its panels",
     );
@@ -529,6 +540,7 @@ async function main() {
       { key: PORTFOLIO, data: fixture, layoutKey: KEY },
     );
     await page.reload();
+    await openWorkspace(page);
     assert.equal(await page.locator("[data-mp-row-select]").count(), 10);
     assert.equal(
       await page.locator(".mp-register tfoot .mp-col-budget b").textContent(),
@@ -561,6 +573,7 @@ async function main() {
     const touch = await mobile.newPage();
     touch.on("pageerror", (e) => errors.push(e.message));
     await touch.goto(base);
+    await openWorkspace(touch);
     await touch.locator('[data-mp="customize"]').click();
     await touch.locator('[data-mp-handle="trend"]').scrollIntoViewIfNeeded();
     await touch.evaluate(() => {
@@ -592,6 +605,7 @@ async function main() {
     });
     assert.equal((await order(touch))[0], "trend");
     await touch.reload();
+    await openWorkspace(touch);
     assert.equal((await order(touch))[0], "trend");
     await mobile.close();
     pass("Actual touch input reorders panels on a phone and survives reload");

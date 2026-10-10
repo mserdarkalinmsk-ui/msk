@@ -1,5 +1,5 @@
 /* Optional offline shell for hosted use; the exported HTML also works alone. */
-const CACHE = 'portfolio-ledger-workspace-v3';
+const CACHE = 'portfolio-ledger-workspace-v4';
 const ROOT = new URL('./', self.location.href).href;
 const INDEX = new URL('index.html', ROOT).href;
 

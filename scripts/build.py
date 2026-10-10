@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 base = (ROOT / 'src/ledger-base.html').read_text()
 styles = ['workspace.css', 'chart-studio.css', 'register-studio.css',
-          'schedule-studio.css', 'staff-studio.css', 'studio.css']
+          'schedule-studio.css', 'staff-studio.css', 'studio.css', 'app-design.css']
 scripts = ['studio-shell.js', 'chart-studio.js', 'register-export.js',
            'register-studio.js', 'schedule-studio.js', 'staff-studio.js', 'workspace.js']
 style = '\n\n'.join((ROOT / 'src' / name).read_text() for name in styles)

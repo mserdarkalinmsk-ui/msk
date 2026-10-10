@@ -6,6 +6,10 @@ saved working contexts. The supplied
 ledger's report, forecast, contract, document-import and financial-evidence
 engine is retained.
 
+All portfolio and project-detail screens use the same application frame,
+navigation, typography, surfaces and controls. Analysis selection and workspace
+settings open on demand so financial content stays close to the top of the page.
+
 ![Portfolio overview with the sample portfolio](docs/overview.png)
 
 ## Download and run
@@ -32,7 +36,9 @@ initial six-project portfolio is explicitly labelled as sample data.
 ## Make the workspace yours
 
 **Home** and **Analytics** share three independently saved profiles:
-Portfolio overview, Finance focus and Delivery focus. **Panels** chooses from
+Portfolio overview, Finance focus and Delivery focus. Open **Workspace settings**
+to change the profile, customize panels, save a context or choose a palette.
+**Panels** chooses from
 12 panels. **Customize** reveals drag handles, Earlier / Later controls,
 width selection and pinning. Handles also support **Alt + ↑ / ↓**; phones
 support vertical touch dragging and edge scrolling.
@@ -74,6 +80,19 @@ The studio includes:
   and a printable decision brief based on the current selected evidence.
 
 <details>
+<summary>Home, Intelligence, Projects and project detail</summary>
+
+![Home](docs/home.png)
+
+![Intelligence](docs/intelligence.png)
+
+![Projects](docs/projects.png)
+
+![Project detail](docs/project-detail.png)
+
+</details>
+
+<details>
 <summary>Charts, register and people previews</summary>
 
 ![Source-aware financial charts](docs/charts.png)
@@ -107,6 +126,7 @@ into focused source modules:
 | `src/schedule-studio.js`      | Source-backed project/activity schedule and milestone detail            |
 | `src/staff-studio.js`         | Document-led people analysis, register and evidence follow-up           |
 | `src/*.css`, `src/studio.css` | Feature styles and the shared visual design system                      |
+| `src/app-design.css`          | Unified frame, typography and surfaces across every retained route      |
 | `scripts/build.py`            | Generates the distributable `index.html` using Python only              |
 | `sw.js`                       | Optional scoped offline document cache                                  |
 
@@ -133,6 +153,7 @@ node tests/smoke.cjs
 node tests/workspace.cjs
 node tests/studio.cjs
 node tests/staff.cjs
+node tests/design.cjs
 ```
 
 The browser suites start and stop their own Python servers, use isolated
@@ -158,9 +179,16 @@ People tests cover a disposable 31-assignment source fixture, evidenced zero ver
 unknown FTE, source payroll context, separate manual records, original contract
 editing, connected people filters, safe full CSV, complete printing and mobile cards.
 
+Design tests compare the application frame across all 26 routes, light/dark themes
+and desktop/tablet/phone widths (156 comparisons). They also verify keyboard-accessible
+disclosures, active analysis after reload, retained project navigation and financial
+chart colors. Set `LEDGER_PREVIEWS=1` to intentionally regenerate the repository's
+screenshots while running this suite.
+
 Set `CHROMIUM_PATH` for another browser installation. Set `LEDGER_TEST_PORT`
 `LEDGER_WORKSPACE_TEST_PORT`, `LEDGER_STUDIO_TEST_PORT` or
-`LEDGER_STAFF_TEST_PORT` if ports 8765/8766/8767/8769 are occupied. Outside the
+`LEDGER_STAFF_TEST_PORT` or `LEDGER_DESIGN_TEST_PORT` if their default ports
+8765/8766/8767/8769/8768 are occupied. Outside the
 cloud image, provide Playwright and a Chromium installation yourself.
 
 These checks exercise the retained workflows and new presentation layer;

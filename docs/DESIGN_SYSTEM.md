@@ -23,13 +23,19 @@ positive colour only when the calculation's sign convention is stated.
 
 ## Palettes and themes
 
-- **Atelier:** platinum canvas, cobalt framework and an indigo evidence banner.
+- **Atelier:** neutral canvas, white surfaces, cobalt accents and a restrained
+  evidence narrative using the same surface as the surrounding panels.
 - **Executive:** conservative blue-grey framework with identical semantics.
 - **Contrast:** firm borders, stronger foregrounds and fewer surface effects.
 
 All palettes support the ledger's light and dark themes. The palette belongs to
 workspace preferences; portfolio records do not depend on it. Feature modules
 use `--studio-*` semantic tokens or their `--mp-*` compatibility aliases.
+
+The application frame applies to every route, including Intelligence, Projects,
+country pages and individual project tabs. Navigation width, background, type
+and header spacing remain stable when moving between them. `app-design.css`
+provides this shared layer after feature styles.
 
 ## Typography and density
 
@@ -66,6 +72,10 @@ The evidence banner communicates a factual narrative, source coverage and
 dates. It must not invent a portfolio score or imply that financial pace is
 delivery completion. Date controls state when they filter historical reports
 rather than changing the current approved financial position.
+
+Analysis selection and workspace settings use native disclosures with visible
+summaries. Active analysis opens its controls on initial load. Secondary controls
+should not push the first analytical row beyond the desktop viewport.
 
 ## Verification
 

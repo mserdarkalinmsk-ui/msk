@@ -767,7 +767,10 @@ const Masterpiece = (() => {
   }
   function workspace(base, analysis = false) {
     const R = studio.scopeRows(base);
-    return `<div class="mp-workspace studio-shell ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${studio.brief(R)}${strip(R, "home")}${studio.scope(base, R)}${toolbar(analysis)}${studio.toolbarExtras()}<div class="mp-grid">${
+    const settingsOpen =
+      customizing ||
+      !!document.querySelector(".studio-workspace-settings")?.open;
+    return `<div class="mp-workspace studio-shell ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${studio.brief(R)}${strip(R, "home")}${studio.scope(base, R)}<details class="studio-workspace-settings" ${settingsOpen ? "open" : ""}><summary><span>${icon("sliders")}Workspace settings</span><span>${h(PROFILES[settings.profile].name)} · ${countText(visiblePanels().length, "panel")}</span><span class="studio-settings-chevron" aria-hidden="true">+</span></summary>${toolbar(analysis)}${studio.toolbarExtras()}</details><div class="mp-grid">${
       !base.length
         ? empty(
             "No projects match this selection",
@@ -792,12 +795,13 @@ const Masterpiece = (() => {
   }
 
   function afterRender(route) {
-    document
-      .querySelector("main")
-      .classList.toggle(
-        "mp-page",
-        ["home", "overview", "team"].includes(route),
-      );
+    // The application frame belongs to every route, including detail screens.
+    document.querySelector("main").classList.add("mp-page");
+    if (route === "compare") {
+      const projects = document.querySelector('.side a[data-r="projects"]');
+      projects?.classList.add("on");
+      projects?.setAttribute("aria-current", "page");
+    }
     studio.afterRender();
     chartStudio.afterRender(view);
     registerStudio.afterRender(view);

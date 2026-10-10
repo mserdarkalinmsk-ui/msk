@@ -9311,7 +9311,7 @@ body[data-studio-palette="contrast"] {
   }
 }
 
-/* The chrome changes when the studio is the active route. */
+/* The application chrome is shared by every route. */
 .app:has(main.mp-page) {
   background: var(--studio-canvas, var(--bg));
   grid-template-columns: 202px minmax(0, 1fr);
@@ -11443,6 +11443,652 @@ body[data-studio-palette] main .tw > table > thead th {
   color: var(--mute);
 }
 
+
+/* One application, one frame. This layer also covers retained ledger screens. */
+body[data-studio-palette="atelier"] {
+  --bg: #f5f6f8;
+  --studio-canvas: #f5f6f8;
+  --ink: #202630;
+  --mute: #657080;
+  --line: #e1e5eb;
+  --studio-panel-border: #e1e5eb;
+  --studio-panel-alt: #f8f9fb;
+  --studio-hover: #f4f6fb;
+  --studio-radius: 12px;
+  --mp-panel-shadow: 0 2px 8px #20263003;
+}
+:root[data-theme="dark"] body[data-studio-palette="atelier"] {
+  --bg: #151a22;
+  --studio-canvas: #151a22;
+  --ink: #edf1f7;
+  --mute: #acb8cb;
+  --line: #354050;
+  --studio-panel-border: #354050;
+  --studio-panel-alt: #232d3d;
+  --studio-hover: #263246;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"])
+    body[data-studio-palette="atelier"] {
+    --bg: #151a22;
+    --studio-canvas: #151a22;
+    --ink: #edf1f7;
+    --mute: #acb8cb;
+    --line: #354050;
+    --studio-panel-border: #354050;
+    --studio-panel-alt: #232d3d;
+    --studio-hover: #263246;
+  }
+}
+body[data-studio-palette] {
+  --r: var(--studio-radius);
+  --sh: var(--mp-panel-shadow);
+  font-variant-numeric: tabular-nums;
+}
+.app:has(main.mp-page) .side a,
+.app:has(main.mp-page) .side .more {
+  font-size: 13px;
+  font-weight: 520;
+}
+.app:has(main.mp-page) .side a.on {
+  font-weight: 630;
+}
+.mp-page .top {
+  padding: 24px 0 18px;
+}
+.mp-page .top h1 {
+  font-size: clamp(28px, 2.25vw, 34px);
+  font-weight: 660;
+  letter-spacing: -1px;
+}
+.mp-page .workspace-crumb {
+  letter-spacing: 1px;
+}
+.mp-page .top p {
+  font-size: 13px;
+}
+.mp-page .bar-wrap {
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.mp-page :is(.btn, .mp-mini) {
+  box-shadow: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.mp-page .btn.pri {
+  color: var(--on-brand);
+  border-color: var(--brand);
+  background: var(--brand);
+}
+.mp-page
+  :is(button, a, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+.mp-page :is(.grid, .hgrid, .hrow2, .hbot) {
+  gap: 18px;
+}
+.mp-page #view :is(.card, .ccard, .mp-panel, .ps-panel, .ps-hero) {
+  border-radius: var(--studio-radius);
+  border-color: var(--studio-panel-border);
+  box-shadow: var(--mp-panel-shadow);
+  background-color: var(--surface);
+}
+.mp-page #view .card:not(.studio-shell .card) {
+  padding: 22px;
+}
+.mp-page #view .card:hover {
+  box-shadow: var(--mp-panel-shadow);
+  border-color: var(--studio-panel-border);
+}
+.mp-page #view :is(.card > h2, .mp-panel-head h2, .ps-panel-head h2) {
+  font-family: var(--heading);
+  font-size: 19px;
+  font-weight: 640;
+  letter-spacing: -0.45px;
+  line-height: 1.35;
+}
+.mp-page #view .card > .sub {
+  font-size: 12.5px;
+  line-height: 1.65;
+  margin: 6px 0 20px;
+}
+.mp-page #view :is(.ptool, .bulk-bar, .mtools, .subnav) {
+  gap: 10px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.mp-page .seg {
+  background: var(--studio-panel-alt);
+  border-color: var(--line);
+  border-radius: 8px;
+}
+.mp-page .seg button {
+  font-size: 12px;
+  padding: 7px 12px;
+  font-weight: 580;
+}
+.mp-page .seg button.on {
+  color: var(--brand);
+  background: var(--surface);
+  box-shadow: 0 1px 3px #20263010;
+}
+.mp-page .subnav a {
+  font-size: 12px;
+  background: var(--surface);
+  border-color: var(--line);
+  border-radius: 7px;
+}
+.mp-page .subnav a.on {
+  background: var(--soft);
+  border-color: color-mix(in srgb, var(--brand) 25%, var(--line));
+}
+.mp-page .evidence-rail {
+  padding: 13px 16px;
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: none;
+  margin-bottom: 18px;
+}
+.mp-page .evidence-meta {
+  font-size: 12px;
+  gap: 8px 16px;
+}
+.mp-page .tw > table {
+  font-size: 13px;
+}
+.mp-page .tw > table > thead th {
+  font-size: 11px;
+  padding-block: 12px;
+  border-bottom-width: 1px;
+  letter-spacing: 0.045em;
+}
+.mp-page .tw > table > tbody td {
+  padding-block: 13px;
+}
+.mp-page .tw > table > tbody tr:hover {
+  background: var(--studio-hover);
+}
+.mp-page .kv > div,
+.mp-page .ins li {
+  background: var(--studio-panel-alt);
+  border-radius: 8px;
+}
+.mp-page .tag {
+  font-size: 11px;
+  font-weight: 620;
+}
+/* Compact evidence narrative lets the figures and charts lead. */
+.studio-brief {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--studio-radius);
+  box-shadow: none;
+  padding: 20px 23px;
+  gap: 22px;
+  margin-bottom: 14px;
+}
+.studio-brief::after {
+  content: none;
+}
+.studio-brief :is(.studio-eyebrow, .mp-eyebrow) {
+  color: var(--mute);
+  letter-spacing: 1px;
+}
+.studio-brief :is(h2, h3) {
+  color: var(--ink);
+  font-size: 25px;
+  font-weight: 640;
+  margin: 7px 0;
+}
+.studio-brief :is(p, p b, p strong, a) {
+  color: var(--mute);
+}
+.studio-brief p {
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+.studio-brief .btn {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--brand);
+  margin-top: 11px;
+}
+.studio-brief .btn:hover {
+  background: var(--studio-hover);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.studio-brief .btn:focus-visible {
+  outline-color: var(--brand);
+}
+.studio-brief-facts > * {
+  border-left-color: var(--line);
+  min-width: 100px;
+  padding-left: 18px;
+}
+.studio-brief-facts :is(b, strong) {
+  color: var(--ink);
+  font-size: 27px;
+}
+.studio-brief-facts :is(span, small) {
+  color: var(--mute);
+  font-size: 11.5px;
+}
+.mp-page #view .strip > *,
+.studio-shell .home-metrics.strip > * {
+  border-radius: var(--studio-radius);
+  background: var(--surface);
+  box-shadow: none;
+  min-height: 120px;
+  padding: 16px 18px;
+  border-color: var(--line);
+}
+.mp-page #view .strip b {
+  font-size: 29px;
+  font-family: var(--font);
+  font-weight: 650;
+  letter-spacing: -0.9px;
+  margin-block: 10px 6px;
+}
+.mp-page #view .strip :is(.kl, .ks) {
+  font-size: 12px;
+}
+.studio-shell .home-metrics.strip > *::before {
+  width: 2px;
+}
+.studio-shell .mp-panel-head {
+  padding: 22px 23px 16px;
+}
+.studio-shell .mp-panel-body {
+  padding: 0 23px 23px;
+}
+.studio-shell .mp-panel-head p {
+  font-size: 12.5px;
+}
+.studio-shell .operational-details {
+  margin-bottom: 10px;
+}
+/* Secondary analysis controls have a visible native disclosure. */
+details.studio-scope {
+  padding: 0 16px;
+  border-radius: 9px;
+  margin-bottom: 10px;
+}
+details.studio-scope > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  margin: 0;
+  cursor: pointer;
+}
+details.studio-scope > summary::-webkit-details-marker {
+  display: none;
+}
+details.studio-scope > summary::after {
+  content: "+";
+  font-size: 19px;
+  font-weight: 400;
+  color: var(--mute);
+}
+details.studio-scope[open] > summary::after {
+  content: "−";
+}
+.studio-scope-icon {
+  color: var(--brand);
+  flex: none;
+}
+.studio-scope-icon svg {
+  height: 17px;
+  width: 17px;
+}
+details.studio-scope .studio-eyebrow {
+  display: none;
+}
+details.studio-scope h2 {
+  font-size: 12.5px;
+  font-weight: 620;
+  letter-spacing: 0;
+  margin: 0;
+}
+details.studio-scope h2 span {
+  color: var(--mute);
+  font-weight: 400;
+  margin-left: 12px;
+}
+details.studio-scope .studio-selection-count {
+  margin-left: auto;
+  padding: 5px 8px;
+  background: var(--studio-panel-alt);
+  border: 0;
+}
+details.studio-scope[open] {
+  padding-bottom: 13px;
+}
+details.studio-scope[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 13px;
+}
+.studio-workbench-toolbar {
+  background: var(--studio-panel-alt);
+  border-radius: 9px;
+  margin-bottom: 18px;
+}
+.studio-workspace-settings {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 9px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 5;
+}
+.studio-workspace-settings > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 16px;
+  list-style: none;
+  font-size: 12px;
+  cursor: pointer;
+}
+.studio-workspace-settings > summary::-webkit-details-marker {
+  display: none;
+}
+.studio-workspace-settings > summary > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 620;
+}
+.studio-workspace-settings > summary > span:first-child svg {
+  width: 17px;
+  height: 17px;
+  color: var(--brand);
+}
+.studio-workspace-settings > summary > span:nth-child(2) {
+  margin-left: auto;
+  color: var(--mute);
+}
+.studio-settings-chevron {
+  font-size: 19px;
+  font-weight: 400;
+  color: var(--mute);
+}
+.studio-workspace-settings[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.studio-workspace-settings[open] .studio-settings-chevron {
+  transform: rotate(45deg);
+}
+.studio-workspace-settings .mp-toolbar {
+  border: 0;
+  margin: 0;
+  border-radius: 0;
+}
+.studio-workspace-settings .studio-workbench-toolbar {
+  border-inline: 0;
+  border-bottom: 0;
+  margin: 0;
+  border-radius: 0 0 9px 9px;
+}
+/* Original project charts retain their values and share financial semantics. */
+.mp-page
+  svg[aria-label="Spent, committed and available by project"]
+  rect[fill="var(--soft)"] {
+  fill: var(--studio-available);
+}
+.mp-page
+  svg[aria-label="Spent, committed and available by project"]
+  rect[fill="var(--brand)"] {
+  fill: var(--studio-spent);
+}
+.mp-page
+  svg[aria-label="Spent, committed and available by project"]
+  rect[opacity=".45"] {
+  fill: var(--studio-committed);
+  opacity: 1;
+}
+.mp-page
+  svg[aria-label="Spent, committed and available by project"]
+  + .leg
+  span:nth-child(1)
+  i {
+  background: var(--studio-spent) !important;
+}
+.mp-page
+  svg[aria-label="Spent, committed and available by project"]
+  + .leg
+  span:nth-child(2)
+  i {
+  background: var(--studio-committed) !important;
+  opacity: 1 !important;
+}
+.mp-page
+  svg[aria-label="Spent, committed and available by project"]
+  + .leg
+  span:nth-child(3)
+  i {
+  background: var(--studio-available) !important;
+}
+.mp-page
+  svg[aria-label="Cumulative planned and projected spending"]
+  line[stroke="var(--bad)"] {
+  stroke: var(--studio-budget);
+}
+.mp-page
+  svg[aria-label="Cumulative planned and projected spending"]
+  polyline[stroke="var(--brand)"] {
+  stroke: var(--studio-forecast);
+}
+.mp-page
+  svg[aria-label="Cumulative planned and projected spending"]
+  + .leg
+  span:nth-child(2)
+  i {
+  background: var(--studio-forecast) !important;
+}
+/* Intelligence uses the same panels, with a legible source checklist. */
+.mp-page .intel-summary-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: stretch;
+}
+.mp-page .intel-summary-grid > .hside {
+  display: flex;
+}
+.mp-page .intel-summary-grid > .hside > .card {
+  width: 100%;
+}
+.mp-page .intel-health-layout {
+  grid-template-columns: 135px minmax(0, 1fr);
+  gap: 20px;
+  padding-top: 18px;
+}
+.mp-page .intel-gauge-wrap {
+  background: var(--studio-panel-alt);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding-block: 18px;
+}
+.mp-page .intel-health-parts .hbar {
+  grid-template-columns: 106px minmax(25px, 1fr) 38px;
+  font-size: 12px;
+  padding-block: 11px;
+}
+.mp-page .intel-health-parts .hbar b {
+  font-size: 12px;
+}
+.mp-page .intel-quality-list {
+  gap: 8px;
+}
+.mp-page .intel-quality-list summary {
+  font-size: 12px;
+  font-weight: 520;
+  padding: 10px 11px;
+  min-height: 51px;
+}
+.mp-page .intel-quality-list ul {
+  font-size: 12px;
+}
+/* Project identity belongs to the code/edge; budget always means blue. */
+.mp-page .projects-dashboard .cgrid {
+  gap: 18px;
+}
+.mp-page .project-summary-card.project-premium.ccard,
+.mp-page .dense .project-summary-card.project-premium.ccard {
+  padding: 19px;
+  height: auto;
+  min-height: 338px;
+  grid-template-rows: 32px minmax(68px, auto) 59px 38px 36px 32px;
+  gap: 9px;
+  border-top-width: 2px;
+}
+.mp-page .summary-card-title h3 {
+  font-family: var(--heading);
+  font-size: 18px;
+  font-weight: 630;
+  line-height: 1.4;
+  letter-spacing: -0.35px;
+}
+.mp-page .summary-card-money > div:first-child b {
+  color: var(--studio-budget);
+  font-family: var(--font);
+  font-size: 27px;
+  font-weight: 650;
+}
+.mp-page .summary-card-money > div:last-child b {
+  font-size: 23px;
+  color: var(--ink);
+}
+.mp-page .summary-card-money b.negative {
+  color: var(--studio-risk);
+}
+.mp-page .summary-card-money small,
+.mp-page .summary-card-dates small {
+  font-size: 10px;
+  letter-spacing: 0.035em;
+}
+.mp-page :is(.summary-card-dates b, .summary-card-use, .summary-card-footer) {
+  font-size: 11.5px;
+}
+.mp-page .summary-card-footer {
+  border-top-color: var(--line);
+}
+.mp-page .project-signals .sigleg button {
+  font-size: 12px;
+  font-weight: 540;
+}
+@media (max-width: 1100px) {
+  .mp-page .intel-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .app:has(main.mp-page) .side a,
+  .app:has(main.mp-page) .side .more {
+    font-size: 10px;
+  }
+  .mp-page .top {
+    padding: 21px 0 17px;
+  }
+  .mp-page .top h1 {
+    font-size: 29px;
+  }
+  .mp-page #view .card:not(.studio-shell .card) {
+    padding: 17px;
+  }
+  .mp-page #view .card > h2 {
+    font-size: 18px;
+  }
+  .studio-brief {
+    padding: 19px;
+  }
+  .studio-brief h2 {
+    font-size: 23px;
+  }
+  .studio-brief-facts {
+    gap: 12px;
+    margin-top: 17px;
+  }
+  .studio-brief-facts > * {
+    min-width: 92px;
+    padding-left: 12px;
+    padding-right: 0;
+  }
+  .studio-brief-facts > *:first-child {
+    padding-left: 0;
+  }
+  .studio-brief-facts :is(b, strong) {
+    font-size: 25px;
+  }
+  .studio-brief-facts :is(span, small) {
+    font-size: 11px;
+  }
+  .mp-page #view .strip > * {
+    min-height: 131px;
+    padding: 15px;
+  }
+  .mp-page #view .strip b {
+    font-size: 27px;
+  }
+  details.studio-scope {
+    padding-inline: 13px;
+  }
+  .studio-workspace-settings > summary {
+    flex-wrap: wrap;
+    padding-inline: 13px;
+    gap: 8px;
+  }
+  .studio-workspace-settings > summary > span:nth-child(2) {
+    font-size: 11px;
+  }
+  details.studio-scope h2 span {
+    display: none;
+  }
+  details.studio-scope > summary {
+    flex-wrap: nowrap;
+  }
+  .mp-page .intel-health-layout {
+    grid-template-columns: 105px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .mp-page .intel-health-parts .hbar {
+    grid-template-columns: 1fr 36px;
+    padding-block: 7px;
+    gap: 5px;
+  }
+  .mp-page .intel-quality-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-shell .mp-panel-head {
+    padding: 19px 18px 14px;
+  }
+  .studio-shell .mp-panel-body {
+    padding: 0 18px 19px;
+  }
+}
+@media print {
+  .mp-page #view .card,
+  .mp-page #view .ccard,
+  .studio-brief {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  details.studio-scope,
+  .studio-workspace-settings {
+    display: none;
+  }
+  .studio-brief :is(h2, h3, p, strong, span, small) {
+    color: #202630;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -13389,7 +14035,9 @@ function createStudioShell(api) {
       countries.find(([id]) => id === a.country)?.[1] || a.country;
     const projectName =
       base.find((r) => r.p.id === a.project)?.p.code || a.project;
-    return `<section class="studio-scope studio-context" aria-labelledby="studio-scope-title"><div class="studio-scope-heading"><div><span class="studio-eyebrow">Connected analysis</span><h2 id="studio-scope-title">One selection. Every perspective.</h2></div><span class="studio-selection-count"><b>${R.length}</b> / ${base.length} projects</span></div><div class="studio-scope-controls"><label>Country<select data-studio-scope="country" aria-label="Analysis country"><option value="all">All selected countries</option>${countries.map(([id, name]) => `<option value="${h(id)}" ${a.country === id ? "selected" : ""}>${h(name)}</option>`).join("")}</select></label><label>Project<select data-studio-scope="project" aria-label="Analysis project"><option value="all">All selected projects</option>${projects.map((r) => `<option value="${h(r.p.id)}" ${a.project === r.p.id ? "selected" : ""}>${h(r.p.code)} · ${h(r.p.name)}</option>`).join("")}</select></label><label>Report history from<input type="date" data-studio-scope="from" aria-label="Report history from" value="${a.from}"></label><label>Report history to<input type="date" data-studio-scope="to" aria-label="Report history to" value="${a.to}"></label><button class="btn studio-scope-reset" data-studio-action="clear-scope">Reset selection</button></div><div class="studio-filter-chips">${a.country !== "all" ? chip(countryName, "country") : ""}${a.project !== "all" ? chip(projectName, "project") : ""}${a.from || a.to ? chip((a.from || "First report") + " → " + (a.to || "Latest report"), "history") : ""}<span>${a.from || a.to ? "History window selected" : "All recorded history"}${dates.length ? " · " + dates[0] + " — " + dates.at(-1) : " · no dated financial reports"}</span></div><p class="studio-scope-note">Country and project scope connects all panels. Report dates filter history; current budgets, actuals and register totals keep their current basis.</p></section>`;
+    const expanded =
+      a.country !== "all" || a.project !== "all" || a.from || a.to;
+    return `<details class="studio-scope studio-context" ${expanded ? "open" : ""}><summary class="studio-scope-heading"><div class="studio-scope-icon" aria-hidden="true">${icon("filters")}</div><div><span class="studio-eyebrow">Connected analysis</span><h2 id="studio-scope-title">Analysis selection <span>Country, project &amp; report dates</span></h2></div><span class="studio-selection-count"><b>${R.length}</b> / ${base.length} projects</span></summary><div class="studio-scope-controls"><label>Country<select data-studio-scope="country" aria-label="Analysis country"><option value="all">All selected countries</option>${countries.map(([id, name]) => `<option value="${h(id)}" ${a.country === id ? "selected" : ""}>${h(name)}</option>`).join("")}</select></label><label>Project<select data-studio-scope="project" aria-label="Analysis project"><option value="all">All selected projects</option>${projects.map((r) => `<option value="${h(r.p.id)}" ${a.project === r.p.id ? "selected" : ""}>${h(r.p.code)} · ${h(r.p.name)}</option>`).join("")}</select></label><label>Report history from<input type="date" data-studio-scope="from" aria-label="Report history from" value="${a.from}"></label><label>Report history to<input type="date" data-studio-scope="to" aria-label="Report history to" value="${a.to}"></label><button class="btn studio-scope-reset" data-studio-action="clear-scope">Reset selection</button></div><div class="studio-filter-chips">${a.country !== "all" ? chip(countryName, "country") : ""}${a.project !== "all" ? chip(projectName, "project") : ""}${a.from || a.to ? chip((a.from || "First report") + " → " + (a.to || "Latest report"), "history") : ""}<span>${a.from || a.to ? "History window selected" : "All recorded history"}${dates.length ? " · " + dates[0] + " — " + dates.at(-1) : " · no dated financial reports"}</span></div><p class="studio-scope-note">Country and project scope connects all panels. Report dates filter history; current budgets, actuals and register totals keep their current basis.</p></details>`;
   }
   function toolbarExtras() {
     const s = saved(),
@@ -18297,7 +18945,10 @@ const Masterpiece = (() => {
   }
   function workspace(base, analysis = false) {
     const R = studio.scopeRows(base);
-    return `<div class="mp-workspace studio-shell ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${studio.brief(R)}${strip(R, "home")}${studio.scope(base, R)}${toolbar(analysis)}${studio.toolbarExtras()}<div class="mp-grid">${
+    const settingsOpen =
+      customizing ||
+      !!document.querySelector(".studio-workspace-settings")?.open;
+    return `<div class="mp-workspace studio-shell ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${studio.brief(R)}${strip(R, "home")}${studio.scope(base, R)}<details class="studio-workspace-settings" ${settingsOpen ? "open" : ""}><summary><span>${icon("sliders")}Workspace settings</span><span>${h(PROFILES[settings.profile].name)} · ${countText(visiblePanels().length, "panel")}</span><span class="studio-settings-chevron" aria-hidden="true">+</span></summary>${toolbar(analysis)}${studio.toolbarExtras()}</details><div class="mp-grid">${
       !base.length
         ? empty(
             "No projects match this selection",
@@ -18322,12 +18973,13 @@ const Masterpiece = (() => {
   }
 
   function afterRender(route) {
-    document
-      .querySelector("main")
-      .classList.toggle(
-        "mp-page",
-        ["home", "overview", "team"].includes(route),
-      );
+    // The application frame belongs to every route, including detail screens.
+    document.querySelector("main").classList.add("mp-page");
+    if (route === "compare") {
+      const projects = document.querySelector('.side a[data-r="projects"]');
+      projects?.classList.add("on");
+      projects?.setAttribute("aria-current", "page");
+    }
     studio.afterRender();
     chartStudio.afterRender(view);
     registerStudio.afterRender(view);
