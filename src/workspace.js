@@ -154,6 +154,16 @@ const Masterpiece = (() => {
     encodeURIComponent(r.p.id) +
     (tab === "overview" ? "" : "/" + tab);
   const icons = {
+    people:
+      '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v1"/>',
+    project:
+      '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 5V3h8v2M3 11h18M10 11v3h4v-3"/>',
+    map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15"/>',
+    alert: '<path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v4M12 16h.01"/>',
+    staff:
+      '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v1"/>',
+    arrow: '<path d="M4 12h15m-5-5 5 5-5 5"/>',
+    save: '<path d="M4 3h13l4 4v14H3V3h1ZM7 3v6h10V3M7 21v-8h10v8"/>',
     sliders: '<path d="M4 7h16M4 17h16M8 4v6M16 14v6"/>',
     drag: '<circle cx="8" cy="5" r="1"/><circle cx="16" cy="5" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="8" cy="19" r="1"/><circle cx="16" cy="19" r="1"/>',
     up: '<path d="m6 14 6-6 6 6"/>',
@@ -175,7 +185,15 @@ const Masterpiece = (() => {
     return {
       order: uniq([...PROFILES[profile].visible, ...ids]),
       hidden: ids.filter((id) => !PROFILES[profile].visible.includes(id)),
-      widths: {},
+      widths:
+        profile === "delivery"
+          ? {}
+          : {
+              allocation: "half",
+              trend: "half",
+              composition: "half",
+              coverage: "half",
+            },
       collapsed: [],
       pinned: [],
       density: "comfortable",
@@ -193,7 +211,7 @@ const Masterpiece = (() => {
         list(v.hidden ?? base.hidden).filter((id) => own(PANELS, id)),
       ),
       widths: Object.fromEntries(
-        Object.entries(v.widths || {}).filter(
+        Object.entries(v.widths || base.widths).filter(
           ([id, width]) => own(PANELS, id) && WIDTHS.includes(width),
         ),
       ),
@@ -202,15 +220,15 @@ const Masterpiece = (() => {
       density: v.density === "compact" ? "compact" : "comfortable",
     };
   }
-  function cleanSettings(value) {
+  function cleanSettings(value, nested = false) {
     const v = value && typeof value === "object" ? value : {},
       profile = own(PROFILES, v.profile) ? v.profile : "overview",
       profiles = {};
     for (const key of Object.keys(PROFILES))
       profiles[key] = cleanLayout(v.profiles?.[key], key);
     const charts = v.charts || {},
-      table = v.table || {};
-    return {
+      appearance = v.appearance || {};
+    const result = {
       version: 2,
       profile,
       profiles,
@@ -220,28 +238,91 @@ const Masterpiece = (() => {
         series: ["both", "spent", "exposure"].includes(charts.series)
           ? charts.series
           : "both",
-        history: typeof charts.history === "string" ? charts.history : "all",
+        history:
+          typeof charts.history === "string"
+            ? charts.history.slice(0, 160)
+            : "all",
         window: charts.window === "12" ? "12" : "all",
+        mode: charts.mode === "interval" ? "interval" : "cumulative",
+        style: charts.style === "columns" ? "columns" : "line",
+        bridge: charts.bridge === "coverage" ? "coverage" : "waterfall",
       },
-      table: {
-        columns: uniq([
-          "name",
-          ...list(table.columns ?? DEFAULT_COLUMNS).filter((id) =>
-            own(COLUMNS, id),
-          ),
-        ]),
-        sort: own(COLUMNS, table.sort) ? table.sort : "budget",
-        direction: table.direction === 1 ? 1 : -1,
-        density: table.density === "compact" ? "compact" : "comfortable",
-        group: ["country", "signal"].includes(table.group)
-          ? table.group
-          : "none",
-        pageSize: [10, 25, 50].includes(Number(table.pageSize))
-          ? Number(table.pageSize)
-          : 10,
+      table: normalizeRegisterSettings(v.table, COLUMNS),
+      analysis: normalizeAnalysisScope(v.analysis),
+      schedule: normalizeScheduleSettings(v.schedule),
+      appearance: {
+        palette: ["atelier", "executive", "contrast"].includes(
+          appearance.palette,
+        )
+          ? appearance.palette
+          : "atelier",
+        effects: appearance.effects === "none" ? "none" : "subtle",
       },
+      workspaces: [],
+      activeWorkspace: "",
     };
+    if (!nested) {
+      result.workspaces = list(v.workspaces)
+        .filter(
+          (w) =>
+            w &&
+            /^ws-[a-z0-9-]{1,60}$/.test(w.id) &&
+            typeof w.name === "string" &&
+            w.name.trim() &&
+            w.snapshot &&
+            typeof w.snapshot === "object",
+        )
+        .slice(-12)
+        .map((w) => {
+          const clean = cleanSettings(w.snapshot, true);
+          const {
+            profile,
+            profiles,
+            charts,
+            table,
+            analysis,
+            schedule,
+            appearance,
+          } = clean;
+          const scenario = Number.isFinite(Number(w.snapshot.scenario))
+            ? Math.max(-80, Math.min(80, Number(w.snapshot.scenario)))
+            : 0;
+          const registerState =
+            w.snapshot.registerState &&
+            typeof w.snapshot.registerState === "object"
+              ? {
+                  query:
+                    typeof w.snapshot.registerState.query === "string"
+                      ? w.snapshot.registerState.query.slice(0, 200)
+                      : "",
+                }
+              : { query: "" };
+          return {
+            id: w.id,
+            name: w.name.trim().slice(0, 64),
+            snapshot: {
+              profile,
+              profiles,
+              charts,
+              table,
+              analysis,
+              schedule,
+              appearance,
+              scenario,
+              registerState,
+            },
+          };
+        })
+        .filter((w, i, a) => a.findIndex((x) => x.id === w.id) === i);
+      result.activeWorkspace = result.workspaces.some(
+        (w) => w.id === v.activeWorkspace,
+      )
+        ? v.activeWorkspace
+        : "";
+    }
+    return result;
   }
+
   let settings = cleanSettings(ls.get(KEY)),
     customizing = false,
     layoutSaved = true;
@@ -283,9 +364,152 @@ const Masterpiece = (() => {
   function empty(title, copy, link = "") {
     return `<div class="mp-empty"><span aria-hidden="true">${icon("search")}</span><b>${h(title)}</b><p>${h(copy)}</p>${link}</div>`;
   }
-  function legend() {
-    return '<div class="mp-legend"><span class="spent">Spent</span><span class="committed">Committed</span><span class="available">Available</span><span class="unknown">No exposure evidence</span></div>';
+  function patchSettings(patch, rerender = true) {
+    const changed =
+      !Object.prototype.hasOwnProperty.call(patch, "activeWorkspace") &&
+      !Object.prototype.hasOwnProperty.call(patch, "workspaces");
+    settings = cleanSettings({
+      ...settings,
+      ...patch,
+      ...(changed ? { activeWorkspace: "" } : {}),
+    });
+    persist();
+    if (rerender) render();
   }
+  function effectiveAnalysis() {
+    const route = location.hash.replace(/^#\//, "").split("/")[0] || "home";
+    return ["home", "overview"].includes(route)
+      ? settings.analysis
+      : normalizeAnalysisScope();
+  }
+  function sourceHistory(p) {
+    const byDate = new Map();
+    for (const report of reps(p)) {
+      if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(report.date) ||
+        !Number.isFinite(Date.parse(report.date)) ||
+        !(
+          cmSourceAmountKnown(report, "actual") ||
+          cmSourceAmountKnown(report, "spentCommitted")
+        )
+      )
+        continue;
+      const old = byDate.get(report.date);
+      if (
+        !old ||
+        String(report.updatedAt || report.registeredAt || "") >=
+          String(old.updatedAt || old.registeredAt || "")
+      )
+        byDate.set(report.date, report);
+    }
+    return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+  const common = {
+    h,
+    money,
+    compact,
+    pc,
+    icon,
+    empty,
+    url,
+    entityColor,
+    SG,
+    historyReports: sourceHistory,
+    sourceReports: reps,
+    finAt,
+    cmSourceAmountKnown,
+    tableEvidence,
+    getSettings: () => settings,
+    getBaseRows: () => rows(),
+    getAnalysis: effectiveAnalysis,
+    setAnalysis: (patch) => {
+      const foreign = !["home", "overview"].includes(
+        location.hash.replace(/^#\//, "").split("/")[0] || "home",
+      );
+      studio.setAnalysis(foreign ? { country: "all", ...patch } : patch);
+      if (foreign) location.hash = "#/overview";
+    },
+    render,
+    announce,
+    download,
+    download2,
+  };
+  const studio = createStudioShell({
+    ...common,
+    scenario: () => F.k,
+    isDemo: () => DEMO_MODE,
+    financialSummary,
+    todayActions,
+    toast,
+    patchSettings,
+    getRegisterState: () => registerStudio.getTransient(),
+    restoreWorkspace: (w) => {
+      const { scenario, registerState, ...snapshot } = w.snapshot;
+      settings = cleanSettings({
+        ...settings,
+        ...snapshot,
+        activeWorkspace: w.id,
+      });
+      registerStudio.resetTransient(registerState);
+      ui.pickedDate = "";
+      persist();
+      $("#fk").value = scenario;
+      setF("k", scenario);
+    },
+  });
+  const chartStudio = createChartStudio({
+    ...common,
+    updateCharts: (patch) =>
+      patchSettings(
+        { charts: { ...settings.charts, ...patch }, activeWorkspace: "" },
+        false,
+      ),
+    getPickedDate: () => ui.pickedDate,
+    setPickedDate: (value) => {
+      ui.pickedDate = value;
+    },
+  });
+  const registerStudio = createRegisterStudio({
+    ...common,
+    COLUMNS,
+    tableValue,
+    tableCell,
+    tableTotal,
+    tableDetail,
+    sourceRows,
+    updateTable: (patch, opts = {}) =>
+      patchSettings(
+        { table: { ...settings.table, ...patch }, activeWorkspace: "" },
+        opts.render === true,
+      ),
+    historyRows: (r) =>
+      sourceHistory(r.p).map((q) => {
+        const f = finAt(r.p, q);
+        return {
+          date: q.date,
+          spent: cmSourceAmountKnown(q, "actual") ? f.actual : null,
+          exposure: cmSourceAmountKnown(q, "spentCommitted") ? f.sc : null,
+        };
+      }),
+  });
+  const scheduleStudio = createScheduleStudio({
+    ...common,
+    portfolioEvents,
+    updateSchedule: (patch) =>
+      patchSettings(
+        { schedule: { ...settings.schedule, ...patch }, activeWorkspace: "" },
+        false,
+      ),
+  });
+  const staffStudio = createStaffStudio({
+    ...common,
+    portfolioDocumentTeam,
+    staffRoster,
+    staffAvatar,
+    n2,
+    cname,
+  });
+  studio.afterRender();
   function chartMenu(id) {
     return `<button class="mp-icon-button" data-mp="chart-export" data-panel="${id}" aria-label="Export ${h(PANELS[id].title)} chart" title="Export chart">${icon("export")}</button>`;
   }
@@ -295,7 +519,7 @@ const Masterpiece = (() => {
       collapsed = l.collapsed.includes(id),
       pinned = l.pinned.includes(id),
       width = l.widths[id] || spec.width;
-    return `<section class="mp-panel mp-width-${width}${collapsed ? " mp-collapsed" : ""}${pinned ? " mp-pinned" : ""}" data-mp-panel="${id}" aria-labelledby="mp-title-${id}"><header class="mp-panel-head"><div><span class="mp-eyebrow">${spec.eyebrow}</span><h2 id="mp-title-${id}">${spec.title}</h2><p>${spec.desc}</p></div><div class="mp-panel-tools">${["trend", "pace", "composition"].includes(id) ? chartMenu(id) : ""}<button class="mp-icon-button mp-collapse" data-mp="collapse" data-panel="${id}" aria-expanded="${!collapsed}" aria-controls="mp-body-${id}" aria-label="${collapsed ? "Expand" : "Collapse"} ${spec.title}" title="${collapsed ? "Expand" : "Collapse"} panel">${icon(collapsed ? "down" : "up")}</button><button class="mp-icon-button mp-handle" draggable="${customizing}" data-mp-handle="${id}" aria-label="Move ${spec.title}. Alt and arrow keys reorder this panel." title="Drag to move · Alt + ↑ / ↓" ${customizing ? "" : "hidden"}>${icon("drag")}</button></div></header><div class="mp-panel-edit" ${customizing ? "" : "hidden"}><button data-mp="move-up" data-panel="${id}" class="mp-mini">${icon("up")}Earlier</button><button data-mp="move-down" data-panel="${id}" class="mp-mini">${icon("down")}Later</button><label>Width<select data-mp-width="${id}" aria-label="Width of ${spec.title}">${WIDTHS.map((w) => `<option value="${w}" ${w === width ? "selected" : ""}>${w === "third" ? "Third" : w === "half" ? "Half" : w === "wide" ? "Wide" : "Full"}</option>`).join("")}</select></label><button class="mp-mini ${pinned ? "on" : ""}" data-mp="pin" data-panel="${id}" aria-pressed="${pinned}">${icon("pin")}${pinned ? "Pinned" : "Pin"}</button><button class="mp-mini" data-mp="hide" data-panel="${id}">Hide</button></div><div id="mp-body-${id}" class="mp-panel-body" ${collapsed ? "hidden" : ""}>${body}</div></section>`;
+    return `<section class="mp-panel mp-width-${width}${collapsed ? " mp-collapsed" : ""}${pinned ? " mp-pinned" : ""}" data-mp-panel="${id}" aria-labelledby="mp-title-${id}"><header class="mp-panel-head"><div><span class="mp-eyebrow">${spec.eyebrow}</span><h2 id="mp-title-${id}">${spec.title}</h2><p>${spec.desc}</p></div><div class="mp-panel-tools">${["allocation", "trend", "pace", "composition"].includes(id) ? chartMenu(id) : ""}<button class="mp-icon-button mp-collapse" data-mp="collapse" data-panel="${id}" aria-expanded="${!collapsed}" aria-controls="mp-body-${id}" aria-label="${collapsed ? "Expand" : "Collapse"} ${spec.title}" title="${collapsed ? "Expand" : "Collapse"} panel">${icon(collapsed ? "down" : "up")}</button><button class="mp-icon-button mp-handle" draggable="${customizing}" data-mp-handle="${id}" aria-label="Move ${spec.title}. Alt and arrow keys reorder this panel." title="Drag to move · Alt + ↑ / ↓" ${customizing ? "" : "hidden"}>${icon("drag")}</button></div></header><div class="mp-panel-edit" ${customizing ? "" : "hidden"}><button data-mp="move-up" data-panel="${id}" class="mp-mini">${icon("up")}Earlier</button><button data-mp="move-down" data-panel="${id}" class="mp-mini">${icon("down")}Later</button><label>Width<select data-mp-width="${id}" aria-label="Width of ${spec.title}">${WIDTHS.map((w) => `<option value="${w}" ${w === width ? "selected" : ""}>${w === "third" ? "Third" : w === "half" ? "Half" : w === "wide" ? "Wide" : "Full"}</option>`).join("")}</select></label><button class="mp-mini ${pinned ? "on" : ""}" data-mp="pin" data-panel="${id}" aria-pressed="${pinned}">${icon("pin")}${pinned ? "Pinned" : "Pin"}</button><button class="mp-mini" data-mp="hide" data-panel="${id}">Hide</button></div><div id="mp-body-${id}" class="mp-panel-body" ${collapsed ? "hidden" : ""}>${body}</div></section>`;
   }
   function toolbar(analysis = false) {
     return `<div class="mp-toolbar"><div class="mp-profile-switch" role="group" aria-label="Workspace profile">${Object.entries(
@@ -309,308 +533,22 @@ const Masterpiece = (() => {
         "",
       )}</div><div class="mp-toolbar-actions"><span class="mp-layout-state">${customizing ? (layoutSaved ? "Layout saved on this device" : "Layout not saved · storage unavailable") : countText(visiblePanels().length, "panel")}</span><button class="btn ${customizing ? "pri" : ""}" data-mp="customize" aria-pressed="${customizing}">${icon("sliders")}${customizing ? "Done arranging" : "Customize"}</button><button class="btn mp-manager" data-mp="manage">Panels</button><details class="mp-more-tools"><summary class="btn" aria-label="Workspace tools">•••</summary><div><button data-mp="print">${icon("print")}Print / save PDF</button><button data-act="export">${icon("export")}Portfolio backup</button><button data-mp="export-layout">Export layout</button><button data-mp="import-layout">Import layout</button><button data-mp="reset-layout">${icon("restore")}Reset this layout</button><a href="#/data">Open data tools</a></div></details></div></div>${customizing ? '<div class="mp-edit-notice"><b>Make the workspace yours.</b> Drag a handle to reorder panels. On phones, drag vertically or use Earlier / Later. Alt + ↑ / ↓ works from a focused handle. Panel changes do not alter portfolio data.</div>' : ""}`;
   }
-  function summary(R) {
-    const covered = R.filter((r) => r.evidence.exposure).length,
-      off = R.filter((r) => ["r", "o"].includes(r.g)).length,
-      overdue = portfolioEvents(R).filter(
-        (e) => !e.done && e.kind === "report" && e.date < TODAY(),
-      ).length;
-    const dates = R.map((r) => r.evidence.latest?.date)
-        .filter(Boolean)
-        .sort(),
-      dateRange = dates.length
-        ? dates[0] === dates.at(-1)
-          ? dates[0]
-          : dates[0] + " — " + dates.at(-1)
-        : "No dated financial reports";
-    return `<div class="mp-executive"><div class="mp-executive-copy"><span class="mp-eyebrow">Evidence, before conclusions</span><h2>${off ? countText(off, "project") + " need" + (off === 1 ? "s" : "") + " a closer look." : "Your portfolio, seen clearly."}</h2><p>${off ? "Financial pace differs from elapsed time. Review the project context before deciding." : "Explore funding, recorded dates and the evidence behind each figure."}</p></div><div class="mp-executive-facts"><a href="#/calendar" class="${overdue ? "attention" : ""}"><b>${overdue}</b><span>overdue report${overdue === 1 ? "" : "s"}</span></a><a href="#mp-title-coverage" data-mp="reveal" data-panel="coverage"><b>${covered}<small> / ${R.length}</small></b><span>exposure sources</span></a></div></div><div class="mp-evidence-strip"><span><i class="mp-status-dot"></i>${DEMO_MODE ? "Sample portfolio" : "Current portfolio records"}</span><span>Latest financial report dates <b>${h(dateRange)}</b></span><span>Currency <b>EUR</b></span>${F.k ? `<span class="mp-scenario-flag">Scenario ${F.k > 0 ? "+" : ""}${F.k}% · estimates only</span>` : ""}</div>`;
-  }
   function allocation(R) {
-    const percent = settings.charts.allocation === "percent",
-      known = R.filter((r) => r.b > 0),
-      sorted = [...R].sort((a, b) => b.b - a.b),
-      max = percent
-        ? Math.max(
-            1,
-            ...known.filter((r) => r.evidence.exposure).map((r) => r.u / r.b),
-          )
-        : Math.max(
-            1,
-            ...R.map((r) => Math.max(r.b, r.evidence.exposure ? r.u : 0)),
-          ),
-      scale = (n) => Math.max(0, (n / max) * 100);
-    return `<div class="mp-chart-controls"><div class="mp-toggle" role="group" aria-label="Allocation scale">${[
-      ["amount", "EUR"],
-      ["percent", "% of budget"],
-    ]
-      .map(
-        ([k, l]) =>
-          `<button data-mp="allocation-scale" data-value="${k}" aria-pressed="${settings.charts.allocation === k}">${l}</button>`,
-      )
-      .join(
-        "",
-      )}</div><span>${percent ? "Common percentage scale" : "Common EUR scale"}</span></div>${legend()}<div class="mp-allocation-list">${sorted
-      .map((r) => {
-        const e = r.evidence,
-          has = e.exposure && r.b > 0,
-          signed = has && (r.sp < 0 || r.co < 0),
-          den = percent ? r.b : 1,
-          budget = den > 0 ? r.b / den : 0,
-          spent = has ? Math.max(0, r.sp) / den : 0,
-          commit = has ? Math.max(0, r.co) / den : 0,
-          available = has ? Math.max(0, r.b - r.u) / den : 0,
-          over = has && r.u > r.b;
-        return `<a class="mp-allocation-row" href="${url(r, "finance/budget")}" aria-label="${h(r.p.name)}. Approved ${money(r.b)}. ${e.exposure ? "Exposure " + money(r.u) : "Exposure evidence missing"}"><div class="mp-allocation-label"><span><i style="background:${entityColor("project", r.p.id)}"></i><b>${h(r.p.code || r.p.name)}</b><small>${h(r.cn)}</small></span><strong>${compact(r.b)}</strong></div><div class="mp-allocation-track" role="img" aria-label="${h(r.p.name)}: ${has ? "spent " + money(r.sp) + ", committed " + money(r.co) + ", " + (over ? money(r.u - r.b) + " over budget" : money(r.b - r.u) + " available") : e.exposure ? "budget " + money(r.b) + "; positive budget required to plot exposure " + money(r.u) : "budget " + money(r.b) + ", exposure unknown"}">${signed ? `<i class="adjusted" style="width:${scale(budget)}%"></i>` : has ? `<i class="spent" style="width:${scale(spent)}%"></i><i class="committed" style="width:${scale(commit)}%"></i><i class="available" style="width:${scale(available)}%"></i>` : `<i class="unknown" style="width:${scale(budget)}%"></i>`}${r.b > 0 ? `<span class="mp-budget-marker" style="left:${scale(budget)}%" title="Approved budget"></span>` : ""}</div><div class="mp-allocation-meta"><span class="${over ? "negative" : ""}">${signed ? "Signed adjustment · exposure " + compact(r.u) : has ? (over ? compact(r.u - r.b) + " over budget" : pc(r.u / r.b) + " used · " + compact(r.b - r.u) + " available") : e.exposure ? "Positive budget required" : "Exposure not recorded"}</span><span>${h(e.latest?.date || (e.exposure ? "Manual / undated" : "Awaiting actuals"))}</span></div></a>`;
-      })
-      .join(
-        "",
-      )}</div><p class="mp-footnote">Committed excludes spent. The vertical tick marks approved funding. Hatched bars have no exposure evidence; ${percent ? "each percentage uses its own project budget" : "bar lengths use one EUR scale"}. Signed adjustments are shown numerically, rather than stacked. Open any row to inspect its source.</p>`;
+    return chartStudio.allocation(R);
   }
-  function trendData(R) {
-    const reports = R.map((r) => ({
-      index: -1,
-      Q: historyReports(r.p)
-        .filter(
-          (q) =>
-            /^\d{4}-\d{2}-\d{2}$/.test(q.date) &&
-            Number.isFinite(Date.parse(q.date)),
-        )
-        .map((q) => {
-          const f = finAt(r.p, q);
-          return {
-            date: q.date,
-            spent: cmSourceAmountKnown(q, "actual") ? f.actual : null,
-            exposure: cmSourceAmountKnown(q, "spentCommitted") ? f.sc : null,
-          };
-        }),
-    }));
-    const dates = uniq(reports.flatMap(({ Q }) => Q.map((q) => q.date))).sort();
-    return dates.map((date) => {
-      let spent = 0,
-        exposure = 0,
-        actualCount = 0,
-        exposureCount = 0;
-      for (const history of reports) {
-        while (history.Q[history.index + 1]?.date <= date) history.index++;
-        const q = history.Q[history.index];
-        if (!q) continue;
-        if (q.spent !== null) {
-          spent += q.spent;
-          actualCount++;
-        }
-        if (q.exposure !== null) {
-          exposure += q.exposure;
-          exposureCount++;
-        }
-      }
-      return {
-        date,
-        t: Date.parse(date),
-        spent: actualCount ? spent : null,
-        exposure: exposureCount ? exposure : null,
-        actualCount,
-        exposureCount,
-        total: R.length,
-      };
-    });
-  }
+
   function trend(R) {
-    if (
-      settings.charts.history !== "all" &&
-      !R.some((r) => r.p.id === settings.charts.history)
-    )
-      settings.charts.history = "all";
-    const scope =
-        settings.charts.history === "all"
-          ? R
-          : R.filter((r) => r.p.id === settings.charts.history),
-      all = trendData(scope),
-      points = settings.charts.window === "12" ? all.slice(-12) : all;
-    const controls = `<div class="mp-chart-controls"><label>Scope<select data-mp-chart="history"><option value="all">Selected portfolio (${R.length})</option>${R.map((r) => `<option value="${h(r.p.id)}" ${settings.charts.history === r.p.id ? "selected" : ""}>${h(r.p.code || r.p.name)}</option>`).join("")}</select></label><label>Series<select data-mp-chart="series">${[
-      ["both", "Both series"],
-      ["spent", "Spent"],
-      ["exposure", "Exposure"],
-    ]
-      .map(
-        ([v, l]) =>
-          `<option value="${v}" ${settings.charts.series === v ? "selected" : ""}>${l}</option>`,
-      )
-      .join(
-        "",
-      )}</select></label><label>History<select data-mp-chart="window"><option value="all" ${settings.charts.window === "all" ? "selected" : ""}>All dates</option><option value="12" ${settings.charts.window === "12" ? "selected" : ""}>Last 12 dates</option></select></label></div>`;
-    if (!points.length)
-      return (
-        controls +
-        empty(
-          "No dated expenditure yet",
-          "Add a financial report with a date and actuals to see a report history.",
-          '<a class="btn" href="#/data">Add source reports</a>',
-        )
-      );
-    const selected =
-        points.find((p) => p.date === ui.pickedDate) || points.at(-1),
-      L = 65,
-      W = 650,
-      T = 22,
-      B = 245,
-      t0 = points[0].t,
-      t1 = points.at(-1).t,
-      vals = points.flatMap((p) =>
-        ["spent", "exposure"]
-          .filter(
-            (k) =>
-              settings.charts.series === "both" || settings.charts.series === k,
-          )
-          .map((k) => p[k])
-          .filter(Number.isFinite),
-      ),
-      min = Math.min(0, ...vals),
-      max = Math.max(1, ...vals),
-      span = max - min,
-      X = (t) => L + ((t - t0) / (t1 - t0 || 1)) * W,
-      Y = (v) => B - ((v - min) / span) * (B - T),
-      stroke = { spent: "var(--mp-spent)", exposure: "var(--mp-committed)" };
-    const path = (k) => {
-      let start = true;
-      return points
-        .map((p) => {
-          if (p[k] === null) {
-            start = true;
-            return "";
-          }
-          const cmd = start ? "M" : "L";
-          start = false;
-          return `${cmd}${X(p.t).toFixed(2)} ${Y(p[k]).toFixed(2)}`;
-        })
-        .join(" ");
-    };
-    const series = ["spent", "exposure"].filter(
-        (k) =>
-          settings.charts.series === "both" || settings.charts.series === k,
-      ),
-      ticks = [points[0]];
-    for (const p of points.slice(1, -1)) {
-      if (
-        X(p.t) - X(ticks.at(-1).t) >= (ticks.length === 1 ? 190 : 125) &&
-        X(points.at(-1).t) - X(p.t) >= 190
-      )
-        ticks.push(p);
-    }
-    if (points.length > 1) ticks.push(points.at(-1));
-    const chart = `<svg class="mp-chart mp-trend-chart" viewBox="0 0 760 292" role="group" aria-labelledby="mp-trend-title mp-trend-desc"><title id="mp-trend-title">Cumulative expenditure by financial report date</title><desc id="mp-trend-desc">Actual dates determine spacing. Each point uses one latest known report per project, rather than adding snapshots. Select a point to review amounts and source counts.</desc><defs><linearGradient id="mp-trend-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--mp-spent)" stop-opacity=".18"/><stop offset="1" stop-color="var(--mp-spent)" stop-opacity="0"/></linearGradient></defs>${[0, 0.25, 0.5, 0.75, 1].map((f) => `<line x1="${L}" x2="${L + W}" y1="${Y(min + span * f)}" y2="${Y(min + span * f)}" class="mp-gridline"/><text x="${L - 9}" y="${Y(min + span * f) + 4}" text-anchor="end">${compact(min + span * f)}</text>`).join("")}${series.includes("spent") && points.every((p) => p.spent !== null) ? `<path d="${path("spent")} L${X(points.at(-1).t)} ${Y(0)} L${X(points[0].t)} ${Y(0)} Z" fill="url(#mp-trend-area)"/>` : ""}<line x1="${X(selected.t)}" x2="${X(selected.t)}" y1="${T}" y2="${B}" class="mp-selection-line"/>${series
-      .map(
-        (k) =>
-          `<path d="${path(k)}" fill="none" stroke="${stroke[k]}" stroke-width="2.6" ${k === "exposure" ? 'stroke-dasharray="5 4"' : ""}/>${points
-            .filter((p) => p[k] !== null)
-            .map(
-              (p) =>
-                `<g class="mp-point" role="button" tabindex="0" data-mp="pick-date" data-value="${p.date}" aria-label="${p.date}: ${k === "spent" ? "spent" : "spent plus committed"} ${money(p[k])}; ${k === "spent" ? p.actualCount : p.exposureCount} of ${p.total} projects" data-tip="${p.date}|${k === "spent" ? "Spent" : "Spent + committed"} ${money(p[k])}|${p.actualCount}/${p.total} actuals · ${p.exposureCount}/${p.total} exposure sources"><circle cx="${X(p.t)}" cy="${Y(p[k])}" r="11" fill="transparent"/><circle cx="${X(p.t)}" cy="${Y(p[k])}" r="${p.date === selected.date ? 5 : 3.5}" fill="${stroke[k]}" stroke="var(--surface)" stroke-width="2"/></g>`,
-            )
-            .join("")}`,
-      )
-      .join(
-        "",
-      )}${ticks.map((p) => `<text x="${X(p.t)}" y="${B + 25}" text-anchor="${p === points[0] ? "start" : p === points.at(-1) ? "end" : "middle"}">${h(p.date)}</text>`).join("")}</svg>`;
-    return (
-      controls +
-      chart +
-      `<div class="mp-trend-readout" aria-live="polite"><div><small>Selected report date</small><b>${selected.date}</b></div><div><small>Spent · ${selected.actualCount}/${selected.total} sources</small><b>${compact(selected.spent)}</b></div><div><small>Spent + committed · ${selected.exposureCount}/${selected.total} sources</small><b>${compact(selected.exposure)}</b></div></div><div class="mp-legend"><span class="spent">Cumulative spent</span><span class="committed">Spent + committed</span></div><details class="mp-data-disclosure"><summary>Read the chart as a table</summary><div class="mp-scroll" tabindex="0" role="region" aria-label="Report history values"><table><caption>Latest known report per project at each date. Missing amounts stay unknown.</caption><thead><tr><th scope="col">Date</th><th scope="col">Spent</th><th scope="col">Exposure</th><th scope="col">Actuals coverage</th><th scope="col">Exposure coverage</th></tr></thead><tbody>${points.map((p) => `<tr><td>${p.date}</td><td>${money(p.spent)}</td><td>${money(p.exposure)}</td><td>${p.actualCount}/${p.total}</td><td>${p.exposureCount}/${p.total}</td></tr>`).join("")}</tbody></table></div></details><p class="mp-footnote">Spacing represents actual time. Coverage can change between snapshots; changes are not necessarily spending by the same projects. Historical reports are shown as recorded; current administrator adjustments belong in the register.</p>`
-    );
+    return chartStudio.trend(R);
   }
+
   function pace(R) {
-    const valid = R.filter(
-        (r) =>
-          r.evidence.exposure &&
-          r.b > 0 &&
-          r.util >= 0 &&
-          Number.isFinite(r.el) &&
-          r.s < r.e,
-      ),
-      excluded = R.length - valid.length;
-    if (!valid.length)
-      return empty(
-        "Pace cannot be assessed yet",
-        "Add valid project dates, a positive budget and exposure evidence.",
-      );
-    const L = 52,
-      W = 545,
-      T = 24,
-      B = 255,
-      ceiling = Math.max(1.15, ...valid.map((r) => r.util)) * 1.08,
-      X = (v) => L + v * W,
-      Y = (v) => B - (v / ceiling) * (B - T),
-      color = (g) =>
-        g === "r"
-          ? "var(--bad)"
-          : g === "o"
-            ? "var(--warn)"
-            : g === "g"
-              ? "var(--good)"
-              : "var(--mute)",
-      maxBudget = Math.max(...valid.map((r) => r.b));
-    const svg = `<svg class="mp-chart mp-pace-chart" viewBox="0 0 635 312" role="group" aria-labelledby="mp-pace-title mp-pace-desc"><title id="mp-pace-title">Financial utilization compared with elapsed project time</title><desc id="mp-pace-desc">Each circle is a project. Larger circles have larger budgets. The dashed line shows equal financial use and elapsed time. ${excluded} projects cannot be assessed.</desc><path d="M${L} ${B}L${X(1)} ${Y(1)}L${X(1)} ${B}Z" fill="var(--mp-spent)" opacity=".045"/>${[0, 0.25, 0.5, 0.75, 1].map((f) => `<line x1="${X(f)}" x2="${X(f)}" y1="${T}" y2="${B}" class="mp-gridline"/><text x="${X(f)}" y="${B + 20}" text-anchor="middle">${pc(f)}</text>`).join("")}${[
-      0, 0.25, 0.5, 0.75, 1,
-    ]
-      .filter((f) => f <= ceiling)
-      .map(
-        (f) =>
-          `<line x1="${L}" x2="${L + W}" y1="${Y(f)}" y2="${Y(f)}" class="mp-gridline"/><text x="${L - 9}" y="${Y(f) + 4}" text-anchor="end">${pc(f)}</text>`,
-      )
-      .join(
-        "",
-      )}<path d="M${X(0)} ${Y(0)}L${X(1)} ${Y(1)}" stroke="var(--mute)" stroke-dasharray="5 5" fill="none"/><text x="${X(0.67)}" y="${Y(0.67) - 9}" class="mp-annotation">Equal time and exposure</text>${valid.map((r) => `<a href="${url(r)}" tabindex="0" aria-label="${h(r.p.name)}: ${pc(r.el)} time elapsed, ${pc(r.util)} budget used" data-tip="${h(r.p.name)}|${pc(r.util)} budget exposure · ${pc(r.el)} elapsed time|${r.pace === null ? "Pace not yet assessed" : r.pace.toFixed(2) + "× pace"} · ${SG[r.g][0]}"><circle cx="${X(r.el)}" cy="${Y(r.util)}" r="${7 + Math.sqrt(r.b / maxBudget) * 12}" fill="${color(r.g)}" fill-opacity=".2" stroke="${color(r.g)}" stroke-width="1.5"/><text x="${X(r.el)}" y="${Y(r.util) + 3}" text-anchor="middle" class="mp-bubble-label">${h(r.p.code?.split("-").at(-1) || "")}</text></a>`).join("")}<text x="${L + W / 2}" y="${B + 48}" text-anchor="middle">Elapsed project time →</text><text transform="translate(12 148) rotate(-90)" text-anchor="middle">Budget used →</text></svg>`;
-    return (
-      svg +
-      `<div class="mp-legend"><span class="signal-good">On pace</span><span class="signal-warn">Slow absorption</span><span class="signal-bad">Fast burn</span><span class="signal-neutral">Not assessed</span></div><p class="mp-footnote">${valid.length}/${R.length} projects plotted${excluded ? " · " + excluded + " lack valid dates, positive budget or non-negative exposure" : ""}. Circle size reflects approved budget. Financial pace is not delivery completion; the reference is a straight-line timing assumption.</p>`
-    );
+    return chartStudio.pace(R);
   }
+
   function composition(R) {
-    const mode = settings.charts.composition,
-      groups = new Map();
-    for (const r of R) {
-      const key = mode === "country" ? r.p.country : r.p.sector || "Unassigned",
-        label = mode === "country" ? r.cn : key;
-      if (!groups.has(key))
-        groups.set(key, { key, label, budget: 0, rows: [] });
-      const g = groups.get(key);
-      g.budget += Math.max(0, r.b);
-      g.rows.push(r);
-    }
-    const all = [...groups.values()].sort((a, b) => b.budget - a.budget),
-      total = all.reduce((a, g) => a + g.budget, 0),
-      C = 2 * Math.PI * 79;
-    let offset = 0;
-    const controls = `<div class="mp-chart-controls"><div class="mp-toggle" role="group" aria-label="Portfolio composition">${[
-      ["country", "By country"],
-      ["sector", "By sector"],
-    ]
-      .map(
-        ([v, l]) =>
-          `<button data-mp="composition" data-value="${v}" aria-pressed="${mode === v}">${l}</button>`,
-      )
-      .join("")}</div><span>Current approved budgets</span></div>`;
-    if (!total)
-      return (
-        controls +
-        empty(
-          "No positive approved budgets",
-          "Record a budget to show funding composition. Project records remain in the register.",
-        )
-      );
-    return (
-      controls +
-      `<div class="mp-composition"><svg class="mp-chart mp-donut" viewBox="0 0 240 240" role="img" aria-labelledby="mp-composition-title"><title id="mp-composition-title">Approved budget by ${mode}. Total ${money(total)}.</title><circle cx="120" cy="120" r="79" fill="none" stroke="var(--line)" stroke-width="19"/>${all
-        .map((g) => {
-          const d = (g.budget / total) * C,
-            o = offset;
-          offset += d;
-          return `<circle cx="120" cy="120" r="79" transform="rotate(-90 120 120)" fill="none" stroke="${entityColor(mode === "country" ? "country" : "sector", g.key)}" stroke-width="19" stroke-dasharray="${d} ${Math.max(0, C - d)}" stroke-dashoffset="${-o}" data-tip="${h(g.label)}|${money(g.budget)} approved · ${pc(g.budget / total)}|${countText(g.rows.length, "project")}"/>`;
-        })
-        .join(
-          "",
-        )}<text x="120" y="115" text-anchor="middle" class="mp-donut-number">${compact(total)}</text><text x="120" y="140" text-anchor="middle">approved budget</text></svg><div class="mp-composition-list">${all.map((g) => `<details><summary><span><i style="background:${entityColor(mode === "country" ? "country" : "sector", g.key)}"></i><b>${h(g.label)}</b></span><strong>${pc(g.budget / total)}</strong></summary><div><p>${money(g.budget)} · ${countText(g.rows.length, "project")}</p>${g.rows.map((r) => `<a href="${url(r)}">${h(r.p.code)} <span>${h(r.p.name)}</span></a>`).join("")}</div></details>`).join("")}</div></div><p class="mp-footnote">Shares describe funding allocation, not expenditure or delivery. Expand a group to inspect its projects.</p>`
-    );
+    return chartStudio.composition(R);
   }
+
   function coverage(R) {
     const metrics = [
         ["Actuals", (r) => r.evidence.actual],
@@ -791,58 +729,9 @@ const Masterpiece = (() => {
     return `<tr class="mp-register-detail"><td colspan="${columns.length + 2}"><div><section><span>Source &amp; context</span><b>${h(source)}</b><p>${h(latest?.date || "No dated financial report")} · ${h(r.cn)} · ${h(r.p.funding || "Funding not recorded")}</p>${Object.keys(r.p.adminOverrides || {}).length ? '<p class="mp-adjustment">Current figures include administrator adjustments. Report history remains as recorded.</p>' : ""}</section><section><span>Financial evidence</span><p>Actuals ${e.actual ? "recorded" : "missing"} · commitments ${e.committed ? "recorded" : "missing"} · exposure ${e.exposure ? "recorded" : "missing"}</p><p>${e.forecast ? "Estimate: " + h(BL[r.basis] || r.basis) : "No supported estimate"}${F.k ? " · " + h(F.k) + "% scenario" : ""}</p></section><section><span>Inspect the source</span><a href="${url(r, "finance/reports")}">Financial reports ↗</a><a href="${url(r, "finance/budget")}">Budget &amp; comparisons ↗</a>${projectPmmLink(r.p)}</section></div></td></tr>`;
   }
   function table(R) {
-    const t = settings.table,
-      filtered = filteredRows(R),
-      columns = t.columns,
-      pages = Math.max(1, Math.ceil(filtered.length / t.pageSize));
-    ui.page = Math.min(ui.page, pages - 1);
-    const page = filtered.slice(
-        ui.page * t.pageSize,
-        (ui.page + 1) * t.pageSize,
-      ),
-      filteredIds = new Set(filtered.map((r) => r.p.id));
-    ui.selected = new Set([...ui.selected].filter((id) => filteredIds.has(id)));
-    const selected = filtered.filter((r) => ui.selected.has(r.p.id)),
-      allSelected =
-        page.length > 0 && page.every((r) => ui.selected.has(r.p.id));
-    let lastGroup = "";
-    const rowsHTML = page
-      .map((r) => {
-        let group = "";
-        if (t.group !== "none") {
-          const label =
-            t.group === "country"
-              ? r.cn
-              : tableValue(r, "signal") || "Not assessed";
-          if (label !== lastGroup) {
-            lastGroup = label;
-            const n = filtered.filter(
-              (x) =>
-                (t.group === "country"
-                  ? x.cn
-                  : tableValue(x, "signal") || "Not assessed") === label,
-            ).length;
-            group = `<tr class="mp-register-group"><th colspan="${columns.length + 2}" scope="rowgroup">${h(label)} <span>${countText(n, "project")} in filtered results</span></th></tr>`;
-          }
-        }
-        return (
-          group +
-          `<tr class="${ui.selected.has(r.p.id) ? "mp-selected-row" : ""}"><td class="mp-select-cell"><input type="checkbox" data-mp-row-select="${h(r.p.id)}" aria-label="Select ${h(r.p.name)}" ${ui.selected.has(r.p.id) ? "checked" : ""}></td>${columns.map((key) => `<td class="mp-col-${key}">${tableCell(r, key)}</td>`).join("")}<td class="mp-detail-cell"><button class="mp-icon-button" data-mp="row-detail" data-row="${h(r.p.id)}" aria-expanded="${ui.expanded.has(r.p.id)}" aria-label="${ui.expanded.has(r.p.id) ? "Hide" : "Show"} source details for ${h(r.p.name)}">${icon(ui.expanded.has(r.p.id) ? "up" : "down")}</button></td></tr>` +
-          (ui.expanded.has(r.p.id) ? tableDetail(r, columns) : "")
-        );
-      })
-      .join("");
-    return `<div class="mp-table-root mp-density-${t.density}" data-mp-source="${h(JSON.stringify(R.map((r) => r.p.id)))}"><div class="mp-table-toolbar"><label class="mp-register-search"><span class="sr-only">Search this table</span>${icon("search")}<input id="mp-register-query" type="search" placeholder="Find a project, code or country…" value="${h(ui.query)}" data-mp-table-query></label><div><label class="mp-table-control">Group<select data-mp-table="group" aria-label="Group table rows"><option value="none" ${t.group === "none" ? "selected" : ""}>No grouping</option><option value="country" ${t.group === "country" ? "selected" : ""}>Country</option><option value="signal" ${t.group === "signal" ? "selected" : ""}>Financial signal</option></select></label><details class="mp-columns"><summary class="btn">Columns <span>${columns.length}</span></summary><div>${Object.entries(
-      COLUMNS,
-    )
-      .map(
-        ([key, c]) =>
-          `<label><input type="checkbox" data-mp-column="${key}" ${columns.includes(key) ? "checked" : ""} ${key === "name" ? "disabled" : ""}>${c.label}</label>`,
-      )
-      .join(
-        "",
-      )}</div></details><button class="btn" data-mp="table-density" aria-label="Switch to ${t.density === "compact" ? "comfortable" : "compact"} table density" title="Table density">${icon("sliders")}</button><button class="btn" data-mp="table-export" ${!filtered.length ? "disabled" : ""}>${icon("export")}${selected.length ? "Export selected (" + selected.length + ")" : "Export CSV"}</button></div></div><div class="mp-table-info" role="status"><span>${countText(filtered.length, "project")} ${ui.query ? "match" : "in this view"}${filtered.length !== R.length ? " · " + R.length + " in the workspace selection" : ""}</span><span>${selected.length ? "Selected " + selected.length + " · " : ""}Unknown values stay last when sorting</span></div><p class="mp-mobile-hint">Swipe horizontally for more columns.</p><div class="mp-scroll mp-register-scroll" tabindex="0" role="region" aria-label="Project register, scroll horizontally for more columns"><table class="mp-register"><caption class="sr-only">Project register in EUR. Totals cover all filtered rows, not only this page. Source counts are shown for each total.</caption><thead><tr><th class="mp-select-cell" scope="col"><input type="checkbox" data-mp-page-select aria-label="Select all projects on this page" ${allSelected ? "checked" : ""} ${!page.length ? "disabled" : ""}></th>${columns.map((key) => `<th class="mp-col-${key}" scope="col" aria-sort="${t.sort === key ? (t.direction === 1 ? "ascending" : "descending") : "none"}"><button data-mp="sort" data-column="${key}" aria-label="Sort by ${COLUMNS[key].label}">${COLUMNS[key].label}<span aria-hidden="true">${t.sort === key ? (t.direction === 1 ? "↑" : "↓") : "↕"}</span></button></th>`).join("")}<th scope="col"><span class="sr-only">Source details</span></th></tr></thead><tbody>${rowsHTML || `<tr><td colspan="${columns.length + 2}">${empty("No matching projects", "Try a shorter search or clear the table search.", '<button class="btn" data-mp="clear-table">Clear table search</button>')}</td></tr>`}</tbody><tfoot><tr><td></td>${columns.map((key) => `<td class="mp-col-${key}">${tableTotal(filtered, key)}</td>`).join("")}<td></td></tr></tfoot></table></div><div class="mp-table-pagination"><label>Rows per page<select data-mp-table="pageSize">${[10, 25, 50].map((n) => `<option ${t.pageSize === n ? "selected" : ""}>${n}</option>`).join("")}</select></label><span>${filtered.length ? ui.page * t.pageSize + 1 : 0}–${Math.min((ui.page + 1) * t.pageSize, filtered.length)} of ${filtered.length}</span><div><button class="btn" data-mp="page-prev" ${ui.page === 0 ? "disabled" : ""} aria-label="Previous table page">←</button><span>Page ${ui.page + 1} / ${pages}</span><button class="btn" data-mp="page-next" ${ui.page >= pages - 1 ? "disabled" : ""} aria-label="Next table page">→</button></div></div><p class="mp-footnote">Available = approved − spent − committed. Totals use only recorded values and can have different source counts and dates. A dash means insufficient evidence. Estimates and financial pace do not measure delivery.</p></div>`;
+    return registerStudio.table(R);
   }
+
   function panelBody(id, R) {
     switch (id) {
       case "allocation":
@@ -864,10 +753,7 @@ const Masterpiece = (() => {
       case "map":
         return mapCard(R);
       case "timeline":
-        return (
-          '<p class="mp-mobile-hint">Swipe horizontally to compare dates and budget use.</p>' +
-          timeline(R)
-        );
+        return scheduleStudio.timeline(R);
       case "register":
         return table(R);
       case "findings":
@@ -879,31 +765,46 @@ const Masterpiece = (() => {
         return "";
     }
   }
-  function workspace(R, analysis = false) {
-    if (!R.length)
-      return `<div class="mp-workspace">${empty("No projects match this selection", "Broaden the workspace filters to bring your projects back.", '<button class="btn" data-act="reset">Clear filters</button>')}</div>`;
-    return `<div class="mp-workspace ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${summary(R)}${strip(R, "home")}${toolbar(analysis)}<div class="mp-grid">${
-      visiblePanels()
-        .map((id) => panel(id, panelBody(id, R)))
-        .join("") ||
-      empty(
-        "Your workspace is ready to arrange",
-        "Choose the panels you want to see in this profile.",
-        '<button class="btn" data-mp="manage">Choose panels</button>',
-      )
-    }</div><details class="mp-method"><summary>Understand the figures &amp; how this workspace works</summary><div><section><h3>Financial position</h3><p>Spent is cumulative expenditure. Committed excludes spent. Exposure adds both. Current approved budgets and latest financial reports can have different effective dates. Availability for the whole portfolio is withheld when exposure evidence is incomplete.</p></section><section><h3>Historical reports &amp; estimates</h3><p>The history uses the latest known report per project at each date; snapshots are never added together. Forecasts use the ledger engine and the selected scenario. They are estimates, not revised budgets or promised savings.</p></section><section><h3>Personal workspace</h3><p>Each profile keeps its own panel order, widths, collapsed panels and visibility on this device. Customize to drag a handle, or use Earlier / Later and Alt + arrow keys. Layout export is separate from a portfolio backup.</p></section></div></details></div>`;
+  function workspace(base, analysis = false) {
+    const R = studio.scopeRows(base);
+    return `<div class="mp-workspace studio-shell ${customizing ? "mp-customizing" : ""} mp-workspace-${layout().density}">${studio.brief(R)}${strip(R, "home")}${studio.scope(base, R)}${toolbar(analysis)}${studio.toolbarExtras()}<div class="mp-grid">${
+      !base.length
+        ? empty(
+            "No projects match this selection",
+            "Broaden the workspace filters to bring your projects back.",
+            '<button class="btn" data-act="reset">Clear filters</button>',
+          )
+        : !R.length
+          ? empty(
+              "No projects in this analysis scope",
+              "Clear the country or project selection to return to your portfolio.",
+              '<button class="btn" data-studio-action="clear-scope">Clear analysis scope</button>',
+            )
+          : visiblePanels()
+              .map((id) => panel(id, panelBody(id, R)))
+              .join("") ||
+            empty(
+              "Your workspace is ready to arrange",
+              "Choose the panels you want to see in this profile.",
+              '<button class="btn" data-mp="manage">Choose panels</button>',
+            )
+    }</div><details class="mp-method"><summary>Understand the figures &amp; how this workspace works</summary><div><section><h3>Financial position</h3><p>Spent is cumulative expenditure. Committed excludes spent. Exposure adds both. Current approved budgets and latest reports can have different effective dates. Whole-portfolio availability is withheld when exposure evidence is incomplete.</p></section><section><h3>Historical reports &amp; estimates</h3><p>The history uses the latest known report per project at each date; snapshots are never added together. Interval changes compare matched sources and can include refunds or revisions. Date filtering affects history, not current funding or actuals. Forecasts remain estimates.</p></section><section><h3>Personal workspace</h3><p>Profiles, named workspaces and table views keep arrangements on this device. Customize to move or resize panels; Undo layout reverses the last panel change. Export your layout separately from a portfolio backup.</p></section></div></details></div>`;
   }
+
   function afterRender(route) {
     document
       .querySelector("main")
-      .classList.toggle("mp-page", ["home", "overview"].includes(route));
-    view.querySelectorAll(".mp-table-root").forEach((root) => {
-      const boxes = [...root.querySelectorAll("[data-mp-row-select]")],
-        selected = boxes.filter((e) => e.checked).length,
-        all = root.querySelector("[data-mp-page-select]");
-      if (all) all.indeterminate = selected > 0 && selected < boxes.length;
-    });
+      .classList.toggle(
+        "mp-page",
+        ["home", "overview", "team"].includes(route),
+      );
+    studio.afterRender();
+    chartStudio.afterRender(view);
+    registerStudio.afterRender(view);
+    scheduleStudio.afterRender(view);
+    staffStudio.afterRender(view);
   }
+
   function home(R) {
     return {
       t: "Portfolio overview",
@@ -972,6 +873,8 @@ const Masterpiece = (() => {
   }
   function setPanel(id, key, value) {
     const l = layout();
+    studio.recordLayout();
+    settings.activeWorkspace = "";
     if (key === "width") l.widths[id] = value;
     else {
       l[key] = l[key].filter((x) => x !== id);
@@ -992,6 +895,8 @@ const Masterpiece = (() => {
       announce("Unpin the panel to move it between groups.");
       return;
     }
+    studio.recordLayout();
+    settings.activeWorkspace = "";
     const order = l.order.filter((x) => x !== id),
       at = order.indexOf(target);
     order.splice(at + (after ? 1 : 0), 0, id);
@@ -1088,11 +993,29 @@ const Masterpiece = (() => {
     announce(countText(R.length, "project") + " exported.");
   }
   async function exportChart(format) {
-    const svg = view.querySelector(
+    let svg = view.querySelector(
         `[data-mp-panel="${ui.exportPanel}"] svg.mp-chart`,
       ),
-      status = exportDialog.querySelector(".mp-export-status");
-    if (!svg) return;
+      temporary;
+    const status = exportDialog.querySelector(".mp-export-status");
+    if (!svg) {
+      const markup = chartStudio.exportSVG?.(
+        ui.exportPanel,
+        studio.scopeRows(rows()),
+      );
+      if (!markup) {
+        status.textContent = "No chart is available for this selection.";
+        return;
+      }
+      temporary = document.createElement("div");
+      temporary.className = "mp-panel";
+      temporary.style.cssText =
+        "position:fixed;left:-12000px;top:0;width:900px;visibility:hidden;pointer-events:none";
+      temporary.setAttribute("aria-hidden", "true");
+      temporary.innerHTML = markup;
+      document.body.append(temporary);
+      svg = temporary.querySelector("svg");
+    }
     const buttons = exportDialog.querySelectorAll(
       '[data-mp="export-svg"],[data-mp="export-png"]',
     );
@@ -1131,21 +1054,124 @@ const Masterpiece = (() => {
         copies[i].removeAttribute("data-mp");
         copies[i].removeAttribute("role");
       }
-      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      const ns = "http://www.w3.org/2000/svg",
+        W = box.width + 80,
+        H = box.height + 232;
+      const frame = document.createElementNS(ns, "svg");
+      frame.setAttribute("xmlns", ns);
+      frame.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      frame.setAttribute("width", String(W));
+      frame.setAttribute("height", String(H));
+      const style = getComputedStyle(svg.closest(".mp-panel"));
+      const bg = style.backgroundColor,
+        ink = style.getPropertyValue("--ink").trim() || style.color,
+        muted = style.getPropertyValue("--mute").trim() || ink;
+      const rect = document.createElementNS(ns, "rect");
+      rect.setAttribute("width", String(W));
+      rect.setAttribute("height", String(H));
+      rect.setAttribute("fill", bg);
+      frame.append(rect);
+      const addText = (value, x, y, size = 12, color = muted, bold = false) => {
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", String(x));
+        t.setAttribute("y", String(y));
+        t.setAttribute("fill", color);
+        t.setAttribute("font-family", "Arial, sans-serif");
+        t.setAttribute("font-size", String(size));
+        if (bold) t.setAttribute("font-weight", "700");
+        t.textContent = value;
+        frame.append(t);
+      };
+      const R = studio.scopeRows(rows()),
+        context = chartStudio.exportContext(ui.exportPanel, R);
+      addText(
+        "PORTFOLIO LEDGER  /  " +
+          (DEMO_MODE ? "SAMPLE RECORDS" : "CURRENT PORTFOLIO"),
+        40,
+        30,
+        10,
+        muted,
+        true,
+      );
+      addText(
+        context.title || PANELS[ui.exportPanel].title,
+        40,
+        61,
+        22,
+        ink,
+        true,
+      );
+      addText(context.scope || `${R.length} projects · EUR`, 40, 85, 12, ink);
+      addText(
+        (context.date || "Current records") + " · " + (context.coverage || ""),
+        40,
+        106,
+        11,
+        muted,
+      );
+      clone.setAttribute("x", "40");
+      clone.setAttribute("y", "125");
       clone.setAttribute("width", String(box.width));
       clone.setAttribute("height", String(box.height));
-      const back = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "rect",
+      clone.style.removeProperty("aspect-ratio");
+      frame.append(clone);
+      const legendY = box.height + 154;
+      const keys =
+        ui.exportPanel === "trend"
+          ? [
+              ["Spent", "--mp-spent"],
+              ["Spent + committed", "--mp-committed"],
+            ].filter(
+              ([label]) =>
+                settings.charts.series === "both" ||
+                (settings.charts.series === "spent"
+                  ? label === "Spent"
+                  : label !== "Spent"),
+            )
+          : ui.exportPanel === "allocation"
+            ? [
+                ["Approved", "--studio-budget"],
+                ["Spent", "--mp-spent"],
+                ["Committed", "--mp-committed"],
+                ["Available", "--mp-available"],
+              ]
+            : [];
+      keys.forEach(([label, token], i) => {
+        const x = 40 + (i * (W - 80)) / Math.max(1, keys.length),
+          c = document.createElementNS(ns, "rect");
+        c.setAttribute("x", String(x));
+        c.setAttribute("y", String(legendY - 9));
+        c.setAttribute("width", "8");
+        c.setAttribute("height", "8");
+        c.setAttribute("rx", "2");
+        c.setAttribute("fill", style.getPropertyValue(token).trim() || ink);
+        frame.append(c);
+        addText(label, x + 14, legendY, 10);
+      });
+      const maxChars = Math.max(42, Math.floor((W - 80) / 6.2)),
+        words = String(
+          context.caption ||
+            "Source coverage records evidence availability, not delivery completion.",
+        ).split(/\s+/),
+        lines = [];
+      let line = "";
+      for (const word of words) {
+        if ((line + " " + word).length > maxChars && line) {
+          lines.push(line);
+          line = word;
+        } else line += (line ? " " : "") + word;
+      }
+      if (line) lines.push(line);
+      lines
+        .slice(0, 3)
+        .forEach((text, i) => addText(text, 40, legendY + 23 + i * 15, 11));
+      addText(
+        `EUR · Exported ${TODAY()}${F.k ? ` · Forecast scenario ${F.k > 0 ? "+" : ""}${F.k}%` : ""} · Financial pace does not measure delivery.`,
+        40,
+        H - 14,
+        10,
       );
-      back.setAttribute("width", String(box.width));
-      back.setAttribute("height", String(box.height));
-      back.setAttribute(
-        "fill",
-        getComputedStyle(svg.closest(".mp-panel")).backgroundColor,
-      );
-      clone.insertBefore(back, clone.firstChild);
-      const xml = new XMLSerializer().serializeToString(clone),
+      const xml = new XMLSerializer().serializeToString(frame),
         blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" }),
         name = "portfolio-" + ui.exportPanel + "-" + TODAY();
       if (format === "svg") download2(name + ".svg", blob);
@@ -1162,7 +1188,7 @@ const Masterpiece = (() => {
         });
         const canvas = document.createElement("canvas");
         canvas.width = 1800;
-        canvas.height = Math.round((1800 * box.height) / box.width);
+        canvas.height = Math.round((1800 * H) / W);
         canvas
           .getContext("2d")
           .drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -1177,11 +1203,14 @@ const Masterpiece = (() => {
       status.textContent = error.message || "Chart export failed. Try SVG.";
     } finally {
       if (objectURL) URL.revokeObjectURL(objectURL);
+      temporary?.remove();
       buttons.forEach((b) => (b.disabled = false));
     }
   }
   function reveal(id) {
     const l = layout();
+    studio.recordLayout();
+    settings.activeWorkspace = "";
     l.hidden = l.hidden.filter((x) => x !== id);
     l.collapsed = l.collapsed.filter((x) => x !== id);
     persist();
@@ -1207,6 +1236,7 @@ const Masterpiece = (() => {
       case "profile":
         if (!own(PROFILES, button.dataset.profile)) return;
         settings.profile = button.dataset.profile;
+        settings.activeWorkspace = "";
         ui.page = 0;
         persist();
         render();
@@ -1253,7 +1283,9 @@ const Masterpiece = (() => {
         return;
       case "pick-date":
         ui.pickedDate = button.dataset.value;
-        announce(button.getAttribute("aria-label") || "Report date " + ui.pickedDate);
+        announce(
+          button.getAttribute("aria-label") || "Report date " + ui.pickedDate,
+        );
         render();
         view
           .querySelector(
@@ -1354,6 +1386,8 @@ const Masterpiece = (() => {
         resetDialog.close();
         return;
       case "confirm-reset":
+        studio.recordLayout();
+        settings.activeWorkspace = "";
         settings.profiles[settings.profile] = defaultLayout(settings.profile);
         persist();
         resetDialog.close();
@@ -1392,6 +1426,25 @@ const Masterpiece = (() => {
         )
           menu.open = false;
       }
+      const target = event.target;
+      const rsButton =
+        target.closest(".rs-studio") &&
+        target.closest("[data-rs-action],[data-mp]");
+      const csButton = target.closest("[data-cs-action]");
+      const ssButton = target.closest("[data-ss-action]");
+      const psButton = target.closest("[data-ps-action]");
+      const shellButton = target.closest("[data-studio-action]");
+      if (
+        (rsButton && registerStudio.handleClick(rsButton, event)) ||
+        (csButton && chartStudio.handleClick(csButton, event)) ||
+        (ssButton && scheduleStudio.handleClick(ssButton, event)) ||
+        (psButton && staffStudio.handleClick(psButton, event)) ||
+        (shellButton && studio.handleClick(shellButton, event))
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
       const button = event.target.closest("[data-mp]");
       if (!button) return;
       event.preventDefault();
@@ -1403,6 +1456,16 @@ const Masterpiece = (() => {
   document.addEventListener("change", (event) => {
     const el = event.target,
       root = el.closest(".mp-table-root");
+    if (
+      registerStudio.handleChange(el, event) ||
+      chartStudio.handleChange(el, event) ||
+      scheduleStudio.handleChange(el, event) ||
+      staffStudio.handleChange(el, event) ||
+      studio.handleChange(el, event)
+    ) {
+      event.stopImmediatePropagation();
+      return;
+    }
     if (el.dataset.mpWidth) {
       if (own(PANELS, el.dataset.mpWidth) && WIDTHS.includes(el.value))
         setPanel(el.dataset.mpWidth, "width", el.value);
@@ -1411,6 +1474,8 @@ const Masterpiece = (() => {
     if (el.dataset.mpVisibility) {
       const id = el.dataset.mpVisibility;
       if (!own(PANELS, id)) return;
+      studio.recordLayout();
+      settings.activeWorkspace = "";
       const hidden = layout().hidden.filter((x) => x !== id);
       if (!el.checked) hidden.push(id);
       layout().hidden = hidden;
@@ -1419,6 +1484,8 @@ const Masterpiece = (() => {
       return;
     }
     if (el.hasAttribute("data-mp-density")) {
+      studio.recordLayout();
+      settings.activeWorkspace = "";
       layout().density = el.value === "compact" ? "compact" : "comfortable";
       persist();
       render();
@@ -1485,6 +1552,13 @@ const Masterpiece = (() => {
   });
   view.addEventListener("input", (event) => {
     const el = event.target;
+    if (
+      registerStudio.handleInput(el, event) ||
+      staffStudio.handleInput(el, event)
+    ) {
+      event.stopImmediatePropagation();
+      return;
+    }
     if (el.hasAttribute("data-mp-table-query")) {
       ui.query = el.value;
       ui.page = 0;
@@ -1660,8 +1734,16 @@ const Masterpiece = (() => {
   window.addEventListener("pointercancel", (event) => {
     if (ui.drag?.pointer === event.pointerId) endDrag(true);
   });
-  return { home, analytics, table, afterRender };
+  return {
+    home,
+    analytics,
+    table,
+    afterRender,
+    staff: (R) => staffStudio.page(R),
+    scopeRows: (R) => studio.scopeRows(R),
+  };
 })();
 V.home = () => Masterpiece.home(rows());
 V.overview = () => Masterpiece.analytics(rows());
+V.team = () => Masterpiece.staff(rows());
 table = (R) => Masterpiece.table(R);

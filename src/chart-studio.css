@@ -1,0 +1,850 @@
+/* Chart studio: shared visual grammar, mobile controls and evidence context. */
+.cs-studio-controls {
+  align-items: center;
+  gap: 12px;
+}
+.cs-studio-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cs-studio-controls label {
+  margin-left: auto;
+}
+.cs-toggle button {
+  min-height: 34px;
+}
+.cs-series-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 12px;
+}
+.cs-series-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 35px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mute);
+  font-size: 12px;
+}
+.cs-series-controls button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--soft);
+  border-color: var(--line);
+}
+.cs-series-controls button[aria-pressed="false"] .cs-series-dot {
+  opacity: 0.35;
+}
+.cs-series-controls > span {
+  margin-left: auto;
+  color: var(--mute);
+  font-size: 11px;
+}
+.cs-series-dot {
+  display: block;
+  width: 17px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--mp-spent);
+}
+.cs-series-dot.exposure {
+  background: repeating-linear-gradient(
+    to right,
+    var(--mp-committed) 0 5px,
+    transparent 5px 8px
+  );
+}
+.cs-date-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.cs-date-toolbar label {
+  display: grid;
+  gap: 5px;
+  flex: 1 1 130px;
+  color: var(--mute);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+.cs-date-toolbar input {
+  width: 100%;
+  min-height: 35px;
+  padding: 6px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.cs-zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.cs-zoom button {
+  min-height: 35px;
+  min-width: 35px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--ink);
+  padding: 5px 10px;
+}
+.cs-zoom button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cs-zoom button:last-child {
+  font-size: 11px;
+}
+.cs-navigator {
+  margin: 10px 0 8px;
+  padding: 9px 11px 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.cs-navigator > svg {
+  display: block;
+  width: 100%;
+  height: 36px;
+  overflow: visible;
+}
+.cs-range-handles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 5px;
+}
+.cs-range-handles label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-range-handles input {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--mp-spent);
+  cursor: ew-resize;
+  min-height: 27px;
+  border: 0;
+  background: transparent;
+}
+.cs-navigator p {
+  margin: 5px 0;
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-navigator p span {
+  margin-left: 8px;
+  opacity: 0.85;
+}
+.cs-history-chart {
+  height: auto !important;
+  aspect-ratio: 760/290;
+  min-height: 0 !important;
+  margin-top: 9px;
+}
+.cs-history-chart text,
+.cs-waterfall-chart text {
+  font-size: 11px;
+  fill: var(--mute);
+}
+.cs-history-chart .cs-axis-unit,
+.cs-waterfall-chart .cs-axis-unit {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.cs-zero-line {
+  stroke: var(--mute);
+  stroke-width: 1;
+  opacity: 0.65;
+}
+.cs-point {
+  cursor: pointer;
+  outline: none;
+}
+.cs-point:focus circle:last-child {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.cs-point:focus .cs-column {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.cs-point:hover .cs-column {
+  opacity: 1;
+}
+.cs-history-chart .mp-selection-line {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.4;
+}
+.mp-trend-readout > div > span {
+  font-size: 10px;
+  color: var(--mute);
+  margin-top: 3px;
+  display: block;
+}
+.cs-signed-adjustment {
+  color: var(--mp-spent) !important;
+}
+.cs-comparison-note {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--mute);
+  padding: 10px 12px;
+  border-left: 2px solid var(--mp-spent);
+  background: var(--soft);
+  margin: 12px 0;
+}
+.cs-comparison-note > b {
+  color: var(--ink);
+}
+.cs-source-disclosure {
+  margin: 11px 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.cs-source-disclosure > summary {
+  padding: 10px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: list-item;
+  list-style-position: inside;
+  color: var(--ink);
+}
+.cs-source-disclosure > summary span {
+  font-size: 10px;
+  color: var(--mute);
+  float: right;
+}
+.cs-source-list {
+  border-top: 1px solid var(--line);
+  padding: 0 12px;
+}
+.cs-source-list article {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+.cs-source-list article:last-child {
+  border-bottom: 0;
+}
+.cs-source-list article > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.cs-source-list b {
+  font-size: 12px;
+  color: var(--ink);
+}
+.cs-source-list span {
+  font-size: 11px;
+  color: var(--mute);
+}
+.cs-source-list small {
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-source-list dl {
+  margin: 0;
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.cs-source-list dl > div {
+  display: grid;
+  gap: 4px;
+}
+.cs-source-list dt {
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-source-list dd {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.cs-source-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cs-source-links button,
+.cs-source-links a {
+  font-size: 11px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--brand);
+  text-align: left;
+}
+.mp-data-disclosure table button {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--brand);
+  font: inherit;
+  text-align: left;
+}
+.mp-data-disclosure table td small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-selected-data {
+  background: var(--soft);
+}
+.cs-current-caption b {
+  color: var(--ink);
+}
+.cs-bridge-summary {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1.3fr;
+  gap: 14px;
+  margin: 19px 0 12px;
+}
+.cs-bridge-summary > div {
+  display: grid;
+  gap: 7px;
+}
+.cs-bridge-summary span {
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-bridge-summary b {
+  font-size: 23px;
+  line-height: 1.1;
+  font-family: var(--serif);
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cs-bridge-summary small {
+  font-size: 11px;
+  font-family: var(--sans);
+  font-weight: 400;
+  color: var(--mute);
+}
+.cs-waterfall-chart {
+  height: auto !important;
+  aspect-ratio: 760/295;
+  min-height: 0 !important;
+}
+.cs-waterfall-chart .cs-bridge-value {
+  font-size: 12px;
+  font-weight: 650;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cs-bridge-connector {
+  stroke: var(--mute);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.cs-comparison-key {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+  color: var(--mute);
+  font-size: 10px;
+}
+.cs-comparison-key span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cs-comparison-key i {
+  width: 18px;
+  height: 4px;
+  background: var(--mp-spent);
+  display: block;
+  border-radius: 2px;
+}
+.cs-comparison-key .exposure {
+  background: var(--mp-committed);
+}
+.cs-comparison-key .budget {
+  width: 2px;
+  height: 11px;
+  background: var(--studio-budget, var(--brand));
+  border-radius: 0;
+}
+.cs-project-comparison {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0;
+}
+.cs-project-comparison article {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.cs-project-comparison article:last-child {
+  border: 0;
+  padding-bottom: 0;
+}
+.cs-project-comparison header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.cs-project-comparison header button {
+  background: transparent;
+  border: 0;
+  display: flex;
+  gap: 9px;
+  text-align: left;
+  align-items: center;
+  padding: 0;
+  color: var(--ink);
+  min-height: 35px;
+}
+.cs-project-comparison header button > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.cs-project-comparison header button > span {
+  display: grid;
+  gap: 3px;
+}
+.cs-project-comparison b {
+  font-size: 12px;
+}
+.cs-project-comparison small {
+  font-size: 10px;
+  color: var(--mute);
+}
+.cs-project-comparison strong {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cs-comparison-track {
+  position: relative;
+  height: 24px;
+  background: var(--soft);
+  border-radius: 4px;
+  overflow: visible;
+}
+.cs-comparison-track .cs-comparison-zero {
+  position: absolute;
+  top: 0;
+  height: 24px;
+  width: 1px;
+  background: var(--line);
+  z-index: 2;
+}
+.cs-comparison-bar {
+  position: absolute;
+  height: 9px;
+  top: 4px;
+  border-radius: 2px;
+  background: var(--mp-committed);
+  opacity: 0.5;
+}
+.cs-comparison-bar.spent {
+  top: 12px;
+  background: var(--mp-spent);
+  opacity: 1;
+}
+.cs-comparison-bar.cs-negative-bar {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    rgba(255, 255, 255, 0.25) 4px 6px
+  );
+}
+.cs-budget-tick {
+  position: absolute;
+  width: 2px;
+  height: 30px;
+  top: -3px;
+  background: var(--studio-budget, var(--brand));
+  z-index: 3;
+}
+.cs-comparison-unknown {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 5px,
+    var(--line) 5px 6px
+  );
+  border-radius: 4px;
+  opacity: 0.7;
+}
+.cs-comparison-track > span {
+  position: absolute;
+  inset: 0;
+  font-size: 10px;
+  padding: 5px 7px;
+  color: var(--mute);
+}
+.cs-project-comparison footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10px;
+  margin-top: 7px;
+  color: var(--mute);
+}
+.cs-project-comparison footer a {
+  color: var(--brand);
+}
+.cs-pace-chart {
+  height: auto !important;
+  aspect-ratio: 660/310;
+  min-height: 0 !important;
+}
+.cs-scatter-point {
+  cursor: pointer;
+  outline: none;
+}
+.cs-scatter-point:hover circle:nth-child(2),
+.cs-scatter-point:focus circle:nth-child(2) {
+  stroke-width: 3;
+  fill-opacity: 0.35;
+}
+.cs-ring-segment[data-cs-action] {
+  cursor: pointer;
+  outline: none;
+  pointer-events: stroke;
+}
+.cs-ring-segment[data-cs-action]:hover,
+.cs-ring-segment[data-cs-action]:focus {
+  stroke-width: 25;
+}
+.cs-composition {
+  gap: 20px !important;
+}
+.cs-composition-ranking {
+  flex: 1;
+  min-width: 180px;
+  display: grid;
+  gap: 15px;
+}
+.cs-composition-ranking article > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+.cs-composition-ranking button,
+.cs-composition-ranking article > div > b {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 550;
+}
+.cs-composition-ranking article > div > strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.cs-composition-ranking i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.cs-composition-track {
+  height: 4px;
+  display: block;
+  background: var(--soft);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 7px 0;
+}
+.cs-composition-track i {
+  height: 4px;
+  display: block;
+  border-radius: 2px;
+}
+.cs-composition-ranking details > summary {
+  font-size: 10px;
+  color: var(--mute);
+  cursor: pointer;
+  list-style-position: inside;
+}
+.cs-composition-project {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 9px;
+}
+.cs-composition-project button {
+  font-size: 11px;
+}
+.cs-composition-project a {
+  font-size: 10px;
+  color: var(--mute);
+  white-space: nowrap;
+}
+.cs-composition-chart {
+  flex: none;
+  max-width: 240px;
+  width: 45% !important;
+  min-width: 150px;
+}
+.cs-composition-chart text {
+  pointer-events: none;
+}
+@media (max-width: 1250px) {
+  .cs-bridge-summary b {
+    font-size: 20px;
+  }
+  .cs-composition {
+    gap: 12px !important;
+  }
+  .cs-composition-ranking {
+    min-width: 150px;
+  }
+  .cs-history-chart text {
+    font-size: 12px;
+  }
+}
+@media (max-width: 720px) {
+  .cs-studio-controls {
+    gap: 10px;
+  }
+  .cs-studio-controls > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cs-studio-controls .cs-toggle button {
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+  .cs-studio-controls label {
+    margin-left: 0;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cs-studio-controls select {
+    max-width: 160px;
+  }
+  .cs-series-controls > span {
+    width: 100%;
+    margin-left: 0;
+    font-size: 10px;
+  }
+  .cs-date-toolbar {
+    gap: 8px;
+    padding: 10px;
+  }
+  .cs-date-toolbar label {
+    flex-basis: calc(50% - 5px);
+    min-width: 0;
+    font-size: 10px;
+  }
+  .cs-date-toolbar input {
+    font-size: 11px;
+    min-width: 0;
+  }
+  .cs-zoom {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .cs-zoom button {
+    min-height: 34px;
+  }
+  .cs-navigator p span {
+    display: block;
+    margin: 4px 0 0;
+  }
+  .cs-history-chart {
+    margin-top: 13px;
+    overflow: visible;
+  }
+  .cs-history-chart text,
+  .cs-waterfall-chart text {
+    font-size: 15px;
+  }
+  .cs-history-chart .cs-axis-unit,
+  .cs-waterfall-chart .cs-axis-unit {
+    font-size: 12px;
+  }
+  .cs-range-handles {
+    gap: 14px;
+  }
+  .cs-range-handles input {
+    min-height: 34px;
+  }
+  .cs-comparison-note {
+    font-size: 10px;
+    padding: 9px 10px;
+  }
+  .cs-bridge-summary {
+    gap: 10px;
+    margin-top: 17px;
+  }
+  .cs-bridge-summary span {
+    font-size: 9px;
+    line-height: 1.4;
+  }
+  .cs-bridge-summary b {
+    font-size: 18px;
+  }
+  .cs-bridge-summary small {
+    display: block;
+    font-size: 9px;
+    margin-top: 5px;
+  }
+  .cs-waterfall-chart .cs-bridge-value {
+    font-size: 15px;
+  }
+  .cs-source-links {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cs-source-list dl {
+    gap: 15px;
+  }
+  .cs-composition {
+    flex-direction: column !important;
+  }
+  .cs-composition-chart {
+    width: 100% !important;
+    max-width: 220px;
+    align-self: center;
+  }
+  .cs-composition-ranking {
+    width: 100%;
+    min-width: 0;
+    gap: 17px;
+  }
+  .cs-composition-ranking button {
+    min-height: 32px;
+  }
+  .cs-composition-ranking details > summary {
+    font-size: 11px;
+    min-height: 25px;
+  }
+  .cs-pace-chart text {
+    font-size: 14px;
+  }
+  .cs-pace-chart .mp-bubble-label {
+    font-size: 10px;
+  }
+  .cs-pace-chart .mp-annotation {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-ring-segment,
+  .cs-scatter-point,
+  .cs-column {
+    transition: none !important;
+  }
+}
+@media (max-width: 720px) {
+  .cs-studio-controls .cs-toggle button,
+  .cs-series-controls button,
+  .cs-zoom button,
+  .cs-date-toolbar input {
+    min-height: 44px;
+  }
+  .cs-series-controls button {
+    font-size: 12px;
+  }
+  .cs-range-handles input {
+    min-height: 44px;
+  }
+  .cs-source-links button,
+  .cs-source-links a,
+  .cs-composition-project button,
+  .cs-composition-project a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .cs-composition-ranking article > div:first-child button {
+    min-height: 44px;
+  }
+  .cs-source-list span,
+  .cs-source-list small,
+  .cs-composition-ranking details > summary,
+  .cs-project-comparison footer {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .cs-source-list dt {
+    font-size: 11px;
+  }
+  .cs-comparison-note {
+    font-size: 12px;
+  }
+  .cs-composition-ranking button,
+  .cs-source-links button,
+  .cs-source-links a {
+    font-size: 12px;
+  }
+}
+@media print {
+  .cs-date-toolbar,
+  .cs-navigator,
+  .cs-series-controls,
+  .cs-studio-controls {
+    display: none !important;
+  }
+  .cs-history-chart,
+  .cs-waterfall-chart,
+  .cs-pace-chart {
+    break-inside: avoid;
+  }
+  .cs-source-disclosure:not([open]) {
+    display: none;
+  }
+  .cs-comparison-note {
+    background: transparent;
+    color: #444;
+  }
+  .cs-current-caption {
+    font-size: 9px;
+  }
+  .cs-bridge-summary b {
+    color: #111;
+  }
+  .cs-composition-ranking {
+    break-inside: avoid;
+  }
+}

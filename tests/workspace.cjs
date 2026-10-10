@@ -150,13 +150,11 @@ async function main() {
     await page.locator('[data-mp="confirm-reset"]').click();
     assert.deepEqual(await order(page), initial);
     await tools(page, "import-layout");
-    await page
-      .locator("#mp-layout-import")
-      .setInputFiles({
-        name: "layout.json",
-        mimeType: "application/json",
-        buffer: layoutFile,
-      });
+    await page.locator("#mp-layout-import").setInputFiles({
+      name: "layout.json",
+      mimeType: "application/json",
+      buffer: layoutFile,
+    });
     await page.waitForFunction(
       (key) =>
         JSON.parse(localStorage.getItem(key)).profiles.overview.widths
@@ -228,7 +226,9 @@ async function main() {
       svg.includes("<svg") && svg.includes("<title") && svg.includes("<desc"),
     );
     assert.ok(!svg.includes('url("http') && !svg.includes("url(&quot;http"));
-    assert.ok(/stop-color: rgb/.test(svg));
+    assert.ok(/(?:fill|stroke): rgb/.test(svg));
+    assert.match(svg, /PORTFOLIO LEDGER/);
+    assert.match(svg, /Exported/);
     const png = await download(page, () =>
       page.locator('[data-mp="export-png"]').click(),
     );
@@ -249,8 +249,42 @@ async function main() {
       assert.equal(image.readUInt32BE(16), 1800);
       await page.keyboard.press("Escape");
     }
+    if (!(await page.locator("#mp-body-allocation").isVisible()))
+      await page
+        .locator('[data-mp="collapse"][data-panel="allocation"]')
+        .click();
+    for (const mode of ["waterfall", "coverage"]) {
+      await page
+        .locator(
+          `[data-cs-action="option"][data-cs-key="bridge"][data-cs-value="${mode}"]`,
+        )
+        .click();
+      await page
+        .locator('[data-mp="chart-export"][data-panel="allocation"]')
+        .click();
+      const exported = (
+        await download(page, () =>
+          page.locator('[data-mp="export-svg"]').click(),
+        )
+      ).toString();
+      assert.match(exported, /PORTFOLIO LEDGER/);
+      if (mode === "coverage") {
+        assert.match(exported, /cs-project-comparison-export/);
+        assert.match(exported, /TR-LANG/);
+      }
+      const image = await download(page, () =>
+        page.locator('[data-mp="export-png"]').click(),
+      );
+      assert.equal(image.readUInt32BE(16), 1800);
+      await page.keyboard.press("Escape");
+    }
+    assert.equal(
+      await page.locator('.mp-panel[aria-hidden="true"]').count(),
+      0,
+      "Temporary export hosts are removed",
+    );
     pass(
-      "Trend, scatter and composition export as real 1800px PNGs; SVG retains theme and gradients",
+      "History, pace, composition, waterfall and project comparisons export real 1800px PNGs and source-aware SVGs",
     );
 
     await page.locator(".mp-columns summary").click();
@@ -293,6 +327,7 @@ async function main() {
         .evaluate((e) => e.indeterminate),
       true,
     );
+    await page.locator(".rs-export-menu summary").click();
     const csv = (
       await download(page, () =>
         page.locator('[data-mp="table-export"]').click(),
@@ -402,6 +437,7 @@ async function main() {
       await missingRow.locator(".mp-col-spent").textContent(),
       /Not recorded/,
     );
+    await page.locator(".rs-export-menu summary").click();
     const fixtureCSV = (
       await download(page, () =>
         page.locator('[data-mp="table-export"]').click(),
@@ -425,29 +461,46 @@ async function main() {
       { key: PORTFOLIO, data: fixture },
     );
     await page.reload();
+    await page
+      .locator(
+        '[data-cs-action="option"][data-cs-key="bridge"][data-cs-value="coverage"]',
+      )
+      .click();
     assert.match(
-      await page.locator(".mp-allocation-list").textContent(),
+      await page.locator(".cs-project-comparison").textContent(),
       /Signed adjustment/,
     );
     assert.match(
-      await page.locator(".mp-allocation-list").textContent(),
+      await page.locator(".cs-project-comparison").textContent(),
       /€200 over budget/,
     );
     await page
-      .locator('[data-mp="allocation-scale"][data-value="percent"]')
+      .locator(
+        '[data-cs-action="option"][data-cs-key="allocation"][data-cs-value="percent"]',
+      )
       .click();
     assert.ok(
-      await page
-        .locator(".mp-allocation-track")
-        .evaluateAll((tracks) =>
-          tracks.every(
-            (track) =>
-              [...track.querySelectorAll("i")].reduce(
-                (sum, bar) => sum + parseFloat(bar.style.width),
-                0,
-              ) <= 100.01,
-          ),
+      await page.locator(".cs-comparison-track").evaluateAll((tracks) =>
+        tracks.every(
+          (track) =>
+            [...track.querySelectorAll(".cs-comparison-bar")].every((bar) => {
+              const left = parseFloat(bar.style.left),
+                width = parseFloat(bar.style.width);
+              return (
+                Number.isFinite(left) &&
+                Number.isFinite(width) &&
+                left >= 0 &&
+                width >= 0 &&
+                left + width <= 100.41
+              );
+            }) &&
+            [...track.querySelectorAll(".cs-budget-tick")].every(
+              (tick) =>
+                parseFloat(tick.style.left) >= 0 &&
+                parseFloat(tick.style.left) <= 100,
+            ),
         ),
+      ),
     );
     await page.locator('[data-mp="manage"]').click();
     for (const box of await page

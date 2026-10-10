@@ -144,9 +144,12 @@ async function main() {
     }
     await page.locator('#theme').click();
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
-    const colors = await page.locator('.country-premium-name h3').first().evaluate(e => ({
-      ink: getComputedStyle(e).color, bg: getComputedStyle(e.closest('.country-premium-head')).backgroundColor
-    }));
+    await page.locator('.country-premium-name h3').first().waitFor();
+    const colors = await page.evaluate(() => {
+      const e=document.querySelector('.country-premium-name h3');
+      return {ink:getComputedStyle(e).color,bg:getComputedStyle(e.closest('.country-premium-head')).backgroundColor};
+    });
+    assert.ok(colors.ink && colors.bg, 'Country colors resolve on the current rendered view');
     assert.notEqual(colors.ink, colors.bg);
     for (const route of ['home', 'overview', 'projects', 'monitoring', 'countries']) await go(page, route);
     await page.reload();
