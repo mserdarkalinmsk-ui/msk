@@ -1,5 +1,12 @@
 # Portfolio Ledger
 
+**Uploaded Ledger 40, with its original structure preserved:** use
+[portfolio-ledger-professional.html](portfolio-ledger-professional.html) or the
+[dedicated ZIP](downloads/portfolio-ledger-professional.zip). This separate variant
+adds optional styling, performance and table/chart tools to the exact uploaded
+file. See [its architecture and validation](docs/PRESERVED_STRUCTURE.md).
+The `index.html` described below is the earlier six-workspace version.
+
 A self-contained, offline portfolio workspace. Six connected workspaces share one
 selection and one design system while answering different questions. Project
 records, document readers and source-aware financial calculations are retained.
