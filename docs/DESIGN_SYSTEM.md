@@ -1,86 +1,95 @@
-# Portfolio Intelligence Studio
+# Portfolio Ledger design system
 
-The studio is a working environment for portfolio evidence. Its hierarchy is
-scope → current financial position → comparison → individual source records.
-Panels, charts and tables share one visual system without sharing the same
-interaction model.
+The shared application frame supports six different jobs. Home is an operational
+summary, Projects is a directory, Finance is a financial investigation workspace,
+Intelligence is an explainable follow-up queue, People distinguishes source names
+from assignments/contracts, and Planning presents recorded dates and schedules.
+The same components, selection, type scale and financial meanings connect them.
 
-## Financial colour semantics
+## Financial and evidence colors
 
-| Meaning                       | Default light colour | Paired explanation                              |
-| ----------------------------- | -------------------- | ----------------------------------------------- |
-| Approved budget               | Cobalt `#3058bd`     | Budget label or budget reference line           |
-| Cumulative expenditure        | Teal `#007f82`       | Spent label or solid series                     |
-| Outstanding commitments       | Amber `#a26207`      | Committed label; expenditure excluded           |
-| Forecast                      | Violet `#7855c8`     | Estimated label, assumptions and forecast basis |
-| Attention or adverse variance | Coral `#bc434f`      | Explicit status and numerical difference        |
-| Unknown or unavailable        | Slate `#647085`      | Missing label, dash or hatching                 |
+| Meaning                        | Token                | Color family |
+| ------------------------------ | -------------------- | ------------ |
+| Approved budget                | `--studio-budget`    | Blue         |
+| Cumulative expenditure         | `--studio-spent`     | Teal         |
+| Commitments / exposure series  | `--studio-committed` | Amber        |
+| Supported forecast             | `--studio-forecast`  | Purple       |
+| Risk / urgent condition        | `--studio-risk`      | Coral        |
+| Unknown / neutral availability | `--studio-unknown`   | Grey         |
 
-Project and country identity colours remain separate from financial meaning.
-A colour alone must never establish an assessment. Zero is a known numerical
-value; missing evidence is a different state. Positive variance can use the
-positive colour only when the calculation's sign convention is stated.
+Palette shades vary; meanings do not. Light/dark and contrast variants keep the
+same families. Shape, text and coverage labels supplement color. Unspent funds
+and positive forecast variance are neutral unless a specific interpretation is
+stated. Source availability does not establish verification or delivery. Zero is
+numerical evidence; a dash means insufficient evidence.
 
-## Palettes and themes
+## Scale and surfaces
 
-- **Atelier:** neutral canvas, white surfaces, cobalt accents and a restrained
-  evidence narrative using the same surface as the surrounding panels.
-- **Executive:** conservative blue-grey framework with identical semantics.
-- **Contrast:** firm borders, stronger foregrounds and fewer surface effects.
+`atelier.css` defines 4/8/12/16/24/32px spacing tokens. Main text uses the local
+system sans serif stack; financial numbers use tabular numerals. Body and primary
+controls use 14–15px, analytical table cells 13px, source notes 11–12px and compact
+metadata 10–11px. Headings are restrained 18–30px with stronger weight; the Home
+portfolio statement is the only larger display element.
 
-All palettes support the ledger's light and dark themes. The palette belongs to
-workspace preferences; portfolio records do not depend on it. Feature modules
-use `--studio-*` semantic tokens or their `--mp-*` compatibility aliases.
+A neutral canvas, thin dividers and white/dark surfaces establish hierarchy.
+Headers and shared selection stay stable across routes. Group lists, source
+catalogs, agenda rows and toolbars use dividers; containers are reserved for
+meaningful sections and comparisons. No quantitative graphic uses decorative 3D.
+Legacy workflow components inherit the frame and financial aliases.
 
-The application frame applies to every route, including Intelligence, Projects,
-country pages and individual project tabs. Navigation width, background, type
-and header spacing remain stable when moving between them. `app-design.css`
-provides this shared layer after feature styles.
+## Reusable components
 
-## Typography and density
+`atelier-pages.js` uses shared section headers, statistics, badges, tabs,
+selection/search, empty states, pagination, evidence drawer and review/import
+forms. Specialized charts, register, schedule and assignments remain separate
+feature modules. `LedgerHost` provides explicit render/scope/model/import-preview
+hooks; `ledger-domain.js` supplies financial coverage, observation/source
+projections, cache invalidation and additive preferences/review validation.
 
-Use the local system font stack and tabular, lining numbers. Workspace headings
-use a sans serif family; financial values have stronger weight and restrained
-letter spacing. Body, controls and source notes are typically 12–13 CSS pixels;
-decorative labels may be 10 pixels. SVG labels must be checked at their actual
-rendered size, especially inside smaller panels. Compact density reduces
-spacing before reducing text size.
+Portfolio selection follows the six workspaces. Local table/assignment/event
+filters show matching counts and refine that selection. Project/country detail
+links establish their own drill-down context. Report history windows do not
+silently change current figures. Country and project source families remain
+separate in comparisons and are not double-counted.
 
-Numbers align at the decimal edge where practical. Tables distinguish
-selection, hover, grouping, totals and unknown values. Column identity is
-stable while its width, position or visibility changes. Mobile views scroll
-individual data surfaces and retain the page's viewport width.
+## Task composition
 
-## Effects and interaction
+Home has four summary figures and four arrangeable sections: diverse project
+priorities, compact funding position, next recorded dates, recent changes.
+Finance places the bridge/composition, history or forecasts in distinct views;
+advanced controls and the 12-panel custom studio remain available on demand.
+Projects starts with six columns and task presets. Intelligence exposes reason,
+source, date, owner, next step and review state without a synthetic health score.
 
-Effects explain state: selected controls, focused objects, source disclosure,
-drag destinations and a brief route entrance. Financial graphics avoid
-decorative 3D, gradients on quantitative bars and permanent animation. Panels
-do not move on hover. Keyboard focus remains visible, and reduced-motion
-preferences disable the studio's animations and transitions.
+Reviewed is separate from resolved. If a recorded resolution still has an active
+source condition, the interface says so. If source evidence changes, its review
+fingerprint no longer marks the changed condition reviewed. Follow-ups are saved
+with portfolio records and backed up; device layout preferences are separate.
 
-## Composition
+## Mobile, keyboard and effects
 
-The preserved overview layout pairs allocation and historical comparison at
-half width. For a history-focused layout, expand the historical comparison to
-full width. Funding composition can pair a wide allocation panel with a
-third-width budget bridge. The project register uses full width. Context and
-evidence panels follow the task. Users can change the arrangement and save
-named layouts.
+Mobile navigation shows Home, Projects, Finance, Intelligence and More; More
+exposes all six workspaces and utilities. Planning defaults to an agenda.
+Analytical tables offer mobile cards and a full horizontally scrollable table
+using the same filtered records. Full exports retain all matching rows.
 
-The evidence banner communicates a factual narrative, source coverage and
-dates. It must not invent a portfolio score or imply that financial pace is
-delivery completion. Date controls state when they filter historical reports
-rather than changing the current approved financial position.
+Home and custom-studio arranging offer mouse, touch and keyboard controls;
+Earlier/Later buttons provide a clear alternative to dragging. Columns retain
+keyboard movement, resizing and freezing. Native disclosures, labelled form
+controls, focus outlines, keyboard chart points and Escape-close dialogs remain
+available. Effects identify focus, selection and a drop target; reduced motion
+and effects-off disable decorative transitions/animation.
 
-Analysis selection and workspace settings use native disclosures with visible
-summaries. Active analysis opens its controls on initial load. Secondary controls
-should not push the first analytical row beyond the desktop viewport.
+## Verification and limits
 
-## Verification
+Browser suites inspect retained routes, two themes, three frame sizes and focused
+320/390/768/1440/1920px feature checks. Financial fixtures cover independent source
+coverage, zero/unknown, cumulative snapshots, changing coverage, corrections and
+invariant current totals. Export tests inspect actual SVG/PNG and workbook data.
+Atelier adds shared scope, purpose separation, review backup/undo, reader preview,
+mobile views and bounded rendering at 50/200/1000 projects.
 
-Check 320, 390, 768, 1440 and 1920-pixel viewports, both themes, all palettes,
-keyboard focus, reduced motion and print. Wait for route animations to settle
-before capturing visual references. Exported graphics must retain meaning
-outside the application: title, units, dates, scope, source coverage and
-assumptions belong with the visual.
+Screenshots are reviewed visually after functional checks. Automated frame and
+keyboard checks are not an accessibility certification or proof of subjective
+visual quality. Large document parsing remains dependent on the retained readers
+and the source's structure/text layer.

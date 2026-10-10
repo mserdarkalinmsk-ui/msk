@@ -1,196 +1,190 @@
 # Portfolio Ledger
 
-An offline portfolio intelligence studio with connected financial charts,
-a customizable analytical register, source evidence, project schedules and
-saved working contexts. The supplied
-ledger's report, forecast, contract, document-import and financial-evidence
-engine is retained.
+A self-contained, offline portfolio workspace. Six connected workspaces share one
+selection and one design system while answering different questions. Project
+records, document readers and source-aware financial calculations are retained.
 
-All portfolio and project-detail screens use the same application frame,
-navigation, typography, surfaces and controls. Analysis selection and workspace
-settings open on demand so financial content stays close to the top of the page.
-
-![Portfolio overview with the sample portfolio](docs/overview.png)
+![Portfolio overview](docs/home.png)
 
 ## Download and run
 
 Download **index.html** using GitHub's **Download raw file** button, or download
-this repository as a ZIP. The generated HTML contains the application, styles,
-sample portfolio, graphics and embedded PDF readers. Running it requires no
-package installation or build step.
+this repository as a ZIP. The generated HTML includes the application, sample
+portfolio, graphics and embedded PDF readers. It needs no package installation,
+backend or external assets. The six-project starting portfolio is labelled sample
+data; it is never presented as your own records.
 
-For hosted development, run from this directory:
+Use a modern browser with JavaScript, IndexedDB and SVG support. For hosted
+development, run from the repository:
 
 ```sh
 python3 -m http.server 8000 --bind 127.0.0.1 --directory .
 ```
 
-Use a modern browser with JavaScript, IndexedDB and SVG support. The optional
-**sw.js** adds an offline document cache when served from a secure context or
-loopback host; keep it beside index.html for hosted offline use.
+Keep **sw.js** beside index.html for optional hosted offline caching. The single
+HTML also works independently. Records and original files live in this browser;
+**Data & settings → Export backup** moves portfolio records and follow-up records
+between profiles or origins. Original files are stored separately in IndexedDB;
+see the original app's backup contents before assuming every attachment is inside
+a JSON backup.
 
-Records and imported documents live in browser storage. Use **Data → Export
-backup** to move a portfolio between browser profiles or hosting origins. The
-initial six-project portfolio is explicitly labelled as sample data.
+## Six workspaces
 
-## Make the workspace yours
+| Workspace    | Purpose                                                    | Views                                                                             |
+| ------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Home         | Understand the current position and choose the next action | Four KPIs, project priorities, financial coverage, upcoming dates, recent changes |
+| Projects     | Find, inspect and compare project records                  | Directory, cards, countries, comparison                                           |
+| Finance      | Examine facts, recorded history and supported estimates    | Current position, history, forecasts, source comparison, custom studio            |
+| Intelligence | Understand and follow up a source condition                | Finance, delivery, evidence, people and continuity queues                         |
+| People       | Keep identity, assignment and contract evidence distinct   | Assignments, source-name groups, contracts                                        |
+| Planning     | Work with recorded dates and project schedules             | Agenda, calendar, timeline, continuity                                            |
 
-**Home** and **Analytics** share three independently saved profiles:
-Portfolio overview, Finance focus and Delivery focus. Open **Workspace settings**
-to change the profile, customize panels, save a context or choose a palette.
-**Panels** chooses from
-12 panels. **Customize** reveals drag handles, Earlier / Later controls,
-width selection and pinning. Handles also support **Alt + ↑ / ↓**; phones
-support vertical touch dragging and edge scrolling.
+**Source center** and **Data & settings** are utility destinations. Older links to
+country details, financial monitoring, calendar, continuity and project tabs still
+work. A country or individual project detail is an explicit drill-down: it remains
+readable even if the portfolio selection points to another country or project.
 
-Collapse, hide or resize panels without editing portfolio records. Layout
-settings use the separate `ledger.workspace.v2` storage key. The tools menu
-exports/imports a layout or restores the active profile's default layout.
-Portfolio backup remains a separate operation.
+### Shared selection and honest figures
 
-The studio includes:
+Country, project, search, sector, financial signal and project-date filters select
+portfolio records. That selection follows all six workspaces. Finance's report-date
+window restricts historical charts; it does not replace current approved budgets,
+actuals or register totals. Column/assignment/event filters refine the current
+workspace and state their own matching counts.
 
-- A shared country/project selection across financial figures, charts, source
-  coverage, register and schedule. Report-date windows affect historical views;
-  current budgets and actuals retain their current financial basis.
-- A source-aware budget waterfall and a project comparison mode. Missing sources,
-  overspend and signed financial corrections are explicit.
-- Dated cumulative history or matched report changes, line/column modes, native
-  date-range navigation, zoom, selectable chart points and source detail.
-  Opening values and newly covered projects never become invented period spend.
-- Clickable country/sector composition and project pace comparisons that connect
-  back to the shared selection. Financial pace does not measure delivery.
-- A register with per-column filters, up to four sort priorities, draggable and
-  resizable columns, frozen identity/additional columns, nested grouping with
-  source-counted subtotals, saved views, source details and genuine history
-  sparklines. Missing values remain distinct from recorded zero.
-- All filtered or selected records exported as safe CSV, a real three-sheet XLSX
-  workbook with typed numbers/dates, or a full register printout independent of
-  pagination. Excel includes provenance and analysis context.
-- A schedule with quarter/month/week scales, sticky project labels, planned-date
-  windows, preparation/execution segments and recorded milestone source sheets.
-- A people studio with base distribution, project staffing/FTE coverage, missing
-  detail queues, live search, sortable table/cards, source evidence, full CSV and
-  printing. Existing contract editing remains available; unknown FTE stays unknown.
-- Named workspaces saving selection, panels, chart/table preferences, palette and
-  forecast scenario; layout undo complements keyboard, mouse and touch arranging.
-- Atelier, Executive and Contrast palettes, a consistent financial color system,
-  light/dark themes, visible selection/focus effects and an effects-off preference.
-- Framed SVG/1800px PNG chart exports with scope, dates and source descriptions,
-  and a printable decision brief based on the current selected evidence.
+Missing values remain unknown. Recorded zero stays zero. Actuals, commitments,
+exposure and forecasts have their own source coverage. Available funding for an
+entire selection is withheld when exposure coverage is incomplete. A covered
+subset is explicitly labelled. Cumulative reports are never added together and
+new coverage never becomes invented period expenditure. Country PDF reports and
+project finance files remain independent source families.
 
-<details>
-<summary>Home, Intelligence, Projects and project detail</summary>
+Financial pace compares exposure with elapsed time, not delivery. Intelligence
+shows evidence coverage and supported observations instead of a composite health
+score. Matching source names are grouped for navigation, not verified shared
+identities; FTE is summed only where the source establishes a value.
 
-![Home](docs/home.png)
+### Review and source workflow
 
-![Intelligence](docs/intelligence.png)
+An Intelligence observation explains its cause, project, source, recorded date and
+next action. **Record follow-up** saves state, owner, follow-up date and notes.
+Reviewed and resolution recorded are distinct. Recording a resolution does not
+remove a condition still present in the source. Changed evidence invalidates an
+old review's fingerprint. Follow-ups are additive portfolio records, included in
+JSON backup round-trips and the existing undo/redo workflow.
 
-![Projects](docs/projects.png)
+The shared source drawer shows financial versions, coverage and retained originals.
+**Source center → Add source documents** accepts files or a drop, requires an
+explicit project/source-family match, and hands the files to the retained readers.
+Recognition, source terms, dates, version choices and candidate differences appear
+before saving. Unsupported extraction stays visible as needing review. Scanned
+PDFs require a text layer; there is no new OCR service.
 
-![Project detail](docs/project-detail.png)
+### Tables, charts and layout
 
-</details>
+Directory tables start with six columns. Essential, Finance, Forecast and Evidence
+quick views choose a task-specific set. Existing numeric/text filters, multi-sort,
+column dragging/resizing/freezing, grouping, coverage totals, saved views and full
+CSV/typed XLSX/print exports remain available. On phones, project cards and the
+full table use the same filtered records and selection.
 
-<details>
-<summary>Charts, register and people previews</summary>
+Finance separates the financial bridge, composition, history and forecasts into
+the relevant views. History supports cumulative and matched changes, lines/columns,
+range selection, keyboard point navigation and source detail. SVG and 1800px PNG
+exports retain scope, units, dates and method notes. Management brief is a separate
+printable export of current evidence and recorded follow-up.
 
-![Source-aware financial charts](docs/charts.png)
+**Arrange overview** moves Home's four sections by mouse, touch, keyboard
+(**Alt + ↑/↓**) or Earlier/Later buttons. Finance's **Custom studio → Workspace
+settings** retains 12 analytical panels, independently saved profiles, width,
+pinning, collapse, visibility, mouse/touch/keyboard arrangement, layout undo and
+named contexts. Device preferences stay separate from portfolio facts.
 
-![Advanced portfolio register](docs/register.png)
+Atelier, Executive and Contrast palettes, light/dark themes, semantic financial
+colors, visible focus and effects-off/reduced-motion support cover the common
+frame and retained project/country screens.
 
-![People studio showing the sample portfolio's missing document rosters](docs/people.png)
+## Build and architecture
 
-</details>
-
-<details>
-<summary>Phone preview</summary>
-
-![Phone overview](docs/mobile.png)
-
-</details>
-
-## Maintain the code
-
-The distributable remains a single HTML file, while editable source is split
-into focused source modules:
-
-| File                          | Purpose                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| `src/ledger-base.html`        | Retained ledger engine, shared screens and embedded parsers             |
-| `src/workspace.js`            | Workspace integration, panel layout and canonical register values       |
-| `src/studio-shell.js`         | Shared analysis scope, named workspaces, layout undo and decision brief |
-| `src/chart-studio.js`         | Source-aware charts, dated navigation and cross-filtering               |
-| `src/register-studio.js`      | Advanced table interactions and saved register views                    |
-| `src/register-export.js`      | Offline native XLSX and complete register print export                  |
-| `src/schedule-studio.js`      | Source-backed project/activity schedule and milestone detail            |
-| `src/staff-studio.js`         | Document-led people analysis, register and evidence follow-up           |
-| `src/*.css`, `src/studio.css` | Feature styles and the shared visual design system                      |
-| `src/app-design.css`          | Unified frame, typography and surfaces across every retained route      |
-| `scripts/build.py`            | Generates the distributable `index.html` using Python only              |
-| `sw.js`                       | Optional scoped offline document cache                                  |
-
-After editing source, regenerate the distributable with Python's standard
-library:
+Edit `src/`, then regenerate the distributable:
 
 ```sh
 python3 scripts/build.py
 ```
 
-Do not hand-edit generated index.html. The builder checks its integration
-points so engine changes cannot silently detach the workspace. No third-party
-build tooling is required. Existing portfolio storage keys and embedded PDF
-readers are preserved.
+The builder uses Python's standard library. It validates explicit style and module
+extension markers instead of replacing parts of the render function. Do not
+hand-edit generated index.html.
 
-## Validate
+| Module                                  | Responsibility                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| ledger-base.html                        | Existing financial/domain engine, readers, original workflows, storage and explicit LedgerHost hooks                               |
+| ledger-domain.js                        | Cached model projections, covered financial aggregates, explainable observations, source catalog, review/preferences normalization |
+| atelier-pages.js                        | Six task workspaces, shared selection, evidence drawer, follow-up/import flow and Home arranging                                   |
+| workspace.js / studio-shell.js          | Adapter, configurable financial studio, named contexts and export brief                                                            |
+| chart-studio.js                         | Source-aware history, bridge, comparisons and visual exports                                                                       |
+| register-studio.js / register-export.js | Analytical table, mobile cards, CSV, typed three-sheet XLSX and print                                                              |
+| schedule-studio.js / staff-studio.js    | Detailed schedules and source-backed assignment/contract studio                                                                    |
+| atelier.css / app-design.css            | Shared scale, frame, semantics, responsive task layouts and legacy component alignment                                             |
 
-The cloud image provides Node.js, Playwright and `/usr/bin/chromium`:
+`ledger.portfolio.v1` and existing IndexedDB stores remain in use. Follow-ups add
+`reviewWork` without replacing projects or the ledger schema. Existing
+`ledger.workspace.v2` preferences remain readable. `ledger.atelier.v1` saves Home
+order and task views, and `ledger.staff.studio.v1` retains assignment preferences.
+Model caches are invalidated by portfolio saves, forecast method/scenario and the
+current date; register/queue/agenda/card rendering is paginated.
+
+The retained engine is intentionally not replaced wholesale. It still contains
+legacy workflow markup and CSS; new task modules use a defined host boundary.
+This is a controlled modular migration with a standalone deliverable, not a new
+server or a framework port.
+
+## Validation
+
+The cloud image provides Python 3, Node.js, Playwright and `/usr/bin/chromium`.
+Run from this directory:
 
 ```sh
-node --check src/workspace.js
 python3 scripts/build.py
 node tests/smoke.cjs
 node tests/workspace.cjs
 node tests/studio.cjs
 node tests/staff.cjs
 node tests/design.cjs
+node tests/atelier.cjs
 ```
 
-The browser suites start and stop their own Python servers, use isolated
-profiles, and never touch a user's portfolio. Smoke tests cover 26 screens
-at desktop and phone widths, filters, map/keyboard navigation, themes,
-project validation and creation, undo/redo, backup round-tripping, actual
-offline reload, self-contained rendering and print visibility.
+Suites use disposable browser profiles and own Python servers; no personal
+portfolio is required. They cover retained routes and workflows, shared scope,
+financial/date invariants, cumulative sources and refunds, zero/unknown values,
+original contract editing, numeric filters, multi-sort, column arrangement,
+coverage totals, native XLSX/CSV, full print, genuine Chromium touch input, theme
+consistency, offline reload, independent Home/Finance/Intelligence, review backup
+round-trip/undo, guided reader preview, mobile cards and 50/200/1000-project scale.
 
-Workspace tests cover mouse dragging, real Chromium touch input, keyboard
-movement, persistent layouts, profile isolation, layout import/export/reset,
-source-preserving scenarios, five viewport widths, SVG/PNG exports, register
-interactions and controlled financial fixtures. Fixtures check cumulative
-snapshots, known zero versus missing evidence, signed corrections, overspend,
-CSV escaping and totals across multiple pages.
+Design validation compares 26 retained routes across two themes and three viewport
+sizes. Atelier's scale test writes measured load/filter timings to
+`test-results/atelier-performance.json`; it does not estimate production or parser
+performance from those fixtures. Set `LEDGER_PREVIEWS=1` with `tests/atelier.cjs` to
+regenerate the documentation's screenshots.
 
-Studio tests check connected scope and date invariance, matched report changes,
-refunds and changing coverage, chart navigation, layout undo and named contexts,
-real palette/effects changes, numeric filters and multi-sort, column drag/resize,
-nested subtotals and saved views, native workbook ZIP/XML data, complete printing,
-source-backed milestones and narrow mobile layouts. All fixtures are disposable.
+For occupied ports, set `LEDGER_TEST_PORT`, `LEDGER_WORKSPACE_TEST_PORT`,
+`LEDGER_STUDIO_TEST_PORT`, `LEDGER_STAFF_TEST_PORT`, `LEDGER_DESIGN_TEST_PORT` or
+`LEDGER_ATELIER_TEST_PORT`; defaults are 8765/8766/8767/8769/8768/8792. Use
+`CHROMIUM_PATH` for another browser installation. Outside this cloud image,
+provide Playwright and Chromium yourself.
 
-People tests cover a disposable 31-assignment source fixture, evidenced zero versus
-unknown FTE, source payroll context, separate manual records, original contract
-editing, connected people filters, safe full CSV, complete printing and mobile cards.
+These checks cover the changed workflows and representative source fixtures.
+They do not exhaustively validate every original document format, calculation,
+accessibility criterion or large document workload.
 
-Design tests compare the application frame across all 26 routes, light/dark themes
-and desktop/tablet/phone widths (156 comparisons). They also verify keyboard-accessible
-disclosures, active analysis after reload, retained project navigation and financial
-chart colors. Set `LEDGER_PREVIEWS=1` to intentionally regenerate the repository's
-screenshots while running this suite.
+<details>
+<summary>Finance, Projects, Intelligence, People and mobile previews</summary>
 
-Set `CHROMIUM_PATH` for another browser installation. Set `LEDGER_TEST_PORT`
-`LEDGER_WORKSPACE_TEST_PORT`, `LEDGER_STUDIO_TEST_PORT` or
-`LEDGER_STAFF_TEST_PORT` or `LEDGER_DESIGN_TEST_PORT` if their default ports
-8765/8766/8767/8769/8768 are occupied. Outside the
-cloud image, provide Playwright and a Chromium installation yourself.
+![Finance](docs/overview.png)
+![Projects](docs/projects.png)
+![Intelligence](docs/intelligence.png)
+![People](docs/people.png)
+![Mobile overview](docs/mobile.png)
 
-These checks exercise the retained workflows and new presentation layer;
-they do not exhaustively validate every original document parser or financial
-calculation.
+</details>

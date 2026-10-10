@@ -121,9 +121,6 @@ const Masterpiece = (() => {
     "spent",
     "exposure",
     "available",
-    "used",
-    "signal",
-    "date",
   ];
   const COLUMNS = {
     name: { label: "Project", kind: "text" },
@@ -309,6 +306,9 @@ const Masterpiece = (() => {
               schedule,
               appearance,
               scenario,
+              portfolioFilters: w.snapshot.portfolioFilters
+                ? cleanFilters(w.snapshot.portfolioFilters)
+                : null,
               registerState,
             },
           };
@@ -368,6 +368,14 @@ const Masterpiece = (() => {
     const changed =
       !Object.prototype.hasOwnProperty.call(patch, "activeWorkspace") &&
       !Object.prototype.hasOwnProperty.call(patch, "workspaces");
+    if (
+      patch.analysis &&
+      Object.prototype.hasOwnProperty.call(patch.analysis, "country")
+    ) {
+      F.c = patch.analysis.country;
+      ls.set(FKEY, F);
+      syncBar();
+    }
     settings = cleanSettings({
       ...settings,
       ...patch,
@@ -377,11 +385,17 @@ const Masterpiece = (() => {
     if (rerender) render();
   }
   function effectiveAnalysis() {
-    const route = location.hash.replace(/^#\//, "").split("/")[0] || "home";
-    return ["home", "overview"].includes(route)
-      ? settings.analysis
-      : normalizeAnalysisScope();
+    const parts = (location.hash || "#/home").split("/");
+    if (parts[1] === "country")
+      return {
+        ...settings.analysis,
+        country: safeRouteId(parts[2] || "all"),
+        project: "all",
+      };
+    if (parts[1] === "project") return normalizeAnalysisScope();
+    return { ...settings.analysis, country: F.c };
   }
+
   function sourceHistory(p) {
     const byDate = new Map();
     for (const report of reps(p)) {
@@ -420,14 +434,18 @@ const Masterpiece = (() => {
     cmSourceAmountKnown,
     tableEvidence,
     getSettings: () => settings,
-    getBaseRows: () => rows(),
+    getBaseRows: () => rows({ allCountries: true, allProjects: true }),
     getAnalysis: effectiveAnalysis,
     setAnalysis: (patch) => {
-      const foreign = !["home", "overview"].includes(
-        location.hash.replace(/^#\//, "").split("/")[0] || "home",
+      const route = (location.hash || "#/home").split("/")[1];
+      const p = S.projects.find((p) => p.id === patch.project);
+      studio.setAnalysis(
+        p && F.c !== "all" && p.country !== F.c
+          ? { country: "all", ...patch }
+          : patch,
       );
-      studio.setAnalysis(foreign ? { country: "all", ...patch } : patch);
-      if (foreign) location.hash = "#/overview";
+      if (p && ["country", "countries", "project"].includes(route))
+        location.hash = "#/overview";
     },
     render,
     announce,
@@ -442,9 +460,11 @@ const Masterpiece = (() => {
     todayActions,
     toast,
     patchSettings,
+    getPortfolioFilters: () => ({ ...F }),
     getRegisterState: () => registerStudio.getTransient(),
     restoreWorkspace: (w) => {
-      const { scenario, registerState, ...snapshot } = w.snapshot;
+      const { scenario, registerState, portfolioFilters, ...snapshot } =
+        w.snapshot;
       settings = cleanSettings({
         ...settings,
         ...snapshot,
@@ -453,8 +473,12 @@ const Masterpiece = (() => {
       registerStudio.resetTransient(registerState);
       ui.pickedDate = "";
       persist();
-      $("#fk").value = scenario;
-      setF("k", scenario);
+      if (portfolioFilters) F = cleanFilters(portfolioFilters);
+      F.c = settings.analysis.country;
+      F.k = scenario;
+      ls.set(FKEY, F);
+      syncBar();
+      render();
     },
   });
   const chartStudio = createChartStudio({
@@ -509,6 +533,8 @@ const Masterpiece = (() => {
     n2,
     cname,
   });
+  if (F.c === "all" && settings.analysis.country !== "all")
+    F.c = settings.analysis.country;
   studio.afterRender();
   function chartMenu(id) {
     return `<button class="mp-icon-button" data-mp="chart-export" data-panel="${id}" aria-label="Export ${h(PANELS[id].title)} chart" title="Export chart">${icon("export")}</button>`;
@@ -1745,6 +1771,61 @@ const Masterpiece = (() => {
     afterRender,
     staff: (R) => staffStudio.page(R),
     scopeRows: (R) => studio.scopeRows(R),
+    setScope: (patch) => studio.setAnalysis(patch),
+    getScope: effectiveAnalysis,
+    syncFilters: (key) => {
+      if (!["c", "reset"].includes(key)) {
+        patchSettings({ activeWorkspace: "" }, false);
+        return;
+      }
+      const analysis = { ...settings.analysis, country: F.c };
+      if (key === "c" || key === "reset") analysis.project = "all";
+      if (key === "reset") {
+        analysis.from = "";
+        analysis.to = "";
+      }
+      patchSettings({ analysis, activeWorkspace: "" }, false);
+    },
+    panel: (id, R) => panel(id, panelBody(id, R)),
+    timeline: (R) => scheduleStudio.timeline(R),
+    brief: (R) => (studio.decisionContent ? studio.decisionContent(R) : ""),
+    contextTools: () => studio.toolbarExtras(),
+    tablePreset: (preset) => {
+      const presets = {
+        essential: [
+          "name",
+          "country",
+          "budget",
+          "spent",
+          "exposure",
+          "available",
+        ],
+        finance: ["name", "budget", "spent", "committed", "exposure", "date"],
+        forecast: [
+          "name",
+          "budget",
+          "exposure",
+          "forecast",
+          "variance",
+          "signal",
+        ],
+        evidence: ["name", "country", "spent", "exposure", "date", "signal"],
+      };
+      const columns = presets[preset];
+      if (!columns) return;
+      patchSettings({
+        table: {
+          ...settings.table,
+          columns,
+          order: [
+            ...columns,
+            ...Object.keys(COLUMNS).filter((k) => !columns.includes(k)),
+          ],
+          frozen: ["name"],
+          activeView: "",
+        },
+      });
+    },
   };
 })();
 V.home = () => Masterpiece.home(rows());

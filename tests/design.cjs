@@ -117,7 +117,7 @@ async function main() {
       errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(base);
-    await page.waitForSelector(".studio-shell");
+    await page.waitForSelector(".atelier-page");
     const portfolio = await page.evaluate(() =>
       localStorage.getItem("ledger.portfolio.v1"),
     );
@@ -162,6 +162,18 @@ async function main() {
     });
     await go(page, "home");
     assert.equal(
+      await page.locator("[data-mp-panel]").count(),
+      0,
+      "Home is independent from the financial studio",
+    );
+    assert.ok(
+      (await page
+        .locator(".atelier-home-panel")
+        .first()
+        .evaluate((n) => n.getBoundingClientRect().top)) < 760,
+    );
+    await go(page, "overview/studio");
+    assert.equal(
       await page.locator(".studio-scope").evaluate((node) => node.open),
       false,
     );
@@ -176,7 +188,7 @@ async function main() {
       .first()
       .evaluate((node) => node.getBoundingClientRect().top);
     assert.ok(
-      top < 760,
+      top < 900,
       `Secondary controls push the first chart below ${top}px`,
     );
     await page.locator(".studio-scope > summary").focus();
@@ -208,14 +220,22 @@ async function main() {
       "Compact controls remain keyboard-accessible; active selection opens on reload and arranging remains available",
     );
     await go(page, "projects");
-    await page.locator('[data-act="pv"][data-id="mode:table"]').click();
+    await page
+      .locator('[data-at="projects-view"][data-value="directory"]')
+      .click();
     assert.equal(await page.locator(".rs-studio").isVisible(), true);
-    await page.locator('[data-act="pv"][data-id="mode:cards"]').click();
+    await page.locator('[data-at="projects-view"][data-value="cards"]').click();
     await page
       .locator('.project-summary-card[data-href="#/project/lang"]')
       .focus();
     await page.keyboard.press("Enter");
     await page.waitForFunction(() => location.hash === "#/project/lang");
+    await page.waitForSelector(
+      'svg[aria-label="Spent, committed and available by project"]',
+    );
+    await page.waitForSelector(
+      'svg[aria-label="Cumulative planned and projected spending"]',
+    );
     const colors = await page.evaluate(() => {
       const svg = document.querySelector(
           'svg[aria-label="Spent, committed and available by project"]',
@@ -244,14 +264,12 @@ async function main() {
       "Project cards/table/navigation retain their behavior and project chart colors match financial semantics",
     );
     await go(page, "intel");
-    await page.locator(".intel-quality-list summary").first().click();
+    await page.locator('[data-at="source"]').first().click();
     assert.equal(
-      await page
-        .locator(".intel-quality-list details")
-        .first()
-        .evaluate((node) => node.open),
+      await page.locator(".atelier-drawer").evaluate((n) => n.open),
       true,
     );
+    await page.keyboard.press("Escape");
     assert.equal(
       await page.evaluate(() => localStorage.getItem("ledger.portfolio.v1")),
       portfolio,
@@ -275,7 +293,7 @@ async function main() {
         await page.mouse.move(0, 0);
         await page.screenshot({ path: path.join(root, `docs/${name}.png`) });
       }
-      await page.goto(base + "#/overview");
+      await page.goto(base + "#/overview/studio");
       await page.waitForSelector(".studio-shell");
       for (const [panel, name] of [
         ["trend", "charts"],
@@ -287,7 +305,7 @@ async function main() {
         await page.screenshot({ path: path.join(root, `docs/${name}.png`) });
       }
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto(base + "#/overview");
+      await page.goto(base + "#/overview/studio");
       await page.waitForSelector(".studio-shell");
       await pause(300);
       await page.screenshot({

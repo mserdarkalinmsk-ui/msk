@@ -12089,6 +12089,2237 @@ details.studio-scope[open] > summary {
   }
 }
 
+
+/* Shared components and task layouts. One scale, one set of financial meanings. */
+body[data-studio-palette] {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --studio-risk: #c34f50;
+  --studio-unknown: #7d8797;
+  --mp-spent: var(--studio-spent);
+  --mp-committed: var(--studio-committed);
+  --mp-available: var(--studio-unknown);
+  --mp-budget: var(--studio-budget);
+  --studio-exposure: var(--studio-committed);
+  --heading: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+}
+body[data-studio-palette="atelier"] {
+  --studio-budget: #3977d5;
+  --studio-spent: #118078;
+  --studio-committed: #ad7016;
+  --studio-forecast: #8053bc;
+}
+:root[data-theme="dark"] body[data-studio-palette="atelier"] {
+  --studio-budget: #79a8f5;
+  --studio-spent: #64c9b9;
+  --studio-committed: #edba61;
+  --studio-forecast: #bc9aee;
+  --studio-risk: #ef9393;
+  --studio-unknown: #a4afc0;
+}
+main.mp-page {
+  max-width: 1800px;
+  padding: 28px 36px 48px;
+}
+.top #title {
+  font-family: var(--font);
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+.top #subtitle {
+  font-size: 14px;
+  margin-top: 8px;
+}
+.top {
+  margin-bottom: 24px;
+  padding-bottom: 0;
+}
+#page-crumb {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.app:has(main.mp-page) .side {
+  width: 224px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 24px 14px;
+}
+.app:has(main.mp-page) .side .brand {
+  padding: 0 10px 25px;
+  gap: 10px;
+}
+.side .brand-mark {
+  width: 34px;
+  height: 34px;
+  background: var(--brand);
+  color: var(--surface);
+  border-radius: 10px;
+}
+.side .brand > span:last-child {
+  font-size: 15px;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+.side .brand small {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.app:has(main.mp-page) .side a {
+  font-size: 13px;
+  padding: 11px 13px;
+  margin: 2px 0;
+  border-radius: 8px;
+  gap: 11px;
+}
+.app:has(main.mp-page) .side a.on {
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  color: var(--brand);
+  font-weight: 650;
+  box-shadow: inset 3px 0 var(--brand);
+}
+.side .nav-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  margin: 22px 13px 8px;
+}
+.atelier-page {
+  min-width: 0;
+}
+.atelier-page p,
+.atelier-page small,
+.atelier-page input,
+.atelier-page select,
+.atelier-page button {
+  font-family: var(--font);
+}
+.atelier-page h2,
+.atelier-page h3,
+.atelier-page h4 {
+  font-family: var(--font);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.atelier-page h3 {
+  font-size: 16px;
+}
+.atelier-page a {
+  text-decoration: none;
+}
+.atelier-page a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+button,
+input,
+select,
+textarea,
+.btn {
+  font-size: 14px;
+}
+.atelier-page button,
+.atelier-page .btn,
+.atelier-page input,
+.atelier-page select {
+  min-height: 40px;
+}
+.atelier-scope {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 5;
+}
+.atelier-scope label {
+  min-width: 0;
+}
+.atelier-scope select {
+  width: 100%;
+  max-width: 180px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 8px 30px 8px 12px;
+}
+.atelier-search {
+  display: flex;
+  align-items: center;
+  flex: 1 1 230px;
+  max-width: 420px;
+  gap: 8px;
+}
+.atelier-search svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: var(--mute);
+  stroke-width: 1.6;
+  flex-shrink: 0;
+}
+.atelier-search input {
+  width: 100%;
+  border: 0 !important;
+  outline-offset: 2px;
+  background: transparent;
+  padding: 6px;
+  min-width: 0;
+}
+.atelier-selection {
+  font-size: 11px;
+  color: var(--mute);
+  margin-left: auto;
+  white-space: nowrap;
+}
+.atelier-filter-more {
+  position: relative;
+}
+.atelier-filter-more summary {
+  list-style: none;
+  cursor: pointer;
+}
+.atelier-filter-more > div {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 40px #0002;
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  z-index: 20;
+}
+.atelier-filter-more label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--mute);
+}
+.atelier-filter-more select {
+  max-width: none;
+}
+.atelier-filter-more p {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0;
+}
+.atelier-eyebrow {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-weight: 650;
+  color: var(--brand);
+}
+.atelier-welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin: 26px 0 28px;
+}
+.atelier-welcome h2 {
+  font-size: clamp(26px, 2.6vw, 40px);
+  line-height: 1.14;
+  margin: 10px 0 12px;
+  letter-spacing: -0.045em;
+}
+.atelier-welcome h2 span {
+  color: var(--mute);
+  font-weight: 400;
+}
+.atelier-welcome p {
+  font-size: 14px;
+  color: var(--mute);
+  margin: 0;
+  max-width: 520px;
+}
+.atelier-welcome > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.atelier-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 20px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.atelier-kpis.home-metrics {
+  padding: 0;
+}
+.atelier-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 20px 24px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.atelier-stat:last-child {
+  border-right: 0;
+}
+.atelier-stat .metric-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mute);
+  line-height: 1.4;
+}
+.atelier-stat b {
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: -0.045em;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.atelier-stat .ks {
+  font-size: 11px;
+  color: var(--mute);
+  line-height: 1.45;
+}
+.atelier-stat.metric-budget b {
+  color: var(--studio-budget);
+}
+.atelier-stat.metric-spent b {
+  color: var(--studio-spent);
+}
+.atelier-stat.metric-exposure b {
+  color: var(--studio-committed);
+}
+.atelier-small-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.atelier-small-kpis .atelier-stat {
+  padding: 16px 20px;
+}
+.atelier-small-kpis .atelier-stat b {
+  font-size: 26px;
+}
+.atelier-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.atelier-home-panel {
+  background: var(--surface);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+}
+.atelier-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.atelier-section-head h2 {
+  font-size: 20px;
+  margin: 6px 0 5px;
+}
+.atelier-section-head p {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0;
+}
+.atelier-text-link {
+  font-size: 12px;
+  color: var(--brand);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.atelier-decision {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.atelier-decision-marker {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+.atelier-decision-marker.bad {
+  background: color-mix(in srgb, var(--bad) 8%, var(--surface));
+  color: var(--bad);
+}
+.atelier-decision-marker.warn {
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  color: var(--warn);
+}
+.atelier-decision h3 {
+  font-size: 14px;
+  margin: 7px 0 5px;
+}
+.atelier-decision h3 a {
+  color: var(--ink);
+}
+.atelier-decision p {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0 0 6px;
+  line-height: 1.6;
+}
+.atelier-decision small {
+  font-size: 10px;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+.atelier-decision-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--studio-panel-alt);
+  color: var(--mute);
+  white-space: nowrap;
+}
+.atelier-label.bad {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 6%, var(--surface));
+  border-color: color-mix(in srgb, var(--bad) 20%, var(--line));
+}
+.atelier-label.warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface));
+  border-color: color-mix(in srgb, var(--warn) 20%, var(--line));
+}
+.atelier-label.good {
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 7%, var(--surface));
+}
+.atelier-position-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--mute);
+  margin: 26px 0 18px;
+}
+.atelier-position-total b {
+  font-size: 24px;
+  letter-spacing: -0.04em;
+  color: var(--studio-budget);
+}
+.atelier-financial-track {
+  height: 20px;
+  display: flex;
+  background: var(--studio-panel-alt);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.spent {
+  background: var(--studio-spent);
+}
+.committed {
+  background: var(--studio-committed);
+}
+.unknown {
+  background: var(--studio-unknown);
+}
+.atelier-financial-track i {
+  display: block;
+  height: 100%;
+}
+.atelier-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 22px 0;
+}
+.atelier-amounts dt {
+  font-size: 11px;
+  color: var(--mute);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.atelier-amounts dt i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+.atelier-amounts dd {
+  margin: 7px 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.atelier-amounts small {
+  font-size: 10px;
+  color: var(--mute);
+  display: block;
+}
+.atelier-note {
+  font-size: 12px;
+  color: var(--mute);
+  line-height: 1.7;
+  margin: 16px 0;
+  max-width: 1000px;
+}
+.atelier-date-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.atelier-date-row time {
+  display: grid;
+  width: 40px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px;
+}
+.atelier-date-row time b {
+  font-size: 18px;
+  line-height: 1.2;
+}
+.atelier-date-row time span {
+  font-size: 10px;
+  color: var(--mute);
+}
+.atelier-date-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.atelier-date-row a {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.atelier-date-row small {
+  display: block;
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-date-row > span {
+  font-size: 10px;
+  color: var(--mute);
+}
+.atelier-change {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.atelier-change > span {
+  color: var(--brand);
+}
+.atelier-change b {
+  font-size: 13px;
+  font-weight: 500;
+}
+.atelier-change time {
+  display: block;
+  font-size: 11px;
+  color: var(--mute);
+  margin-top: 5px;
+}
+.atelier-method {
+  margin: 20px 0;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.atelier-method > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--mute);
+  padding: 8px 0;
+}
+.atelier-method > div {
+  padding: 16px 0;
+}
+.atelier-method p {
+  font-size: 13px;
+  color: var(--mute);
+}
+.operational-metrics {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.operational-metrics > .atelier-stat {
+  border: 0;
+  min-width: 220px;
+  padding: 12px 0;
+}
+.atelier-tabs {
+  display: flex;
+  gap: 24px;
+  overflow: auto;
+  border-bottom: 1px solid var(--line);
+  margin: 0 0 24px;
+  scrollbar-width: thin;
+}
+.atelier-tabs a,
+.atelier-tabs button {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mute);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 13px 0;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+}
+.atelier-tabs a[aria-current],
+.atelier-tabs button[aria-pressed="true"] {
+  color: var(--brand);
+  font-weight: 650;
+  box-shadow: inset 0 -2px var(--brand);
+}
+.atelier-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.atelier-page .mp-panel {
+  border-radius: 10px;
+  box-shadow: none;
+  margin: 0;
+}
+.atelier-page .mp-panel-head {
+  padding: 20px 22px 10px;
+}
+.atelier-page .mp-panel-head h2 {
+  font-size: 19px;
+}
+.atelier-page .mp-panel-head p {
+  font-size: 12px;
+}
+.atelier-page .mp-panel-body {
+  padding: 12px 22px 22px;
+}
+.atelier-page .mp-chart-controls {
+  font-size: 12px;
+  gap: 8px;
+}
+.atelier-page .mp-chart-controls button,
+.atelier-page .mp-chart-controls select {
+  min-height: 34px;
+  font-size: 12px;
+}
+.atelier-page .mp-panel .mp-handle,
+.atelier-page .mp-panel .mp-panel-edit {
+  display: none;
+}
+.atelier-page:has(.mp-customizing) .mp-handle:not([hidden]) {
+  display: flex;
+}
+.atelier-page:has(.mp-customizing) .mp-panel-edit:not([hidden]) {
+  display: flex;
+}
+.atelier-register-section {
+  margin-top: 28px;
+}
+.atelier-register-section > .atelier-section-head {
+  margin-bottom: 16px;
+}
+.atelier-directory-heading {
+  display: flex;
+  align-items: start;
+  gap: 20px;
+  justify-content: space-between;
+}
+.atelier-directory-heading .atelier-tabs {
+  flex: 1;
+}
+.atelier-directory-heading > span {
+  font-size: 11px;
+  color: var(--mute);
+  padding-top: 15px;
+}
+.atelier-project-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.atelier-project-cards .pcard {
+  width: auto;
+  min-width: 0;
+  margin: 0;
+}
+.atelier-country {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.atelier-country summary {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  gap: 16px;
+}
+.atelier-country summary b {
+  font-size: 17px;
+}
+.atelier-country summary small {
+  display: block;
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 4px;
+}
+.atelier-country summary strong {
+  font-size: 20px;
+  color: var(--studio-budget);
+}
+.atelier-country ul {
+  list-style: none;
+  padding: 0 24px;
+  margin: 0;
+}
+.atelier-country li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.atelier-country li > a {
+  color: var(--ink);
+  font-weight: 600;
+}
+.atelier-country li > span {
+  grid-column: 1;
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-country li > b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-weight: 500;
+}
+.atelier-country footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.atelier-intelligence-intro {
+  display: flex;
+  gap: 32px;
+  justify-content: space-between;
+  margin: 32px 0;
+  align-items: center;
+}
+.atelier-intelligence-intro h2 {
+  font-size: 27px;
+  margin: 8px 0 10px;
+}
+.atelier-intelligence-intro p {
+  font-size: 14px;
+  color: var(--mute);
+  margin: 0;
+}
+.atelier-evidence-dimensions {
+  display: flex;
+  gap: 24px;
+}
+.atelier-evidence-dimensions > div {
+  border-left: 1px solid var(--line);
+  padding-left: 20px;
+  max-width: 130px;
+}
+.atelier-evidence-dimensions b {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.atelier-evidence-dimensions span {
+  display: block;
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-list-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.atelier-list-toolbar > label {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--mute);
+  min-width: 150px;
+}
+.atelier-list-toolbar > label:first-child {
+  flex: 1;
+  max-width: 380px;
+}
+.atelier-list-toolbar input,
+.atelier-list-toolbar select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  border-radius: 7px;
+  min-width: 0;
+}
+.atelier-list-toolbar > span {
+  font-size: 11px;
+  color: var(--mute);
+  margin-left: auto;
+  padding-bottom: 12px;
+}
+.atelier-queue-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  margin: 12px 0;
+  overflow: hidden;
+}
+.atelier-queue-item > header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 13px 20px;
+  background: var(--studio-panel-alt);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-queue-item > header > span:last-child {
+  margin-left: auto;
+}
+.atelier-queue-body {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 24px;
+  padding: 20px;
+}
+.atelier-queue-body h3 {
+  margin: 0 0 8px;
+}
+.atelier-queue-body p {
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 0 0 14px;
+  color: var(--mute);
+}
+.atelier-queue-body dl {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+.atelier-queue-body dl > div {
+  display: grid;
+  grid-template-columns: 115px 1fr;
+  gap: 12px;
+  font-size: 12px;
+}
+.atelier-queue-body dt {
+  color: var(--mute);
+}
+.atelier-queue-body dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.atelier-queue-body aside {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: start;
+  border-left: 1px solid var(--line);
+  padding-left: 20px;
+}
+.atelier-queue-body aside > span:not(.atelier-label) {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-queue-body .atelier-condition {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--warn) 5%, var(--surface));
+  border-left: 2px solid var(--warn);
+  color: var(--ink);
+}
+.atelier-queue-body .atelier-review-note {
+  margin: 12px 0 0;
+  white-space: pre-wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  color: var(--ink);
+}
+.atelier-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 0;
+  color: var(--mute);
+  font-size: 12px;
+}
+.atelier-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+.atelier-person-directory {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.atelier-person-directory article {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+}
+.atelier-person-directory h3 {
+  margin: 14px 0 8px;
+}
+.atelier-person-directory p {
+  font-size: 12px;
+  color: var(--mute);
+}
+.atelier-person-directory small {
+  display: block;
+  font-size: 11px;
+  color: var(--mute);
+  margin-top: 16px;
+}
+.atelier-person-directory article > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+}
+.atelier-person-directory dl {
+  font-size: 12px;
+  margin: 16px 0;
+}
+.atelier-person-directory dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+.atelier-person-directory dt {
+  color: var(--mute);
+}
+.atelier-person-directory dd {
+  margin: 0;
+}
+.atelier-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 650;
+}
+.atelier-agenda {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.atelier-agenda article {
+  display: grid;
+  grid-template-columns: 155px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.atelier-agenda article:last-child {
+  border-bottom: 0;
+}
+.atelier-agenda time {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.atelier-agenda time span {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-agenda h3 {
+  margin: 7px 0;
+  font-size: 15px;
+}
+.atelier-agenda h3 a {
+  color: var(--ink);
+}
+.atelier-agenda p {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0;
+}
+.atelier-agenda small {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.atelier-segments button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.atelier-import-steps {
+  list-style: none;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 0;
+  margin: 24px 0;
+  font-size: 12px;
+  color: var(--mute);
+}
+.atelier-import-steps li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.atelier-import-steps b {
+  color: var(--brand);
+  font-size: 10px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+}
+.atelier-source-list {
+  border-top: 1px solid var(--line);
+}
+.atelier-source-list > article {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.atelier-file-icon {
+  width: 36px;
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+.atelier-source-list article > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.atelier-source-list h3 {
+  font-size: 14px;
+  margin: 0 0 5px;
+  overflow-wrap: anywhere;
+}
+.atelier-source-list p {
+  font-size: 11px;
+  color: var(--mute);
+  margin: 0 0 4px;
+}
+.atelier-source-list small {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-source-list article > div:last-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.atelier-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--mute);
+}
+.atelier-empty > span {
+  font-size: 24px;
+  color: var(--brand);
+}
+.atelier-empty h3 {
+  font-size: 16px;
+  margin: 12px 0 8px;
+  color: var(--ink);
+}
+.atelier-empty p {
+  font-size: 13px;
+  max-width: 420px;
+  margin: 0 auto 14px;
+  line-height: 1.7;
+}
+.atelier-arrange {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.atelier-arrange .btn {
+  min-height: 34px;
+  font-size: 11px;
+}
+.atelier-arrange [draggable] {
+  cursor: grab;
+  touch-action: none;
+}
+.atelier-home-grid.arranging .atelier-home-panel {
+  border-style: dashed;
+}
+.atelier-home-grid .drop-target {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+.atelier-history-controls {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 0 24px;
+}
+.atelier-history-controls label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--mute);
+}
+.atelier-history-controls input {
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.atelier-history-controls p {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 0;
+  flex-basis: 100%;
+}
+.atelier-drawer,
+.atelier-review-dialog,
+.atelier-import-dialog {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 80px #0003;
+  font-family: var(--font);
+  padding: 28px;
+  border-radius: 12px;
+  max-height: calc(100dvh - 32px);
+}
+.atelier-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: min(530px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  overflow: auto;
+}
+.atelier-drawer > header,
+.atelier-review-dialog header,
+.atelier-import-dialog header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.atelier-drawer h3 {
+  font-size: 21px;
+}
+.atelier-drawer .atelier-section-head h2 {
+  font-size: 14px;
+}
+.atelier-drawer .atelier-section-head {
+  margin: 0;
+}
+.atelier-drawer h4 {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 28px 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.atelier-drawer-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px;
+  background: var(--studio-panel-alt);
+  border-radius: 8px;
+}
+.atelier-drawer-facts span {
+  display: block;
+  font-size: 11px;
+  color: var(--mute);
+  margin-bottom: 5px;
+}
+.atelier-drawer-facts b {
+  font-size: 16px;
+}
+.atelier-source-version {
+  display: grid;
+  gap: 7px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.atelier-source-version span,
+.atelier-source-version small {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-source-version .btn {
+  justify-self: start;
+}
+.atelier-drawer footer {
+  margin-top: 24px;
+}
+.atelier-review-dialog,
+.atelier-import-dialog {
+  width: min(600px, calc(100vw - 32px));
+}
+.atelier-review-dialog h2,
+.atelier-import-dialog h2 {
+  font-size: 23px;
+  letter-spacing: -0.04em;
+  margin: 5px 0;
+}
+.atelier-review-dialog form > label,
+.atelier-import-dialog form > label {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0;
+  font-size: 12px;
+  color: var(--mute);
+}
+.atelier-review-dialog input,
+.atelier-review-dialog select,
+.atelier-review-dialog textarea,
+.atelier-import-dialog select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+}
+.atelier-review-dialog footer,
+.atelier-import-dialog footer {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+  margin-top: 24px;
+}
+.atelier-review-dialog p,
+.atelier-import-dialog p {
+  font-size: 13px;
+}
+.atelier-import-dialog .atelier-drop {
+  border: 1px dashed var(--brand);
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  background: color-mix(in srgb, var(--brand) 3%, var(--surface));
+  color: var(--ink);
+  font-size: 14px;
+}
+.atelier-drop input {
+  margin: 8px 0;
+  width: 100%;
+  font-size: 12px;
+}
+.atelier-drop small {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-drop.dragging {
+  outline: 2px solid var(--brand);
+}
+.atelier-import-dialog #atelier-import-summary {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.atelier-review-dialog [hidden],
+.atelier-import-dialog [hidden] {
+  display: none !important;
+}
+.atelier-management-brief {
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.atelier-brief-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.atelier-brief-observation {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.atelier-brief-observation p {
+  font-size: 12px;
+  color: var(--mute);
+  margin: 8px 0;
+}
+.atelier-brief-observation small {
+  font-size: 11px;
+  color: var(--mute);
+}
+.atelier-management-brief > .atelier-section-head {
+  margin-top: 32px;
+}
+.atelier-data-settings {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+/* Retained project, country and import components inherit the same scale. */
+.mp-page .tw th,
+.mp-page .rs-table th {
+  font-size: 12px;
+}
+.mp-page .tw td,
+.mp-page .rs-table td {
+  font-size: 13px;
+}
+.mp-page .tw small {
+  font-size: 11px;
+}
+.mp-page .tw caption {
+  font-size: 12px;
+}
+.mp-page .card h2 {
+  font-family: var(--font);
+  font-size: 20px;
+  letter-spacing: -0.025em;
+}
+.mp-page .card .sub,
+.mp-page .card .note {
+  font-size: 12px;
+}
+.atelier-page .rs-register,
+.atelier-page .ps-register {
+  border-radius: 10px;
+}
+.atelier-page .rs-controls {
+  background: var(--surface);
+}
+.atelier-page .rs-table th button {
+  font-size: 12px;
+}
+.atelier-page .rs-table td {
+  font-size: 13px;
+}
+.atelier-page .ps-hero {
+  padding: 20px 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+.atelier-page .ps-hero h2 {
+  font-size: 23px;
+}
+.atelier-page .ps-kpis {
+  margin: 16px 0;
+}
+.atelier-page .ps-kpi {
+  padding: 16px;
+  border-radius: 8px;
+}
+.atelier-page .ps-kpi b {
+  font-size: 26px;
+}
+.atelier-page .ps-intelligence-grid {
+  gap: 16px;
+  margin: 20px 0;
+}
+.atelier-budget .budget-kpi-spent b,
+.atelier-budget .budget-kpi-spent strong {
+  color: var(--studio-spent) !important;
+}
+.atelier-budget [class*="spent"] {
+  --blue: var(--studio-spent);
+}
+@media (min-width: 721px) {
+  .app {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+}
+@media (max-width: 1200px) {
+  main.mp-page {
+    padding: 24px;
+  }
+  .atelier-project-cards,
+  .atelier-person-directory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .atelier-stat {
+    padding: 18px 16px;
+  }
+  .atelier-stat b {
+    font-size: 26px;
+  }
+  .atelier-intelligence-intro {
+    align-items: start;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .atelier-evidence-dimensions > div:first-child {
+    border-left: 0;
+    padding-left: 0;
+    max-width: 160px;
+  }
+}
+@media (max-width: 900px) {
+  .atelier-home-grid,
+  .atelier-two-col {
+    grid-template-columns: 1fr;
+  }
+  .atelier-welcome {
+    gap: 20px;
+    align-items: start;
+  }
+  .atelier-welcome > div:last-child {
+    flex-direction: column;
+    align-items: start;
+  }
+  .atelier-stat b {
+    font-size: 24px;
+  }
+  .atelier-source-list article > div:last-child {
+    flex-basis: 170px;
+  }
+  .atelier-project-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  main.mp-page {
+    padding: 20px 18px 105px;
+  }
+  .top {
+    margin-bottom: 18px;
+  }
+  .top #title {
+    font-size: 27px;
+  }
+  .top #subtitle {
+    font-size: 12px;
+  }
+  .atelier-top-source {
+    display: none;
+  }
+  .app:has(main.mp-page) .side {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    height: 72px;
+    padding: 6px 8px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    background: var(--surface);
+    z-index: 100;
+    box-shadow: 0 -1px 0 var(--line);
+    border: 0;
+  }
+  .side[data-ledger-nav="six"] a[data-r] {
+    display: none !important;
+  }
+  .side[data-ledger-nav="six"]
+    a:is(
+      [data-r="home"],
+      [data-r="projects"],
+      [data-r="overview"],
+      [data-r="intel"]
+    ) {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+    grid-row: 1;
+    padding: 6px 0 !important;
+    margin: 0 !important;
+    font-size: 10px !important;
+    min-width: 0;
+  }
+  .side[data-ledger-nav="six"] a[data-r="home"] {
+    grid-column: 1;
+  }
+  .side[data-ledger-nav="six"] a[data-r="projects"] {
+    grid-column: 2;
+  }
+  .side[data-ledger-nav="six"] a[data-r="overview"] {
+    grid-column: 3;
+  }
+  .side[data-ledger-nav="six"] a[data-r="intel"] {
+    grid-column: 4;
+  }
+  .side[data-ledger-nav="six"] #more {
+    grid-column: 5;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-size: 10px;
+    gap: 4px;
+    padding: 0;
+  }
+  .app:has(main.mp-page) .side a.on {
+    box-shadow: inset 0 2px var(--brand);
+  }
+  .side[data-ledger-nav="six"] .brand,
+  .side[data-ledger-nav="six"] .nav-label,
+  .side[data-ledger-nav="six"] .side-footer,
+  .side[data-ledger-nav="six"] [data-act="notifbtn"] {
+    display: none;
+  }
+  .atelier-scope {
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 0;
+  }
+  .atelier-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .atelier-scope > label:not(.atelier-search) {
+    flex: 1;
+  }
+  .atelier-scope select {
+    max-width: none;
+    font-size: 12px;
+  }
+  .atelier-selection {
+    font-size: 10px;
+  }
+  .atelier-filter-more .btn,
+  .atelier-reset {
+    font-size: 12px;
+  }
+  .atelier-filter-more > div {
+    right: auto;
+    left: 0;
+  }
+  .atelier-welcome {
+    display: block;
+    margin: 20px 0;
+  }
+  .atelier-welcome h2 {
+    font-size: 29px;
+  }
+  .atelier-welcome > div:last-child {
+    flex-direction: row;
+    margin-top: 18px;
+  }
+  .atelier-welcome p {
+    font-size: 12px;
+  }
+  .atelier-kpis {
+    grid-template-columns: 1fr 1fr;
+    margin: 18px 0 20px;
+  }
+  .atelier-stat {
+    padding: 15px 14px;
+    gap: 6px;
+  }
+  .atelier-stat:nth-child(2) {
+    border-right: 0;
+  }
+  .atelier-stat:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+  .atelier-stat b {
+    font-size: 25px;
+  }
+  .atelier-stat .metric-label {
+    font-size: 11px;
+  }
+  .atelier-stat .ks {
+    font-size: 10px;
+  }
+  .atelier-home-grid {
+    gap: 16px;
+  }
+  .atelier-home-panel {
+    padding: 20px;
+  }
+  .atelier-section-head {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .atelier-section-head h2 {
+    font-size: 18px;
+  }
+  .atelier-section-head p {
+    font-size: 11px;
+  }
+  .atelier-eyebrow {
+    font-size: 9px;
+  }
+  .atelier-text-link {
+    font-size: 11px;
+  }
+  .atelier-date-row > span {
+    display: none;
+  }
+  .atelier-amounts dd {
+    font-size: 17px;
+  }
+  .operational-metrics {
+    flex-direction: column;
+    align-items: start;
+    gap: 0;
+  }
+  .atelier-tabs {
+    gap: 22px;
+    margin-bottom: 18px;
+  }
+  .atelier-tabs a,
+  .atelier-tabs button {
+    font-size: 12px;
+  }
+  .atelier-directory-heading {
+    display: block;
+  }
+  .atelier-directory-heading > span {
+    display: block;
+    padding: 0;
+    margin-bottom: 16px;
+  }
+  .atelier-project-cards,
+  .atelier-person-directory {
+    grid-template-columns: 1fr;
+  }
+  .atelier-country summary {
+    padding: 18px;
+  }
+  .atelier-country summary strong {
+    font-size: 18px;
+  }
+  .atelier-country ul {
+    padding: 0 18px;
+  }
+  .atelier-country li {
+    grid-template-columns: 1fr;
+  }
+  .atelier-country li > b {
+    grid-column: 1;
+    grid-row: auto;
+    font-size: 12px;
+    color: var(--mute);
+  }
+  .atelier-intelligence-intro {
+    margin: 24px 0;
+  }
+  .atelier-intelligence-intro h2 {
+    font-size: 25px;
+  }
+  .atelier-intelligence-intro p {
+    font-size: 12px;
+  }
+  .atelier-evidence-dimensions {
+    gap: 16px;
+    width: 100%;
+  }
+  .atelier-evidence-dimensions > div {
+    padding-left: 14px;
+    flex: 1;
+  }
+  .atelier-evidence-dimensions b {
+    font-size: 22px;
+  }
+  .atelier-evidence-dimensions span {
+    font-size: 10px;
+  }
+  .atelier-list-toolbar {
+    gap: 12px;
+  }
+  .atelier-list-toolbar > label:first-child {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .atelier-list-toolbar > span {
+    padding: 0;
+    margin-left: 0;
+  }
+  .atelier-list-toolbar select,
+  .atelier-list-toolbar input {
+    font-size: 13px;
+  }
+  .atelier-queue-item > header {
+    padding: 12px 16px;
+    gap: 7px;
+  }
+  .atelier-queue-body {
+    grid-template-columns: 1fr;
+    padding: 18px 16px;
+    gap: 16px;
+  }
+  .atelier-queue-body aside {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 14px 0 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .atelier-queue-body aside > span:not(.atelier-label) {
+    flex: 1;
+  }
+  .atelier-queue-body .btn {
+    font-size: 12px;
+  }
+  .atelier-queue-body dl > div {
+    grid-template-columns: 80px 1fr;
+    gap: 10px;
+    font-size: 11px;
+  }
+  .atelier-small-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .atelier-small-kpis .atelier-stat {
+    padding: 12px 10px;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+  }
+  .atelier-small-kpis .atelier-stat:last-child {
+    border-right: 0;
+  }
+  .atelier-small-kpis .metric-label {
+    font-size: 10px;
+  }
+  .atelier-small-kpis .atelier-stat b {
+    font-size: 22px;
+  }
+  .atelier-small-kpis .ks {
+    display: none;
+  }
+  .atelier-segments {
+    width: 100%;
+  }
+  .atelier-segments button {
+    font-size: 11px;
+    padding: 6px 8px;
+    min-height: 36px;
+  }
+  .atelier-agenda article {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px;
+    position: relative;
+  }
+  .atelier-agenda time {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .atelier-agenda .btn {
+    justify-self: start;
+    font-size: 12px;
+    min-height: 34px;
+  }
+  .atelier-agenda h3 {
+    font-size: 14px;
+  }
+  .atelier-source-list article {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .atelier-source-list article > div:last-child {
+    flex-basis: 100%;
+    padding-left: 48px;
+  }
+  .atelier-source-list .btn {
+    font-size: 11px;
+    min-height: 34px;
+  }
+  .atelier-import-steps {
+    gap: 10px;
+    font-size: 10px;
+  }
+  .atelier-import-steps b {
+    width: 22px;
+    height: 22px;
+  }
+  .atelier-page .mp-panel-head {
+    padding: 18px 16px 8px;
+  }
+  .atelier-page .mp-panel-head h2 {
+    font-size: 18px;
+  }
+  .atelier-page .mp-panel-body {
+    padding: 12px 16px 18px;
+  }
+  .atelier-page .mp-panel-head p {
+    font-size: 11px;
+  }
+  .atelier-page .ps-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .atelier-page .ps-intelligence-grid {
+    grid-template-columns: 1fr;
+  }
+  .atelier-page .ps-hero {
+    padding: 12px 0;
+  }
+  .atelier-page .ps-hero > div:last-child {
+    display: none;
+  }
+  .atelier-drawer {
+    padding: 22px;
+  }
+  .atelier-review-dialog,
+  .atelier-import-dialog {
+    padding: 22px 18px;
+  }
+  .atelier-review-dialog h2,
+  .atelier-import-dialog h2 {
+    font-size: 21px;
+  }
+  .atelier-management-brief {
+    padding: 20px;
+  }
+  .atelier-brief-actions .btn {
+    font-size: 12px;
+  }
+  .atelier-pagination .btn {
+    font-size: 12px;
+    min-height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atelier-page *,
+  .atelier-drawer * {
+    scroll-behavior: auto;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+body[data-studio-effects="none"] .atelier-page * {
+  animation: none !important;
+  transition: none !important;
+}
+@media print {
+  .atelier-scope,
+  .atelier-tabs,
+  .atelier-arrange,
+  .atelier-brief-actions,
+  .atelier-top-source,
+  .atelier-pagination {
+    display: none !important;
+  }
+  .atelier-home-grid,
+  .atelier-two-col {
+    display: block;
+  }
+  .atelier-home-panel,
+  .atelier-management-brief {
+    border: 0;
+    break-inside: avoid;
+    padding: 12px 0;
+  }
+  .atelier-kpis {
+    border: 0;
+  }
+  .atelier-stat {
+    padding: 12px;
+  }
+  .atelier-queue-body aside {
+    display: none;
+  }
+  .atelier-queue-body {
+    grid-template-columns: 1fr;
+  }
+}
+/* Compact mobile representations use the same filtered rows and export scope. */
+.atelier-kpis.home-metrics > .atelier-stat {
+  background: var(--surface) !important;
+  min-height: 0;
+  box-shadow: none;
+  color: var(--ink);
+  padding: 20px 24px;
+}
+.atelier-kpis.home-metrics > .atelier-stat .metric-label {
+  color: var(--mute);
+}
+.atelier-kpis.home-metrics > .atelier-stat .ks {
+  color: var(--mute);
+}
+.atelier-two-col > .mp-panel {
+  grid-column: auto !important;
+  min-width: 0;
+  width: auto;
+}
+.atelier-arrow {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 3px;
+}
+.atelier-arrow svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.atelier-table-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.atelier-table-presets > span {
+  font-size: 11px;
+  color: var(--mute);
+  margin-right: 6px;
+}
+.atelier-table-presets .btn {
+  font-size: 12px;
+  min-height: 34px;
+}
+.rs-mobile-cards,
+.rs-mobile-switch {
+  display: none;
+}
+.atelier-import-preview {
+  padding: 20px;
+  background: var(--studio-panel-alt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 16px 0;
+}
+.atelier-import-preview p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+@media (max-width: 720px) {
+  .atelier-scope > label:not(.atelier-search) {
+    flex: 1 1 calc(50% - 4px);
+  }
+  .atelier-scope > .atelier-selection {
+    flex: 1 1 auto;
+    text-align: right;
+  }
+  .top .acts .atelier-top-source {
+    display: none !important;
+  }
+  .atelier-kpis.home-metrics > .atelier-stat {
+    padding: 14px;
+    min-height: 0;
+  }
+  .atelier-kpis.home-metrics > .atelier-stat b {
+    font-size: 25px;
+    margin: 0;
+  }
+  .atelier-kpis.home-metrics > .atelier-stat .metric-label {
+    font-size: 11px;
+  }
+  .rs-mobile-switch {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+  }
+  .rs-mobile-switch .btn {
+    font-size: 12px;
+  }
+  .rs-mobile-switch [aria-pressed="true"] {
+    color: var(--brand);
+    border-color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+  }
+  .rs-mobile-cards {
+    display: grid;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .rs-mobile-cards article {
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .rs-mobile-cards article > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--mute);
+    gap: 12px;
+  }
+  .rs-mobile-cards input {
+    min-height: 0;
+    width: 16px;
+    height: 16px;
+  }
+  .rs-mobile-cards h3 {
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.4;
+    margin: 10px 0 14px;
+  }
+  .rs-mobile-cards h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .rs-mobile-cards dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  .rs-mobile-cards dt {
+    font-size: 10px;
+    color: var(--mute);
+  }
+  .rs-mobile-cards dd {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 6px 0;
+  }
+  .rs-mobile-cards dl > div:nth-child(1) dd {
+    color: var(--studio-budget);
+  }
+  .rs-mobile-cards dl > div:nth-child(2) dd {
+    color: var(--studio-spent);
+  }
+  .rs-mobile-cards footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .rs-mobile-cards footer span {
+    font-size: 10px;
+    color: var(--mute);
+  }
+  .rs-mobile-cards .btn {
+    font-size: 11px;
+    min-height: 34px;
+  }
+  .rs-mobile-total {
+    font-size: 11px;
+    color: var(--mute);
+    padding: 10px 0;
+    line-height: 1.7;
+  }
+  .rs-mobile-cards.rs-unused {
+    display: none;
+  }
+  .rs-mobile-cards:empty {
+    display: none;
+  }
+  .rs-mobile-cards + .mp-mobile-hint {
+    display: none;
+  }
+  .rs-mobile-cards .atelier-empty {
+    padding: 20px;
+  }
+  .rs-display-table .rs-mobile-cards {
+    display: none;
+  }
+  .rs-mobile-cards:not(.rs-display-table .rs-mobile-cards)
+    ~ .mp-register-scroll {
+    display: none;
+  }
+  .rs-display-table .mp-register-scroll {
+    display: block;
+  }
+}
+@media print {
+  .rs-mobile-cards,
+  .rs-mobile-switch {
+    display: none !important;
+  }
+}
+.atelier-source-comparison {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto;
+  max-width: 100%;
+}
+.atelier-source-comparison table {
+  min-width: 920px;
+  width: 100%;
+  border-collapse: collapse;
+}
+.atelier-source-comparison caption {
+  font-size: 11px;
+  color: var(--mute);
+  padding: 14px;
+  text-align: left;
+}
+.atelier-source-comparison th {
+  text-align: left;
+  padding: 14px;
+  font-size: 11px;
+  background: var(--studio-panel-alt);
+  white-space: nowrap;
+}
+.atelier-source-comparison td {
+  padding: 16px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  vertical-align: top;
+}
+.atelier-source-comparison small {
+  display: block;
+  font-size: 10px;
+  color: var(--mute);
+  margin-top: 6px;
+  max-width: 200px;
+  white-space: normal;
+}
+.atelier-source-comparison td:last-child {
+  display: grid;
+  gap: 8px;
+}
+.atelier-source-comparison td:last-child a {
+  font-size: 11px;
+}
+.atelier-source-comparison .btn {
+  font-size: 11px;
+  min-height: 34px;
+}
+.atelier-country-sources {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.atelier-country-sources article {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+}
+.atelier-country-sources span,
+.atelier-country-sources small {
+  font-size: 11px;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+.atelier-country-sources .btn {
+  justify-self: start;
+  font-size: 12px;
+}
+.atelier-history-controls select {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+}
+@media (max-width: 720px) {
+  .atelier-welcome {
+    margin: 8px 0;
+  }
+  .atelier-kpis.home-metrics {
+    margin: 8px 0;
+  }
+  .atelier-welcome h2 {
+    font-size: 22px;
+    line-height: 1.15;
+    margin: 8px 0;
+  }
+  .atelier-welcome h2 span {
+    font-size: 18px;
+  }
+  .atelier-welcome p {
+    font-size: 11px;
+  }
+  .atelier-welcome > div:last-child {
+    margin-top: 12px;
+  }
+  .atelier-kpis.home-metrics > .atelier-stat {
+    padding: 10px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -12177,6 +14408,8 @@ const savedPortfolio=ls.get(KEY);let DEMO_MODE=!valid(savedPortfolio);
 let S=migrate(DEMO_MODE?JSON.parse(JSON.stringify(DEMO)):savedPortfolio);
 function cleanFilters(value){const f=value&&typeof value==='object'?value:{},text=k=>typeof f[k]==='string'?f[k]:'',date=k=>/^\d{4}-\d{2}-\d{2}$/.test(text(k))?text(k):'';return{q:text('q'),c:text('c')||'all',s:text('s')||'all',g:['all','off','r','o','g','n'].includes(f.g)?f.g:'all',k:cl(num(f.k),-80,80),fm:['auto','rate','reports','run-rate','plan','team','pace','trend'].includes(f.fm)?f.fm:'auto',ds:date('ds'),de:date('de')}}
 let F=cleanFilters(ls.get(FKEY)),T={k:'util',d:-1};
+/* Explicit extension boundary: readers and financial calculations stay in the host. */
+const LedgerHost={owns:()=>false,scopeRows:R=>R,models:ps=>ps.map(model),filtersChanged:()=>{},cleanReviews:()=>({}),importPreview:()=>'',afterRender:()=>{}};
 const IDB={db:null,open(){return new Promise(r=>{try{const q=indexedDB.open('portfolio-ledger',2);q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');if(!d.objectStoreNames.contains('files'))d.createObjectStore('files')};q.onsuccess=()=>{this.db=q.result;r(this.db)};q.onerror=()=>r(null)}catch(e){r(null)}})},
  get(k){return new Promise(r=>{if(!this.db)return r(null);try{const t=this.db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>r(t.result||null);t.onerror=()=>r(null)}catch(e){r(null)}})},
  putFile(k,b){return new Promise(r=>{if(!this.db)return r(false);try{const tx=this.db.transaction('files','readwrite');tx.objectStore('files').put(b,k);tx.oncomplete=()=>r(true);tx.onerror=()=>r(false)}catch(e){r(false)}})},
@@ -12250,8 +14483,8 @@ function model(p){const evidence=projectFinancialEvidence(p),staffFte=projectSta
  if(e>NOW){const am=ac.length>=4?ac:[];if(am.length>=4){const monthIndex=m=>Number(m.slice(0,4))*12+Number(m.slice(5,7))-1,origin=monthIndex(am[0].month),xs=am.map(a=>monthIndex(a.month)-origin),ys=[];let cum=0;am.forEach(a=>{cum+=num(a.amount);ys.push(cum)});const n=xs.length,sx=xs.reduce((a,x)=>a+x,0),sy=ys.reduce((a,y)=>a+y,0),sxx=xs.reduce((a,x)=>a+x*x,0),sxy=xs.reduce((a,x,i)=>a+x*ys[i],0),den=n*sxx-sx*sx;if(den>0){const slope=(n*sxy-sx*sy)/den,inter=(sy*sxx-sx*sxy)/den,totalMonths=Math.ceil((e-+new Date(am[0].month+'-01'))/(30.44*DAY)),trendEnd=inter+slope*(totalMonths-1);FC.trend=Math.max(u,trendEnd*K)}}}
  const want=F.fm&&F.fm!=='auto'?(F.fm==='rate'?['reports','run-rate']:[F.fm]):[],m=[...want,'reports','run-rate','plan','team','pace','trend'].find(k=>FC[k]!=null)||'none',eac=FC[m]??u,g=pace==null?'n':pace>1.15?'r':pace<.7?'o':'g';
  return{p,evidence,s,e,b,sp,co,u,av:b-u,util,el,pace,eac,vr:b-eac,forecastAvailable:m!=='none',left:Math.round((e-NOW)/DAY),g,cn:cname(p.country),fte:staffFte.value??0,staffFte,staffCount:projectTeam(p).length,rr,basis:m,fc:FC,evm:ev}}
-function rows(scope={}){const q=F.q.trim().toLowerCase();let ps=S.projects.filter(p=>(scope.c?p.country===scope.c:F.c==='all'||p.country===F.c)&&(F.s==='all'||p.sector===F.s)&&(!q||(p.name+' '+p.code+' '+cname(p.country)+' '+(p.sector||'')+' '+(p.funding||'')+' '+(p.notes||'')).toLowerCase().includes(q))&&(!F.ds||p.start>=F.ds)&&(!F.de||p.end<=F.de));
- let R=ps.map(model);if(F.g!=='all')R=R.filter(r=>F.g==='off'?(r.g==='r'||r.g==='o'):r.g===F.g);return R}
+function rows(scope={}){const q=F.q.trim().toLowerCase();let ps=S.projects.filter(p=>(scope.allCountries|| (scope.c?p.country===scope.c:F.c==='all'||p.country===F.c))&&(F.s==='all'||p.sector===F.s)&&(!q||(p.name+' '+p.code+' '+cname(p.country)+' '+(p.sector||'')+' '+(p.funding||'')+' '+(p.notes||'')).toLowerCase().includes(q))&&(!F.ds||p.start>=F.ds)&&(!F.de||p.end<=F.de));
+ let R=LedgerHost.models(ps);if(F.g!=='all')R=R.filter(r=>F.g==='off'?(r.g==='r'||r.g==='o'):r.g===F.g);return LedgerHost.scopeRows(R,scope)}
 const sum=(R,k)=>R.reduce((a,r)=>a+r[k],0),forecastRows=R=>R.filter(r=>r.forecastAvailable);
 /* ---------- charts ---------- */
 const TLEXP=new Set();
@@ -12862,14 +15095,14 @@ function budgetExecutionWorkspace(p,r){const f=budgetComparison(p),{u,b,d,rows}=
  const source=`<section class="card budget-source"><div class="budget-heading"><div><span class="report-eyebrow">Budget workspace</span><h2>Choose your comparison</h2><p class="sub">Select each source independently. These choices apply to this view.</p></div><a class="btn sm" href="#/project/${encodeURIComponent(p.id)}/finance/reports">Manage documents →</a></div><div class="budget-selectors">${pick('budget','Budget baseline',f.budgetDocs,'Automatic · latest approved budget')}${pick('document','Compare with',f.D,revision?'Automatic · latest approved budget':'Automatic · latest financial report')}<label>Compare values<select data-budget-field="mode" data-pid="${h(p.id)}"><option value="actual"${!revision?' selected':''}>Expenditure & commitments</option><option value="budget"${revision?' selected':''}>Budget amounts / revisions</option></select></label></div><div class="budget-resolved"><div><small>Using budget</small><b>${h(b?.name||'No source')}</b><span>${h(b?.date||'')} · ${h(b?.fileName||'No filename recorded')}</span></div><div><small>Using comparison</small><b>${h(d?.name||'No source')}</b><span>${h(d?.date||'')} · ${h(d?.fileName||'No filename recorded')}</span></div></div>${d?`<div class="budget-coverage"><b>Selected source: ${h(d.fileName||d.name)}</b><span>${leaf(d.snapshot.lines).length} source lines · Spent: ${leaf(d.snapshot.lines).filter(l=>budgetNumber(l.actual)!==null).length} · Spent + committed: ${leaf(d.snapshot.lines).filter(l=>budgetNumber(l.spentCommitted)!==null).length} · Reported units: ${leaf(d.snapshot.lines).filter(l=>budgetNumber(l.reportedUnits)!==null).length}</span><button class="btn sm" data-act="report-reimport" data-id="${h(p.id)}|${h(d.id)}">Re-read this Excel</button></div>`:''}<details class="budget-source-details"><summary>View source files and data fields</summary><div class="budget-evidence-grid">${budgetEvidence(b,'Baseline source','Approved ← snapshot.lines.approved; total ← snapshot.totals.approved')}${budgetEvidence(d,'Comparison source',revision?'Compared budget ← snapshot.lines.approved; total ← snapshot.totals.approved':'Spent ← actual; exposure ← spentCommitted (or actual + committed); units ← reportedUnits; forecast ← forecast')}</div><p class="note">Budget lines are matched by code. Missing lines or values display “—”. Cumulative financial reports are never added together. Forecast schedules with recognised actual-expenditure fields are eligible for automatic selection. Forecast files without those fields are excluded.</p></details></section>`;
  const notes=[...(d?.snapshot.importNotes||[])];if(d&&!d.snapshot.lines.some(l=>budgetNumber(l.reportedUnits)!==null))notes.push('The selected stored document contains no reported-unit values. Re-read this Excel above to update this source; the reader cannot recover units from old snapshot values alone.');if(!b)notes.push('No budget source is available.');else if(!isBV(b))notes.push('The selected baseline is a report snapshot, not a registered approved budget.');if(!d)notes.push('No comparison document is available.');if(!revision&&d&&isBV(d))notes.push('The comparison document is an approved budget: its expenditure columns may be zero. Choose a financial report to see actual spending.');if(!revision&&d&&/forecast/i.test(d.type)&&!d.snapshot.fieldSources?.actual)notes.push('A forecast document is selected manually. Check its actual and commitment fields before interpreting expenditure.');if(b&&d&&b.date>d.date)notes.push('The baseline is dated after the comparison document. This view compares the selected budget with earlier spending.');if(revision&&b?.id===d?.id)notes.push('Both sources are the same document. Select the original budget and a later revision to see changes.');if(f.approved!==null&&f.lineApproved!==null&&Math.abs(f.approved-f.lineApproved)>=1)notes.push(`Baseline total ${eur(f.approved)} differs from its matched leaf-line sum ${eur(f.lineApproved)}.`);if(f.compared!==null&&f.lineCompared!==null&&Math.abs(f.compared-f.lineCompared)>=1)notes.push(`Comparison total ${eur(f.compared)} differs from its leaf-line sum ${eur(f.lineCompared)}.`);
  rows.forEach(l=>{if(l.reported!==null&&l.units!==null&&l.reported>l.units)notes.push(`Line ${l.code}: ${l.reported} reported units exceed ${l.units} budgeted units.`);if(l.forecast!==null&&l.ap!==null&&l.forecast>l.ap)notes.push(`Line ${l.code}: forecast ${eur(l.forecast)} exceeds the selected budget ${eur(l.ap)}.`)});
- const kpis=revision?[['Baseline budget',f.approved,''],['Compared budget',f.compared,''],['Budget change',f.delta,'brand'],['Matched lines',rows.filter(x=>x.match==='matched').length,'count']]:[['Selected budget',f.approved,''],['Spent',f.actual,'brand'],['Committed',f.committed,'warn'],['Available',f.available,f.available<0?'bad':'good']];
+ const kpis=revision?[['Baseline budget',f.approved,''],['Compared budget',f.compared,''],['Budget change',f.delta,'brand'],['Matched lines',rows.filter(x=>x.match==='matched').length,'count']]:[['Selected budget',f.approved,'studio-budget'],['Spent',f.actual,'studio-spent'],['Committed',f.committed,'studio-committed'],['Available',f.available,f.available<0?'bad':'']];
  const kpi=`<div class="budget-kpis">${kpis.map(([title,value,color])=>`<div><small>${title}</small><strong${color&&color!=='count'?` style="color:var(--${color})"`:''}>${color==='count'?value:num(value)}</strong></div>`).join('')}</div>`;
  const visible=rows.filter(l=>(!u.q||`${l.code} ${l.desc}`.toLowerCase().includes(u.q.toLowerCase()))&&(u.filter==='all'||u.filter==='unmatched'&&l.match!=='matched'||u.filter==='over'&&(revision?l.delta>0:l.available!==null&&l.available<0))),groups={};visible.forEach(l=>{const k=l.code.split('.')[0];(groups[k]||(groups[k]=[])).push(l)});const names={...(p.contract?.annex?.heads||{}),'1':'Human resources','2':'Travel','3':'Equipment & services','4':'Local office','5':'Other costs','6':'Other','7':'Direct costs','8':'Contingency','9':'Other','10':'Administrative costs'};
  const cols=revision?['Code & description','Baseline budget','Compared budget','Change','Change %']:['Code & description','Approved','Spent','Committed','Available'];if(u.advanced&&!revision)cols.push('Spent + committed','Used %','Approved units','Reported units','Reported unit rate','Unit %','Planned expenditure','Proposed budget');
  const row=l=>`<tr class="${l.match!=='matched'?'budget-unmatched':''}"><td><b class="budget-code">${h(l.code)}</b><span>${h(l.desc||'Untitled line')}</span>${l.match!=='matched'?`<small class="budget-match">${l.match==='budget-only'?'Only in baseline':'Only in comparison'}</small>`:''}${u.advanced&&l.unit?`<small class="budget-match">${h(l.unit)}${l.rate!==null?' · '+eur(l.rate)+'/unit':''}</small>`:''}</td><td>${num(l.ap)}</td>${revision?`<td>${num(l.val)}</td><td>${num(l.delta)}</td><td>${l.ap!==null&&l.ap!==0&&l.delta!==null?pc(l.delta/Math.abs(l.ap)):'—'}</td>`:`<td class="budget-actual">${num(l.actual)}</td><td class="budget-commit">${num(l.committed)}</td><td style="color:${l.available<0?'var(--bad)':'var(--good)'}">${num(l.available)}</td>${u.advanced?`<td>${num(l.sc)}</td><td>${l.ap>0&&l.sc!==null?pc(l.sc/l.ap):'—'}</td><td>${l.units===null?'—':l.units.toLocaleString('en')}</td><td>${l.reported===null?'—':l.reported.toLocaleString('en')}</td><td>${num(l.reportedUnitRate)}</td><td>${l.units>0&&l.reported!==null&&!l.unitMixed?pc(l.reported/l.units):'—'}</td><td>${num(l.planned)}</td><td>${num(l.proposedBudget)}</td>`:''}`}</tr>`;
  const headings=Object.keys(groups).sort(codeSort).map(k=>{const L=groups[k],sum=key=>L.some(l=>l[key]!==null)?L.reduce((n,l)=>n+(l[key]??0),0):null,a=sum('ap'),ac=sum('actual'),sc=sum('sc'),v=revision?sum('val'):a!==null&&sc!==null?a-sc:null,used=a>0&&sc!==null?sc/a:null;const annex=p.contract?.annex,original=budgetNumber(annex?.subs?.[k]?.total)??(annex?.lines?.length?annex.lines.filter(l=>String(l.code).split('.')[0]===k).reduce((n,l)=>n+num(l.approved),0):null),limit=budgetNumber(p.contract?.flexPct)??25,annexInfo=original>0&&a!==null?`<div class="budget-annex">Annex III reference: ${num(original)} · selected budget change: ${pc((a-original)/original)} · configured flexibility threshold: ${limit}%${Math.abs((a-original)/original)*100>limit?' · <b>Review required</b>':''}</div>`:'';return `<details class="budget-group" data-budget-group="${h(k)}" data-pid="${h(p.id)}"${u.open.includes(k)||u.q||u.filter!=='all'?' open':''}><summary><div><span class="budget-group-name">${h(k)} · ${h(p.contract?.annex?.heads?.[k]||names[k]||'Budget heading')}</span><small>${L.length} line${L.length===1?'':'s'}${!revision&&used!==null?' · '+pc(used)+' spent + committed':''}</small></div><div class="budget-group-meter" aria-hidden="true">${!revision&&a>0?`<i style="width:${Math.max(0,Math.min(100,(ac??0)/a*100))}%;background:var(--brand)"></i><i style="width:${Math.max(0,Math.min(100,((sc??0)-(ac??0))/a*100))}%;background:var(--warn)"></i>`:''}</div><div class="budget-group-total"><b>${num(a)}</b><small>baseline</small></div><div class="budget-group-total"><b>${num(v)}</b><small>${revision?'compared':'available'}</small></div></summary>${annexInfo}<div class="budget-table-scroll"><table class="budget-table"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${L.map(row).join('')}</tbody></table></div></details>`}).join('');
  const filters=`<div class="budget-filters"><label class="report-search">Find a budget line<input id="budget-search" type="search" data-budget-field="q" data-pid="${h(p.id)}" value="${h(u.q)}" placeholder="Code or description"></label><label>Show lines<select data-budget-field="filter" data-pid="${h(p.id)}">${[['all','All lines'],['over',revision?'Budget increases':'Over budget'],['unmatched','Unmatched codes']].map(([v,t])=>`<option value="${v}"${u.filter===v?' selected':''}>${t}</option>`).join('')}</select></label>${!revision?`<label class="budget-advanced"><input type="checkbox" data-budget-field="advanced" data-pid="${h(p.id)}"${u.advanced?' checked':''}> Units, totals & budget proposals</label>`:''}<button class="btn sm" data-act="budget-expand" data-id="${h(p.id)}">${u.open.length?'Collapse':'Expand'} all</button></div>`;
- const table=card(revision?'Budget changes by heading':'Budget execution by heading',revision?'Compare approved amounts across the selected documents.':'Blue: spent · amber: committed · open a heading for its budget lines.',filters+(headings||'<p class="empty">No budget lines match this selection.</p>'),'wide');
+ const table=card(revision?'Budget changes by heading':'Budget execution by heading',revision?'Compare approved amounts across the selected documents.':'Teal: spent · amber: committed · open a heading for its budget lines.',filters+(headings||'<p class="empty">No budget lines match this selection.</p>'),'wide');
  return `<div class="budget-workspace">${source}${notes.length?`<ul class="ins budget-notes">${notes.map(x=>`<li class="warn">${h(x)}</li>`).join('')}</ul>`:''}${kpi}${table}${!RP(p).length?card('Manual budget lines','Add documents above to use source-based comparisons.',recTable(p,'lines',[['Code',x=>h(x.code)],['Heading',x=>h(x.heading)],['Approved',x=>eur(x.approved)],['Spent',x=>eur(x.actual)],['Committed',x=>eur(x.committed)]]),'wide'):''}</div>`}
 
 const REPORT_PREF_KEY='ledger.reportworkspace',REPORT_UI=Object.create(null);
@@ -13302,7 +15535,7 @@ async function importProjectDocuments(files,pid){const p=S.projects.find(x=>x.id
  else if(/\.docx$/i.test(file.name)){e.D=parseDoA(await docxRead(await file.arrayBuffer()));e.notes.push(...(e.D.importNotes||[]))}else if(/\.(xlsx|csv)$/i.test(file.name))e.financial=true;
  const counts=[];if(e.D?.acts.length)counts.push(e.D.acts.length+' activities');if(e.D?.inds.length)counts.push(e.D.inds.length+' indicators');if(e.D?.risks.length)counts.push(e.D.risks.length+' risks');if(e.contract?.annex?.lines.length)counts.push(e.contract.annex.lines.length+' budget lines');if(Object.keys(e.contract?.facts||{}).length)counts.push(Object.keys(e.contract.facts).length+' contract terms');if(e.amendment?.isAmendment)counts.push('Contract amendment'+(e.amendment.effective?' · effective '+e.amendment.effective:''));e.counts=counts;e.recognized=!!counts.length;if(!counts.length&&!e.financial)e.notes.push('Original file will be retained; no project data was recognized.');}catch(err){e.error=err.message;e.notes.push(err.message)}}if(PDI!==state)return;state.busy=false;drawProjectDocumentsReview()}
 function drawProjectDocumentsReview(){const p=S.projects.find(x=>x.id===PDI?.pid);if(!p)return;let D=null;for(const e of PDI.entries)if(e.D)D=mergeDoAData(D,e.D);const standalone=PDI.entries.findIndex(e=>e.D?.inds.length&&!e.D?.acts.length),sources=PDI.entries.map((e,i)=>({e,i})).filter(x=>x.e.D?.inds.length);if(sources.length){PDI.indicatorIndex=PDI.indicatorIndex??(standalone>=0?standalone:sources.at(-1).i);D={...D,inds:PDI.entries[PDI.indicatorIndex].D.inds}}PDI.D=D;const amendment=PDI.entries.find(e=>e.amendment?.effective)?.amendment,contractEntries=PDI.entries.filter(e=>Object.keys(e.contract?.facts||{}).length),period=contractEntries.find(e=>e.contract.facts.period)?.contract.facts.period.value,start=D?.start||period?.start||p.doa?.start||p.start||'',months=D?.months||period?.months||p.doa?.months||Math.max(1,Math.round((new Date(p.end)-new Date(p.start))/(30.44*DAY))),budgetEntries=PDI.entries.filter(e=>e.contract?.annex?.lines.length);
- $('#ibbox').innerHTML=`<h2 style="margin:0">Project documents ready for review</h2><p class="sub">Every selected file was checked. Action plans, Logframes and budget versions feed their own project fields. Original files stay linked to the extracted data.</p><div class="tw" style="max-height:36vh;overflow:auto"><table class="imt"><thead><tr><th>Document</th><th>Recognized data</th><th>Status</th></tr></thead><tbody>${PDI.entries.map((e,i)=>`<tr><td style="text-align:left"><b>${h(e.file.name)}</b>${e.pages?`<br><small>${e.pages} pages</small>`:''}</td><td style="text-align:left">${h(e.counts?.join(' · ')||(e.financial?'Financial file: report review follows this import':'Supporting file'))}</td><td><span class="tag ${e.error?'bad':e.recognized?'good':'neutral'}">${e.error?'Review needed':e.recognized?'Data recognized':'Original retained'}</span></td></tr>`).join('')}</tbody></table></div>
+ $('#ibbox').innerHTML=`<h2 style="margin:0">Project documents ready for review</h2><p class="sub">Every selected file was checked. Action plans, Logframes and budget versions feed their own project fields. Original files stay linked to the extracted data.</p>${LedgerHost.importPreview(p,PDI)}<div class="tw" style="max-height:36vh;overflow:auto"><table class="imt"><thead><tr><th>Document</th><th>Recognized data</th><th>Status</th></tr></thead><tbody>${PDI.entries.map((e,i)=>`<tr><td style="text-align:left"><b>${h(e.file.name)}</b>${e.pages?`<br><small>${e.pages} pages</small>`:''}</td><td style="text-align:left">${h(e.counts?.join(' · ')||(e.financial?'Financial file: report review follows this import':'Supporting file'))}</td><td><span class="tag ${e.error?'bad':e.recognized?'good':'neutral'}">${e.error?'Review needed':e.recognized?'Data recognized':'Original retained'}</span></td></tr>`).join('')}</tbody></table></div>
  ${contractEntries.length?`<details style="margin-top:14px"><summary>Contract terms and source pages</summary>${contractEntries.map(e=>`<div class="tw"><table class="imt"><thead><tr><th>${h(e.file.name)}</th><th>Value</th><th>Source</th></tr></thead><tbody>${Object.entries(e.contract.facts).map(([k,f])=>`<tr><td>${h(f.label)}</td><td>${h(fmtFact(f.value,k))}</td><td style="text-align:left"><small>p. ${f.page}: ${h(f.quote)}</small></td></tr>`).join('')}</tbody></table></div>`).join('')}</details>`:''}
  ${D?.acts.length||D?.inds.length||contractEntries.length?`<div class="sim" style="margin-top:14px"><label>Plan month 1<input type="date" id="pdi-start" value="${h(start)}"></label><label>Plan duration (months)<input type="number" min="1" max="120" id="pdi-months" value="${months}"></label></div>${D?.acts.length||D?.inds.length?`<p class="note"><span id="pdi-counts">${D.acts.length} activities · ${D.inds.length} indicators</span>. Importing a separate Logframe preserves existing activities.</p>`:''}${D?.acts.length?`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pdi-dates" ${D.start?'checked':''}> Use the plan dates for the project</label>`:''}${contractEntries.length?`<div class="sim" style="margin-top:10px"><label>Contract start<input type="date" id="pdi-ct-start" value="${h(period?.start||p.contract?.start||start)}"></label><label>Contract duration (months)<input type="number" min="1" max="120" id="pdi-ct-months" value="${period?.months||p.contract?.months||months}"></label></div><label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="pdi-ct-dates" ${period?'checked':''}> Use the contract dates for the project</label>`:''}`:''}
  ${sources.length>1?`<label style="display:block;margin-top:12px">Use indicators from<select id="pdi-logframe">${sources.map(x=>`<option value="${x.i}"${x.i===PDI.indicatorIndex?' selected':''}>${h(x.e.file.name)} · ${x.e.D.inds.length} indicators</option>`).join('')}</select></label>`:''}
@@ -13589,7 +15822,7 @@ function cmCountryTabs(cid,tab='overview'){return `<nav class="tabs" aria-label=
 function cmSelected(cid){const reports=(S.countryReports||[]).filter(r=>(cid?r.country===cid:cmInScope(r.country))&&(!CM.date||r.date<=CM.date)).sort((a,b)=>b.date.localeCompare(a.date));if(cid){const chosen=reports.find(r=>r.id===CM.report)||reports[0];return chosen?[chosen]:[]}const out=[];for(const r of reports)if(!out.some(x=>x.country===r.country))out.push(r);return out}
 function cmKey(r){return r.pmm+'|'+r.bh}
 function cmRows(reports){const seen=new Set();let duplicates=0;const rows=[];for(const report of reports)for(const r of report.rows){const key=r.pid?'p:'+r.pid:'s:'+cmKey(r);if(seen.has(key)){duplicates++;continue}seen.add(key);if(CM.mae!=='all'&&r.mae!==CM.mae||CM.funding!=='all'&&r.funding!==CM.funding||CM.q&&!cmNorm(r.title+' '+r.pmm+' '+r.bh).includes(cmNorm(CM.q)))continue;rows.push({...r,report})}return {rows,duplicates}}
-function cmTrend(reports){const dates=[...new Set(reports.map(r=>r.date))].sort(),series=dates.map(date=>{const reps=[];for(const r of [...reports].filter(r=>r.date<=date).sort((a,b)=>b.date.localeCompare(a.date)))if(!reps.some(x=>x.country===r.country))reps.push(r);return {date,rows:cmRows(reps).rows}});if(series.length<2)return '<p class="sub">Upload another dated report to see the trend. Historical snapshots are never summed together.</p>';const max=Math.max(1,...series.flatMap(x=>[cmSum(x.rows).spent||0,cmSum(x.rows).exposure||0]));const W=800,H=190,x=i=>55+i*(W-90)/Math.max(1,series.length-1),y=v=>140-(v||0)/max*105,line=k=>series.map((s,i)=>`${x(i)},${y(cmSum(s.rows)[k])}`).join(' ');return `<div class="cm-trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Spent and spent plus committed by report date"><polyline points="${line('exposure')}" fill="none" stroke="#2469c3" stroke-width="3"/><polyline points="${line('spent')}" fill="none" stroke="#109889" stroke-width="3"/>${series.map((s,i)=>`<circle cx="${x(i)}" cy="${y(cmSum(s.rows).spent)}" r="4" fill="#109889"><title>${h(s.date)}: ${cmMoney(cmSum(s.rows).spent)} spent; ${s.rows.length} source projects</title></circle><text x="${x(i)}" y="168" text-anchor="middle" font-size="11" fill="currentColor">${h(s.date)}</text>`).join('')}</svg></div><p class="sub">● Spent (teal) · ● Spent + committed (blue). Coverage can change between dates; hover over a point for project coverage.</p>`}
+function cmTrend(reports){const dates=[...new Set(reports.map(r=>r.date))].sort(),series=dates.map(date=>{const reps=[];for(const r of [...reports].filter(r=>r.date<=date).sort((a,b)=>b.date.localeCompare(a.date)))if(!reps.some(x=>x.country===r.country))reps.push(r);return {date,rows:cmRows(reps).rows}});if(series.length<2)return '<p class="sub">Upload another dated report to see the trend. Historical snapshots are never summed together.</p>';const max=Math.max(1,...series.flatMap(x=>[cmSum(x.rows).spent||0,cmSum(x.rows).exposure||0]));const W=800,H=190,x=i=>55+i*(W-90)/Math.max(1,series.length-1),y=v=>140-(v||0)/max*105,line=k=>series.map((s,i)=>`${x(i)},${y(cmSum(s.rows)[k])}`).join(' ');return `<div class="cm-trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Spent and spent plus committed by report date"><polyline points="${line('exposure')}" fill="none" stroke="var(--studio-committed)" stroke-width="3"/><polyline points="${line('spent')}" fill="none" stroke="#109889" stroke-width="3"/>${series.map((s,i)=>`<circle cx="${x(i)}" cy="${y(cmSum(s.rows).spent)}" r="4" fill="#109889"><title>${h(s.date)}: ${cmMoney(cmSum(s.rows).spent)} spent; ${s.rows.length} source projects</title></circle><text x="${x(i)}" y="168" text-anchor="middle" font-size="11" fill="currentColor">${h(s.date)}</text>`).join('')}</svg></div><p class="sub">● Spent (teal) · ● Spent + committed (amber). Coverage can change between dates; hover over a point for project coverage.</p>`}
 function cmCountryComparison(reports,rows,filtered,duplicates){if(!reports.length)return '';return card('Country comparison','One dated snapshot per country; countries without reports have no financial values',`<div class="tw"><table><thead><tr><th>Country / report date</th><th>Covered projects</th><th>Project amount</th><th>Spent</th><th>Spent + committed</th><th>Left budget</th><th>Source pace indicators</th></tr></thead><tbody>${reports.map(r=>{const rr=rows.filter(x=>x.report.id===r.id),t=filtered||duplicates?cmSum(rr):r.totals;return `<tr><td><a href="#/country/${encodeURIComponent(r.country)}/monitoring"><b>${h(S.countries.find(c=>c.id===r.country)?.name||'Country removed')}</b></a><small>${h(r.date)}</small></td><td>${rr.length} of ${r.rows.length} source rows</td><td>${cmMoney(t.budget)}</td><td>${cmMoney(t.spent)}</td><td>${cmMoney(t.exposure)}</td><td>${cmMoney(t.remaining)}</td><td>Spent vs planned ${pc(r.sourceMetrics?.spentPlanned)}<small>S&C vs planned ${pc(r.sourceMetrics?.exposurePlanned)}</small></td></tr>`}).join('')}</tbody></table></div>`,'wide')}
 function cmSnapshotView(cid,history=false){const c=S.countries.find(c=>c.id===cid);if(cid&&!c)return V.notfound();const all=(S.countryReports||[]).filter(r=>cid?r.country===cid:cmInScope(r.country)),reports=cmSelected(cid),selected=cmRows(reports),R=selected.rows,filtered=CM.q||CM.mae!=='all'||CM.funding!=='all',tot=!filtered&&!selected.duplicates&&reports.length?Object.fromEntries(['budget','spent','exposure','remaining','forecast'].map(k=>[k,reports.every(r=>Number.isFinite(r.totals[k]))?reports.reduce((n,r)=>n+r.totals[k],0):null])):cmSum(R),dates=[...new Set(reports.map(r=>r.date))],known=S.projects.filter(p=>cid?p.country===cid:cmInScope(p.country)).length,previous=cid&&reports[0]?(all.find(r=>r.id===CM.compare)||all.filter(r=>r.date<reports[0].date).sort((a,b)=>b.date.localeCompare(a.date))[0]):null,prev=new Map((previous?.rows||[]).map(r=>[cmKey(r),r])),fields=key=>[...new Set(all.flatMap(r=>r.rows.map(x=>x[key])).filter(Boolean))].sort(),sel=(key,label,opts)=>`<label>${label}<select data-cm-field="${key}"><option value="all">All</option>${opts.map(v=>`<option value="${h(v)}" ${CM[key]===v?'selected':''}>${h(v)}</option>`).join('')}</select></label>`;
  const controls=`<div class="cm-controls">${!cid?`<details class="cm-country-picker"><summary>${CM.country==='all'?'All countries':Array.isArray(CM.country)?CM.country.length+' countries selected':'Country selection'}</summary><div><p class="sub">Clear selections to include all countries.</p>${S.countries.map(c=>`<label><input type="checkbox" data-cm-country="${h(c.id)}" ${CM.country!=='all'&&cmInScope(c.id)?'checked':''}>${h(c.name)}</label>`).join('')}</div></details>`:''}<label>As of<input type="date" data-cm-field="date" value="${h(CM.date)}"></label>${cid?`<label>Report<select data-cm-field="report"><option value="">Latest available</option>${all.sort((a,b)=>b.date.localeCompare(a.date)).map(r=>`<option value="${h(r.id)}" ${CM.report===r.id?'selected':''}>${h(r.date)} · ${h(r.fileName)}</option>`).join('')}</select></label>`:''}${sel('mae','MAE',fields('mae'))}${sel('funding','Funding',fields('funding'))}<label>Project search<input data-cm-field="q" value="${h(CM.q)}" placeholder="Project, PMM or BH"></label><button class="btn" data-act="cm-reset">Reset</button></div>`;
@@ -13612,7 +15845,7 @@ function cmSourceAmountKnown(rep,key){const known=v=>v!==null&&v!==undefined&&v!
 function cmProjectRows(cid){return S.projects.filter(p=>(cid?p.country===cid:cmInScope(p.country))&&(CM.funding==='all'||p.funding===CM.funding)&&(!CM.q||cmNorm(p.name+' '+p.code).includes(cmNorm(CM.q)))).map(p=>{const Q=historyReports(p).filter(r=>!CM.date||r.date<=CM.date),rep=Q.at(-1),f=rep?finAt(p,rep):null,B=effB(p,CM.date||undefined),base=B?finAt(p,{date:CM.date||B.date,snapshot:{lines:[]}}):null,current=model(p),manual=!CM.date&&!rep&&(Number.isFinite(Number(p.spent))||Number.isFinite(Number(p.committed)))&&(Number(p.spent)!==0||Number(p.committed)!==0),budget=!CM.date&&p.adminOverrides?.budget?current.b:base&&cmSourceAmountKnown(B,'approved')?base.approved:!CM.date&&Number(p.budget)>0?Number(p.budget):f&&cmSourceAmountKnown(rep,'approved')?f.approved:null,spent=!CM.date&&p.adminOverrides?.spent?current.sp:f&&cmSourceAmountKnown(rep,'actual')?f.actual:manual?current.sp:null,exposure=!CM.date&&(p.adminOverrides?.spent||p.adminOverrides?.committed)?current.u:f&&cmSourceAmountKnown(rep,'spentCommitted')?f.sc:manual&&p.committed!==null&&p.committed!==undefined&&p.committed!==''?current.u:null,H=financialHistory(CM.date?{...p,reportingPeriods:RP(p).filter(r=>r.date<=CM.date)}:p),mae=projectIdentifier(p,'mae')||'Unassigned',previous=Q.length>1?finAt(p,Q.at(-2)):null;
  return {p,budget,spent,exposure,remaining:budget!==null&&exposure!==null?budget-exposure:null,forecast:H.eac,rate:H.rate,delta:f&&previous&&cmSourceAmountKnown(rep,'actual')&&cmSourceAmountKnown(Q.at(-2),'actual')?f.actual-previous.actual:null,date:rep?.date||'',source:rep?.fileName||rep?.name||(manual?'Manual project figures':'No financial actuals'),budgetSource:B?.fileName||B?.name||(budget!==null?'Project budget':'No budget source'),mae,funding:p.funding||'Unassigned',rep,coverage:!CM.date&&Object.keys(p.adminOverrides||{}).length?'Administrator adjusted':rep?'Reported':manual?'Manual / undated':'Missing actuals',staffCount:current.staffCount,fte:current.staffFte?.value??null};}).filter(r=>CM.mae==='all'||r.mae===CM.mae)}
 function cmProjectTotal(R,k){const covered=R.filter(r=>Number.isFinite(r[k]));return {value:covered.length?covered.reduce((n,r)=>n+r[k],0):null,covered:covered.length,total:R.length}}
-function cmProjectHistory(R){const dates=[...new Set(R.flatMap(r=>historyReports(r.p).filter(x=>!CM.date||x.date<=CM.date).map(x=>x.date)))].sort();if(dates.length<2)return '<p class="sub">Add dated reports to the projects to see country and global trends automatically.</p>';const data=dates.map(date=>{const rows=R.map(r=>{const rep=historyReports(r.p).filter(x=>x.date<=date).at(-1);return rep?finAt(r.p,rep):null}).filter(Boolean);return {date,spent:rows.reduce((n,f)=>n+f.actual,0),exposure:rows.reduce((n,f)=>n+f.sc,0),coverage:rows.length}}),max=Math.max(1,...data.flatMap(r=>[r.spent,r.exposure])),x=i=>50+i*700/(data.length-1),y=v=>140-v/max*110,path=k=>data.map((r,i)=>`${x(i)},${y(r[k])}`).join(' ');return `<div class="cm-trend"><svg viewBox="0 0 800 190" role="img" aria-label="Automatic cumulative spending history from project reports">${[0,.5,1].map(f=>`<line x1="50" x2="750" y1="${y(max*f)}" y2="${y(max*f)}" stroke="currentColor" opacity=".08"/><text x="45" y="${y(max*f)+3}" text-anchor="end" font-size="9" fill="currentColor" opacity=".6">${max*f>=1e6?(max*f/1e6).toFixed(1)+'M':max*f>=1e3?Math.round(max*f/1e3)+'K':Math.round(max*f)}</text>`).join('')}<polyline points="${path('exposure')}" stroke="#2469c3" stroke-width="3" fill="none"/><polyline points="${path('spent')}" stroke="#109889" stroke-width="3" fill="none"/>${data.map((r,i)=>`<circle cx="${x(i)}" cy="${y(r.spent)}" r="4" fill="#109889"><title>${h(r.date)} · ${r.coverage}/${R.length} projects · spent ${cmMoney(r.spent)} · S&C ${cmMoney(r.exposure)}</title></circle>${i===0||i===data.length-1||i%Math.ceil(data.length/6)===0?`<text x="${x(i)}" y="167" font-size="10" text-anchor="middle" fill="currentColor">${h(r.date)}</text>`:''}`).join('')}</svg></div><p class="sub">Teal: spent · Blue: spent + committed. One latest report per project at each date; snapshots are never added together. Coverage may change.</p>`}
+function cmProjectHistory(R){const dates=[...new Set(R.flatMap(r=>historyReports(r.p).filter(x=>!CM.date||x.date<=CM.date).map(x=>x.date)))].sort();if(dates.length<2)return '<p class="sub">Add dated reports to the projects to see country and global trends automatically.</p>';const data=dates.map(date=>{const rows=R.map(r=>{const rep=historyReports(r.p).filter(x=>x.date<=date).at(-1);return rep?finAt(r.p,rep):null}).filter(Boolean);return {date,spent:rows.reduce((n,f)=>n+f.actual,0),exposure:rows.reduce((n,f)=>n+f.sc,0),coverage:rows.length}}),max=Math.max(1,...data.flatMap(r=>[r.spent,r.exposure])),x=i=>50+i*700/(data.length-1),y=v=>140-v/max*110,path=k=>data.map((r,i)=>`${x(i)},${y(r[k])}`).join(' ');return `<div class="cm-trend"><svg viewBox="0 0 800 190" role="img" aria-label="Automatic cumulative spending history from project reports">${[0,.5,1].map(f=>`<line x1="50" x2="750" y1="${y(max*f)}" y2="${y(max*f)}" stroke="currentColor" opacity=".08"/><text x="45" y="${y(max*f)+3}" text-anchor="end" font-size="9" fill="currentColor" opacity=".6">${max*f>=1e6?(max*f/1e6).toFixed(1)+'M':max*f>=1e3?Math.round(max*f/1e3)+'K':Math.round(max*f)}</text>`).join('')}<polyline points="${path('exposure')}" stroke="var(--studio-committed)" stroke-width="3" fill="none"/><polyline points="${path('spent')}" stroke="#109889" stroke-width="3" fill="none"/>${data.map((r,i)=>`<circle cx="${x(i)}" cy="${y(r.spent)}" r="4" fill="#109889"><title>${h(r.date)} · ${r.coverage}/${R.length} projects · spent ${cmMoney(r.spent)} · S&C ${cmMoney(r.exposure)}</title></circle>${i===0||i===data.length-1||i%Math.ceil(data.length/6)===0?`<text x="${x(i)}" y="167" font-size="10" text-anchor="middle" fill="currentColor">${h(r.date)}</text>`:''}`).join('')}</svg></div><p class="sub">Teal: spent · Blue: spent + committed. One latest report per project at each date; snapshots are never added together. Coverage may change.</p>`}
 function cmProjectRegister(R){const list=R.flatMap(r=>historyReports(r.p).filter(x=>!CM.date||x.date<=CM.date).map(rep=>({r,rep,f:finAt(r.p,rep)}))).sort((a,b)=>b.rep.date.localeCompare(a.rep.date));return list.length?`<div class="tw"><table><thead><tr><th>Country / project</th><th>Report date / source</th><th>Spent</th><th>Spent + committed</th><th>Budget at report date</th></tr></thead><tbody>${list.map(({r,rep,f})=>`<tr><td><a href="#/project/${encodeURIComponent(r.p.id)}/finance/reports">${h(r.p.name)}</a><small>${h(cname(r.p.country))} · ${h(r.p.code)}</small></td><td>${h(rep.date)}<small>${h(rep.fileName||rep.name)}</small></td><td>${cmMoney(f.actual)}</td><td>${cmMoney(f.sc)}</td><td>${cmMoney(f.approved)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">No dated project financial reports in this selection. Add a report inside its project; it will appear here automatically.</p>'}
 const CM_EXPANDED=new Set();
 function cmFinanceGlyph(k){const paths={budget:'M4 6h16v14H4zM4 10h16M8 14h3M8 17h7',spent:'M4 17l5-5 4 3 7-9M15 6h5v5',exposure:'M5 5h14v14H5zM8 9h8M8 13h4',remaining:'M12 3v18M17 7c-1-3-10-3-10 1s10 3 10 7-9 4-10 1',rate:'M3 16l5-8 5 5 8-9M3 21h18'};return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[k]||paths.budget}"/></svg>`}
@@ -13654,21 +15887,21 @@ function captureViewState(v){
 }
 function routeOutput(route,id,tab,sub){try{return V[route](id,tab,sub)}catch(error){console.error('Portfolio screen error',route,error);return{t:'This view needs attention',s:'Your portfolio data remains available.',html:'<section class="card recovery-panel"><h2>This screen could not be displayed</h2><p>Try reopening it, or export a backup before reviewing the source records.</p><div class="acts"><button class="btn pri" data-act="retry-view">Try again</button><a class="btn" href="#/data">Open data tools</a><button class="btn" data-act="export">Export backup</button></div></section>'}}}
 function render(){NOW=Date.now();const[,r='home',id,tab,sub2]=(location.hash||'#/home').split('/'),route=Object.prototype.hasOwnProperty.call(V,r)?r:'home',key=[route,id||'',tab||'',sub2||''].join('|'),fresh=key!==lastRoute,out=routeOutput(route,id&&safeRouteId(id),tab,sub2),v=$('#view'),restore=fresh?null:captureViewState(v);
- hideTip();closeActSide();const priorEvidence=v.querySelector('details[data-home-disclosure="evidence"]');if(priorEvidence)homeEvidenceOpen=priorEvidence.open;$('main').dataset.page=route;$('#title').textContent=out.t;$('#page-crumb').textContent=route==='home'?'Overview':out.t;$('#subtitle').textContent=out.s.replace(/&amp;/g,'&');v.classList.remove('anim');v.classList.toggle('dense',PVW.den==='compact'&&route==='projects');v.innerHTML=(['overview','intel','brief','countries','projects','country'].includes(route)&&!(route==='country'&&(tab==='monitoring'||tab==='history'||tab==='sources'))?evidenceRail(route==='overview'?Masterpiece.scopeRows(rows()):rows(route==='country'?{c:safeRouteId(id)}:{}),['overview','countries'].includes(route)):'')+(route==='project'?adminOverrideNotice(S.projects.find(p=>p.id===safeRouteId(id))||{}):'')+out.html;const currentEvidence=v.querySelector('details[data-home-disclosure="evidence"]');if(currentEvidence)currentEvidence.open=homeEvidenceOpen;document.title=out.t+' · Portfolio Ledger';
+ hideTip();closeActSide();const priorEvidence=v.querySelector('details[data-home-disclosure="evidence"]');if(priorEvidence)homeEvidenceOpen=priorEvidence.open;$('main').dataset.page=route;$('#title').textContent=out.t;$('#page-crumb').textContent=route==='home'?'Overview':out.t;$('#subtitle').textContent=out.s.replace(/&amp;/g,'&');v.classList.remove('anim');v.classList.toggle('dense',PVW.den==='compact'&&route==='projects');v.innerHTML=(!LedgerHost.owns(route)&&['overview','intel','brief','countries','projects','country'].includes(route)&&!(route==='country'&&(tab==='monitoring'||tab==='history'||tab==='sources'))?evidenceRail(rows(route==='country'?{c:safeRouteId(id)}:{}),['overview','countries'].includes(route)):'')+(route==='project'?adminOverrideNotice(S.projects.find(p=>p.id===safeRouteId(id))||{}):'')+out.html;const currentEvidence=v.querySelector('details[data-home-disclosure="evidence"]');if(currentEvidence)currentEvidence.open=homeEvidenceOpen;document.title=out.t+' · Portfolio Ledger';
  document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('on',a.dataset.r===route||(route==='country'&&a.dataset.r==='countries')||(route==='project'&&a.dataset.r==='projects')));
  document.querySelectorAll('.side a').forEach(a=>{if(a.classList.contains('on'))a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  $('#barwrap').hidden=route==='data'||route==='project'||route==='monitoring'||(route==='country'&&(tab==='monitoring'||tab==='history'||tab==='sources'));
  $('#bar').hidden=route==='data'||route==='project'||route==='monitoring'||(route==='country'&&(tab==='monitoring'||tab==='history'||tab==='sources'));$('#add').textContent=route==='countries'?'Add country':route==='country'?'Add project here':'Add project';
  if(fresh&&!RM.matches){v.querySelectorAll('.card,.strip').forEach((c,i)=>c.style.setProperty('--i',i));void v.offsetWidth;v.classList.add('anim')}
  const rl=v.querySelector('.cal-rl.on');if(rl&&rl.parentElement)rl.parentElement.scrollLeft=Math.max(0,rl.offsetLeft-rl.parentElement.clientWidth/2+rl.offsetWidth/2);
- syncBarVis();count(fresh);wireMap();restore?.();$('#ubtn').disabled=!H.past.length;$('#rbtn').disabled=!H.fut.length;if(fresh){scrollTo(0,0);lastRoute=key}Masterpiece.afterRender(route)}
+ syncBarVis();count(fresh);wireMap();restore?.();$('#ubtn').disabled=!H.past.length;$('#rbtn').disabled=!H.fut.length;if(fresh){scrollTo(0,0);lastRoute=key}LedgerHost.afterRender(route)}
 function count(fresh){document.querySelectorAll('#view .strip b').forEach(b=>{const lab=b.previousElementSibling?.textContent||'',m=b.textContent.match(/^(-?)(€?)([\d.,]+)([MK%]?)$/);if(!m)return;
  const money=m[2]==='€',mul=money?(m[4]==='M'?1e6:m[4]==='K'?1e3:1):1,to=parseFloat(m[3].replace(/,/g,''))*mul*(m[1]?-1:1),dec=(m[3].split('.')[1]||'').length,orig=b.textContent,key=lab+(money?'€':m[4]),from=fresh?0:(prevN.has(key)?prevN.get(key):to);prevN.set(key,to);if(RM.matches||document.body.dataset.studioEffects==='none'||from===to)return;
  const fmt=x=>money?eur(x):(x<0?'-':'')+Math.abs(x).toFixed(dec)+m[4],t0=performance.now();(function step(t){const k=Math.min(1,(t-t0)/700),e=1-Math.pow(1-k,3);b.textContent=k<1?fmt(from+(to-from)*e):orig;if(k<1)requestAnimationFrame(step)})(t0)})}
 function syncBar(){const opt=(arr,all,v)=>`<option value="all">${all}</option>`+arr.map(([k,l])=>`<option value="${h(k)}"${v===k?' selected':''}>${h(l)}</option>`).join('');
  $('#fc').innerHTML=opt(S.countries.map(c=>[c.id,c.name]),'All countries',F.c);$('#fs').innerHTML=opt([...new Set(S.projects.map(p=>p.sector).filter(Boolean))].sort().map(s=>[s,s]),'All sectors',F.s);
  $('#fq').value=F.q;$('#fg').value=F.g;$('#fm').value=F.fm||'auto';$('#fk').value=F.k;$('#fkv').textContent=(F.k>0?'+':'')+F.k+'%';try{const ds=$('#fds'),de=$('#fde');if(ds)ds.value=F.ds||'';if(de)de.value=F.de||'';loadPresets();syncBarVis()}catch(e){}}
-function setF(k,v){if(k==='k')v=cl(num(v),-80,80);F[k]=v;ls.set(FKEY,F);if(k==='k')$('#fkv').textContent=(v>0?'+':'')+v+'%';syncBarVis();render()}
+function setF(k,v){if(k==='k')v=cl(num(v),-80,80);F[k]=v;LedgerHost.filtersChanged(k);ls.set(FKEY,F);if(k==='k')$('#fkv').textContent=(v>0?'+':'')+v+'%';syncBarVis();render()}
 $('#fq').addEventListener('input',e=>setF('q',e.target.value));
 $('#view').addEventListener('input',e=>{const k=e.target.dataset.sim;if(!k)return;if(k==='amt'){RS.amt=+e.target.value;$('#simv').textContent=eur(RS.amt);const R=rows(),box=document.createElement('div');box.innerHTML=simCard(R);$('#simt').replaceWith(box.querySelector('#simt'));$('[data-act=simapply]').disabled=!RS.amt}else{RS[k]=e.target.value;RS.amt=0;$('#simbox').innerHTML=simCard(rows())}});$('#fc').addEventListener('change',e=>setF('c',e.target.value));$('#fs').addEventListener('change',e=>setF('s',e.target.value));
 $('#fg').addEventListener('change',e=>setF('g',e.target.value));$('#fm').addEventListener('change',e=>setF('fm',e.target.value));$('#fk').addEventListener('input',e=>setF('k',+e.target.value));
@@ -13678,7 +15911,7 @@ const FPKEY='ledger.fpresets';
 function loadPresets(){const p=ls.get(FPKEY)||[];const sel=$('#fpreset');sel.innerHTML='<option value="">Filter presets…</option>'+p.map((x,i)=>`<option value="${i}">${h(x.name)}</option>`).join('')+'<option value="__del" style="color:var(--bad)">Delete a preset…</option>'}
 $('#fpsave').addEventListener('click',()=>{const name=prompt('Name for this filter preset:');if(!name||!name.trim())return;const p=ls.get(FPKEY)||[];p.push({name:name.trim(),f:{...F}});ls.set(FPKEY,p);loadPresets();toast('Preset "'+name.trim()+'" saved')});
 $('#fpreset').addEventListener('change',e=>{const v=e.target.value;if(!v)return;if(v==='__del'){const p=ls.get(FPKEY)||[];if(!p.length){toast('No presets to delete');e.target.value='';return}const n=prompt('Enter preset name to delete:');if(n){const i=p.findIndex(x=>x.name===n);if(i>=0){p.splice(i,1);ls.set(FPKEY,p);loadPresets();toast('Deleted')}else toast('Preset not found')}e.target.value='';return}const p=ls.get(FPKEY)||[];const pr=p[+v];if(pr){F=cleanFilters(pr.f);ls.set(FKEY,F);syncBar();render()}e.target.value=''});
-function resetF(){F={q:'',c:'all',s:'all',g:'all',k:0,fm:'auto',ds:'',de:''};ls.set(FKEY,F);syncBar();render()}$('#freset').addEventListener('click',resetF);
+function resetF(){F={q:'',c:'all',s:'all',g:'all',k:0,fm:'auto',ds:'',de:''};LedgerHost.filtersChanged('reset');ls.set(FKEY,F);syncBar();render()}$('#freset').addEventListener('click',resetF);
 /* ---------- dashboard customization ---------- */
 const DLKEY='ledger.dashlayout',DKKEY='ledger.dashkpis';
 function getDashLayout(){return ls.get(DLKEY)||['timeline','findings','scenario','delivery','outlook','scatter','structure','donuts','table']}
@@ -13850,7 +16083,7 @@ addEventListener('dragover',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].inc
 addEventListener('drop',e=>{if(e.target.closest&&e.target.closest('#drop'))return;if(!e.dataTransfer?.files.length)return;e.preventDefault();document.querySelectorAll('.rdrop.over,.drop.over').forEach(x=>x.classList.remove('over'));const z=e.target.closest&&e.target.closest('[data-plandrop],[data-doa],.rdrop'),hp=location.hash.split('/'),pid=z?(z.dataset.plandrop||z.dataset.doa||z.dataset.pid):(hp[1]==='project'?decodeURIComponent(hp[2]||''):'');const files=[...e.dataTransfer.files];if(files.every(f=>/\.(xlsx|csv)$/i.test(f.name)))return inbox(files,pid||'');if(pid)return routeFiles(files,pid);toast('Open the project first, then add its project documents')});
 addEventListener('drop',e=>{const d=e.target.closest&&e.target.closest('#drop');if(!d)return;e.preventDefault();d.classList.remove('over');const f=e.dataTransfer.files[0];if(f)readFile(f)});
 $('#file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result),c=d.state||d;if(!valid(c))throw new Error('The file has no countries and projects lists.');
- commit('Imported '+f.name);S={bin:S.bin,log:S.log,countryReports:cmCleanReports(c.countryReports),countries:c.countries.map(x=>({...x,id:String(x.id),name:String(x.name||x.id),region:String(x.region||'')})),projects:c.projects.map(p=>({...p,id:String(p.id||'p'+Math.random().toString(36).slice(2,8)),country:String(p.country||''),name:String(p.name||'Untitled'),code:String(p.code||''),sector:String(p.sector||''),start:String(p.start||''),end:String(p.end||''),budget:num(p.budget),spent:num(p.spent),committed:num(p.committed),fte:num(p.fte),funding:String(p.funding||''),successor:String(p.successor||'Review'),status:String(p.status||'Active')}))};
+ commit('Imported '+f.name);S={bin:S.bin,log:S.log,reviewWork:LedgerHost.cleanReviews(c.reviewWork),countryReports:cmCleanReports(c.countryReports),countries:c.countries.map(x=>({...x,id:String(x.id),name:String(x.name||x.id),region:String(x.region||'')})),projects:c.projects.map(p=>({...p,id:String(p.id||'p'+Math.random().toString(36).slice(2,8)),country:String(p.country||''),name:String(p.name||'Untitled'),code:String(p.code||''),sector:String(p.sector||''),start:String(p.start||''),end:String(p.end||''),budget:num(p.budget),spent:num(p.spent),committed:num(p.committed),fte:num(p.fte),funding:String(p.funding||''),successor:String(p.successor||'Review'),status:String(p.status||'Active')}))};
  S=migrate(S);DEMO_MODE=false;save();syncBar();render();autoStaffFromSavedFiles();toast(`Imported ${S.projects.length} projects`,{l:'Undo',f:undo})}catch(err){toast('Import failed: '+err.message)}e.target.value=''};rd.readAsText(f)});
 /* ---------- project form ---------- */
 function openForm(id,preset){if(!S.countries.length){toast('Add a country first, then its projects');return openCountryForm()}const p=S.projects.find(x=>x.id===id)||{country:preset||(F.c!=='all'?F.c:S.countries[0]?.id||''),successor:'Review',status:'Active',start:new Date().toISOString().slice(0,10)};
@@ -13896,7 +16129,7 @@ $('#theme').addEventListener('click',()=>{const next=document.documentElement.da
 SYSTEM_THEME.addEventListener('change',()=>{if(!['light','dark'].includes(ls.get(TKEY))){document.documentElement.dataset.theme=SYSTEM_THEME.matches?'dark':'light';syncThemeButton()}});
 syncThemeButton();
 /* ---------- command palette & keyboard ---------- */
-function palItems(q){q=q.trim().toLowerCase();const PN={home:'Home',overview:'Analytics',intel:'Intelligence',calendar:'Calendar',projects:'Projects',countries:'Countries',team:'Staff',continuity:'Continuity',brief:'Management brief',monitoring:'Financial monitoring',data:'Data'};const it=[...Object.keys(PN).map(r=>({t:PN[r],s:'Page',go:()=>location.hash='#/'+r})),
+function palItems(q){q=q.trim().toLowerCase();const PN={home:'Home',overview:'Finance',intel:'Intelligence',calendar:'Planning · Calendar',projects:'Projects',countries:'Countries',team:'People · Staff',continuity:'Continuity',brief:'Management brief',monitoring:'Financial monitoring',sources:'Source center',data:'Data & settings'};const it=[...Object.keys(PN).map(r=>({t:PN[r],s:'Page',go:()=>location.hash='#/'+r})),
  ...S.projects.map(p=>({t:p.name,s:p.code+', '+cname(p.country),go:()=>location.hash='#/project/'+encodeURIComponent(p.id)})),
  ...S.countries.map(c=>({t:c.name,s:'Country',go:()=>location.hash='#/country/'+encodeURIComponent(c.id)})),
  {t:'Compare two projects',s:'Action',go:()=>location.hash='#/compare'},{t:'New project from documents',s:'Action',go:()=>openNew()},{t:'Add project by hand',s:'Action',go:()=>openForm()},{t:'Export JSON backup',s:'Action',go:()=>act('export')},{t:'Switch theme',s:'Action',go:()=>$('#theme').click()},{t:'Undo last change',s:'Action',go:undo},{t:'Clear filters',s:'Action',go:resetF},{t:'Keyboard shortcuts',s:'Help',go:()=>$('#kbdlg').showModal()},{t:'Scenario analysis',s:'Action',go:()=>{location.hash='#/overview';setTimeout(()=>{const fk=$('#fk');if(fk&&!F.k){setF('k',15);fk.value=15}},100)}}];
@@ -14099,6 +16332,7 @@ function createStudioShell(api) {
       analysis: s.analysis,
       appearance: s.appearance,
       scenario: api.scenario(),
+      portfolioFilters: api.getPortfolioFilters?.() || null,
       registerState: api.getRegisterState?.() || { query: "" },
     };
   }
@@ -14257,6 +16491,7 @@ function createStudioShell(api) {
   }
   return {
     scopeRows,
+    decisionContent,
     scope,
     toolbarExtras,
     brief,
@@ -15819,9 +18054,6 @@ function normalizeRegisterSettings(value, definitions) {
     "spent",
     "exposure",
     "available",
-    "used",
-    "signal",
-    "date",
   ];
   function core(input) {
     const v = input && typeof input === "object" ? input : {};
@@ -15890,6 +18122,7 @@ function normalizeRegisterSettings(value, definitions) {
       sort: sorts[0].key,
       direction: sorts[0].direction,
       density: v.density === "compact" ? "compact" : "comfortable",
+      mobileView: v.mobileView === "table" ? "table" : "cards",
       group: ["country", "signal", "country-signal", "country-sector"].includes(
         v.group,
       )
@@ -16272,7 +18505,16 @@ function createRegisterStudio(api) {
       a = api.getAnalysis?.() || {};
     const filterCount =
       Object.keys(t.filters).length + (t.evidence !== "all" ? 1 : 0);
-    return `<div class="mp-table-root rs-studio mp-density-${t.density}" data-rs="register" data-mp-source="${h(JSON.stringify(R.map((r) => r.p.id)))}"><div class="rs-register-stats"><div><span>Projects in view</span><b>${filtered.length}<small> / ${R.length}</small></b></div><div><span>Approved funding</span><b>${h(budgets.length ? money(budgets.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Recorded exposure</span><b>${h(known.length ? money(known.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Exposure coverage</span><b>${known.length}<small> / ${filtered.length} sources</small></b></div></div><div class="mp-table-toolbar rs-table-toolbar"><label class="mp-register-search"><span class="sr-only">Search this table</span>${icon("search")}<input id="mp-register-query" type="search" placeholder="Find a project, code, country or sector…" value="${h(state.query)}" data-mp-table-query></label><div class="rs-table-actions">${filtersUI()}${sortsUI()}${columnUI()}${viewsUI()}${exportUI(filtered)}<button class="btn rs-density" data-mp="table-density" aria-label="Switch to ${t.density === "compact" ? "comfortable" : "compact"} table density" title="Table density">${icon("sliders")}</button></div></div><div class="rs-register-context"><label class="mp-table-control">Group<select data-mp-table="group" aria-label="Group table rows">${[
+    const mobileCards = `<div class="rs-mobile-cards">${page
+      .filter((r) => pageVisible.some((v) => v.p.id === r.p.id))
+      .map(
+        (r) =>
+          `<article data-mobile-project="${h(r.p.id)}"><header><span>${h(r.p.code)} · ${h(r.cn)}</span><input type="checkbox" data-rs-mobile-select="${h(r.p.id)}" aria-label="Select ${h(r.p.name)}" ${state.selected.has(r.p.id) ? "checked" : ""}></header><h3><a href="#/project/${encodeURIComponent(r.p.id)}">${h(r.p.name)}</a></h3><dl>${["budget", "spent", "exposure"].map((key) => `<div><dt>${h(label(key))}</dt><dd>${values(r, key) === null ? "—" : money(values(r, key))}</dd></div>`).join("")}</dl><footer><span>${h(r.evidence.latest?.date || "Source date not established")}</span><button class="btn" data-at="source" data-value="${h(r.p.id)}">Evidence</button></footer></article>`,
+      )
+      .join(
+        "",
+      )}<div class="rs-mobile-total">All ${filtered.length} matching projects · ${known.length}/${filtered.length} exposure sources<br>Approved ${money(budgets.reduce((a, b) => a + b, 0))} · Recorded exposure ${known.length ? money(known.reduce((a, b) => a + b, 0)) : "—"}</div></div>`;
+    return `<div class="mp-table-root rs-studio mp-density-${t.density} rs-display-${t.mobileView}" data-rs="register" data-mp-source="${h(JSON.stringify(R.map((r) => r.p.id)))}"><div class="rs-register-stats"><div><span>Projects in view</span><b>${filtered.length}<small> / ${R.length}</small></b></div><div><span>Approved funding</span><b>${h(budgets.length ? money(budgets.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Recorded exposure</span><b>${h(known.length ? money(known.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Exposure coverage</span><b>${known.length}<small> / ${filtered.length} sources</small></b></div></div><div class="mp-table-toolbar rs-table-toolbar"><label class="mp-register-search"><span class="sr-only">Search this table</span>${icon("search")}<input id="mp-register-query" type="search" placeholder="Find a project, code, country or sector…" value="${h(state.query)}" data-mp-table-query></label><div class="rs-table-actions">${filtersUI()}${sortsUI()}${columnUI()}${viewsUI()}${exportUI(filtered)}<button class="btn rs-density" data-mp="table-density" aria-label="Switch to ${t.density === "compact" ? "comfortable" : "compact"} table density" title="Table density">${icon("sliders")}</button></div></div><div class="rs-register-context"><label class="mp-table-control">Group<select data-mp-table="group" aria-label="Group table rows">${[
       ["none", "No grouping"],
       ["country", "Country"],
       ["signal", "Financial signal"],
@@ -16285,7 +18527,7 @@ function createRegisterStudio(api) {
       )
       .join(
         "",
-      )}</select></label><span class="rs-current-basis"><i class="mp-status-dot"></i>Current financial basis${a.from || a.to ? " · history window does not replace latest figures" : ""}</span>${selected.length ? `<span class="rs-selection-status">${selected.length} selected <button class="mp-mini" data-rs-action="clear-selection">Clear</button></span>` : ""}</div>${filterChips()}<div class="mp-table-info" role="status"><span>${filtered.length} project${filtered.length === 1 ? "" : "s"}${filterCount || state.query ? " match your table filters" : " in this view"}${filtered.length !== R.length ? ` · ${R.length} in workspace selection` : ""}</span><span>Shift + click: multi-sort · drag header edge: resize · unknown values stay last</span></div><p class="mp-mobile-hint">Swipe horizontally. Frozen project names retain your place.</p><div class="mp-scroll mp-register-scroll" tabindex="0" role="region" aria-label="Project register, scroll horizontally for more columns"><table class="mp-register rs-table" style="width:${44 + cols.reduce((total, key) => total + width(key), 0) + 88}px"><caption class="sr-only">Current project register in EUR. Totals and grouped subtotals cover all matching records, independently of pagination. Source coverage is indicated.</caption><colgroup><col style="width:44px">${cols.map((key) => `<col data-rs-col="${key}" style="width:${width(key)}px">`).join("")}<col style="width:88px"></colgroup><thead><tr><th class="mp-select-cell rs-select-frozen" scope="col"><input type="checkbox" data-mp-page-select aria-label="Select all visible projects on this page" ${allSelected ? "checked" : ""} ${!pageVisible.length ? "disabled" : ""}></th>${cols
+      )}</select></label><span class="rs-current-basis"><i class="mp-status-dot"></i>Current financial basis${a.from || a.to ? " · history window does not replace latest figures" : ""}</span>${selected.length ? `<span class="rs-selection-status">${selected.length} selected <button class="mp-mini" data-rs-action="clear-selection">Clear</button></span>` : ""}</div>${filterChips()}<div class="mp-table-info" role="status"><span>${filtered.length} project${filtered.length === 1 ? "" : "s"}${filterCount || state.query ? " match your table filters" : " in this view"}${filtered.length !== R.length ? ` · ${R.length} in workspace selection` : ""}</span><span>Shift + click: multi-sort · drag header edge: resize · unknown values stay last</span></div><div class="rs-mobile-switch" role="group" aria-label="Mobile register display"><button class="btn" data-rs-action="mobile-view" data-value="cards" aria-pressed="${t.mobileView === "cards"}">Project cards</button><button class="btn" data-rs-action="mobile-view" data-value="table" aria-pressed="${t.mobileView === "table"}">Full table</button></div>${mobileCards}<p class="mp-mobile-hint">Swipe horizontally. Frozen project names retain your place.</p><div class="mp-scroll mp-register-scroll" tabindex="0" role="region" aria-label="Project register, scroll horizontally for more columns"><table class="mp-register rs-table" style="width:${44 + cols.reduce((total, key) => total + width(key), 0) + 88}px"><caption class="sr-only">Current project register in EUR. Totals and grouped subtotals cover all matching records, independently of pagination. Source coverage is indicated.</caption><colgroup><col style="width:44px">${cols.map((key) => `<col data-rs-col="${key}" style="width:${width(key)}px">`).join("")}<col style="width:88px"></colgroup><thead><tr><th class="mp-select-cell rs-select-frozen" scope="col"><input type="checkbox" data-mp-page-select aria-label="Select all visible projects on this page" ${allSelected ? "checked" : ""} ${!pageVisible.length ? "disabled" : ""}></th>${cols
       .map((key) => {
         const sortIndex = t.sorts.findIndex((sort) => sort.key === key),
           sort = t.sorts[sortIndex];
@@ -16469,6 +18711,9 @@ function createRegisterStudio(api) {
       t = cfg(),
       R = api.sourceRows(root);
     switch (action) {
+      case "mobile-view":
+        changeConfig(root, { mobileView: button.dataset.value });
+        break;
       case "sort": {
         const existing = t.sorts.find((s) => s.key === key),
           direction = existing ? existing.direction * -1 : 1;
@@ -16646,7 +18891,12 @@ function createRegisterStudio(api) {
     if (!root) return false;
     if (root.dataset.rsRedrawing === "true") return true;
     const t = cfg();
-    if (el.dataset.mpColumn) {
+    if (el.dataset.rsMobileSelect) {
+      el.checked
+        ? state.selected.add(el.dataset.rsMobileSelect)
+        : state.selected.delete(el.dataset.rsMobileSelect);
+      redraw(root);
+    } else if (el.dataset.mpColumn) {
       const key = el.dataset.mpColumn,
         columns = el.checked
           ? [...t.columns, key]
@@ -18299,9 +20549,6 @@ const Masterpiece = (() => {
     "spent",
     "exposure",
     "available",
-    "used",
-    "signal",
-    "date",
   ];
   const COLUMNS = {
     name: { label: "Project", kind: "text" },
@@ -18487,6 +20734,9 @@ const Masterpiece = (() => {
               schedule,
               appearance,
               scenario,
+              portfolioFilters: w.snapshot.portfolioFilters
+                ? cleanFilters(w.snapshot.portfolioFilters)
+                : null,
               registerState,
             },
           };
@@ -18546,6 +20796,14 @@ const Masterpiece = (() => {
     const changed =
       !Object.prototype.hasOwnProperty.call(patch, "activeWorkspace") &&
       !Object.prototype.hasOwnProperty.call(patch, "workspaces");
+    if (
+      patch.analysis &&
+      Object.prototype.hasOwnProperty.call(patch.analysis, "country")
+    ) {
+      F.c = patch.analysis.country;
+      ls.set(FKEY, F);
+      syncBar();
+    }
     settings = cleanSettings({
       ...settings,
       ...patch,
@@ -18555,11 +20813,17 @@ const Masterpiece = (() => {
     if (rerender) render();
   }
   function effectiveAnalysis() {
-    const route = location.hash.replace(/^#\//, "").split("/")[0] || "home";
-    return ["home", "overview"].includes(route)
-      ? settings.analysis
-      : normalizeAnalysisScope();
+    const parts = (location.hash || "#/home").split("/");
+    if (parts[1] === "country")
+      return {
+        ...settings.analysis,
+        country: safeRouteId(parts[2] || "all"),
+        project: "all",
+      };
+    if (parts[1] === "project") return normalizeAnalysisScope();
+    return { ...settings.analysis, country: F.c };
   }
+
   function sourceHistory(p) {
     const byDate = new Map();
     for (const report of reps(p)) {
@@ -18598,14 +20862,18 @@ const Masterpiece = (() => {
     cmSourceAmountKnown,
     tableEvidence,
     getSettings: () => settings,
-    getBaseRows: () => rows(),
+    getBaseRows: () => rows({ allCountries: true, allProjects: true }),
     getAnalysis: effectiveAnalysis,
     setAnalysis: (patch) => {
-      const foreign = !["home", "overview"].includes(
-        location.hash.replace(/^#\//, "").split("/")[0] || "home",
+      const route = (location.hash || "#/home").split("/")[1];
+      const p = S.projects.find((p) => p.id === patch.project);
+      studio.setAnalysis(
+        p && F.c !== "all" && p.country !== F.c
+          ? { country: "all", ...patch }
+          : patch,
       );
-      studio.setAnalysis(foreign ? { country: "all", ...patch } : patch);
-      if (foreign) location.hash = "#/overview";
+      if (p && ["country", "countries", "project"].includes(route))
+        location.hash = "#/overview";
     },
     render,
     announce,
@@ -18620,9 +20888,11 @@ const Masterpiece = (() => {
     todayActions,
     toast,
     patchSettings,
+    getPortfolioFilters: () => ({ ...F }),
     getRegisterState: () => registerStudio.getTransient(),
     restoreWorkspace: (w) => {
-      const { scenario, registerState, ...snapshot } = w.snapshot;
+      const { scenario, registerState, portfolioFilters, ...snapshot } =
+        w.snapshot;
       settings = cleanSettings({
         ...settings,
         ...snapshot,
@@ -18631,8 +20901,12 @@ const Masterpiece = (() => {
       registerStudio.resetTransient(registerState);
       ui.pickedDate = "";
       persist();
-      $("#fk").value = scenario;
-      setF("k", scenario);
+      if (portfolioFilters) F = cleanFilters(portfolioFilters);
+      F.c = settings.analysis.country;
+      F.k = scenario;
+      ls.set(FKEY, F);
+      syncBar();
+      render();
     },
   });
   const chartStudio = createChartStudio({
@@ -18687,6 +20961,8 @@ const Masterpiece = (() => {
     n2,
     cname,
   });
+  if (F.c === "all" && settings.analysis.country !== "all")
+    F.c = settings.analysis.country;
   studio.afterRender();
   function chartMenu(id) {
     return `<button class="mp-icon-button" data-mp="chart-export" data-panel="${id}" aria-label="Export ${h(PANELS[id].title)} chart" title="Export chart">${icon("export")}</button>`;
@@ -19923,12 +22199,1600 @@ const Masterpiece = (() => {
     afterRender,
     staff: (R) => staffStudio.page(R),
     scopeRows: (R) => studio.scopeRows(R),
+    setScope: (patch) => studio.setAnalysis(patch),
+    getScope: effectiveAnalysis,
+    syncFilters: (key) => {
+      if (!["c", "reset"].includes(key)) {
+        patchSettings({ activeWorkspace: "" }, false);
+        return;
+      }
+      const analysis = { ...settings.analysis, country: F.c };
+      if (key === "c" || key === "reset") analysis.project = "all";
+      if (key === "reset") {
+        analysis.from = "";
+        analysis.to = "";
+      }
+      patchSettings({ analysis, activeWorkspace: "" }, false);
+    },
+    panel: (id, R) => panel(id, panelBody(id, R)),
+    timeline: (R) => scheduleStudio.timeline(R),
+    brief: (R) => (studio.decisionContent ? studio.decisionContent(R) : ""),
+    contextTools: () => studio.toolbarExtras(),
+    tablePreset: (preset) => {
+      const presets = {
+        essential: [
+          "name",
+          "country",
+          "budget",
+          "spent",
+          "exposure",
+          "available",
+        ],
+        finance: ["name", "budget", "spent", "committed", "exposure", "date"],
+        forecast: [
+          "name",
+          "budget",
+          "exposure",
+          "forecast",
+          "variance",
+          "signal",
+        ],
+        evidence: ["name", "country", "spent", "exposure", "date", "signal"],
+      };
+      const columns = presets[preset];
+      if (!columns) return;
+      patchSettings({
+        table: {
+          ...settings.table,
+          columns,
+          order: [
+            ...columns,
+            ...Object.keys(COLUMNS).filter((k) => !columns.includes(k)),
+          ],
+          frozen: ["name"],
+          activeView: "",
+        },
+      });
+    },
   };
 })();
 V.home = () => Masterpiece.home(rows());
 V.overview = () => Masterpiece.analytics(rows());
 V.team = () => Masterpiece.staff(rows());
 table = (R) => Masterpiece.table(R);
+
+
+/* Domain projections. Financial facts remain owned by the tested ledger engine. */
+function cleanLedgerReviews(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .slice(0, 10000)
+      .filter(
+        ([key, v]) =>
+          key.length <= 240 &&
+          key.includes(":") &&
+          v &&
+          typeof v === "object" &&
+          ["open", "progress", "reviewed", "resolved"].includes(v.status),
+      )
+      .map(([key, v]) => [
+        key,
+        {
+          fingerprint:
+            typeof v.fingerprint === "string" ? v.fingerprint.slice(0, 80) : "",
+          status: v.status,
+          owner: typeof v.owner === "string" ? v.owner.slice(0, 120) : "",
+          note: typeof v.note === "string" ? v.note.slice(0, 2000) : "",
+          due:
+            typeof v.due === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.due)
+              ? v.due
+              : "",
+          at: typeof v.at === "string" ? v.at.slice(0, 40) : "",
+        },
+      ]),
+  );
+}
+function createLedgerDomain(host) {
+  const cache = new WeakMap();
+  let version = "";
+  function models(projects) {
+    const next = host.revision();
+    version = next;
+    return projects.map((p) => {
+      const hit = cache.get(p);
+      if (hit?.version === version) return hit.value;
+      const value = host.model(p);
+      cache.set(p, { version, value });
+      return value;
+    });
+  }
+  const sumKnown = (R, predicate, field) => {
+    const covered = R.filter(predicate);
+    return {
+      value: covered.length ? covered.reduce((n, r) => n + r[field], 0) : null,
+      covered: covered.length,
+      total: R.length,
+    };
+  };
+  function financial(R) {
+    return {
+      ...host.financialSummary(R),
+      spent: sumKnown(R, (r) => r.evidence.actual, "sp"),
+      committed: sumKnown(R, (r) => r.evidence.committed, "co"),
+      forecasts: sumKnown(R, (r) => r.forecastAvailable, "eac"),
+      pace: R.filter((r) => r.pace !== null).length,
+      delivery: R.filter((r) => host.delivery(r.p)?.total > 0).length,
+    };
+  }
+  function stableKey(text) {
+    let hash = 2166136261;
+    for (const char of text)
+      hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+    return (hash >>> 0).toString(36);
+  }
+  function observations(R) {
+    const byKey = new Map();
+    const put = (x) => {
+      const key = x.p.id + ":" + stableKey(x.category + "|" + x.title);
+      const evidence = host.reports(x.p).at(-1);
+      const fingerprint = stableKey(
+        x.reason + "|" + (evidence?.id || "") + "|" + (evidence?.date || ""),
+      );
+      const contractCondition = /report.*(overdue|in \d)|heading/i.test(
+        x.title,
+      );
+      const source = contractCondition
+        ? x.p.contract?.fileName || "Contract calendar and budget checks"
+        : x.category === "delivery"
+          ? x.p.doa?.fileName || "Recorded activity plan"
+          : x.category === "continuity"
+            ? "Project continuity record"
+            : evidence?.fileName || evidence?.name || "Project records";
+      const stored = host.reviews()[key];
+      const review = stored?.fingerprint === fingerprint ? stored : {};
+      byKey.set(key, {
+        ...x,
+        key,
+        fingerprint,
+        review,
+        status: review.status || "open",
+        source,
+        sourceDate:
+          contractCondition || x.category === "continuity"
+            ? ""
+            : evidence?.date || "",
+        owner: review.owner || "",
+        amount: R.find((r) => r.p.id === x.p.id)?.evidence.exposure
+          ? R.find((r) => r.p.id === x.p.id).u
+          : null,
+      });
+    };
+    for (const [priority, tone, title, p, link, due] of host.actions(R)) {
+      const category = /successor/i.test(title)
+        ? "continuity"
+        : /report|heading|spend|absorp|financial/i.test(title)
+          ? "finance"
+          : "delivery";
+      put({
+        p,
+        category,
+        priority,
+        tone,
+        title,
+        due,
+        reason: title,
+        link,
+        next:
+          category === "continuity"
+            ? "Confirm a successor decision and date"
+            : category === "delivery"
+              ? "Review activity progress against the recorded plan"
+              : "Check the report and record the follow-up",
+      });
+    }
+    for (const check of host.quality(R))
+      for (const { r, t } of check.items) {
+        const category = /Staff/i.test(check.label)
+          ? "people"
+          : /Successor/i.test(check.label)
+            ? "continuity"
+            : /findings/i.test(check.label)
+              ? "delivery"
+              : "evidence";
+        put({
+          p: r.p,
+          category,
+          priority: 2,
+          tone: "neutral",
+          title: check.label,
+          reason: t,
+          link: host.projectLink(r.p, check.tab),
+          due: "",
+          next:
+            category === "people"
+              ? "Verify the contract and missing FTE details"
+              : "Inspect the original source and update the record",
+        });
+      }
+    return [...byKey.values()].sort(
+      (a, b) =>
+        a.priority - b.priority ||
+        (a.due || "9999").localeCompare(b.due || "9999") ||
+        a.p.code.localeCompare(b.p.code),
+    );
+  }
+  function sources(R) {
+    return R.flatMap((r) => {
+      const p = r.p,
+        linked = new Set((p.docs || []).map((d) => d.ref).filter(Boolean));
+      const docs = (p.docs || []).map((d) => ({
+        key: p.id + "/doc/" + d.id,
+        p,
+        name: d.fileName,
+        date: (d.addedAt || "").slice(0, 10),
+        type: d.kind || "document",
+        state: d.extraction?.status || "stored",
+        detail: d.extraction?.summary || "Original document retained",
+        href: host.projectLink(p, "documents/documents"),
+        download: p.id + "|" + d.id,
+      }));
+      const reports = (p.reportingPeriods || [])
+        .filter((q) => !linked.has(q.id))
+        .map((q) => ({
+          key: p.id + "/report/" + q.id,
+          p,
+          name: q.fileName || q.name,
+          date: q.date || "",
+          type: q.type || "report",
+          state: "registered",
+          detail: q.name || "Financial source",
+          href: host.projectLink(p, "finance/reports"),
+          download: "",
+        }));
+      return [...docs, ...reports];
+    }).sort(
+      (a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name),
+    );
+  }
+  return { models, financial, observations, sources };
+}
+
+/* Device preferences are separate from portfolio facts, migrations are additive. */
+function createLedgerPreferences(storage, onFailure) {
+  const key = "ledger.atelier.v1";
+  const homeIds = ["decisions", "position", "dates", "changes"];
+  function clean(value) {
+    const v = value && typeof value === "object" ? value : {};
+    const order = Array.isArray(v.homeOrder)
+      ? v.homeOrder.filter((x) => homeIds.includes(x))
+      : [];
+    return {
+      version: 1,
+      homeOrder: [...new Set([...order, ...homeIds])],
+      projectsView: ["directory", "cards", "countries", "compare"].includes(
+        v.projectsView,
+      )
+        ? v.projectsView
+        : "directory",
+      peopleTab: ["assignments", "people", "contracts"].includes(v.peopleTab)
+        ? v.peopleTab
+        : "assignments",
+      planningTab: ["agenda", "calendar", "timeline", "continuity"].includes(
+        v.planningTab,
+      )
+        ? v.planningTab
+        : "agenda",
+    };
+  }
+  let state = clean(storage.get(key));
+  return {
+    get: () => state,
+    set(patch) {
+      state = clean({ ...state, ...patch });
+      if (!storage.set(key, state)) onFailure();
+      return state;
+    },
+  };
+}
+
+
+/* Six task-oriented workspaces, connected through one host and selection. */
+const Atelier = (() => {
+  "use strict";
+  const view = $("#view"),
+    legacy = { ...V };
+  const domain = createLedgerDomain({
+    model,
+    financialSummary,
+    delivery,
+    reports: reps,
+    actions: todayActions,
+    quality: dq,
+    projectLink: PL,
+    reviews: () => S.reviewWork || {},
+    revision: () => [saveRevision, F.k, F.fm, TODAY()].join("|"),
+  });
+  const prefs = createLedgerPreferences(ls, () =>
+    toast("Preferences could not be saved in this browser."),
+  );
+  const ui = {
+    arranging: false,
+    projectsPage: 0,
+    queueCategory: "all",
+    queueStatus: "active",
+    queueQuery: "",
+    queuePage: 0,
+    sourcesQuery: "",
+    sourcesPage: 0,
+    comparisonPage: 0,
+    agenda: "upcoming",
+    agendaKind: "all",
+    agendaPage: 0,
+    peopleQuery: "",
+    peoplePage: 0,
+  };
+  const coreRoutes = new Set([
+    "home",
+    "overview",
+    "finance",
+    "projects",
+    "intel",
+    "team",
+    "people",
+    "calendar",
+    "planning",
+    "continuity",
+    "brief",
+    "sources",
+  ]);
+  const emptyState = (title, description, action = "") =>
+    `<div class="atelier-empty"><span aria-hidden="true">◇</span><h3>${h(title)}</h3><p>${h(description)}</p>${action}</div>`;
+  const link = (href, label, cls = "") =>
+    `<a class="${cls}" href="${h(href)}">${h(label)}<span aria-hidden="true" class="atelier-arrow"><svg viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></span></a>`;
+  const label = (text, tone = "neutral") =>
+    `<span class="atelier-label ${tone}">${h(text)}</span>`;
+  const fmt = (n) => (n === null || n === undefined ? "—" : eur(n));
+  const number = (n) =>
+    new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 }).format(n);
+  const date = (d) =>
+    d
+      ? new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          timeZone: "UTC",
+        })
+      : "Not recorded";
+  const title = (eyebrow, name, note = "", action = "") =>
+    `<header class="atelier-section-head"><div><span class="atelier-eyebrow">${h(eyebrow)}</span><h2>${h(name)}</h2>${note ? `<p>${h(note)}</p>` : ""}</div>${action}</header>`;
+  const tabs = (items, active, attr = "href") =>
+    `<nav class="atelier-tabs" aria-label="Workspace views">${items.map(([id, name]) => (attr === "href" ? `<a href="${h(id)}" ${active === id ? 'aria-current="page"' : ""}>${h(name)}</a>` : `<button type="button" data-at="${attr}" data-value="${id}" aria-pressed="${active === id}">${h(name)}</button>`)).join("")}</nav>`;
+  const stat = (name, value, detail, cls = "", href = "") =>
+    `<${href ? "a" : "div"} ${href ? `href="${href}"` : ""} class="atelier-stat ${cls}"><span class="metric-label">${h(name)}</span><b>${h(value)}</b><span class="ks">${h(detail)}</span></${href ? "a" : "div"}>`;
+  const pagination = (count, page, size, action) =>
+    `<div class="atelier-pagination"><span>${count ? `${page * size + 1}–${Math.min(count, (page + 1) * size)}` : "0"} of ${count}</span><div><button class="btn" data-at="${action}" data-value="${page - 1}" ${page === 0 ? "disabled" : ""}>Previous</button><button class="btn" data-at="${action}" data-value="${page + 1}" ${(page + 1) * size >= count ? "disabled" : ""}>Next</button></div></div>`;
+  function scope(R) {
+    const a = Masterpiece.getScope(),
+      candidates = S.projects.filter((p) => F.c === "all" || p.country === F.c);
+    return `<section class="atelier-scope" aria-label="Shared portfolio selection"><label class="atelier-search"><span class="sr-only">Search portfolio</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input data-ledger-scope="q" value="${h(F.q)}" placeholder="Search projects, codes, countries…" aria-label="Search portfolio"></label><label><span class="sr-only">Portfolio country</span><select data-ledger-scope="c" aria-label="Portfolio country"><option value="all">All countries</option>${S.countries.map((c) => `<option value="${h(c.id)}" ${F.c === c.id ? "selected" : ""}>${h(c.name)}</option>`).join("")}</select></label><label><span class="sr-only">Portfolio project</span><select data-ledger-scope="project" aria-label="Portfolio project"><option value="all">All projects</option>${candidates.map((p) => `<option value="${h(p.id)}" ${a.project === p.id ? "selected" : ""}>${h(p.code || p.name)}</option>`).join("")}</select></label><details class="atelier-filter-more"><summary class="btn">More filters${F.s !== "all" || F.g !== "all" || F.ds || F.de ? " · active" : ""}</summary><div><label>Sector<select data-ledger-scope="s"><option value="all">All sectors</option>${[
+      ...new Set(S.projects.map((p) => p.sector).filter(Boolean)),
+    ]
+      .sort()
+      .map((s) => `<option ${F.s === s ? "selected" : ""}>${h(s)}</option>`)
+      .join(
+        "",
+      )}</select></label><label>Financial signal<select data-ledger-scope="g">${[
+      ["all", "All signals"],
+      ["off", "Off pace"],
+      ["r", "Ahead of time"],
+      ["o", "Slow absorption"],
+      ["g", "Near time pace"],
+      ["n", "Not assessed"],
+    ]
+      .map(
+        ([id, name]) =>
+          `<option value="${id}" ${F.g === id ? "selected" : ""}>${name}</option>`,
+      )
+      .join(
+        "",
+      )}</select></label><label>Project starts from<input type="date" data-ledger-scope="ds" value="${F.ds}"></label><label>Project ends by<input type="date" data-ledger-scope="de" value="${F.de}"></label><p>Project dates select records. History dates in Finance restrict report history only.</p></div></details><button class="btn atelier-reset" data-at="reset-scope">Reset</button><span class="atelier-selection">${R.length} / ${S.projects.length} projects${DEMO_MODE ? " · Sample data" : ""}</span></section>`;
+  }
+  function shell(R, body, active = "") {
+    return `<div class="atelier-page" data-workspace="${active}">${scope(R)}${R.length ? body : emptyState("No projects match this selection", "Broaden the selection to return to your portfolio.", '<button class="btn" data-act="reset">Clear filters</button>')}</div>`;
+  }
+  function kpis(R, home = false) {
+    const f = domain.financial(R);
+    return `<div class="atelier-kpis ${home ? "home-metrics" : ""}">${stat("Approved funding", fmt(f.budget), `${R.length} projects · EUR`, "metric-budget")} ${stat("Cumulative spent", fmt(f.spent.value), `${f.spent.covered}/${R.length} with actuals evidence`, "metric-spent")} ${home ? stat("Needs follow-up", number(domain.observations(R).filter((x) => x.status !== "reviewed" && x.status !== "resolved").length), "Recorded observations · open or in progress", "", "#/intel") : stat("Spent + committed", fmt(f.exposure), `${f.covered}/${R.length} with exposure evidence`, "metric-exposure")} ${home ? stat("Evidence coverage", `${f.covered}/${R.length}`, "Exposure sources available · verification separate", "", "#/sources") : stat("Available funding", fmt(f.available), f.complete ? "Current selection fully covered" : "Whole-selection total withheld · incomplete sources", "metric-available")}</div>`;
+  }
+  function decisionRows(items, max = 5) {
+    return items
+      .slice(0, max)
+      .map(
+        (x) =>
+          `<article class="atelier-decision"><div class="atelier-decision-marker ${x.tone}" aria-hidden="true">${x.priority === 0 ? "!" : "↗"}</div><div><div class="atelier-decision-meta">${label(x.priority === 0 ? "Act now" : x.priority === 1 ? "Review soon" : "Evidence gap", x.tone)}<span>${h(x.p.code)}${x.due ? " · " + h(date(x.due)) : ""}</span></div><h3>${link(x.link, x.title)}</h3><p>${h(x.reason === x.title ? x.next : x.reason)}</p><small>${h(x.source)}${x.sourceDate ? " · " + h(x.sourceDate) : ""}</small></div></article>`,
+      )
+      .join("");
+  }
+  function compactPosition(R) {
+    const f = domain.financial(R),
+      spent = f.spent.value,
+      committed = f.committed.value,
+      coveredBudget = R.filter((r) => r.evidence.exposure).reduce(
+        (n, r) => n + r.b,
+        0,
+      );
+    const denom = Math.max(
+        f.budget,
+        Math.abs(spent || 0) + Math.abs(committed || 0),
+        1,
+      ),
+      width = (n) => Math.max(0, Math.min(100, (n / denom) * 100));
+    return `<div class="atelier-position-total"><span>Approved portfolio funding</span><b>${fmt(f.budget)}</b></div><div class="atelier-financial-track" role="img" aria-label="Approved funding ${h(fmt(f.budget))}, covered expenditure ${h(fmt(spent))}, covered commitments ${h(fmt(committed))}. Missing source values are unknown."><i class="spent" style="width:${width(spent || 0)}%"></i><i class="committed" style="width:${width(committed || 0)}%"></i></div><dl class="atelier-amounts"><div><dt><i class="spent"></i>Spent</dt><dd>${fmt(spent)}</dd><small>${f.spent.covered}/${R.length} covered</small></div><div><dt><i class="committed"></i>Committed</dt><dd>${fmt(committed)}</dd><small>${f.committed.covered}/${R.length} covered</small></div><div><dt><i class="unknown"></i>Available</dt><dd>${fmt(f.available)}</dd><small>${f.complete ? "Entire selection" : "Incomplete evidence"}</small></div></dl><p class="atelier-note">${f.complete ? "All selected projects have exposure evidence." : `Exposure evidence covers ${fmt(coveredBudget)} of approved funding. Missing expenditure is unknown.`} Current project sources can have different dates.</p>${link("#/overview", "Explore financial position", "atelier-text-link")}`;
+  }
+  function agendaItems(R, max = 5) {
+    const events = portfolioEvents(R)
+      .filter((e) => !e.done && e.date >= TODAY())
+      .slice(0, max);
+    return events.length
+      ? events
+          .map(
+            (e) =>
+              `<div class="atelier-date-row"><time datetime="${h(e.date)}"><b>${new Date(e.date + "T12:00:00Z").getUTCDate()}</b><span>${new Date(e.date + "T12:00:00Z").toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" })}</span></time><div>${link(e.link, e.label)}<small>${h(e.p.code)} · ${h(e.kind)}</small></div><span>${h(e.date)}</span></div>`,
+          )
+          .join("")
+      : emptyState(
+          "No upcoming dates recorded",
+          "Add contract and plan dates to populate this view.",
+        );
+  }
+  function home() {
+    const R = rows(),
+      f = domain.financial(R),
+      observations = domain
+        .observations(R)
+        .filter((x) => x.status !== "resolved" && x.status !== "reviewed");
+    const content = {
+      decisions:
+        title(
+          "01 / Your next decisions",
+          "Focus on what matters",
+          `${observations.length} open or in-progress observations`,
+          link("#/intel", "View all", "atelier-text-link"),
+        ) +
+        (observations.length
+          ? decisionRows(
+              observations.filter(
+                (x, i, all) => all.findIndex((v) => v.p.id === x.p.id) === i,
+              ),
+            )
+          : emptyState(
+              "No open observations",
+              "This does not establish project performance; inspect evidence coverage separately.",
+            )),
+      position:
+        title(
+          "02 / Financial position",
+          "Funding in perspective",
+          "Current values · source coverage stays visible",
+        ) + compactPosition(R),
+      dates:
+        title(
+          "03 / Looking ahead",
+          "Next recorded dates",
+          "Project records · completion is recorded separately",
+          link("#/calendar", "Planning", "atelier-text-link"),
+        ) + agendaItems(R),
+      changes:
+        title(
+          "04 / Portfolio activity",
+          "Recent changes",
+          "Changes saved in this portfolio",
+        ) +
+        ((S.log || [])
+          .slice(0, 5)
+          .map(
+            (x) =>
+              `<div class="atelier-change"><span aria-hidden="true">↗</span><div><b>${h(x.msg)}</b><time>${h(new Date(x.at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }))}</time></div></div>`,
+          )
+          .join("") ||
+          emptyState(
+            "No changes recorded",
+            "Saved project edits and document imports appear here.",
+          )),
+    };
+    const panels = prefs
+      .get()
+      .homeOrder.map(
+        (id, i) =>
+          `<section class="atelier-home-panel" data-home-panel="${id}">${ui.arranging ? `<div class="atelier-arrange"><button class="btn" draggable="true" data-home-handle="${id}" aria-label="Move ${id}. Alt and arrow keys also reorder.">⠿ Move ${id}</button><button class="btn" data-at="home-up" data-value="${id}" ${i === 0 ? "disabled" : ""}>Earlier</button><button class="btn" data-at="home-down" data-value="${id}" ${i === 3 ? "disabled" : ""}>Later</button></div>` : ""}${content[id]}</section>`,
+      )
+      .join("");
+    return {
+      t: "Portfolio overview",
+      s: "A clear view of funding, evidence and the decisions ahead",
+      html: shell(
+        R,
+        `<div class="atelier-welcome"><div><span class="atelier-eyebrow">${DEMO_MODE ? "Sample portfolio" : "Your portfolio"} / ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span><h2>${R.length} projects.<br><span>${new Set(R.map((r) => r.p.country)).size} countries. One portfolio.</span></h2><p>${observations.filter((x) => x.priority === 0).length} urgent observations · ${f.covered}/${R.length} projects with exposure evidence.</p></div><div><a class="btn" href="#/brief">Management brief</a><button class="btn" data-at="arrange-home" aria-pressed="${ui.arranging}">${ui.arranging ? "Done arranging" : "Arrange overview"}</button></div></div>${kpis(R, true)}<div class="atelier-home-grid ${ui.arranging ? "arranging" : ""}">${panels}</div><details class="atelier-method operational-details"><summary>Understand coverage and financial measures</summary><div class="operational-metrics">${stat("Budget used", f.used === null ? "—" : pc(f.used), f.label, "metric-used")}<p>Financial pace compares expenditure and commitments with elapsed project time. It does not measure delivery. Missing actuals, FTE, dates or plans are unknown, even when no alert is recorded.</p></div></details>`,
+        "home",
+      ),
+    };
+  }
+  function sourceComparison(R) {
+    const latest = new Map();
+    for (const q of S.countryReports || []) {
+      const old = latest.get(q.country);
+      if (!old || q.date > old.date) latest.set(q.country, q);
+    }
+    const comparisons = R.map((r) => {
+      const report = latest.get(r.p.country),
+        matches = (report?.rows || []).filter((x) => x.pid === r.p.id);
+      const source = matches.length === 1 ? matches[0] : null;
+      const aligned = !!(
+        source &&
+        r.evidence.actual &&
+        r.evidence.latest?.date &&
+        r.evidence.latest.date === report.date
+      );
+      return {
+        r,
+        report,
+        source,
+        aligned,
+        delta: aligned ? source.spent - r.sp : null,
+        ambiguous: matches.length > 1,
+      };
+    });
+    const linked = comparisons.filter((x) => x.source),
+      aligned = comparisons.filter((x) => x.aligned),
+      different = aligned.filter((x) => Math.abs(x.delta) >= 1);
+    ui.comparisonPage = Math.min(
+      ui.comparisonPage,
+      Math.max(0, Math.ceil(comparisons.length / 25) - 1),
+    );
+    return `${title("Independent source families", "Do the sources agree?", "Compare linked expenditure only when reporting dates align.", '<button class="btn" data-at="import">Add a source report</button>')}<div class="atelier-kpis">${stat("Selected projects", R.length, "Current portfolio selection")}${stat("Linked country rows", `${linked.length}/${R.length}`, "Unlinked or ambiguous rows stay unknown")}${stat("Comparable source dates", `${aligned.length}/${R.length}`, "A common reporting date is required")}${stat("Differences to inspect", different.length, "Among comparable linked rows only")}</div><div class="tw atelier-source-comparison" tabindex="0" role="region" aria-label="Independent project and country expenditure comparison"><table><caption>EUR · latest eligible project actuals and latest country report · independent sources</caption><thead><tr><th>Project</th><th>Project actuals</th><th>Project source date</th><th>Country PDF actuals</th><th>Country source date</th><th>Comparable difference</th><th>Evidence</th></tr></thead><tbody>${comparisons
+      .slice(ui.comparisonPage * 25, (ui.comparisonPage + 1) * 25)
+      .map(
+        ({ r, report, source, aligned, delta, ambiguous }) =>
+          `<tr><td><b>${h(r.p.code)}</b><small>${h(r.p.name)}</small></td><td>${r.evidence.actual ? fmt(r.sp) : "—"}</td><td>${h(r.evidence.latest?.date || "Undated / not established")}</td><td>${source ? fmt(source.spent) : "—"}<small>${ambiguous ? "Ambiguous links" : !report ? "No country report" : !source ? "Project not linked" : "Linked source row"}</small></td><td>${h(report?.date || "—")}</td><td>${aligned ? fmt(delta) : "—"}<small>${aligned ? (Math.abs(delta) < 1 ? "Agrees within €1" : "Inspect the source difference") : source ? "Dates differ or are unknown" : "No comparable linked source"}</small></td><td><button class="btn" data-at="source" data-value="${h(r.p.id)}">Project sources</button>${report ? link("#/country/" + encodeURIComponent(r.p.country) + "/sources", "Country source") : ""}</td></tr>`,
+      )
+      .join(
+        "",
+      )}</tbody></table></div>${pagination(comparisons.length, ui.comparisonPage, 25, "comparison-page")}<p class="atelier-note">Country reports and project files are independent source families. Their amounts are never added together. A numerical difference is withheld for different or unknown reporting dates. A matching total does not verify individual transactions.</p><div class="atelier-country-sources">${
+      [...latest.values()]
+        .filter((q) => F.c === "all" || q.country === F.c)
+        .map(
+          (q) =>
+            `<article><b>${h(cname(q.country))}</b><span>${h(q.date)} · ${h(q.fileName)}</span><small>${q.rows.length} source projects · ${q.rows.filter((x) => x.pid).length} linked in the originating report</small>${link("#/country/" + encodeURIComponent(q.country) + "/sources", "Inspect all country rows", "btn")}</article>`,
+        )
+        .join("") ||
+      emptyState(
+        "No country reports registered",
+        "Project evidence remains available. Add a country expenditure PDF to compare the independent sources.",
+      )
+    }</div>`;
+  }
+  function finance(id) {
+    const R = rows(),
+      mode = ["history", "forecast", "sources", "studio"].includes(id)
+        ? id
+        : "current";
+    const nav = tabs(
+      [
+        ["#/overview", "Current position"],
+        ["#/overview/history", "Report history"],
+        ["#/overview/forecast", "Forecasts"],
+        ["#/overview/sources", "Source comparison"],
+        ["#/overview/studio", "Custom studio"],
+      ],
+      mode === "current" ? "#/overview" : "#/overview/" + mode,
+    );
+    let content = "";
+    if (mode === "studio")
+      content = Masterpiece.analytics(
+        rows({ allCountries: true, allProjects: true }),
+      ).html;
+    else if (mode === "sources") content = sourceComparison(R);
+    else if (mode === "history") {
+      const a = Masterpiece.getScope();
+      content = `<section class="atelier-history-controls"><label>Report history from<input type="date" value="${a.from}" data-at-history="from"></label><label>Report history to<input type="date" value="${a.to}" data-at-history="to"></label><button class="btn" data-at="reset-history">All history</button><p>Dates change historical charts; current figures retain their current basis.</p></section>${Masterpiece.panel("trend", R)}<details class="atelier-method"><summary>Evidence coverage and comparison methods</summary>${Masterpiece.panel("coverage", R)}</details>`;
+    } else if (mode === "forecast")
+      content = `<div class="atelier-history-controls"><label>Forecast method<select data-ledger-scope="fm" aria-label="Forecast method">${[
+        ["auto", "Best supported evidence"],
+        ["reports", "Dated report rate"],
+        ["run-rate", "Monthly run rate"],
+        ["plan", "Earned-value plan"],
+        ["team", "Recorded team estimate"],
+        ["pace", "Financial pace"],
+        ["trend", "Recent report trend"],
+      ]
+        .map(
+          ([v, t]) =>
+            `<option value="${v}" ${F.fm === v ? "selected" : ""}>${t}</option>`,
+        )
+        .join(
+          "",
+        )}</select></label><p>A method needs its supporting evidence. When it cannot establish an estimate, the result stays unknown.</p></div><div class="atelier-two-col">${Masterpiece.panel("forecast", R)}${Masterpiece.panel("pace", R)}</div><details class="atelier-method"><summary>Reallocation simulation · changes budgets when applied</summary>${simCard(R)}</details>`;
+    else
+      content = `${kpis(R)}<div class="atelier-two-col">${Masterpiece.panel("allocation", R)}${Masterpiece.panel("composition", R)}</div><details class="atelier-method"><summary>View source coverage</summary>${Masterpiece.panel("coverage", R)}</details><section class="atelier-register-section">${title("Project finance", "Financial register", "Current selection · totals respect source coverage")}${Masterpiece.table(R)}</section>`;
+    return {
+      t: "Finance",
+      s: "Current position, recorded history and supported estimates",
+      html: shell(R, nav + content, "finance"),
+    };
+  }
+  const tablePresets = () =>
+    `<div class="atelier-table-presets" role="group" aria-label="Table task views"><span>Quick view</span>${[
+      ["essential", "Essential"],
+      ["finance", "Finance"],
+      ["forecast", "Forecast"],
+      ["evidence", "Evidence"],
+    ]
+      .map(
+        ([id, name]) =>
+          `<button class="btn" data-at="table-preset" data-value="${id}">${name}</button>`,
+      )
+      .join("")}</div>`;
+  function projects(id) {
+    const R = rows(),
+      mode = ["directory", "cards", "countries", "compare"].includes(id)
+        ? id
+        : prefs.get().projectsView;
+    const nav = tabs(
+      [
+        ["directory", "Directory"],
+        ["cards", "Project cards"],
+        ["countries", "By country"],
+        ["compare", "Compare"],
+      ],
+      mode,
+      "projects-view",
+    );
+    let content;
+    if (mode === "directory") content = tablePresets() + Masterpiece.table(R);
+    else if (mode === "compare") content = legacy.compare().html;
+    else if (mode === "countries")
+      content = `<div class="atelier-country-list">${S.countries
+        .map((c) => {
+          const X = R.filter((r) => r.p.country === c.id),
+            f = domain.financial(X);
+          return X.length
+            ? `<details class="atelier-country" ${R.length < 12 ? "open" : ""}><summary><span><b>${h(c.name)}</b><small>${X.length} projects · ${h(c.region || "")}</small></span><strong>${fmt(f.budget)}</strong></summary><ul>${X.map((r) => `<li>${link(PL(r.p), r.p.name)}<span>${h(r.p.code)} · ${h(r.p.sector || "Sector not set")}</span><b>${fmt(r.b)}</b></li>`).join("")}</ul><footer>${link("#/country/" + encodeURIComponent(c.id), "Open country sources and details")}</footer></details>`
+            : "";
+        })
+        .join("")}</div>`;
+    else {
+      const pages = Math.max(1, Math.ceil(R.length / 12));
+      ui.projectsPage = Math.min(ui.projectsPage, pages - 1);
+      content = `<div class="atelier-project-cards">${R.slice(
+        ui.projectsPage * 12,
+        (ui.projectsPage + 1) * 12,
+      )
+        .map((r, i) => pcard(r, i))
+        .join(
+          "",
+        )}</div>${pagination(R.length, ui.projectsPage, 12, "projects-page")}`;
+    }
+    return {
+      t: "Projects",
+      s: "Find a project, compare records and inspect the evidence",
+      html: shell(
+        R,
+        `<div class="atelier-directory-heading">${nav}<span>${R.length} selected · ${new Set(R.map((r) => r.p.country)).size} countries</span></div>${content}`,
+        "projects",
+      ),
+    };
+  }
+  const categories = [
+    ["all", "All observations"],
+    ["finance", "Finance"],
+    ["delivery", "Delivery"],
+    ["evidence", "Evidence"],
+    ["people", "People"],
+    ["continuity", "Continuity"],
+  ];
+  function intelligence() {
+    const R = rows(),
+      all = domain.observations(R),
+      query = ui.queueQuery.toLocaleLowerCase();
+    const chosen = all.filter(
+      (x) =>
+        (ui.queueCategory === "all" || x.category === ui.queueCategory) &&
+        (ui.queueStatus === "all" ||
+          (ui.queueStatus === "active" &&
+            !["resolved", "reviewed"].includes(x.status)) ||
+          x.status === ui.queueStatus) &&
+        (!query ||
+          [x.title, x.reason, x.p.code, x.p.name, x.owner]
+            .join(" ")
+            .toLocaleLowerCase()
+            .includes(query)),
+    );
+    const pageCount = Math.max(1, Math.ceil(chosen.length / 15));
+    ui.queuePage = Math.min(ui.queuePage, pageCount - 1);
+    const f = domain.financial(R);
+    const content = `<section class="atelier-intelligence-intro"><div><span class="atelier-eyebrow">Evidence into decisions</span><h2>Every signal deserves context.</h2><p>Review the reason, inspect its source and record who takes the next step.</p></div><div class="atelier-evidence-dimensions"><div><b>${f.pace}/${R.length}</b><span>Financial pace assessed</span></div><div><b>${f.delivery}/${R.length}</b><span>Recorded delivery plans</span></div><div><b>${f.covered}/${R.length}</b><span>Exposure evidence</span></div></div></section>${tabs(categories, ui.queueCategory, "queue-category")}<div class="atelier-list-toolbar"><label>Search observations<input data-at-input="queue" aria-label="Search observations" value="${h(ui.queueQuery)}" placeholder="Project, reason or owner"></label><label>Review state<select data-at-select="queue-status">${[
+      ["active", "Open + in progress"],
+      ["all", "All current conditions"],
+      ["open", "Open"],
+      ["progress", "In progress"],
+      ["reviewed", "Reviewed"],
+      ["resolved", "Resolution recorded"],
+    ]
+      .map(
+        ([k, t]) =>
+          `<option value="${k}" ${ui.queueStatus === k ? "selected" : ""}>${t}</option>`,
+      )
+      .join(
+        "",
+      )}</select></label><span>${chosen.length} matching observations</span></div><div class="atelier-queue">${
+      chosen
+        .slice(ui.queuePage * 15, (ui.queuePage + 1) * 15)
+        .map(
+          (x) =>
+            `<article class="atelier-queue-item ${x.tone}" data-observation="${h(x.key)}"><header>${label(x.priority === 0 ? "Act now" : x.priority === 1 ? "Review soon" : "Evidence gap", x.tone)}<span>${h(x.p.code)} · ${h(cname(x.p.country))}</span><span class="atelier-label">${h(x.category)}</span></header><div class="atelier-queue-body"><div><h3>${h(x.title)}</h3><p>${h(x.reason)}</p><dl><div><dt>Evidence</dt><dd>${h(x.source)}${x.sourceDate ? " · " + h(x.sourceDate) : ""}</dd></div>${x.due ? `<div><dt>Recorded due date</dt><dd>${h(date(x.due))}</dd></div>` : ""}<div><dt>Next action</dt><dd>${h(x.next)}</dd></div></dl>${x.status === "resolved" ? '<p class="atelier-condition">A resolution was recorded, but the source condition is still present. Verify the project record before closing the issue.</p>' : ""}${x.review.due ? `<p class="atelier-note">Follow-up ${h(x.review.due)}${x.review.due < TODAY() ? " · overdue" : ""}</p>` : ""}${x.review.note ? `<p class="atelier-review-note">${h(x.review.note)}</p>` : ""}</div><aside>${label({ open: "Open", progress: "In progress", reviewed: "Reviewed", resolved: "Resolution recorded" }[x.status] || "Open")}<span>Owner: ${h(x.owner || "Unassigned")}</span>${link(x.link, "Inspect project", "btn")}<button class="btn" data-at="review" data-value="${h(x.key)}">Record follow-up</button><button class="btn" data-at="source" data-value="${h(x.p.id)}">Source details</button></aside></div></article>`,
+        )
+        .join("") ||
+      emptyState(
+        "No observations match",
+        "Change the category or review state. Missing evidence is never interpreted as a clean bill of health.",
+      )
+    }</div>${pagination(chosen.length, ui.queuePage, 15, "queue-page")}<p class="atelier-note">Coverage describes available evidence. Reviewed is separate from resolved; recording a resolution does not remove a source condition. No composite health score is used.</p>`;
+    return {
+      t: "Intelligence",
+      s: "Explainable observations, evidence and accountable follow-up",
+      html: shell(R, content, "intelligence"),
+    };
+  }
+  function people() {
+    const R = rows(),
+      mode = prefs.get().peopleTab,
+      nav = tabs(
+        [
+          ["assignments", "Assignments"],
+          ["people", "Source names"],
+          ["contracts", "Contracts"],
+        ],
+        mode,
+        "people-tab",
+      );
+    let content;
+    if (mode === "assignments") content = Masterpiece.staff(R).html;
+    else {
+      const assignments = portfolioDocumentTeam(R),
+        groups = new Map();
+      assignments.forEach((x) => {
+        const key = x.name.normalize("NFKC").toLocaleLowerCase();
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(x);
+      });
+      const query = ui.peopleQuery.toLocaleLowerCase();
+      const records =
+        mode === "people"
+          ? [...groups.values()].filter(
+              (G) =>
+                !query ||
+                [G[0].name, ...G.map((x) => x.r.p.code)]
+                  .join(" ")
+                  .toLocaleLowerCase()
+                  .includes(query),
+            )
+          : assignments.filter(
+              (x) =>
+                !query ||
+                [x.name, x.r.p.code, x.a.position]
+                  .join(" ")
+                  .toLocaleLowerCase()
+                  .includes(query),
+            );
+      ui.peoplePage = Math.min(
+        ui.peoplePage,
+        Math.max(0, Math.ceil(records.length / 24) - 1),
+      );
+      content = `${title("Source-backed people", mode === "people" ? "Names across the portfolio" : "Assignment contracts", mode === "people" ? "Matching names are grouped for navigation; shared identity is not verified." : "Contract records and payroll observations remain distinct.")}<div class="atelier-list-toolbar"><label>Search names and projects<input data-at-input="people" value="${h(ui.peopleQuery)}" aria-label="Search source names"></label><span>${records.length} ${mode === "people" ? "source-name groups" : "assignments"}</span></div><div class="atelier-person-directory">${
+        records
+          .slice(ui.peoplePage * 24, (ui.peoplePage + 1) * 24)
+          .map((record) => {
+            if (mode === "people") {
+              const G = record,
+                known = G.filter((x) => x.fte !== null);
+              return `<article><span class="atelier-avatar">${h(
+                G[0].name
+                  .split(" ")
+                  .map((x) => x[0])
+                  .slice(0, 2)
+                  .join(""),
+              )}</span><h3>${h(G[0].name)}</h3>${label("Identity not verified")}<p>${G.length} project assignments · ${known.length}/${G.length} FTE covered</p><div>${G.map((x) => link(PL(x.r.p, "finance/staff"), x.r.p.code)).join("")}</div><small>Equal source names can describe different people.</small></article>`;
+            }
+            const x = record;
+            return `<article><span class="atelier-eyebrow">${h(x.r.p.code)} / ${h(x.a.base || "Base not established")}</span><h3>${h(x.name)}</h3><p>${h(x.a.position || "Position not recorded")}</p><dl><div><dt>Contract start</dt><dd>${h(x.a.start || "Not established")}</dd></div><div><dt>Contract end</dt><dd>${h(x.a.end || "Not established")}</dd></div><div><dt>Known assignment FTE</dt><dd>${x.fte === null ? "—" : number(x.fte)}</dd></div></dl>${link(PL(x.r.p, "finance/staff"), "Review original assignment", "btn")}</article>`;
+          })
+          .join("") ||
+        emptyState(
+          "No source records match",
+          "Import a staffing source or broaden your search.",
+        )
+      }</div>${pagination(records.length, ui.peoplePage, 24, "people-page")}`;
+    }
+    return {
+      t: "People",
+      s: "Source names, project assignments and contract evidence",
+      html: shell(R, nav + content, "people"),
+    };
+  }
+  function planning(id) {
+    const R = rows(),
+      mode = ["agenda", "calendar", "timeline", "continuity"].includes(id)
+        ? id
+        : prefs.get().planningTab;
+    const nav = tabs(
+      [
+        ["agenda", "Agenda"],
+        ["calendar", "Calendar"],
+        ["timeline", "Timeline"],
+        ["continuity", "Continuity"],
+      ],
+      mode,
+      "planning-tab",
+    );
+    let content;
+    if (mode === "timeline") content = Masterpiece.timeline(R);
+    else if (mode === "calendar") content = legacy.calendar().html;
+    else if (mode === "continuity") content = legacy.continuity().html;
+    else {
+      const all = portfolioEvents(R),
+        matches = all.filter(
+          (e) =>
+            (ui.agendaKind === "all" || e.kind === ui.agendaKind) &&
+            (ui.agenda === "all" ||
+              (ui.agenda === "complete" && e.done) ||
+              (ui.agenda === "overdue" && !e.done && e.date < TODAY()) ||
+              (ui.agenda === "upcoming" && !e.done && e.date >= TODAY())),
+        );
+      ui.agendaPage = Math.min(
+        ui.agendaPage,
+        Math.max(0, Math.ceil(matches.length / 30) - 1),
+      );
+      content = `<div class="atelier-kpis atelier-small-kpis">${stat("Overdue recorded dates", number(all.filter((e) => !e.done && e.date < TODAY()).length), "Completion follows project records")}${stat("Next 90 days", number(all.filter((e) => !e.done && e.date >= TODAY() && dd(e.date) <= 90).length), "Dates from contracts and plans")}${stat("Projects with dates", `${new Set(all.map((e) => e.p.id)).size}/${R.length}`, "No dates does not mean no obligations")}</div><div class="atelier-list-toolbar"><div class="atelier-segments" aria-label="Agenda range">${[
+        ["upcoming", "Upcoming"],
+        ["overdue", "Overdue"],
+        ["all", "All dates"],
+        ["complete", "Recorded complete"],
+      ]
+        .map(
+          ([v, t]) =>
+            `<button class="btn" data-at="agenda-range" data-value="${v}" aria-pressed="${ui.agenda === v}">${t}</button>`,
+        )
+        .join(
+          "",
+        )}</div><label>Event type<select data-at-select="agenda-kind">${[
+        ["all", "All types"],
+        ["report", "Reports"],
+        ["payment", "Payments"],
+        ["milestone", "Milestones"],
+        ["decision", "Decisions"],
+        ["end", "Project end"],
+      ]
+        .map(
+          ([v, t]) =>
+            `<option value="${v}" ${ui.agendaKind === v ? "selected" : ""}>${t}</option>`,
+        )
+        .join(
+          "",
+        )}</select></label></div><section class="atelier-agenda" aria-label="Recorded project agenda">${
+        matches
+          .slice(ui.agendaPage * 30, (ui.agendaPage + 1) * 30)
+          .map(
+            (e) =>
+              `<article><time datetime="${h(e.date)}"><b>${h(date(e.date))}</b><span>${e.done ? "Recorded complete" : e.date < TODAY() ? `${Math.abs(dd(e.date))} days overdue` : dd(e.date) === 0 ? "Today" : `In ${dd(e.date)} days`}</span></time><div>${label(e.kind, e.done ? "good" : e.date < TODAY() ? "bad" : "neutral")}<h3>${link(e.link, e.label)}</h3><p>${h(e.p.code)} · ${h(e.p.name)}</p>${e.detail ? `<small>${h(e.detail)}</small>` : ""}</div><button class="btn" data-at="source" data-value="${h(e.p.id)}">Evidence</button></article>`,
+          )
+          .join("") ||
+        emptyState(
+          "No recorded dates in this view",
+          "Change the range or import contract and plan dates.",
+        )
+      }</section>${pagination(matches.length, ui.agendaPage, 30, "agenda-page")}<p class="atelier-note">Planned dates do not establish delivery or receipt of a payment. Only completion recorded in the originating project is shown as complete.</p>`;
+    }
+    return {
+      t: "Planning",
+      s: "Recorded dates, delivery schedules and continuity decisions",
+      html: shell(R, nav + content, "planning"),
+    };
+  }
+  function sourceCenter() {
+    const R = rows(),
+      all = [
+        ...domain.sources(R),
+        ...(S.countryReports || [])
+          .filter((q) => F.c === "all" || q.country === F.c)
+          .map((q) => ({
+            key: "country/" + q.id,
+            p: { code: cname(q.country) },
+            name: q.fileName,
+            date: q.date,
+            type: "Country expenditure PDF",
+            state: q.originalStored ? "original retained" : "data registered",
+            detail:
+              q.rows.length +
+              " source projects · country figures are a separate source family",
+            href: "#/country/" + encodeURIComponent(q.country) + "/sources",
+            countryOriginal: q.originalStored ? q.id : "",
+            download: "",
+          })),
+      ],
+      q = ui.sourcesQuery.toLocaleLowerCase(),
+      selected = all.filter(
+        (x) =>
+          !q ||
+          [x.name, x.p.code, x.type, x.detail]
+            .join(" ")
+            .toLocaleLowerCase()
+            .includes(q),
+      );
+    ui.sourcesPage = Math.min(
+      ui.sourcesPage,
+      Math.max(0, Math.ceil(selected.length / 25) - 1),
+    );
+    return {
+      t: "Source center",
+      s: "Original documents, financial versions and a guided import review",
+      html: shell(
+        R,
+        `${title("Traceable evidence", "From original to decision", "Inspect retained files and review every import before it changes records.", '<button class="btn pri" data-at="import">＋ Add source documents</button>')}<ol class="atelier-import-steps"><li><b>01</b>Select files</li><li><b>02</b>Match project</li><li><b>03</b>Recognize & preview</li><li><b>04</b>Review differences</li><li><b>05</b>Save source links</li></ol><div class="atelier-list-toolbar"><label>Search sources<input data-at-input="sources" aria-label="Search sources" value="${h(ui.sourcesQuery)}" placeholder="File, project, type…"></label><span>${selected.length} source records</span>${link("#/overview/sources", "Compare country and project sources", "btn")}</div><div class="atelier-source-list">${
+          selected
+            .slice(ui.sourcesPage * 25, (ui.sourcesPage + 1) * 25)
+            .map(
+              (x) =>
+                `<article><span class="atelier-file-icon" aria-hidden="true">↳</span><div><h3>${h(x.name)}</h3><p>${h(x.p.code)} · ${h(x.type)} · ${h(x.date || "Date not recorded")}</p><small>${h(x.detail)}</small></div><div>${label(x.state, x.state === "review" ? "warn" : "neutral")}${x.p.id ? `<button class="btn" data-at="source" data-value="${h(x.p.id)}">Evidence</button>` : ""}${link(x.href, "Open record", "btn")}${x.countryOriginal ? `<button class="btn" data-act="cm-original" data-id="${h(x.countryOriginal)}">Original PDF</button>` : ""}${x.download ? `<button class="btn" data-act="docget" data-id="${h(x.download)}">Original</button>` : ""}</div></article>`,
+            )
+            .join("") ||
+          emptyState(
+            "No source records match",
+            "Add files or change the search. Original financial readers remain available.",
+          )
+        }</div>${pagination(selected.length, ui.sourcesPage, 25, "sources-page")}`,
+        "sources",
+      ),
+    };
+  }
+  function brief() {
+    const R = rows();
+    return {
+      t: "Management brief",
+      s: "Current selection, source coverage and recorded follow-up",
+      html: shell(
+        R,
+        `<div class="atelier-brief-actions"><button class="btn pri" data-at="print">Print / save PDF</button><button class="btn" data-studio-action="open-brief">Open export preview</button></div><article class="atelier-management-brief">${Masterpiece.brief(R)}${title("Accountable follow-up", "Current review queue", "Recorded source conditions and their follow-up state")}<div>${
+          domain
+            .observations(R)
+            .slice(0, 12)
+            .map(
+              (x) =>
+                `<div class="atelier-brief-observation"><b>${h(x.p.code)} · ${h(x.title)}</b><p>${h(x.reason)}</p><small>${h(x.status)} · ${h(x.owner || "Unassigned")} · ${h(x.source)}${x.review.due ? " · follow-up " + h(x.review.due) : ""}</small></div>`,
+            )
+            .join("") || "<p>No current observations.</p>"
+        }</div></article>`,
+        "brief",
+      ),
+    };
+  }
+  // A shared evidence drawer, including retained file links and all financial versions.
+  const drawer = document.createElement("dialog");
+  drawer.className = "atelier-drawer";
+  drawer.setAttribute("aria-labelledby", "atelier-drawer-title");
+  document.body.append(drawer);
+  const reviewDialog = document.createElement("dialog");
+  reviewDialog.className = "atelier-review-dialog";
+  reviewDialog.setAttribute("aria-labelledby", "atelier-review-title");
+  document.body.append(reviewDialog);
+  const importDialog = document.createElement("dialog");
+  importDialog.className = "atelier-import-dialog";
+  importDialog.setAttribute("aria-labelledby", "atelier-import-title");
+  document.body.append(importDialog);
+  function showSource(pid) {
+    const p = S.projects.find((p) => p.id === pid);
+    if (!p) return;
+    const r = model(p),
+      sources = domain.sources([r]),
+      e = r.evidence;
+    drawer.innerHTML = `<header>${title("Source details", p.code || p.name, "Original records and financial coverage")}<button class="btn" data-at="close-dialog" aria-label="Close source details">×</button></header><h3 id="atelier-drawer-title">${h(p.name)}</h3><div class="atelier-drawer-facts"><div><span>Approved</span><b>${fmt(r.b)}</b></div><div><span>Spent</span><b>${e.actual ? fmt(r.sp) : "—"}</b></div><div><span>Exposure</span><b>${e.exposure ? fmt(r.u) : "—"}</b></div><div><span>Actuals source date</span><b>${h(e.latest?.date || "Not established")}</b></div></div><p class="atelier-note">A dash means no usable evidence. Availability and source dates do not establish verification or delivery.</p><h4>Financial versions</h4>${
+      (p.reportingPeriods || [])
+        .slice()
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        .map(
+          (q) =>
+            `<article class="atelier-source-version"><b>${h(q.name || q.fileName)}</b><span>${h(q.type)} · ${h(q.date || "Undated")}</span>${link(PL(p, "finance/reports"), "Inspect version")}</article>`,
+        )
+        .join("") || "<p>No financial versions recorded.</p>"
+    }<h4>Retained original files</h4>${
+      sources
+        .filter((x) => x.download)
+        .map(
+          (x) =>
+            `<article class="atelier-source-version"><b>${h(x.name)}</b><small>${h(x.detail)}</small><button class="btn" data-act="docget" data-id="${h(x.download)}">Download original</button></article>`,
+        )
+        .join("") ||
+      "<p>No original files listed. Inspect the project to review its inputs.</p>"
+    }<footer>${link(PL(p, "documents/documents"), "Open project documents", "btn")}</footer>`;
+    drawer.showModal();
+    drawer.querySelector('[data-at="close-dialog"]').focus();
+  }
+  drawer.addEventListener("click", (event) => {
+    const action = event.target.closest('[data-act="docget"]');
+    if (action) {
+      event.preventDefault();
+      act("docget", action.dataset.id);
+    }
+    if (event.target.closest('a[href^="#/"]')) drawer.close();
+  });
+  let reviewKey = "";
+  function showReview(key) {
+    const x = domain.observations(rows()).find((x) => x.key === key);
+    if (!x) return;
+    reviewKey = key;
+    reviewDialog.innerHTML = `<form><header><div><span class="atelier-eyebrow">${h(x.p.code)} / Follow-up</span><h2 id="atelier-review-title">Record the next step</h2></div><button type="button" class="btn" data-at="close-dialog" aria-label="Close follow-up">×</button></header><p>${h(x.title)}</p><label>Review state<select name="status">${[
+      ["open", "Open"],
+      ["progress", "In progress"],
+      ["reviewed", "Reviewed"],
+      ["resolved", "Resolution recorded"],
+    ]
+      .map(
+        ([v, t]) =>
+          `<option value="${v}" ${x.status === v ? "selected" : ""}>${t}</option>`,
+      )
+      .join(
+        "",
+      )}</select></label><label>Responsible person<input name="owner" maxlength="120" value="${h(x.owner)}" placeholder="Name or team"></label><label>Follow-up date<input name="due" type="date" value="${h(x.review.due || "")}"></label><label>Decision and next action<textarea name="note" maxlength="2000" rows="4">${h(x.review.note || "")}</textarea></label><p class="atelier-note">Reviewed does not mean resolved. A recorded resolution remains visible while the originating source condition persists. This follow-up is included in portfolio backups and can be undone.</p><footer><button type="button" class="btn" data-at="close-dialog">Cancel</button><button class="btn pri" type="submit">Save follow-up</button></footer></form>`;
+    reviewDialog.showModal();
+    reviewDialog.querySelector("select").focus();
+  }
+  reviewDialog.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const x = domain.observations(rows()).find((x) => x.key === reviewKey);
+    if (!x) return;
+    const f = new FormData(event.target),
+      status = f.get("status");
+    if (!["open", "progress", "reviewed", "resolved"].includes(status)) return;
+    commit("Recorded follow-up for " + x.p.code + ": " + x.title);
+    S.reviewWork =
+      S.reviewWork &&
+      typeof S.reviewWork === "object" &&
+      !Array.isArray(S.reviewWork)
+        ? S.reviewWork
+        : {};
+    S.reviewWork[x.key] = {
+      fingerprint: x.fingerprint,
+      status,
+      owner: String(f.get("owner") || "")
+        .trim()
+        .slice(0, 120),
+      due: String(f.get("due") || ""),
+      note: String(f.get("note") || "")
+        .trim()
+        .slice(0, 2000),
+      at: new Date().toISOString(),
+    };
+    save();
+    reviewDialog.close();
+    render();
+    toast("Follow-up saved", { l: "Undo", f: undo });
+  });
+  let selectedFiles = [];
+  function showImport() {
+    selectedFiles = [];
+    importDialog.innerHTML = `<form><header><div><span class="atelier-eyebrow">Source workflow / 01–02</span><h2 id="atelier-import-title">Bring the evidence in</h2></div><button type="button" class="btn" data-at="close-dialog" aria-label="Close source import">×</button></header><ol class="atelier-import-steps"><li><b>01</b>Select</li><li><b>02</b>Match</li><li><b>03–05</b>Review & save</li></ol><label class="atelier-drop" id="atelier-drop">Drop documents here or choose files<input type="file" id="atelier-import-files" multiple accept=".pdf,.docx,.xlsx,.csv"><small>PDF · Word · Excel · CSV. Scanned PDFs need a text layer.</small></label><label>Source family<select id="atelier-import-family"><option value="project">Project documents and financial files</option><option value="country">Country expenditure PDF</option></select></label><label id="atelier-project-match">Match to project<select id="atelier-import-project" required>${S.projects.map((p) => `<option value="${h(p.id)}">${h(p.code)} · ${h(p.name)}</option>`).join("")}</select></label><label id="atelier-country-match" hidden>Match to country<select id="atelier-import-country"><option value="">Recognize country from document</option>${S.countries.map((c) => `<option value="${h(c.id)}">${h(c.name)}</option>`).join("")}</select></label><div id="atelier-import-summary" role="status">No files selected.</div><p class="atelier-note">The existing readers will recognize columns, dates, source terms and differences. You will review their results before saving. File names alone never establish project identity.</p><footer><button type="button" class="btn" data-at="close-dialog">Cancel</button><button type="submit" class="btn pri">Recognize & preview</button></footer></form>`;
+    const input = importDialog.querySelector('input[type="file"]'),
+      drop = importDialog.querySelector(".atelier-drop");
+    const update = (files) => {
+      selectedFiles = [...files];
+      importDialog.querySelector("#atelier-import-summary").textContent =
+        selectedFiles.length
+          ? selectedFiles.map((f) => f.name).join(" · ")
+          : "No files selected.";
+    };
+    input.addEventListener("change", () => update(input.files));
+    drop.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.add("dragging");
+    });
+    drop.addEventListener("dragleave", () => drop.classList.remove("dragging"));
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.remove("dragging");
+      update(e.dataTransfer.files);
+    });
+    importDialog
+      .querySelector("#atelier-import-family")
+      .addEventListener("change", (e) => {
+        const country = e.target.value === "country";
+        importDialog.querySelector("#atelier-project-match").hidden = country;
+        importDialog.querySelector("#atelier-country-match").hidden = !country;
+        importDialog.querySelector("#atelier-import-project").required =
+          !country;
+      });
+    importDialog.showModal();
+    input.focus();
+  }
+  importDialog.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const message = importDialog.querySelector("#atelier-import-summary");
+    if (!selectedFiles.length) {
+      message.textContent = "Choose at least one file.";
+      return;
+    }
+    const family = importDialog.querySelector("#atelier-import-family").value;
+    if (
+      family === "country" &&
+      (selectedFiles.length !== 1 || !/\.pdf$/i.test(selectedFiles[0].name))
+    ) {
+      message.textContent =
+        "Choose one country expenditure PDF for this review.";
+      return;
+    }
+    const pid = importDialog.querySelector("#atelier-import-project").value,
+      cid = importDialog.querySelector("#atelier-import-country").value,
+      files = selectedFiles;
+    if (family === "project" && !S.projects.some((p) => p.id === pid)) {
+      message.textContent =
+        "Choose an existing project, or add a project first.";
+      return;
+    }
+    importDialog.close();
+    if (family === "country") cmImport(files[0], cid);
+    else routeFiles(files, pid);
+  });
+  function moveHome(id, delta) {
+    const order = prefs.get().homeOrder.slice(),
+      from = order.indexOf(id),
+      to = Math.max(0, Math.min(order.length - 1, from + delta));
+    if (from < 0 || from === to) return;
+    order.splice(from, 1);
+    order.splice(to, 0, id);
+    prefs.set({ homeOrder: order });
+    render();
+    view
+      .querySelector(`[data-home-handle="${id}"]`)
+      ?.focus({ preventScroll: true });
+  }
+  let dragHome = "",
+    touchHome = null;
+  view.addEventListener(
+    "dragstart",
+    (event) => {
+      const node = event.target.closest("[data-home-handle]");
+      if (!node) return;
+      event.stopImmediatePropagation();
+      dragHome = node.dataset.homeHandle;
+      event.dataTransfer.setData("text/plain", dragHome);
+      event.dataTransfer.effectAllowed = "move";
+    },
+    true,
+  );
+  view.addEventListener(
+    "dragover",
+    (event) => {
+      if (!dragHome || !event.target.closest("[data-home-panel]")) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.dataTransfer.dropEffect = "move";
+    },
+    true,
+  );
+  view.addEventListener(
+    "drop",
+    (event) => {
+      if (!dragHome) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      const id = event.target.closest("[data-home-panel]")?.dataset.homePanel;
+      if (id)
+        moveHome(
+          dragHome,
+          prefs.get().homeOrder.indexOf(id) -
+            prefs.get().homeOrder.indexOf(dragHome),
+        );
+      dragHome = "";
+    },
+    true,
+  );
+  view.addEventListener("dragend", () => {
+    dragHome = "";
+  });
+  view.addEventListener("keydown", (event) => {
+    const id = event.target.closest("[data-home-handle]")?.dataset.homeHandle;
+    if (!id || !event.altKey || !["ArrowUp", "ArrowDown"].includes(event.key))
+      return;
+    event.preventDefault();
+    moveHome(id, event.key === "ArrowUp" ? -1 : 1);
+  });
+  view.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest("[data-home-handle]");
+    if (!handle || event.pointerType === "mouse") return;
+    event.preventDefault();
+    const gesture = (touchHome = {
+      id: handle.dataset.homeHandle,
+      pointer: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      startY: event.clientY,
+      active: false,
+    });
+    const track = () => {
+      if (touchHome !== gesture) return;
+      if (gesture.active) {
+        if (gesture.y < 70) window.scrollBy(0, -10);
+        else if (gesture.y > innerHeight - 110) window.scrollBy(0, 10);
+        const target = document
+          .elementFromPoint(gesture.x, gesture.y)
+          ?.closest("[data-home-panel]");
+        gesture.target = target?.dataset.homePanel;
+        view
+          .querySelectorAll("[data-home-panel]")
+          .forEach((p) => p.classList.toggle("drop-target", p === target));
+      }
+      gesture.raf = requestAnimationFrame(track);
+    };
+    gesture.raf = requestAnimationFrame(track);
+    handle.setPointerCapture(event.pointerId);
+  });
+  window.addEventListener(
+    "pointermove",
+    (event) => {
+      if (!touchHome || touchHome.pointer !== event.pointerId) return;
+      event.preventDefault();
+      touchHome.x = event.clientX;
+      touchHome.y = event.clientY;
+      touchHome.active = Math.abs(event.clientY - touchHome.startY) > 6;
+      const target = document
+        .elementFromPoint(event.clientX, event.clientY)
+        ?.closest("[data-home-panel]");
+      view
+        .querySelectorAll("[data-home-panel]")
+        .forEach((p) => p.classList.toggle("drop-target", p === target));
+      touchHome.target = target?.dataset.homePanel;
+    },
+    { passive: false },
+  );
+  window.addEventListener("pointerup", (event) => {
+    if (!touchHome || touchHome.pointer !== event.pointerId) return;
+    const { id, target } = touchHome;
+    cancelAnimationFrame(touchHome.raf);
+    touchHome = null;
+    if (target)
+      moveHome(
+        id,
+        prefs.get().homeOrder.indexOf(target) -
+          prefs.get().homeOrder.indexOf(id),
+      );
+    view
+      .querySelectorAll(".drop-target")
+      .forEach((p) => p.classList.remove("drop-target"));
+  });
+  window.addEventListener("pointercancel", () => {
+    if (touchHome) cancelAnimationFrame(touchHome.raf);
+    touchHome = null;
+    view
+      .querySelectorAll(".drop-target")
+      .forEach((p) => p.classList.remove("drop-target"));
+  });
+  const handlers = {
+    "table-preset": (id) => Masterpiece.tablePreset(id),
+    "arrange-home": () => {
+      ui.arranging = !ui.arranging;
+      render();
+    },
+    "home-up": (id) => moveHome(id, -1),
+    "home-down": (id) => moveHome(id, 1),
+    "projects-view": (value) => {
+      ui.projectsPage = 0;
+      prefs.set({ projectsView: value });
+      location.hash = "#/projects/" + value;
+      render();
+    },
+    "people-tab": (value) => {
+      prefs.set({ peopleTab: value });
+      ui.peoplePage = 0;
+      render();
+    },
+    "planning-tab": (value) => {
+      prefs.set({ planningTab: value });
+      ui.agendaPage = 0;
+      location.hash = "#/calendar/" + value;
+      render();
+    },
+    "queue-category": (value) => {
+      ui.queueCategory = value;
+      ui.queuePage = 0;
+      render();
+    },
+    "agenda-range": (value) => {
+      ui.agenda = value;
+      ui.agendaPage = 0;
+      render();
+    },
+    "projects-page": (v) => {
+      ui.projectsPage = Math.max(0, +v || 0);
+      render();
+    },
+    "queue-page": (v) => {
+      ui.queuePage = Math.max(0, +v || 0);
+      render();
+    },
+    "comparison-page": (v) => {
+      ui.comparisonPage = Math.max(0, +v || 0);
+      render();
+    },
+    "sources-page": (v) => {
+      ui.sourcesPage = Math.max(0, +v || 0);
+      render();
+    },
+    "agenda-page": (v) => {
+      ui.agendaPage = Math.max(0, +v || 0);
+      render();
+    },
+    "people-page": (v) => {
+      ui.peoplePage = Math.max(0, +v || 0);
+      render();
+    },
+    "reset-scope": () => resetF(),
+    "reset-history": () => Masterpiece.setScope({ from: "", to: "" }),
+    review: showReview,
+    source: showSource,
+    import: showImport,
+    print: () => window.print(),
+  };
+  document.addEventListener(
+    "click",
+    (event) => {
+      const button = event.target.closest("[data-at]");
+      if (!button) return;
+      const action = button.dataset.at;
+      if (action === "close-dialog") {
+        event.preventDefault();
+        button.closest("dialog").close();
+        return;
+      }
+      if (!handlers[action]) return;
+      event.preventDefault();
+      handlers[action](button.dataset.value);
+    },
+    true,
+  );
+  view.addEventListener("change", (event) => {
+    const target = event.target,
+      k = target.dataset.ledgerScope;
+    if (k) {
+      if (k === "q") return;
+      if (k === "project") Masterpiece.setScope({ project: target.value });
+      else setF(k, target.value);
+      ui.projectsPage = 0;
+      return;
+    }
+    if (target.dataset.atHistory) {
+      Masterpiece.setScope({ [target.dataset.atHistory]: target.value });
+      return;
+    }
+    const key = target.dataset.atSelect;
+    if (key === "queue-status") {
+      ui.queueStatus = target.value;
+      ui.queuePage = 0;
+      render();
+    } else if (key === "agenda-kind") {
+      ui.agendaKind = target.value;
+      ui.agendaPage = 0;
+      render();
+    }
+  });
+  let inputTimer;
+  view.addEventListener("input", (event) => {
+    const input = event.target,
+      search = input.dataset.atInput,
+      shared = input.dataset.ledgerScope === "q";
+    if (!search && !shared) return;
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(() => {
+      if (!input.isConnected) return;
+      const start = input.selectionStart,
+        end = input.selectionEnd;
+      if (shared) {
+        F.q = input.value;
+        ui.projectsPage = 0;
+        Masterpiece.syncFilters("q");
+        ls.set(FKEY, F);
+        syncBar();
+      } else {
+        ui[
+          search === "queue"
+            ? "queueQuery"
+            : search === "people"
+              ? "peopleQuery"
+              : "sourcesQuery"
+        ] = input.value;
+        ui[search + "Page"] = 0;
+      }
+      render();
+      const selector = shared
+        ? '[data-ledger-scope="q"]'
+        : `[data-at-input="${search}"]`;
+      const restored = view.querySelector(selector);
+      restored?.focus({ preventScroll: true });
+      restored?.setSelectionRange(start, end);
+    }, 160);
+  });
+  function navigation() {
+    const side = $(".side"),
+      original = new Map(
+        [...side.querySelectorAll("a[data-r]")].map((a) => [a.dataset.r, a]),
+      );
+    const workspace = [
+      ["home", "Home"],
+      ["projects", "Projects"],
+      ["overview", "Finance"],
+      ["intel", "Intelligence"],
+      ["team", "People"],
+      ["calendar", "Planning"],
+    ];
+    const first = side.querySelector(".nav-label");
+    first.textContent = "Workspace";
+    side.querySelectorAll("a[data-r],.nav-label").forEach((a) => {
+      if (a !== first) a.remove();
+    });
+    const fragment = document.createDocumentFragment();
+    workspace.forEach(([route, name]) => {
+      const a = original.get(route);
+      a.classList.remove("mx");
+      a.innerHTML = a.querySelector("svg").outerHTML + `<span>${name}</span>`;
+      a.dataset.section = route;
+      fragment.append(a);
+    });
+    const utility = document.createElement("div");
+    utility.className = "nav-label";
+    utility.textContent = "Tools";
+    fragment.append(utility);
+    const sources = document.createElement("a");
+    sources.href = "#/sources";
+    sources.dataset.r = "sources";
+    sources.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H5v18h14V8zM14 3v5h5M8 13h8M8 17h6"/></svg><span>Source center</span>';
+    fragment.append(sources);
+    const data = original.get("data");
+    data.innerHTML =
+      data.querySelector("svg").outerHTML + "<span>Data & settings</span>";
+    data.classList.remove("mx");
+    fragment.append(data);
+    first.after(fragment);
+    side.dataset.ledgerNav = "six";
+    $(".brand small").textContent = "Evidence into decisions";
+    const sourceButton = document.createElement("a");
+    sourceButton.href = "#/sources";
+    sourceButton.className = "btn atelier-top-source";
+    sourceButton.textContent = "Sources";
+    $("#cmdk").before(sourceButton);
+  }
+  function afterRender(route) {
+    Masterpiece.afterRender(route);
+    const root = coreRoutes.has(route);
+    $("main").classList.toggle("atelier-root", root);
+    if (root) {
+      $("#barwrap").hidden = true;
+      $("#bar").hidden = true;
+    }
+    const active =
+      {
+        finance: "overview",
+        people: "team",
+        planning: "calendar",
+        monitoring: "overview",
+        continuity: "calendar",
+        countries: "projects",
+        country: "projects",
+        compare: "projects",
+        project: "projects",
+        brief: "home",
+      }[route] || route;
+    $(".side")
+      .querySelectorAll("a[data-r]")
+      .forEach((a) => {
+        const selected = a.dataset.r === active;
+        a.classList.toggle("on", selected);
+        if (selected) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+    // Retained budget views share the same financial semantics as the studio.
+    view
+      .querySelectorAll(".budget-workspace")
+      .forEach((root) => root.classList.add("atelier-budget"));
+    if (route === "data") {
+      if (!view.querySelector(".atelier-data-settings")) {
+        const settings = document.createElement("section");
+        settings.className = "atelier-data-settings";
+        settings.innerHTML =
+          title(
+            "Display preferences",
+            "Your working environment",
+            "Palette, motion and saved contexts use device storage.",
+          ) + Masterpiece.contextTools();
+        view.prepend(settings);
+      }
+    }
+  }
+  LedgerHost.importPreview = (p, state) => {
+    const changes = [];
+    for (const entry of state.entries) {
+      const facts = entry.contract?.facts || {};
+      if (facts.period?.value) {
+        const value = facts.period.value;
+        changes.push([
+          "Contract start",
+          p.contract?.start || p.start,
+          value.start,
+          entry.file.name,
+        ]);
+        changes.push([
+          "Contract months",
+          p.contract?.months,
+          value.months,
+          entry.file.name,
+        ]);
+      }
+      if (entry.D?.acts?.length)
+        changes.push([
+          "Plan activities",
+          p.doa?.acts?.length || 0,
+          entry.D.acts.length,
+          entry.file.name,
+        ]);
+      if (entry.D?.inds?.length)
+        changes.push([
+          "Indicators",
+          p.doa?.inds?.length || 0,
+          entry.D.inds.length,
+          entry.file.name,
+        ]);
+      const versions =
+        entry.contract?.annex?.versions ||
+        (entry.contract?.annex?.lines?.length ? [entry.contract.annex] : []);
+      for (const v of versions)
+        if (v.validation?.total !== undefined)
+          changes.push([
+            "Approved budget candidate",
+            fmt(p.budget),
+            fmt(v.validation.total),
+            entry.file.name + " · " + (v.label || "Budget"),
+          ]);
+    }
+    return `<section class="atelier-import-preview"><span class="atelier-eyebrow">03–04 / Recognized candidates and differences</span><p>Match: <b>${h(p.code)} · ${h(p.name)}</b>. Review the source dates and selectable versions below before saving.</p>${changes.length ? `<div class="tw"><table><thead><tr><th>Field</th><th>Current record</th><th>Recognized candidate</th><th>Source</th></tr></thead><tbody>${changes.map(([field, before, after, source]) => `<tr><td>${h(field)}</td><td>${h(before ?? "Not recorded")}</td><td>${h(after ?? "Not established")}</td><td>${h(source)}</td></tr>`).join("")}</tbody></table></div>` : "<p>No structured field differences recognized. Read the extraction notes and retained-file status below.</p>"}<p class="atelier-note">These are reader candidates; selecting plan dates, budget versions and effective dates below determines the changes applied. Counts alone do not establish equivalent content.</p></section>`;
+  };
+  navigation();
+  V.home = home;
+  V.overview = finance;
+  V.finance = finance;
+  V.projects = projects;
+  V.intel = intelligence;
+  V.team = people;
+  V.people = people;
+  V.calendar = planning;
+  V.planning = planning;
+  V.continuity = () => planning("continuity");
+  V.sources = sourceCenter;
+  V.brief = brief;
+  LedgerHost.cleanReviews = cleanLedgerReviews;
+  LedgerHost.owns = (route) => coreRoutes.has(route);
+  LedgerHost.models = domain.models;
+  LedgerHost.scopeRows = (R, scope = {}) => {
+    const route = (location.hash || "#/home").split("/")[1],
+      selection = Masterpiece.getScope();
+    if (route === "project" || scope.c || scope.allProjects) return R;
+    return R.filter(
+      (r) => selection.project === "all" || r.p.id === selection.project,
+    );
+  };
+  LedgerHost.filtersChanged = (key) => Masterpiece.syncFilters(key);
+  LedgerHost.afterRender = afterRender;
+  return { domain };
+})();
 
 S.projects.forEach(p=>{try{resolveProject(p)}catch(e){}});
 syncBar();render();setInterval(()=>{if(!document.hidden&&!document.querySelector('dialog[open],#asSide.open')&&!document.activeElement?.closest('#view input,#view select,#view textarea,#view button,#view summary'))render()},60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!document.querySelector('dialog[open],#asSide.open')&&!document.activeElement?.closest('#view input,#view select,#view textarea,#view button,#view summary'))render()});try{checkReminders()}catch(e){}

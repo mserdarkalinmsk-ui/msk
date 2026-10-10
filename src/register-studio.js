@@ -10,9 +10,6 @@ function normalizeRegisterSettings(value, definitions) {
     "spent",
     "exposure",
     "available",
-    "used",
-    "signal",
-    "date",
   ];
   function core(input) {
     const v = input && typeof input === "object" ? input : {};
@@ -81,6 +78,7 @@ function normalizeRegisterSettings(value, definitions) {
       sort: sorts[0].key,
       direction: sorts[0].direction,
       density: v.density === "compact" ? "compact" : "comfortable",
+      mobileView: v.mobileView === "table" ? "table" : "cards",
       group: ["country", "signal", "country-signal", "country-sector"].includes(
         v.group,
       )
@@ -463,7 +461,16 @@ function createRegisterStudio(api) {
       a = api.getAnalysis?.() || {};
     const filterCount =
       Object.keys(t.filters).length + (t.evidence !== "all" ? 1 : 0);
-    return `<div class="mp-table-root rs-studio mp-density-${t.density}" data-rs="register" data-mp-source="${h(JSON.stringify(R.map((r) => r.p.id)))}"><div class="rs-register-stats"><div><span>Projects in view</span><b>${filtered.length}<small> / ${R.length}</small></b></div><div><span>Approved funding</span><b>${h(budgets.length ? money(budgets.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Recorded exposure</span><b>${h(known.length ? money(known.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Exposure coverage</span><b>${known.length}<small> / ${filtered.length} sources</small></b></div></div><div class="mp-table-toolbar rs-table-toolbar"><label class="mp-register-search"><span class="sr-only">Search this table</span>${icon("search")}<input id="mp-register-query" type="search" placeholder="Find a project, code, country or sector…" value="${h(state.query)}" data-mp-table-query></label><div class="rs-table-actions">${filtersUI()}${sortsUI()}${columnUI()}${viewsUI()}${exportUI(filtered)}<button class="btn rs-density" data-mp="table-density" aria-label="Switch to ${t.density === "compact" ? "comfortable" : "compact"} table density" title="Table density">${icon("sliders")}</button></div></div><div class="rs-register-context"><label class="mp-table-control">Group<select data-mp-table="group" aria-label="Group table rows">${[
+    const mobileCards = `<div class="rs-mobile-cards">${page
+      .filter((r) => pageVisible.some((v) => v.p.id === r.p.id))
+      .map(
+        (r) =>
+          `<article data-mobile-project="${h(r.p.id)}"><header><span>${h(r.p.code)} · ${h(r.cn)}</span><input type="checkbox" data-rs-mobile-select="${h(r.p.id)}" aria-label="Select ${h(r.p.name)}" ${state.selected.has(r.p.id) ? "checked" : ""}></header><h3><a href="#/project/${encodeURIComponent(r.p.id)}">${h(r.p.name)}</a></h3><dl>${["budget", "spent", "exposure"].map((key) => `<div><dt>${h(label(key))}</dt><dd>${values(r, key) === null ? "—" : money(values(r, key))}</dd></div>`).join("")}</dl><footer><span>${h(r.evidence.latest?.date || "Source date not established")}</span><button class="btn" data-at="source" data-value="${h(r.p.id)}">Evidence</button></footer></article>`,
+      )
+      .join(
+        "",
+      )}<div class="rs-mobile-total">All ${filtered.length} matching projects · ${known.length}/${filtered.length} exposure sources<br>Approved ${money(budgets.reduce((a, b) => a + b, 0))} · Recorded exposure ${known.length ? money(known.reduce((a, b) => a + b, 0)) : "—"}</div></div>`;
+    return `<div class="mp-table-root rs-studio mp-density-${t.density} rs-display-${t.mobileView}" data-rs="register" data-mp-source="${h(JSON.stringify(R.map((r) => r.p.id)))}"><div class="rs-register-stats"><div><span>Projects in view</span><b>${filtered.length}<small> / ${R.length}</small></b></div><div><span>Approved funding</span><b>${h(budgets.length ? money(budgets.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Recorded exposure</span><b>${h(known.length ? money(known.reduce((a, b) => a + b, 0)) : "—")}</b></div><div><span>Exposure coverage</span><b>${known.length}<small> / ${filtered.length} sources</small></b></div></div><div class="mp-table-toolbar rs-table-toolbar"><label class="mp-register-search"><span class="sr-only">Search this table</span>${icon("search")}<input id="mp-register-query" type="search" placeholder="Find a project, code, country or sector…" value="${h(state.query)}" data-mp-table-query></label><div class="rs-table-actions">${filtersUI()}${sortsUI()}${columnUI()}${viewsUI()}${exportUI(filtered)}<button class="btn rs-density" data-mp="table-density" aria-label="Switch to ${t.density === "compact" ? "comfortable" : "compact"} table density" title="Table density">${icon("sliders")}</button></div></div><div class="rs-register-context"><label class="mp-table-control">Group<select data-mp-table="group" aria-label="Group table rows">${[
       ["none", "No grouping"],
       ["country", "Country"],
       ["signal", "Financial signal"],
@@ -476,7 +483,7 @@ function createRegisterStudio(api) {
       )
       .join(
         "",
-      )}</select></label><span class="rs-current-basis"><i class="mp-status-dot"></i>Current financial basis${a.from || a.to ? " · history window does not replace latest figures" : ""}</span>${selected.length ? `<span class="rs-selection-status">${selected.length} selected <button class="mp-mini" data-rs-action="clear-selection">Clear</button></span>` : ""}</div>${filterChips()}<div class="mp-table-info" role="status"><span>${filtered.length} project${filtered.length === 1 ? "" : "s"}${filterCount || state.query ? " match your table filters" : " in this view"}${filtered.length !== R.length ? ` · ${R.length} in workspace selection` : ""}</span><span>Shift + click: multi-sort · drag header edge: resize · unknown values stay last</span></div><p class="mp-mobile-hint">Swipe horizontally. Frozen project names retain your place.</p><div class="mp-scroll mp-register-scroll" tabindex="0" role="region" aria-label="Project register, scroll horizontally for more columns"><table class="mp-register rs-table" style="width:${44 + cols.reduce((total, key) => total + width(key), 0) + 88}px"><caption class="sr-only">Current project register in EUR. Totals and grouped subtotals cover all matching records, independently of pagination. Source coverage is indicated.</caption><colgroup><col style="width:44px">${cols.map((key) => `<col data-rs-col="${key}" style="width:${width(key)}px">`).join("")}<col style="width:88px"></colgroup><thead><tr><th class="mp-select-cell rs-select-frozen" scope="col"><input type="checkbox" data-mp-page-select aria-label="Select all visible projects on this page" ${allSelected ? "checked" : ""} ${!pageVisible.length ? "disabled" : ""}></th>${cols
+      )}</select></label><span class="rs-current-basis"><i class="mp-status-dot"></i>Current financial basis${a.from || a.to ? " · history window does not replace latest figures" : ""}</span>${selected.length ? `<span class="rs-selection-status">${selected.length} selected <button class="mp-mini" data-rs-action="clear-selection">Clear</button></span>` : ""}</div>${filterChips()}<div class="mp-table-info" role="status"><span>${filtered.length} project${filtered.length === 1 ? "" : "s"}${filterCount || state.query ? " match your table filters" : " in this view"}${filtered.length !== R.length ? ` · ${R.length} in workspace selection` : ""}</span><span>Shift + click: multi-sort · drag header edge: resize · unknown values stay last</span></div><div class="rs-mobile-switch" role="group" aria-label="Mobile register display"><button class="btn" data-rs-action="mobile-view" data-value="cards" aria-pressed="${t.mobileView === "cards"}">Project cards</button><button class="btn" data-rs-action="mobile-view" data-value="table" aria-pressed="${t.mobileView === "table"}">Full table</button></div>${mobileCards}<p class="mp-mobile-hint">Swipe horizontally. Frozen project names retain your place.</p><div class="mp-scroll mp-register-scroll" tabindex="0" role="region" aria-label="Project register, scroll horizontally for more columns"><table class="mp-register rs-table" style="width:${44 + cols.reduce((total, key) => total + width(key), 0) + 88}px"><caption class="sr-only">Current project register in EUR. Totals and grouped subtotals cover all matching records, independently of pagination. Source coverage is indicated.</caption><colgroup><col style="width:44px">${cols.map((key) => `<col data-rs-col="${key}" style="width:${width(key)}px">`).join("")}<col style="width:88px"></colgroup><thead><tr><th class="mp-select-cell rs-select-frozen" scope="col"><input type="checkbox" data-mp-page-select aria-label="Select all visible projects on this page" ${allSelected ? "checked" : ""} ${!pageVisible.length ? "disabled" : ""}></th>${cols
       .map((key) => {
         const sortIndex = t.sorts.findIndex((sort) => sort.key === key),
           sort = t.sorts[sortIndex];
@@ -660,6 +667,9 @@ function createRegisterStudio(api) {
       t = cfg(),
       R = api.sourceRows(root);
     switch (action) {
+      case "mobile-view":
+        changeConfig(root, { mobileView: button.dataset.value });
+        break;
       case "sort": {
         const existing = t.sorts.find((s) => s.key === key),
           direction = existing ? existing.direction * -1 : 1;
@@ -837,7 +847,12 @@ function createRegisterStudio(api) {
     if (!root) return false;
     if (root.dataset.rsRedrawing === "true") return true;
     const t = cfg();
-    if (el.dataset.mpColumn) {
+    if (el.dataset.rsMobileSelect) {
+      el.checked
+        ? state.selected.add(el.dataset.rsMobileSelect)
+        : state.selected.delete(el.dataset.rsMobileSelect);
+      redraw(root);
+    } else if (el.dataset.mpColumn) {
       const key = el.dataset.mpColumn,
         columns = el.checked
           ? [...t.columns, key]

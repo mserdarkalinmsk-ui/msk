@@ -70,7 +70,7 @@ async function main() {
     });
     const page = await context.newPage();
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(base);
+    await page.goto(base + "#/overview/studio");
     await page.locator('[data-mp-panel="register"]').waitFor();
     await openWorkspace(page);
     await page.locator(".mp-more-tools summary").click();
@@ -294,6 +294,7 @@ async function main() {
     pass(
       "History, pace, composition, waterfall and project comparisons export real 1800px PNGs and source-aware SVGs",
     );
+
 
     await page.locator(".mp-columns summary").click();
     await page.locator('[data-mp-column="committed"]').check();
@@ -572,7 +573,7 @@ async function main() {
     });
     const touch = await mobile.newPage();
     touch.on("pageerror", (e) => errors.push(e.message));
-    await touch.goto(base);
+    await touch.goto(base + "#/overview/studio");
     await openWorkspace(touch);
     await touch.locator('[data-mp="customize"]').click();
     await touch.locator('[data-mp-handle="trend"]').scrollIntoViewIfNeeded();

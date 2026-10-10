@@ -217,7 +217,7 @@ async function main() {
     contexts.push(sample);
     const seed = await sample.newPage();
     seed.on("pageerror", (error) => errors.push(error.message));
-    await seed.goto(base);
+    await seed.goto(base + "#/overview/studio");
     await seed.locator('[data-mp-panel="register"]').waitFor();
     await openDetails(seed.locator(".studio-workspace-settings"));
     await openDetails(seed.locator(".mp-more-tools"));
@@ -245,7 +245,7 @@ async function main() {
       );
       const page = await context.newPage();
       page.on("pageerror", (error) => errors.push(error.message));
-      await page.goto(base);
+      await page.goto(base + "#/overview/studio");
       await page.locator('[data-mp-panel="register"]').waitFor();
       await openDetails(page.locator(".studio-scope"));
       await openDetails(page.locator(".studio-workspace-settings"));

@@ -152,6 +152,7 @@ function createStudioShell(api) {
       analysis: s.analysis,
       appearance: s.appearance,
       scenario: api.scenario(),
+      portfolioFilters: api.getPortfolioFilters?.() || null,
       registerState: api.getRegisterState?.() || { query: "" },
     };
   }
@@ -310,6 +311,7 @@ function createStudioShell(api) {
   }
   return {
     scopeRows,
+    decisionContent,
     scope,
     toolbarExtras,
     brief,
