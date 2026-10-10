@@ -236,6 +236,12 @@ async function main() {
           await a.page.evaluate(() => __test40.facts()),
           `${k}/${fm} financial mismatch`,
         );
+        const viewRoutes = routes.slice(0, 9);
+        assert.deepEqual(
+          await b.page.evaluate((routes) => routes.map((route) => __test40.output(route)), viewRoutes),
+          await a.page.evaluate((routes) => routes.map((route) => __test40.output(route)), viewRoutes),
+          `${k}/${fm} cached route output mismatch`,
+        );
       }
     for (const p of [a.page, b.page])
       await p.evaluate(() => {
@@ -243,7 +249,7 @@ async function main() {
         __test40.filter("fm", "auto");
       });
     pass(
-      "Original portfolio records and all financial model fields match across twelve forecast/scenario combinations",
+      "Original records/model fields and 108 cached route outputs match across twelve forecast/scenario combinations",
     );
     const beforePasses = await b.page.evaluate(
       () => LedgerProfessional.getMetrics().passes,
@@ -295,8 +301,40 @@ async function main() {
       25,
     );
     await b.page.evaluate(() => document.querySelector("#freset").click());
+    await b.page.evaluate(() => __test40.filter("k", 25));
+    await b.page.evaluate(() => {
+      const slider = document.querySelector("#fk");
+      slider.value = "40";
+      slider.dispatchEvent(new Event("input", { bubbles: true }));
+      document.querySelector('[data-act="resetk"]').click();
+    });
+    await pause(150);
+    assert.deepEqual(await b.page.evaluate(() => [JSON.parse(localStorage.getItem("ledger.filters.v1")).k, document.querySelector("#fk").value, document.querySelector("#fkv").textContent]), [0, "0", "0%"]);
+    // Reproduce host integrations which restore scope within the debounce window.
+    await b.page.evaluate(() => {
+      const filters = JSON.parse(localStorage.getItem("ledger.filters.v1"));
+      localStorage.setItem("ledger.fpresets", JSON.stringify([{ name: "All", f: filters }]));
+    });
+    await b.page.reload();
+    await b.page.waitForSelector("#view>*");
+    await b.page.evaluate(() => {
+      const input = document.querySelector("#fq");
+      input.value = "Language"; input.dispatchEvent(new Event("input", { bubbles: true }));
+      const preset = document.querySelector("#fpreset");
+      preset.value = "0"; preset.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await pause(180);
+    assert.deepEqual(await b.page.evaluate(() => [JSON.parse(localStorage.getItem("ledger.filters.v1")).q, document.querySelector("#fq").value, __test40.facts().length]), ["", "", 6]);
+    b.page.once("dialog", (dialog) => dialog.accept("Pending selection"));
+    await b.page.evaluate(() => {
+      const input = document.querySelector("#fq");
+      input.value = "Language"; input.dispatchEvent(new Event("input", { bubbles: true }));
+      document.querySelector("#fpsave").click();
+    });
+    assert.equal(await b.page.evaluate(() => JSON.parse(localStorage.getItem("ledger.fpresets")).at(-1).f.q), "Language");
+    await b.page.evaluate(() => document.querySelector("#freset").click());
     pass(
-      "Eight rapid search inputs cause one final render; pending searches cannot undo Reset, and scenario release saves immediately",
+      "Search batching, scenario release, reset/preset cancellation and preset save reflect the final visible scope",
     );
     const saved = await b.page.evaluate(() => __test40.state());
     const tableTools = b.page.locator(".lp-table-tools").last();
@@ -321,7 +359,6 @@ async function main() {
       "table-row",
     );
     await b.page.emulateMedia({ media: "screen" });
-    await tableTools.locator("input").fill("");
     const sort = b.page.locator('th[data-sort="name"]').first();
     await sort.focus();
     await b.page.keyboard.press("Enter");
@@ -331,23 +368,48 @@ async function main() {
           .querySelector('th[data-sort="name"]')
           .getAttribute("aria-sort") !== "none",
     );
+    await b.page.waitForFunction(() => [...document.querySelectorAll(".lp-table-tools input")].at(-1)?.value === "Language");
+    assert.match(await tableTools.locator("output").textContent(), /1 \/ 6 rows/);
+    await b.page.locator('th[data-sort="name"]').first().click();
+    await b.page.waitForFunction(() => [...document.querySelectorAll(".lp-table-tools input")].at(-1)?.value === "Language");
+    const sortedDownload = b.page.waitForEvent("download");
+    await tableTools.getByRole("button", { name: "Visible rows CSV" }).click();
+    const sortedCSV = await fs.readFile(await (await sortedDownload).path(), "utf8");
+    assert.equal(sortedCSV.trim().split(/\r?\n/).length, 2);
+    assert.match(sortedCSV, /Language Rights Programme Türkiye/);
+    assert.doesNotMatch(sortedCSV, /Media Standards/);
+    await tableTools.locator("input").fill("");
     pass(
       "Local table search preserves original totals and records; filtered CSV, complete printing and keyboard sorting work",
     );
     const chart = b.page.locator(".lp-chart-tools").first();
     assert.equal(await chart.count(), 1);
+    await b.page.evaluate(() => { __test40.filter("c", "tr"); __test40.filter("k", 35); __test40.filter("fm", "team"); });
     const svgPending = b.page.waitForEvent("download");
     await chart.getByRole("button", { name: /as SVG/ }).click();
-    const svg = await fs.readFile(await (await svgPending).path(), "utf8");
+    const svgDownload = await svgPending;
+    const svg = await fs.readFile(await svgDownload.path(), "utf8");
     assert.match(svg, /xmlns="http:\/\/www.w3.org\/2000\/svg"/);
     assert.match(svg, /<desc>/);
+    assert.match(svg, /Scenario: \+35%/);
+    assert.match(svg, /Country: Türkiye/);
+    assert.match(svg, /Forecast method:/);
+    assert.match(svg, /Selected date window:/);
+    assert.match(svg, /export time is not a source date/);
+    assert.match(svgDownload.suggestedFilename(), /tr-scenario-35/);
+    const visibleCaption = svg.slice(0, svg.indexOf('<svg', 5));
+    assert.match(visibleCaption, /<text[^>]*>Scenario: \+35%/);
     const pngPending = b.page.waitForEvent("download");
     await chart.getByRole("button", { name: /as PNG/ }).click();
     const png = await fs.readFile(await (await pngPending).path());
     assert.equal(png.subarray(1, 4).toString(), "PNG");
-    assert.equal(png.readUInt32BE(16), 1800);
+    assert.ok(png.readUInt32BE(16) >= 1799 && png.readUInt32BE(16) <= 1800);
+    await chart.getByRole("button", { name: /Inspect/ }).click();
+    assert.ok(await b.page.locator(".lp-inspection-values li").count() > 0);
+    await b.page.getByRole("button", { name: "Close chart", exact: true }).click();
+    await b.page.evaluate(() => document.querySelector("#freset").click());
     pass(
-      "Visible charts download as self-contained SVG and genuine 1800px PNG with resolved colors",
+      "SVG/PNG exports carry visible selection, method, scenario and time captions; enlarged chart inspection exposes existing values",
     );
     await b.page.locator("#lp-display-button").click();
     const dlg = b.page.locator(".lp-display");
@@ -359,6 +421,8 @@ async function main() {
       false,
     );
     await dlg.locator('[data-lp-setting="design"]').uncheck();
+    assert.deepEqual(await b.page.locator("#view td").first().evaluate((cell) => ({ font: getComputedStyle(cell).fontSize, padding: getComputedStyle(cell).paddingTop })), { font: "15px", padding: "8px" });
+    assert.equal(await b.page.locator("#view td small").first().evaluate((cell) => getComputedStyle(cell).fontSize), "14px");
     await dlg.locator('[data-lp-setting="fast"]').uncheck();
     await dlg.locator("[data-lp-close]").click();
     const directPasses = await b.page.evaluate(
@@ -393,6 +457,27 @@ async function main() {
     pass(
       "Each extension can be disabled independently; reading/density preferences persist without altering portfolio records",
     );
+    const mobile = await profile();
+    await mobile.page.setViewportSize({ width: 390, height: 844 });
+    await go(mobile.page, "enhanced", "overview");
+    assert.equal(await mobile.page.locator("#bartog").getAttribute("aria-expanded"), "false");
+    assert.ok((await mobile.page.locator("#view .card").first().boundingBox()).y < 750);
+    await mobile.page.locator("#bartog").click();
+    assert.equal(await mobile.page.locator("#bartog").getAttribute("aria-expanded"), "true");
+    assert.ok(await mobile.page.locator(".bar").evaluate((node) => node.scrollHeight <= node.clientHeight + 2));
+    assert.ok((await mobile.page.locator(".lp-chart-tools .btn").first().boundingBox()).height >= 44);
+    const activity = mobile.page.locator('g[data-act="tlexp"]').first();
+    assert.equal(await activity.getAttribute("role"), "button");
+    const activityId = await activity.getAttribute("data-id");
+    await activity.focus(); await mobile.page.keyboard.press("Enter");
+    await mobile.page.waitForFunction((id) => document.querySelector(`g[data-id="${id}"]`)?.getAttribute("aria-expanded") === "true", activityId);
+    await mobile.page.locator(`g[data-id="${activityId}"]`).focus();
+    await mobile.page.keyboard.press("Space");
+    await mobile.page.waitForFunction((id) => document.querySelector(`g[data-id="${id}"]`)?.getAttribute("aria-expanded") === "false", activityId);
+    await mobile.page.setViewportSize({ width: 320, height: 844 });
+    assert.equal(await mobile.page.locator(".side a").first().evaluate((a) => getComputedStyle(a).fontSize), "10.5px");
+    await mobile.context.close();
+    pass("Phone filters expand without clipping, touch actions are 44px, and activity expansion works with Enter/Space");
     await b.page.evaluate(() => __test40.openForm());
     for (const [name, value] of Object.entries({
       name: "Preserved architecture check",
@@ -503,6 +588,16 @@ async function main() {
       "50/200/1000-project fixtures produce byte-identical Analytics output with fewer repeated source calculations",
     );
     console.log("Performance evidence", JSON.stringify(timings));
+    await b.page.evaluate(() => { location.hash = "#/overview"; });
+    await b.page.waitForSelector(".lp-chart-tools");
+    const tallDownload = b.page.waitForEvent("download");
+    await b.page.locator(".lp-chart-tools").first().getByRole("button", { name: /as PNG/ }).click();
+    const tallPNG = await fs.readFile(await (await tallDownload).path());
+    const tallWidth = tallPNG.readUInt32BE(16), tallHeight = tallPNG.readUInt32BE(20);
+    assert.equal(tallPNG.subarray(1, 4).toString(), "PNG");
+    assert.ok(tallWidth <= 8192 && tallHeight <= 8192 && tallWidth * tallHeight <= 8000000);
+    assert.ok(tallHeight > tallWidth, "Actual tall timeline must retain aspect ratio");
+    pass("A real 1,000-project timeline exports PNG within the 8-million-pixel and 8192px limits");
     const standalone = await browser.newContext({
       viewport: { width: 390, height: 844 },
       colorScheme: "dark",

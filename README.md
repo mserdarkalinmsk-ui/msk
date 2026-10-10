@@ -5,7 +5,27 @@
 [dedicated ZIP](downloads/portfolio-ledger-professional.zip). This separate variant
 adds optional styling, performance and table/chart tools to the exact uploaded
 file. See [its architecture and validation](docs/PRESERVED_STRUCTURE.md).
-The `index.html` described below is the earlier six-workspace version.
+The `index.html` described in the legacy section below is the earlier six-workspace version.
+
+## Download and run the current Professional version
+
+Download [portfolio-ledger-professional.zip](downloads/portfolio-ledger-professional.zip),
+extract it, and open **portfolio-ledger-professional.html** in a modern browser.
+You can also download that HTML using GitHub's **Download raw file** button.
+This is the structure-preserving version based on the latest uploaded Ledger 40.
+It requires no installation, backend, or external assets. Browser records belong
+to the current profile/origin; use the original Data backup tools when moving them.
+
+```sh
+python3 scripts/build-professional.py
+node tests/professional.cjs
+```
+
+The [seven-role review protocol](docs/REVIEW_PROTOCOL.md) defines independent
+review, correction and re-approval. Actual findings and verdicts are recorded in
+[the review log](docs/REVIEW_LOG.md).
+
+## Earlier six-workspace version — index.html
 
 A self-contained, offline portfolio workspace. Six connected workspaces share one
 selection and one design system while answering different questions. Project
@@ -13,7 +33,7 @@ records, document readers and source-aware financial calculations are retained.
 
 ![Portfolio overview](docs/home.png)
 
-## Download and run
+### Download and run the earlier version
 
 Download **index.html** using GitHub's **Download raw file** button, or download
 this repository as a ZIP. The generated HTML includes the application, sample

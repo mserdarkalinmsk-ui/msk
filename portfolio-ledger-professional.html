@@ -640,6 +640,33 @@ html[data-lp-motion="quiet"] *::after {
   font-size: 12px;
   color: var(--mute);
 }
+/* Reading and density are independent preferences, including the native theme. */
+html[data-lp-density="compact"] #view td { padding: 8px 12px; }
+html[data-lp-reading="large"] body { font-size: 16px; }
+html[data-lp-reading="large"] #view td { font-size: 15px; }
+html[data-lp-reading="large"] #view th,
+html[data-lp-reading="large"] #view td small,
+html[data-lp-reading="large"] #view .sub,
+html[data-lp-reading="large"] #view .leg,
+html[data-lp-reading="large"] #view .strip small { font-size: 14px; line-height: 1.5; }
+html[data-lp-reading="large"] #view .card h2 { font-size: 18px; }
+html[data-lp-reading="large"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-lp-reading="large"] select,
+html[data-lp-reading="large"] textarea { font-size: 16px; }
+html[data-lp-reading="large"] .lp-table-tools,
+html[data-lp-reading="large"] .lp-chart-tools { font-size: 14px; }
+.lp-table-hint { flex-basis: 100%; font-size: inherit; }
+.lp-inspection {
+  width: min(1100px, calc(100vw - 28px)); max-height: calc(100dvh - 28px);
+  padding: 20px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.lp-inspection h2 { font-size: 20px; margin: 0 0 8px; }
+.lp-inspection p { font-size: 14px; color: var(--mute); }
+.lp-inspection-chart { max-height: 55dvh; overflow: auto; border: 1px solid var(--line); padding: 12px; }
+.lp-inspection-values { font-size: 14px; line-height: 1.6; padding-left: 22px; }
+.lp-inspection-values li { margin: 8px 0; }
+#view g[role="button"]:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 @media (max-width: 640px) {
   html[data-lp-design="on"] .top .acts {
     gap: 6px;
@@ -649,9 +676,15 @@ html[data-lp-motion="quiet"] *::after {
     padding: 7px 10px;
   }
   html[data-lp-design="on"] .bar {
-    overflow-y: auto;
-    max-height: 270px;
+    overflow: visible;
+    max-height: none;
   }
+  html[data-lp-design="on"] .bar-wrap.shut .bar { max-height: 0; overflow: hidden; }
+  html[data-lp-design="on"] .side a { font-size: 10.5px; padding: 6px 2px; overflow-wrap: anywhere; }
+  html[data-lp-design="on"] .seg button,
+  .lp-table-tools .btn,
+  .lp-chart-tools .btn { min-height: 44px !important; }
+  #bartog { min-height: 44px; }
   html[data-lp-design="on"] .bar > input[type="search"] {
     flex-basis: 100%;
     width: 100%;
@@ -680,7 +713,8 @@ html[data-lp-motion="quiet"] *::after {
   .lp-table-tools,
   .lp-chart-tools,
   #lp-display-button,
-  .lp-display {
+  .lp-display,
+  .lp-inspection {
     display: none !important;
   }
   html[data-lp-design="on"] .tw {
@@ -2129,6 +2163,7 @@ const LedgerProfessional = (() => {
       if (!records) byObject.set(first, (records = []));
       const existing = records.find(
         (x) =>
+          (name !== "model" || (x.scenario === F.k && x.method === F.fm)) &&
           x.args.length === args.length &&
           x.args.every((a, i) => a === args[i]),
       );
@@ -2138,7 +2173,7 @@ const LedgerProfessional = (() => {
       }
       metrics.misses++;
       const value = fn.apply(this, args);
-      records.push({ args, value });
+      records.push({ args, value, scenario: F.k, method: F.fm });
       return value;
     };
   }
@@ -2220,13 +2255,32 @@ const LedgerProfessional = (() => {
     redo();
   };
   window.addEventListener("hashchange", flush, true);
+  $("#fpreset").addEventListener("change", (event) => {
+    if (event.target.value && event.target.value !== "__del") clearPending();
+  }, true);
   document.addEventListener(
     "click",
     (event) => {
       if (event.target.closest('#freset,[data-act="reset"]')) clearPending();
+      if (event.target.closest('[data-act="resetk"]')) {
+        clearTimeout(rangeTimer);
+        pendingRange = undefined;
+      }
+      if (event.target.closest("#fpsave")) flush();
     },
     true,
   );
+
+  // Use the host's existing collapse control; explicit device choices take priority.
+  const phone = matchMedia("(max-width: 640px)");
+  function mobileFilters() {
+    if (ls.get("ledger.baropen") === null) {
+      barOpen = !phone.matches;
+      syncBarVis();
+    }
+  }
+  mobileFilters();
+  phone.addEventListener("change", mobileFilters);
 
   const display = document.createElement("dialog");
   display.className = "lp-display";
@@ -2244,7 +2298,7 @@ const LedgerProfessional = (() => {
       `<label><span>${label}</span><input type="checkbox" data-lp-setting="${key}" ${settings[key] ? "checked" : ""}></label>`;
     const select = (key, label, options) =>
       `<label><span>${label}</span><select data-lp-setting="${key}">${options.map(([value, title]) => `<option value="${value}" ${settings[key] === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`;
-    display.innerHTML = `<h2 id="lp-display-title">Your display preferences</h2><p>Choose the tools and reading style that suit your work.</p>${toggle("design", "Professional styling")}${toggle("fast", "Faster search and rendering")}${toggle("tables", "Table search and visible-row CSV")}${toggle("charts", "SVG and PNG chart downloads")}${select(
+    display.innerHTML = `<h2 id="lp-display-title">Your display preferences</h2><p>Choose the tools and reading style that suit your work.</p>${toggle("design", "Professional styling")}${toggle("fast", "Search batching and render reuse")}${toggle("tables", "Table search and visible-row CSV")}${toggle("charts", "Chart inspection, SVG and PNG downloads")}${select(
       "density",
       "Table spacing",
       [
@@ -2295,6 +2349,16 @@ const LedgerProfessional = (() => {
   });
 
   const tableStates = new WeakMap();
+  const tableQueries = new Map();
+  function tableKey(table) {
+    const card = table.closest(".card");
+    return JSON.stringify([
+      location.hash || "#/home",
+      [...view.querySelectorAll("table")].indexOf(table),
+      card?.querySelector("h2")?.textContent || "Table",
+      [...table.tHead.querySelectorAll("th")].map((cell) => cell.dataset.sort || cell.textContent),
+    ]);
+  }
   function makeTableTools(table) {
     if (!table.tHead || !table.tBodies.length || tableStates.has(table)) return;
     const rows = [...table.tBodies].flatMap((body) => [...body.rows]);
@@ -2316,6 +2380,8 @@ const LedgerProfessional = (() => {
     input.type = "search";
     input.placeholder = "Find in this table";
     input.setAttribute("aria-label", `Find in ${heading}`);
+    const key = tableKey(table);
+    input.value = tableQueries.get(key) || "";
     const output = document.createElement("output");
     output.setAttribute("aria-live", "polite");
     const button = document.createElement("button");
@@ -2328,6 +2394,9 @@ const LedgerProfessional = (() => {
     const originallyHidden = rows.map((row) => row.hidden);
     function filter() {
       state.query = input.value.trim().toLocaleLowerCase();
+      tableQueries.delete(key);
+      if (input.value) tableQueries.set(key, input.value);
+      if (tableQueries.size > 64) tableQueries.delete(tableQueries.keys().next().value);
       let visible = 0;
       rows.forEach((row, i) => {
         const filtered =
@@ -2358,16 +2427,20 @@ const LedgerProfessional = (() => {
         "\ufeff" +
         records
           .map((row) =>
-            [...row.cells].map((cell) => csvCell(cell.textContent)).join(","),
+            [...row.cells].map((cell) => csvCell(cell.innerText)).join(","),
           )
           .join("\r\n");
       download("portfolio-table-visible.csv", csv, "text/csv;charset=utf-8");
     });
     tools.append(input, output, button);
+    const hint = document.createElement("small");
+    hint.className = "lp-table-hint";
+    hint.textContent = "CSV contains matching displayed text. Original Print includes all rows.";
+    tools.append(hint);
     (table.closest(".tw") || table).before(tools);
     filter();
   }
-  async function exportChart(svg, format) {
+  function styledChart(svg) {
     const clone = svg.cloneNode(true);
     const originals = [svg, ...svg.querySelectorAll("*")],
       copies = [clone, ...clone.querySelectorAll("*")];
@@ -2396,6 +2469,44 @@ const LedgerProfessional = (() => {
           copies[i].setAttribute(key, value);
       }
     });
+    return clone;
+  }
+  const svgNS = "http://www.w3.org/2000/svg";
+  function svgElement(tag, attributes = {}, text) {
+    const node = document.createElementNS(svgNS, tag);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function chartContext(svg) {
+    const selected = (id, key) => {
+      const value = F[key] || (key === "fm" ? "auto" : "all");
+      return [...($(id)?.options || [])].find((option) => option.value === value)?.textContent || String(value);
+    };
+    const label = svg.getAttribute("aria-label") || "Portfolio chart";
+    const route = location.hash || "#/home";
+    const lines = [
+      `${$("#title").textContent} · ${route}`,
+      `Country: ${selected("#fc", "c")} · Sector: ${selected("#fs", "s")} · Signal: ${selected("#fg", "g")}`,
+      `Search: ${F.q || "All projects"} · Selected date window: ${F.ds || "Unrestricted"} to ${F.de || "Unrestricted"}`,
+      `Scenario: ${Number(F.k) > 0 ? "+" : ""}${Number(F.k) || 0}% · Forecast method: ${selected("#fm", "fm")}`,
+    ];
+    if (route.startsWith("#/project/")) lines.push("Project detail: global filters may not restrict this chart.");
+    if (route.startsWith("#/country/")) lines.push(`Country detail scope: ${decodeURIComponent(route.split("/")[2])}`);
+    const legend = [...(svg.closest(".card")?.querySelectorAll(".leg") || [])]
+      .map((node) => node.textContent.replace(/\s+/g, " ").trim()).filter(Boolean).join(" · ");
+    if (legend) lines.push(legend);
+    lines.push(`Exported: ${new Date().toISOString()} (UTC). Source dates are retained per record; export time is not a source date.`);
+    return { label, route, lines };
+  }
+  function rasterSize(width, height) {
+    const scale = Math.min(1800 / width, 8192 / width, 8192 / height, Math.sqrt(8000000 / (width * height)));
+    return { width: Math.max(1, Math.floor(width * scale)), height: Math.max(1, Math.floor(height * scale)) };
+  }
+  async function exportChart(svg, format) {
+    flush();
+    if (!svg.isConnected) throw Error("Selection changed. Download the updated chart.");
+    const clone = styledChart(svg);
     const box = svg.viewBox.baseVal;
     const w = box.width || svg.clientWidth || 800,
       height = box.height || svg.clientHeight || 400;
@@ -2403,30 +2514,38 @@ const LedgerProfessional = (() => {
     clone.setAttribute("width", w);
     clone.setAttribute("height", height);
     if (!box.width) clone.setAttribute("viewBox", `0 0 ${w} ${height}`);
-    const background = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "rect",
-    );
-    background.setAttribute("x", box.x || 0);
-    background.setAttribute("y", box.y || 0);
-    background.setAttribute("width", w);
-    background.setAttribute("height", height);
-    background.setAttribute(
-      "fill",
-      getComputedStyle(document.body).getPropertyValue("--surface").trim() ||
-        "#fff",
-    );
-    clone.prepend(background);
-    const description = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "desc",
-    );
-    description.textContent = `${svg.getAttribute("aria-label") || "Portfolio chart"} · ${$("#title").textContent} · ${new Date().toISOString()} · current visible chart`;
-    clone.prepend(description);
-    const blob = new Blob([new XMLSerializer().serializeToString(clone)], {
+    const context = chartContext(svg);
+    const width = Math.max(720, w + 40);
+    const wrapped = context.lines.flatMap((line) => {
+      const chunks = []; let rest = line;
+      while (rest.length > 86) {
+        const space = rest.lastIndexOf(" ", 86);
+        const at = space > 0 ? space : 86;
+        chunks.push(rest.slice(0, at)); rest = rest.slice(at).trimStart();
+      }
+      chunks.push(rest); return chunks;
+    });
+    const captionHeight = 65 + wrapped.length * 20;
+    const fullHeight = captionHeight + height + 20;
+    const exported = svgElement("svg", { xmlns: svgNS, width, height: fullHeight, viewBox: `0 0 ${width} ${fullHeight}`, role: "img", "aria-label": context.label });
+    exported.append(svgElement("desc", {}, [context.label, ...context.lines].join("\n")));
+    exported.append(svgElement("rect", { width, height: fullHeight, fill: getComputedStyle(document.body).getPropertyValue("--surface").trim() || "#fff" }));
+    const ink = getComputedStyle(document.body).color;
+    exported.append(svgElement("text", { x: 20, y: 30, fill: ink, "font-family": "sans-serif", "font-size": 18, "font-weight": 700 }, context.label));
+    wrapped.forEach((line, i) => exported.append(svgElement("text", { x: 20, y: 57 + i * 20, fill: ink, "font-family": "sans-serif", "font-size": 13 }, line)));
+    clone.setAttribute("x", 20); clone.setAttribute("y", captionHeight);
+    exported.append(clone);
+    const size = rasterSize(width, fullHeight);
+    if (format === "png") {
+      exported.setAttribute("width", size.width);
+      exported.setAttribute("height", size.height);
+    }
+    const slug = `${context.label}-${context.route}-${F.c || "all"}-scenario-${F.k || 0}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 160);
+    const filename = `portfolio-${slug}`;
+    const blob = new Blob([new XMLSerializer().serializeToString(exported)], {
       type: "image/svg+xml;charset=utf-8",
     });
-    if (format === "svg") return download2("portfolio-chart.svg", blob);
+    if (format === "svg") return download2(`${filename}.svg`, blob);
     const url = URL.createObjectURL(blob);
     try {
       const image = new Image();
@@ -2436,8 +2555,8 @@ const LedgerProfessional = (() => {
         image.src = url;
       });
       const canvas = document.createElement("canvas");
-      canvas.width = 1800;
-      canvas.height = Math.max(1, Math.round((height / w) * 1800));
+      canvas.width = size.width;
+      canvas.height = size.height;
       canvas
         .getContext("2d")
         .drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -2445,10 +2564,48 @@ const LedgerProfessional = (() => {
         canvas.toBlob(resolve, "image/png"),
       );
       if (!png) throw Error("PNG export unavailable");
-      download2("portfolio-chart.png", png);
+      download2(`${filename}.png`, png);
+      if (size.width < 1799) toast("PNG size limited for this tall chart. Use SVG for full-scale detail.");
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+  const inspection = document.createElement("dialog");
+  inspection.className = "lp-inspection";
+  inspection.setAttribute("aria-labelledby", "lp-inspection-title");
+  document.body.append(inspection);
+  function inspectChart(svg) {
+    inspection.replaceChildren();
+    const title = document.createElement("h2");
+    title.id = "lp-inspection-title";
+    title.textContent = svg.getAttribute("aria-label") || "Chart inspection";
+    const note = document.createElement("p");
+    note.textContent = "Read-only enlarged chart. Scroll to inspect it; expand activities in the original chart.";
+    const scroller = document.createElement("div");
+    scroller.className = "lp-inspection-chart";
+    scroller.tabIndex = 0;
+    scroller.setAttribute("aria-label", "Enlarged chart, scroll horizontally and vertically");
+    const clone = styledChart(svg);
+    const box = svg.viewBox.baseVal;
+    clone.style.width = `${Math.max(720, box.width)}px`;
+    clone.style.maxWidth = "none";
+    clone.style.height = `${box.height * Math.max(720, box.width) / box.width}px`;
+    clone.querySelectorAll("[tabindex],[data-act]").forEach((node) => {
+      node.removeAttribute("tabindex"); node.removeAttribute("role"); node.removeAttribute("data-act");
+    });
+    scroller.append(clone);
+    const list = document.createElement("ul");
+    list.className = "lp-inspection-values";
+    svg.querySelectorAll("[data-tip]").forEach((node) => {
+      const item = document.createElement("li");
+      item.textContent = node.dataset.tip.split("|").join(" · ");
+      list.append(item);
+    });
+    const close = document.createElement("button");
+    close.className = "btn pri"; close.textContent = "Close chart";
+    close.addEventListener("click", () => inspection.close());
+    inspection.append(title, note, scroller, list, close);
+    inspection.showModal();
   }
   const chartStates = new WeakMap();
   function makeChartTools(svg) {
@@ -2465,6 +2622,11 @@ const LedgerProfessional = (() => {
     const label = document.createElement("span");
     label.textContent = "Download the visible chart";
     tools.append(label);
+    const inspect = document.createElement("button");
+    inspect.type = "button"; inspect.className = "btn"; inspect.textContent = "Inspect";
+    inspect.setAttribute("aria-label", `Inspect ${svg.getAttribute("aria-label") || "chart"} at a larger size`);
+    inspect.addEventListener("click", () => inspectChart(svg));
+    tools.append(inspect);
     for (const format of ["svg", "png"]) {
       const button = document.createElement("button");
       button.type = "button";
@@ -2517,6 +2679,21 @@ const LedgerProfessional = (() => {
             if (["Enter", " "].includes(event.key)) {
               event.preventDefault();
               th.click();
+            }
+          });
+        }
+      }
+      for (const group of view.querySelectorAll('g[data-act="tlexp"]')) {
+        group.setAttribute("tabindex", "0");
+        group.setAttribute("role", "button");
+        const expanded = TLEXP.has(group.dataset.id);
+        group.setAttribute("aria-expanded", String(expanded));
+        group.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} activities: ${group.dataset.tip.split("|")[0]}`);
+        if (!group.dataset.lpKeyboard) {
+          group.dataset.lpKeyboard = "on";
+          group.addEventListener("keydown", (event) => {
+            if (["Enter", " "].includes(event.key)) {
+              event.preventDefault(); group.dispatchEvent(new MouseEvent("click", { bubbles: true }));
             }
           });
         }

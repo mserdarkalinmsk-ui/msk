@@ -252,6 +252,33 @@ html[data-lp-motion="quiet"] *::after {
   font-size: 12px;
   color: var(--mute);
 }
+/* Reading and density are independent preferences, including the native theme. */
+html[data-lp-density="compact"] #view td { padding: 8px 12px; }
+html[data-lp-reading="large"] body { font-size: 16px; }
+html[data-lp-reading="large"] #view td { font-size: 15px; }
+html[data-lp-reading="large"] #view th,
+html[data-lp-reading="large"] #view td small,
+html[data-lp-reading="large"] #view .sub,
+html[data-lp-reading="large"] #view .leg,
+html[data-lp-reading="large"] #view .strip small { font-size: 14px; line-height: 1.5; }
+html[data-lp-reading="large"] #view .card h2 { font-size: 18px; }
+html[data-lp-reading="large"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-lp-reading="large"] select,
+html[data-lp-reading="large"] textarea { font-size: 16px; }
+html[data-lp-reading="large"] .lp-table-tools,
+html[data-lp-reading="large"] .lp-chart-tools { font-size: 14px; }
+.lp-table-hint { flex-basis: 100%; font-size: inherit; }
+.lp-inspection {
+  width: min(1100px, calc(100vw - 28px)); max-height: calc(100dvh - 28px);
+  padding: 20px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.lp-inspection h2 { font-size: 20px; margin: 0 0 8px; }
+.lp-inspection p { font-size: 14px; color: var(--mute); }
+.lp-inspection-chart { max-height: 55dvh; overflow: auto; border: 1px solid var(--line); padding: 12px; }
+.lp-inspection-values { font-size: 14px; line-height: 1.6; padding-left: 22px; }
+.lp-inspection-values li { margin: 8px 0; }
+#view g[role="button"]:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 @media (max-width: 640px) {
   html[data-lp-design="on"] .top .acts {
     gap: 6px;
@@ -261,9 +288,15 @@ html[data-lp-motion="quiet"] *::after {
     padding: 7px 10px;
   }
   html[data-lp-design="on"] .bar {
-    overflow-y: auto;
-    max-height: 270px;
+    overflow: visible;
+    max-height: none;
   }
+  html[data-lp-design="on"] .bar-wrap.shut .bar { max-height: 0; overflow: hidden; }
+  html[data-lp-design="on"] .side a { font-size: 10.5px; padding: 6px 2px; overflow-wrap: anywhere; }
+  html[data-lp-design="on"] .seg button,
+  .lp-table-tools .btn,
+  .lp-chart-tools .btn { min-height: 44px !important; }
+  #bartog { min-height: 44px; }
   html[data-lp-design="on"] .bar > input[type="search"] {
     flex-basis: 100%;
     width: 100%;
@@ -292,7 +325,8 @@ html[data-lp-motion="quiet"] *::after {
   .lp-table-tools,
   .lp-chart-tools,
   #lp-display-button,
-  .lp-display {
+  .lp-display,
+  .lp-inspection {
     display: none !important;
   }
   html[data-lp-design="on"] .tw {
