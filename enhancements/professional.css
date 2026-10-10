@@ -340,3 +340,106 @@ html[data-lp-reading="large"] .lp-chart-tools { font-size: 14px; }
     display: table-row !important;
   }
 }
+/* Calendar: compact navigation, explicit report queues and a bounded sidebar. */
+main[data-lp-route="#/calendar"] .cal-ib { width: 44px; height: 44px; }
+main[data-lp-route="#/calendar"] .cal-nav { gap: 8px; margin: 12px 0 8px; }
+main[data-lp-route="#/calendar"] .cal-grid { grid-template-rows: 34px; grid-auto-rows: minmax(86px, auto); }
+main[data-lp-route="#/calendar"] .cal-hd { padding: 8px; min-height: 0; }
+main[data-lp-route="#/calendar"] .cal-side { position: static; }
+main[data-lp-route="#/calendar"] .alert-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; border-left: 5px solid currentColor;
+  padding: 12px 14px; font-weight: 650;
+}
+.lp-alert-context { flex-basis: 100%; color: var(--mute); font-size: 12px; font-weight: 400; }
+.lp-deadline-action { margin-left: auto; }
+.lp-month-picker { display: inline-flex; align-items: center; gap: 8px; color: var(--mute); font-size: 12px; }
+.lp-month-picker input { width: 160px; }
+.lp-month-browser { margin: 0 0 12px; color: var(--mute); font-size: 12px; }
+.lp-month-browser > summary { cursor: pointer; padding: 8px 0; }
+.lp-month-browser .cal-rail { margin: 4px 0 0; }
+.lp-calendar-export-note { display: block; color: var(--mute); font-size: 11px; margin: -4px 0 10px; }
+.lp-deadlines {
+  width: min(720px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); overflow: auto;
+  padding: 22px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+}
+.lp-deadlines h2 { font-size: 22px; margin: 0 0 10px; }
+.lp-deadlines p { font-size: 14px; line-height: 1.5; color: var(--mute); }
+.lp-deadline-list { max-height: 58dvh; overflow: auto; margin: 16px 0; }
+/* Data: existing cards remain inside keyboard-accessible native disclosures. */
+main[data-lp-route="#/data"] #barwrap { display: none; }
+.lp-data-groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.lp-data-section { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.lp-data-section > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 14px; cursor: pointer; padding: 16px 18px; min-height: 72px; }
+.lp-data-section > summary::before { content: "›"; font-size: 24px; color: var(--brand); }
+.lp-data-section[open] > summary::before { content: "⌄"; }
+.lp-data-section > summary strong { font-size: 15px; }
+.lp-data-section > summary span { color: var(--mute); font-size: 12px; margin-left: auto; }
+html[data-lp-design="on"] .lp-data-section > .card { border: 0; border-radius: 0; box-shadow: none; border-top: 1px solid var(--line); margin: 0; padding: 16px 18px; }
+.lp-data-section .drop { padding: 16px; }
+.lp-danger-section > summary strong { color: var(--bad); }
+/* Brief: screen width follows the workspace; evidence has its own paper rules. */
+main[data-lp-route="#/brief"] .brief { width: 100%; max-width: none; min-width: 0; }
+main[data-lp-route="#/brief"] .brief .lead { max-width: 95ch; font-size: 15px; line-height: 1.7; }
+main[data-lp-route="#/brief"] .brief .lst li > span:first-child { min-width: 0; }
+main[data-lp-route="#/brief"] .brief .lst li b { overflow-wrap: anywhere; }
+.lp-brief-evidence { margin-top: 18px; }
+.lp-evidence-counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.lp-evidence-counts span { padding: 8px 12px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; font-size: 13px; }
+.lp-evidence-table { min-width: 760px; }
+.lp-evidence-table th, .lp-evidence-table td { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.lp-brief-details { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.6; }
+.lp-brief-details summary { cursor: pointer; font-weight: 650; }
+.lp-brief-details li { margin: 8px 0; }
+/* Logframe: retain every native input and export, contain the long table. */
+.lp-logframe-viewport { max-height: 560px; overflow: auto; overscroll-behavior: contain; }
+.lp-logframe-table { min-width: 840px; width: 100%; table-layout: fixed; }
+html[data-lp-design="on"] .lp-logframe-table th:first-child { width: 40%; }
+.lp-logframe-table th:nth-child(2), .lp-logframe-table th:nth-child(3) { width: 13%; }
+.lp-logframe-table th:nth-child(4) { width: 20%; }
+.lp-logframe-table th:nth-child(5) { width: 14%; }
+html[data-lp-design="on"] .lp-logframe-table td { white-space: normal; overflow-wrap: anywhere; vertical-align: top; padding: 10px 12px; }
+.lp-logframe-table th { position: sticky; top: 0; z-index: 3; background: var(--bg); text-align: left; }
+.lp-logframe-table .ind-in { width: 100%; min-width: 0; }
+.lp-indicator-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.lp-indicator-tools input { flex: 1; min-width: 160px; }
+.lp-indicator-tools output { flex-basis: 100%; color: var(--mute); font-size: 12px; }
+.lp-result-toggle { float: right; margin-left: 12px; font-size: 11px !important; min-height: 32px !important; }
+.lp-indicator-detail { margin-top: 7px; font-size: 12px; color: var(--mute); }
+.lp-indicator-detail summary { cursor: pointer; }
+.lp-indicator-detail div { white-space: pre-wrap; padding: 8px 0; }
+/* Report details: full source columns are discoverable, missing values remain unknown. */
+.lp-report-details-viewport { max-height: 620px; overflow: auto; }
+.lp-report-details-table { min-width: 1900px; }
+.lp-report-details-table th { position: sticky; top: 0; z-index: 3; }
+.lp-report-details-table th:first-child, .lp-report-details-table td:first-child { position: sticky; left: 0; min-width: 300px; max-width: 390px; white-space: normal; background: var(--surface); z-index: 2; }
+.lp-report-details-table th:first-child { z-index: 4; background: var(--bg); }
+.lp-report-details-table .lp-unit-detail { min-width: 105px; }
+.lp-report-details-table .lp-unit-staffNames { min-width: 200px; white-space: normal; }
+.lp-report-compact { min-width: 1050px; }
+.lp-report-compact .lp-unit-detail { display: none; }
+.lp-report-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.lp-report-source-status { flex-basis: 100%; font-size: 12px; color: var(--mute); }
+.lp-report-controls .note { margin: 0; flex-basis: 100%; }
+.lp-derived { display: block; font-size: 10px; color: var(--mute); }
+.lp-report-team { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; font-size: 13px; }
+.lp-report-team summary { cursor: pointer; font-weight: 650; }
+@media (max-width: 640px) {
+  main[data-lp-route="#/calendar"] .cal-grid { grid-template-rows: 30px; grid-auto-rows: minmax(66px, auto); }
+  .lp-month-picker { width: 100%; justify-content: space-between; }
+  .lp-data-section > summary span { width: 100%; padding-left: 26px; margin: 0; }
+  .lp-deadline-action { margin-left: 0; min-height: 44px !important; }
+  .lp-result-toggle { float: none; display: block; margin: 8px 0 0; width: max-content; }
+  .lp-inspection > .btn, .lp-deadlines > .btn, .lp-indicator-tools .btn, .lp-report-controls .btn { min-height: 44px !important; }
+  .lp-report-details-table th:first-child, .lp-report-details-table td:first-child { min-width: 175px; max-width: 210px; }
+}
+@media print {
+  .lp-indicator-tools, .lp-report-controls, .lp-month-picker, .lp-month-browser, .lp-result-toggle,
+  .lp-indicator-detail, .lp-deadline-action, .lp-deadlines { display: none !important; }
+  .lp-brief-details::details-content { content-visibility: visible !important; display: block !important; }
+  .lp-logframe-viewport, .lp-report-details-viewport { max-height: none; overflow: visible; }
+  .lp-logframe-table th { position: static; }
+  .lp-indicator-hidden { display: table-row !important; }
+  .lp-brief-evidence .card { break-inside: auto; }
+  .lp-evidence-table { min-width: 0; width: 100%; font-size: 10px; }
+  .lp-evidence-table tr { break-inside: avoid; }
+}

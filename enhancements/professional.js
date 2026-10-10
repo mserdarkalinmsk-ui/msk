@@ -311,7 +311,7 @@ const LedgerProfessional = (() => {
         "\ufeff" +
         records
           .map((row) =>
-            [...row.cells].map((cell) => csvCell(cell.innerText)).join(","),
+            [...row.cells].filter((cell) => getComputedStyle(cell).display !== "none").map((cell) => csvCell(cell.innerText)).join(","),
           )
           .join("\r\n");
       download("portfolio-table-visible.csv", csv, "text/csv;charset=utf-8");
@@ -372,13 +372,13 @@ const LedgerProfessional = (() => {
     const lines = [
       `${$("#title").textContent} · ${route}`,
       `Country: ${selected("#fc", "c")} · Sector: ${selected("#fs", "s")} · Signal: ${selected("#fg", "g")}`,
-      `Search: ${F.q || "All projects"} · Selected date window: ${F.ds || "Unrestricted"} to ${F.de || "Unrestricted"}`,
+      `Search: ${F.q || "All projects"} · Project date filter: ${F.ds || "Unrestricted"} to ${F.de || "Unrestricted"} (project dates, not report dates)`,
       `Scenario: ${Number(F.k) > 0 ? "+" : ""}${Number(F.k) || 0}% · Forecast method: ${selected("#fm", "fm")}`,
     ];
     if (route.startsWith("#/project/")) lines.push("Project detail: global filters may not restrict this chart.");
     if (route.startsWith("#/country/")) lines.push(`Country detail scope: ${decodeURIComponent(route.split("/")[2])}`);
     const legend = [...(svg.closest(".card")?.querySelectorAll(".leg") || [])]
-      .map((node) => node.textContent.replace(/\s+/g, " ").trim()).filter(Boolean).join(" · ");
+      .map((node) => [...node.children].map((item) => item.textContent.replace(/\s+/g, " ").trim()).join(" · ") || node.textContent.trim()).filter(Boolean).join(" · ");
     if (legend) lines.push(legend);
     lines.push(`Exported: ${new Date().toISOString()} (UTC). Source dates are retained per record; export time is not a source date.`);
     return { label, route, lines };
@@ -541,6 +541,7 @@ const LedgerProfessional = (() => {
     augmenting = true;
     try {
       $("main").dataset.lpRoute = location.hash || "#/home";
+      LedgerWorkspaceRefinements.augment();
       $("#ubtn").disabled = H.past.length === 0;
       $("#rbtn").disabled = H.fut.length === 0;
       document.querySelectorAll(".side a").forEach((a) => {

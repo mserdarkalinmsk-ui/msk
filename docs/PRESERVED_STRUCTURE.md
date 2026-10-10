@@ -33,7 +33,7 @@ flowchart LR
 
 | Module            | Behavior                                                                                                              | Boundary                                                                            |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Presentation      | Common type, controls, independent reading/spacing, zebra rows, focus, dark theme and mobile filter collapse           | Existing menu, screen and section order remain                                      |
+| Presentation      | Common type, controls, independent reading/spacing, zebra rows, focus, dark theme and mobile filter collapse           | Original menus remain; authorized Data regrouping is described below                                      |
 | Performance       | 120ms search batching, 64ms scenario batching and per-route source/model memoization                                  | Original computations are called; no cache survives a synchronous view evaluation   |
 | Tables            | Search within eligible read-only tables, matching counts, visible-row CSV and keyboard activation of original sorting | Original totals, records and exports remain; interactive/merged tables are excluded |
 | Charts            | Larger read-only inspection, keyboard activity expansion, scoped SVG and PNG exports with visible context captions     | Original chart data, marks and click handlers remain                                |
@@ -58,7 +58,7 @@ Original mobile filter controls start collapsed if no explicit device choice was
 saved, and expand without clipped nested scrolling.
 
 Chart exports add visible context only to the exported copy: actual selection,
-route, scenario, forecast method, selected date window, original legend text and
+route, scenario, forecast method, project-date filter (project dates, not report dates), original legend text and
 export time distinguished from record source dates. PNG preserves aspect ratio,
 with width up to 1800px, dimensions at most 8192px and at most eight million pixels.
 Very tall charts become smaller; the download explains that SVG preserves detail.
@@ -70,6 +70,7 @@ Inspect offers the original graphic enlarged and readable existing tooltip text.
 python3 scripts/build-professional.py
 node --check enhancements/professional.js
 node tests/professional.cjs
+node tests/refinements.cjs
 ```
 
 The Python builder uses only the standard library and emits a reproducible ZIP.
@@ -97,7 +98,8 @@ That check verifies self-containment; it does not claim a real `file://` run in
 this managed browser. Original parser behavior and financial interpretation are
 retained rather than exhaustively revalidated or corrected by a styling extension.
 
-Verified on 10 October 2026: all 12 check groups passed, including 42 before/after
+Verified on the five-area candidate on 10 October 2026: all 12 Professional
+check groups and nine refinement groups passed, including 42 before/after
 route comparisons, 108 cached route/scenario/method outputs, reset/preset scheduling,
 search/sort/CSV, keyboard expansion, phone filters and real bounded PNG exports.
 Independent UX and user reviewers exercised 320px, 390px and desktop tasks.
@@ -107,15 +109,39 @@ whitespace checks also passed.
 
 | Projects | Original HTML evaluation | Enhanced HTML evaluation | Source calculations before → after |
 | ---: | ---: | ---: | ---: |
-| 50 | 4 ms | 5 ms | 126 → 84 |
-| 200 | 13 ms | 13 ms | 501 → 334 |
-| 1,000 | 45 ms | 42 ms | 2,499 → 1,666 |
+| 50 | 4 ms | 4 ms | 126 → 84 |
+| 200 | 12 ms | 11 ms | 501 → 334 |
+| 1,000 | 44 ms | 43 ms | 2,499 → 1,666 |
 
 These are medians from the coordinator's final full-suite run using the method
 above. Other independent runs vary. The 50-project case illustrates why fewer
 calculations are not a guaranteed elapsed-time
 improvement. Eight rapid search events were separately verified to produce one
 final render, compared with immediate rendering when the speed module is off.
+
+## Five-area refinements
+
+`workspace-refinements.js` adds compact month navigation/exact deadline queues,
+a full-width Brief with source/coverage appendix, six native Data disclosures
+containing the seven original cards, and bounded searchable/grouped Logframe
+views preserving native inputs and complete exports. Its source recovery action
+uses original save/undo and cancels if the dataset or source changes while reading.
+
+`report-details.js` delegates to the original snapshot reader and adds namespaced
+source metadata for recognized explicit CSV/XLSX unit/name fields. Missing values,
+conflicts and incompatible unit types remain unknown. Spent quantity never falls
+back to approved quantity; derived cost requires established actual expenditure.
+Future-dated budget selection is disclosed and derived unit balance withheld.
+Legacy records need a readable exactly linked original or a new original upload
+to supply fields the earlier reader did not retain. No names are guessed onto
+budget lines. Original monetary formulas and snapshot amounts are retained.
+
+The original Data sequence remains inside its authorized expandable groups.
+New `ledger.refinements.v1` preferences are separate from portfolio records.
+The [new review record](REFINEMENT_REVIEW.md) contains this round’s findings,
+source boundaries and individual decisions; earlier approvals remain historical.
+The nine-group refinement suite uses port 8806, overrideable with
+`LEDGER_REFINEMENTS_TEST_PORT`; its previews are disposable sample fixtures.
 
 ## Future changes
 

@@ -728,6 +728,109 @@ html[data-lp-reading="large"] .lp-chart-tools { font-size: 14px; }
     display: table-row !important;
   }
 }
+/* Calendar: compact navigation, explicit report queues and a bounded sidebar. */
+main[data-lp-route="#/calendar"] .cal-ib { width: 44px; height: 44px; }
+main[data-lp-route="#/calendar"] .cal-nav { gap: 8px; margin: 12px 0 8px; }
+main[data-lp-route="#/calendar"] .cal-grid { grid-template-rows: 34px; grid-auto-rows: minmax(86px, auto); }
+main[data-lp-route="#/calendar"] .cal-hd { padding: 8px; min-height: 0; }
+main[data-lp-route="#/calendar"] .cal-side { position: static; }
+main[data-lp-route="#/calendar"] .alert-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; border-left: 5px solid currentColor;
+  padding: 12px 14px; font-weight: 650;
+}
+.lp-alert-context { flex-basis: 100%; color: var(--mute); font-size: 12px; font-weight: 400; }
+.lp-deadline-action { margin-left: auto; }
+.lp-month-picker { display: inline-flex; align-items: center; gap: 8px; color: var(--mute); font-size: 12px; }
+.lp-month-picker input { width: 160px; }
+.lp-month-browser { margin: 0 0 12px; color: var(--mute); font-size: 12px; }
+.lp-month-browser > summary { cursor: pointer; padding: 8px 0; }
+.lp-month-browser .cal-rail { margin: 4px 0 0; }
+.lp-calendar-export-note { display: block; color: var(--mute); font-size: 11px; margin: -4px 0 10px; }
+.lp-deadlines {
+  width: min(720px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); overflow: auto;
+  padding: 22px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+}
+.lp-deadlines h2 { font-size: 22px; margin: 0 0 10px; }
+.lp-deadlines p { font-size: 14px; line-height: 1.5; color: var(--mute); }
+.lp-deadline-list { max-height: 58dvh; overflow: auto; margin: 16px 0; }
+/* Data: existing cards remain inside keyboard-accessible native disclosures. */
+main[data-lp-route="#/data"] #barwrap { display: none; }
+.lp-data-groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.lp-data-section { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.lp-data-section > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 14px; cursor: pointer; padding: 16px 18px; min-height: 72px; }
+.lp-data-section > summary::before { content: "›"; font-size: 24px; color: var(--brand); }
+.lp-data-section[open] > summary::before { content: "⌄"; }
+.lp-data-section > summary strong { font-size: 15px; }
+.lp-data-section > summary span { color: var(--mute); font-size: 12px; margin-left: auto; }
+html[data-lp-design="on"] .lp-data-section > .card { border: 0; border-radius: 0; box-shadow: none; border-top: 1px solid var(--line); margin: 0; padding: 16px 18px; }
+.lp-data-section .drop { padding: 16px; }
+.lp-danger-section > summary strong { color: var(--bad); }
+/* Brief: screen width follows the workspace; evidence has its own paper rules. */
+main[data-lp-route="#/brief"] .brief { width: 100%; max-width: none; min-width: 0; }
+main[data-lp-route="#/brief"] .brief .lead { max-width: 95ch; font-size: 15px; line-height: 1.7; }
+main[data-lp-route="#/brief"] .brief .lst li > span:first-child { min-width: 0; }
+main[data-lp-route="#/brief"] .brief .lst li b { overflow-wrap: anywhere; }
+.lp-brief-evidence { margin-top: 18px; }
+.lp-evidence-counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.lp-evidence-counts span { padding: 8px 12px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; font-size: 13px; }
+.lp-evidence-table { min-width: 760px; }
+.lp-evidence-table th, .lp-evidence-table td { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.lp-brief-details { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.6; }
+.lp-brief-details summary { cursor: pointer; font-weight: 650; }
+.lp-brief-details li { margin: 8px 0; }
+/* Logframe: retain every native input and export, contain the long table. */
+.lp-logframe-viewport { max-height: 560px; overflow: auto; overscroll-behavior: contain; }
+.lp-logframe-table { min-width: 840px; width: 100%; table-layout: fixed; }
+html[data-lp-design="on"] .lp-logframe-table th:first-child { width: 40%; }
+.lp-logframe-table th:nth-child(2), .lp-logframe-table th:nth-child(3) { width: 13%; }
+.lp-logframe-table th:nth-child(4) { width: 20%; }
+.lp-logframe-table th:nth-child(5) { width: 14%; }
+html[data-lp-design="on"] .lp-logframe-table td { white-space: normal; overflow-wrap: anywhere; vertical-align: top; padding: 10px 12px; }
+.lp-logframe-table th { position: sticky; top: 0; z-index: 3; background: var(--bg); text-align: left; }
+.lp-logframe-table .ind-in { width: 100%; min-width: 0; }
+.lp-indicator-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.lp-indicator-tools input { flex: 1; min-width: 160px; }
+.lp-indicator-tools output { flex-basis: 100%; color: var(--mute); font-size: 12px; }
+.lp-result-toggle { float: right; margin-left: 12px; font-size: 11px !important; min-height: 32px !important; }
+.lp-indicator-detail { margin-top: 7px; font-size: 12px; color: var(--mute); }
+.lp-indicator-detail summary { cursor: pointer; }
+.lp-indicator-detail div { white-space: pre-wrap; padding: 8px 0; }
+/* Report details: full source columns are discoverable, missing values remain unknown. */
+.lp-report-details-viewport { max-height: 620px; overflow: auto; }
+.lp-report-details-table { min-width: 1900px; }
+.lp-report-details-table th { position: sticky; top: 0; z-index: 3; }
+.lp-report-details-table th:first-child, .lp-report-details-table td:first-child { position: sticky; left: 0; min-width: 300px; max-width: 390px; white-space: normal; background: var(--surface); z-index: 2; }
+.lp-report-details-table th:first-child { z-index: 4; background: var(--bg); }
+.lp-report-details-table .lp-unit-detail { min-width: 105px; }
+.lp-report-details-table .lp-unit-staffNames { min-width: 200px; white-space: normal; }
+.lp-report-compact { min-width: 1050px; }
+.lp-report-compact .lp-unit-detail { display: none; }
+.lp-report-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.lp-report-source-status { flex-basis: 100%; font-size: 12px; color: var(--mute); }
+.lp-report-controls .note { margin: 0; flex-basis: 100%; }
+.lp-derived { display: block; font-size: 10px; color: var(--mute); }
+.lp-report-team { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; font-size: 13px; }
+.lp-report-team summary { cursor: pointer; font-weight: 650; }
+@media (max-width: 640px) {
+  main[data-lp-route="#/calendar"] .cal-grid { grid-template-rows: 30px; grid-auto-rows: minmax(66px, auto); }
+  .lp-month-picker { width: 100%; justify-content: space-between; }
+  .lp-data-section > summary span { width: 100%; padding-left: 26px; margin: 0; }
+  .lp-deadline-action { margin-left: 0; min-height: 44px !important; }
+  .lp-result-toggle { float: none; display: block; margin: 8px 0 0; width: max-content; }
+  .lp-inspection > .btn, .lp-deadlines > .btn, .lp-indicator-tools .btn, .lp-report-controls .btn { min-height: 44px !important; }
+  .lp-report-details-table th:first-child, .lp-report-details-table td:first-child { min-width: 175px; max-width: 210px; }
+}
+@media print {
+  .lp-indicator-tools, .lp-report-controls, .lp-month-picker, .lp-month-browser, .lp-result-toggle,
+  .lp-indicator-detail, .lp-deadline-action, .lp-deadlines { display: none !important; }
+  .lp-brief-details::details-content { content-visibility: visible !important; display: block !important; }
+  .lp-logframe-viewport, .lp-report-details-viewport { max-height: none; overflow: visible; }
+  .lp-logframe-table th { position: static; }
+  .lp-indicator-hidden { display: table-row !important; }
+  .lp-brief-evidence .card { break-inside: auto; }
+  .lp-evidence-table { min-width: 0; width: 100%; font-size: 10px; }
+  .lp-evidence-table tr { break-inside: avoid; }
+}
 
 </style>
 <!-- PROFESSIONAL_STYLE_END -->
@@ -2114,6 +2217,509 @@ addEventListener('keydown',e=>{const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCas
  else if(!typing&&!dlg&&k==='e'){const sel=view.querySelector('.pcard.ksel');if(sel){const href=sel.dataset.href;if(href){e.preventDefault();const id=decodeURIComponent(href.split('/project/')[1]||'').split('/')[0];if(id)act('edit',id)}}}
  else if(!typing&&!dlg&&e.key==='?'){e.preventDefault();$('#kbdlg').showModal()}});
 /* PROFESSIONAL_EXTENSION_START */
+/* Source-backed optional report details. The uploaded financial reader and formulas stay intact. */
+const LedgerReportDetails = (() => {
+  const version = 1;
+  const aliases = {
+    code: ["line code", "budget line code", "budget line", "line", "code"],
+    approvedUnits: ["approved units", "budget units", "approved quantity", "budget quantity", "number of units", "units", "quantity"],
+    unitRate: ["approved unit cost", "approved unit rate", "budget unit cost", "budget unit rate", "unit rate", "unit cost", "cost per unit", "rate per unit"],
+    actualUnits: ["actual units", "spent units", "reported actual units", "actual quantity", "spent quantity", "units spent", "units consumed"],
+    actualUnitCost: ["actual unit cost", "spent unit cost", "actual unit rate", "spent unit rate", "actual cost per unit"],
+    actual: ["actual", "actual expenditure", "actual amount", "spent", "spent amount", "expenditure", "sum of actual expenditure"],
+    remainingUnits: ["remaining units", "remaining quantity", "units remaining", "remaining budget units"],
+    unit: ["unit", "unit type", "unit of measure", "unit of measurement"],
+    approvedUnit: ["approved unit type", "budget unit type", "approved unit of measure"],
+    actualUnit: ["actual unit type", "spent unit type", "actual unit of measure"],
+    staffNames: ["staff name", "staff names", "staff member name", "employee name", "employee names", "person name", "person names", "name of staff member"],
+  };
+  const normalized = Object.fromEntries(Object.entries(aliases).map(([key, names]) => [key, new Set(names.map(n2))]));
+  const numeric = new Set(["approvedUnits", "unitRate", "actualUnits", "actualUnitCost", "remainingUnits", "actual"]);
+  const meaningful = ["approvedUnits", "unitRate", "actualUnits", "actualUnitCost", "remainingUnits", "staffNames", "actual"];
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const own = (x, k) => !!x && Object.prototype.hasOwnProperty.call(x, k);
+  const text = (value) => String(value ?? "").trim();
+  function lineCode(value) {
+    const match = text(value).match(/^(\d+(?:\.\d+)*)\b/);
+    return match ? match[1] : null;
+  }
+  function columnName(index) {
+    let result = "";
+    for (let n = index + 1; n; n = Math.floor((n - 1) / 26)) result = String.fromCharCode(65 + ((n - 1) % 26)) + result;
+    return result;
+  }
+  function number(value) {
+    if (value === "" || value === null || value === undefined) return null;
+    const parsed = pnum(value);
+    return parsed !== null && Number.isFinite(parsed) ? parsed : null;
+  }
+  function fieldsAt(row) {
+    const found = {};
+    row.forEach((cell, index) => {
+      const name = n2(cell);
+      for (const [key, names] of Object.entries(normalized)) if (names.has(name)) (found[key] ||= []).push(index);
+    });
+    return found;
+  }
+  function addConflict(record, field, reason, values = []) {
+    if (!record.conflicts.some((item) => item.field === field && item.reason === reason)) record.conflicts.push({ field, reason, values });
+    delete record.fields[field];
+    record.presence[field] = false;
+  }
+  function fieldConflict(record, field) {
+    return (record?.conflicts || []).some((item) => item.field === field);
+  }
+  async function extract(file) {
+    const result = { version, fileName: text(file?.name), fileSize: Number(file?.size) || 0, status: "unrecognized", lines: {}, issues: [] };
+    try {
+      const buffer = await file.arrayBuffer();
+      const isWorkbook = /\.xlsx$/i.test(result.fileName) || (new Uint8Array(buffer)[0] === 80 && new Uint8Array(buffer)[1] === 75);
+      const workbook = isWorkbook ? await wbOpen(buffer) : { names: ["CSV"], rows: async () => parseCSV(new TextDecoder().decode(buffer)) };
+      let recognized = 0;
+      for (const sheet of workbook.names) {
+        const rows = await workbook.rows(sheet);
+        let headers = null, headerRow = -1;
+        for (let index = 0; index < rows.length; index++) {
+          const row = rows[index];
+          const candidate = fieldsAt(row);
+          if (candidate.code?.length && meaningful.some((key) => candidate[key]?.length)) {
+            headers = candidate;
+            headerRow = index;
+            recognized++;
+            continue;
+          }
+          if (!headers) continue;
+          if (headers.code.length !== 1) {
+            result.issues.push({ sheet, row: headerRow + 1, reason: "Multiple line-code columns; details were not matched." });
+            headers = null;
+            continue;
+          }
+          const code = lineCode(row[headers.code[0]]);
+          if (!code || /\b(subtotal|total)\b/i.test(text(row[headers.code[0]]))) continue;
+          const record = result.lines[code] ||= { fields: {}, presence: {}, provenance: { sheet, row: index + 1, columns: {}, sources: {} }, conflicts: [] };
+          for (const [field, columns] of Object.entries(headers)) {
+            if (field === "code") continue;
+            const sources = columns.map((column) => ({ fileName: result.fileName, sheet, row: index + 1, column: columnName(column), columnIndex: column, header: text(rows[headerRow][column]) }));
+            (record.provenance.sources[field] ||= []).push(...sources);
+            record.provenance.columns[field] ||= sources[0];
+            if (columns.length !== 1) {
+              addConflict(record, field, "Multiple columns identify this field.");
+              continue;
+            }
+            const raw = row[columns[0]];
+            if (!text(raw)) {
+              if (!own(record.presence, field)) record.presence[field] = false;
+              continue;
+            }
+            let value;
+            if (numeric.has(field)) {
+              value = number(raw);
+              if (value === null || (value < 0 && !["remainingUnits", "actual", "actualUnitCost"].includes(field))) {
+                addConflict(record, field, "Source value is not a valid quantity or rate.", [text(raw)]);
+                continue;
+              }
+            } else if (field === "staffNames") {
+              value = [...new Set(text(raw).split(/[;|\n]+/).map(text).filter(Boolean))];
+            } else value = text(raw);
+            if (fieldConflict(record, field)) continue;
+            if (own(record.fields, field) && !same(record.fields[field], value)) {
+              addConflict(record, field, "Conflicting values for the same line code; no aggregation was applied.", [record.fields[field], value]);
+              continue;
+            }
+            record.fields[field] = value;
+            record.presence[field] = true;
+          }
+        }
+      }
+      result.status = !recognized ? "unrecognized" : Object.values(result.lines).some((record) => record.conflicts.length) || result.issues.length ? "partial" : "recognized";
+    } catch (error) {
+      result.status = "error";
+      result.issues.push({ reason: String(error?.message || "Source details could not be read") });
+    }
+    return result;
+  }
+  const originalReadSnapshot = readSnapshot;
+  readSnapshot = async function (file, ...args) {
+    const snapshot = await originalReadSnapshot.call(this, file, ...args);
+    snapshot.ledgerDetails = await extract(file);
+    return snapshot;
+  };
+  function measure(value = null, state = "missing", label = "Not supplied by the source", provenance = []) {
+    return { value, state, label, provenance };
+  }
+  function recordFor(report, code) {
+    const details = report?.snapshot?.ledgerDetails;
+    return details?.version === version ? details.lines?.[code] : null;
+  }
+  function sourceMeasure(report, code, key) {
+    const record = recordFor(report, code);
+    const provenance = (record?.provenance?.sources?.[key] || []).map((source) => ({ ...source, reportId: report.id, reportName: report.name, reportDate: report.date }));
+    if (fieldConflict(record, key)) return measure(null, "conflict", "Source values conflict; no value selected", provenance);
+    if (record?.presence?.[key] === true && own(record.fields, key)) return measure(record.fields[key], "source", "Explicit source value", provenance);
+    return measure(null, "missing", "Not supplied by the source", provenance);
+  }
+  function approvedMeasure(report, code, key) {
+    const explicit = sourceMeasure(report, code, key);
+    if (explicit.state !== "missing") return explicit;
+    const line = (report?.snapshot?.lines || []).find((item) => String(item.code) === code);
+    const raw = line?.[key];
+    const value = number(raw);
+    const provenance = report ? [{ reportId: report.id, reportName: report.name, reportDate: report.date, fileName: report.fileName || "", field: key }] : [];
+    if (own(line, key) && value !== null && value > 0) return measure(value, "legacy", "Value retained in the original snapshot; source cell presence was not recorded", provenance);
+    if (own(line, key) && value === 0) return measure(null, "ambiguous", "Legacy zero may represent a missing source column", provenance);
+    return explicit;
+  }
+  function unitMeasure(report, code, side) {
+    const scoped = sourceMeasure(report, code, side === "actual" ? "actualUnit" : "approvedUnit");
+    if (scoped.state !== "missing") return scoped;
+    const generic = sourceMeasure(report, code, "unit");
+    if (generic.state !== "missing") return generic;
+    const raw = (report?.snapshot?.lines || []).find((item) => String(item.code) === code)?.unit;
+    if (text(raw)) return measure(text(raw), "legacy", "Unit type retained in the original snapshot", [{ reportId: report.id, reportName: report.name, reportDate: report.date, fileName: report.fileName || "", field: "unit" }]);
+    return generic;
+  }
+  const unitAliases = { day: "day", days: "day", month: "month", months: "month", personmonth: "personmonth", personmonths: "personmonth", staffmonth: "personmonth", staffmonths: "personmonth", personday: "personday", persondays: "personday", hour: "hour", hours: "hour", item: "item", items: "item", unit: "unit", units: "unit" };
+  function compatibleUnits(a, b) {
+    if (a.value === null || b.value === null) return false;
+    const left = n2(a.value), right = n2(b.value);
+    return !!left && (unitAliases[left] || left) === (unitAliases[right] || right);
+  }
+  function project(p) {
+    const report = reps(p).at(-1) || null;
+    const budget = effB(p, report?.date) || null;
+    const current = finAt(p, report);
+    const budgetAfterReport = !!(budget && report && budget.date > report.date);
+    const approvedSource = budget || report;
+    const lines = current.lines.map((line) => {
+      const code = String(line.code);
+      const approvedUnits = approvedMeasure(approvedSource, code, "approvedUnits");
+      const unitRate = approvedMeasure(approvedSource, code, "unitRate");
+      const approvedUnit = unitMeasure(approvedSource, code, "approved");
+      const actualUnit = unitMeasure(report, code, "actual");
+      const actualUnits = sourceMeasure(report, code, "actualUnits");
+      let actualAmount = sourceMeasure(report, code, "actual");
+      if (actualAmount.state === "missing") {
+        const raw = (report?.snapshot?.lines || []).find((item) => String(item.code) === code)?.actual;
+        const value = number(raw);
+        if (value !== null && value !== 0) actualAmount = measure(value, "legacy", "Non-zero actual expenditure retained in the original report snapshot", [{ reportId: report.id, reportName: report.name, reportDate: report.date, field: "actual" }]);
+        else if (value === 0) actualAmount = measure(null, "ambiguous", "Legacy zero may represent a missing actual expenditure column");
+      }
+      let actualUnitCost = sourceMeasure(report, code, "actualUnitCost");
+      if (actualUnitCost.state === "missing" && actualUnits.value !== null && actualUnits.value > 0 && actualAmount.value !== null && actualAmount.value === line.actual) actualUnitCost = measure(line.actual / actualUnits.value, "derived", "Derived: source-established actual expenditure ÷ explicitly reported actual units", [...actualUnits.provenance, ...actualAmount.provenance]);
+      if (actualUnitCost.state === "missing" && actualAmount.value === null) actualUnitCost.label = "Actual expenditure is not source-established; no unit cost derived";
+      let remainingUnits = sourceMeasure(report, code, "remainingUnits");
+      if (remainingUnits.state === "missing" && approvedUnits.value !== null && actualUnits.value !== null) {
+        remainingUnits = budgetAfterReport ? measure(null, "chronology", "The selected budget is dated after the report; no unit balance derived") : compatibleUnits(approvedUnit, actualUnit) ? measure(approvedUnits.value - actualUnits.value, "derived", "Derived: approved units − actual units; compatible source unit types", [...approvedUnits.provenance, ...actualUnits.provenance, ...approvedUnit.provenance, ...actualUnit.provenance]) : measure(null, "incompatible", "Remaining units cannot be calculated until source unit types are compatible", [...approvedUnit.provenance, ...actualUnit.provenance]);
+      }
+      const staffNames = sourceMeasure(report, code, "staffNames");
+      return { code, description: line.desc, financial: { approved: line.approved, actual: line.actual, spentCommitted: line.sc, remaining: line.approved - line.sc, forecast: line.forecast }, fields: { approvedUnits, unitRate, actualUnits, actualUnitCost, actualAmount, remainingUnits, unit: approvedUnit, approvedUnit, actualUnit, staffNames } };
+    });
+    const issues = [budget, report].filter(Boolean).flatMap((source) => (source.snapshot?.ledgerDetails?.issues || []).map((issue) => ({ ...issue, reportId: source.id, reportName: source.name })));
+    return { version, budget, report, budgetAfterReport, lines, issues, status: report ? "report" : budget ? "budget-only" : "no-source" };
+  }
+  async function hydrate(p, options = {}) {
+    const latest = reps(p).at(-1);
+    const budget = effB(p, latest?.date);
+    const targets = options.all ? RP(p) : [...new Set([budget, latest].filter(Boolean))];
+    const updates = [], issues = [];
+    for (const report of targets) {
+      if (report.snapshot?.ledgerDetails?.version === version && report.snapshot.ledgerDetails.status === "recognized" && !options.force) continue;
+      const documents = (p.docs || []).filter((doc) => doc.ref === report.id && ["budget", "report"].includes(doc.kind));
+      if (documents.length !== 1) {
+        issues.push({ reportId: report.id, reason: documents.length ? "Multiple retained files reference this report; no file selected." : "No retained original file is linked to this report." });
+        continue;
+      }
+      const doc = documents[0];
+      const stored = await IDB.getFile(doc.id);
+      if (!stored) {
+        issues.push({ reportId: report.id, docId: doc.id, reason: "The retained original file is unavailable in this browser." });
+        continue;
+      }
+      const file = new File([stored], doc.fileName || report.fileName || "source.csv", { type: doc.mime || "" });
+      const details = await extract(file);
+      updates.push({ reportId: report.id, docId: doc.id, details });
+    }
+    return { updates, issues };
+  }
+  const api = Object.freeze({ version, extract, project, hydrate });
+  window.LedgerReportDetails = api;
+  return api;
+})();
+
+/* Task-specific refinements reuse existing nodes, event handlers and source records. */
+const LedgerWorkspaceRefinements = (() => {
+  const preferenceKey = "ledger.refinements.v1";
+  let preferences = ls.get(preferenceKey) || {};
+  const indicatorQueries = new Map();
+  function added(node) { node.dataset.lpAdded = "true"; return node; }
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function button(text, action) {
+    const node = element("button", "btn", text); node.type = "button";
+    node.addEventListener("click", action); return node;
+  }
+  function headingCard(title) {
+    return [...view.querySelectorAll(".card")].find((card) => card.querySelector("h2")?.textContent === title);
+  }
+  function currentProject() {
+    const id = decodeURIComponent((location.hash || "").split("/")[2] || "");
+    return S.projects.find((p) => p.id === id);
+  }
+  const deadlineDialog = element("dialog", "lp-deadlines");
+  deadlineDialog.setAttribute("aria-labelledby", "lp-deadlines-title");
+  document.body.append(deadlineDialog);
+  deadlineDialog.addEventListener("click", (event) => {
+    if (event.target.closest("a[href]")) deadlineDialog.close();
+  });
+  function deadlines(kind) {
+    const events = calAll().filter((event) => event.kind === "report" && !event.done &&
+      (kind === "overdue" ? event.date < TODAY() : event.date >= TODAY() && dd(event.date) <= 60));
+    deadlineDialog.innerHTML = `<h2 id="lp-deadlines-title">${kind === "overdue" ? "Overdue reports" : "Reports due within 60 days"}</h2><p>${events.length} in the current portfolio selection. Completion/receipt has not been marked in the contract schedule. These dates may be outside the displayed month.</p><div class="lp-deadline-list">${events.map((event) => agItem(event, true)).join("") || "<p>No matching deadlines.</p>"}</div>`;
+    deadlineDialog.append(button("Close deadlines", () => deadlineDialog.close()));
+    deadlineDialog.showModal();
+  }
+  function calendar() {
+    const nav = view.querySelector(".cal-nav"), rail = view.querySelector(".cal-rail");
+    if (nav && !nav.querySelector(".lp-month-picker")) {
+      const picker = added(element("label", "lp-month-picker", "Jump to month"));
+      const input = element("input"); input.type = "month"; input.value = CAL.m;
+      input.setAttribute("aria-label", "Jump to calendar month");
+      input.addEventListener("change", () => {
+        if (!/^\d{4}-\d{2}$/.test(input.value)) return;
+        CAL.m = input.value; CAL.sel = ""; render();
+      });
+      picker.append(input); nav.append(picker);
+    }
+    if (rail && !rail.closest(".lp-month-browser")) {
+      const browser = element("details", "lp-month-browser");
+      const summary = added(element("summary", "", "Browse all months and event counts"));
+      rail.before(browser); browser.append(summary, rail);
+      browser.addEventListener("toggle", () => {
+        if (browser.open) rail.querySelector(".on")?.scrollIntoView({ block: "nearest", inline: "center" });
+      });
+    }
+    const exportButton = view.querySelector('[data-act="calics"]');
+    if (exportButton && !view.querySelector(".lp-calendar-export-note")) {
+      const note = added(element("small", "lp-calendar-export-note", `ICS export uses the original list range: ${CAL.range === "all" ? "all dates" : `next ${CAL.range} days`}${CAL.past ? ", including past dates" : ", plus open overdue report deadlines"}. It does not export only the displayed month.`));
+      view.querySelector(".ptool")?.after(note);
+    }
+    for (const bar of view.querySelectorAll(".alert-bar")) {
+      if (bar.querySelector(".lp-deadline-action")) continue;
+      const kind = bar.classList.contains("bad") ? "overdue" : "soon";
+      const action = added(button(kind === "overdue" ? "Review overdue reports" : "Review upcoming reports", () => deadlines(kind)));
+      action.classList.add("lp-deadline-action");
+      const context = added(element("small", "lp-alert-context", "Across the current selection · not limited to the displayed month"));
+      bar.append(action, context); bar.setAttribute("role", "note");
+    }
+    for (const cell of view.querySelectorAll('.cal-cell[data-act="calday"]')) {
+      if (cell.dataset.lpDayKeyboard) continue;
+      cell.dataset.lpDayKeyboard = "on";
+      cell.addEventListener("keydown", (event) => {
+        if (event.target === cell && ["Enter", " "].includes(event.key)) {
+          event.preventDefault(); cell.click();
+        }
+      });
+    }
+  }
+  function data() {
+    const grid = view.querySelector(":scope > .grid");
+    if (!grid) return;
+    if (grid.classList.contains("lp-data-groups")) {
+      if (PREV) grid.querySelector('[data-lp-data-group="records"]').open = true;
+      return;
+    }
+    grid.classList.add("lp-data-groups");
+    const groups = [
+      ["reports", "Financial reports", "Upload approved budgets and project reports", ["Financial report inbox"]],
+      ["records", "Bulk records and templates", "Review Excel/CSV rows before importing", ["Import from Excel or CSV"]],
+      ["backups", "Backups and transfer", "Export or restore portfolio records", ["Back up and restore"]],
+      ["countries", "Country register", "Maintain countries before adding projects", ["Countries"]],
+      ["history", "History and recovery", "Review changes and recover deleted projects", ["Recycle bin", "Change log"]],
+      ["reset", "Replace data with demo portfolio", "Destructive action · open only when needed", ["Start over"]],
+    ];
+    for (const [key, title, note, titles] of groups) {
+      const cards = titles.map(headingCard).filter(Boolean);
+      if (!cards.length) continue;
+      const group = element("details", `lp-data-section${key === "reset" ? " lp-danger-section" : ""}`);
+      group.dataset.lpDataGroup = key;
+      const summary = added(element("summary"));
+      summary.append(element("strong", "", title), element("span", "", note));
+      group.append(summary, ...cards); grid.append(group);
+      group.open = !!preferences.data?.[key] || (key === "records" && !!PREV);
+      group.addEventListener("toggle", () => {
+        preferences = { ...preferences, data: { ...preferences.data, [key]: group.open } };
+        ls.set(preferenceKey, preferences);
+      });
+    }
+  }
+  function brief() {
+    const brief = view.querySelector(".brief");
+    if (!brief || brief.querySelector(".lp-brief-evidence")) return;
+    const R = rows(), quality = dq(R).filter((check) => check.items.length);
+    const indicators = R.flatMap((row) => row.p.doa?.inds || []);
+    const measured = indicators.filter((indicator) => String(indicator.current ?? "").trim() !== "");
+    const actions = todayActions(R);
+    const sourceRows = R.map((row) => {
+      const report = reps(row.p).at(-1), budget = effB(row.p, report?.date);
+      return `<tr><td><a href="${PL(row.p, "finance/reports")}">${h(row.p.code)}</a><br>${h(row.p.name)}</td><td>${report ? `${h(report.name)}<br><small>${h(report.date)} · ${h(report.fileName || "File not recorded")}</small>` : "No report registered"}</td><td>${budget ? `${h(budget.name)}<br><small>${h(budget.date)}${report && budget.date > report.date ? " · Dated after report; original engine fallback needs source review" : ""}</small>` : "No budget version registered"}</td><td>${h(BL[row.basis] || "No supported method")}</td></tr>`;
+    }).join("");
+    const teams = R.flatMap((row) => (row.p.people || []).map((person) => ({ person, p: row.p })));
+    const panel = added(element("section", "lp-brief-evidence grid sec"));
+    panel.innerHTML = `${card("Evidence and briefing scope", "Generation date is not the source date", `<div class="lp-evidence-counts"><span>${R.filter((row) => reps(row.p).length).length}/${R.length} projects with financial reports</span><span>${R.filter((row) => row.p.doa).length}/${R.length} with action plans</span><span>${measured.length}/${indicators.length} indicators with current values</span></div><p class="note">Country: ${h(F.c === "all" ? "All countries" : cname(F.c))} · Sector: ${h(F.s)} · Signal: ${h(F.g === "all" ? "All signals" : SG[F.g]?.[0] || F.g)} · Search: ${h(F.q || "All projects")}<br>Scenario ${F.k > 0 ? "+" : ""}${h(F.k)}% · Requested forecast: ${h(F.fm || "auto")} · Project date filter: ${h(F.ds || "Unrestricted")} to ${h(F.de || "Unrestricted")} (project dates, not report dates).</p><div class="tw"><table class="lp-evidence-table"><thead><tr><th>Project</th><th>Latest financial report</th><th>Effective approved budget</th><th>Forecast basis used</th></tr></thead><tbody>${sourceRows}</tbody></table></div>`, "wide")}${card("Recorded updates and quality findings", "Original action rules; affected projects remain accessible", `<p class="note">The original management section shows up to 10 non-neutral actions and 5 top risks. This appendix exposes every current action, including status updates.</p><details class="lp-brief-details"><summary>All ${actions.length} current management/update points</summary>${actionList(actions)}</details>${quality.length ? `<details class="lp-brief-details"><summary>${quality.length} data-quality checks with affected records</summary>${quality.map((check) => `<h3>${h(check.label)}</h3><ul>${check.items.map((item) => `<li><a href="${PL(item.r.p, check.tab)}">${h(item.r.p.code)}</a>: ${h(item.t)}</li>`).join("")}</ul>`).join("")}</details>` : "<p>No outstanding quality findings in the original checks.</p>"}`, "wide")}${card("Named team and risk responsibilities", "Recorded names; budget-line assignments are not inferred", `<details class="lp-brief-details"><summary>${teams.length} recorded team assignments</summary>${teams.length ? `<ul>${teams.map(({person, p}) => `<li><a href="${PL(p, "risks/people")}">${h(p.code)}</a> · <b>${h(person.name)}</b> · ${h(person.role || "Role not recorded")} · Contract until ${h(person.until || "Not recorded")}</li>`).join("")}</ul>` : "<p>No named team records available.</p>"}</details><details class="lp-brief-details"><summary>Recorded open risk owners and mitigation</summary><ul>${R.flatMap((row) => (row.p.riskRegister || []).filter((risk) => risk.status !== "Closed").map((risk) => `<li><a href="${PL(row.p, "risks/risks")}">${h(row.p.code)}</a> · ${h(risk.title)}<br>Owner: ${h(risk.owner || "Not recorded")} · Mitigation: ${h(risk.mitigation || "Not recorded")}</li>`)).join("") || "<li>No open risks recorded.</li>"}</ul></details>`, "wide")}`;
+    brief.append(panel);
+  }
+  function logframe() {
+    const card = headingCard("Logframe indicators"), p = currentProject();
+    const table = card?.querySelector("table");
+    if (!table || !p?.doa || table.dataset.lpLogframe) return;
+    table.dataset.lpLogframe = "on"; table.classList.add("lp-logframe-table");
+    table.closest(".tw").classList.add("lp-logframe-viewport");
+    const state = indicatorQueries.get(p.id) || { query: "", mode: "all", collapsed: new Set() };
+    indicatorQueries.delete(p.id); indicatorQueries.set(p.id, state);
+    if (indicatorQueries.size > 32) indicatorQueries.delete(indicatorQueries.keys().next().value);
+    const tools = added(element("div", "lp-indicator-tools"));
+    const search = element("input"); search.type = "search"; search.value = state.query;
+    search.placeholder = "Find indicator or result"; search.setAttribute("aria-label", "Find logframe indicator or result");
+    const mode = element("select"); mode.setAttribute("aria-label", "Indicator value coverage");
+    mode.innerHTML = '<option value="all">All indicators</option><option value="blank">Blank current values</option><option value="measured">With current values</option>';
+    mode.value = state.mode;
+    const count = element("output"); count.setAttribute("aria-live", "polite");
+    const groups = []; let group;
+    for (const row of table.tBodies[0].rows) {
+      const input = row.querySelector("[data-ind]");
+      if (!input) {
+        group = { header: row, rows: [], index: groups.length }; groups.push(group);
+      } else {
+        const id = input.dataset.ind.split("|")[1], indicator = p.doa.inds.find((item) => item.id === id);
+        if (!group) { group = { header: null, rows: [], index: 0 }; groups.push(group); }
+        group.rows.push({ row, input, indicator });
+        const detail = added(element("details", "lp-indicator-detail"));
+        detail.append(element("summary", "", "Source and full result"));
+        const text = element("div"); text.textContent = `Result: ${indicator?.result || "Not recorded"}\nSource: ${indicator?.sources || "Not recorded"}\nAssumptions: ${indicator?.assumptions || "Not recorded"}\nAs of: ${indicator?.asOf || "Not recorded"}`;
+        detail.append(text); row.cells[0].append(detail);
+        input.setAttribute("aria-label", `Current value: ${indicator?.text || input.dataset.ind}`);
+      }
+    }
+    function filter() {
+      state.query = search.value; state.mode = mode.value;
+      let visible = 0, matched = 0;
+      groups.forEach((group) => {
+        let groupMatches = 0;
+        for (const item of group.rows) {
+          const value = String(item.input.value ?? "").trim();
+          const matching = `${item.indicator?.text || item.row.cells[0].textContent} ${item.indicator?.result || ""}`.toLocaleLowerCase().includes(state.query.trim().toLocaleLowerCase()) && (state.mode === "all" || (state.mode === "blank" ? value === "" : value !== ""));
+          item.row.hidden = !matching || state.collapsed.has(group.index);
+          item.row.classList.toggle("lp-indicator-hidden", item.row.hidden);
+          if (matching) { groupMatches++; matched++; }
+          if (!item.row.hidden) visible++;
+        }
+        if (group.header) {
+          group.header.hidden = groupMatches === 0;
+          group.header.classList.toggle("lp-indicator-hidden", group.header.hidden);
+          const toggle = group.header.querySelector("button");
+          toggle?.setAttribute("aria-expanded", String(!state.collapsed.has(group.index)));
+        }
+      });
+      count.textContent = `${visible} visible · ${matched} matching · ${p.doa.inds.length} total. KPIs and Excel include all indicators. Scroll sideways for baseline, target, current value and progress.`;
+    }
+    for (const group of groups) {
+      if (!group.header) continue;
+      const toggle = added(button("Collapse / expand result", () => {
+        state.collapsed.has(group.index) ? state.collapsed.delete(group.index) : state.collapsed.add(group.index);
+        filter();
+      }));
+      toggle.classList.add("lp-result-toggle"); group.header.cells[0].append(toggle);
+    }
+    search.addEventListener("input", filter); mode.addEventListener("change", filter);
+    tools.append(search, mode, button("Expand all results", () => { state.collapsed.clear(); filter(); }), count);
+    table.closest(".tw").before(tools); filter();
+  }
+  function budgetReport() {
+    const card = headingCard("Budget lines at the latest report"), p = currentProject();
+    const table = card?.querySelector("table");
+    if (!table || !p || table.dataset.lpReportDetails) return;
+    table.dataset.lpReportDetails = "on"; table.classList.add("lp-report-details-table");
+    table.closest(".tw").classList.add("lp-report-details-viewport");
+    const projection = LedgerReportDetails.project(p);
+    const columns = [
+      ["approvedUnit", "Approved unit"], ["approvedUnits", "Approved units"], ["unitRate", "Approved unit cost"],
+      ["actualUnit", "Spent unit"], ["actualUnits", "Spent units"], ["actualUnitCost", "Spent unit cost"], ["remainingUnits", "Remaining units"], ["staffNames", "Staff names (source)"],
+    ];
+    const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function measureCell(field, key) {
+      const cell = added(element("td", `lp-unit-detail lp-unit-${key}`));
+      if (!field || field.value === null) {
+        cell.textContent = "—"; cell.title = field?.label || "Not applicable; unit values are not aggregated";
+      } else {
+        cell.textContent = Array.isArray(field.value) ? field.value.join("; ") : key === "unitRate" || key === "actualUnitCost" ? money.format(field.value) : typeof field.value === "number" ? field.value.toLocaleString("en-GB", { maximumFractionDigits: 6 }) : String(field.value);
+        if (field.state === "derived") cell.append(element("small", "lp-derived", "Derived"));
+        cell.title = `${field.label}\n${field.provenance.map((source) => `${source.reportName || ""} ${source.reportDate || ""} · ${source.fileName || ""}${source.sheet ? ` / ${source.sheet} row ${source.row} ${source.column}` : ""}`).join("\n")}`;
+      }
+      return cell;
+    }
+    const head = table.tHead.rows[0], anchor = head.cells[1];
+    for (const [, title] of columns) { const cell = added(element("th", "ns lp-unit-detail", title)); head.insertBefore(cell, anchor); }
+    [...table.tBodies[0].rows].forEach((row, index) => {
+      const fields = projection.lines[index]?.fields;
+      const anchor = row.cells[1];
+      for (const [key] of columns) row.insertBefore(measureCell(fields?.[key], key), anchor);
+    });
+    const controls = added(element("div", "lp-report-controls"));
+    const mode = button("Financial overview", () => {
+      const compact = table.classList.toggle("lp-report-compact");
+      mode.textContent = compact ? "Full source details" : "Financial overview";
+      mode.setAttribute("aria-pressed", String(compact));
+    });
+    mode.setAttribute("aria-pressed", "false");
+    const restore = button("Read details from stored originals", async () => {
+      restore.disabled = true;
+      try {
+        const sourceState = S, sourceFingerprint = JSON.stringify(p);
+        const sourceReports = RP(p).map((report) => ({ report, snapshot: report.snapshot }));
+        const result = await LedgerReportDetails.hydrate(p, { force: true });
+        const current = S.projects.find((project) => project.id === p.id);
+        if (S !== sourceState || current !== p || JSON.stringify(p) !== sourceFingerprint ||
+            sourceReports.some(({ report, snapshot }) => !RP(p).includes(report) || report.snapshot !== snapshot)) {
+          const message = "Project or source changed during the read. No details were applied; retry with the current originals.";
+          status.textContent = message; toast(message);
+          return;
+        }
+        const updates = result.updates.filter((update) => ["recognized", "partial"].includes(update.details.status) && RP(current || {}).some((report) => report.id === update.reportId));
+        if (!current || !updates.length) {
+          status.textContent = "No readable linked original supplied extra fields. Upload the original report or approved budget again; unavailable fields remain —.";
+          return;
+        }
+        commit(`Read source unit details for ${current.name}`);
+        for (const update of updates) RP(current).find((report) => report.id === update.reportId).snapshot.ledgerDetails = update.details;
+        save(); render(); toast("Source details refreshed. Original financial amounts remain unchanged.");
+      } catch (error) { status.textContent = error.message; }
+      finally { restore.disabled = false; }
+    });
+    const status = element("output", "lp-report-source-status"); status.setAttribute("aria-live", "polite");
+    status.textContent = `Report: ${projection.report?.name || "Not registered"} (${projection.report?.date || "date unavailable"}) · Budget selected by original engine: ${projection.budget?.name || "Not registered"} (${projection.budget?.date || "date unavailable"}).${projection.budgetAfterReport ? " Budget is dated after this report; derived unit balances are unavailable pending source review." : ""}`;
+    const note = element("p", "note", "Full source details: scroll sideways for all financial columns. — means the source does not establish a value. Spent units never use approved quantities as a fallback. Derived costs use actual expenditure ÷ explicit spent units. Remaining units require compatible unit types. Unit quantities/rates are not totalled across lines.");
+    controls.append(mode, restore, status, note); table.closest(".tw").before(controls);
+    const team = added(element("details", "lp-report-team"));
+    team.append(element("summary", "", `${(p.people || []).length} recorded project team members · separate from budget-line assignments`));
+    const list = element("ul");
+    for (const person of p.people || []) list.append(element("li", "", `${person.name} · ${person.role || "Role not recorded"} · ${person.base || "Base not recorded"}${person.until ? ` · Until ${person.until}` : ""}`));
+    if (!list.childElementCount) list.append(element("li", "", "No named project team records. Names explicitly read from a report appear in the source column; line assignments are not inferred."));
+    team.append(list); card.append(team);
+  }
+  function augment() {
+    const route = (location.hash || "#/home").split("/")[1];
+    if (route === "calendar") calendar();
+    if (route === "data") data();
+    if (route === "brief") brief();
+    if (route === "project") { logframe(); budgetReport(); }
+  }
+  return Object.freeze({ augment });
+})();
+
 /* Additive modules inside the original closure. No screen or financial formula is replaced. */
 const LedgerProfessional = (() => {
   const settingsKey = "ledger.professional.v1";
@@ -2427,7 +3033,7 @@ const LedgerProfessional = (() => {
         "\ufeff" +
         records
           .map((row) =>
-            [...row.cells].map((cell) => csvCell(cell.innerText)).join(","),
+            [...row.cells].filter((cell) => getComputedStyle(cell).display !== "none").map((cell) => csvCell(cell.innerText)).join(","),
           )
           .join("\r\n");
       download("portfolio-table-visible.csv", csv, "text/csv;charset=utf-8");
@@ -2488,13 +3094,13 @@ const LedgerProfessional = (() => {
     const lines = [
       `${$("#title").textContent} · ${route}`,
       `Country: ${selected("#fc", "c")} · Sector: ${selected("#fs", "s")} · Signal: ${selected("#fg", "g")}`,
-      `Search: ${F.q || "All projects"} · Selected date window: ${F.ds || "Unrestricted"} to ${F.de || "Unrestricted"}`,
+      `Search: ${F.q || "All projects"} · Project date filter: ${F.ds || "Unrestricted"} to ${F.de || "Unrestricted"} (project dates, not report dates)`,
       `Scenario: ${Number(F.k) > 0 ? "+" : ""}${Number(F.k) || 0}% · Forecast method: ${selected("#fm", "fm")}`,
     ];
     if (route.startsWith("#/project/")) lines.push("Project detail: global filters may not restrict this chart.");
     if (route.startsWith("#/country/")) lines.push(`Country detail scope: ${decodeURIComponent(route.split("/")[2])}`);
     const legend = [...(svg.closest(".card")?.querySelectorAll(".leg") || [])]
-      .map((node) => node.textContent.replace(/\s+/g, " ").trim()).filter(Boolean).join(" · ");
+      .map((node) => [...node.children].map((item) => item.textContent.replace(/\s+/g, " ").trim()).join(" · ") || node.textContent.trim()).filter(Boolean).join(" · ");
     if (legend) lines.push(legend);
     lines.push(`Exported: ${new Date().toISOString()} (UTC). Source dates are retained per record; export time is not a source date.`);
     return { label, route, lines };
@@ -2657,6 +3263,7 @@ const LedgerProfessional = (() => {
     augmenting = true;
     try {
       $("main").dataset.lpRoute = location.hash || "#/home";
+      LedgerWorkspaceRefinements.augment();
       $("#ubtn").disabled = H.past.length === 0;
       $("#rbtn").disabled = H.fut.length === 0;
       document.querySelectorAll(".side a").forEach((a) => {

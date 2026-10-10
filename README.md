@@ -19,7 +19,12 @@ to the current profile/origin; use the original Data backup tools when moving th
 ```sh
 python3 scripts/build-professional.py
 node tests/professional.cjs
+node tests/refinements.cjs
 ```
+
+The current update adds compact Calendar navigation, a full-width Brief with
+source evidence, expandable Data groups, bounded searchable Logframe indicators,
+and source-backed budget unit/name columns. See the [five-area review record](docs/REFINEMENT_REVIEW.md).
 
 The [seven-role review protocol](docs/REVIEW_PROTOCOL.md) defines independent
 review, correction and re-approval. Actual findings and verdicts are recorded in

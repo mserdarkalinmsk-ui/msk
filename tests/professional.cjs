@@ -58,7 +58,7 @@ async function digest(page) {
   return page.evaluate(() => {
     const clone = document.querySelector("#view").cloneNode(true);
     clone
-      .querySelectorAll(".lp-table-tools,.lp-chart-tools")
+      .querySelectorAll(".lp-table-tools,.lp-chart-tools,[data-lp-added]")
       .forEach((x) => x.remove());
     return {
       title: document.querySelector("#title").textContent,
@@ -394,7 +394,7 @@ async function main() {
     assert.match(svg, /Scenario: \+35%/);
     assert.match(svg, /Country: Türkiye/);
     assert.match(svg, /Forecast method:/);
-    assert.match(svg, /Selected date window:/);
+    assert.match(svg, /Project date filter:/);
     assert.match(svg, /export time is not a source date/);
     assert.match(svgDownload.suggestedFilename(), /tr-scenario-35/);
     const visibleCaption = svg.slice(0, svg.indexOf('<svg', 5));
@@ -509,6 +509,7 @@ async function main() {
       7,
     );
     await go(b.page, "enhanced", "data");
+    await b.page.locator('[data-lp-data-group="backups"] > summary').click();
     const backupPending = b.page.waitForEvent("download");
     await b.page.locator('[data-act="export"]').first().click();
     const backup = await fs.readFile(await (await backupPending).path());

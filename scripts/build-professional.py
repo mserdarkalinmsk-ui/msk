@@ -11,7 +11,11 @@ base = SOURCE.read_bytes()
 assert hashlib.sha256(base).hexdigest() == EXPECTED, 'Uploaded baseline was changed.'
 text = base.decode()
 css = (ROOT / 'enhancements/professional.css').read_text()
-js = (ROOT / 'enhancements/professional.js').read_text()
+js = '\n'.join((ROOT / name).read_text() for name in [
+    'enhancements/report-details.js',
+    'enhancements/workspace-refinements.js',
+    'enhancements/professional.js',
+])
 assert '</style' not in css.lower() and '</script' not in js.lower()
 boot = 'S.projects.forEach(p=>{try{resolveProject(p)}catch(e){}});\nsyncBar();render();'
 assert text.count(boot) == 1, 'Cannot identify the original startup safely.'
