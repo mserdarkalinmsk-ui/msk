@@ -1,5 +1,8 @@
 import { unzip, readXlsx } from './xlsx';
-import type { Doc } from '../domain/documents';
+import type { Doc, Geometry } from '../domain/documents';
+import * as geoModule from './pdfgeom';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped port of the previous app's layout readers
+const geo = geoModule as any;
 
 const td = new TextDecoder();
 const unesc = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&amp;/g, '&');
@@ -28,9 +31,28 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
   const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false, useSystemFonts: false }).promise;
   const paragraphs: string[] = [], tables: string[][][] = [];
   let table: string[][] = [];
+  const G: Geometry = { acts: [], months: 0, indicators: [], risks: [] };
+  const layouts: unknown[] = []; let template: unknown = null;
   for (let n = 1; n <= doc.numPages; n++) {
     const page = await doc.getPage(n);
     const tc = await page.getTextContent();
+    // Layout readers from the previous app (need a canvas; skipped where none exists, e.g. in unit tests)
+    if (typeof document !== 'undefined') try {
+      const items = tc.items as unknown[];
+      const layout = geo.pdfDisplayLayout(page, items); layout.page = n; layouts.push(layout);
+      const text = paragraphs.join(' ') + ' ' + tables.flat(2).join(' ');
+      const expected = +((text.match(/(?:proposed\s+)?duration\s+of\s+(?:the\s+)?(?:project|action)[\s:]*?(\d{1,3})\s*months/i) || [])[1] || 0);
+      let plan = await geo.pdfPlanGeometry(page, items, n);
+      if (!plan && layout.items.length) plan = await geo.pdfCalendarPlan(page, layout, n, template, expected);
+      if (plan) {
+        if (plan.template) { template = plan.template; G.start = plan.start; }
+        if (plan.continuation && G.acts.length) { const prev = G.acts.at(-1)!; prev.name += ' ' + plan.continuation; prev.E = [...new Set([...(prev.E ?? []), ...plan.continuationMonths])].sort((a, b) => a - b); }
+        G.acts.push(...plan.acts); G.months = Math.max(G.months, plan.months);
+      }
+      const lf = geo.pdfLogframeGeometry(items, n); G.indicators.push(...lf);
+      const prevL = layouts.at(-2) as { logframeGrid?: unknown } | undefined;
+      if (!lf.length && (layout.width > layout.height || prevL?.logframeGrid || layout.items.some((i: { str: string }) => /^(?:Intervention logic|Indicators|Indicatoes|Logframe level)$/i.test(i.str)))) layout.logframeGrid = await geo.pdfLogframeGrid(page, layout);
+    } catch { /* layout reading is best effort; the text tables below still apply */ }
     const rows = new Map<number, { x: number; w: number; s: string }[]>();
     for (const it of tc.items as { str: string; transform: number[]; width: number }[]) {
       if (!it.str.trim()) continue;
@@ -46,8 +68,9 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
     }
   }
   if (table.length) tables.push(table);
+  if (layouts.length) try { G.indicators.push(...geo.pdfAnnexIndicators(layouts)); G.risks.push(...geo.pdfAnnexRisks(layouts)); } catch { /* best effort */ }
   await doc.destroy();
-  return { name, kind: 'pdf', paragraphs, tables };
+  return { name, kind: 'pdf', paragraphs, tables, ...(G.acts.length || G.indicators.length || G.risks.length ? { geometry: G } : {}) };
 }
 
 export async function readDocument(f: File): Promise<Doc> {

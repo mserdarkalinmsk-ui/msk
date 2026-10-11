@@ -109,12 +109,12 @@ function Summary({ p }: { p: Project }) {
   );
 }
 
-interface LineV { code: string; description: string; approved: number; actual: number; committed: number; exposure: number; used: number }
+interface LineV { code: string; description: string; approved: number; actual: number; committed: number; exposure: number; used: number; note?: string; why?: string }
 function Lines({ p }: { p: Project }) {
   const rep = reportsByDate(p).filter((r) => r.snapshot?.lines.length).at(-1)
     ?? (p.approvedBudget ? { id: '__approved', name: 'Approved budget', type: `baseline from ${p.approvedBudget.source}`, date: (p.approvedBudget.importedAt ?? p.start).slice(0, 10), snapshot: { lines: p.approvedBudget.lines } } as ReportingPeriod : undefined);
   if (!rep) return <div class="card empty-page"><div><h2>No budget lines yet</h2><p>Import an approved budget or a financial report.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button></div></div>;
-  const rows: LineV[] = rep.snapshot!.lines.map((l) => { const ex = lineExposure(l), ap = l.approved ?? 0; return { code: l.code, description: l.description ?? '', approved: ap, actual: l.actual ?? 0, committed: ex - (l.actual ?? 0), exposure: ex, used: ap ? ex / ap : 0 }; });
+  const rows: LineV[] = rep.snapshot!.lines.map((l) => { const ex = lineExposure(l), ap = l.approved ?? 0; const nt = p.budgetNotes?.[l.code]; return { code: l.code, description: l.description ?? '', approved: ap, actual: l.actual ?? 0, committed: ex - (l.actual ?? 0), exposure: ex, used: ap ? ex / ap : 0, note: nt?.clarification, why: nt?.justification }; });
   const ro = rep.id === '__approved'; // the approved baseline is replaced by a newer approved budget, not edited
   const ed = (f: 'approved' | 'actual' | 'committed') => ro ? undefined : ({ type: 'text' as const, commit: (r: LineV, v: string) => { const x = parseAmount(v); if (x != null && x >= 0) updateLine(p.id, rep.id, r.code, { [f]: x }); } });
   const cols: Column<LineV>[] = [
@@ -125,6 +125,7 @@ function Lines({ p }: { p: Project }) {
     { key: 'committed', label: 'Committed', width: 130, align: 'r', sum: true, format: full, value: (r) => r.committed, edit: ed('committed') },
     { key: 'used', label: 'Used', width: 180, value: (r) => r.used, render: (r) => <div class="bar-cell"><div class="minibar"><span style={{ width: `${Math.min(100, r.used * 100)}%`, background: `var(--${usedTone(r.used) === 'good' ? 'c1' : usedTone(r.used) === 'warning' ? 'warn' : usedTone(r.used)})` }} /><i style={{ left: `${elapsed(p, TODAY) * 100}%` }} /></div><span class="num" style={{ fontSize: '12px' }}>{pct(r.used)}</span></div> },
     { key: 'balance', label: 'Balance', width: 130, align: 'r', sum: true, format: full, value: (r) => r.approved - r.exposure },
+    ...(p.budgetNotes ? [{ key: 'note', label: 'Clarification & justification', width: 360, value: (r: LineV) => `${r.note ?? ''} ${r.why ?? ''}`, render: (r: LineV) => (r.note || r.why) ? <span class="just" title={[r.note, r.why].filter(Boolean).join('\n\n')}>{r.note || r.why}</span> : <span class="muted">—</span> } as Column<LineV>] : []),
   ];
   return (
     <section class="card" style={{ overflow: 'hidden' }}>
@@ -290,8 +291,8 @@ function ResultsDocs({ p }: { p: Project }) {
       <section class="card span-8" style={{ overflow: 'hidden' }}>
         <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Results framework</h2><p>{I.length ? `${I.length} indicators from project documents` : 'Add the logframe or Description of Action to fill this'}</p></div>
           <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div></div>
-        {I.length > 0 && <table class="mini" style={{ margin: 0 }}><thead><tr><th style={{ paddingLeft: '24px' }}>Result</th><th>Indicator</th><th>Baseline</th><th>Target</th><th>Source</th></tr></thead>
-          <tbody>{I.map((x, i) => <tr><td style={{ paddingLeft: '24px', fontWeight: 600 }}>{i && I[i - 1].result === x.result ? '' : x.result}</td><td>{x.indicator}</td><td class="num">{x.baseline}</td><td class="num">{x.target}</td><td class="muted">{x.source}</td></tr>)}</tbody></table>}
+        {I.length > 0 && <table class="mini" style={{ margin: 0 }}><thead><tr><th style={{ paddingLeft: '24px' }}>Result</th><th>Indicator</th><th>Baseline</th><th>Target</th><th>Source</th>{I.some((x) => x.assumptions) && <th>Assumptions</th>}</tr></thead>
+          <tbody>{I.map((x, i) => <tr><td style={{ paddingLeft: '24px', fontWeight: 600 }}>{i && I[i - 1].result === x.result ? '' : <>{x.level && <span class="badge neutral" style={{ marginRight: '6px' }}>{x.level}</span>}{x.result}</>}</td><td>{x.indicator}</td><td class="num">{x.baseline}</td><td class="num">{x.target}</td><td class="muted">{x.source}</td>{I.some((y) => y.assumptions) && <td class="muted">{i && I[i - 1].assumptions === x.assumptions ? '' : x.assumptions}</td>}</tr>)}</tbody></table>}
       </section>
       <section class="card span-4">
         <div class="card-h"><div><h2>Contract</h2><p>{facts.length ? 'Read from documents' : 'No contract read yet'}</p></div></div>

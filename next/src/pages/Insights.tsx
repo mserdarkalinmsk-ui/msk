@@ -151,7 +151,7 @@ export function ForecastCard({ p }: { p: Project }) {
 /* ---------------- project: budget revision scenario ---------------- */
 export function Scenario({ p }: { p: Project }) {
   const [d, setD] = useState<Record<string, number>>({});
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 10); // contract's budget-heading flexibility when known
   const S = scenario(p, d, limit / 100);
   if (!S.rows.length) return <div class="card empty-page"><div><h2>No budget lines yet</h2><p>Import a financial report to model a budget revision.</p></div></div>;
   const balance = () => {
