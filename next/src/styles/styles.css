@@ -219,3 +219,14 @@ details.jt-row { border-top: 1px solid var(--line); }
 .assume { margin: 0; padding: 8px 20px 18px 44px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 28px; font-size: 13px; line-height: 1.5; }
 .assume li::marker { color: var(--muted); font-weight: 700; }
 @media (max-width: 900px) { .assume { grid-template-columns: 1fr; } }
+.fa-total{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.fa-total span{font-size:12.5px;color:var(--muted)}.fa-total b{font-size:22px;margin-left:auto}.fa-total small{width:100%;text-align:right;color:var(--muted);font-size:11.5px}
+.fa-flow{list-style:none;margin:6px 0 0;padding:0}
+.fa-flow li{display:grid;grid-template-columns:72px 1fr auto;gap:10px;padding:6px 0;font-size:13px;border-bottom:1px dashed var(--line)}
+.fa-flow li>span:first-child{color:var(--muted);font-size:12px}
+.fa-flow li.neg{color:var(--muted)}.fa-flow li.neg b{color:var(--critical)}
+.fa-acc{display:grid;gap:12px;padding-top:4px}
+.fa-legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted)}.fa-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.fa-h{display:flex;gap:8px;align-items:baseline;font-size:13px}.fa-h .muted{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.fa-bar{display:flex;height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:5px 0 4px}.fa-bar span{background:var(--c1)}
+.fa-f{display:flex;gap:10px;font-size:11.5px;color:var(--muted)}
