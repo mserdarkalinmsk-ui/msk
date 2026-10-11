@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { set } from '../data/store';
-import { elapsed, lines } from '../domain/calc';
+import { byPeriodThenImport, elapsed, lines } from '../domain/calc';
 import type { Project } from '../domain/types';
 import type { WbLine, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -13,7 +13,7 @@ import { Statement } from '../ui/Statement';
 const HEADINGS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment & supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other' };
 
 export function latestWorkbook(p: Project) {
-  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort((a, b) => a.date.localeCompare(b.date));
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byPeriodThenImport);
   return R.at(-1);
 }
 
