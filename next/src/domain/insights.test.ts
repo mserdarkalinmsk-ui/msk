@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { workbook } from '../ui/xlsxwrite';
 import { readXlsx } from '../ui/xlsx';
-import { alerts, changes, migrateBackup, narrative, outcome, scenario } from './insights';
+import { alerts, changes, migrateBackup, status, outcome, scenario } from './insights';
 import type { Project } from './types';
 
 const rep = (date: string, actual: number, approved = 1000) => ({ id: date, name: date, type: 'Interim', date, snapshot: { lines: [{ code: '1', description: 'Staff', approved, actual, committed: 0 }, { code: '2', description: 'Travel', approved: 1000, actual: 0, committed: 0 }] } });
@@ -18,9 +18,16 @@ describe('insights', () => {
   });
   it('flags low forecast use and writes a narrative', () => {
     expect(alerts([P], today).some((a) => a.kind === 'forecast' && a.severity === 'serious')).toBe(true);
-    const N = narrative(P, today);
-    expect(N[0]).toMatch(/20% of the €2,000 budget/);
-    expect(N.join(' ')).toMatch(/close at \d+% of budget/);
+    const S = status(P, today);
+    expect(S.headline).toBe('20% spent at 50% of time');
+    expect(S.verdict).toBe('Behind schedule');
+    expect(S.points.find((x) => x.area === 'Forecast')!.head).toMatch(/of budget used at end/);
+  });
+  it('a short catch-up period does not explode the forecast', () => {
+    const Q: Project = { ...P, reportingPeriods: [rep('2025-06-30', 200), rep('2025-12-31', 400), { ...rep('2026-01-31', 900), id: 'x' }] };
+    const o = outcome(Q, new Date('2026-02-01T00:00:00Z'));
+    expect(o.basis).toBe('average rate');
+    expect(o.utilisation).toBeLessThan(1.1);
   });
   it('compares the latest report with the previous one or a chosen date', () => {
     expect(changes([P])[0].spent).toEqual([200, 400]);

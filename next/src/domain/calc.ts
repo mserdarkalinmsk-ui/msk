@@ -78,6 +78,21 @@ export function recentRate(p: Project): number {
   return Math.max(0, ((b.v - a.v) / ((b.t - a.t) / DAY)) * 30.4375);
 }
 
+/**
+ * Monthly rate used for forecasts: the average since start, blended 50/50 with the recent
+ * rate when the last two reports are at least ~3 months apart (recent capped at 2x average),
+ * so a short or catch-up period between reports cannot swing the forecast.
+ */
+export function forecastRate(p: Project, today: Date): { rate: number; recent: boolean } {
+  const start = parseDate(p.start).getTime(), end = parseDate(p.end).getTime();
+  const pts = spendPoints(p), a = pts.at(-2), b = pts.at(-1)!;
+  const asOf = Math.min(end, Math.max(b.t, Math.min(today.getTime(), b.t)));
+  const done = (asOf - start) / DAY / 30.4375;
+  const avg = done >= 1 ? b.v / done : 0;
+  if (a && avg && b.t - a.t >= 85 * DAY && a.v > 0) return { rate: 0.5 * avg + 0.5 * Math.min(recentRate(p), 2 * avg), recent: true };
+  return { rate: avg, recent: false };
+}
+
 export const monthEnd = (y: number, m: number) => Date.UTC(y, m + 1, 0);
 
 export interface SeriesPoint { t: number; actual: number | null; plan: number; low: number | null; mid: number | null; high: number | null }
@@ -103,7 +118,7 @@ export function portfolioSeries(ps: Project[], today: Date): SeriesPoint[] {
         const base = spendAt(p, Math.min(t, last.t));
         const end = parseDate(p.end).getTime();
         const months = Math.max(0, (Math.min(t, end) - last.t) / DAY / 30.4375);
-        return Math.min(n(p.budget), base + recentRate(p) * k * months);
+        return Math.min(n(p.budget), base + forecastRate(p, today).rate * k * months);
       });
     out.push({
       t,
@@ -116,7 +131,6 @@ export function portfolioSeries(ps: Project[], today: Date): SeriesPoint[] {
     if (t >= e0.getTime()) break;
     if (out.length > 600) break;
   }
-  void today;
   return out;
 }
 

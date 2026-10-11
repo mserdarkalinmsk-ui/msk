@@ -1,4 +1,4 @@
-import { attention, deadlines, elapsed, lineExposure, lines, money, n, parseDate, planStats, recentRate, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
+import { attention, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
 import { daysUntil, renewals, roster } from './staff';
 import type { Ledger, Project } from './types';
 
@@ -18,11 +18,8 @@ export function outcome(p: Project, today: Date): Outcome {
   const m = money(p);
   const end = parseDate(p.end).getTime(), start = parseDate(p.start).getTime();
   const monthsLeft = Math.max(0, (end - Math.max(today.getTime(), start)) / DAY / 30.4375);
-  let rate = recentRate(p), basis: Outcome['basis'] = 'recent rate';
-  if (!rate) {
-    const done = (Math.min(today.getTime(), end) - start) / DAY / 30.4375;
-    rate = done > 0 ? m.spent / done : 0; basis = rate ? 'average rate' : 'no data';
-  }
+  const f = forecastRate(p, today);
+  const rate = f.rate, basis: Outcome['basis'] = !rate ? 'no data' : f.recent ? 'recent rate' : 'average rate';
   const projected = Math.max(m.exposure, m.spent + rate * monthsLeft);
   const capped = Math.min(projected, m.budget);
   return {
@@ -63,25 +60,34 @@ export function alerts(ps: Project[], today: Date): Alert[] {
 }
 
 /* ---------------- narrative ---------------- */
-/** Plain-language status sentences generated from the figures. */
-export function narrative(p: Project, today: Date): string[] {
-  const m = money(p), el = elapsed(p, today), o = outcome(p, today), S: string[] = [];
+export type Tone = 'good' | 'warn' | 'bad' | 'info';
+export interface Point { area: string; tone: Tone; head: string; text: string }
+export interface Status { verdict: string; tone: Tone; headline: string; points: Point[]; plain: string }
+
+/** Status built from the figures: a verdict, a headline and short points with a tone each. */
+export function status(p: Project, today: Date): Status {
+  const m = money(p), el = elapsed(p, today), o = outcome(p, today), P: Point[] = [];
   const burn = m.budget ? m.spent / m.budget : 0, gap = burn - el;
-  S.push(`${pct(burn)} of the ${eur(m.budget)} budget is spent at ${pct(el)} of the implementation period${Math.abs(gap) < 0.05 ? ', in line with time' : gap < 0 ? ` — ${Math.round(-gap * 100)} points behind time` : ` — ${Math.round(gap * 100)} points ahead of time`}.`);
-  if (m.committed > 0) S.push(`A further ${eur(m.committed)} is committed, leaving ${eur(m.remaining)} uncommitted.`);
-  if (o.basis !== 'no data' && el < 1) S.push(`At ${o.basis === 'recent rate' ? 'the recent' : 'the average'} rate of ${eur(o.rate)}/month the project would close at ${pct(o.utilisation)} of budget${o.unused > 1 ? ` (${eur(o.unused)} unused)` : o.overrun > 1 ? ` (${eur(o.overrun)} over)` : ''}.`);
+  const tone: Tone = gap < -0.15 || gap > 0.1 || m.remaining < 0 ? 'bad' : gap < -0.05 ? 'warn' : 'good';
+  const verdict = m.remaining < 0 ? 'Over budget' : gap < -0.15 ? 'Behind schedule' : gap > 0.1 ? 'Ahead of schedule' : gap < -0.05 ? 'Slightly behind' : 'On track';
+  const headline = `${pct(burn)} spent at ${pct(el)} of time`;
+  P.push({ area: 'Budget', tone: m.remaining < 0 ? 'bad' : 'info', head: `${eur(m.remaining)} uncommitted`, text: `${eur(m.spent)} spent and ${eur(m.committed)} committed of ${eur(m.budget)}` });
+  if (o.basis !== 'no data' && el < 1) {
+    const t: Tone = o.overrun > 1 ? 'bad' : o.utilisation < 0.7 ? 'bad' : o.utilisation < 0.9 ? 'warn' : 'good';
+    P.push({ area: 'Forecast', tone: t, head: o.overrun > 1 ? `${eur(o.overrun)} over budget at end` : o.unused > 1 ? `${pct(o.utilisation)} of budget used at end` : 'Full budget used at end', text: `${eur(o.rate)}/month now · ${eur(o.needRate)}/month needed to use the remaining budget` });
+  }
   const over = lines(p).filter((l) => n(l.approved) && lineExposure(l) > n(l.approved));
-  if (over.length) S.push(`${over.length} budget line${over.length > 1 ? 's are' : ' is'} over the approved amount (${over.slice(0, 3).map((l) => l.code).join(', ')}).`);
+  if (over.length) P.push({ area: 'Lines', tone: 'bad', head: `${over.length} line${over.length > 1 ? 's' : ''} over approved`, text: over.slice(0, 4).map((l) => `${l.code} ${l.description ?? ''}`.trim()).join(' · ') });
   const people = roster(p, today), ren = renewals(people, today, 60);
-  const active = people.filter((a) => a.status === 'Active').length;
-  if (people.length) S.push(`${active} staff on active contracts${ren.length ? `; ${ren.length} contract${ren.length > 1 ? 's end' : ' ends'} within 60 days` : ''}.`);
+  if (people.length) P.push({ area: 'Staff', tone: ren.length ? 'warn' : 'good', head: `${people.filter((a) => a.status === 'Active').length} on active contracts`, text: ren.length ? `${ren.length} contract${ren.length > 1 ? 's end' : ' ends'} within 60 days` : 'No contract ends within 60 days' });
   const st = planStats(p, today);
-  if (st) S.push(`Activity plan: ${st.done} of ${st.total} done, ${st.late} past the planned month (project month ${st.month}).`);
-  const risks = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open').length;
-  if (risks) S.push(`${risks} open risk${risks > 1 ? 's' : ''} in the register.`);
+  if (st) P.push({ area: 'Activities', tone: st.late ? 'warn' : 'good', head: `${st.done} of ${st.total} done`, text: st.late ? `${st.late} past the planned month · project month ${st.month}` : `None late · project month ${st.month}` });
+  const risks = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open');
+  if (risks.length) { const hi = risks.filter((r) => riskScore(r) >= 12).length; P.push({ area: 'Risks', tone: hi ? 'bad' : 'info', head: `${risks.length} open risk${risks.length > 1 ? 's' : ''}`, text: hi ? `${hi} rated high` : 'None rated high' }); }
   const od = deadlines(p, today).filter((d) => d.status === 'overdue');
-  if (od.length) S.push(`${od.length} report${od.length > 1 ? 's are' : ' is'} overdue.`);
-  return S;
+  if (od.length) P.push({ area: 'Reporting', tone: 'bad', head: `${od.length} report${od.length > 1 ? 's' : ''} overdue`, text: od.map((d) => `${d.kind} due ${d.due}`).join(' · ') });
+  const plain = [`${verdict}: ${headline}.`, ...P.map((x) => `${x.area}: ${x.head} (${x.text}).`)].join('\n');
+  return { verdict, tone, headline, points: P, plain };
 }
 
 /* ---------------- period comparison ---------------- */
