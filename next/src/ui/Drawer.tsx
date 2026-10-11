@@ -1,3 +1,4 @@
+import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { backupNow } from './Backup';
 import { AlertPanel } from './AlertPanel';
 import { useEffect, useState } from 'preact/hooks';
@@ -397,7 +398,7 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
     const c = countries.find((x) => x.id === edit);
     setD(c ? { region: '', iso3: '', ccm: '', ...c } : { id: '', name: '', region: '', iso3: '', ccm: '' }); setErr({});
   }, [edit]);
-  const regions = [...new Set(countries.map((c) => c.region).filter(Boolean))] as string[];
+  const regions = [...new Set([...countries.map((c) => c.region), ...COUNTRY_LIST.map((c) => c.region)].filter(Boolean))] as string[];
   const save = () => {
     const e = checkCountry(d, countries, edit !== 'new' ? edit ?? undefined : undefined);
     setErr(e as Record<string, string>); if (Object.keys(e).length) return;
@@ -415,7 +416,9 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
           <section class="card card-b" style={{ display: 'grid', gap: '12px' }}>
             <h3 style={{ margin: 0, fontSize: '14px' }}>{edit === 'new' ? 'Add country' : `Edit ${d.name}`}</h3>
             <div class="field" data-invalid={err.name ? '' : undefined}><label for="c-name">Name</label>
-              <input id="c-name" autoFocus value={d.name} onInput={(e) => setD({ ...d, name: (e.target as HTMLInputElement).value })} onKeyDown={(e) => e.key === 'Enter' && save()} />
+              <input id="c-name" autoFocus list="coe-countries" placeholder="Start typing — member states are listed" value={d.name}
+                onInput={(e) => { const v = (e.target as HTMLInputElement).value, k = countryInfo(v); setD(k ? { ...d, name: k.name, iso3: k.iso3, region: k.region } : { ...d, name: v }); }} onKeyDown={(e) => e.key === 'Enter' && save()} />
+              <datalist id="coe-countries">{COUNTRY_LIST.filter((c) => !countries.some((x) => x.name === c.name && x.id !== d.id)).map((c) => <option value={c.name}>{c.member ? 'Member state' : 'Partner'} · {c.region}</option>)}</datalist>
               {err.name && <span class="err">{err.name}</span>}</div>
             <div class="form-2">
               <div class="field"><label for="c-region">Region</label>
