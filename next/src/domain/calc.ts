@@ -197,3 +197,97 @@ export function validateLedger(x: unknown): string[] {
   });
   return errs;
 }
+
+/* ---------------- budget lines & report versions ---------------- */
+
+export const lineExposure = (l: BudgetLine) => (l.spentCommitted != null ? n(l.spentCommitted) : n(l.actual) + n(l.committed));
+export const lineCommitted = (l: BudgetLine) => (l.committed != null ? n(l.committed) : Math.max(0, lineExposure(l) - n(l.actual)));
+
+export interface LineRow { key: string; project: Project; code: string; description: string; approved: number; actual: number; committed: number; exposure: number; used: number; balance: number }
+
+/** Every budget line from each project's latest report, flattened. */
+export function lineRows(ps: Project[]): LineRow[] {
+  return ps.flatMap((p) => lines(p).map((l) => {
+    const approved = n(l.approved), exposure = lineExposure(l);
+    return { key: `${p.id}:${l.code}`, project: p, code: l.code, description: l.description || `Line ${l.code}`, approved, actual: n(l.actual), committed: lineCommitted(l), exposure, used: approved ? exposure / approved : 0, balance: approved - exposure };
+  }));
+}
+
+/** Lines grouped by description (cost category) across projects. */
+export function byCategory(rows: LineRow[]) {
+  const m = new Map<string, { key: string; approved: number; actual: number; committed: number; exposure: number; lines: number }>();
+  for (const r of rows) {
+    const k = r.description.trim();
+    const g = m.get(k) ?? { key: k, approved: 0, actual: 0, committed: 0, exposure: 0, lines: 0 };
+    g.approved += r.approved; g.actual += r.actual; g.committed += r.committed; g.exposure += r.exposure; g.lines++;
+    m.set(k, g);
+  }
+  return [...m.values()].sort((a, b) => b.approved - a.approved);
+}
+
+export function reportTotals(r: ReportingPeriod) {
+  const L = r.snapshot?.lines ?? [];
+  return { approved: sum(L, (l) => n(l.approved)), actual: sum(L, (l) => n(l.actual)), committed: sum(L, lineCommitted), exposure: sum(L, lineExposure) };
+}
+
+export const reportsByDate = (p: Project) => [...(p.reportingPeriods ?? [])].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+
+export interface LineDelta { code: string; description: string; status: 'added' | 'removed' | 'changed' | 'same'; approved: [number, number]; actual: [number, number]; exposure: [number, number] }
+
+/** Line-by-line comparison of two report versions, matched on line code. */
+export function compareReports(a: ReportingPeriod, b: ReportingPeriod): LineDelta[] {
+  const A = new Map((a.snapshot?.lines ?? []).map((l) => [l.code, l]));
+  const B = new Map((b.snapshot?.lines ?? []).map((l) => [l.code, l]));
+  const codes = [...new Set([...A.keys(), ...B.keys()])].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
+  return codes.map((code) => {
+    const x = A.get(code), y = B.get(code);
+    const pair = (f: (l: BudgetLine) => number): [number, number] => [x ? f(x) : 0, y ? f(y) : 0];
+    const d: LineDelta = { code, description: y?.description || x?.description || '', status: 'same', approved: pair((l) => n(l.approved)), actual: pair((l) => n(l.actual)), exposure: pair(lineExposure) };
+    d.status = !x ? 'added' : !y ? 'removed' : d.approved[0] !== d.approved[1] || d.actual[0] !== d.actual[1] || d.exposure[0] !== d.exposure[1] ? 'changed' : 'same';
+    return d;
+  });
+}
+
+export interface ReportCheck { level: 'error' | 'warning'; text: string }
+
+/** Sanity checks for a new report against the project and its previous report. */
+export function checkReport(p: Project, r: ReportingPeriod): ReportCheck[] {
+  const out: ReportCheck[] = [];
+  const L = r.snapshot?.lines ?? [];
+  if (!L.length) out.push({ level: 'error', text: 'The report has no budget lines' });
+  const seen = new Set<string>();
+  for (const l of L) {
+    if (!l.code) out.push({ level: 'error', text: 'A line is missing its code' });
+    else if (seen.has(l.code)) out.push({ level: 'error', text: `Line code ${l.code} appears twice` });
+    seen.add(l.code);
+    if (n(l.actual) < 0 || n(l.approved) < 0) out.push({ level: 'error', text: `Line ${l.code} has a negative amount` });
+  }
+  if (isNaN(parseDate(r.date).getTime())) out.push({ level: 'error', text: 'Report date is invalid' });
+  else if (r.date < p.start) out.push({ level: 'warning', text: 'Report date is before the project start' });
+  if ((p.reportingPeriods ?? []).some((x) => x.date === r.date && x.id !== r.id)) out.push({ level: 'warning', text: 'Another report already has this date' });
+  const prev = reportsByDate(p).filter((x) => x.date < r.date && x.id !== r.id).at(-1);
+  if (prev) {
+    for (const d of compareReports(prev, r))
+      if (d.status !== 'added' && d.status !== 'removed' && d.actual[1] < d.actual[0] - 0.5)
+        out.push({ level: 'warning', text: `Line ${d.code}: cumulative actual fell from ${Math.round(d.actual[0]).toLocaleString('en-GB')} to ${Math.round(d.actual[1]).toLocaleString('en-GB')}` });
+  }
+  const t = reportTotals(r);
+  if (t.approved && Math.abs(t.approved - n(p.budget)) > 1) out.push({ level: 'warning', text: `Approved total (${Math.round(t.approved).toLocaleString('en-GB')}) differs from project budget (${Math.round(n(p.budget)).toLocaleString('en-GB')})` });
+  for (const l of L) if (n(l.approved) && lineExposure(l) > n(l.approved)) out.push({ level: 'warning', text: `Line ${l.code} is over its approved amount` });
+  return out;
+}
+
+/* ---------------- activity plan ---------------- */
+export function planStats(p: Project, today: Date) {
+  const d = p.doa; if (!d) return null;
+  const cm = monthsBetween(parseDate(d.start), today) + 1; // current project month, 1-based
+  const acts = d.acts.map((a) => {
+    // P = preparation, E = implementation, X = extension months (1-based project months)
+    const all = [...(a.P ?? []), ...(a.E ?? []), ...((a as { X?: number[] }).X ?? [])];
+    const plannedEnd = all.length ? Math.max(...all) : 0;
+    const done = a.status === 'Done';
+    const late = !done && plannedEnd > 0 && plannedEnd < cm;
+    return { ...a, plannedEnd, done, late };
+  });
+  return { month: cm, total: acts.length, done: acts.filter((a) => a.done).length, late: acts.filter((a) => a.late).length, acts };
+}

@@ -10,7 +10,7 @@ export interface ReportingPeriod {
   snapshot?: { format?: string; lines: BudgetLine[] };
 }
 
-export interface Activity { id: string; code: string; name: string; group?: string; P?: number[]; E?: number[]; status?: string }
+export interface Activity { id: string; code: string; name: string; group?: string; P?: number[]; E?: number[]; X?: number[]; status?: string }
 export interface Risk { id: string; title: string; category?: string; likelihood?: string | number; impact?: string | number; mitigation?: string; status?: string; owner?: string }
 
 export interface Project {
@@ -24,3 +24,16 @@ export interface Project {
 }
 
 export interface Ledger { countries: Country[]; projects: Project[] }
+
+export const SECTORS = ['Human Rights', 'Democracy', 'Rule of Law'] as const;
+export type Sector = (typeof SECTORS)[number];
+
+/** Maps free-text sector names (any case, common variants, Turkish) to the fixed list. */
+export function normalizeSector(s: string | undefined): Sector | null {
+  const t = (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+  if (!t) return null;
+  if (/^(human rights?|hr|insan haklar[ıi])$/.test(t)) return 'Human Rights';
+  if (/^(democracy|democratic|demokrasi)$/.test(t)) return 'Democracy';
+  if (/^(rule of law|rol|hukukun üstünlüğü|hukukun ustunlugu)$/.test(t)) return 'Rule of Law';
+  return null;
+}

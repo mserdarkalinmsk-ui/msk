@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'preact/hooks';
-import { deleteProjects, get, replaceLedger, resetDemo, set, upsertProject, useStore } from '../data/store';
+import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, set, upsertCountry, upsertProject, useStore } from '../data/store';
+import type { Country } from '../domain/types';
 import { burnGap, elapsed, lines, money, parseDate, riskScore, spendPoints, validateLedger } from '../domain/calc';
-import type { Ledger, Project } from '../domain/types';
+import { normalizeSector, SECTORS, type Ledger, type Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
 import { full, month, pct, short, signedPct } from './format';
+import { readTable, ReportImport, RiskForm } from './ReportImport';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -21,7 +23,10 @@ export function Drawer() {
       <div class="scrim" onClick={close} />
       <div class="drawer" role="dialog" aria-modal="true">
         {d.kind === 'project' && <ProjectView id={d.id} close={close} />}
-        {d.kind === 'new-project' && <ProjectForm close={close} />}
+        {d.kind === 'new-project' && <ProjectForm close={close} preset={d.country} />}
+        {d.kind === 'report' && <ReportImport projectId={d.projectId} close={close} />}
+        {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
+        {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}
       </div>
     </>
@@ -101,9 +106,10 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
         )}
       </div>
       <div class="drawer-f">
-        <button class="btn danger" onClick={() => { deleteProjects([p.id]); close(); }}>Delete</button>
+        <button class="btn danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); close(); } }}>Delete</button>
         <span style={{ flex: 1 }} />
-        <button class="btn primary" onClick={() => setEdit(true)}>Edit</button>
+        <button class="btn" onClick={() => setEdit(true)}>Edit</button>
+        <button class="btn primary" onClick={() => { close(); go(`project/${p.id}`); }}>Open project page →</button>
       </div>
     </>
   );
@@ -117,6 +123,7 @@ export function checkDraft(d: Draft, projects: Project[], selfId?: string): Part
   else if (projects.some((p) => p.code.toLowerCase() === d.code.trim().toLowerCase() && p.id !== selfId)) e.code = 'Code already used';
   if (!d.name.trim()) e.name = 'Required';
   if (!d.country) e.country = 'Required';
+  if (!(SECTORS as readonly string[]).includes(d.sector)) e.sector = `Choose ${SECTORS.join(', ')}`;
   const b = parseAmount(d.budget);
   if (b == null || b <= 0) e.budget = 'Enter a positive amount';
   const s = parseDay(d.start), en = parseDay(d.end);
@@ -126,17 +133,16 @@ export function checkDraft(d: Draft, projects: Project[], selfId?: string): Part
   return e;
 }
 
-function ProjectForm({ close, project }: { close: () => void; project?: Project }) {
+export function ProjectForm({ close, project, preset }: { close: () => void; project?: Project; preset?: string }) {
   const { countries, projects } = useStore((s) => s.ledger);
   const [d, setD] = useState<Draft>({
-    code: project?.code ?? '', name: project?.name ?? '', country: project?.country ?? countries[0]?.id ?? '',
-    sector: project?.sector ?? '', funding: project?.funding ?? '', start: project?.start ?? '', end: project?.end ?? '',
+    code: project?.code ?? '', name: project?.name ?? '', country: project?.country ?? preset ?? countries[0]?.id ?? '',
+    sector: normalizeSector(project?.sector) ?? '', funding: project?.funding ?? '', start: project?.start ?? '', end: project?.end ?? '',
     budget: project ? String(project.budget) : '', status: project?.status ?? 'Active',
   });
   const [touched, setTouched] = useState(false);
   const errs = checkDraft(d, projects, project?.id);
   const ok = !Object.keys(errs).length;
-  const sectors = [...new Set(projects.map((p) => p.sector).filter(Boolean))] as string[];
   const f = (k: keyof Draft, label: string, props: Record<string, unknown> = {}) => (
     <div class="field" data-invalid={touched && errs[k] ? '' : undefined}>
       <label for={`f-${k}`}>{label}</label>
@@ -163,9 +169,12 @@ function ProjectForm({ close, project }: { close: () => void; project?: Project 
           <div class="field"><label for="f-country">Country</label>
             <select id="f-country" value={d.country} onChange={(e) => setD({ ...d, country: (e.target as HTMLSelectElement).value })}>{countries.map((c) => <option value={c.id}>{c.name}</option>)}</select>
           </div>
-          {f('sector', 'Sector', { list: 'sectors' })}
+          <div class="field" data-invalid={touched && errs.sector ? '' : undefined}><label for="f-sector">Sector</label>
+            <select id="f-sector" value={d.sector} onChange={(e) => setD({ ...d, sector: (e.target as HTMLSelectElement).value })}>
+              <option value="">Choose…</option>{SECTORS.map((o) => <option>{o}</option>)}
+            </select>{touched && errs.sector && <span class="err">Required</span>}
+          </div>
         </div>
-        <datalist id="sectors">{sectors.map((s) => <option value={s} />)}</datalist>
         <div class="form-2">{f('start', 'Start', { type: 'date' })}{f('end', 'End', { type: 'date' })}</div>
         <div class="form-2">{f('funding', 'Funding')}
           <div class="field"><label for="f-status">Status</label>
@@ -186,7 +195,7 @@ const FIELDS = [
   { key: 'budget', label: 'Budget', req: true, alias: ['budget', 'total', 'bütçe', 'butce', 'amount'] },
   { key: 'start', label: 'Start', req: true, alias: ['start', 'start date', 'başlangıç', 'from'] },
   { key: 'end', label: 'End', req: true, alias: ['end', 'end date', 'bitiş', 'to'] },
-  { key: 'sector', label: 'Sector', req: false, alias: ['sector', 'sektör', 'theme'] },
+  { key: 'sector', label: 'Sector', req: true, alias: ['sector', 'sektör', 'theme'] },
   { key: 'funding', label: 'Funding', req: false, alias: ['funding', 'donor', 'source'] },
 ] as const;
 
@@ -205,7 +214,8 @@ function ImportPanel({ close }: { close: () => void }) {
       try { const data = JSON.parse(text); setJson({ data, errs: validateLedger(data) }); } catch { setErr('This file is not valid JSON.'); }
       return;
     }
-    const R = parseCSV(text);
+    let R: string[][];
+    try { R = /\.xlsx?$/i.test(file.name) ? (await readTable(file)).rows : parseCSV(text); } catch (e) { setErr((e as Error).message); return; }
     if (R.length < 2) { setErr('The CSV needs a header row and at least one data row.'); return; }
     const head = R[0].map((h) => h.trim().toLowerCase());
     const m: Record<string, number> = {};
@@ -219,9 +229,10 @@ function ImportPanel({ close }: { close: () => void }) {
   };
   const parsed = rows?.slice(1).map((r, i) => {
     const g = (k: string) => (map[k] != null ? (r[map[k]] ?? '').trim() : '');
-    const d: Draft = { code: g('code'), name: g('name'), country: countryId(g('country')) ?? '', sector: g('sector'), funding: g('funding'), start: parseDay(g('start')) ?? g('start'), end: parseDay(g('end')) ?? g('end'), budget: g('budget'), status: 'Active' };
+    const d: Draft = { code: g('code'), name: g('name'), country: countryId(g('country')) ?? '', sector: normalizeSector(g('sector')) ?? '', funding: g('funding'), start: parseDay(g('start')) ?? g('start'), end: parseDay(g('end')) ?? g('end'), budget: g('budget'), status: 'Active' };
     const e = checkDraft(d, ledger.projects);
-    if (g('country') && !d.country) e.country = `Unknown country “${g('country')}”`;
+    if (g('country') && !d.country) e.country = `Unknown country “${g('country')}” (add it under Manage countries)`;
+    if (g('sector') && !d.sector) e.sector = `Unknown sector “${g('sector')}”`;
     return { line: i + 2, d, e };
   }) ?? [];
   const good = parsed.filter((x) => !Object.keys(x.e).length);
@@ -240,8 +251,8 @@ function ImportPanel({ close }: { close: () => void }) {
       <div class="drawer-b">
         <label class={`drop ${over ? 'on' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer?.files[0]; if (f) read(f); }}>
-          <input type="file" accept=".csv,.json,text/csv,application/json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) read(f); }} />
-          <strong style={{ color: 'var(--ink)' }}>Drop a CSV of projects or a JSON backup</strong><br />or click to choose a file
+          <input type="file" accept=".csv,.xlsx,.json,text/csv,application/json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) read(f); }} />
+          <strong style={{ color: 'var(--ink)' }}>Drop a project list (Excel or CSV) or a JSON backup</strong><br />or click to choose a file
         </label>
         {err && <ul class="errlist"><li>{err}</li></ul>}
 
@@ -308,6 +319,83 @@ function ImportPanel({ close }: { close: () => void }) {
           }}>Import {importable.length} row{importable.length === 1 ? '' : 's'}</button>
         </div>
       )}
+    </>
+  );
+}
+
+export function checkCountry(c: Country, all: Country[], selfId?: string) {
+  const e: Partial<Record<'name' | 'iso3', string>> = {};
+  if (!c.name.trim()) e.name = 'Required';
+  else if (all.some((x) => x.name.toLowerCase() === c.name.trim().toLowerCase() && x.id !== selfId)) e.name = 'Already exists';
+  if (c.iso3 && !/^[A-Za-z]{3}$/.test(c.iso3)) e.iso3 = 'Three letters, e.g. TUR';
+  return e;
+}
+
+function CountryPanel({ close, edit: initial }: { close: () => void; edit?: string }) {
+  const { countries, projects } = useStore((s) => s.ledger);
+  const [edit, setEdit] = useState<string | null>(initial ?? null);
+  const [d, setD] = useState<Country>({ id: '', name: '', region: '', iso3: '' });
+  const [err, setErr] = useState<Record<string, string>>({});
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    const c = countries.find((x) => x.id === edit);
+    setD(c ? { region: '', iso3: '', ...c } : { id: '', name: '', region: '', iso3: '' }); setErr({});
+  }, [edit]);
+  const regions = [...new Set(countries.map((c) => c.region).filter(Boolean))] as string[];
+  const save = () => {
+    const e = checkCountry(d, countries, edit !== 'new' ? edit ?? undefined : undefined);
+    setErr(e as Record<string, string>); if (Object.keys(e).length) return;
+    let id = d.id;
+    if (!id) { const b = (d.iso3 || d.name).toLowerCase().replace(/[^a-z]/g, '').slice(0, 3) || 'c'; id = b; let i = 2; while (countries.some((c) => c.id === id)) id = b + i++; }
+    upsertCountry({ id, name: d.name.trim(), region: d.region?.trim() || undefined, iso3: d.iso3?.toUpperCase() || undefined });
+    setEdit(null);
+  };
+  return (
+    <>
+      <div class="drawer-h"><h2>Countries</h2><X close={close} /></div>
+      <div class="drawer-b">
+        {msg && <ul class="errlist"><li>{msg}</li></ul>}
+        {edit != null && (
+          <section class="card card-b" style={{ display: 'grid', gap: '12px' }}>
+            <h3 style={{ margin: 0, fontSize: '14px' }}>{edit === 'new' ? 'Add country' : `Edit ${d.name}`}</h3>
+            <div class="field" data-invalid={err.name ? '' : undefined}><label for="c-name">Name</label>
+              <input id="c-name" autoFocus value={d.name} onInput={(e) => setD({ ...d, name: (e.target as HTMLInputElement).value })} onKeyDown={(e) => e.key === 'Enter' && save()} />
+              {err.name && <span class="err">{err.name}</span>}</div>
+            <div class="form-2">
+              <div class="field"><label for="c-region">Region</label>
+                <input id="c-region" list="regions" value={d.region} onInput={(e) => setD({ ...d, region: (e.target as HTMLInputElement).value })} />
+                <datalist id="regions">{regions.map((r) => <option value={r} />)}</datalist></div>
+              <div class="field" data-invalid={err.iso3 ? '' : undefined}><label for="c-iso">ISO code</label>
+                <input id="c-iso" maxLength={3} value={d.iso3} placeholder="TUR" onInput={(e) => setD({ ...d, iso3: (e.target as HTMLInputElement).value })} />
+                {err.iso3 && <span class="err">{err.iso3}</span>}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button class="btn" onClick={() => setEdit(null)}>Cancel</button>
+              <button class="btn primary" onClick={save}>{edit === 'new' ? 'Add country' : 'Save'}</button>
+            </div>
+          </section>
+        )}
+        <section class="card">
+          <div class="card-h" style={{ alignItems: 'center' }}><div><h2>{countries.length} countries</h2><p>A country can be removed once it has no projects</p></div>
+            <div class="tools">{edit == null && <button class="btn" onClick={() => { setMsg(''); setEdit('new'); }}>+ Add country</button>}</div></div>
+          <ul class="att" style={{ marginTop: '12px' }}>
+            {countries.map((c) => {
+              const P = projects.filter((p) => p.country === c.id);
+              return (
+                <li style={{ cursor: 'default', gridTemplateColumns: '1fr auto' }}>
+                  <div><div class="t">{c.name} {c.iso3 && <span class="num muted" style={{ fontSize: '11.5px' }}>{c.iso3}</span>}</div>
+                    <div class="d">{c.region || 'No region'} · {P.length} project{P.length === 1 ? '' : 's'} · {short(P.reduce((s, p) => s + money(p).budget, 0))}</div></div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button class="btn ghost" title="Add a project in this country" onClick={() => set({ drawer: { kind: 'new-project', country: c.id } })}>+ Project</button>
+                    <button class="btn ghost" onClick={() => { setMsg(''); setEdit(c.id); }}>Edit</button>
+                    <button class="btn ghost danger" aria-label={`Remove ${c.name}`} title={P.length ? 'Has projects' : 'Remove'} onClick={() => setMsg(deleteCountry(c.id) ?? '')}>Remove</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      </div>
     </>
   );
 }

@@ -1,6 +1,6 @@
-import { filtered, set, updateProject, useStore } from '../data/store';
+import { deleteProjects, filtered, set, updateProject, useStore } from '../data/store';
 import { attention, burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
-import type { Project } from '../domain/types';
+import { SECTORS, type Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -11,9 +11,8 @@ const gapTone = (g: number) => (g < -0.3 ? 'serious' : g < -0.15 ? 'warning' : g
 const gapWord = (g: number) => (g < -0.15 ? 'Behind' : g > 0.1 ? 'Ahead' : 'On track');
 
 export function Filters() {
-  const { countries, projects } = useStore((s) => s.ledger);
+  const { countries } = useStore((s) => s.ledger);
   const f = useStore((s) => s.filters);
-  const sectors = [...new Set(projects.map((p) => p.sector).filter(Boolean))].sort() as string[];
   const setF = (patch: Partial<typeof f>) => set((s) => ({ filters: { ...s.filters, ...patch } }));
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }} role="toolbar" aria-label="Filters">
@@ -22,8 +21,10 @@ export function Filters() {
         <button class="chip" aria-pressed={f.country === c.id} onClick={() => setF({ country: f.country === c.id ? '' : c.id })}>{c.name}</button>
       ))}
       <select class="select" style={{ height: '28px', borderRadius: '99px' }} value={f.sector} onChange={(e) => setF({ sector: (e.target as HTMLSelectElement).value })} aria-label="Sector">
-        <option value="">All sectors</option>{sectors.map((s) => <option>{s}</option>)}
+        <option value="">All sectors</option>{SECTORS.map((s) => <option>{s}</option>)}
       </select>
+      <button class="chip" style={{ borderStyle: 'dashed' }} onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })} title="Add a country">+ Country</button>
+      <button class="btn ghost" style={{ height: '28px' }} onClick={() => set({ drawer: { kind: 'countries' } })}>Manage countries</button>
       {(f.country || f.sector) && <button class="btn ghost" style={{ height: '28px' }} onClick={() => setF({ country: '', sector: '' })}>Clear filters</button>}
     </div>
   );
@@ -161,14 +162,19 @@ export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cnam
   return (
     <DataTable rows={rows} columns={cols} rowKey={(p) => p.id} title="projects" storageKey="pl-cols-projects" maxHeight={maxHeight}
       groupBy={[{ label: 'country', key: (p) => cname(p.country) }, { label: 'sector', key: (p) => p.sector ?? '' }, { label: 'status', key: (p) => p.status ?? 'Active' }]}
-      onOpen={(p) => set({ drawer: { kind: 'project', id: p.id } })} />
+      onOpen={(p) => set({ drawer: { kind: 'project', id: p.id } })}
+      actions={(sel, clear) => sel.length > 0 && (
+        <button class="btn danger" onClick={() => { if (confirm(`Delete ${sel.length} selected project${sel.length > 1 ? 's' : ''}? You can undo right after.`)) { deleteProjects(sel.map((p) => p.id)); clear(); } }}>
+          Delete {sel.length}
+        </button>
+      )} />
   );
 }
 
 /* ---------------- chart options ---------------- */
-const axisMoney = (v: number) => (v === 0 ? '0' : Math.abs(v) >= 1e6 ? `€${+(v / 1e6).toFixed(1)}M` : `€${+(v / 1e3).toFixed(0)}K`);
-const axisX = (t: Tokens) => ({ axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, hideOverlap: true }, splitLine: { show: false } });
-const axisY = (t: Tokens) => ({ axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, fontFamily: t.mono, formatter: axisMoney }, splitLine: { lineStyle: { color: t.line } } });
+export const axisMoney = (v: number) => (v === 0 ? '0' : Math.abs(v) >= 1e6 ? `€${+(v / 1e6).toFixed(1)}M` : `€${+(v / 1e3).toFixed(0)}K`);
+export const axisX = (t: Tokens) => ({ axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, hideOverlap: true }, splitLine: { show: false } });
+export const axisY = (t: Tokens) => ({ axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, fontFamily: t.mono, formatter: axisMoney }, splitLine: { lineStyle: { color: t.line } } });
 
 function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, budget: number) {
   const pick = (k: 'actual' | 'plan' | 'low' | 'mid') => S.filter((x) => x[k] != null).map((x) => [x.t, x[k]]);

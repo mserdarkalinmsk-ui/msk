@@ -22,13 +22,16 @@ export function Palette() {
 
   const cmds: Cmd[] = useMemo(() => [
     { group: 'Actions', label: 'Add project', hint: 'N', run: () => set({ drawer: { kind: 'new-project' } }) },
-    { group: 'Actions', label: 'Import CSV or backup', run: () => set({ drawer: { kind: 'import' } }) },
+    { group: 'Actions', label: 'Add country', run: () => set({ drawer: { kind: 'countries', edit: 'new' } }) },
+    { group: 'Actions', label: 'Manage countries', run: () => set({ drawer: { kind: 'countries' } }) },
+    { group: 'Actions', label: 'Import Excel, CSV or backup', run: () => set({ drawer: { kind: 'import' } }) },
     { group: 'Actions', label: 'Undo last change', hint: 'Ctrl Z', run: undo },
     { group: 'Actions', label: 'Theme: light', run: () => setTheme('light') },
     { group: 'Actions', label: 'Theme: dark', run: () => setTheme('dark') },
     { group: 'Actions', label: 'Theme: follow system', run: () => setTheme('auto') },
     ...ROUTES.map((r) => ({ group: 'Go to', label: r.label, run: () => go(r.id) })),
-    ...projects.map((p) => ({ group: 'Projects', label: `${p.code} — ${p.name}`, run: () => set({ drawer: { kind: 'project', id: p.id } }) })),
+    ...projects.map((p) => ({ group: 'Projects', label: `${p.code} — ${p.name}`, run: () => go(`project/${p.id}`) })),
+    ...projects.map((p) => ({ group: 'Import report', label: `Import report for ${p.code}`, run: () => set({ drawer: { kind: 'report', projectId: p.id } }) })),
   ], [projects]);
 
   const qq = q.trim().toLowerCase();
