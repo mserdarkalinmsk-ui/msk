@@ -31,6 +31,7 @@ export function money(p: Project) {
 
 /** Fraction of the implementation period elapsed at `today`, clamped to [0, 1]. */
 export function elapsed(p: Project, today: Date): number {
+  if (p.datesTbc) return 0;
   const s = parseDate(p.start).getTime(), e = parseDate(p.end).getTime();
   if (!(e > s)) return 0;
   return Math.min(1, Math.max(0, (today.getTime() - s) / (e - s)));
@@ -103,6 +104,7 @@ export interface SeriesPoint { t: number; actual: number | null; plan: number; l
  * (±20 %), capped at each project's budget.
  */
 export function portfolioSeries(ps: Project[], today: Date): SeriesPoint[] {
+  ps = ps.filter((p) => !p.datesTbc);
   if (!ps.length) return [];
   const s0 = new Date(Math.min(...ps.map((p) => parseDate(p.start).getTime())));
   const e0 = new Date(Math.max(...ps.map((p) => parseDate(p.end).getTime())));
@@ -166,7 +168,7 @@ export function attention(ps: Project[], today: Date): Flag[] {
   const F: Flag[] = [];
   const pct = (x: number) => `${Math.round(x * 100)}%`;
   for (const p of ps) {
-    if (p.status && p.status !== 'Active') continue;
+    if ((p.status && p.status !== 'Active') || p.datesTbc) continue;
     const m = money(p);
     const gap = burnGap(p, today), el = elapsed(p, today);
     if (el > 0.1 && gap < -0.15)
@@ -331,6 +333,7 @@ const addDays = (iso: string, n: number) => new Date(parseDate(iso).getTime() + 
  * its end is on file. Defaults: 12 months / 60 days / 6 months.
  */
 export function deadlines(p: Project, today: Date): Deadline[] {
+  if (p.datesTbc) return [];
   const c = (p.contract ?? {}) as { repMonths?: number; progDays?: number; finalMonths?: number };
   const rep = c.repMonths || 12, prog = c.progDays || 60, fin = c.finalMonths || 6;
   const t = today.toISOString().slice(0, 10);

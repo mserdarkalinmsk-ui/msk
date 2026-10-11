@@ -6,7 +6,7 @@ import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { parseAmount } from '../ui/csv';
 import { DataTable, type Column } from '../ui/DataTable';
-import { date, full, month, pct, short, signedPct } from '../ui/format';
+import { date, full, month, pct, period, short, signedPct } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { usedTone } from './Budget';
 import { StaffBoard } from './People';
@@ -14,13 +14,22 @@ import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
-import { ForecastCard, HeadingsCard, History, Scenario, StatusWords } from './Insights';
+import { ForecastCard, HeadingsCard, ReadinessCard, History, Scenario, StatusWords } from './Insights';
 import { alerts } from '../domain/insights';
 import { projectSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
 
 const TABS = ['Summary', 'Financial report', 'Budget lines', 'Scenario', 'Reports', 'People', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
+/** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
+const GROUPS: { label: string; tabs: Tab[] }[] = [
+  { label: 'Summary', tabs: ['Summary'] },
+  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Justification', 'Scenario', 'Reports'] },
+  { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
+  { label: 'People', tabs: ['People'] },
+  { label: 'Documents', tabs: ['Results & documents', 'History'] },
+];
+const LABEL: Partial<Record<Tab, string>> = { 'Results & documents': 'Documents' };
 
 export function ProjectPage({ id }: { id: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
@@ -35,7 +44,7 @@ export function ProjectPage({ id }: { id: string }) {
     <>
       <div class="ph">
         <div style={{ minWidth: 0 }}>
-          <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span>{month(p.start)} → {month(p.end)}</span>{p.pmm && <span>PMM <b class="num">{p.pmm}</b></span>}{p.bh && <span>BH <b class="num">{p.bh}</b></span>}{p.mae && <span>MAE <b>{p.mae}</b></span>}<span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
+          <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span>{period(p)}</span>{p.pmm && <span>PMM <b class="num">{p.pmm}</b></span>}{p.bh && <span>BH <b class="num">{p.bh}</b></span>}{p.mae && <span>MAE <b>{p.mae}</b></span>}<span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
           <h2 class="ph-title">{p.name}</h2>
         </div>
         <div class="ph-actions">
@@ -60,8 +69,10 @@ export function ProjectPage({ id }: { id: string }) {
         <div class="kpi"><span class="label">Activities</span><span class="value">{plan ? `${plan.done}/${plan.total}` : '—'}</span><span class="ctx">{plan ? <>{plan.late > 0 ? <b style={{ color: 'var(--serious)' }}>{plan.late} overdue</b> : 'none overdue'} · month {plan.month}</> : 'no plan on file'}</span></div>
       </section>
       <div class="tabs" role="tablist">
-        {TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}{counts[t] != null && <span class="tab-n">{counts[t]}</span>}</button>)}
+        {GROUPS.map((g) => { const n = g.tabs.reduce((s, t) => s + (counts[t] ?? 0), 0); return <button role="tab" aria-selected={g.tabs.includes(tab)} onClick={() => !g.tabs.includes(tab) && setTab(g.tabs[0])}>{g.label}{n > 0 && <span class="tab-n">{n}</span>}</button>; })}
       </div>
+      {(() => { const g = GROUPS.find((x) => x.tabs.includes(tab))!; return g.tabs.length > 1 && (
+        <div class="subtabs" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{LABEL[t] ?? t}{counts[t] != null && <span class="tab-n">{counts[t]}</span>}</button>)}</div>); })()}
       {tab === 'Summary' && <Summary p={p} />}
       {tab === 'Financial report' && <FinancialReport p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
@@ -109,6 +120,7 @@ function Summary({ p }: { p: Project }) {
         </ul>
       </section>
       <HeadingsCard p={p} />
+      <ReadinessCard p={p} />
     </div>
   );
 }

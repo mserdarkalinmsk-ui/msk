@@ -4,7 +4,8 @@ import { attention, burnGap, deadlines, elapsed, latestReport, money, reportsByD
 import { roster } from '../domain/staff';
 import { SECTORS, type Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, month, pct, short, signedPct } from '../ui/format';
+import { readiness } from '../domain/insights';
+import { date, pct, period, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
 import { Filters, ProjectTable } from './Overview';
 
@@ -64,11 +65,18 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
       tabIndex={0} onClick={() => go(`project/${p.id}`)} onKeyDown={(e) => e.key === 'Enter' && go(`project/${p.id}`)}>
       <header>
         <span class="num pc-code">{p.code}</span>
-        <span class="pc-sector">{p.sector}</span>
+        <span class="pc-sector">{p.sector}</span>{p.datesTbc && <span class="badge warning">set-up</span>}
         {crit + ser > 0 && <span class={`badge ${crit ? 'critical' : 'serious'}`} title={F.map((f) => f.title).join('\n')} style={{ marginLeft: 'auto' }}>{crit + ser}</span>}
       </header>
       <h3>{p.name}</h3>
-      <div class="pc-meta">{cname(p.country)} · {month(p.start)} → {month(p.end)}{p.bh && <> · BH <span class="num">{p.bh}</span></>}</div>
+      <div class="pc-meta">{cname(p.country)} · {period(p)}{p.bh && <> · BH <span class="num">{p.bh}</span></>}</div>
+      {p.datesTbc ? (
+        <div class="pc-setup">
+          <b>Set-up · project file {Math.round(readiness(p).score * 100)}%</b>
+          <span>Add the DoA / contract and the approved budget — dates, budget, plan and logframe are read from them.</span>
+          <button class="btn" onClick={(e) => { e.stopPropagation(); set({ drawer: { kind: 'documents', projectId: p.id } }); }}>Add documents</button>
+        </div>
+      ) : <>
       <div class="pc-money">
         <div><b class="num">{short(m.spent)}</b><span>of {short(m.budget)}</span></div>
         <span class={`badge ${tone}`}>{signedPct(g)}</span>
@@ -79,12 +87,14 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
         <i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} />
       </div>
       <div class="pc-spark"><Sparkline values={pts.length > 1 ? pts : [0, 0]} color="var(--sc)" height={30} /></div>
-      <footer>
+      </>}
+      {!p.datesTbc && <footer>
         <span title="Change in cumulative spend since the previous report">{delta != null ? <><b class="num">+{short(delta)}</b> since last report</> : 'first report'}</span>
         <span class={age != null && age > 150 ? 'stale' : ''} title={last ? `Latest figures: ${last.name}` : 'No figures yet'}>{age != null ? `data ${age} d old` : 'no data'}</span>
         <span>{staff} staff</span>
+        <span title="Project file completeness (documents and reports on file)">file {Math.round(readiness(p).score * 100)}%</span>
         {next && <span class={next.status === 'overdue' ? 'stale' : ''}>{next.status === 'overdue' ? 'report overdue' : `report due ${date(next.due)}`}</span>}
-      </footer>
+      </footer>}
     </article>
   );
 }

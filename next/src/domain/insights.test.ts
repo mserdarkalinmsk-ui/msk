@@ -68,3 +68,14 @@ describe('budget headings', () => {
     expect(alerts([Q], today).some((a) => a.id.includes(':heading:1'))).toBe(true);
   });
 });
+
+describe('readiness & placeholder dates', () => {
+  it('scores the project file and keeps set-up projects out of pacing', async () => {
+    const { readiness } = await import('./insights');
+    const T: Project = { id: 't', code: 'BH1', name: 'New', country: 'tr', start: '2025-01-01', end: '2027-12-31', budget: 0, bh: '1', datesTbc: true };
+    expect(readiness(T).items.find((i) => i.key === 'dates')!.done).toBe(false);
+    expect(readiness(P).score).toBeGreaterThan(readiness(T).score);
+    const A = alerts([T], today);
+    expect(A.map((a) => a.kind)).toEqual(['setup']);
+  });
+});

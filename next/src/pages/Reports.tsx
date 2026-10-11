@@ -6,7 +6,7 @@ import { TODAY } from '../today';
 import { Chart } from '../ui/Chart';
 import { date, full, month, pct, short, signedPct } from '../ui/format';
 import { Filters, spendOption } from './Overview';
-import { AlertCentre, Changes, History } from './Insights';
+import { AlertCentre, Changes, Compliance, History } from './Insights';
 import { portfolioSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
 import { get } from '../data/store';
@@ -14,7 +14,7 @@ import { get } from '../data/store';
 const DTONE: Record<Deadline['status'], string> = { submitted: 'good', overdue: 'critical', due: 'serious', upcoming: 'neutral' };
 
 export function Reports() {
-  const [tab, setTab] = useState<'brief' | 'alerts' | 'changes' | 'calendar' | 'history'>(() => (location.hash.split('/')[2] as 'alerts') || 'brief');
+  const [tab, setTab] = useState<'brief' | 'alerts' | 'changes' | 'compliance' | 'calendar' | 'history'>(() => (location.hash.split('/')[2] as 'alerts') || 'brief');
   const P = useStore((s) => filtered(s));
   const excel = () => download(`portfolio-${TODAY.toISOString().slice(0, 10)}.xlsx`, portfolioSheets(get().ledger, P, TODAY));
   return (
@@ -24,6 +24,7 @@ export function Reports() {
         <button role="tab" aria-selected={tab === 'brief'} onClick={() => setTab('brief')}>Executive brief</button>
         <button role="tab" aria-selected={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert centre</button>
         <button role="tab" aria-selected={tab === 'changes'} onClick={() => setTab('changes')}>What changed</button>
+        <button role="tab" aria-selected={tab === 'compliance'} onClick={() => setTab('compliance')}>Compliance & results</button>
         <button role="tab" aria-selected={tab === 'calendar'} onClick={() => setTab('calendar')}>Reporting calendar</button>
         <button role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}>History</button>
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
@@ -31,7 +32,7 @@ export function Reports() {
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
         </span>
       </div>
-      {tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : <Calendar />}
+      {tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }

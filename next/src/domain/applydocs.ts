@@ -11,7 +11,7 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
     q.contract = { ...(q.contract ?? {}), ...Object.fromEntries(Object.entries({ number: k.number, title: k.title, total: k.total, euMax: k.euMax, start: k.start, end: k.end, months: k.months, repMonths: k.repMonths, progDays: k.progDays, finalMonths: k.finalMonths, flexPct: k.flexPct, contingencyPct: k.contingencyPct, prefin: k.prefinancing, share: k.euShare != null ? { eu: k.euShare } : undefined }).filter(([, v]) => v != null)) };
     if (k.number) q.contractNo = k.number;
   }
-  if (c.dates) { if (k.start) q.start = k.start; if (k.end) q.end = k.end; }
+  if (c.dates) { if (k.start) q.start = k.start; if (k.end) q.end = k.end; if (k.start && k.end) delete q.datesTbc; }
   if (c.approved && F.budget) { q.approvedBudget = { ...F.budget, importedAt: new Date().toISOString() }; q.budget = Math.round(F.budget.total * 100) / 100; }
   else if (c.budget && k.total && !q.approvedBudget) q.budget = k.total;
   if (c.contract) { if (k.jp && !q.jp) q.jp = k.jp; if (k.bh && !q.bh) q.bh = k.bh; }

@@ -9,6 +9,17 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || 
 let failed = 0;
 const check = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++; };
 
+
+const PGROUP = { 'Financial report': 'Finance', 'Budget lines': 'Finance', Justification: 'Finance', Scenario: 'Finance', Reports: 'Finance', Indicators: 'Results', 'Activity plan': 'Results', Risks: 'Results', 'Results & documents': 'Documents', History: 'Documents' };
+const SUBLABEL = { 'Results & documents': 'Documents' };
+/** Opens a project tab: its group in the tab bar, then the sub-tab. */
+async function ptab(p, name) {
+  const g = PGROUP[name];
+  if (!g) return p.click(`.tabs button:has-text("${name}")`);
+  await p.click(`.tabs button:has-text("${g}")`); await p.waitForTimeout(80);
+  await p.click(`.subtabs button:has-text("${SUBLABEL[name] ?? name}")`);
+}
+
 async function page(opts) {
   const ctx = await browser.newContext(opts);
   const p = await ctx.newPage();
@@ -136,12 +147,12 @@ async function page(opts) {
   await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(500);
   await p.screenshot({ path: `${shots}/project.png`, fullPage: true });
   for (const t of ['Budget lines', 'Reports', 'Activity plan', 'Risks']) {
-    await p.click(`.tabs button:has-text("${t}")`); await p.waitForTimeout(250);
+    await ptab(p, t); await p.waitForTimeout(250);
     await p.screenshot({ path: `${shots}/project-${t.split(' ')[0].toLowerCase()}.png`, fullPage: true });
     if (t === 'Activity plan') check(await p.locator('.gantt .gc.e').count() > 10, 'activity plan renders');
     if (t === 'Risks') check(await p.locator('.matrix .mx').count() === 25, 'risk matrix renders');
   }
-  await p.click('.tabs button:has-text("Reports")');
+  await ptab(p, 'Reports');
   const nReports = await p.locator('.att li').count();
   await p.click('text=+ Import report');
   await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/report-q3.xlsx')); await p.waitForTimeout(400);
@@ -152,7 +163,7 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/report-import.png` });
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(300);
   check(await p.locator('.att li').count() === nReports + 1, 'imported report added as a new version');
-  await p.click('.tabs button:has-text("People")'); await p.waitForTimeout(300);
+  await ptab(p, 'People'); await p.waitForTimeout(300);
   check(await p.locator('.dt-cell:has-text("Ayla Testova")').count() === 1, 'staff read from the Purchase Orders sheet');
 
   // People: renewal queue → confirm contract dates
@@ -201,7 +212,7 @@ async function page(opts) {
   await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(700);
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400);
   check(await p.locator('.ph-meta :text("BH")').count() === 1, 'BH saved to the project from the workbook');
-  await p.click('.tabs button:has-text("Financial report")'); await p.waitForTimeout(700);
+  await ptab(p, 'Financial report'); await p.waitForTimeout(700);
   check(await p.locator('.wb-strip :text("700009999")').count() === 1, 'financial report tab shows the contract');
   check(await p.locator('.att li:has-text("20% above budget rate")').count() === 1, 'unit-rate check shown');
   check(await p.locator('table.stmt tfoot tr.t3').count() === 1, 'financial statement with totals block');
@@ -221,18 +232,18 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/documents.png` });
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400);
   check((await p.locator('.ph-meta').textContent()).includes('Mar 2026'), 'implementation period updated from documents');
-  await p.click('.tabs button:has-text("Activity plan")'); await p.waitForTimeout(200);
+  await ptab(p, 'Activity plan'); await p.waitForTimeout(200);
   check(await p.locator('.gantt .ga').count() === 3, 'action plan replaced from the DoA');
-  await p.click('.tabs button:has-text("Results & documents")'); await p.waitForTimeout(200);
+  await ptab(p, 'Results & documents'); await p.waitForTimeout(200);
   check(await p.locator('dd:has-text("700008888")').count() === 1, 'contract shown');
-  await p.click('.tabs button:has-text("Indicators")'); await p.waitForTimeout(200);
+  await ptab(p, 'Indicators'); await p.waitForTimeout(200);
   check(await p.locator('.lf-row:has-text("Judges trained")').count() === 1, 'indicators tab lists the logframe');
   await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-now input').fill('50'); await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-now input').press('Tab'); await p.waitForTimeout(200);
   check(await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-prog b').textContent() === '25%', 'indicator progress from the current value');
   await p.screenshot({ path: `${shots}/indicators.png`, fullPage: true });
-  await p.click('.tabs button:has-text("Justification")'); await p.waitForTimeout(200);
+  await ptab(p, 'Justification'); await p.waitForTimeout(200);
   check(await p.locator('h2:text-is("Budget justification")').count() === 1, 'justification tab');
-  await p.click('.tabs button:has-text("Reports")'); await p.click('.tabs button:has-text("Summary")');
+  await ptab(p, 'Reports'); await ptab(p, 'Summary');
 
   // Appearance options
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
@@ -273,8 +284,9 @@ async function page(opts) {
   check((await p.locator('.stw-head').textContent()).includes('spent at'), 'status in words written');
   check(await p.locator('.fc-big').count() === 1, 'end-of-project forecast shown');
   check(await p.locator('table.hd tbody tr').count() >= 3, 'budget headings vs approved budget');
+  check(await p.locator('.rd-list li').count() === 10, 'project file checklist');
   await p.screenshot({ path: `${shots}/project-summary.png`, fullPage: true });
-  await p.click('.tabs button:has-text("Scenario")'); await p.waitForSelector('.scn-in');
+  await ptab(p, 'Scenario'); await p.waitForSelector('.scn-in');
   await p.locator('.scn-in').first().fill('-5000'); await p.locator('.scn-in').first().press('Tab');
   check(await p.locator('.scn-sum :text("−€5,000")').count() === 1, 'scenario shows net change');
   await p.click('button:has-text("Balance")'); await p.waitForTimeout(100);
@@ -300,9 +312,14 @@ async function page(opts) {
   const p = await ctx.newPage();
   await p.goto(url.replace('&demo', '') + '#/projects'); await p.waitForSelector('.ph-title, .pcard, .empty-page', { timeout: 10000 }).catch(() => {});
   await p.waitForTimeout(500);
-  check(await p.locator('article.pcard').count() === 1 && await p.locator('article.pcard:has-text("Enhancing Foreign Language")').count() === 1, 'start data: one real Türkiye project');
+  check(await p.locator('article.pcard').count() === 6 && await p.locator('article.pcard:has-text("Enhancing Foreign Language")').count() === 1, 'start data: six real Türkiye projects');
+  check(await p.locator('article.pcard:has-text("ROMA INTEGRATION") .pc-setup').count() === 1, 'projects without documents are marked set-up');
+  await p.screenshot({ path: `${shots}/real-projects.png`, fullPage: true });
+  await p.goto(url.replace('&demo', '') + '#/reports/compliance'); await p.waitForSelector('.chg-t');
+  check(await p.locator('.chg-t tbody tr').count() === 6, 'compliance & results lists every project');
+  await p.screenshot({ path: `${shots}/compliance.png`, fullPage: true });
   await p.goto(url.replace('&demo', '') + '#/project/jp3220'); await p.waitForSelector('.ph-title');
-  await p.click('.tabs button:has-text("Budget lines")'); await p.waitForTimeout(300);
+  await ptab(p, 'Budget lines'); await p.waitForTimeout(300);
   check(await p.locator('.dt-total:has-text("€5,403,333")').count() >= 1, 'approved budget baseline shown as budget lines');
   await p.screenshot({ path: `${shots}/real-lines.png`, fullPage: true });
   await ctx.close();

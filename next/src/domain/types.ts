@@ -19,6 +19,8 @@ export interface Project {
   id: string; code: string; name: string; country: string; sector?: string; funding?: string;
   start: string; end: string; budget: number; spent?: number; committed?: number; fte?: number;
   successor?: string; status?: string;
+  /** Start/end are placeholders until the DoA, contract or a confirmed edit sets them. */
+  datesTbc?: boolean;
   /** Organisational identifiers from the master project list */
   mae?: string; pmm?: string; bh?: string; pmmUrl?: string; contractNo?: string; jp?: string;
   staffOverrides?: Record<string, import('./staff').StaffOverride>;

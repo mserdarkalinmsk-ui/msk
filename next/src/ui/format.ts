@@ -13,4 +13,5 @@ const mf = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric', t
 const df = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 export const month = (t: number | string) => mf.format(new Date(typeof t === 'string' ? t + 'T00:00:00Z' : t));
 export const date = (s: string) => df.format(new Date(s + 'T00:00:00Z'));
+export const period = (p: { start: string; end: string; datesTbc?: boolean }) => (p.datesTbc ? 'dates to confirm' : `${month(p.start)} → ${month(p.end)}`);
 export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

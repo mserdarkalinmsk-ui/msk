@@ -73,9 +73,25 @@ export async function load() {
       const q = db.transaction(STORE).objectStore(STORE).get(KEY);
       q.onsuccess = () => res(q.result); q.onerror = () => res(undefined);
     });
-    if (l && !validateLedger(l).length) state = { ...state, ledger: l };
+    if (l && !validateLedger(l).length) state = { ...state, ledger: mergeSeed(l) };
   }
   set({ ready: true });
+}
+
+/**
+ * Start data grows over time (new real projects). Projects added to the start data since this browser last
+ * loaded it are merged in once, matched by id or budget head, so existing work is kept.
+ */
+const SEED_VERSION = 2;
+function mergeSeed(l: Ledger): Ledger {
+  const v = (l as Ledger & { seedVersion?: number }).seedVersion ?? 1;
+  if (DEMO || v >= SEED_VERSION) return l;
+  const S = seed as unknown as Ledger, L = clone(l);
+  for (const p of S.projects) if (!L.projects.some((x) => x.id === p.id || (p.bh && x.bh === p.bh))) L.projects.push(clone(p));
+  for (const c of S.countries) if (!L.countries.some((x) => x.id === c.id)) L.countries.push(clone(c));
+  (L as Ledger & { seedVersion?: number }).seedVersion = SEED_VERSION;
+  persist(L);
+  return L;
 }
 
 /* ---------- mutations: every change is undoable ---------- */
