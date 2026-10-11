@@ -9,7 +9,7 @@ export interface State {
   ledger: Ledger;
   route: string;
   filters: Filters;
-  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string };
+  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' };
   palette: boolean;
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];

@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import './styles/tokens.css';
 import './styles/app.css';
+import './styles/styles.css';
 import { go, load, set, useStore } from './data/store';
 import { Overview } from './pages/Overview';
 import { Projects } from './pages/Projects';
@@ -12,6 +13,7 @@ import { ProjectPage } from './pages/ProjectPage';
 import { Drawer } from './ui/Drawer';
 import { Palette, Toasts } from './ui/Palette';
 import { Placeholder, ROUTES, Shell } from './ui/Shell';
+import { applyPrefs } from './ui/Appearance';
 
 function App() {
   const route = useStore((s) => s.route);
@@ -36,5 +38,6 @@ function App() {
   );
 }
 
+applyPrefs();
 render(<App />, document.getElementById('app')!);
 load();

@@ -26,6 +26,7 @@ export function Palette() {
     { group: 'Actions', label: 'Manage countries', run: () => set({ drawer: { kind: 'countries' } }) },
     { group: 'Actions', label: 'Import Excel, CSV or backup', run: () => set({ drawer: { kind: 'import' } }) },
     { group: 'Actions', label: 'Undo last change', hint: 'Ctrl Z', run: undo },
+    { group: 'Actions', label: 'Appearance: design direction, accent, density', run: () => set({ drawer: { kind: 'appearance' } }) },
     { group: 'Actions', label: 'Theme: light', run: () => setTheme('light') },
     { group: 'Actions', label: 'Theme: dark', run: () => setTheme('dark') },
     { group: 'Actions', label: 'Theme: follow system', run: () => setTheme('auto') },

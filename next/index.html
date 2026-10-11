@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portfolio Ledger</title>
-<script>try{var t=localStorage.getItem('pl-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>try{var d=document.documentElement.dataset,t=localStorage.getItem('pl-theme');if(t)d.theme=t;['style','accent','density','numbers'].forEach(function(k){var v=localStorage.getItem('pl-'+k);if(v)d[k]=v})}catch(e){}</script>
 </head>
 <body><div id="app"></div><script type="module" src="/src/main.tsx"></script></body>
 </html>

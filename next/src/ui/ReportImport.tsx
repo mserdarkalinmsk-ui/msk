@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { upsertReport, upsertRisk, useStore } from '../data/store';
 import { checkReport, compareReports, reportsByDate, reportTotals } from '../domain/calc';
 import type { BudgetLine, Project, ReportingPeriod, Risk } from '../domain/types';
@@ -6,6 +6,19 @@ import { parseAmount, parseCSV, parseDay } from './csv';
 import { date, full, short } from './format';
 import { readXlsx, type Workbook } from './xlsx';
 import { extractStaff } from '../domain/staff';
+import { parseWorkbook, summarize, toBudgetLines, type Workbook as CoeWorkbook } from '../domain/workbook';
+import { updateProject } from '../data/store';
+
+/** A file chosen elsewhere (e.g. the global import) that the report drawer should open with. */
+let pending: File | null = null;
+export const setPendingReport = (f: File) => { pending = f; };
+
+export async function readCoe(f: File): Promise<CoeWorkbook | null> {
+  if (!/\.xlsx$/i.test(f.name)) return null;
+  const x = await readXlsx(await f.arrayBuffer());
+  const wb = parseWorkbook(x.sheets.map((n) => ({ name: n, R: x.read(n) })));
+  return wb.lines.length ? wb : null;
+}
 
 /** Reads a CSV or Excel file into rows; returns sheet names for workbooks. */
 export async function readTable(file: File): Promise<{ rows: string[][]; wb?: Workbook }> {
@@ -34,7 +47,7 @@ export function detectHeader(rows: string[][]) {
   return { at: 0, map: {} as Partial<Record<LK, number>> };
 }
 
-const TYPES = ['Latest Approved Budget', 'Quarterly Financial Report', 'Yearly / Annual Report', 'Final Report'];
+const TYPES = ['Latest Approved Budget', 'Interim Financial Report', 'Quarterly Financial Report', 'Yearly / Annual Report', 'Final Report'];
 
 export function ReportImport({ projectId, close }: { projectId: string; close: () => void }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === projectId)) as Project;
@@ -45,10 +58,20 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const [meta, setMeta] = useState({ name: '', type: TYPES[1], date: new Date().toISOString().slice(0, 10) });
   const [err, setErr] = useState('');
   const [over, setOver] = useState(false);
+  const [coe, setCoe] = useState<CoeWorkbook | null>(null);
+  const [manual, setManual] = useState(false);
+  const [saveIds, setSaveIds] = useState(true);
+  useEffect(() => { if (pending) { const f = pending; pending = null; open(f); } }, []);
 
   async function open(f: File) {
-    setErr('');
+    setErr(''); setCoe(null); setManual(false);
     try {
+      const wb = await readCoe(f).catch(() => null);
+      if (wb) {
+        setCoe(wb);
+        const to = wb.meta.periodTo || wb.meta.asAt || wb.meta.situationDate;
+        setMeta({ name: to ? `Interim report to ${date(to)}` : f.name.replace(/\.[^.]+$/, ''), type: 'Interim Financial Report', date: to || new Date().toISOString().slice(0, 10) });
+      }
       const t = await readTable(f);
       const d = detectHeader(t.rows);
       setFile({ name: f.name, ...t }); setSheet(t.wb?.sheets[0] ?? ''); setHead(d.at); setMap(d.map);
@@ -61,9 +84,10 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
     setFile({ ...file, rows }); setSheet(name); setHead(d.at); setMap(d.map);
   }
 
-  const body = file ? file.rows.slice(head + 1) : [];
+  const useCoe = !!coe && !manual;
+  const body = file && !useCoe ? file.rows.slice(head + 1) : [];
   const rowErr: string[] = [];
-  const lines: BudgetLine[] = [];
+  const lines: BudgetLine[] = useCoe ? toBudgetLines(coe!) : [];
   body.forEach((r, i) => {
     const g = (k: LK) => (map[k] != null ? (r[map[k]!] ?? '').trim() : '');
     const code = g('code');
@@ -74,12 +98,19 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   });
   const reportDate = parseDay(meta.date);
   // Staff contracts are read from every sheet of the workbook (Purchase Orders + GL).
-  const staff = file?.wb ? extractStaff(file.wb.sheets.map((n) => ({ name: n, R: file.wb!.read(n) }))) : null;
+  const staff = useCoe ? { records: coe!.staff, groups: coe!.staffGroups } : file?.wb ? extractStaff(file.wb.sheets.map((n) => ({ name: n, R: file.wb!.read(n) }))) : null;
   const report: ReportingPeriod = { id: 'r' + Date.now().toString(36), name: meta.name.trim() || 'Report', type: meta.type, date: reportDate ?? meta.date, fileName: file?.name, registeredAt: new Date().toISOString(),
-    snapshot: { format: 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}) } };
-  const missing = LF.filter((f) => f.req && map[f.key] == null).map((f) => f.label);
+    snapshot: { format: useCoe ? 'CoE workbook' : 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}), ...(useCoe ? { workbook: summarize(coe!, file?.name) } : {}) } };
+  const idWarn: string[] = [];
+  if (useCoe) {
+    if (p.bh && coe!.meta.bh && p.bh !== coe!.meta.bh) idWarn.push(`This file is for budget head ${coe!.meta.bh}, but ${p.code} has budget head ${p.bh}`);
+    if (p.contractNo && coe!.meta.contract && p.contractNo !== coe!.meta.contract) idWarn.push(`Contract ${coe!.meta.contract} in the file differs from ${p.contractNo} on the project`);
+  }
+  const fillIds = useCoe && ((!p.bh && coe!.meta.bh) || (!p.contractNo && coe!.meta.contract) || (!p.jp && coe!.meta.jp));
+  const missing = useCoe ? [] : LF.filter((f) => f.req && map[f.key] == null).map((f) => f.label);
   const checks = file ? [...missing.map((m) => ({ level: 'error' as const, text: `Choose the column for “${m}”` })), ...rowErr.slice(0, 5).map((t) => ({ level: 'error' as const, text: t })), ...(missing.length ? [] : checkReport(p, report))] : [];
   if (file && !reportDate) checks.unshift({ level: 'error', text: 'Report date is invalid' });
+  idWarn.forEach((t) => checks.unshift({ level: 'warning', text: t }));
   const errors = checks.filter((c) => c.level === 'error');
   const prev = reportsByDate(p).filter((r) => r.date <= report.date).at(-1);
   const t = reportTotals(report);
@@ -109,7 +140,8 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
                   : <div class="field"><label for="r-head">Header row</label><input id="r-head" type="number" min={1} value={head + 1} onInput={(e) => setHead(Math.max(0, +(e.target as HTMLInputElement).value - 1))} /></div>}
               </div>
             </section>
-            <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
+            {useCoe && <CoeSummary wb={coe!} onManual={() => setManual(true)} fillIds={!!fillIds} saveIds={saveIds} setSaveIds={setSaveIds} />}
+            {!useCoe && <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
               <h3 style={{ margin: 0, fontSize: '14px' }}>Match columns <span class="muted" style={{ fontWeight: 400 }}>· header: {(file.rows[head] ?? []).filter(Boolean).slice(0, 4).join(', ')}</span></h3>
               <div class="form-2" style={{ gap: '10px' }}>
                 {LF.map((f) => (
@@ -119,7 +151,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
                     </select></div>
                 ))}
               </div>
-            </section>
+            </section>}
             <section class="card">
               <div class="card-h"><div><h2>Preview</h2><p>{lines.length} lines{staff?.records.length ? ` · ${staff.records.filter((r) => r.name).length} staff records${staff.records.some((r) => r.review) ? ` (${staff.records.filter((r) => r.review).length} to review)` : ''}` : ''} · approved {short(t.approved)} · spent {short(t.actual)}{prev ? ` (${t.actual >= reportTotals(prev).actual ? '+' : '−'}${short(Math.abs(t.actual - reportTotals(prev).actual))} since ${prev.name})` : ''}</p></div></div>
               {checks.length > 0 && <ul class="att" style={{ marginTop: '10px' }}>{checks.slice(0, 12).map((c) => <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : 'warning'}`}>{c.level}</span><div class="d" style={{ color: 'var(--ink)' }}>{c.text}</div><span /></li>)}</ul>}
@@ -137,7 +169,11 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
       </div>
       <div class="drawer-f">
         <button class="btn" onClick={close}>Cancel</button>
-        <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => { upsertReport(p.id, report); close(); }}>
+        <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => {
+          upsertReport(p.id, report);
+          if (fillIds && saveIds) updateProject(p.id, { bh: p.bh || coe!.meta.bh, contractNo: p.contractNo || coe!.meta.contract, jp: p.jp || coe!.meta.jp });
+          close();
+        }}>
           {file && errors.length ? `${errors.length} problem${errors.length > 1 ? 's' : ''} to fix` : `Save report${reportDate ? ` · ${date(reportDate)}` : ''}`}
         </button>
       </div>
@@ -173,5 +209,31 @@ export function RiskForm({ projectId, id, close }: { projectId: string; id?: str
       <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button>
         <button class="btn primary" onClick={() => { setTouched(true); if (bad) return; upsertRisk(p.id, { ...r, title: r.title.trim() }); close(); }}>{existing ? 'Save' : 'Add risk'}</button></div>
     </>
+  );
+}
+
+function CoeSummary({ wb, onManual, fillIds, saveIds, setSaveIds }: { wb: CoeWorkbook; onManual: () => void; fillIds: boolean; saveIds: boolean; setSaveIds: (v: boolean) => void }) {
+  const m = wb.meta, e = wb.totals.eligible;
+  const openPO = wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5);
+  return (
+    <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span class="badge good">Recognised</span><b style={{ fontSize: '14px' }}>Council of Europe financial report workbook</b>
+        <button class="btn ghost" style={{ marginLeft: 'auto', height: '26px' }} onClick={onManual}>Map columns manually</button></div>
+      {m.title && <div style={{ fontSize: '13.5px' }}>{m.title}</div>}
+      <dl class="dl" style={{ gridTemplateColumns: '130px 1fr', fontSize: '13px' }}>
+        {m.contract && <><dt>Contract</dt><dd class="num">{m.contract}</dd></>}
+        {(m.jp || m.bh) && <><dt>JP / BH</dt><dd class="num">{m.jp ?? '—'} / {m.bh ?? '—'}</dd></>}
+        {m.periodFrom && <><dt>Report period</dt><dd>{date(m.periodFrom)} → {date(m.periodTo!)}</dd></>}
+        {m.asAt && <><dt>Actuals as at</dt><dd>{date(m.asAt)}</dd></>}
+        {m.plannedFrom && <><dt>Forecast period</dt><dd>{date(m.plannedFrom)} → {date(m.plannedTo!)}</dd></>}
+        {e && <><dt>Total eligible</dt><dd class="num">budget {full(e.budget)} · actual {full(e.actual)} · S&C {full(e.sc)}{e.planned != null ? ` · next 12 m ${full(e.planned)}` : ''}</dd></>}
+        <dt>Also read</dt><dd>{[wb.situation.length && 'budget situation', wb.pos.length && `${wb.pos.length} POs (${openPO.length} open)`, wb.monthly.length && `${wb.monthly.length} months of postings`, wb.movements.length && `${wb.movements.filter((x) => x.funding).length} funding movements`, wb.staff.length && `${wb.staff.filter((x) => x.name).length} staff records`].filter(Boolean).join(' · ')}</dd>
+        <dt>Sheets</dt><dd class="muted" style={{ fontSize: '12px' }}>{wb.sheets.join(', ')}</dd>
+      </dl>
+      {fillIds && <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px' }}><input type="checkbox" checked={saveIds} onChange={() => setSaveIds(!saveIds)} />Save contract / JP / BH from this file to the project</label>}
+      <ul class="att" style={{ margin: '0 -20px' }}>
+        {wb.checks.map((c) => <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : c.level === 'warning' ? 'warning' : 'good'}`}>{c.level === 'info' ? 'ok' : c.level}</span><div class="d" style={{ color: 'var(--ink)', whiteSpace: 'normal' }}>{c.text}</div><span /></li>)}
+      </ul>
+    </section>
   );
 }

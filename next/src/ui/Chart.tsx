@@ -50,8 +50,8 @@ export function Chart({ option, height, onClick, label }: Props) {
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
     const re = () => c.setOption(option(tokens()), true);
-    mq.addEventListener('change', re);
-    return () => { ro.disconnect(); mq.removeEventListener('change', re); c.dispose(); };
+    mq.addEventListener('change', re); addEventListener('pl-prefs', re);
+    return () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
   }, []);
   useEffect(() => { inst.current?.setOption(option(tokens()), true); });
   void theme;
