@@ -98,16 +98,21 @@ export function FinancialReport({ p }: { p: Project }) {
             <div class="card-h"><div><h2>Funding & accounts</h2><p>Contributions received and the budget situation in the accounting system{m.situationDate ? ` (${date(m.situationDate)})` : ''}</p></div></div>
             <div class="card-b" style={{ display: 'grid', gap: '14px' }}>
               {funding.length > 0 && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}><span class="muted" style={{ fontSize: '12.5px' }}>Net contributions received</span><b class="num" style={{ fontSize: '20px', marginLeft: 'auto' }}>{full(received)}</b></div>
-                  <ul class="flow">{funding.map((x) => <li><span class="num muted">{month(x.date)}</span><span class="flow-d">{x.description.replace(/\s+/g, ' ').slice(0, 48)}</span><b class="num" style={{ color: x.amount < 0 ? 'var(--critical)' : undefined }}>{x.amount < 0 ? '−' : '+'}{short(Math.abs(x.amount))}</b></li>)}</ul>
+                <div class="fa-fund">
+                  <div class="fa-total"><span>Net received</span><b class="num">{full(received)}</b><small>{funding.filter((x) => x.amount > 0).length} receipts · {funding.filter((x) => x.amount < 0).length} reversals</small></div>
+                  <ul class="fa-flow">{funding.map((x) => <li class={x.amount < 0 ? 'neg' : ''} title={x.description}><span class="num">{month(x.date)}</span><span>{fundLabel(x.description)}</span><b class="num">{x.amount < 0 ? '−' : '+'}{short(Math.abs(x.amount))}</b></li>)}</ul>
                 </div>
               )}
               {wb.situation.length > 0 && (
-                <table class="mini">
-                  <thead><tr><th>CCM / art.</th><th class="r">Budget</th><th class="r">Actual</th><th class="r">PO</th><th class="r">Available</th></tr></thead>
-                  <tbody>{wb.situation.map((r) => <tr><td title={r.description}><span class="num">{r.ccm}/{+r.article}</span> <span class="muted" style={{ fontSize: '12px' }}>{r.description.slice(0, 22)}</span></td><td class="r num">{short(r.budget)}</td><td class="r num">{short(r.actual)}</td><td class="r num">{short(r.po)}</td><td class="r num" style={{ color: r.available < 0 ? 'var(--critical)' : undefined }}>{short(r.available)}</td></tr>)}</tbody>
-                </table>
+                <div class="fa-acc">
+                  <div class="fa-legend"><span><i style={{ background: 'var(--c1)' }} />Actual</span><span><i style={{ background: 'var(--c1)', opacity: .4 }} />PO</span><span><i style={{ background: 'var(--line)' }} />Available</span></div>
+                  {wb.situation.map((r) => { const B = r.budget || 1; return (
+                    <div class="fa-row" title={r.description}>
+                      <div class="fa-h"><span class="num">{r.ccm}/{+r.article}</span><span class="muted">{r.description.replace(/\s+/g, ' ')}</span><b class="num">{short(r.budget)}</b></div>
+                      <div class="fa-bar"><span style={{ width: `${Math.min(100, r.actual / B * 100)}%` }} /><span style={{ width: `${Math.min(100, r.po / B * 100)}%`, opacity: .4 }} /></div>
+                      <div class="fa-f num"><span>{short(r.actual)} actual</span>{r.po ? <span>{short(r.po)} PO</span> : null}<span style={{ marginLeft: 'auto', color: r.available < 0 ? 'var(--critical)' : undefined }}>{short(r.available)} left · {Math.round((r.actual + r.po) / B * 100)}% used</span></div>
+                    </div>); })}
+                </div>
               )}
             </div>
           </section>
@@ -193,4 +198,11 @@ function monthlyOption(t: Tokens, wb: WorkbookSummary) {
       { name: 'GL', type: 'bar', stack: 'm', data: M.map((x) => x.gl), itemStyle: { color: t.c[2], borderRadius: [3, 3, 0, 0] } },
     ],
   };
+}
+
+/** Accounting descriptions are long bank strings; keep what they mean. */
+function fundLabel(d: string) {
+  const t = d.replace(/\s+/g, ' '), tr = t.match(/(\d+)\s*(?:è|e)re\s+tranche/i);
+  const kind = /annul/i.test(t) ? 'Reversal of advance' : /avance/i.test(t) ? 'Advance payment' : 'EU contribution';
+  return tr ? `${kind} · tranche ${tr[1]}` : kind;
 }
