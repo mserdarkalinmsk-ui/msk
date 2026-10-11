@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'preact/hooks';
 import * as echarts from 'echarts/core';
 import { BarChart, CustomChart, LineChart } from 'echarts/charts';
-import { DataZoomComponent, GridComponent, MarkLineComponent, TooltipComponent } from 'echarts/components';
+import { DataZoomComponent, GridComponent, LegendComponent, MarkLineComponent, TooltipComponent } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 import type { EChartsCoreOption } from 'echarts/core';
 import { useStore } from '../data/store';
 
-echarts.use([BarChart, LineChart, CustomChart, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, SVGRenderer]);
+echarts.use([BarChart, LineChart, CustomChart, GridComponent, LegendComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, SVGRenderer]);
 
 /** Resolved design tokens, read at render time so charts follow the theme. */
 export function tokens() {

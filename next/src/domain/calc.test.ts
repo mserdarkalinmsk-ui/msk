@@ -80,3 +80,41 @@ describe('validateLedger', () => {
   });
   it('rejects non-ledgers', () => expect(validateLedger(null)).toHaveLength(1));
 });
+
+import { byCategory, checkReport, compareReports, lineRows, planStats, reportTotals } from './calc';
+
+describe('budget lines', () => {
+  it('flattens latest lines and reconciles with money()', () => {
+    const R = lineRows(L.projects);
+    for (const p of L.projects) {
+      const mine = R.filter((r) => r.project.id === p.id);
+      expect(mine.reduce((s, r) => s + r.actual, 0)).toBeCloseTo(money(p).spent, 6);
+    }
+    const C = byCategory(R);
+    expect(C.reduce((s, c) => s + c.approved, 0)).toBeCloseTo(R.reduce((s, r) => s + r.approved, 0), 6);
+  });
+  it('compares versions by code, including added and removed lines', () => {
+    const a = { id: 'a', name: 'a', type: 'Q', date: '2026-01-01', snapshot: { lines: [{ code: '1', approved: 10, actual: 1 }, { code: '2', approved: 5, actual: 0 }] } };
+    const b = { id: 'b', name: 'b', type: 'Q', date: '2026-06-01', snapshot: { lines: [{ code: '1', approved: 10, actual: 4 }, { code: '3', approved: 2, actual: 0 }] } };
+    const D = compareReports(a, b);
+    expect(D.map((d) => [d.code, d.status])).toEqual([['1', 'changed'], ['2', 'removed'], ['3', 'added']]);
+    expect(D[0].actual).toEqual([1, 4]);
+    expect(reportTotals(b)).toMatchObject({ approved: 12, actual: 4 });
+  });
+  it('checks a new report', () => {
+    const p = L.projects[0];
+    const prev = p.reportingPeriods!.at(-1)!;
+    const bad = { id: 'n', name: 'n', type: 'Q', date: '2026-09-30', snapshot: { lines: [{ ...prev.snapshot!.lines[0], actual: 1 }, { code: '1', approved: 1, actual: 0 }] } };
+    const C = checkReport(p, bad);
+    expect(C.some((c) => c.level === 'error' && /twice/.test(c.text))).toBe(true);
+    expect(C.some((c) => /fell from/.test(c.text))).toBe(true);
+    const good = { ...prev, id: 'g', date: '2026-09-30' };
+    expect(checkReport(p, good).filter((c) => c.level === 'error')).toEqual([]);
+  });
+  it('computes plan status', () => {
+    const s = planStats(L.projects[0], T)!;
+    expect(s.total).toBe(L.projects[0].doa!.acts.length);
+    expect(s.month).toBe(22);
+    expect(s.late).toBeGreaterThanOrEqual(0);
+  });
+});
