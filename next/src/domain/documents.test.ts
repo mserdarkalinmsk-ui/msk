@@ -101,3 +101,18 @@ describe('justification PDF running headers', () => {
     expect(all).not.toMatch(/Demo Rights Programme|Contract n°/);
   }, 20000);
 });
+
+describe('narrative risks', () => {
+  it('reads bulleted risks with ratings, assumptions and mitigation across a page break', async () => {
+    const { narrativeRisks } = await import('./documents');
+    const paragraphs = ['4.9 Sustainability: risk analysis and assumptions', 'The assumptions are as follows:', '- There is commitment at all levels to improve the quality of education based on the CEFR', 'and CEFR Companion Volume (2020).', '- All stakeholders collaborate closely; and', '- In-house know-how and/or staff with necessary competencies are available.',
+      'The risks are as follows:', '- Workload of the beneficiary (low).', '- Contradicting interests between different institutions (medium).', '40', '- Any pandemic, similar to the Covid-19 may cause additional limitations imposed by', 'national authorities, pose a potential risk to face-to-face meetings (medium).', '- Other natural disasters, such as an earthquake (low).',
+      'Mitigation measures are as follows:', '• High-level discussions in the framework of the Türkiye-EU dialogue.', '• regular consultations between the CoE and Turkish authorities.', 'As regards the risk related to the spread of Covid-19, during the initial phase'];
+    const N = narrativeRisks({ name: 'doa.pdf', kind: 'pdf', paragraphs, tables: [] });
+    expect(N.assumptions).toEqual(['There is commitment at all levels to improve the quality of education based on the CEFR and CEFR Companion Volume (2020).', 'All stakeholders collaborate closely', 'In-house know-how and/or staff with necessary competencies are available.']);
+    expect(N.risks.map((r) => [r.title, r.likelihood, r.category])).toEqual([
+      ['Workload of the beneficiary', '2', 'Operational'], ['Contradicting interests between different institutions', '3', 'Institutional'],
+      ['Any pandemic, similar to the Covid-19 may cause additional limitations imposed by national authorities, pose a potential risk to face-to-face meetings', '3', 'External'], ['Other natural disasters, such as an earthquake', '2', 'External']]);
+    expect(N.mitigation.length).toBe(2);
+  });
+});

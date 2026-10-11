@@ -18,7 +18,7 @@ export interface ContractFacts {
   number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;
   repMonths?: number; progDays?: number; finalMonths?: number; prefinancing?: number; flexPct?: number; contingencyPct?: number; jp?: string; bh?: string;
 }
-export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; notes?: Record<string, BudgetNote>; summary: string[] }
+export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; notes?: Record<string, BudgetNote>; assumptions?: string[]; summary: string[] }
 
 /* ---------- helpers ---------- */
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -163,7 +163,9 @@ export function analyse(doc: Doc): DocFindings {
   const gRisk: Risk[] = (G?.risks ?? []).filter((r) => r.title).map((r, i) => ({ id: 'gr' + i, title: r.title, category: r.category || 'Operational', likelihood: r.likelihood ?? '', impact: r.impact ?? '', mitigation: r.mitigation ?? '', owner: r.owner ?? '', status: 'Open' }));
   const tPlan = actionPlan(doc), tRisk = risks(doc), tInd = indicators(doc);
   const plan = gPlan && gPlan.acts.length >= (tPlan?.acts.length ?? 0) ? gPlan : tPlan;
-  const R = gRisk.length > tRisk.length ? gRisk : tRisk, I = gInd.length > tInd.length ? gInd : tInd;
+  const NR = narrativeRisks(doc);
+  const R0 = gRisk.length > tRisk.length ? gRisk : tRisk;
+  const R = NR.risks.length > R0.length ? NR.risks : R0, I = gInd.length > tInd.length ? gInd : tInd;
   const contract = contractFacts(doc), budget = approvedBudget(doc), notes = { ...budgetNotes(doc), ...(doc.notes ?? {}) };
   const nn = Object.keys(notes).length;
   const summary = [
@@ -171,9 +173,9 @@ export function analyse(doc: Doc): DocFindings {
     budget && `approved budget €${Math.round(budget.total).toLocaleString('en-GB')} (${budget.lines.length} lines)`,
     Object.keys(contract).length && `${Object.keys(contract).length} contract facts`,
     plan && `${plan.acts.length} activities over ${plan.months} months`,
-    R.length && `${R.length} risks`, I.length && `${I.length} indicators`,
+    R.length && `${R.length} risks`, NR.assumptions.length && `${NR.assumptions.length} assumptions`, I.length && `${I.length} indicators`,
   ].filter(Boolean) as string[];
-  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, summary };
+  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, assumptions: NR.assumptions, summary };
 }
 
 /* ---------- approved budget (CoE "Budget for all years" template, DoA annex) ---------- */
@@ -276,4 +278,48 @@ export function notesFromLayout(items: PdfItem[], prev?: NoteColumns): { notes: 
   for (const b of blocks((i) => i.x >= cols.just)) { const n = get(near(b.y)); n.justification = clean(`${n.justification} ${b.t}`); }
   for (const [k, v] of Object.entries(notes)) if (!v.clarification && !v.justification) delete notes[k];
   return { notes, cols };
+}
+
+/* ---------- narrative risks & assumptions ("The risks are as follows: - … (medium)") ---------- */
+const BULLET = /^\s*(?:[-–—•▪◦●]|\d{1,2}[.)])\s+/;
+/** Bulleted items under a lead-in like "The risks are as follows:"; wrapped lines are joined, the list ends at the next prose line. */
+function listAfter(paras: string[], lead: RegExp): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < paras.length; i++) {
+    if (!lead.test(paras[i])) continue;
+    let cur = '';
+    const first = paras.slice(i + 1).find((x) => x.trim());
+    if (first && !BULLET.test(first)) { // Word lists carry no bullet character: one paragraph per item
+      for (let j = i + 1; j < paras.length && j < i + 40; j++) {
+        const l = paras[j].trim(); if (!l) continue;
+        if (/:\s*$/.test(l) || /^\d+(\.\d+)*\s+[A-Z]/.test(l) || /^As regards/i.test(l) || l.length > 400) break;
+        out.push(l);
+      }
+      if (out.length) break; else continue;
+    }
+    for (let j = i + 1; j < paras.length && j < i + 80; j++) {
+      const l = paras[j].trim(); if (!l) continue;
+      if (BULLET.test(l)) { if (cur) out.push(cur); cur = l.replace(BULLET, ''); continue; }
+      if (/^\d{1,3}$/.test(l)) continue; // page number between pages
+      if (cur && !/[.;:]$/.test(cur) && /^[a-z(]/.test(l)) { cur = joinLines([cur, l]); continue; } // wrapped line
+      if (cur && /^[a-z]/.test(l)) { cur = joinLines([cur, l]); continue; }
+      break;
+    }
+    if (cur) out.push(cur);
+    if (out.length) break;
+  }
+  return out.map((x) => x.replace(/[;,]?\s*(?:and)?\s*$/, '').replace(/\s*;\s*and$/, '').trim()).filter((x) => x.length > 3);
+}
+const RATE: Record<string, string> = { 'very low': '1', low: '2', medium: '3', moderate: '3', high: '4', 'very high': '5' };
+export function narrativeRisks(doc: Doc): { risks: Risk[]; assumptions: string[]; mitigation: string[] } {
+  const P = doc.paragraphs;
+  const mitigation = listAfter(P, /mitigation measures (?:are|include)[^:]*:\s*$/i);
+  const risks = listAfter(P, /\b(?:the )?(?:main )?risks (?:are|include)[^:]*:\s*$/i).map((t, k) => {
+    const m = t.match(/\((very low|low|medium|moderate|high|very high)\)\s*\.?$/i);
+    const lvl = m ? RATE[m[1].toLowerCase()] : '3';
+    const title = t.replace(/\s*\((?:very low|low|medium|moderate|high|very high)\)\s*\.?$/i, '').replace(/\.$/, '');
+    return { id: 'n' + k, title, category: /pandemic|covid|earthquake|disaster|flood/i.test(title) ? 'External' : /financ|fund|budget/i.test(title) ? 'Financial' : /communicat|co-?operation|interest|stakeholder|commitment/i.test(title) ? 'Institutional' : 'Operational', likelihood: lvl, impact: lvl, mitigation: mitigation.join(' · '), owner: '', status: 'Open', rating: m?.[1].toLowerCase() ?? '' } as Risk;
+  });
+  const assumptions = listAfter(P, /assumptions (?:are|include)[^:]*:\s*$/i);
+  return { risks, assumptions, mitigation };
 }
