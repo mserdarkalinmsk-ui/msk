@@ -324,10 +324,10 @@ function Spark({ v }: { v: number[] }) {
   return <svg class="ew-sp" viewBox={`0 0 ${w} ${h + 2}`} width={w} height={h + 2}><line x1="0" x2={w} y1={h - h / max} y2={h - h / max} stroke="#bbb" stroke-dasharray="3 3" /><polyline points={pts} fill="none" stroke="#1f4e9c" stroke-width="1.8" /><title>Performance at each report: {v.map((x) => `${Math.round(x * 100)}%`).join(' → ')}</title></svg>;
 }
 
-type SimRow = { id: string; label: string; p: Project; spent: number; committed: number; budget: number; rate: number };
+export type SimRow = { id: string; label: string; p: Project; spent: number; committed: number; budget: number; rate: number };
 const MS = 30.4375 * 86_400_000;
 /** What-if: monthly spending for the next N months → performance then, and the end-of-project outcome at that pace. */
-function Simulator({ rows, riskPct }: { rows: SimRow[]; riskPct: number }) {
+export function Simulator({ rows, riskPct }: { rows: SimRow[]; riskPct: number }) {
   const [id, setId] = useState('all');
   const sel = id === 'all' ? rows : rows.filter((r) => r.id === id);
   const cur = sel.reduce((a, r) => a + r.rate, 0);
@@ -351,7 +351,7 @@ function Simulator({ rows, riskPct }: { rows: SimRow[]; riskPct: number }) {
   return (
     <section class="sim">
       <div class="sim-h"><h3>Scenario simulator</h3>
-        <select class="select" value={id} onChange={(e) => setId((e.target as HTMLSelectElement).value)} aria-label="Project"><option value="all">All projects in this view</option>{rows.map((r) => <option value={r.id}>{r.label.slice(0, 70)}</option>)}</select></div>
+        {rows.length > 1 && <select class="select" value={id} onChange={(e) => setId((e.target as HTMLSelectElement).value)} aria-label="Project"><option value="all">All projects in this view</option>{rows.map((r) => <option value={r.id}>{r.label.slice(0, 70)}</option>)}</select>}</div>
       <div class="sim-c">
         <label>Monthly spending <b class="num">{n0(rate)}</b> <small>({mult.toFixed(1)}× current {n0(cur)})</small>
           <input type="range" min="0" max="4" step="0.1" value={mult} onInput={(e) => setMult(Number((e.target as HTMLInputElement).value))} /></label>

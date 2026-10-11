@@ -26,30 +26,43 @@ export function moves(P: Project[]): Move[] {
   });
 }
 
-/** Plain-language management summary built from the figures. */
-export function narrative(P: Project[], cname: (id: string) => string): string[] {
+export interface Point { label: string; text: string; tone: 'info' | 'good' | 'warn' | 'bad' }
+const names = (xs: string[]) => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`;
+
+/** Management summary as short labelled points, built from the figures. */
+export function narrative(P: Project[], cname: (id: string) => string): Point[] {
   const M = moves(P);
-  if (!M.length) return ['No projects with confirmed dates in this selection.'];
+  if (!M.length) return [{ label: 'Position', text: 'No projects with confirmed dates in this selection.', tone: 'info' }];
   const B = M.reduce((a, x) => a + money(x.p).budget, 0), S = M.reduce((a, x) => a + x.spent, 0);
   const PL = M.reduce((a, x) => a + money(x.p).budget * elapsed(x.p, TODAY), 0), perf = PL ? S / PL : 0;
+  const many = new Set(M.map((x) => x.p.country)).size > 1;
+  const who = (x: Move) => many ? `${lab(x.p)} (${cname(x.p.country)})` : lab(x.p);
+  const out: Point[] = [];
+  const verdict = perf >= 1 ? 'ahead of plan' : perf >= 0.9 ? 'on track' : perf >= 0.7 ? 'somewhat behind plan' : 'well behind plan';
+  out.push({ label: 'Position', tone: perf >= 0.9 ? 'good' : perf >= 0.7 ? 'warn' : 'bad',
+    text: `${M.length} projects have spent ${short(S)} of their ${short(B)} budget (${p0(B ? S / B : 0)}). By now ${short(PL)} should have been spent, so spending is at ${p0(perf)} of plan — ${verdict}.` });
   const cnt = (b: string) => M.filter((x) => x.now === b).length;
-  const out: string[] = [];
-  out.push(`At ${date(TODAY.toISOString().slice(0, 10))} the ${M.length} projects have spent ${short(S)} of ${short(B)} (${p0(B ? S / B : 0)}), which is ${p0(perf)} of the spending planned to date — ${perf >= 1 ? 'ahead of plan' : perf >= 0.9 ? 'on track' : perf >= 0.7 ? 'somewhat behind plan' : 'well behind plan'}. ${cnt('blue') + cnt('green')} on or above plan, ${cnt('amber')} amber and ${cnt('red')} red.`);
+  const parts = [['blue', 'above plan'], ['green', 'on plan'], ['amber', 'slightly behind (70–90%)'], ['red', 'well behind (under 70%)']].filter(([b]) => cnt(b)).map(([b, w]) => `${cnt(b)} ${w}`);
+  out.push({ label: 'Projects', tone: cnt('red') ? 'bad' : cnt('amber') ? 'warn' : 'good', text: cnt('red') === M.length ? `All ${M.length} projects are well behind plan (under 70%).` : `${names(parts)}.` });
   const added = M.reduce((a, x) => a + x.added, 0);
-  const up = M.filter((x) => x.prev != null).sort((a, b) => (b.perf - b.prev!) - (a.perf - a.prev!));
-  if (added) out.push(`Since the previous reports ${short(added)} of new spending was recorded${up[0] && up[0].perf - up[0].prev! > 0.02 ? `; the strongest improvement is ${lab(up[0].p)} (${pts(up[0].perf - up[0].prev!)})` : ''}${up.at(-1) && up.at(-1)!.perf - up.at(-1)!.prev! < -0.02 ? `, while ${lab(up.at(-1)!.p)} slipped ${pts(up.at(-1)!.perf - up.at(-1)!.prev!)}` : ''}.`);
-  const worse = M.filter((x) => x.was && x.was !== x.now && ['blue', 'green', 'amber', 'red'].indexOf(x.now) > ['blue', 'green', 'amber', 'red'].indexOf(x.was));
-  if (worse.length) out.push(`Moved to a weaker band: ${worse.map((x) => `${lab(x.p)} (${x.was} → ${x.now})`).join(', ')}.`);
+  const D = M.filter((x) => x.prev != null).map((x) => ({ x, d: x.perf - x.prev! })).sort((a, b) => b.d - a.d);
+  if (added) {
+    const best = D[0] && D[0].d > 0.02 ? ` Biggest improvement: ${who(D[0].x)}, ${pts(D[0].d)}.` : '';
+    const worst = D.at(-1) && D.at(-1)!.d < -0.02 ? ` Biggest slip: ${who(D.at(-1)!.x)}, ${pts(D.at(-1)!.d)}.` : '';
+    out.push({ label: 'Since last report', tone: 'info', text: `${short(added)} of new spending recorded.${best}${worst}` });
+  }
+  const order = ['blue', 'green', 'amber', 'red'];
+  const worse = M.filter((x) => x.was && order.indexOf(x.now) > order.indexOf(x.was));
+  if (worse.length) out.push({ label: 'Downgraded', tone: 'warn', text: `${names(worse.map((x) => `${who(x)} ${x.was} → ${x.now}`))}.` });
   const red = M.filter((x) => x.now === 'red').sort((a, b) => a.perf - b.perf);
-  if (red.length) out.push(`Needs action: ${red.slice(0, 4).map((x) => `${lab(x.p)} ${cname(x.p.country)} at ${p0(x.perf)} of plan`).join('; ')}.`);
+  if (red.length) out.push({ label: 'Needs action', tone: 'bad', text: `${names(red.slice(0, 5).map((x) => `${who(x)} at ${p0(x.perf)}`))} of planned spending${red.length > 5 ? `, and ${red.length - 5} more` : ''}.` });
   const high = M.filter((x) => warningScore(x.p, TODAY, { perf: x.perf, scp: x.perf, staffRatio: 0 }).level === 'high');
-  if (high.length) out.push(`${high.length} project${high.length > 1 ? 's have' : ' has'} a high attention score: ${high.map((x) => lab(x.p)).join(', ')}.`);
-  const od = M.flatMap((x) => deadlines(x.p, TODAY).filter((d) => d.status === 'overdue').map(() => lab(x.p)));
-  if (od.length) out.push(`Overdue reports: ${[...new Set(od)].join(', ')}.`);
+  const od = [...new Set(M.filter((x) => deadlines(x.p, TODAY).some((d) => d.status === 'overdue')).map(who))];
+  if (high.length || od.length) out.push({ label: 'Follow-up', tone: 'warn', text: [high.length && `High attention score: ${names(high.map(who))}.`, od.length && `Report overdue: ${names(od)}.`].filter(Boolean).join(' ') });
   const ren = M.flatMap((x) => renewals(roster(x.p, TODAY), TODAY, 90));
-  if (ren.length) out.push(`${ren.length} staff contract${ren.length > 1 ? 's end' : ' ends'} within 90 days.`);
-  const ending = M.filter((x) => { const e = parseDate(x.p.end).getTime(), d = (e - TODAY.getTime()) / 864e5; return d > 0 && d < 183 && money(x.p).budget - x.spent > 0.15 * money(x.p).budget; });
-  if (ending.length) out.push(`Ending within six months with more than 15% unspent: ${ending.map((x) => `${lab(x.p)} (${short(money(x.p).budget - x.spent)} left, ends ${date(x.p.end)})`).join('; ')}.`);
+  if (ren.length) { const by = [...new Set(ren.map((r) => r.end).filter(Boolean))].sort(); out.push({ label: 'Staff', tone: 'warn', text: `${ren.length} contract${ren.length > 1 ? 's end' : ' ends'} in the next 90 days${by[0] ? `, the first on ${date(by[0]!)}` : ''}.` }); }
+  const ending = M.filter((x) => { const d = (parseDate(x.p.end).getTime() - TODAY.getTime()) / 864e5; return d > 0 && d < 183 && money(x.p).budget - x.spent > 0.15 * money(x.p).budget; });
+  if (ending.length) out.push({ label: 'Closing soon', tone: 'bad', text: `${names(ending.map((x) => `${who(x)} ends ${date(x.p.end)} with ${short(money(x.p).budget - x.spent)} unspent`))}.` });
   return out;
 }
 
@@ -70,8 +83,8 @@ export function MonthlyPack() {
       </header>
       <section class="pack-s pack-sum">
         <h3>Summary</h3>
-        {N.map((t) => <p>{t}</p>)}
-        <button class="btn ghost no-print" onClick={() => navigator.clipboard?.writeText(N.join('\n\n'))}>Copy summary</button>
+        <ul class="pack-pts">{N.map((t) => <li class={`t-${t.tone}`}><span>{t.label}</span><p>{t.text}</p></li>)}</ul>
+        <button class="btn ghost no-print" onClick={() => navigator.clipboard?.writeText(N.map((t) => `${t.label}: ${t.text}`).join('\n'))}>Copy summary</button>
       </section>
       <section class="pack-s">
         <h3>What changed since the previous report</h3>

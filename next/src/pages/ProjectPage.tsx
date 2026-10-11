@@ -20,6 +20,7 @@ import { ForecastCard, HeadingsCard, ReadinessCard, History, Scenario, StatusWor
 import { alerts } from '../domain/insights';
 import { projectSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
+import { ProjectForesight } from './Depletion';
 
 const TABS = ['Summary', 'Financial report', 'Budget lines', 'Scenario', 'Revision', 'Closure', 'Reports', 'People', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
@@ -86,7 +87,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Results & documents' && <ResultsDocs p={p} />}
       {tab === 'Indicators' && <Indicators p={p} />}
       {tab === 'Justification' && <Justification p={p} />}
-      {tab === 'Scenario' && <Scenario p={p} />}
+      {tab === 'Scenario' && <><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
       {tab === 'Revision' && <div class="grid g-12"><Revision p={p} /></div>}
       {tab === 'Closure' && <Closure p={p} />}
       {tab === 'History' && <History project={p.code} />}
