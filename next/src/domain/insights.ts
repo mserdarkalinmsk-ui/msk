@@ -160,7 +160,7 @@ export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct
   const base = p.approvedBudget?.lines ?? [];
   const cur = lines(p);
   const key = (c: string) => c.split('.')[0];
-  const codes = [...new Set([...base, ...cur].map((l) => key(l.code)))].filter((c) => HEADINGS[c] && c !== '10').sort((a, b) => +a - +b);
+  const codes = [...new Set([...base, ...cur].map((l) => key(l.code)))].filter((c) => HEADINGS[c] && c !== '10' && c !== '8').sort((a, b) => +a - +b);
   const sum = (L: typeof cur, c: string, f: (l: (typeof cur)[number]) => number) => L.filter((l) => key(l.code) === c).reduce((s, l) => s + f(l), 0);
   const rows = codes.map((c) => {
     const inCur = cur.some((l) => key(l.code) === c);
@@ -171,8 +171,14 @@ export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct
   });
   const ab = p.approvedBudget, admCur = sum(cur, '10', (l) => n(l.approved)), admExp = sum(cur, '10', lineExposure);
   const direct = { baseline: rows.reduce((s, r) => s + r.baseline, 0), approved: rows.reduce((s, r) => s + r.approved, 0), exposure: rows.reduce((s, r) => s + r.exposure, 0) };
-  const admin = { baseline: ab?.admin || (base.length ? sum(base, '10', (l) => n(l.approved)) : 0) || admCur, approved: admCur || ab?.admin || 0, exposure: admExp };
-  const contingency = ab?.contingency ?? 0;
+  const adm8 = base.filter((l) => key(l.code) === '8' && /admin|indirect/i.test(l.description ?? '')).reduce((a, l) => a + n(l.approved), 0);
+  const admin = { baseline: ab?.admin || (base.length ? sum(base, '10', (l) => n(l.approved)) : 0) || adm8 || admCur, approved: admCur || ab?.admin || 0, exposure: admExp };
+  // Line 8 is the contingency reserve in some templates and administrative costs in others (7/8/9 layout):
+  // count it as contingency only when its wording says so and it is not the admin amount again.
+  const l8 = [...base, ...cur].filter((l) => key(l.code) === '8');
+  const l8IsCont = l8.some((l) => /contingen/i.test(l.description ?? '')) && !l8.some((l) => /admin|indirect/i.test(l.description ?? ''));
+  const c0 = ab?.contingency ?? (l8IsCont ? sum(base.length ? base : cur, '8', (l) => n(l.approved)) : 0);
+  const contingency = c0 && Math.abs(c0 - admin.baseline) > 1 ? c0 : 0;
   const total = { baseline: direct.baseline + admin.baseline + contingency, approved: direct.approved + admin.approved + contingency, exposure: direct.exposure + admin.exposure };
   return { flex, rows, direct, admin, contingency, total };
 }

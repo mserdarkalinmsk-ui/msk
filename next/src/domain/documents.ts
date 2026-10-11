@@ -227,6 +227,7 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   if (leaves.length < 3) return null;
   const sum = leaves.reduce((s, l) => s + (l.approved ?? 0), 0);
   if (!direct) direct = sum;
+  if (contingency && admin && Math.abs(contingency - admin) < 1) contingency = 0; // the 7% row read twice, not a reserve
   if (!admin && total > direct) admin = Math.round((total - direct - contingency) * 100) / 100;
   const out = [...leaves];
   if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
