@@ -188,7 +188,7 @@ async function page(opts) {
   // CoE workbook: global import → project match → report → Financial report tab
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
   await p.click('text=Import / backup');
-  await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
+  await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
   check(await p.locator('.drawer h2:has-text("1 financial report workbook")').count() === 1, 'workbook recognised in global import');
   check(await p.locator('.drawer .badge:text-is("new")').count() === 1, 'unmatched workbook becomes a new project');
   await p.selectOption('.drawer select[aria-label=Country]', 'tr');
@@ -231,7 +231,7 @@ async function page(opts) {
   // Appearance options
   // dropping the same workbook again updates the project instead of duplicating it
   await p.click('text=Import / backup');
-  await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
+  await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
   check(await p.locator('.drawer .badge:text-is("update")').count() === 1, 'second import matches by budget head');
   await p.keyboard.press('Escape');
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
@@ -248,6 +248,56 @@ async function page(opts) {
   await ctx.close();
 }
 
+
+// Insights: alerts, changes, scenario, history, exports, import preview, old backup
+{
+  const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'light', acceptDownloads: true });
+  const bell = await p.locator('.bell-n').textContent().catch(() => '0');
+  check(Number(bell) > 0, `alert bell shows urgent count (${bell})`);
+  await p.click('.bell'); await p.waitForSelector('.alerts li');
+  const nAll = await p.locator('.alerts li').count();
+  await p.click('.kpi-btn:has-text("critical")'); await p.waitForTimeout(100);
+  check(await p.locator('.alerts li').count() < nAll, 'alert centre filters by severity');
+  check(await p.locator('.seg button:has-text("Staff")').count() + await p.locator('.seg button:has-text("Reporting")').count() >= 1, 'alerts grouped by area');
+  await p.screenshot({ path: `${shots}/alerts.png`, fullPage: true });
+  await p.click('.tabs button:has-text("What changed")'); await p.waitForTimeout(200);
+  check(await p.locator('.chg-t tbody tr').count() >= 1, 'what changed lists projects');
+  await p.screenshot({ path: `${shots}/changes.png`, fullPage: true });
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.tabs button:has-text("Excel")')]);
+  const path = await dl.path(); const { readFileSync, statSync } = await import('node:fs');
+  check(dl.suggestedFilename().endsWith('.xlsx') && statSync(path).size > 2000 && readFileSync(path).subarray(0, 2).toString() === 'PK', 'portfolio Excel export downloads');
+  writeFileSync(`${shots}/portfolio.xlsx`, readFileSync(path));
+  // project: words, forecast, scenario, history
+  await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
+  check((await p.locator('.narr p').first().textContent()).includes('of the €'), 'status in words written');
+  check(await p.locator('.fc-big').count() === 1, 'end-of-project forecast shown');
+  await p.screenshot({ path: `${shots}/project-summary.png`, fullPage: true });
+  await p.click('.tabs button:has-text("Scenario")'); await p.waitForSelector('.scn-in');
+  await p.locator('.scn-in').first().fill('-5000'); await p.locator('.scn-in').first().press('Tab');
+  check(await p.locator('.scn-sum :text("−€5,000")').count() === 1, 'scenario shows net change');
+  await p.click('button:has-text("Balance")'); await p.waitForTimeout(100);
+  check(await p.locator('.scn-sum :text("balanced")').count() === 1, 'scenario balances');
+  await p.screenshot({ path: `${shots}/scenario.png`, fullPage: true });
+  // import preview: before → after
+  await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
+  await p.click('text=Import / backup');
+  await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
+  check(await p.locator('.drawer table.diff tr.chg').count() >= 3, 'import shows before → after');
+  await p.screenshot({ path: `${shots}/import-diff.png` });
+  // backup from the previous app
+  const old = { app: 'Portfolio Ledger', exportedAt: '2025-01-01', state: { countries: [{ id: 'tr', name: 'Türkiye' }], projects: [{ id: 'o1', code: 'OLD-1', name: 'Old project', country: 'tr', start: '2024-01-01', end: '2026-12-31', budget: 1000 }], log: [{ at: '2025-01-01T09:00:00Z', msg: 'Old edit' }] } };
+  writeFileSync(`${shots}/old-backup.json`, JSON.stringify(old));
+  await p.keyboard.press('Escape'); await p.click('text=Import / backup');
+  await p.setInputFiles('.drawer .drop input', `${shots}/old-backup.json`); await p.waitForTimeout(300);
+  check(await p.locator('.drawer h3:has-text("previous Portfolio Ledger")').count() === 1, 'previous-app backup recognised');
+  await p.click('.drawer button:has-text("Replace data")'); await p.waitForTimeout(300);
+  await p.goto(url + '#/reports/history'); await p.waitForSelector('.hist');
+  check(await p.locator('.hist-i:has-text("Old edit")').count() === 1, 'old history carried over');
+  check(await p.locator('.hist-i').first().textContent().then((t) => t.includes('Imported')), 'change history records the import');
+  check(errors.length === 0, 'insights: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 // Dark + mobile
 {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
@@ -257,9 +307,12 @@ async function page(opts) {
 }
 {
   const { p, errors, ctx } = await page({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-  const sw = await p.evaluate(() => document.documentElement.scrollWidth);
-  check(sw <= 390, `mobile: no horizontal page scroll (${sw}px)`);
-  await p.screenshot({ path: `${shots}/overview-mobile.png`, fullPage: true });
+  for (const r of ['overview', 'projects', 'budget', 'people', 'map', 'reports', 'reports/alerts', 'reports/changes', 'project/lang']) {
+    await p.goto(url + '#/' + r); await p.waitForTimeout(500);
+    const sw = await p.evaluate(() => document.documentElement.scrollWidth);
+    check(sw <= 390, `mobile ${r}: no horizontal page scroll (${sw}px)`);
+    await p.screenshot({ path: `${shots}/m-${r.replace('/', '-')}.png`, fullPage: true });
+  }
   check(errors.length === 0, 'mobile: no console errors');
   await ctx.close();
 }

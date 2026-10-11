@@ -9,7 +9,8 @@ import { parseAmount, parseCSV, parseDay } from './csv';
 import { full, month, pct, short, signedPct } from './format';
 import { readCoe, readTable, ReportImport, RiskForm, setPendingReport } from './ReportImport';
 import type { Workbook as CoeWorkbook } from '../domain/workbook';
-import { applyPlans, plan, type AutoPlan } from '../domain/autoimport';
+import { applyPlans, plan, planDiff, type AutoPlan } from '../domain/autoimport';
+import { migrateBackup } from '../domain/insights';
 import { ContractPanel } from './ContractPanel';
 import { AppearancePanel } from './Appearance';
 import { DocumentsPanel, setPendingDocs } from './DocumentsPanel';
@@ -229,7 +230,7 @@ function ImportPanel({ close }: { close: () => void }) {
   const ledger = useStore((s) => s.ledger);
   const [rows, setRows] = useState<string[][] | null>(null);
   const [map, setMap] = useState<Record<string, number>>({});
-  const [json, setJson] = useState<{ data: Ledger; errs: string[] } | null>(null);
+  const [json, setJson] = useState<{ data: Ledger; errs: string[]; from: string } | null>(null);
   const [over, setOver] = useState(false);
   const [err, setErr] = useState('');
   const [coe, setCoe] = useState<{ wb: CoeWorkbook; file: File }[] | null>(null);
@@ -258,7 +259,7 @@ function ImportPanel({ close }: { close: () => void }) {
     if (wb) { setCoe([{ wb, file }]); return; }
     const text = await file.text();
     if (/\.json$/i.test(file.name) || text.trim().startsWith('{')) {
-      try { const data = JSON.parse(text); setJson({ data, errs: validateLedger(data) }); } catch { setErr('This file is not valid JSON.'); }
+      try { const { ledger: data, from } = migrateBackup(JSON.parse(text)); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
       return;
     }
     let R: string[][];
@@ -309,6 +310,10 @@ function ImportPanel({ close }: { close: () => void }) {
           <input type="file" multiple accept=".csv,.xlsx,.json,.pdf,.docx,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
           <strong style={{ color: 'var(--ink)' }}>Drop financial report workbooks — one or many at once</strong><br />Projects are created or updated automatically. Also accepts a project list (Excel / CSV) or a JSON backup.
         </label>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <label class="btn">Choose a folder…<input type="file" hidden {...{ webkitdirectory: '', directory: '' }} onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])].filter((f) => /\.(xlsx|pdf|docx)$/i.test(f.name) && !f.name.startsWith('~$')); if (F.length) readMany(F); }} /></label>
+          <span class="muted" style={{ fontSize: '12.5px' }}>Every workbook in the folder is matched to its project automatically.</span>
+        </div>
         {err && <ul class="errlist"><li>{err}</li></ul>}
 
         {busy && <div class="muted" role="status" style={{ fontSize: '13px' }}><span class="spin" /> {busy}</div>}
@@ -323,8 +328,8 @@ function ImportPanel({ close }: { close: () => void }) {
         )}
         {json && (
           <section class="card card-b">
-            <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>Backup file</h3>
-            <p class="muted" style={{ margin: 0 }}>{json.data.projects?.length ?? 0} projects · {json.data.countries?.length ?? 0} countries. Importing replaces the current data (you can undo).</p>
+            <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>{json.from === 'previous app' ? 'Backup from the previous Portfolio Ledger' : 'Backup file'}</h3>
+            <p class="muted" style={{ margin: 0 }}>{json.data.projects?.length ?? 0} projects · {json.data.countries?.length ?? 0} countries. {json.data.audit?.length ? ` · ${json.data.audit.length} history entries` : ''}. Importing replaces the current data (you can undo).</p>
             {json.errs.length > 0 && <ul class="errlist" style={{ marginTop: '12px' }}>{json.errs.slice(0, 8).map((e) => <li>{e}</li>)}</ul>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
               <button class="btn primary" disabled={json.errs.length > 0} onClick={() => { replaceLedger(json.data, `Imported ${json.data.projects.length} projects`); close(); }}>Replace data</button>
@@ -500,6 +505,9 @@ function AutoImport({ items, close }: { items: { wb: CoeWorkbook; file: File }[]
               <div class="d">{p.match ? `matched by ${p.matchedBy}` : `${p.project.sector} · ${p.project.start} → ${p.project.end}`} · report to {p.report.date}{p.replaces ? ' (replaces same-date report)' : ''} · {p.fileName}</div>
               {p.guessed.length > 0 && <div class="d">Guessed: {p.guessed.join('; ')}</div>}
               {p.problems.map((x) => <div class="d" style={{ color: 'var(--serious)' }}>{x}</div>)}
+              {!skip.has(i) && <table class="diff"><thead><tr><th></th><th>Before</th><th>After</th></tr></thead><tbody>
+                {planDiff(ledger, p).map((d) => <tr class={d.changed ? 'chg' : ''}><td>{d.label}</td><td class="num">{d.before}</td><td class="num">{d.after}</td></tr>)}
+              </tbody></table>}
               {!p.match && p.problems.some((x) => /Country/.test(x)) && (
                 <select class="select" style={{ height: '28px', width: 'fit-content' }} value={countryFix[i] ?? ''} onChange={(e) => setCountryFix({ ...countryFix, [i]: (e.target as HTMLSelectElement).value })} aria-label="Country">
                   <option value="">Choose country…</option>{ledger.countries.map((c) => <option value={c.id}>{c.name}</option>)}

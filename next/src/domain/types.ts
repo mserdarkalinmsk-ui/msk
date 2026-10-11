@@ -30,7 +30,8 @@ export interface Project {
   riskRegister?: Risk[];
 }
 
-export interface Ledger { countries: Country[]; projects: Project[] }
+export interface AuditEntry { at: string; message: string; project?: string }
+export interface Ledger { countries: Country[]; projects: Project[]; /** newest first */ audit?: AuditEntry[] }
 
 export const SECTORS = ['Human Rights', 'Democracy', 'Rule of Law'] as const;
 export type Sector = (typeof SECTORS)[number];

@@ -66,3 +66,12 @@ The sample data includes fictional demo staff so the People screens can be seen.
 
 ## Possible next steps
 - Logframe / results indicators, a real map outline (needs an offline boundary file), and visual regression baselines.
+
+## Insights & exports
+- **Alert centre** (Reports → Alert centre, bell in the top bar): pacing, budget, forecast, staff contracts, reporting deadlines, late activities, project end.
+- **What changed**: latest report vs previous (or a chosen date) per project.
+- **Status in words** and **end-of-project forecast** on each project summary.
+- **Scenario** tab: model a budget revision per line; flags lines below spent + committed and changes above a threshold.
+- **History**: every saved change with time and project.
+- **Excel / PDF**: portfolio and project workbooks (no dependencies), print-to-PDF.
+- Import shows **before → after** per project; a whole **folder** can be imported; backups from the previous app are converted.
