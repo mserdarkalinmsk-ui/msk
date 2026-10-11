@@ -21,7 +21,9 @@ const qty = (s: string) => {
 };
 
 /** PDF text often loses the "ti" ligature (shown as Θ or a private-use glyph): "interpreta Θ on" → "interpretation". */
-export const tidyText = (t: string) => t.replace(/\s?[ΘƟ⊖⦵�-]\s?/g, 'ti').replace(/\s+/g, ' ').trim();
+// Escapes stay in the pattern text so the bundle never holds a literal U+FFFD.
+const LIG = new RegExp('\\s?[\\u0398\\u019F\\u2296\\u29B5\\uFFFD\\uE000-\\uF8FF]\\s?', 'g');
+export const tidyText = (t: string) => t.replace(LIG, 'ti').replace(/\s+/g, ' ').trim();
 
 const ACT = String.raw`-?\s*A\.?\s?(\d+(?:\.\d+)+)\s*:?`;
 
