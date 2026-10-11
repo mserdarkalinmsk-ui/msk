@@ -7,7 +7,7 @@ export interface BudgetLine {
 
 export interface ReportingPeriod {
   id: string; name: string; type: string; date: string; fileName?: string; registeredAt?: string;
-  snapshot?: { format?: string; lines: BudgetLine[] };
+  snapshot?: { format?: string; lines: BudgetLine[]; staffRecords?: import('./staff').StaffRecord[]; staffGroups?: Record<string, import('./staff').StaffGroup> };
 }
 
 export interface Activity { id: string; code: string; name: string; group?: string; P?: number[]; E?: number[]; X?: number[]; status?: string }
@@ -19,6 +19,7 @@ export interface Project {
   successor?: string; status?: string;
   /** Organisational identifiers from the master project list */
   mae?: string; pmm?: string; bh?: string; pmmUrl?: string;
+  staffOverrides?: Record<string, import('./staff').StaffOverride>;
   reportingPeriods?: ReportingPeriod[];
   doa?: { start: string; months: number; acts: Activity[] };
   contract?: Record<string, unknown>;

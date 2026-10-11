@@ -5,6 +5,7 @@ import type { BudgetLine, Project, ReportingPeriod, Risk } from '../domain/types
 import { parseAmount, parseCSV, parseDay } from './csv';
 import { date, full, short } from './format';
 import { readXlsx, type Workbook } from './xlsx';
+import { extractStaff } from '../domain/staff';
 
 /** Reads a CSV or Excel file into rows; returns sheet names for workbooks. */
 export async function readTable(file: File): Promise<{ rows: string[][]; wb?: Workbook }> {
@@ -72,7 +73,10 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
     lines.push({ code: code.replace(/\.$/, ''), description: g('description'), approved: num('approved'), actual, committed, spentCommitted: actual + committed });
   });
   const reportDate = parseDay(meta.date);
-  const report: ReportingPeriod = { id: 'r' + Date.now().toString(36), name: meta.name.trim() || 'Report', type: meta.type, date: reportDate ?? meta.date, fileName: file?.name, registeredAt: new Date().toISOString(), snapshot: { format: 'Imported', lines } };
+  // Staff contracts are read from every sheet of the workbook (Purchase Orders + GL).
+  const staff = file?.wb ? extractStaff(file.wb.sheets.map((n) => ({ name: n, R: file.wb!.read(n) }))) : null;
+  const report: ReportingPeriod = { id: 'r' + Date.now().toString(36), name: meta.name.trim() || 'Report', type: meta.type, date: reportDate ?? meta.date, fileName: file?.name, registeredAt: new Date().toISOString(),
+    snapshot: { format: 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}) } };
   const missing = LF.filter((f) => f.req && map[f.key] == null).map((f) => f.label);
   const checks = file ? [...missing.map((m) => ({ level: 'error' as const, text: `Choose the column for “${m}”` })), ...rowErr.slice(0, 5).map((t) => ({ level: 'error' as const, text: t })), ...(missing.length ? [] : checkReport(p, report))] : [];
   if (file && !reportDate) checks.unshift({ level: 'error', text: 'Report date is invalid' });
@@ -117,7 +121,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
               </div>
             </section>
             <section class="card">
-              <div class="card-h"><div><h2>Preview</h2><p>{lines.length} lines · approved {short(t.approved)} · spent {short(t.actual)}{prev ? ` (${t.actual >= reportTotals(prev).actual ? '+' : '−'}${short(Math.abs(t.actual - reportTotals(prev).actual))} since ${prev.name})` : ''}</p></div></div>
+              <div class="card-h"><div><h2>Preview</h2><p>{lines.length} lines{staff?.records.length ? ` · ${staff.records.filter((r) => r.name).length} staff records${staff.records.some((r) => r.review) ? ` (${staff.records.filter((r) => r.review).length} to review)` : ''}` : ''} · approved {short(t.approved)} · spent {short(t.actual)}{prev ? ` (${t.actual >= reportTotals(prev).actual ? '+' : '−'}${short(Math.abs(t.actual - reportTotals(prev).actual))} since ${prev.name})` : ''}</p></div></div>
               {checks.length > 0 && <ul class="att" style={{ marginTop: '10px' }}>{checks.slice(0, 12).map((c) => <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : 'warning'}`}>{c.level}</span><div class="d" style={{ color: 'var(--ink)' }}>{c.text}</div><span /></li>)}</ul>}
               <div class="card-b" style={{ paddingTop: '4px' }}>
                 <table class="mini">

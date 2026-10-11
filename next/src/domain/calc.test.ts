@@ -134,3 +134,26 @@ describe('identifiers', () => {
     expect(normalizeSector('Health')).toBeNull();
   });
 });
+
+import { addMonths, deadlines } from './calc';
+describe('reporting calendar', () => {
+  it('derives yearly progress and final report deadlines', () => {
+    const p = { ...L.projects[0] }; // 2025-01-01 → 2027-12-31, 12-month periods, 60 days
+    const D = deadlines(p, T);
+    expect(D.map((d) => [d.kind, d.periodEnd, d.due])).toEqual([
+      ['Progress report', '2025-12-31', '2026-03-01'],
+      ['Progress report', '2026-12-31', '2027-03-01'],
+      ['Final report', '2027-12-31', '2028-06-30'],
+    ]);
+    expect(D[0].status).toBe('submitted'); // the Mar 2026 report covers the 2025 period
+    expect(D[1].status).toBe('upcoming');
+  });
+  it('clamps month arithmetic to month ends', () => {
+    expect(addMonths('2027-12-31', 6)).toBe('2028-06-30');
+    expect(addMonths('2024-01-31', 1)).toBe('2024-02-29');
+  });
+  it('flags overdue periods with no report', () => {
+    const p = { ...L.projects[0], reportingPeriods: [] };
+    expect(deadlines(p, T)[0].status).toBe('overdue');
+  });
+});

@@ -142,6 +142,33 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/report-import.png` });
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(300);
   check(await p.locator('.att li').count() === nReports + 1, 'imported report added as a new version');
+  await p.click('.tabs button:has-text("People")'); await p.waitForTimeout(300);
+  check(await p.locator('.dt-cell:has-text("Ayla Testova")').count() === 1, 'staff read from the Purchase Orders sheet');
+
+  // People: renewal queue → confirm contract dates
+  await p.goto(url + '#/people'); await p.waitForSelector('.hero'); await p.waitForTimeout(500);
+  await p.screenshot({ path: `${shots}/people.png`, fullPage: true });
+  const firstName = (await p.locator('.att li .t').first().textContent()).trim();
+  await p.locator('.att li').first().click(); await p.waitForTimeout(300);
+  await p.fill('#ct-end', '2027-12-31'); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(300);
+  const row = p.locator('.dt-row', { hasText: firstName });
+  check(await row.locator('text=31 Dec 2027').count() > 0 && await row.locator('.badge.good:has-text("✓")').count() > 0, 'confirmed contract date overrides the source');
+  await p.click('.seg button:has-text("SxB / HQ")'); await p.waitForTimeout(200);
+  check(await p.locator('.dt-cell:has-text("Local")').count() === 0, 'base filter shows only HQ staff');
+
+  // Map + reports
+  await p.goto(url + '#/map'); await p.waitForSelector('.ccard'); await p.waitForTimeout(500);
+  check(await p.locator('.ccard').count() === 3, 'map lists every country');
+  await p.screenshot({ path: `${shots}/map.png`, fullPage: true });
+  await p.goto(url + '#/reports'); await p.waitForSelector('.brief'); await p.waitForTimeout(500);
+  check((await p.locator('.brief p').first().textContent()).includes('has spent'), 'executive brief writes the financial summary');
+  await p.screenshot({ path: `${shots}/brief.png`, fullPage: true });
+  await p.emulateMedia({ media: 'print' });
+  check(!(await p.locator('.side').isVisible()) && await p.locator('.brief').isVisible(), 'print view shows only the brief');
+  await p.emulateMedia({ media: 'screen' });
+  await p.click('.tabs button:has-text("Reporting calendar")'); await p.waitForTimeout(300);
+  check(await p.locator('.cal-i').count() >= 6, 'reporting calendar lists open deadlines');
+  await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
   check(errors.length === 0, 'no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

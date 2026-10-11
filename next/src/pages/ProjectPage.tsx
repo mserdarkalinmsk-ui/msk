@@ -9,8 +9,10 @@ import { DataTable, type Column } from '../ui/DataTable';
 import { date, full, month, pct, short, signedPct } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { usedTone } from './Budget';
+import { StaffBoard } from './People';
+import { roster } from '../domain/staff';
 
-const TABS = ['Summary', 'Budget lines', 'Reports', 'Activity plan', 'Risks'] as const;
+const TABS = ['Summary', 'Budget lines', 'Reports', 'People', 'Activity plan', 'Risks'] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProjectPage({ id }: { id: string }) {
@@ -21,7 +23,7 @@ export function ProjectPage({ id }: { id: string }) {
   const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
   const reports = reportsByDate(p);
   const plan = planStats(p, TODAY);
-  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length };
+  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, People: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length };
   return (
     <>
       <div class="ph">
@@ -53,6 +55,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Summary' && <Summary p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
       {tab === 'Reports' && <Reports p={p} />}
+      {tab === 'People' && (roster(p, TODAY).length ? <StaffBoard people={roster(p, TODAY)} /> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
       {tab === 'Activity plan' && <Plan p={p} />}
       {tab === 'Risks' && <Risks p={p} />}
     </>

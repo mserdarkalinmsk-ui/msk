@@ -291,3 +291,42 @@ export function planStats(p: Project, today: Date) {
   });
   return { month: cm, total: acts.length, done: acts.filter((a) => a.done).length, late: acts.filter((a) => a.late).length, acts };
 }
+
+/* ---------------- reporting calendar ---------------- */
+export interface Deadline { project: Project; kind: 'Progress report' | 'Final report'; periodEnd: string; due: string; status: 'submitted' | 'overdue' | 'due' | 'upcoming' }
+
+/** Adds calendar months, clamping to the last day of the target month (31 Dec + 6 → 30 Jun). */
+export const addMonths = (iso: string, m: number) => {
+  const d = parseDate(iso), y = d.getUTCFullYear(), mo = d.getUTCMonth() + m;
+  const last = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, mo, Math.min(d.getUTCDate(), last))).toISOString().slice(0, 10);
+};
+const addDays = (iso: string, n: number) => new Date(parseDate(iso).getTime() + n * DAY).toISOString().slice(0, 10);
+
+/**
+ * Contractual reporting deadlines: a progress report every `repMonths` from the
+ * start (due `progDays` after the period end) and a final report `finalMonths`
+ * after the end. A period counts as submitted when a report dated on or after
+ * its end is on file. Defaults: 12 months / 60 days / 6 months.
+ */
+export function deadlines(p: Project, today: Date): Deadline[] {
+  const c = (p.contract ?? {}) as { repMonths?: number; progDays?: number; finalMonths?: number };
+  const rep = c.repMonths || 12, prog = c.progDays || 60, fin = c.finalMonths || 6;
+  const t = today.toISOString().slice(0, 10);
+  const reports = (p.reportingPeriods ?? []).filter((r) => !/approved budget/i.test(r.type)).map((r) => r.date);
+  const out: Deadline[] = [];
+  // A report dated from a month before the period end up to 120 days after it covers the period.
+  const status = (periodEnd: string, due: string): Deadline['status'] =>
+    reports.some((d) => d >= addDays(periodEnd, -31) && d <= addDays(periodEnd, 120)) ? 'submitted'
+      : due < t ? 'overdue' : due <= addDays(t, 60) ? 'due' : 'upcoming';
+  for (let k = 1; ; k++) {
+    const periodEnd = addDays(addMonths(p.start, k * rep), -1);
+    if (periodEnd >= p.end) break;
+    const due = addDays(periodEnd, prog);
+    out.push({ project: p, kind: 'Progress report', periodEnd, due, status: status(periodEnd, due) });
+    if (k > 40) break;
+  }
+  const due = addMonths(p.end, fin);
+  out.push({ project: p, kind: 'Final report', periodEnd: p.end, due, status: status(p.end, due) });
+  return out;
+}

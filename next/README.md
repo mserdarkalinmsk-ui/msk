@@ -39,6 +39,15 @@ npm run e2e     # browser tests + screenshots (needs Chromium; CHROMIUM=/path)
 
 `src/domain/calc.ts` holds every financial calculation and has no UI code; `src/domain/calc.test.ts` reconciles it against the sample data.
 
-## Next phase
-3. People: staff derived from report staff lines (1.x.1.y codes, PO, contract dates, HQ / Local classification), contract renewals and coverage.
-4. People / contracts, Map, Reports & logframe, visual regression baselines.
+## Phase 3
+- **People** (also a tab on every project): staff are read from report workbooks — the "Purchase Orders" sheet (reporting lines 1.x.1.y, "Surname, Given - … from dd/mm/yyyy to dd/mm/yyyy … %") plus GL payroll rows — and classified Local or SxB/HQ from the sheet's group headings. Records are merged per person across reports. Shows coverage by month, a renewal queue, rows that need confirming, and a contract panel with the source rows where dates can be confirmed or a leave date set (manual details win over the source).
+- **Map:** offline bubble map (size = budget, colour = pace) with country cards, sector mix and alerts; click opens that country's overview.
+- **Reports:** a printable executive brief (A4 / save as PDF) with a written financial summary, and a reporting calendar of contractual progress and final report deadlines (overdue / due / upcoming / submitted).
+
+The sample data includes fictional demo staff so the People screens can be seen.
+
+![People](docs/people.png)
+![Brief](docs/brief.png)
+
+## Possible next steps
+ People / contracts, Map, Reports & logframe, visual regression baselines.
