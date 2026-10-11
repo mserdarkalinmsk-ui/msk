@@ -146,7 +146,7 @@ async function page(opts) {
   // Project page tabs + Excel report import
   await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(500);
   await p.screenshot({ path: `${shots}/project.png`, fullPage: true });
-  for (const t of ['Budget lines', 'Reports', 'Activity plan', 'Risks']) {
+  for (const t of ['Budget lines', 'Reports', 'Scenario', 'Activity plan', 'Risks']) {
     await ptab(p, t); await p.waitForTimeout(250);
     await p.screenshot({ path: `${shots}/project-${t.split(' ')[0].toLowerCase()}.png`, fullPage: true });
     if (t === 'Activity plan') {
@@ -158,6 +158,7 @@ async function page(opts) {
       await p.screenshot({ path: `${shots}/gantt.png` });
     }
     if (t === 'Risks') check(await p.locator('.matrix .mx').count() === 25, 'risk matrix renders');
+    if (t === 'Scenario') check(await p.locator('.sim').count() === 1, 'project simulator renders');
   }
   await ptab(p, 'Reports');
   const nReports = await p.locator('.att li').count();
