@@ -80,8 +80,9 @@ export function toast(text: string, undo?: () => void) {
   set((s) => ({ toasts: [...s.toasts, { id, text, undo }].slice(-2) }));
   setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 6000);
 }
-export function commit(next: Ledger, message: string) {
+export function commit(next: Ledger, message: string, project?: string) {
   history.push(state.ledger);
+  next.audit = [{ at: new Date().toISOString(), message, ...(project ? { project } : {}) }, ...(next.audit ?? [])].slice(0, 300);
   if (history.length > 50) history.shift();
   set({ ledger: next });
   persist(next);
@@ -95,7 +96,7 @@ export function upsertProject(p: Project) {
   const L = clone(state.ledger);
   const i = L.projects.findIndex((x) => x.id === p.id);
   if (i >= 0) L.projects[i] = p; else L.projects.push(p);
-  commit(L, i >= 0 ? `Saved ${p.code}` : `Added ${p.code}`);
+  commit(L, i >= 0 ? `Saved ${p.code}` : `Added ${p.code}`, p.code);
 }
 export function updateProject(id: string, patch: Partial<Project>) {
   const p = state.ledger.projects.find((x) => x.id === id); if (!p) return;
@@ -127,7 +128,7 @@ export function deleteCountry(id: string): string | null {
 function editProject(id: string, f: (p: Project) => void, message: string) {
   const L = clone(state.ledger);
   const p = L.projects.find((x) => x.id === id); if (!p) return;
-  f(p); commit(L, message);
+  f(p); commit(L, message, p.code);
 }
 export const upsertReport = (pid: string, r: ReportingPeriod) => editProject(pid, (p) => {
   const R = p.reportingPeriods ?? (p.reportingPeriods = []);

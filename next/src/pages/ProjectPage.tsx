@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { deleteProjects, deleteReport, deleteRisk, go, set, updateLine, upsertRisk, useStore } from '../data/store';
-import { attention, burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, riskScore, spendPoints } from '../domain/calc';
+import { burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, riskScore, spendPoints } from '../domain/calc';
 import { validUrl, type Project, type ReportingPeriod, type Risk } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
@@ -13,8 +13,12 @@ import { StaffBoard } from './People';
 import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
+import { ForecastCard, History, Scenario, StatusWords } from './Insights';
+import { alerts } from '../domain/insights';
+import { projectSheets } from '../domain/exports';
+import { download } from '../ui/xlsxwrite';
 
-const TABS = ['Summary', 'Financial report', 'Budget lines', 'Reports', 'People', 'Activity plan', 'Risks', 'Results & documents'] as const;
+const TABS = ['Summary', 'Financial report', 'Budget lines', 'Scenario', 'Reports', 'People', 'Activity plan', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProjectPage({ id }: { id: string }) {
@@ -38,6 +42,8 @@ export function ProjectPage({ id }: { id: string }) {
           <button class="btn" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
+          <button class="btn" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
+          <button class="btn" onClick={() => print()}>⎙ PDF</button>
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>
       </div>
@@ -63,6 +69,8 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Activity plan' && <Plan p={p} />}
       {tab === 'Risks' && <Risks p={p} />}
       {tab === 'Results & documents' && <ResultsDocs p={p} />}
+      {tab === 'Scenario' && <Scenario p={p} />}
+      {tab === 'History' && <History project={p.code} />}
     </>
   );
 }
@@ -70,9 +78,11 @@ export function ProjectPage({ id }: { id: string }) {
 function Summary({ p }: { p: Project }) {
   const m = money(p), s = parseDate(p.start).getTime(), e = parseDate(p.end).getTime();
   const pts = spendPoints(p);
-  const flags = attention([p], TODAY);
+  const flags = alerts([p], TODAY);
   return (
     <div class="grid g-12">
+      <StatusWords p={p} />
+      <ForecastCard p={p} />
       <section class="card span-8">
         <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report</p></div></div>
         <div class="card-b"><Chart height={300} label="Project spend over time" option={(t) => ({

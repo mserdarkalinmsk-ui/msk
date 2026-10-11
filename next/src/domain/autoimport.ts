@@ -1,4 +1,5 @@
 import { toBudgetLines, summarize, type Workbook } from './workbook';
+import { latestReport, lines, money } from './calc';
 import { normalizeSector, type Ledger, type Project, type ReportingPeriod, type Sector } from './types';
 
 /**
@@ -86,4 +87,26 @@ export function applyPlans(L: Ledger, plans: AutoPlan[]): Ledger {
     R.sort((a, b) => a.date.localeCompare(b.date));
   }
   return N;
+}
+
+export interface DiffRow { label: string; before: string; after: string; changed: boolean }
+
+/** Before → after view of what an import changes on the project (shown for review before applying). */
+export function planDiff(L: Ledger, pl: AutoPlan): DiffRow[] {
+  const before = pl.match;
+  const after = applyPlans(L, [pl]).projects.find((p) => p.id === pl.project.id)!;
+  const eur = (x: number) => `€${Math.round(x).toLocaleString('en-GB')}`;
+  const staff = (p?: Project) => new Set((p?.reportingPeriods ?? []).flatMap((r) => (r.snapshot?.staffRecords ?? []).map((s) => s.name)).filter(Boolean)).size;
+  const last = (p?: Project) => latestReport(p ?? ({} as Project))?.date ?? '—';
+  const mb = before ? money(before) : null, ma = money(after);
+  const R: [string, string, string][] = [
+    ['Budget', mb ? eur(mb.budget) : '—', eur(ma.budget)],
+    ['Spent', mb ? eur(mb.spent) : '—', eur(ma.spent)],
+    ['Committed', mb ? eur(mb.committed) : '—', eur(ma.committed)],
+    ['Budget lines', String(before ? lines(before).length : 0), String(lines(after).length)],
+    ['Staff found', String(staff(before)), String(staff(after))],
+    ['Latest report', before ? last(before) : '—', last(after)],
+    ['Reports on file', String(before?.reportingPeriods?.length ?? 0), String(after.reportingPeriods?.length ?? 0)],
+  ];
+  return R.map(([label, b, a]) => ({ label, before: b, after: a, changed: b !== a }));
 }

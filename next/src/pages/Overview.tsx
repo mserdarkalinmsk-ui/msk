@@ -1,6 +1,7 @@
-import { deleteProjects, filtered, set, updateProject, useStore } from '../data/store';
-import { attention, burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
+import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
+import { burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
 import { SECTORS, validUrl, type Project } from '../domain/types';
+import { alerts } from '../domain/insights';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -41,7 +42,7 @@ export function Overview() {
   const cname = (id: string) => countries.find((c) => c.id === id)?.name ?? id;
   const T = totals(P, TODAY);
   const S = portfolioSeries(P, TODAY);
-  const flags = attention(P, TODAY);
+  const flags = alerts(P, TODAY);
   const actualPts = S.filter((x) => x.actual != null);
   const gap = T.burn - T.elapsed;
   const open = (id: string) => set({ drawer: { kind: 'project', id } });
@@ -103,7 +104,7 @@ export function Overview() {
         </section>
 
         <section class="card span-4" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items, most severe first` : 'Nothing flagged'}</p></div></div>
+          <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items, most severe first` : 'Nothing flagged'}</p></div><button class="btn ghost" style={{ marginLeft: 'auto', height: '28px' }} onClick={() => go('reports/alerts')}>Alert centre →</button></div>
           <ul class="att" style={{ marginTop: '12px', maxHeight: '352px', overflow: 'auto' }}>
             {flags.map((f) => {
               const p = P.find((x) => x.id === f.projectId)!;
