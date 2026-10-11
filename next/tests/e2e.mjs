@@ -61,6 +61,12 @@ async function page(opts) {
   await p.click('.toast button'); await p.waitForTimeout(300);
   check(await p.locator('.dt-cell:has-text("GE-NEW")').count() === 0, 'undo removes it');
 
+  // Chart modes
+  for (const m of ['Monthly', 'By country', 'Cumulative']) { await p.click(`.seg button:text-is("${m}")`); await p.waitForTimeout(250); }
+  for (const m of ['Gap', '+ Committed', 'Spent']) { await p.click(`.seg button:text-is("${m}")`); await p.waitForTimeout(150); }
+  await p.click('.seg button:text-is("Sector")'); await p.waitForTimeout(250);
+  check(await p.locator('h2:text-is("Budget by sector")').count() === 1, 'breakdown switches to sector');
+  await p.click('.seg button:text-is("Country")');
   // Chart drill-down: country filter
   await p.click('.chip:has-text("Georgia")'); await p.waitForTimeout(300);
   check((await p.locator('.kpi.lead .ctx').first().textContent()).includes('1 projects'), 'country filter narrows data');
@@ -108,7 +114,10 @@ async function page(opts) {
   await p.keyboard.press('Escape');
 
   // Bulk delete from the table + undo
-  await p.goto(url + '#/projects'); await p.waitForSelector('.dt-row'); await p.waitForTimeout(300);
+  await p.goto(url + '#/projects'); await p.waitForSelector('.pcard');
+  check(await p.locator('.pcard:not(.pcard-add)').count() >= 6, 'projects shown as cards by default');
+  await p.waitForTimeout(700); await p.screenshot({ path: `${shots}/project-cards.png`, fullPage: true });
+  await p.click('.seg button:has-text("List")'); await p.waitForSelector('.dt-row'); await p.waitForTimeout(300);
   const rowsBefore = await p.locator('.dt-row:not(.dt-head):not(.dt-total)').count();
   await p.locator('.dt-row:not(.dt-head):not(.dt-total) input[type=checkbox]').nth(0).check();
   await p.locator('.dt-row:not(.dt-head):not(.dt-total) input[type=checkbox]').nth(1).check();
@@ -177,13 +186,19 @@ async function page(opts) {
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
   await p.click('text=Import / backup');
   await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
-  check(await p.locator('.drawer b:text-is("Financial report workbook")').count() === 1, 'workbook recognised in global import');
-  await p.selectOption('#wb-proj', 'msk'); await p.click('text=Continue to report import'); await p.waitForTimeout(800);
-  check(await p.locator('.drawer :text("Council of Europe financial report workbook")').count() === 1, 'report drawer opens with the workbook summary');
-  check((await p.inputValue('#r-date')) === '2026-09-30', 'report date taken from the workbook period');
-  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400);
-  await p.goto(url + '#/project/msk'); await p.waitForSelector('.ph-title');
+  check(await p.locator('.drawer h2:has-text("1 financial report workbook")').count() === 1, 'workbook recognised in global import');
+  check(await p.locator('.drawer .badge:text-is("new")').count() === 1, 'unmatched workbook becomes a new project');
+  await p.selectOption('.drawer select[aria-label=Country]', 'tr');
+  await p.click('.drawer button:has-text("Import 1 workbook")'); await p.waitForTimeout(500);
+  await p.goto(url + '#/projects'); await p.waitForSelector('.dt-row');
+  check(await p.locator('.dt-cell:has-text("JP9999")').count() === 1, 'project created automatically from the workbook');
+  // assign the same BH to TR-MSK so a second import updates it
+  await p.evaluate(() => 0);
+  const jp = await p.evaluate(() => location.href);
+  await p.locator('.dt-row', { hasText: 'JP9999' }).locator('.dt-cell').nth(2).click(); await p.waitForTimeout(300);
+  await p.click('.drawer-f :text("Open project page")'); await p.waitForSelector('.ph-title');
   check(await p.locator('.ph-meta :text("BH")').count() === 1, 'BH saved to the project from the workbook');
+  void jp;
   await p.click('.tabs button:has-text("Financial report")'); await p.waitForTimeout(700);
   check(await p.locator('.wb-strip :text("700009999")').count() === 1, 'financial report tab shows the contract');
   check(await p.locator('.att li:has-text("20% above budget rate")').count() === 1, 'unit-rate check shown');
@@ -192,6 +207,11 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/financial-report.png`, fullPage: true });
 
   // Appearance options
+  // dropping the same workbook again updates the project instead of duplicating it
+  await p.click('text=Import / backup');
+  await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
+  check(await p.locator('.drawer .badge:text-is("update")').count() === 1, 'second import matches by budget head');
+  await p.keyboard.press('Escape');
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
   for (const st of ['Executive', 'Atlas', 'Bento']) {
     await p.click('text=Appearance'); await p.click(`.style-opt:has-text("${st}")`); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500);

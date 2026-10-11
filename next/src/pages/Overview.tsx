@@ -6,6 +6,7 @@ import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { full, month, pct, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
+import { Count } from '../ui/Count';
 import { MapView, type MapMode } from '../ui/MapView';
 import { mapData, ModeSwitch } from './MapPage';
 import { useState } from 'preact/hooks';
@@ -45,6 +46,10 @@ export function Overview() {
   const gap = T.burn - T.elapsed;
   const open = (id: string) => set({ drawer: { kind: 'project', id } });
   const final = S.at(-1);
+  const [sm, setSm] = useState<'cumulative' | 'monthly' | 'country'>('cumulative');
+  const [pm, setPm] = useState<'spent' | 'exposure' | 'gap'>('spent');
+  const [bm, setBm] = useState<'country' | 'sector' | 'funding'>('country');
+  const keyOf = (p: Project) => (bm === 'country' ? p.country : bm === 'sector' ? p.sector ?? '' : p.funding ?? '');
 
   if (!P.length) return <><Filters /><div class="card empty-page"><div><h2>No projects match</h2><p>Change the filters or add a project.</p></div></div></>;
 
@@ -54,7 +59,7 @@ export function Overview() {
       <section class="hero" aria-label="Key figures">
         <div class="kpi lead">
           <span class="label">Spent to date</span>
-          <span class="value">{short(T.spent)}</span>
+          <span class="value"><Count value={T.spent} format={short} /></span>
           <span class="ctx"><b>{pct(T.burn)}</b> of {short(T.budget)} budget · {T.projects} projects</span>
           <div class="meter" title={`${pct(T.burn)} spent, ${pct(T.elapsed)} of time elapsed`}>
             <span style={{ width: `${Math.min(100, T.burn * 100)}%`, background: 'var(--c1)' }} />
@@ -65,34 +70,35 @@ export function Overview() {
         </div>
         <div class="kpi">
           <span class="label">Burn vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
-          <span class="value">{signedPct(gap)}</span>
+          <span class="value"><Count value={gap} format={signedPct} /></span>
           <span class="ctx">spend share minus time share</span>
           <div class="spark"><Sparkline values={actualPts.map((x) => x.actual!)} target={actualPts.map((x) => x.plan)} /></div>
         </div>
         <div class="kpi">
           <span class="label">Committed</span>
-          <span class="value">{short(T.committed)}</span>
+          <span class="value"><Count value={T.committed} format={short} /></span>
           <span class="ctx"><b>{short(T.exposure)}</b> spent + committed</span>
         </div>
         <div class="kpi">
           <span class="label">Uncommitted balance</span>
-          <span class="value" style={{ color: T.remaining < 0 ? 'var(--critical)' : undefined }}>{short(T.remaining)}</span>
+          <span class="value" style={{ color: T.remaining < 0 ? 'var(--critical)' : undefined }}><Count value={T.remaining} format={short} /></span>
           <span class="ctx">{final?.mid != null ? <>forecast end spend <b>{short(final.mid)}</b></> : 'no forecast'}</span>
         </div>
       </section>
 
       <div class="grid g-12">
         <section class="card span-8">
-          <div class="card-h">
-            <div><h2>Spending over time</h2><p>Cumulative actual spend, linear plan and forecast range (recent burn rate ±20%)</p></div>
+          <div class="card-h" style={{ alignItems: 'center' }}>
+            <div><h2>Spending over time</h2><p>{sm === 'cumulative' ? 'Cumulative actual spend, linear plan and forecast range (recent burn rate ±20%)' : sm === 'monthly' ? 'Spend added each month (interpolated between reports) against the linear plan' : 'Cumulative spend stacked by country'}</p></div>
+            <div class="tools"><div class="seg">{(['cumulative', 'monthly', 'country'] as const).map((m) => <button aria-pressed={sm === m} onClick={() => setSm(m)}>{m === 'cumulative' ? 'Cumulative' : m === 'monthly' ? 'Monthly' : 'By country'}</button>)}</div></div>
           </div>
           <div class="card-b" style={{ paddingTop: '8px' }}>
-            <div class="legend" style={{ marginBottom: '4px' }}>
+            {sm === 'cumulative' && <div class="legend" style={{ marginBottom: '4px' }}>
               <span><i class="line" style={{ background: 'var(--c1)' }} />Actual</span>
               <span><i class="dash" />Linear plan</span>
               <span><i style={{ background: 'var(--c2)', opacity: .25 }} />Forecast range</span>
-            </div>
-            <Chart height={300} label="Cumulative spending over time" option={(t) => spendOption(t, S, T.budget)} />
+            </div>}
+            <Chart height={300} label="Spending over time" option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
           </div>
         </section>
 
@@ -116,18 +122,24 @@ export function Overview() {
         <OverviewMap />
 
         <section class="card span-7">
-          <div class="card-h"><div><h2>Pacing by project</h2><p>Share of budget spent; the tick marks time elapsed. Click a bar for details.</p></div></div>
-          <div class="card-b"><Chart height={Math.max(180, P.length * 40 + 40)} label="Spend share by project with elapsed time" onClick={(e) => e.data?.id && open(e.data.id)} option={(t) => pacingOption(t, P)} /></div>
+          <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Pacing by project</h2><p>{pm === 'gap' ? 'Spend share minus time share — left of zero is behind schedule' : 'Share of budget used; the tick marks time elapsed'} · click a bar for details</p></div>
+            <div class="tools"><div class="seg">{(['spent', 'exposure', 'gap'] as const).map((m) => <button aria-pressed={pm === m} onClick={() => setPm(m)}>{m === 'spent' ? 'Spent' : m === 'exposure' ? '+ Committed' : 'Gap'}</button>)}</div></div></div>
+          <div class="card-b"><Chart height={Math.max(180, P.length * 40 + 40)} label="Pacing by project" onClick={(e) => e.data?.id && open(e.data.id)} option={(t) => pm === 'gap' ? gapOption(t, P) : pacingOption(t, P, pm === 'exposure')} /></div>
         </section>
 
         <section class="card span-5">
-          <div class="card-h"><div><h2>Budget by country</h2><p>Click a country to filter the page</p></div></div>
+          <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Budget by {bm}</h2><p>Click a bar to filter the page</p></div>
+            <div class="tools"><div class="seg">{(['country', 'sector', 'funding'] as const).map((m) => <button aria-pressed={bm === m} onClick={() => setBm(m)}>{m[0].toUpperCase() + m.slice(1)}</button>)}</div></div></div>
           <div class="card-b">
             <div class="legend" style={{ marginBottom: '4px' }}>
               <span><i style={{ background: 'var(--c1)' }} />Spent</span><span><i style={{ background: 'var(--c3)' }} />Committed</span><span><i style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }} />Uncommitted</span>
             </div>
-            <Chart height={Math.max(160, groupBy(P, (p) => p.country).length * 52 + 30)} label="Budget by country" onClick={(e) => e.name && set((s) => ({ filters: { ...s.filters, country: countries.find((c) => c.name === e.name)?.id ?? '' } }))}
-              option={(t) => countryOption(t, groupBy(P, (p) => p.country).map((g) => ({ ...g, key: cname(g.key) })))} />
+            <Chart height={Math.max(160, groupBy(P, keyOf).length * 52 + 30)} label={`Budget by ${bm}`} onClick={(e) => {
+              if (!e.name) return;
+              if (bm === 'country') set((s) => ({ filters: { ...s.filters, country: countries.find((c) => c.name === e.name)?.id ?? '' } }));
+              else if (bm === 'sector') set((s) => ({ filters: { ...s.filters, sector: s.filters.sector === e.name ? '' : e.name } }));
+              else set((s) => ({ filters: { ...s.filters, q: s.filters.q === e.name ? '' : e.name } }));
+            }} option={(t) => countryOption(t, groupBy(P, keyOf).map((g) => ({ ...g, key: bm === 'country' ? cname(g.key) : g.key })))} />
           </div>
         </section>
 
@@ -195,6 +207,52 @@ export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cnam
 }
 
 /* ---------------- chart options ---------------- */
+function monthlyOption(t: Tokens, S: ReturnType<typeof portfolioSeries>) {
+  const A = S.filter((x) => x.actual != null);
+  const M = A.map((x, i) => ({ t: x.t, v: i ? x.actual! - A[i - 1].actual! : 0, plan: i ? x.plan - A[i - 1].plan : 0 })).slice(1);
+  return {
+    ...base(t), grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = M[ps[0].dataIndex]; return `<b>${month(x.t)}</b><br/>Spent ${full(x.v)}<br/><span style="color:${t.ink3}">plan ${full(x.plan)}</span>`; } },
+    xAxis: { type: 'category', data: M.map((x) => month(x.t)), ...axisX(t) },
+    yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
+    series: [
+      { type: 'bar', data: M.map((x) => ({ value: x.v, itemStyle: { color: x.v < x.plan * 0.7 ? t.warn : t.c[0], borderRadius: [3, 3, 0, 0] } })), barWidth: '62%' },
+      { type: 'line', data: M.map((x) => x.plan), symbol: 'none', lineStyle: { color: t.plan, type: 'dashed', width: 1.5 } },
+    ],
+  };
+}
+
+function byCountryOption(t: Tokens, P: Project[], countries: { id: string; name: string }[]) {
+  const ids = [...new Set(P.map((p) => p.country))].sort((a, b) => totals(P.filter((p) => p.country === b), TODAY).budget - totals(P.filter((p) => p.country === a), TODAY).budget);
+  const S = ids.map((id) => portfolioSeries(P.filter((p) => p.country === id), TODAY).filter((x) => x.actual != null));
+  const all = [...new Set(S.flat().map((x) => x.t))].sort((a, b) => a - b);
+  return {
+    ...base(t), grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: true },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', valueFormatter: (v: number) => full(v) },
+    xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
+    yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
+    series: ids.map((id, i) => ({
+      name: countries.find((c) => c.id === id)?.name ?? id, type: 'line', stack: 'c', symbol: 'none', smooth: 0.2,
+      data: all.map((tt) => [tt, S[i].find((x) => x.t === tt)?.actual ?? S[i].filter((x) => x.t < tt).at(-1)?.actual ?? 0]),
+      lineStyle: { width: 1.5, color: t.c[i % 8] }, itemStyle: { color: t.c[i % 8] }, areaStyle: { color: t.c[i % 8], opacity: 0.5 }, emphasis: { focus: 'series' },
+    })),
+  };
+}
+
+function gapOption(t: Tokens, P: Project[]) {
+  const R = P.map((p) => ({ p, g: burnGap(p, TODAY) })).sort((a, b) => a.g - b.g);
+  return {
+    ...base(t), grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${R[x.dataIndex].p.code}</b> ${R[x.dataIndex].p.name}<br/>${signedPct(R[x.dataIndex].g)}` },
+    xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => signedPct(v) } },
+    yAxis: { type: 'category', data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 11.5 } },
+    series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: r.g < -0.3 || r.g > 0.1 ? t.serious : r.g < -0.15 ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
+      label: { show: true, position: 'outside', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => signedPct(x.value) },
+      markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: t.ink3, type: 'solid' }, data: [{ xAxis: 0 }] } }],
+  };
+}
+
 export const axisMoney = (v: number) => (v === 0 ? '0' : Math.abs(v) >= 1e6 ? `€${+(v / 1e6).toFixed(1)}M` : `€${+(v / 1e3).toFixed(0)}K`);
 export const axisX = (t: Tokens) => ({ axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, hideOverlap: true }, splitLine: { show: false } });
 export const axisY = (t: Tokens) => ({ axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, fontFamily: t.mono, formatter: axisMoney }, splitLine: { lineStyle: { color: t.line } } });
@@ -228,8 +286,8 @@ export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, bu
   };
 }
 
-function pacingOption(t: Tokens, P: Project[]) {
-  const R = P.map((p) => { const m = money(p); return { p, b: m.budget ? m.spent / m.budget : 0, c: m.budget ? m.committed / m.budget : 0, el: elapsed(p, TODAY), g: burnGap(p, TODAY) }; })
+function pacingOption(t: Tokens, P: Project[], exposure = false) {
+  const R = P.map((p) => { const m = money(p); const b = m.budget ? m.spent / m.budget : 0, c = m.budget ? m.committed / m.budget : 0; return { p, b, c, el: elapsed(p, TODAY), g: exposure ? b + c - elapsed(p, TODAY) : burnGap(p, TODAY) }; })
     .sort((a, b) => a.g - b.g).reverse();
   const tone = (g: number) => (g < -0.3 ? t.serious : g < -0.15 ? t.warn : g > 0.1 ? t.serious : t.c[0]);
   return {
