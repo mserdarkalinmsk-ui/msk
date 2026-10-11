@@ -320,3 +320,30 @@ table.mini .r { text-align: right; }
 
 .doc-find { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); cursor: pointer; font-size: 13.5px; }
 .doc-find .d { color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
+
+/* ---------- financial statement ---------- */
+.stmt-scroll { overflow: auto; max-height: 70vh; }
+table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 900px; }
+.stmt th, .stmt td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface); }
+.stmt thead th { position: sticky; z-index: 2; background: var(--surface-2); font-size: 11.5px; font-weight: 650; color: var(--ink-2); text-align: left; }
+.stmt thead tr.g th { top: 0; border-bottom: 0; } .stmt thead tr.s th { top: 31px; }
+.stmt thead th.gb, .stmt thead th.ga, .stmt thead th.gp { text-align: center; border-bottom: 2px solid; }
+.stmt thead th.gb { border-color: var(--ink-3); } .stmt thead th.ga { border-color: var(--c1); } .stmt thead th.gp { border-color: var(--c2); }
+.stmt .r { text-align: right; } .stmt .pin { position: sticky; left: 0; z-index: 1; min-width: 300px; max-width: 420px; overflow: hidden; text-overflow: ellipsis; box-shadow: 1px 0 0 var(--line); }
+.stmt thead .pin { z-index: 3; }
+.stmt tr.grp td { font-weight: 650; }
+.stmt tr.d0 td { background: var(--surface-2); font-size: 13.5px; border-top: 1px solid var(--line-strong); }
+.stmt tr.d1.grp td { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+.stmt tbody tr:hover td { background: var(--surface-hover); }
+.stmt tr.over td:not(.pin) { color: var(--critical); }
+.stmt td.warn { color: var(--warn); font-weight: 700; } .stmt td.up { color: var(--serious); } .stmt td.down { color: var(--good); }
+.stmt .tw { display: inline-block; width: 16px; border: 0; background: none; padding: 0; cursor: pointer; color: var(--ink-3); font-size: 11px; }
+.stmt .cd { color: var(--ink-3); font-size: 12px; margin-right: 4px; }
+.stmt .usedc { min-width: 140px; } .stmt .usedc { display: table-cell; } .stmt .usedc .minibar { display: inline-block; width: 80px; vertical-align: middle; margin-right: 8px; } .stmt .usedc .num { font-size: 12px; }
+.stmt tfoot td { position: sticky; background: var(--surface-2); font-weight: 700; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.stmt tfoot tr.t1 td { bottom: 66px; border-top: 2px solid var(--ink-3); } .stmt tfoot tr.t2 td { bottom: 33px; font-weight: 500; } .stmt tfoot tr.t3 td { bottom: 0; border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); background: var(--surface); font-size: 14px; }
+.stmt tfoot td:first-child { font-family: var(--font); }
+.stmt-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; padding: 10px var(--s5); }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .lg.over { background: var(--critical); } .lg.warn { background: var(--warn); }
+@media print { .stmt-scroll { max-height: none; overflow: visible; } .stmt thead th, .stmt tfoot td, .stmt .pin { position: static; } .dt-bar, .tabs, .wb-strip .btn, .ph-actions { display: none !important; } }
+.stmt tfoot td.tl { left: 0; z-index: 4; box-shadow: 1px 0 0 var(--line); }
