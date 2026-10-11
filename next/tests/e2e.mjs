@@ -224,7 +224,12 @@ async function page(opts) {
   await p.click('.tabs button:has-text("Activity plan")'); await p.waitForTimeout(200);
   check(await p.locator('.gantt .ga').count() === 3, 'action plan replaced from the DoA');
   await p.click('.tabs button:has-text("Results & documents")'); await p.waitForTimeout(200);
-  check(await p.locator('td:has-text("Judges trained")').count() === 1 && await p.locator('dd:has-text("700008888")').count() === 1, 'indicators and contract shown');
+  check(await p.locator('dd:has-text("700008888")').count() === 1, 'contract shown');
+  await p.click('.tabs button:has-text("Indicators")'); await p.waitForTimeout(200);
+  check(await p.locator('.lf-row:has-text("Judges trained")').count() === 1, 'indicators tab lists the logframe');
+  await p.screenshot({ path: `${shots}/indicators.png`, fullPage: true });
+  await p.click('.tabs button:has-text("Justification")'); await p.waitForTimeout(200);
+  check(await p.locator('h2:text-is("Budget justification")').count() === 1, 'justification tab');
   await p.click('.tabs button:has-text("Reports")'); await p.click('.tabs button:has-text("Summary")');
 
   // Appearance options
