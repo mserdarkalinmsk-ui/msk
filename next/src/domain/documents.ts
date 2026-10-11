@@ -210,13 +210,17 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
     }
     if (code === '8' || /contingency/i.test(desc)) { contingency = nums[0] ?? 0; continue; }
     if (code === '9') continue;
-    if (code === '10' || /administrative costs/i.test(desc)) { admin = nums[0] ?? 0; continue; }
+    if (code === '10' || /administrative costs/i.test(desc)) { admin = admin || (nums[0] ?? 0); continue; }
     if (!code.includes('.') && !unit) continue; // heading row ("1 Human resources")
     if (unit && nums.length >= 3) lines.push({ code, description: desc, unit, approvedUnits: nums[0], unitRate: nums[1], approved: nums[2] });
     else if (unit && nums.length === 0) continue; // unused template row
     else if (!unit && nums.length >= 1 && code.split('.').length >= 2) lines.push({ code, description: desc, approved: nums.at(-1) });
   }
   // Each heading's own sub-total wins: rows under a heading whose sub-total is nil are template/other-table noise.
+  // The same line often appears on several sheets/tables (budget + justification): keep its first occurrence.
+  const seen = new Set<string>();
+  const uniq = lines.filter((l) => (seen.has(l.code) ? false : (seen.add(l.code), true)));
+  lines.length = 0; lines.push(...uniq);
   const leaves = lines.filter((l) => (l.approved ?? 0) > 0 && !lines.some((x) => x !== l && x.code.startsWith(l.code + '.')) && subs.get(l.code.split('.')[0]) !== 0);
   if (leaves.length < 3) return null;
   const sum = leaves.reduce((s, l) => s + (l.approved ?? 0), 0);
