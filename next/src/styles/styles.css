@@ -233,7 +233,7 @@ details.jt-row { border-top: 1px solid var(--line); }
 /* ---------- project cockpit ---------- */
 .cockpit{--tc:var(--good);position:relative;border-radius:var(--r-lg);padding:22px 24px 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 9%,var(--surface)),var(--surface) 60%);border:1px solid var(--line);box-shadow:var(--shadow-1);overflow:hidden;animation:ck-in .5s ease both}
 .cockpit::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--tc)}
-.cockpit.tone-warning{--tc:var(--warning)}.cockpit.tone-critical{--tc:var(--critical)}
+.cockpit.tone-warning{--tc:var(--warn)}.cockpit.tone-critical{--tc:var(--critical)}
 @keyframes ck-in{from{opacity:0;transform:translateY(6px)}}
 .ck-story{margin:0 0 22px;font-size:18px;line-height:1.45;color:var(--ink-2);max-width:900px;text-wrap:pretty}.ck-story b{color:var(--ink);font-weight:650}
 .ck-track{position:relative;height:46px;margin:0 6px 8px}
@@ -254,3 +254,29 @@ details.jt-row { border-top: 1px solid var(--line); }
 @media (max-width:760px){.ck-stats{grid-template-columns:1fr 1fr}.ck-stats>div:nth-child(3){border-left:0}.ck-story{font-size:16px}}
 /* ---------- portfolio bubble ---------- */
 .pf-bubble{margin-bottom:16px}
+.idc-g{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;padding:4px 24px 22px}
+.idc h3{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 8px;font-weight:600}
+.idc-goals{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px;line-height:1.45}
+.idc-out{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13px;color:var(--ink-2)}.idc-out li{padding:6px 10px;border-radius:6px;background:var(--surface-2)}
+.idc-stack{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px}
+.idc-heads{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:13px}.idc-heads li{display:flex;align-items:center;gap:8px}
+.idc-heads i{width:9px;height:9px;border-radius:2px}.idc-heads b{margin-left:auto}.idc-heads small{width:36px;text-align:right;color:var(--ink-3)}
+.idc-terms{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:13px}.idc-terms dt{color:var(--ink-3)}.idc-terms dd{margin:0}
+@media (max-width:860px){.idc-g{grid-template-columns:1fr}}
+/* compact cockpit + tinted project tiles */
+.cockpit{padding:14px 20px 12px}
+.ck-story{font-size:15px;margin:0 0 14px}
+.ck-track{height:36px;margin:0 4px 4px}.ck-rail{top:12px;height:8px}.ck-rep{top:7px;height:18px}.ck-dl{top:22px;width:8px;height:8px;margin-left:-4px}
+.ck-today em{top:-13px;font-size:9.5px}.ck-ends{bottom:-6px;font-size:11px}
+.ck-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ck-chips span{font-size:12.5px;color:var(--ink-2);padding:5px 10px;border-radius:99px;background:var(--surface-2)}.ck-chips b{color:var(--ink);margin-left:4px}
+.ck-chips span.bad{background:color-mix(in srgb,var(--critical) 12%,var(--surface));color:var(--critical)}
+.ph-tiles{gap:10px;background:transparent;border:0;box-shadow:none;padding:0}
+.ph-tiles .kpi{border:0 !important;border-radius:var(--r-lg);padding:14px 18px;--t:var(--c1);background:color-mix(in srgb,var(--t) 10%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t) 22%,transparent)}
+.ph-tiles .kpi:nth-child(2){--t:var(--c3)}.ph-tiles .kpi:nth-child(3){--t:var(--c2)}.ph-tiles .kpi:nth-child(4){--t:var(--c5)}
+.ph-tiles .kpi .value{font-size:26px}.ph-tiles .kpi.lead .value{font-size:30px}
+.ph-tiles .kpi .label{color:color-mix(in srgb,var(--t) 70%,var(--ink))}
+.attn-g{list-style:none;margin:0;padding:4px 16px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.attn-g li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;--t:var(--warn);background:color-mix(in srgb,var(--t) 8%,var(--surface));border-left:3px solid var(--t)}
+.attn-g li.sev-critical{--t:var(--critical)}.attn-g li.sev-serious{--t:var(--serious)}.attn-g li.sev-info{--t:var(--ink-3)}
+.attn-g li>div{display:flex;flex-direction:column;gap:2px;min-width:0}.attn-g b{font-size:13.5px;font-weight:600}.attn-g small{font-size:12px;color:var(--ink-2);line-height:1.4}
