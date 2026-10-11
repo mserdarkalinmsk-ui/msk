@@ -1,12 +1,13 @@
 import { useState } from 'preact/hooks';
 import { filtered, useStore } from '../data/store';
-import { compareReports, elapsed, money, planStats, reportsByDate, reportTotals, riskScore } from '../domain/calc';
+import { compareReports, elapsed, lineExposure, lines, money, planStats, reportsByDate, reportTotals, riskScore } from '../domain/calc';
 import { headings, outcome } from '../domain/insights';
 import { progress, tidy } from '../domain/logframe';
 import { roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, pct } from '../ui/format';
+import { latestWorkbook } from './FinancialReport';
 import { download, type Cell, type SheetSpec } from '../ui/xlsxwrite';
 
 const SECTIONS = [
@@ -156,42 +157,70 @@ function LineTable({ rows, el }: { rows: LA[]; el: number }) {
   );
 }
 
-/** All projects side by side — money, pace, forecast, results, people and open issues — ready to print. */
+/* ---------- Expenditure monitoring (same layout and logic as the CoE monitoring sheet) ---------- */
+const rateTone = (v: number) => v >= 1 ? 'em-blue' : v >= 0.9 ? 'em-green' : v >= 0.7 ? 'em-amber' : 'em-red';
+const staffTone = (v: number) => v >= 0.5 ? '#d9534f' : v > 0.35 ? '#e8b96a' : '#4f9a7a';
+const d8 = (iso: string) => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '';
+const n0 = (v: number) => Math.round(v).toLocaleString('en-GB');
+const p0 = (v: number) => `${Math.round(v * 100)}%`;
+
+/** Expenditure monitoring: one row per project — performance (spent vs planned), S&C vs planned, amounts, forecast, staff ratios. */
 export function Compare() {
   const s = useStore((x) => x);
   const P = filtered(s).filter((p) => !p.datesTbc);
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
+  const scope = s.filters.country ? cname(s.filters.country) : 'All countries';
   const rows = P.map((p) => {
-    const m = money(p), o = outcome(p, TODAY), el = elapsed(p, TODAY), pl = planStats(p, TODAY);
-    const I = (p.indicators ?? []).map(progress).filter((v): v is number => v != null);
-    const risks = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open' && riskScore(r) >= 12).length;
-    return { p, m, o, el, used: m.budget ? m.spent / m.budget : 0, pl, ind: I.length ? I.reduce((a, b) => a + Math.min(1, b), 0) / I.length : null, staff: roster(p, TODAY).filter((a) => a.status === 'Active').length, risks };
-  });
-  const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, c: a.c + r.m.committed, f: a.f + Math.min(r.o.projected, r.m.budget) }), { b: 0, s: 0, c: 0, f: 0 });
-  const bar = (v: number, mark?: number, bad?: boolean) => <div class="cmp-bar"><span style={{ width: `${Math.min(100, v * 100)}%`, background: bad ? '#b42318' : '#1f4e9c' }} />{mark != null && <i style={{ left: `${Math.min(100, mark * 100)}%` }} />}</div>;
-  const xlsx = () => download(`portfolio-comparison-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Comparison', rows: [['Code', 'Project', 'Country', 'Sector', 'Budget', 'Spent', 'Committed', 'Spent %', 'Time %', 'Forecast at end', 'Forecast %', 'Activities done', 'Activities late', 'Indicator progress', 'Active staff', 'High risks'],
-    ...rows.map((r) => [r.p.code, r.p.name, cname(r.p.country), r.p.sector ?? '', r.m.budget, r.m.spent, r.m.committed, pct(r.used), pct(r.el), r.o.projected, pct(r.o.utilisation), r.pl ? `${r.pl.done}/${r.pl.total}` : '', r.pl?.late ?? '', r.ind == null ? '' : pct(r.ind), r.staff, r.risks])], money: [4, 5, 6, 9] }]);
+    const m = money(p), el = elapsed(p, TODAY), planned = m.budget * el, L = lines(p);
+    const hr = L.filter((l) => l.code.split('.')[0] === '1' && !L.some((x) => x !== l && x.code.startsWith(l.code + '.')));
+    const hrS = hr.reduce((a, l) => a + (l.actual ?? 0), 0), hrSC = hr.reduce((a, l) => a + lineExposure(l), 0);
+    const fc = L.reduce((a, l) => a + (l.forecast ?? 0), 0);
+    const under = fc ? Math.max(0, Math.round(m.budget - m.exposure - fc)) : 0;
+    const perf = planned ? m.spent / planned : 0, scp = planned ? m.exposure / planned : 0;
+    const wb = latestWorkbook(p)?.snapshot?.workbook;
+    const ccm = wb?.situation?.[0]?.ccm ?? (p.contract as { ccm?: string } | undefined)?.ccm ?? '';
+    const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
+    return { p, m, planned, perf, scp, ccm, under, note, sr: m.spent ? hrS / m.spent : 0, scr: m.exposure ? hrSC / m.exposure : 0, pct: m.budget ? m.exposure / m.budget : 0 };
+  }).sort((a, b) => b.perf - a.perf);
+  const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.m.exposure, pl: a.pl + r.planned, u: a.u + r.under,
+    hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
+  const tp = T.pl ? T.s / T.pl : 0, tsc = T.pl ? T.sc / T.pl : 0;
+  const xlsx = () => download(`expenditure-monitoring-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Expenditure monitoring', rows: [
+    ['Expenditure monitoring', rows.length, scope, d8(TODAY.toISOString()), 'Spent vs planned', p0(tp), 'Spent and committed vs planned', p0(tsc)], [],
+    ['Performance', 'S&C vs planned', 'CCM', 'Title', 'Country', 'MAE', 'PMM', 'BH', 'Start date', 'End date', 'Source of funding', 'Notes', 'Project amount', 'Spent (actual, T)', 'Spent and Committed (T)', 'Left budget (T)', 'Underspent/overspent forecast', 'Staff ratio (spent)', 'Staff ratio (S&C)', 'S&C as % of project amount'],
+    ...rows.map((r) => [p0(r.perf), p0(r.scp), r.ccm, r.p.name, cname(r.p.country), r.p.mae ?? '', r.p.pmm ?? r.p.jp ?? '', r.p.bh ?? '', d8(r.p.start), d8(r.p.end), r.p.funding ?? '', r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : '', r.m.budget, r.m.spent, r.m.exposure, r.m.budget - r.m.exposure, r.under, p0(r.sr), p0(r.scr), p0(r.pct)]),
+    ['Grand Total', '', '', '', '', '', '', '', '', '', '', '', T.b, T.s, T.sc, T.b - T.sc, T.u, p0(T.s ? T.hs / T.s : 0), p0(T.sc ? T.hsc / T.sc : 0), p0(T.b ? T.sc / T.b : 0)]], money: [12, 13, 14, 15, 16] }]);
+  const dot = (v: number) => <span class="em-dot" style={{ background: staffTone(v) }} />;
   return (
-    <article class="studio-doc cmp">
-      <header class="sd-h" style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-        <div style={{ flex: 1 }}><div class="sd-k">Portfolio comparison</div><h1>{P.length} projects at {date(TODAY.toISOString().slice(0, 10))}</h1>
-          <div class="sd-m">Budget {full(T.b)} · spent {full(T.s)} ({pct(T.b ? T.s / T.b : 0)}) · committed {full(T.c)} · forecast use {pct(T.b ? T.f / T.b : 0)}</div></div>
-        <div class="no-print" style={{ display: 'flex', gap: '8px' }}><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+    <article class="em">
+      <div class="no-print em-tools"><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+      <header class="em-h">
+        <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
+          <tr><td>100%</td><td>-</td><td class="em-blue" /></tr><tr><td>90%</td><td>100%</td><td class="em-green" /></tr>
+          <tr><td>70%</td><td>90%</td><td class="em-amber" /></tr><tr><td>0%</td><td>70%</td><td class="em-red" /></tr></tbody></table>
+        <h1>Expenditure monitoring</h1>
+        <b class="em-n">{rows.length}</b><b class="em-c">{scope}</b><b class="em-d">{d8(TODAY.toISOString())}</b>
+        <div class="em-box"><span>Spent vs planned</span><b class={rateTone(tp)}>{p0(tp)}</b><span>Spent and committed vs planned</span><b class={rateTone(tsc)}>{p0(tsc)}</b></div>
+        <div class="em-x">Extraction date: <span>{date(TODAY.toISOString().slice(0, 10)).toUpperCase()}</span></div>
+        <div class="em-tf">T: Today<br />F: Forecast at end</div>
+        <table class="em-key em-key2"><caption>Colour codes for staff ratios</caption><tbody>
+          <tr><td>0%</td><td>35%</td><td>{dot(0.1)}</td></tr><tr><td>35%</td><td>50%</td><td>{dot(0.4)}</td></tr><tr><td>50%</td><td>100%</td><td>{dot(0.6)}</td></tr></tbody></table>
       </header>
-      <div class="sd-scroll"><table class="sd-t cmp-t">
-        <thead><tr><th>Project</th><th class="r">Budget</th><th>Spent vs time</th><th class="r">Forecast at end</th><th>Activities</th><th>Indicators</th><th class="r">Staff</th><th class="r">High risks</th></tr></thead>
+      <div class="sd-scroll"><table class="em-t">
+        <thead><tr><th>Performance</th><th>S&C vs planned</th><th>CCM</th><th class="em-title">Title</th><th>Country</th><th>MAE</th><th>PMM</th><th>BH</th><th>Start date</th><th>End date</th><th>Source of funding</th><th>Notes</th>
+          <th>Project amount</th><th>Spent (actual, T)</th><th>Spent and Committed (T)</th><th>Left budget (T)</th><th>Underspent/ overspent forecast</th><th>Staff ratio (spent)</th><th>Staff ratio (S&C)</th><th>S&C as % of project amount</th></tr></thead>
         <tbody>{rows.map((r) => <tr>
-          <td><b>{r.p.code}</b> · {r.p.name}<br /><small class="sd-u">{cname(r.p.country)} · {r.p.sector} · {date(r.p.start)} – {date(r.p.end)}</small></td>
-          <td class="r num">{full(r.m.budget)}</td>
-          <td style={{ minWidth: '150px' }}>{bar(r.used, r.el, r.used - r.el < -0.25)}<small class="sd-u">{pct(r.used)} spent · {pct(r.el)} time</small></td>
-          <td class="r num">{full(r.o.projected)}<br /><small class={r.o.utilisation < 0.85 || r.o.overrun ? 'up' : 'sd-u'}>{pct(r.o.utilisation)} of budget</small></td>
-          <td>{r.pl ? <>{bar(r.pl.total ? r.pl.done / r.pl.total : 0)}<small class={r.pl.late ? 'up' : 'sd-u'}>{r.pl.done}/{r.pl.total} done{r.pl.late ? ` · ${r.pl.late} late` : ''}</small></> : <small class="sd-u">no plan</small>}</td>
-          <td>{r.ind == null ? <small class="sd-u">not measured</small> : <>{bar(r.ind)}<small class="sd-u">{pct(r.ind)} average</small></>}</td>
-          <td class="r num">{r.staff}</td><td class={`r num ${r.risks ? 'up' : ''}`}>{r.risks}</td>
+          <td class={`em-rate ${rateTone(r.perf)}`}>{p0(r.perf)}</td><td class={`em-rate ${rateTone(r.scp)}`}>{p0(r.scp)}</td>
+          <td class="em-ccm">{r.ccm}</td><td class="em-title em-g">{r.p.name}</td><td>{cname(r.p.country)}</td><td class="em-g">{r.p.mae ?? ''}</td>
+          <td><b>{r.p.pmm ?? r.p.jp ?? ''}</b></td><td class="em-g">{r.p.bh ?? ''}</td><td>{d8(r.p.start)}</td><td class="em-g">{d8(r.p.end)}</td><td>{r.p.funding ?? ''}</td>
+          <td class={r.note === 'over' ? 'em-over' : r.note === 'under' ? 'em-under' : ''}>{r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : ''}</td>
+          <td class="r">{n0(r.m.budget)}</td><td class="r">{n0(r.m.spent)}</td><td class="r">{n0(r.m.exposure)}</td><td class="r">{n0(r.m.budget - r.m.exposure)}</td><td class="r">{n0(r.under)}</td>
+          <td class="em-sr">{dot(r.sr)}{p0(r.sr)}</td><td class="em-sr">{dot(r.scr)}{p0(r.scr)}</td><td>{p0(r.pct)}</td>
         </tr>)}</tbody>
-        <tfoot><tr class="sd-tot"><td>Total</td><td class="r num">{full(T.b)}</td><td>{pct(T.b ? T.s / T.b : 0)} spent</td><td class="r num">{full(T.f)}</td><td colSpan={4} /></tr></tfoot>
+        <tfoot><tr><td colSpan={12}>Grand Total</td><td class="r">{n0(T.b)}</td><td class="r">{n0(T.s)}</td><td class="r">{n0(T.sc)}</td><td class="r">{n0(T.b - T.sc)}</td><td class="r">{n0(T.u)}</td>
+          <td class="em-sr">{dot(T.s ? T.hs / T.s : 0)}{p0(T.s ? T.hs / T.s : 0)}</td><td class="em-sr">{dot(T.sc ? T.hsc / T.sc : 0)}{p0(T.sc ? T.hsc / T.sc : 0)}</td><td>{p0(T.b ? T.sc / T.b : 0)}</td></tr></tfoot>
       </table></div>
-      <footer class="sd-f">Bar = share spent; the tick marks the share of time elapsed. Red when spending is more than 25 points behind time. High risks = open risks with likelihood × impact ≥ 12.</footer>
+      <p class="em-foot no-print">Planned = project amount × share of the implementation period elapsed at today. Performance = spent ÷ planned; S&C = spent and committed. Staff ratio = heading 1 (human resources) as a share of spent / S&C. Underspent forecast = project amount − S&C − remaining forecast in the latest report.</p>
     </article>
   );
 }

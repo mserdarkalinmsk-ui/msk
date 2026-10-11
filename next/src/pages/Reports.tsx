@@ -23,7 +23,7 @@ export function Reports() {
       <div class="no-print"><Filters /></div>
       <div class="tabs no-print" role="tablist">
         <button role="tab" aria-selected={tab === 'studio'} onClick={() => setTab('studio')}>Report studio</button>
-        <button role="tab" aria-selected={tab === 'compare'} onClick={() => setTab('compare')}>Portfolio comparison</button>
+        <button role="tab" aria-selected={tab === 'compare'} onClick={() => setTab('compare')}>Expenditure monitoring</button>
         <button role="tab" aria-selected={tab === 'brief'} onClick={() => setTab('brief')}>Executive brief</button>
         <button role="tab" aria-selected={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert centre</button>
         <button role="tab" aria-selected={tab === 'changes'} onClick={() => setTab('changes')}>What changed</button>
