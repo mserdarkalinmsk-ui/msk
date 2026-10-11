@@ -44,7 +44,7 @@ export function plan(wb: Workbook, fileName: string, L: Ledger, taken = new Set<
   if (match) {
     project = { ...match, bh: match.bh || m.bh, contractNo: match.contractNo || m.contract, jp: match.jp || m.jp };
     // The workbook's total eligible budget (all years, incl. 7% admin) is authoritative for the project budget.
-    if (E && E.budget > 0 && Math.abs(E.budget - match.budget) > 1) {
+    if (E && E.budget > 0 && Math.abs(E.budget - match.budget) > 1 && !match.approvedBudget) {
       guessed.push(`budget updated ${Math.round(match.budget).toLocaleString('en-GB')} → ${Math.round(E.budget).toLocaleString('en-GB')} (total eligible, all years)`);
       project.budget = Math.round(E.budget * 100) / 100;
     }

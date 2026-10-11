@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import seed from '../data/seed.json';
+import seed from '../data/demo.json';
 import type { Ledger, Project } from './types';
 import { attention, burnGap, elapsed, groupBy, money, portfolioSeries, spendAt, totals, validateLedger } from './calc';
 

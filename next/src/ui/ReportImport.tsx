@@ -101,16 +101,20 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const staff = useCoe ? { records: coe!.staff, groups: coe!.staffGroups } : file?.wb ? extractStaff(file.wb.sheets.map((n) => ({ name: n, R: file.wb!.read(n) }))) : null;
   const report: ReportingPeriod = { id: 'r' + Date.now().toString(36), name: meta.name.trim() || 'Report', type: meta.type, date: reportDate ?? meta.date, fileName: file?.name, registeredAt: new Date().toISOString(),
     snapshot: { format: useCoe ? 'CoE workbook' : 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}), ...(useCoe ? { workbook: summarize(coe!, file?.name) } : {}) } };
-  const idWarn: string[] = [];
+  const idWarn: string[] = [], idErr: string[] = [];
   if (useCoe) {
-    if (p.bh && coe!.meta.bh && p.bh !== coe!.meta.bh) idWarn.push(`This file is for budget head ${coe!.meta.bh}, but ${p.code} has budget head ${p.bh}`);
-    if (p.contractNo && coe!.meta.contract && p.contractNo !== coe!.meta.contract) idWarn.push(`Contract ${coe!.meta.contract} in the file differs from ${p.contractNo} on the project`);
+    if (p.bh && coe!.meta.bh && p.bh !== coe!.meta.bh) idErr.push(`This file is for budget head ${coe!.meta.bh}, but ${p.code} has budget head ${p.bh}`);
+    if (p.contractNo && coe!.meta.contract && p.contractNo !== coe!.meta.contract) idErr.push(`Contract ${coe!.meta.contract} in the file differs from ${p.contractNo} on the project`);
+    if (p.jp && coe!.meta.jp && p.jp !== coe!.meta.jp) idErr.push(`This file is for JP ${coe!.meta.jp}, but ${p.code} is JP ${p.jp}`);
+    const eb = coe!.totals.eligible?.budget;
+    if (p.approvedBudget && eb && Math.abs(eb - p.approvedBudget.total) > 1) idWarn.push(`Report budget ${Math.round(eb).toLocaleString('en-GB')} differs from the approved budget ${Math.round(p.approvedBudget.total).toLocaleString('en-GB')} (${p.approvedBudget.source}); the approved budget is kept`);
   }
   const fillIds = useCoe && ((!p.bh && coe!.meta.bh) || (!p.contractNo && coe!.meta.contract) || (!p.jp && coe!.meta.jp));
   const missing = useCoe ? [] : LF.filter((f) => f.req && map[f.key] == null).map((f) => f.label);
   const checks = file ? [...missing.map((m) => ({ level: 'error' as const, text: `Choose the column for “${m}”` })), ...rowErr.slice(0, 5).map((t) => ({ level: 'error' as const, text: t })), ...(missing.length ? [] : checkReport(p, report))] : [];
   if (file && !reportDate) checks.unshift({ level: 'error', text: 'Report date is invalid' });
   idWarn.forEach((t) => checks.unshift({ level: 'warning', text: t }));
+  idErr.forEach((t) => checks.unshift({ level: 'error', text: `${t} — this report belongs to another project` }));
   const errors = checks.filter((c) => c.level === 'error');
   const prev = reportsByDate(p).filter((r) => r.date <= report.date).at(-1);
   const t = reportTotals(report);
@@ -171,7 +175,8 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
         <button class="btn" onClick={close}>Cancel</button>
         <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => {
           upsertReport(p.id, report);
-          const eb = useCoe ? coe!.totals.eligible?.budget : undefined;
+          // An approved budget baseline (DoA annex) stays authoritative; reports only set the budget when there is none.
+          const eb = useCoe && !p.approvedBudget ? coe!.totals.eligible?.budget : undefined;
           if ((fillIds && saveIds) || (eb && Math.abs(eb - p.budget) > 1))
             updateProject(p.id, { ...(fillIds && saveIds ? { bh: p.bh || coe!.meta.bh, contractNo: p.contractNo || coe!.meta.contract, jp: p.jp || coe!.meta.jp } : {}), ...(eb ? { budget: Math.round(eb * 100) / 100 } : {}) });
           close();

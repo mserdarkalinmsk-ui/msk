@@ -111,13 +111,15 @@ function Summary({ p }: { p: Project }) {
 
 interface LineV { code: string; description: string; approved: number; actual: number; committed: number; exposure: number; used: number }
 function Lines({ p }: { p: Project }) {
-  const rep = reportsByDate(p).filter((r) => r.snapshot?.lines.length).at(-1);
+  const rep = reportsByDate(p).filter((r) => r.snapshot?.lines.length).at(-1)
+    ?? (p.approvedBudget ? { id: '__approved', name: 'Approved budget', type: `baseline from ${p.approvedBudget.source}`, date: (p.approvedBudget.importedAt ?? p.start).slice(0, 10), snapshot: { lines: p.approvedBudget.lines } } as ReportingPeriod : undefined);
   if (!rep) return <div class="card empty-page"><div><h2>No budget lines yet</h2><p>Import an approved budget or a financial report.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button></div></div>;
   const rows: LineV[] = rep.snapshot!.lines.map((l) => { const ex = lineExposure(l), ap = l.approved ?? 0; return { code: l.code, description: l.description ?? '', approved: ap, actual: l.actual ?? 0, committed: ex - (l.actual ?? 0), exposure: ex, used: ap ? ex / ap : 0 }; });
-  const ed = (f: 'approved' | 'actual' | 'committed') => ({ type: 'text' as const, commit: (r: LineV, v: string) => { const x = parseAmount(v); if (x != null && x >= 0) updateLine(p.id, rep.id, r.code, { [f]: x }); } });
+  const ro = rep.id === '__approved'; // the approved baseline is replaced by a newer approved budget, not edited
+  const ed = (f: 'approved' | 'actual' | 'committed') => ro ? undefined : ({ type: 'text' as const, commit: (r: LineV, v: string) => { const x = parseAmount(v); if (x != null && x >= 0) updateLine(p.id, rep.id, r.code, { [f]: x }); } });
   const cols: Column<LineV>[] = [
     { key: 'code', label: 'Line', width: 70, pin: true, value: (r) => r.code, render: (r) => <span class="num">{r.code}</span> },
-    { key: 'description', label: 'Description', width: 240, value: (r) => r.description, edit: { type: 'text', commit: (r, v) => updateLine(p.id, rep.id, r.code, { description: v }) } },
+    { key: 'description', label: 'Description', width: 240, value: (r) => r.description, edit: ro ? undefined : { type: 'text', commit: (r, v) => updateLine(p.id, rep.id, r.code, { description: v }) } },
     { key: 'approved', label: 'Approved', width: 130, align: 'r', sum: true, format: full, value: (r) => r.approved, edit: ed('approved') },
     { key: 'actual', label: 'Spent', width: 130, align: 'r', sum: true, format: full, value: (r) => r.actual, edit: ed('actual') },
     { key: 'committed', label: 'Committed', width: 130, align: 'r', sum: true, format: full, value: (r) => r.committed, edit: ed('committed') },

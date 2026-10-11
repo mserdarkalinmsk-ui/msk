@@ -8,9 +8,9 @@ export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; par
 export interface Indicator { id: string; result: string; indicator: string; baseline: string; target: string; source: string }
 export interface ContractFacts {
   number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;
-  repMonths?: number; progDays?: number; prefinancing?: number;
+  repMonths?: number; progDays?: number; prefinancing?: number; jp?: string; bh?: string;
 }
-export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; summary: string[] }
+export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; summary: string[] }
 
 /* ---------- helpers ---------- */
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -52,6 +52,9 @@ export function contractFacts(doc: Doc): ContractFacts {
   if (f.start && f.months && !f.end) f.end = addMonths(f.start, f.months);
   const rep = pick(/(?:report|reports)[^.]{0,80}?every\s+(\d{1,2})\s+months/i) ?? pick(/every\s+(\d{1,2})\s+months[^.]{0,60}?report/i); if (rep) f.repMonths = +rep;
   const pd = pick(/within\s+(\d{2,3})\s+days[^.]{0,80}?(?:end of|after)[^.]{0,40}?(?:reporting )?period/i); if (pd) f.progDays = +pd;
+  const jp = pick(/\bJP\s*[:n°#]*\s*(\d{3,5})\b/); if (jp) f.jp = jp;
+  const bh = pick(/\bBH\s*[:n°#]*\s*(\d{3,})\b/); if (bh) f.bh = bh;
+  if (!f.title && doc.paragraphs[0] && /\b(?:in|for)\s+[A-ZÇİÖŞÜ]/.test(doc.paragraphs[0]) && doc.paragraphs[0].length < 160 && /budget/i.test(doc.paragraphs.slice(0, 8).join(' ') + doc.tables.flat(2).slice(0, 20).join(' '))) f.title = clean(doc.paragraphs[0]);
   const pf = pick(/pre-?financing[^.]{0,80}?(\d{1,3})\s*%/i); if (pf) f.prefinancing = +pf;
   for (const k of Object.keys(f) as (keyof ContractFacts)[]) if (f[k] == null || f[k] === '') delete f[k];
   return f;
@@ -70,7 +73,10 @@ function monthHeader(row: string[]) {
   });
   // calendar month headers: number them in order
   let k = 0; for (const [i, v] of [...map]) if (v === -1) map.set(i, ++k);
-  return map.size >= 3 ? map : null;
+  // a real timeline has several consecutive month columns (1 2 3 … or Jan Feb Mar …)
+  const v = [...map.values()];
+  const consecutive = v.filter((x, i) => i && x === v[i - 1] + 1).length;
+  return map.size >= 3 && consecutive >= map.size - 1 ? map : null;
 }
 export function actionPlan(doc: Doc): { acts: Activity[]; months: number } | null {
   for (const T of doc.tables) {
@@ -126,11 +132,56 @@ export function indicators(doc: Doc): Indicator[] {
 }
 
 export function analyse(doc: Doc): DocFindings {
-  const contract = contractFacts(doc), plan = actionPlan(doc), R = risks(doc), I = indicators(doc);
+  const contract = contractFacts(doc), plan = actionPlan(doc), R = risks(doc), I = indicators(doc), budget = approvedBudget(doc);
   const summary = [
+    budget && `approved budget €${Math.round(budget.total).toLocaleString('en-GB')} (${budget.lines.length} lines)`,
     Object.keys(contract).length && `${Object.keys(contract).length} contract facts`,
     plan && `${plan.acts.length} activities over ${plan.months} months`,
     R.length && `${R.length} risks`, I.length && `${I.length} indicators`,
   ].filter(Boolean) as string[];
-  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, summary };
+  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, summary };
+}
+
+/* ---------- approved budget (CoE "Budget for all years" template, DoA annex) ---------- */
+export interface ApprovedBudget { lines: import('./types').BudgetLine[]; direct: number; admin: number; contingency: number; total: number; source: string; linesSum: number; importedAt?: string }
+
+const NUM = /^-?[\d][\d.,' ]*$/;
+/**
+ * Reads budget rows "code description | unit | # units | unit rate | cost | (forecast year …)".
+ * Only the first unit/rate/cost group (all years) is used. Sub-total rows are skipped;
+ * rows 8 (contingency) and 10 (administrative costs) are kept as lines '8' and '10'.
+ */
+export function approvedBudget(doc: Doc): ApprovedBudget | null {
+  const lines: import('./types').BudgetLine[] = [];
+  let admin = 0, contingency = 0, direct = 0;
+  for (const T of doc.tables) for (const raw of T) {
+    const r = raw.map((c) => clean(c ?? '')).filter(Boolean);
+    if (!r.length) continue;
+    let head = r[0], rest = r.slice(1);
+    // code may be its own cell ("1.1.2" | "Project manager")
+    if (/^\d+(\.\d+)*\.?$/.test(head) && rest.length && !NUM.test(rest[0])) { head = `${head} ${rest[0]}`; rest = rest.slice(1); }
+    const m = head.match(/^(\d{1,2}(?:\.\d{1,2}){0,4})\.?\s+(.{2,})$/); if (!m) continue;
+    const code = m[1], desc = m[2];
+    const nums = rest.filter((c) => NUM.test(c) || c === '-').map((c) => (c === '-' ? 0 : amount(c) ?? 0));
+    const unit = rest.find((c) => /^per\b/i.test(c));
+    if (/^sub-?total|^total/i.test(desc)) {
+      if (/^7$/.test(code) || /direct eligible/i.test(desc)) direct = direct || nums[0] || 0;
+      continue;
+    }
+    if (code === '8' || /contingency/i.test(desc)) { contingency = nums[0] ?? 0; continue; }
+    if (code === '9') continue;
+    if (code === '10' || /administrative costs/i.test(desc)) { admin = nums[0] ?? 0; continue; }
+    if (!code.includes('.') && !unit) continue; // heading row ("1 Human resources")
+    if (unit && nums.length >= 3) lines.push({ code, description: desc, unit, approvedUnits: nums[0], unitRate: nums[1], approved: nums[2] });
+    else if (unit && nums.length === 0) continue; // unused template row
+    else if (!unit && nums.length >= 1 && code.split('.').length >= 2) lines.push({ code, description: desc, approved: nums.at(-1) });
+  }
+  const leaves = lines.filter((l) => (l.approved ?? 0) > 0 && !lines.some((x) => x !== l && x.code.startsWith(l.code + '.')));
+  if (leaves.length < 3) return null;
+  const sum = leaves.reduce((s, l) => s + (l.approved ?? 0), 0);
+  if (!direct) direct = sum;
+  const out = [...leaves];
+  if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
+  if (admin) out.push({ code: '10', description: 'Administrative costs', unit: '7%', approved: admin });
+  return { lines: out, direct, admin, contingency, total: direct + contingency + admin, source: doc.name, linesSum: sum };
 }

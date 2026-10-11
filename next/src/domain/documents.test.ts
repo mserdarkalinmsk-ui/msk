@@ -33,3 +33,22 @@ describe('project documents', () => {
     expect(anyDate('on 15 January 2025')).toBe('2025-01-15');
   });
 });
+
+describe('approved budget', () => {
+  it('reads the budget-for-all-years table and keeps admin costs', async () => {
+    const { approvedBudget } = await import('./documents');
+    const T = [
+      ['Description', 'Unit', '# of units', 'Unit rate', 'Cost'],
+      ['1.1.1.1 Senior project manager', 'Per month'],
+      ['1.1.1.2 Project manager (100%)', 'Per month', '60', '5,850', '351,000', '12', '5,850', '70,200'],
+      ['2.1 International travel', 'Per return flight', '142', '650', '92,300'],
+      ['5.4 Evaluation costs', 'Per item', '1', '50,000', '50,000'],
+      ['Sub-total 1 Human resources', '351,000'],
+      ['7. Sub-total Direct eligible costs of the action (1+2+3+4+5+6)', '493,300', '70,200'],
+      ['10. Administrative costs (maximum 7% of 9. Total direct eligible costs of the action)', '34,531', '4,914'],
+    ];
+    const B = approvedBudget({ name: 'b.pdf', kind: 'pdf', paragraphs: [], tables: [T] })!;
+    expect(B.lines.map((l) => [l.code, l.approvedUnits, l.unitRate, l.approved])).toEqual([['1.1.1.2', 60, 5850, 351000], ['2.1', 142, 650, 92300], ['5.4', 1, 50000, 50000], ['10', undefined, undefined, 34531]]);
+    expect(B.direct).toBe(493300); expect(B.linesSum).toBe(493300); expect(B.total).toBe(527831);
+  });
+});

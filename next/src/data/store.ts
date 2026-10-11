@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
-import seed from './seed.json';
+import real from './seed.json';
+import demo from './demo.json';
+
+/** `?demo` loads the fictional demo portfolio (used by the end-to-end tests) in its own storage slot. */
+const DEMO = new URLSearchParams(location.search).has('demo');
+const seed = DEMO ? demo : real;
 import type { Country, Ledger, Project, ReportingPeriod, Risk } from '../domain/types';
 import { validateLedger } from '../domain/calc';
 
@@ -16,7 +21,7 @@ export interface State {
   ready: boolean;
 }
 
-const DB = 'portfolio-ledger-next', STORE = 'kv', KEY = 'ledger';
+const DB = 'portfolio-ledger-next', STORE = 'kv', KEY = DEMO ? 'demo' : 'ledger-v2';
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
 let state: State = {
@@ -154,7 +159,7 @@ export const setStaffOverride = (pid: string, key: string, o: import('../domain/
   if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];
 }, o ? 'Contract details saved' : 'Contract details cleared');
 export function replaceLedger(l: Ledger, message: string) { commit(clone(l), message); }
-export function resetDemo() { commit(clone(seed as unknown as Ledger), 'Demo data restored'); }
+export function resetDemo() { commit(clone(seed as unknown as Ledger), 'Start data restored'); }
 
 /* ---------- navigation & theme ---------- */
 export function go(route: string) { if (location.hash !== '#/' + route) location.hash = '/' + route; set({ route, palette: false }); }

@@ -3,7 +3,7 @@ import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const url = 'file://' + resolve('dist/index.html') + '?today=2026-10-11';
+const url = 'file://' + resolve('dist/index.html') + '?today=2026-10-11&demo';
 const shots = resolve(process.env.SHOTS || 'tests/shots'); mkdirSync(shots, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });
 let failed = 0;
@@ -185,23 +185,22 @@ async function page(opts) {
   await p.click('.tabs button:has-text("Reporting calendar")'); await p.waitForTimeout(300);
   check(await p.locator('.cal-i').count() >= 6, 'reporting calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
-  // CoE workbook: global import → project match → report → Financial report tab
+  // CoE workbook: global import refuses reports; they are added inside the project
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
   await p.click('text=Import / backup');
   await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
-  check(await p.locator('.drawer h2:has-text("1 financial report workbook")').count() === 1, 'workbook recognised in global import');
-  check(await p.locator('.drawer .badge:text-is("new")').count() === 1, 'unmatched workbook becomes a new project');
-  await p.selectOption('.drawer select[aria-label=Country]', 'tr');
-  await p.click('.drawer button:has-text("Import 1 workbook")'); await p.waitForTimeout(500);
-  await p.goto(url + '#/projects'); await p.waitForSelector('.dt-row');
-  check(await p.locator('.dt-cell:has-text("JP9999")').count() === 1, 'project created automatically from the workbook');
-  // assign the same BH to TR-MSK so a second import updates it
-  await p.evaluate(() => 0);
-  const jp = await p.evaluate(() => location.href);
-  await p.locator('.dt-row', { hasText: 'JP9999' }).locator('.dt-cell').nth(2).click(); await p.waitForTimeout(300);
-  await p.click('.drawer-f :text("Open project page")'); await p.waitForSelector('.ph-title');
+  check(await p.locator('.drawer .errlist:has-text("inside their project")').count() === 1, 'global import sends reports to their project');
+  await p.keyboard.press('Escape');
+  await p.goto(url + '#/project/tsk'); await p.waitForSelector('.ph-title');
+  await p.click('.ph-actions button:has-text("Import report")');
+  await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(700);
+  check(await p.locator('.drawer :text("belongs to another project")').count() === 1 && await p.locator('.drawer-f .btn.primary').isDisabled(), 'report of another project is refused');
+  await p.keyboard.press('Escape');
+  await p.goto(url + '#/project/ukr'); await p.waitForSelector('.ph-title');
+  await p.click('.ph-actions button:has-text("Import report")');
+  await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(700);
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400);
   check(await p.locator('.ph-meta :text("BH")').count() === 1, 'BH saved to the project from the workbook');
-  void jp;
   await p.click('.tabs button:has-text("Financial report")'); await p.waitForTimeout(700);
   check(await p.locator('.wb-strip :text("700009999")').count() === 1, 'financial report tab shows the contract');
   check(await p.locator('.att li:has-text("20% above budget rate")').count() === 1, 'unit-rate check shown');
@@ -229,11 +228,6 @@ async function page(opts) {
   await p.click('.tabs button:has-text("Reports")'); await p.click('.tabs button:has-text("Summary")');
 
   // Appearance options
-  // dropping the same workbook again updates the project instead of duplicating it
-  await p.click('text=Import / backup');
-  await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
-  check(await p.locator('.drawer .badge:text-is("update")').count() === 1, 'second import matches by budget head');
-  await p.keyboard.press('Escape');
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
   for (const st of ['Executive', 'Atlas', 'Bento']) {
     await p.click('text=Appearance'); await p.click(`.style-opt:has-text("${st}")`); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500);
@@ -278,16 +272,10 @@ async function page(opts) {
   await p.click('button:has-text("Balance")'); await p.waitForTimeout(100);
   check(await p.locator('.scn-sum :text("balanced")').count() === 1, 'scenario balances');
   await p.screenshot({ path: `${shots}/scenario.png`, fullPage: true });
-  // import preview: before → after
-  await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
-  await p.click('text=Import / backup');
-  await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
-  check(await p.locator('.drawer table.diff tr.chg').count() >= 3, 'import shows before → after');
-  await p.screenshot({ path: `${shots}/import-diff.png` });
   // backup from the previous app
   const old = { app: 'Portfolio Ledger', exportedAt: '2025-01-01', state: { countries: [{ id: 'tr', name: 'Türkiye' }], projects: [{ id: 'o1', code: 'OLD-1', name: 'Old project', country: 'tr', start: '2024-01-01', end: '2026-12-31', budget: 1000 }], log: [{ at: '2025-01-01T09:00:00Z', msg: 'Old edit' }] } };
   writeFileSync(`${shots}/old-backup.json`, JSON.stringify(old));
-  await p.keyboard.press('Escape'); await p.click('text=Import / backup');
+  await p.goto(url + '#/overview'); await p.waitForSelector('.hero'); await p.click('text=Import / backup');
   await p.setInputFiles('.drawer .drop input', `${shots}/old-backup.json`); await p.waitForTimeout(300);
   check(await p.locator('.drawer h3:has-text("previous Portfolio Ledger")').count() === 1, 'previous-app backup recognised');
   await p.click('.drawer button:has-text("Replace data")'); await p.waitForTimeout(300);
@@ -295,6 +283,20 @@ async function page(opts) {
   check(await p.locator('.hist-i:has-text("Old edit")').count() === 1, 'old history carried over');
   check(await p.locator('.hist-i').first().textContent().then((t) => t.includes('Imported')), 'change history records the import');
   check(errors.length === 0, 'insights: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+// Start data (no demo): real project, empty other countries
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p = await ctx.newPage();
+  await p.goto(url.replace('&demo', '') + '#/projects'); await p.waitForSelector('.ph-title, .pcard, .empty-page', { timeout: 10000 }).catch(() => {});
+  await p.waitForTimeout(500);
+  check(await p.locator('article.pcard').count() === 1 && await p.locator('article.pcard:has-text("Enhancing Foreign Language")').count() === 1, 'start data: one real Türkiye project');
+  await p.goto(url.replace('&demo', '') + '#/project/jp3220'); await p.waitForSelector('.ph-title');
+  await p.click('.tabs button:has-text("Budget lines")'); await p.waitForTimeout(300);
+  check(await p.locator('.dt-total:has-text("€5,403,333")').count() >= 1, 'approved budget baseline shown as budget lines');
+  await p.screenshot({ path: `${shots}/real-lines.png`, fullPage: true });
   await ctx.close();
 }
 

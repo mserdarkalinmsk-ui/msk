@@ -13,7 +13,7 @@ export function DocumentsPanel({ projectId, close }: { projectId: string; close:
   const [docs, setDocs] = useState<{ name: string; kind: string; F: DocFindings }[]>([]);
   const [busy, setBusy] = useState(''); const [err, setErr] = useState<string[]>([]); const [over, setOver] = useState(false);
   const hasWorkbook = !!p?.reportingPeriods?.some((r) => r.snapshot?.workbook);
-  const [c, setC] = useState<DocChoices>({ contract: true, dates: true, budget: !hasWorkbook, plan: true, risks: true, indicators: true });
+  const [c, setC] = useState<DocChoices>({ approved: true, contract: true, dates: true, budget: !hasWorkbook, plan: true, risks: true, indicators: true });
   useEffect(() => { if (pendingDocs.length) { const f = pendingDocs; pendingDocs = []; add(f); } }, []);
   if (!p) return null;
   async function add(files: File[]) {
@@ -28,7 +28,7 @@ export function DocumentsPanel({ projectId, close }: { projectId: string; close:
   const row = (key: keyof DocChoices, label: string, body: unknown, show: boolean) => show && (
     <label class="doc-find"><input type="checkbox" checked={c[key]} onChange={() => setC({ ...c, [key]: !c[key] })} /><div><b>{label}</b><div class="d">{body as never}</div></div></label>
   );
-  const any = Object.keys(k).length || F.acts.length || F.risks.length || F.indicators.length;
+  const any = F.budget || Object.keys(k).length || F.acts.length || F.risks.length || F.indicators.length;
   return (
     <>
       <div class="drawer-h"><div><div class="num muted" style={{ fontSize: '12px' }}>{p.code}</div><h2>Add project documents</h2></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
@@ -43,9 +43,14 @@ export function DocumentsPanel({ projectId, close }: { projectId: string; close:
         {docs.length > 0 && (any ? (
           <section class="card card-b" style={{ display: 'grid', gap: '4px' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: '14px' }}>Apply to {p.code}</h3>
-            {row('contract', 'Contract details', [k.number && `No ${k.number}`, k.total && `total ${full(k.total)}`, k.euMax && `EU max ${full(k.euMax)}`, k.euShare && `${k.euShare}% EU`, k.repMonths && `report every ${k.repMonths} months`, k.progDays && `due ${k.progDays} days after`, k.prefinancing && `pre-financing ${k.prefinancing}%`].filter(Boolean).join(' · '), Object.keys(k).length > 0)}
+            {F.budget && row('approved', 'Approved budget (baseline)', <>
+              <b>{full(F.budget.total)}</b> = direct {full(F.budget.direct)}{F.budget.contingency ? ` + contingency ${full(F.budget.contingency)}` : ''} + admin {full(F.budget.admin)} · {F.budget.lines.length} lines from {F.budget.source}
+              {Math.abs(F.budget.linesSum - F.budget.direct) > 1 && <div style={{ color: 'var(--serious)' }}>Lines add up to {full(F.budget.linesSum)}, the document says {full(F.budget.direct)} — check the file</div>}
+              <div>Becomes the project budget{p.approvedBudget ? ` (replaces ${full(p.approvedBudget.total)} from ${p.approvedBudget.source})` : ` (now ${full(p.budget)})`}; reports are compared against it</div>
+            </>, true)}
+            {row('contract', 'Contract details', [k.number && `No ${k.number}`, k.jp && `JP ${k.jp}`, k.bh && `BH ${k.bh}`, k.total && `total ${full(k.total)}`, k.euMax && `EU max ${full(k.euMax)}`, k.euShare && `${k.euShare}% EU`, k.repMonths && `report every ${k.repMonths} months`, k.progDays && `due ${k.progDays} days after`, k.prefinancing && `pre-financing ${k.prefinancing}%`].filter(Boolean).join(' · '), Object.keys(k).length > 0)}
             {row('dates', 'Implementation period', `${k.start ? date(k.start) : p.start} → ${k.end ? date(k.end) : p.end}${k.months ? ` (${k.months} months)` : ''} — currently ${date(p.start)} → ${date(p.end)}`, !!(k.start || k.end))}
-            {row('budget', 'Project budget from contract total', `${full(p.budget)} → ${full(k.total ?? 0)}${hasWorkbook ? ' — a financial report workbook already sets the budget' : ''}`, !!k.total && Math.abs((k.total ?? 0) - p.budget) > 1)}
+            {!F.budget && row('budget', 'Project budget from contract total', `${full(p.budget)} → ${full(k.total ?? 0)}${hasWorkbook ? ' — a financial report workbook already sets the budget' : ''}`, !!k.total && Math.abs((k.total ?? 0) - p.budget) > 1)}
             {row('plan', 'Action plan', `${F.acts.length} activities, ${F.planMonths} months — replaces the current plan${p.doa ? ` (${p.doa.acts.length} activities)` : ''}; statuses are kept`, F.acts.length > 0)}
             {row('risks', 'Risks', `${F.risks.length} risks merged by title: ${F.risks.slice(0, 3).map((r) => r.title).join(', ')}${F.risks.length > 3 ? '…' : ''}`, F.risks.length > 0)}
             {row('indicators', 'Results indicators', `${F.indicators.length} indicators: ${F.indicators.slice(0, 2).map((i) => i.indicator).join('; ')}${F.indicators.length > 2 ? '…' : ''}`, F.indicators.length > 0)}
