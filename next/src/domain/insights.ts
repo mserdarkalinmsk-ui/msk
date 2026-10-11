@@ -33,7 +33,7 @@ export interface Alert { id: string; projectId: string; severity: Severity; kind
 
 export const ALERT_KINDS: Record<string, string> = {
   underspend: 'Pacing', overspend: 'Pacing', overbudget: 'Budget', line: 'Budget', stale: 'Reporting', risk: 'Risk',
-  forecast: 'Forecast', contract: 'Staff', deadline: 'Reporting', plan: 'Activities', ending: 'Project end',
+  forecast: 'Forecast', setup: 'Set-up', contract: 'Staff', deadline: 'Reporting', plan: 'Activities', ending: 'Project end',
 };
 
 /** Everything that needs attention across the portfolio: finance, staff, reporting, activities. */
@@ -41,6 +41,7 @@ export function alerts(ps: Project[], today: Date): Alert[] {
   const out: Alert[] = attention(ps, today).map((f, i) => ({ ...f, id: `${f.projectId}:${f.kind}:${i}` }));
   for (const p of ps) {
     if (p.status && p.status !== 'Active') continue;
+    if (p.datesTbc) { out.push({ id: `${p.id}:setup`, projectId: p.id, kind: 'setup', severity: 'warning', title: 'Set-up incomplete', detail: 'Add the DoA / contract and the approved budget to confirm dates and budget' }); continue; }
     const o = outcome(p, today), el = elapsed(p, today);
     if (el > 0.25 && o.basis !== 'no data' && o.utilisation < 0.85)
       out.push({ id: `${p.id}:forecast`, projectId: p.id, kind: 'forecast', severity: o.utilisation < 0.7 ? 'serious' : 'warning', title: `Forecast to use ${pct(o.utilisation)} of budget`, detail: `${eur(o.unused)} may stay unused at the current rate; ${eur(o.needRate)}/month needed` });
@@ -167,4 +168,25 @@ export function headings(p: Project): { flex: number; rows: HeadingRow[] } {
     return { code: c, label: HEADINGS[c], baseline, approved, exposure, change, overspend, status };
   });
   return { flex, rows };
+}
+
+/* ---------------- set-up completeness ---------------- */
+export interface ReadyItem { key: string; label: string; done: boolean; hint: string }
+
+/** What is on file for a project, in the order it is usually collected. */
+export function readiness(p: Project): { items: ReadyItem[]; score: number } {
+  const c = (p.contract ?? {}) as Record<string, unknown>;
+  const items: ReadyItem[] = [
+    { key: 'ids', label: 'Identifiers', done: !!(p.bh && (p.contractNo || p.jp)), hint: 'BH and contract / JP number' },
+    { key: 'dates', label: 'Implementation period', done: !p.datesTbc, hint: 'from the DoA or contract' },
+    { key: 'budget', label: 'Approved budget', done: !!p.approvedBudget, hint: 'budget annex (PDF / Excel)' },
+    { key: 'notes', label: 'Budget justification', done: !!p.budgetNotes && Object.keys(p.budgetNotes).length > 0, hint: 'clarification & justification table' },
+    { key: 'contract', label: 'Contract terms', done: !!(c.repMonths || c.progDays || c.flexPct || c.prefin), hint: 'reporting, flexibility, pre-financing' },
+    { key: 'plan', label: 'Action plan', done: !!p.doa?.acts.length, hint: 'activities by month' },
+    { key: 'logframe', label: 'Logframe', done: !!p.indicators?.length, hint: 'indicators, baselines, targets' },
+    { key: 'risks', label: 'Risk register', done: !!p.riskRegister?.length, hint: 'from the DoA' },
+    { key: 'report', label: 'Financial report', done: !!p.reportingPeriods?.some((r) => r.snapshot?.lines?.length), hint: 'latest report workbook' },
+    { key: 'staff', label: 'Staff', done: roster(p, new Date()).length > 0, hint: 'read from the report workbook' },
+  ];
+  return { items, score: items.filter((i) => i.done).length / items.length };
 }

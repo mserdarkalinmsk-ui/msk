@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'preact/hooks';
-import { go, useStore } from '../data/store';
+import { go, set, useStore } from '../data/store';
+import { progress } from '../domain/logframe';
 import { money } from '../domain/calc';
-import { ALERT_KINDS, alerts, changes, headings, status, outcome, scenario, type Alert } from '../domain/insights';
+import { ALERT_KINDS, alerts, changes, headings, readiness, status, outcome, scenario, type Alert } from '../domain/insights';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { parseAmount } from '../ui/csv';
@@ -214,5 +215,55 @@ export function HeadingsCard({ p }: { p: Project }) {
         </table>
       </div>
     </section>
+  );
+}
+
+/* ---------------- project: set-up completeness ---------------- */
+export function ReadinessCard({ p }: { p: Project }) {
+  const R = readiness(p);
+  return (
+    <section class="card span-12 rd">
+      <div class="card-h"><div><h2>Project file · {Math.round(R.score * 100)}% complete</h2><p>What has been read from documents and reports — open an item to add what is missing</p></div>
+        <button class="btn primary" style={{ marginLeft: 'auto' }} onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div>
+      <ol class="rd-list">{R.items.map((i) => (
+        <li class={i.done ? 'ok' : ''}><span class="rd-dot" aria-hidden="true">{i.done ? '✓' : ''}</span><div><b>{i.label}</b><small>{i.hint}</small></div></li>
+      ))}</ol>
+    </section>
+  );
+}
+
+/* ---------------- portfolio: compliance & results ---------------- */
+export function Compliance({ projects }: { projects: Project[] }) {
+  const rows = projects.map((p) => {
+    const R = readiness(p), H = headings(p), I = p.indicators ?? [];
+    const P = I.map(progress).filter((v): v is number => v != null);
+    return { p, ready: R.score, missing: R.items.filter((i) => !i.done).map((i) => i.label), breach: H.rows.filter((r) => r.status === 'breach').length, watch: H.rows.filter((r) => r.status === 'warn').length, ok: H.rows.length > 0, ind: I.length, prog: P.length ? P.reduce((a, b) => a + Math.min(1, b), 0) / P.length : null };
+  }).sort((a, b) => a.ready - b.ready);
+  const avg = rows.length ? rows.reduce((s, r) => s + r.ready, 0) / rows.length : 0;
+  return (
+    <>
+      <section class="hero" aria-label="Compliance summary">
+        <div class="kpi lead"><span class="label">Project files complete</span><span class="value">{Math.round(avg * 100)}%</span><span class="ctx">average over {rows.length} projects</span></div>
+        <div class="kpi"><span class="label">Headings beyond flexibility</span><span class="value" style={{ color: rows.some((r) => r.breach) ? 'var(--serious)' : undefined }}>{rows.reduce((s, r) => s + r.breach, 0)}</span><span class="ctx">need a budget amendment</span></div>
+        <div class="kpi"><span class="label">Indicators tracked</span><span class="value">{rows.reduce((s, r) => s + r.ind, 0)}</span><span class="ctx">{rows.filter((r) => r.prog != null).length} projects with measured progress</span></div>
+        <div class="kpi"><span class="label">Set-up incomplete</span><span class="value">{rows.filter((r) => r.p.datesTbc).length}</span><span class="ctx">dates and budget to confirm</span></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><div><h2>Compliance & results by project</h2><p>Least complete first · click a project to open it</p></div></div>
+        <div class="card-b table-scroll">
+          <table class="mini chg-t">
+            <thead><tr><th>Project</th><th>Project file</th><th>Missing</th><th class="r">Headings</th><th>Results</th></tr></thead>
+            <tbody>{rows.map((r) => (
+              <tr class="click" onClick={() => go(`project/${r.p.id}`)}>
+                <td><b class="num">{r.p.code}</b> <span class="muted">{r.p.name}</span></td>
+                <td style={{ minWidth: '150px' }}><div class="delta-bar"><span style={{ width: `${r.ready * 100}%`, background: r.ready >= 0.8 ? 'var(--good)' : r.ready >= 0.5 ? 'var(--c1)' : 'var(--warn)' }} /><b class="num">{Math.round(r.ready * 100)}%</b></div></td>
+                <td class="muted" style={{ fontSize: '12px' }}>{r.missing.slice(0, 4).join(', ')}{r.missing.length > 4 ? ` +${r.missing.length - 4}` : ''}</td>
+                <td class="r">{r.p.datesTbc || !r.ok ? <span class="muted">—</span> : r.breach ? <span class="badge serious">{r.breach} amendment</span> : r.watch ? <span class="badge warning">{r.watch} watch</span> : <span class="badge good">within</span>}</td>
+                <td>{r.prog != null ? <div class="delta-bar"><span style={{ width: `${r.prog * 100}px`, background: 'var(--c1)' }} /><b class="num">{Math.round(r.prog * 100)}%</b></div> : <span class="muted">{r.ind ? `${r.ind} indicators, none measured` : 'no logframe'}</span>}</td>
+              </tr>))}</tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }

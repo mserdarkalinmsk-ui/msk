@@ -6,7 +6,7 @@ import { normalizeSector, SECTORS, validUrl, type Ledger, type Project } from '.
 import { TODAY } from '../today';
 import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
-import { full, month, pct, short, signedPct } from './format';
+import { full, month, pct, period, short, signedPct } from './format';
 import { readCoe, readTable, ReportImport, RiskForm } from './ReportImport';
 import { saveFile } from './save';
 import { migrateBackup } from '../domain/insights';
@@ -100,7 +100,7 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
           <dt>Country</dt><dd>{countries.find((c) => c.id === p.country)?.name ?? p.country}</dd>
           <dt>Sector</dt><dd>{p.sector || '—'}</dd>
           <dt>Funding</dt><dd>{p.funding || '—'}</dd>
-          <dt>Period</dt><dd>{month(p.start)} → {month(p.end)}</dd>
+          <dt>Period</dt><dd>{period(p)}</dd>
           <dt>Budget</dt><dd class="num">{full(m.budget)}</dd>
           <dt>Committed</dt><dd class="num">{full(m.committed)}</dd>
           <dt>Status</dt><dd>{p.status || 'Active'}</dd>
@@ -175,6 +175,8 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
       code: d.code.trim(), name: d.name.trim(), country: d.country, sector: d.sector.trim(), funding: d.funding.trim(),
       start: parseDay(d.start)!, end: parseDay(d.end)!, budget: parseAmount(d.budget)!, status: d.status,
       mae: d.mae.trim() || undefined, pmm: d.pmm.trim() || undefined, bh: d.bh.trim() || undefined, pmmUrl: validUrl(d.pmmUrl) ?? undefined,
+      // placeholder dates stay flagged until someone actually changes them
+      datesTbc: editing?.datesTbc && parseDay(d.start) === editing.start && parseDay(d.end) === editing.end ? true : undefined,
     } as Project);
     if (thenReport) set({ drawer: { kind: 'report', projectId: id } }); else close();
   };
