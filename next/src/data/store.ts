@@ -82,13 +82,20 @@ export async function load() {
  * Start data grows over time (new real projects). Projects added to the start data since this browser last
  * loaded it are merged in once, matched by id or budget head, so existing work is kept.
  */
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 function mergeSeed(l: Ledger): Ledger {
   const v = (l as Ledger & { seedVersion?: number }).seedVersion ?? 1;
   if (DEMO || v >= SEED_VERSION) return l;
   const S = seed as unknown as Ledger, L = clone(l);
-  for (const p of S.projects) if (!L.projects.some((x) => x.id === p.id || (p.bh && x.bh === p.bh))) L.projects.push(clone(p));
-  for (const c of S.countries) if (!L.countries.some((x) => x.id === c.id)) L.countries.push(clone(c));
+  for (const p of S.projects) {
+    const x = L.projects.find((y) => y.id === p.id || (p.bh && y.bh === p.bh));
+    if (!x) { L.projects.push(clone(p)); continue; }
+    // Identity fields from the monitoring sheet; dates and amount only while the project is still being set up.
+    for (const k of ['ccm', 'mae', 'pmm', 'funding'] as const) if (p[k]) x[k] = p[k];
+    if (x.datesTbc && !p.datesTbc) { x.start = p.start; x.end = p.end; delete x.datesTbc; }
+    if (!x.approvedBudget && p.budget) x.budget = p.budget; // project amount from the monitoring sheet until an approved budget is on file
+  }
+  for (const c of S.countries) { const x = L.countries.find((y) => y.id === c.id); if (!x) L.countries.push(clone(c)); else if (c.ccm && !x.ccm) x.ccm = c.ccm; }
   (L as Ledger & { seedVersion?: number }).seedVersion = SEED_VERSION;
   persist(L);
   return L;

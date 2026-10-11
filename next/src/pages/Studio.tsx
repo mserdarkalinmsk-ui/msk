@@ -167,6 +167,9 @@ const p0 = (v: number) => `${Math.round(v * 100)}%`;
 /** Expenditure monitoring: one row per project — performance (spent vs planned), S&C vs planned, amounts, forecast, staff ratios. */
 export function Compare() {
   const s = useStore((x) => x);
+  const [group, setGroup] = useState(pref('pl-em-group', 'overall'));
+  const [sort, setSort] = useState(pref('pl-em-sort', 'perf'));
+  const keep = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* */ } };
   const P = filtered(s).filter((p) => !p.datesTbc);
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
   const scope = s.filters.country ? cname(s.filters.country) : 'All countries';
@@ -191,7 +194,15 @@ export function Compare() {
     const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
     const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
     return { p, m, planned, perf, scp, ccm, under, note, sr, scr, pct: m.budget ? m.exposure / m.budget : 0 };
-  }).sort((a, b) => b.perf - a.perf);
+  });
+  const SORTS: Record<string, (a: (typeof rows)[number], b: (typeof rows)[number]) => number> = {
+    perf: (a, b) => b.perf - a.perf, scp: (a, b) => b.scp - a.scp, amount: (a, b) => b.m.budget - a.m.budget,
+    title: (a, b) => a.p.name.localeCompare(b.p.name), end: (a, b) => a.p.end.localeCompare(b.p.end), bh: (a, b) => (a.p.bh ?? '').localeCompare(b.p.bh ?? ''),
+  };
+  rows.sort((a, b) => (group === 'country' ? cname(a.p.country).localeCompare(cname(b.p.country)) : 0) || SORTS[sort](a, b));
+  const groups = group === 'country' ? [...new Set(rows.map((r) => r.p.country))].map((c) => ({ c, R: rows.filter((r) => r.p.country === c) })) : [{ c: '', R: rows }];
+  const tot = (R: typeof rows) => R.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.m.exposure, pl: a.pl + r.planned, u: a.u + r.under,
+    hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
   const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.m.exposure, pl: a.pl + r.planned, u: a.u + r.under,
     hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
   const tp = T.pl ? T.s / T.pl : 0, tsc = T.pl ? T.sc / T.pl : 0;
@@ -203,7 +214,11 @@ export function Compare() {
   const dot = (v: number) => <span class="em-dot" style={{ background: staffTone(v) }} />;
   return (
     <article class="em">
-      <div class="no-print em-tools"><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+      <div class="no-print em-tools">
+        <div class="seg"><button aria-pressed={group === 'overall'} onClick={() => { setGroup('overall'); keep('pl-em-group', 'overall'); }}>Overall</button><button aria-pressed={group === 'country'} onClick={() => { setGroup('country'); keep('pl-em-group', 'country'); }}>By country</button></div>
+        <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); keep('pl-em-sort', v); }}>
+          <option value="perf">Sort: Performance</option><option value="scp">Sort: S&C vs planned</option><option value="amount">Sort: Project amount</option><option value="title">Sort: Title</option><option value="end">Sort: End date</option><option value="bh">Sort: BH</option></select>
+        <button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
       <header class="em-h">
         <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
           <tr><td>100%</td><td>-</td><td class="em-blue" /></tr><tr><td>90%</td><td>100%</td><td class="em-green" /></tr>
@@ -219,14 +234,18 @@ export function Compare() {
       <div class="sd-scroll"><table class="em-t">
         <thead><tr><th>Performance</th><th>S&C vs planned</th><th>CCM</th><th class="em-title">Title</th><th>Country</th><th>MAE</th><th>PMM</th><th>BH</th><th>Start date</th><th>End date</th><th>Source of funding</th><th>Notes</th>
           <th>Project amount</th><th>Spent (actual, T)</th><th>Spent and Committed (T)</th><th>Left budget (T)</th><th>Underspent/ overspent forecast</th><th>Staff ratio (spent)</th><th>Staff ratio (S&C)</th><th>S&C as % of project amount</th></tr></thead>
-        <tbody>{rows.map((r) => <tr>
+        <tbody>{groups.map(({ c, R }) => { const t = tot(R), label = `${cname(c)} total · ${R.length} project${R.length > 1 ? 's' : ''} · spent vs planned ${p0(t.pl ? t.s / t.pl : 0)}`; return <>
+          {group === 'country' && <tr class="em-grp"><td colSpan={20}>{cname(c)}</td></tr>}
+          {R.map((r) => <tr>
           <td class={`em-rate ${rateTone(r.perf)}`}>{p0(r.perf)}</td><td class={`em-rate ${rateTone(r.scp)}`}>{p0(r.scp)}</td>
           <td class="em-ccm">{r.ccm}</td><td class="em-title em-g">{r.p.name}</td><td>{cname(r.p.country)}</td><td class="em-g">{r.p.mae ?? ''}</td>
           <td><b>{r.p.pmm ?? r.p.jp ?? ''}</b></td><td class="em-g">{r.p.bh ?? ''}</td><td>{d8(r.p.start)}</td><td class="em-g">{d8(r.p.end)}</td><td>{r.p.funding ?? ''}</td>
           <td class={r.note === 'over' ? 'em-over' : r.note === 'under' ? 'em-under' : ''}>{r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : ''}</td>
           <td class="r">{n0(r.m.budget)}</td><td class="r">{n0(r.m.spent)}</td><td class="r">{n0(r.m.exposure)}</td><td class="r">{n0(r.m.budget - r.m.exposure)}</td><td class="r">{n0(r.under)}</td>
           <td class="em-sr">{dot(r.sr)}{p0(r.sr)}</td><td class="em-sr">{dot(r.scr)}{p0(r.scr)}</td><td>{p0(r.pct)}</td>
-        </tr>)}</tbody>
+        </tr>)}
+          {group === 'country' && <tr class="em-sub"><td colSpan={12}>{label}</td><td class="r">{n0(t.b)}</td><td class="r">{n0(t.s)}</td><td class="r">{n0(t.sc)}</td><td class="r">{n0(t.b - t.sc)}</td><td class="r">{n0(t.u)}</td><td class="em-sr">{dot(t.s ? t.hs / t.s : 0)}{p0(t.s ? t.hs / t.s : 0)}</td><td class="em-sr">{dot(t.sc ? t.hsc / t.sc : 0)}{p0(t.sc ? t.hsc / t.sc : 0)}</td><td>{p0(t.b ? t.sc / t.b : 0)}</td></tr>}
+        </>; })}</tbody>
         <tfoot><tr><td colSpan={12}>Grand Total</td><td class="r">{n0(T.b)}</td><td class="r">{n0(T.s)}</td><td class="r">{n0(T.sc)}</td><td class="r">{n0(T.b - T.sc)}</td><td class="r">{n0(T.u)}</td>
           <td class="em-sr">{dot(T.s ? T.hs / T.s : 0)}{p0(T.s ? T.hs / T.s : 0)}</td><td class="em-sr">{dot(T.sc ? T.hsc / T.sc : 0)}{p0(T.sc ? T.hsc / T.sc : 0)}</td><td>{p0(T.b ? T.sc / T.b : 0)}</td></tr></tfoot>
       </table></div>
