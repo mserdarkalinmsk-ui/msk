@@ -85,8 +85,12 @@ export async function load() {
 const SEED_VERSION = 3;
 function mergeSeed(l: Ledger): Ledger {
   const v = (l as Ledger & { seedVersion?: number }).seedVersion ?? 1;
-  if (DEMO || v >= SEED_VERSION) return l;
+  if (DEMO) return l;
   const S = seed as unknown as Ledger, L = clone(l);
+  // Projects whose real dates are now in the start data leave set-up, whatever this browser's start-data version.
+  let fixed = false;
+  for (const x of L.projects) { const p = S.projects.find((y) => y.id === x.id || (y.bh && y.bh === x.bh)); if (x.datesTbc && p && !p.datesTbc) { x.start = p.start; x.end = p.end; delete x.datesTbc; fixed = true; } }
+  if (v >= SEED_VERSION) { if (fixed) persist(L); return fixed ? L : l; }
   for (const p of S.projects) {
     const x = L.projects.find((y) => y.id === p.id || (p.bh && y.bh === p.bh));
     if (!x) { L.projects.push(clone(p)); continue; }
