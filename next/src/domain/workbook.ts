@@ -128,7 +128,9 @@ function readGrid(sh: Sheet) {
       const t: WbTotals = byCol.budget != null || byCol.actual != null
         ? { budget: byCol.budget ?? 0, actual: byCol.actual ?? 0, sc: byCol.sc ?? 0, planned: byCol.planned ?? undefined, proposal: byCol.proposal ?? undefined, rounded: byCol.rounded ?? undefined }
         : { budget: vals[0] ?? 0, actual: vals[1] ?? 0, sc: vals[2] ?? 0 };
-      const key = ({ '7': 'direct', '8': 'contingency', '10': 'admin', '11': 'eligible' } as Record<string, keyof Workbook['totals']>)[tm[1]];
+      // Numbering differs between templates (admin is 8 without a contingency row, 10 with one): classify by wording.
+      const key: keyof Workbook['totals'] | undefined = /administrative|indirect/i.test(a) ? 'admin' : /contingency/i.test(a) ? 'contingency'
+        : /total eligible costs/i.test(a) ? 'eligible' : /direct eligible/i.test(a) && /sub-?total|\(1\s*\+/i.test(a) ? 'direct' : undefined;
       if (key) totals[key] = t;
       continue;
     }
