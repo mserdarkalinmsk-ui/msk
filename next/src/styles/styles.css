@@ -316,3 +316,7 @@ details.jt-row { border-top: 1px solid var(--line); }
 .studio{grid-template-columns:minmax(0,270px) minmax(0,1fr)}
 .studio-c{min-width:0}.studio-c .select{width:100%;min-width:0;max-width:100%;text-overflow:ellipsis}
 .sd-t td{word-break:normal;overflow-wrap:anywhere}.sd-t td:nth-child(3){white-space:nowrap}
+/* Reports pages use the full width */
+.brief{max-width:none}.brief p{max-width:110ch}
+.studio-doc{max-width:1100px;width:100%}
+@media print{.brief{max-width:none}}
