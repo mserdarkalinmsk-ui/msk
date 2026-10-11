@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { set } from '../data/store';
-import { elapsed } from '../domain/calc';
+import { elapsed, lines } from '../domain/calc';
 import type { Project } from '../domain/types';
 import type { WbLine, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -128,7 +128,7 @@ export function FinancialReport({ p }: { p: Project }) {
               <button aria-pressed={view === 'pos'} onClick={() => setView('pos')}>Open POs ({openPO.length})</button>
             </div></div>
           </div>
-          {view === 'lines' && <Statement lines={wb.lines} totals={wb.totals} elapsed={el} title={`${p.code}-financial-statement`} />}
+          {view === 'lines' && <Statement lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
         </section>
@@ -205,4 +205,13 @@ function fundLabel(d: string) {
   const t = d.replace(/\s+/g, ' '), tr = t.match(/(\d+)\s*(?:è|e)re\s+tranche/i);
   const kind = /annul/i.test(t) ? 'Reversal of advance' : /avance/i.test(t) ? 'Advance payment' : 'EU contribution';
   return tr ? `${kind} · tranche ${tr[1]}` : kind;
+}
+
+/** Older imports may lack the admin and total rows: take admin from the project's lines (rebuilt there) and add it up. */
+function fillTotals(p: Project, T: WorkbookSummary['totals']): WorkbookSummary['totals'] {
+  if (T.admin && T.eligible) return T;
+  const a = lines(p).find((l) => l.code === '10');
+  const admin = T.admin ?? (a ? { budget: a.approved ?? 0, actual: a.actual ?? 0, sc: a.spentCommitted ?? (a.actual ?? 0) } : undefined);
+  const eligible = T.eligible ?? (T.direct && admin ? { budget: T.direct.budget + (T.contingency?.budget ?? 0) + admin.budget, actual: T.direct.actual + (T.contingency?.actual ?? 0) + admin.actual, sc: T.direct.sc + (T.contingency?.sc ?? 0) + admin.sc } : undefined);
+  return { ...T, admin, eligible };
 }

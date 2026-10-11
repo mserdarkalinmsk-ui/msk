@@ -14,7 +14,16 @@ export function latestReport(p: Project): ReportingPeriod | undefined {
 }
 
 export function lines(p: Project): BudgetLine[] {
-  return latestReport(p)?.snapshot?.lines ?? p.approvedBudget?.lines ?? [];
+  const r = latestReport(p);
+  if (!r) return p.approvedBudget?.lines ?? [];
+  const L = r.snapshot!.lines, T = r.snapshot!.workbook?.totals;
+  // Reports read before admin rows were recognised by wording (row 8 in templates without contingency) lack line 10:
+  // rebuild it from the stored totals, or as eligible − direct − contingency.
+  if (L.some((l) => l.code === '10')) return L;
+  const ab = (p.approvedBudget as { admin?: number } | undefined)?.admin;
+  const ad = T?.admin ?? (T?.eligible && T.direct ? { budget: T.eligible.budget - T.direct.budget - (T.contingency?.budget ?? 0), actual: T.eligible.actual - T.direct.actual - (T.contingency?.actual ?? 0), sc: T.eligible.sc - T.direct.sc - (T.contingency?.sc ?? 0) } : ab ? { budget: ab, actual: 0, sc: 0 } : null);
+  if (!ad || (Math.abs(ad.budget) < 1 && Math.abs(ad.actual) < 1)) return L;
+  return [...L, { code: '10', description: 'Administrative costs', approved: ad.budget, actual: ad.actual, spentCommitted: ad.sc, committed: Math.max(0, ad.sc - ad.actual) }];
 }
 
 /** Spent and committed come from the latest report; project-level fields are the fallback. */
