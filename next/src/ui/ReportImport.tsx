@@ -171,7 +171,9 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
         <button class="btn" onClick={close}>Cancel</button>
         <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => {
           upsertReport(p.id, report);
-          if (fillIds && saveIds) updateProject(p.id, { bh: p.bh || coe!.meta.bh, contractNo: p.contractNo || coe!.meta.contract, jp: p.jp || coe!.meta.jp });
+          const eb = useCoe ? coe!.totals.eligible?.budget : undefined;
+          if ((fillIds && saveIds) || (eb && Math.abs(eb - p.budget) > 1))
+            updateProject(p.id, { ...(fillIds && saveIds ? { bh: p.bh || coe!.meta.bh, contractNo: p.contractNo || coe!.meta.contract, jp: p.jp || coe!.meta.jp } : {}), ...(eb ? { budget: Math.round(eb * 100) / 100 } : {}) });
           close();
         }}>
           {file && errors.length ? `${errors.length} problem${errors.length > 1 ? 's' : ''} to fix` : `Save report${reportDate ? ` · ${date(reportDate)}` : ''}`}

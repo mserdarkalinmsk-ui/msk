@@ -317,3 +317,6 @@ table.mini .r { text-align: right; }
 .pcard-add { align-items: center; justify-content: center; border-style: dashed; box-shadow: none; color: var(--ink-3); min-height: 240px; }
 .pcard-add::before { display: none; } .pcard-add span { font-size: 34px; line-height: 1; color: var(--ink-2); } .pcard-add small { font-size: 12px; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+.doc-find { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); cursor: pointer; font-size: 13.5px; }
+.doc-find .d { color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }

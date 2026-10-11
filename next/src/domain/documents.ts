@@ -1,0 +1,136 @@
+/**
+ * Project documents (contract, Description of Action, action plan, logframe…) in any format are
+ * reduced to plain paragraphs + tables, then analysed for facts the ledger uses.
+ */
+import type { Activity, Risk } from './types';
+
+export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][] }
+export interface Indicator { id: string; result: string; indicator: string; baseline: string; target: string; source: string }
+export interface ContractFacts {
+  number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;
+  repMonths?: number; progDays?: number; prefinancing?: number;
+}
+export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; summary: string[] }
+
+/* ---------- helpers ---------- */
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
+export function amount(s: string): number | null {
+  const t = s.replace(/[€\s ]|EUR/gi, '').replace(/'/g, '');
+  if (!/\d/.test(t)) return null;
+  let v = t;
+  if (/,\d{1,2}$/.test(v)) v = v.replace(/\./g, '').replace(',', '.');
+  else if (/\.\d{3}(\.|$)/.test(v) && !/\.\d{1,2}$/.test(v)) v = v.replace(/\./g, '');
+  v = v.replace(/,/g, '');
+  const x = parseFloat(v);
+  return Number.isFinite(x) ? x : null;
+}
+export function anyDate(s: string): string | undefined {
+  let m = s.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  m = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})/);
+  if (m && MONTHS.indexOf(m[2].toLowerCase()) >= 0) return `${m[3]}-${String(MONTHS.indexOf(m[2].toLowerCase()) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[0] : undefined;
+}
+const addMonths = (iso: string, n: number) => { const d = new Date(iso + 'T00:00:00Z'); const e = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate() - 1)); return e.toISOString().slice(0, 10); };
+const MONEY = String.raw`(?:EUR|€)\s*([\d][\d .,']*\d)|([\d][\d .,']*\d)\s*(?:EUR|€)`;
+
+/* ---------- contract ---------- */
+export function contractFacts(doc: Doc): ContractFacts {
+  const T = clean(doc.paragraphs.join(' ') + ' ' + doc.tables.flat(2).join(' '));
+  const f: ContractFacts = {};
+  const pick = (re: RegExp) => { const m = T.match(re); return m ? (m.slice(1).find(Boolean) ?? '') : undefined; };
+  f.number = pick(/(?:contract|grant agreement)\s*(?:no\.?|n°|nº|number)\s*[:.]?\s*([A-Z]{0,4}[-\/]?\d[\d\-\/]{4,})/i);
+  const title = pick(/title of the action\s*[:\-–]?\s*[“"']?([^“”"'.]{8,160})/i); if (title) f.title = clean(title);
+  const tot = pick(new RegExp(String.raw`total (?:estimated |eligible )*(?:cost|budget)s? of the action[^€\d]{0,120}?(?:${MONEY})`, 'i')); if (tot) f.total = amount(tot) ?? undefined;
+  const eu = pick(new RegExp(String.raw`maximum (?:contribution|amount)[^€\d]{0,160}?(?:${MONEY})`, 'i')); if (eu) f.euMax = amount(eu) ?? undefined;
+  const share = pick(/(\d{1,3}(?:[.,]\d+)?)\s*%\s*of the total (?:estimated )?eligible costs/i); if (share) f.euShare = parseFloat(share.replace(',', '.'));
+  const mo = pick(/(?:implementation (?:period|duration)|duration of (?:the )?(?:action|implementation)|period of implementation)[^.]{0,80}?(\d{1,3})\s*months/i); if (mo) f.months = +mo;
+  const st = pick(/(?:implementation (?:period )?shall start|shall (?:commence|start)|start date|commencement date|starting on)[^.]{0,80}?((?:\d{1,2}[./]\d{1,2}[./]\d{4})|(?:\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4})|\d{4}-\d{2}-\d{2})/i); if (st) f.start = anyDate(st);
+  const en = pick(/(?:end date|shall end|until|ending on)[^.]{0,40}?((?:\d{1,2}[./]\d{1,2}[./]\d{4})|(?:\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4}))/i); if (en) f.end = anyDate(en);
+  if (f.start && f.months && !f.end) f.end = addMonths(f.start, f.months);
+  const rep = pick(/(?:report|reports)[^.]{0,80}?every\s+(\d{1,2})\s+months/i) ?? pick(/every\s+(\d{1,2})\s+months[^.]{0,60}?report/i); if (rep) f.repMonths = +rep;
+  const pd = pick(/within\s+(\d{2,3})\s+days[^.]{0,80}?(?:end of|after)[^.]{0,40}?(?:reporting )?period/i); if (pd) f.progDays = +pd;
+  const pf = pick(/pre-?financing[^.]{0,80}?(\d{1,3})\s*%/i); if (pf) f.prefinancing = +pf;
+  for (const k of Object.keys(f) as (keyof ContractFacts)[]) if (f[k] == null || f[k] === '') delete f[k];
+  return f;
+}
+
+/* ---------- action plan (activities × months) ---------- */
+const MARK = /^(x|✓|✔|●|■|•|p|e|ex|1|yes|\*)$/i;
+function monthHeader(row: string[]) {
+  // "M1 M2…", "1 2 3 … 36", or "Jan-25 Feb-25…" — returns column index → month number (1-based)
+  const map = new Map<number, number>();
+  row.forEach((c, i) => {
+    const t = clean(c);
+    let m = t.match(/^(?:m|month)\s*(\d{1,2})$/i); if (m) { map.set(i, +m[1]); return; }
+    if (/^\d{1,2}$/.test(t) && +t >= 1 && +t <= 72) { map.set(i, +t); return; }
+    m = t.match(/^([A-Za-z]{3})[a-z]*[-\s'’]?(\d{2,4})$/); if (m && MONTHS.some((x) => x.startsWith(m![1].toLowerCase()))) map.set(i, -1);
+  });
+  // calendar month headers: number them in order
+  let k = 0; for (const [i, v] of [...map]) if (v === -1) map.set(i, ++k);
+  return map.size >= 3 ? map : null;
+}
+export function actionPlan(doc: Doc): { acts: Activity[]; months: number } | null {
+  for (const T of doc.tables) {
+    for (let h = 0; h < Math.min(6, T.length); h++) {
+      const cols = monthHeader(T[h]); if (!cols) continue;
+      const first = Math.min(...cols.keys());
+      const acts: Activity[] = []; let group = '';
+      for (const r of T.slice(h + 1)) {
+        const lead = r.slice(0, first).map(clean).filter(Boolean);
+        const text = lead.join(' ');
+        const code = text.match(/^(?:activity\s*)?(\d+(?:\.\d+)+)\.?\s*(.*)$/i);
+        const marks = [...cols].filter(([i]) => MARK.test(clean(r[i] ?? '')) || /^(p|e)$/i.test(clean(r[i] ?? '')));
+        if (!code) { if (text && !marks.length) group = text.slice(0, 80); continue; }
+        const P: number[] = [], E: number[] = [];
+        for (const [i, mo] of marks) (/^p$/i.test(clean(r[i])) ? P : E).push(mo);
+        const name = clean(code[2] || lead[1] || '');
+        acts.push({ id: 'a' + acts.length, code: code[1], name: name || `Activity ${code[1]}`, group: group || `Output ${code[1].split('.')[0]}`, P, E, status: '' });
+      }
+      if (acts.length >= 2) return { acts, months: Math.max(...cols.values()) };
+    }
+  }
+  return null;
+}
+
+/* ---------- risks & indicators ---------- */
+const LEVEL: Record<string, string> = { 'very high': '5', high: '4', medium: '3', moderate: '3', low: '2', 'very low': '1' };
+const level = (s: string) => { const t = clean(s).toLowerCase(); return /^[1-5]$/.test(t) ? t : LEVEL[t] ?? ''; };
+function findTable(doc: Doc, test: (h: string[]) => boolean) {
+  for (const T of doc.tables) for (let i = 0; i < Math.min(3, T.length); i++) { const h = T[i].map((c) => clean(c).toLowerCase()); if (test(h)) return { T, i, h }; }
+  return null;
+}
+export function risks(doc: Doc): Risk[] {
+  const f = findTable(doc, (h) => h.some((x) => x.includes('risk')) && h.some((x) => /likelihood|probability/.test(x)) && h.some((x) => x.includes('impact')));
+  if (!f) return [];
+  const col = (re: RegExp) => f.h.findIndex((x) => re.test(x));
+  const ti = col(/risk/), li = col(/likelihood|probability/), ii = col(/impact/), mi = col(/mitigat|response|measure/), ci = col(/categor|type/), oi = col(/owner|responsib/);
+  return f.T.slice(f.i + 1).map((r, k) => ({
+    id: 'd' + k + Math.random().toString(36).slice(2, 6), title: clean(r[ti] ?? ''), category: ci >= 0 ? clean(r[ci] ?? '') : 'Operational',
+    likelihood: level(r[li] ?? ''), impact: level(r[ii] ?? ''), mitigation: mi >= 0 ? clean(r[mi] ?? '') : '', owner: oi >= 0 ? clean(r[oi] ?? '') : '', status: 'Open', source: doc.name,
+  } as Risk)).filter((r) => r.title && r.likelihood && r.impact);
+}
+export function indicators(doc: Doc): Indicator[] {
+  const f = findTable(doc, (h) => h.some((x) => x.includes('indicator')) && h.some((x) => /target|baseline/.test(x)));
+  if (!f) return [];
+  const col = (re: RegExp) => f.h.findIndex((x) => re.test(x));
+  const ri = col(/result|outcome|output|objective|level/), ii = col(/indicator/), bi = col(/baseline/), ti = col(/target/), si = col(/source|verification|means/);
+  let result = '';
+  return f.T.slice(f.i + 1).flatMap((r, k) => {
+    if (ri >= 0 && clean(r[ri] ?? '')) result = clean(r[ri]);
+    const ind = clean(r[ii] ?? ''); if (!ind) return [];
+    return [{ id: 'i' + k, result, indicator: ind, baseline: bi >= 0 ? clean(r[bi] ?? '') : '', target: ti >= 0 ? clean(r[ti] ?? '') : '', source: si >= 0 ? clean(r[si] ?? '') : '' }];
+  });
+}
+
+export function analyse(doc: Doc): DocFindings {
+  const contract = contractFacts(doc), plan = actionPlan(doc), R = risks(doc), I = indicators(doc);
+  const summary = [
+    Object.keys(contract).length && `${Object.keys(contract).length} contract facts`,
+    plan && `${plan.acts.length} activities over ${plan.months} months`,
+    R.length && `${R.length} risks`, I.length && `${I.length} indicators`,
+  ].filter(Boolean) as string[];
+  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, summary };
+}

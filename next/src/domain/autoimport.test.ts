@@ -32,6 +32,7 @@ describe('automatic import', () => {
     const N = applyPlans(L2, [P]);
     const msk = N.projects.find((p) => p.id === 'msk')!;
     expect(msk.contractNo).toBe('700009999');
+    expect(msk.budget).toBeCloseTo(398000 * 1.07);
     const again = applyPlans(N, [plan(W, 'coe.xlsx', N)]);
     expect(again.projects.find((p) => p.id === 'msk')!.reportingPeriods!.length).toBe(msk.reportingPeriods!.length);
   });

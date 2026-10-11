@@ -13,7 +13,7 @@ import { StaffBoard } from './People';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 
-const TABS = ['Summary', 'Financial report', 'Budget lines', 'Reports', 'People', 'Activity plan', 'Risks'] as const;
+const TABS = ['Summary', 'Financial report', 'Budget lines', 'Reports', 'People', 'Activity plan', 'Risks', 'Results & documents'] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProjectPage({ id }: { id: string }) {
@@ -24,7 +24,7 @@ export function ProjectPage({ id }: { id: string }) {
   const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
   const reports = reportsByDate(p);
   const plan = planStats(p, TODAY);
-  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, People: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length };
+  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, People: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, 'Results & documents': (p.indicators?.length ?? 0) + (p.documents?.length ?? 0) || undefined };
   return (
     <>
       <div class="ph">
@@ -34,6 +34,7 @@ export function ProjectPage({ id }: { id: string }) {
         </div>
         <div class="ph-actions">
           {validUrl(p.pmmUrl) && <a class="btn" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`Open PMM for ${p.name}`}>PMM ↗</a>}
+          <button class="btn" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
@@ -60,6 +61,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'People' && (roster(p, TODAY).length ? <StaffBoard people={roster(p, TODAY)} /> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
       {tab === 'Activity plan' && <Plan p={p} />}
       {tab === 'Risks' && <Risks p={p} />}
+      {tab === 'Results & documents' && <ResultsDocs p={p} />}
     </>
   );
 }
@@ -265,3 +267,26 @@ function Risks({ p }: { p: Project }) {
   );
 }
 export type { ReportingPeriod };
+
+function ResultsDocs({ p }: { p: Project }) {
+  const I = p.indicators ?? [], D = p.documents ?? [];
+  const c = (p.contract ?? {}) as Record<string, unknown>;
+  const facts: [string, string][] = ([['Contract', c.number], ['Title', c.title], ['Total', typeof c.total === 'number' ? full(c.total) : ''], ['EU maximum', typeof c.euMax === 'number' ? full(c.euMax) : ''], ['Duration', c.months ? `${c.months} months` : ''], ['Reporting', c.repMonths ? `every ${c.repMonths} months, due ${c.progDays ?? 60} days after` : ''], ['Pre-financing', c.prefin ? `${c.prefin}%` : '']] as [string, unknown][]).filter(([, v]) => v).map(([k, v]) => [k, String(v)]);
+  return (
+    <div class="grid g-12">
+      <section class="card span-8" style={{ overflow: 'hidden' }}>
+        <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Results framework</h2><p>{I.length ? `${I.length} indicators from project documents` : 'Add the logframe or Description of Action to fill this'}</p></div>
+          <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div></div>
+        {I.length > 0 && <table class="mini" style={{ margin: 0 }}><thead><tr><th style={{ paddingLeft: '24px' }}>Result</th><th>Indicator</th><th>Baseline</th><th>Target</th><th>Source</th></tr></thead>
+          <tbody>{I.map((x, i) => <tr><td style={{ paddingLeft: '24px', fontWeight: 600 }}>{i && I[i - 1].result === x.result ? '' : x.result}</td><td>{x.indicator}</td><td class="num">{x.baseline}</td><td class="num">{x.target}</td><td class="muted">{x.source}</td></tr>)}</tbody></table>}
+      </section>
+      <section class="card span-4">
+        <div class="card-h"><div><h2>Contract</h2><p>{facts.length ? 'Read from documents' : 'No contract read yet'}</p></div></div>
+        <div class="card-b">{facts.length > 0 && <dl class="dl" style={{ gridTemplateColumns: '110px 1fr' }}>{facts.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}</dl>}</div>
+        <div class="card-h" style={{ paddingTop: 0 }}><div><h2>Documents</h2></div></div>
+        <ul class="att" style={{ marginTop: '8px' }}>{D.map((d) => <li style={{ cursor: 'default' }}><span class="badge neutral">{d.kind}</span><div><div class="t">{d.name}</div><div class="d">{d.summary.join(' · ') || '—'} · {date(d.importedAt.slice(0, 10))}</div></div><span /></li>)}
+          {!D.length && <li style={{ cursor: 'default' }}><span /><div class="d">None yet</div><span /></li>}</ul>
+      </section>
+    </div>
+  );
+}
