@@ -49,5 +49,20 @@ The sample data includes fictional demo staff so the People screens can be seen.
 ![People](docs/people.png)
 ![Brief](docs/brief.png)
 
+## Phase 4
+- **Financial report workbooks fill the app automatically.** Drop one or many Council of Europe report workbooks into Import: each is matched to its project by budget head (then contract, then title) or a new project is created from it (name, BH, contract, JP, period, budget, country and sector guessed from the title and listed for review). Same-date reports are replaced, never duplicated. One undo reverts the whole import.
+- **What is read from a workbook:** identifiers and periods; every budget line with units, unit rates, spent, spent + committed, the next-12-month plan and the budget proposal; direct, administrative (7%) and total eligible costs; the accounting budget situation; all purchase orders; monthly invoice and GL postings; donor contributions received; staff contracts.
+- **Cross-checks:** line totals vs report totals, 7% administrative costs, open PO balances vs PO commitments in the accounts, unit rates above budget, lines over budget.
+- **Financial report tab** on each project shows all of it.
+- **Map:** real country outlines (from the earlier ledger), five colour modes, zoom / pan, hover cards, country drill-down; also on the Overview.
+- **Project cards** (default) with sector colour, pace, spend bar against time, trend, change since last report, data age, staff and next report due; list view kept.
+- **Chart modes:** spending over time (cumulative / monthly / by country), pacing (spent / + committed / gap), breakdown (country / sector / funding — click filters the page). KPI figures count up; cards rise in.
+- **Appearance** (optional): Studio (default), Executive, Atlas, Bento; accent, density, figures.
+
+`tests/fixtures/make_coe.py` generates the synthetic workbook used in tests — no real data is stored in the repository.
+
+![Project cards](docs/project-cards.png)
+![Financial report](docs/financial-report.png)
+
 ## Possible next steps
 - Logframe / results indicators, a real map outline (needs an offline boundary file), and visual regression baselines.
