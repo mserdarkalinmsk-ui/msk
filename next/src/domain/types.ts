@@ -30,6 +30,7 @@ export interface Project {
   doa?: { start: string; months: number; acts: Activity[] };
   contract?: Record<string, unknown>;
   riskRegister?: Risk[];
+  closure?: { done?: Record<string, boolean>; received?: number; euShare?: number; notes?: string };
   /** Assumptions from the DoA (risk analysis section). */
   assumptions?: string[];
   /** Approved budget baseline (DoA / budget annex). Sets the project budget until replaced by a newer approved budget. */
