@@ -1,4 +1,4 @@
-import { Studio } from './Studio';
+import { Compare, Studio } from './Studio';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { attention, burnGap, deadlines, elapsed, groupBy, money, portfolioSeries, totals, type Deadline } from '../domain/calc';
@@ -15,7 +15,7 @@ import { get } from '../data/store';
 const DTONE: Record<Deadline['status'], string> = { submitted: 'good', overdue: 'critical', due: 'serious', upcoming: 'neutral' };
 
 export function Reports() {
-  const [tab, setTab] = useState<'studio' | 'brief' | 'alerts' | 'changes' | 'compliance' | 'calendar' | 'history'>(() => (location.hash.split('/')[2] as 'alerts') || 'brief');
+  const [tab, setTab] = useState<'studio' | 'compare' | 'brief' | 'alerts' | 'changes' | 'compliance' | 'calendar' | 'history'>(() => (location.hash.split('/')[2] as 'alerts') || 'brief');
   const P = useStore((s) => filtered(s));
   const excel = () => download(`portfolio-${TODAY.toISOString().slice(0, 10)}.xlsx`, portfolioSheets(get().ledger, P, TODAY));
   return (
@@ -23,6 +23,7 @@ export function Reports() {
       <div class="no-print"><Filters /></div>
       <div class="tabs no-print" role="tablist">
         <button role="tab" aria-selected={tab === 'studio'} onClick={() => setTab('studio')}>Report studio</button>
+        <button role="tab" aria-selected={tab === 'compare'} onClick={() => setTab('compare')}>Portfolio comparison</button>
         <button role="tab" aria-selected={tab === 'brief'} onClick={() => setTab('brief')}>Executive brief</button>
         <button role="tab" aria-selected={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert centre</button>
         <button role="tab" aria-selected={tab === 'changes'} onClick={() => setTab('changes')}>What changed</button>
@@ -34,7 +35,7 @@ export function Reports() {
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
         </span>
       </div>
-      {tab === 'studio' ? <Studio /> : tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
+      {tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }

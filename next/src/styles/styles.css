@@ -337,3 +337,13 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .msym{transition:transform .15s}.msym:hover circle:nth-child(2){stroke-opacity:.5}
 .map-legend i.ring{display:inline-block;width:12px;height:12px;border-radius:50%;border:2.5px solid var(--accent);border-right-color:var(--map-ring);margin-right:4px;vertical-align:-2px}
 .ctry.on{transition:fill .3s}
+.bk-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;margin-bottom:14px;border-radius:var(--r-md);background:color-mix(in srgb,var(--warn) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);font-size:13px}
+.bk-banner>span:nth-child(2){flex:1;min-width:240px}.bk-i{font-size:18px}
+.cl-list{list-style:none;margin:0;padding:4px 16px 16px;display:grid;gap:6px}
+.cl-list label{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--surface-2);cursor:pointer}
+.cl-list input{margin-top:3px;width:16px;height:16px}.cl-list label>div{display:flex;flex-direction:column;gap:2px}.cl-list small{color:var(--ink-2);font-size:12px}
+.cl-list li.done label{background:color-mix(in srgb,var(--good) 10%,var(--surface))}.cl-list li.done b{text-decoration:line-through;color:var(--ink-2)}
+.cl-in{height:28px;width:70px;padding:0 8px}
+.cmp{max-width:none}.cmp-t td{vertical-align:middle}.cmp-t small{display:block;font-size:10.5px;margin-top:2px}.cmp-t small.up{color:#b42318}
+.cmp-bar{position:relative;height:7px;border-radius:4px;background:#e8ecf3;overflow:visible}.cmp-bar span{display:block;height:100%;border-radius:4px}
+.cmp-bar i{position:absolute;top:-3px;width:2px;height:13px;background:#111;margin-left:-1px}

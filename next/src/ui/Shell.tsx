@@ -1,3 +1,4 @@
+import { BackupBanner } from './Backup';
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { get, go, set, setTheme, useStore } from '../data/store';
@@ -57,7 +58,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           </button>
           {actions}
         </header>
-        <main class="page" id="content">{children}</main>
+        <main class="page" id="content"><BackupBanner />{children}</main>
       </div>
     </div>
   );

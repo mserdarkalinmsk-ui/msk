@@ -155,3 +155,43 @@ function LineTable({ rows, el }: { rows: LA[]; el: number }) {
     </>
   );
 }
+
+/** All projects side by side — money, pace, forecast, results, people and open issues — ready to print. */
+export function Compare() {
+  const s = useStore((x) => x);
+  const P = filtered(s).filter((p) => !p.datesTbc);
+  const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
+  const rows = P.map((p) => {
+    const m = money(p), o = outcome(p, TODAY), el = elapsed(p, TODAY), pl = planStats(p, TODAY);
+    const I = (p.indicators ?? []).map(progress).filter((v): v is number => v != null);
+    const risks = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open' && riskScore(r) >= 12).length;
+    return { p, m, o, el, used: m.budget ? m.spent / m.budget : 0, pl, ind: I.length ? I.reduce((a, b) => a + Math.min(1, b), 0) / I.length : null, staff: roster(p, TODAY).filter((a) => a.status === 'Active').length, risks };
+  });
+  const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, c: a.c + r.m.committed, f: a.f + Math.min(r.o.projected, r.m.budget) }), { b: 0, s: 0, c: 0, f: 0 });
+  const bar = (v: number, mark?: number, bad?: boolean) => <div class="cmp-bar"><span style={{ width: `${Math.min(100, v * 100)}%`, background: bad ? '#b42318' : '#1f4e9c' }} />{mark != null && <i style={{ left: `${Math.min(100, mark * 100)}%` }} />}</div>;
+  const xlsx = () => download(`portfolio-comparison-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Comparison', rows: [['Code', 'Project', 'Country', 'Sector', 'Budget', 'Spent', 'Committed', 'Spent %', 'Time %', 'Forecast at end', 'Forecast %', 'Activities done', 'Activities late', 'Indicator progress', 'Active staff', 'High risks'],
+    ...rows.map((r) => [r.p.code, r.p.name, cname(r.p.country), r.p.sector ?? '', r.m.budget, r.m.spent, r.m.committed, pct(r.used), pct(r.el), r.o.projected, pct(r.o.utilisation), r.pl ? `${r.pl.done}/${r.pl.total}` : '', r.pl?.late ?? '', r.ind == null ? '' : pct(r.ind), r.staff, r.risks])], money: [4, 5, 6, 9] }]);
+  return (
+    <article class="studio-doc cmp">
+      <header class="sd-h" style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
+        <div style={{ flex: 1 }}><div class="sd-k">Portfolio comparison</div><h1>{P.length} projects at {date(TODAY.toISOString().slice(0, 10))}</h1>
+          <div class="sd-m">Budget {full(T.b)} · spent {full(T.s)} ({pct(T.b ? T.s / T.b : 0)}) · committed {full(T.c)} · forecast use {pct(T.b ? T.f / T.b : 0)}</div></div>
+        <div class="no-print" style={{ display: 'flex', gap: '8px' }}><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+      </header>
+      <div class="sd-scroll"><table class="sd-t cmp-t">
+        <thead><tr><th>Project</th><th class="r">Budget</th><th>Spent vs time</th><th class="r">Forecast at end</th><th>Activities</th><th>Indicators</th><th class="r">Staff</th><th class="r">High risks</th></tr></thead>
+        <tbody>{rows.map((r) => <tr>
+          <td><b>{r.p.code}</b> · {r.p.name}<br /><small class="sd-u">{cname(r.p.country)} · {r.p.sector} · {date(r.p.start)} – {date(r.p.end)}</small></td>
+          <td class="r num">{full(r.m.budget)}</td>
+          <td style={{ minWidth: '150px' }}>{bar(r.used, r.el, r.used - r.el < -0.25)}<small class="sd-u">{pct(r.used)} spent · {pct(r.el)} time</small></td>
+          <td class="r num">{full(r.o.projected)}<br /><small class={r.o.utilisation < 0.85 || r.o.overrun ? 'up' : 'sd-u'}>{pct(r.o.utilisation)} of budget</small></td>
+          <td>{r.pl ? <>{bar(r.pl.total ? r.pl.done / r.pl.total : 0)}<small class={r.pl.late ? 'up' : 'sd-u'}>{r.pl.done}/{r.pl.total} done{r.pl.late ? ` · ${r.pl.late} late` : ''}</small></> : <small class="sd-u">no plan</small>}</td>
+          <td>{r.ind == null ? <small class="sd-u">not measured</small> : <>{bar(r.ind)}<small class="sd-u">{pct(r.ind)} average</small></>}</td>
+          <td class="r num">{r.staff}</td><td class={`r num ${r.risks ? 'up' : ''}`}>{r.risks}</td>
+        </tr>)}</tbody>
+        <tfoot><tr class="sd-tot"><td>Total</td><td class="r num">{full(T.b)}</td><td>{pct(T.b ? T.s / T.b : 0)} spent</td><td class="r num">{full(T.f)}</td><td colSpan={4} /></tr></tfoot>
+      </table></div>
+      <footer class="sd-f">Bar = share spent; the tick marks the share of time elapsed. Red when spending is more than 25 points behind time. High risks = open risks with likelihood × impact ≥ 12.</footer>
+    </article>
+  );
+}
