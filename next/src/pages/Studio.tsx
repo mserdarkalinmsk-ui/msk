@@ -189,11 +189,15 @@ export function Compare() {
     }
     // Underspent forecast only when the report's forecast reaches the end date: amount − (S&C + planned to the end).
     const toEnd = wb?.meta.plannedTo && wb.meta.plannedTo >= p.end.slice(0, 7);
-    const under = toEnd && wb?.totals.eligible?.planned != null ? Math.max(0, Math.round(m.budget - m.exposure - wb.totals.eligible.planned)) : 0;
-    const perf = planned ? m.spent / planned : 0, scp = planned ? m.exposure / planned : 0;
+    const under0 = toEnd && wb?.totals.eligible?.planned != null ? wb.totals.eligible.planned : null;
+    // Commitments exclude staff: staff POs (remuneration articles) are salaries already planned, not open purchases.
+    const staffCommitted = staff.length ? sum(staff, (r) => r.po + r.da) : L.filter((l) => /^1\.[12]\.1(\.|$)/.test(l.code)).reduce((a, l) => a + Math.max(0, lineExposure(l) - (l.actual ?? 0)), 0);
+    const committed = Math.max(0, m.exposure - m.spent - staffCommitted), sc = m.spent + committed, risk = committed * 0.2;
+    const perf = planned ? m.spent / planned : 0, scp = planned ? sc / planned : 0;
     const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
+    const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : 0;
     const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
-    return { p, m, planned, perf, scp, ccm, under, note, sr, scr, pct: m.budget ? m.exposure / m.budget : 0 };
+    return { p, m, planned, perf, scp, ccm, under, note, sr, scr, sc, committed, staffCommitted, risk, pct: m.budget ? sc / m.budget : 0 };
   });
   const SORTS: Record<string, (a: (typeof rows)[number], b: (typeof rows)[number]) => number> = {
     perf: (a, b) => b.perf - a.perf, scp: (a, b) => b.scp - a.scp, amount: (a, b) => b.m.budget - a.m.budget,
@@ -201,15 +205,15 @@ export function Compare() {
   };
   rows.sort((a, b) => (group === 'country' ? cname(a.p.country).localeCompare(cname(b.p.country)) : 0) || SORTS[sort](a, b));
   const groups = group === 'country' ? [...new Set(rows.map((r) => r.p.country))].map((c) => ({ c, R: rows.filter((r) => r.p.country === c) })) : [{ c: '', R: rows }];
-  const tot = (R: typeof rows) => R.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.m.exposure, pl: a.pl + r.planned, u: a.u + r.under,
-    hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
-  const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.m.exposure, pl: a.pl + r.planned, u: a.u + r.under,
-    hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
+  const tot = (R: typeof rows) => R.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.sc, cm: a.cm + r.committed, rk: a.rk + r.risk, pl: a.pl + r.planned, u: a.u + r.under,
+    hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, cm: 0, rk: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
+  const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.sc, cm: a.cm + r.committed, rk: a.rk + r.risk, pl: a.pl + r.planned, u: a.u + r.under,
+    hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, cm: 0, rk: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
   const tp = T.pl ? T.s / T.pl : 0, tsc = T.pl ? T.sc / T.pl : 0;
   const xlsx = () => download(`expenditure-monitoring-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Expenditure monitoring', rows: [
     ['Expenditure monitoring', rows.length, scope, d8(TODAY.toISOString()), 'Spent vs planned', p0(tp), 'Spent and committed vs planned', p0(tsc)], [],
     ['Performance', 'S&C vs planned', 'CCM', 'Title', 'Country', 'MAE', 'PMM', 'BH', 'Start date', 'End date', 'Source of funding', 'Notes', 'Project amount', 'Spent (actual, T)', 'Spent and Committed (T)', 'Left budget (T)', 'Underspent/overspent forecast', 'Staff ratio (spent)', 'Staff ratio (S&C)', 'S&C as % of project amount'],
-    ...rows.map((r) => [p0(r.perf), p0(r.scp), r.ccm, r.p.name, cname(r.p.country), r.p.mae ?? '', r.p.pmm ?? r.p.jp ?? '', r.p.bh ?? '', d8(r.p.start), d8(r.p.end), r.p.funding ?? '', r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : '', r.m.budget, r.m.spent, r.m.exposure, r.m.budget - r.m.exposure, r.under, p0(r.sr), p0(r.scr), p0(r.pct)]),
+    ...rows.map((r) => [p0(r.perf), p0(r.scp), r.ccm, r.p.name, cname(r.p.country), r.p.mae ?? '', r.p.pmm ?? r.p.jp ?? '', r.p.bh ?? '', d8(r.p.start), d8(r.p.end), r.p.funding ?? '', r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : '', r.m.budget, r.m.spent, r.sc, r.m.budget - r.sc, r.under, p0(r.sr), p0(r.scr), p0(r.pct)]),
     ['Grand Total', '', '', '', '', '', '', '', '', '', '', '', T.b, T.s, T.sc, T.b - T.sc, T.u, p0(T.s ? T.hs / T.s : 0), p0(T.sc ? T.hsc / T.sc : 0), p0(T.b ? T.sc / T.b : 0)]], money: [12, 13, 14, 15, 16] }]);
   const dot = (v: number) => <span class="em-dot" style={{ background: staffTone(v) }} />;
   return (
@@ -241,7 +245,7 @@ export function Compare() {
           <td class="em-ccm">{r.ccm}</td><td class="em-title em-g">{r.p.name}</td><td>{cname(r.p.country)}</td><td class="em-g">{r.p.mae ?? ''}</td>
           <td><b>{r.p.pmm ?? r.p.jp ?? ''}</b></td><td class="em-g">{r.p.bh ?? ''}</td><td>{d8(r.p.start)}</td><td class="em-g">{d8(r.p.end)}</td><td>{r.p.funding ?? ''}</td>
           <td class={r.note === 'over' ? 'em-over' : r.note === 'under' ? 'em-under' : ''}>{r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : ''}</td>
-          <td class="r">{n0(r.m.budget)}</td><td class="r">{n0(r.m.spent)}</td><td class="r">{n0(r.m.exposure)}</td><td class="r">{n0(r.m.budget - r.m.exposure)}</td><td class="r">{n0(r.under)}</td>
+          <td class="r">{n0(r.m.budget)}</td><td class="r">{n0(r.m.spent)}</td><td class="r">{n0(r.sc)}</td><td class="r">{n0(r.m.budget - r.sc)}</td><td class="r">{n0(r.under)}</td>
           <td class="em-sr">{dot(r.sr)}{p0(r.sr)}</td><td class="em-sr">{dot(r.scr)}{p0(r.scr)}</td><td>{p0(r.pct)}</td>
         </tr>)}
           {group === 'country' && <tr class="em-sub"><td colSpan={12}>{label}</td><td class="r">{n0(t.b)}</td><td class="r">{n0(t.s)}</td><td class="r">{n0(t.sc)}</td><td class="r">{n0(t.b - t.sc)}</td><td class="r">{n0(t.u)}</td><td class="em-sr">{dot(t.s ? t.hs / t.s : 0)}{p0(t.s ? t.hs / t.s : 0)}</td><td class="em-sr">{dot(t.sc ? t.hsc / t.sc : 0)}{p0(t.sc ? t.hsc / t.sc : 0)}</td><td>{p0(t.b ? t.sc / t.b : 0)}</td></tr>}
@@ -249,7 +253,27 @@ export function Compare() {
         <tfoot><tr><td colSpan={12}>Grand Total</td><td class="r">{n0(T.b)}</td><td class="r">{n0(T.s)}</td><td class="r">{n0(T.sc)}</td><td class="r">{n0(T.b - T.sc)}</td><td class="r">{n0(T.u)}</td>
           <td class="em-sr">{dot(T.s ? T.hs / T.s : 0)}{p0(T.s ? T.hs / T.s : 0)}</td><td class="em-sr">{dot(T.sc ? T.hsc / T.sc : 0)}{p0(T.sc ? T.hsc / T.sc : 0)}</td><td>{p0(T.b ? T.sc / T.b : 0)}</td></tr></tfoot>
       </table></div>
-      <p class="em-foot no-print">Planned = project amount × share of the implementation period elapsed at today. Performance = spent ÷ planned; S&C = spent and committed. Staff ratio = staff remuneration articles of the Situation budgétaire as a share of spent / S&C. Underspent forecast = project amount − S&C − planned expenditure, shown only when the report's forecast runs to the end date.</p>
+      <section class="em-risk">
+        <h3>Commitment risk — 20% of open commitments (staff excluded)</h3>
+        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Committed (excl. staff)</th><th>Staff commitments (excluded)</th><th>Risk 20%</th><th>Risk as % of left budget</th></tr></thead>
+          <tbody>{rows.filter((r) => r.committed > 0 || r.staffCommitted > 0).map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td><td class="r">{n0(r.committed)}</td><td class="r em-g">{n0(r.staffCommitted)}</td><td class="r"><b>{n0(r.risk)}</b></td><td>{p0(r.m.budget - r.sc > 0 ? r.risk / (r.m.budget - r.sc) : 0)}</td></tr>)}</tbody>
+          <tfoot><tr><td colSpan={2}>Total</td><td class="r">{n0(T.cm)}</td><td /><td class="r">{n0(T.rk)}</td><td /></tr></tfoot></table>
+      </section>
+      <section class="em-method">
+        <h3>How the figures are calculated</h3>
+        <ol>
+          <li><b>Planned</b> = project amount × share of the implementation period elapsed at today (T): (today − start date) ÷ (end date − start date).</li>
+          <li><b>Performance</b> = spent (actual, T) ÷ planned.</li>
+          <li><b>Committed</b> = open purchase orders and requests <b>excluding staff</b> (remuneration of permanent and temporary staff are not counted as commitments).</li>
+          <li><b>Spent and committed (S&C)</b> = spent + committed (excluding staff). <b>S&C vs planned</b> = S&C ÷ planned.</li>
+          <li><b>Left budget</b> = project amount − S&C. <b>S&C as % of project amount</b> = S&C ÷ project amount.</li>
+          <li><b>Underspent/overspent forecast</b> = project amount − S&C − planned expenditure to the end date (only when the report's forecast covers the period to the end date).</li>
+          <li><b>Staff ratio (spent)</b> = staff remuneration spent ÷ total spent; <b>(S&C)</b> = staff remuneration spent and committed ÷ total spent and committed (Situation budgétaire).</li>
+          <li><b>Commitment risk</b> = 20% of committed (excluding staff) — the share of open commitments assumed at risk of not being spent as planned.</li>
+          <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of unspent balance” when an underspend is forecast.</li>
+        </ol>
+      </section>
+      
     </article>
   );
 }
