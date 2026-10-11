@@ -6,6 +6,7 @@ import { parseAmount, parseCSV, parseDay } from './csv';
 import { date, full, short } from './format';
 import { readXlsx, type Workbook } from './xlsx';
 import { extractStaff } from '../domain/staff';
+import { BulkReports } from './BulkReports';
 import { parseWorkbook, summarize, toBudgetLines, type Workbook as CoeWorkbook } from '../domain/workbook';
 import { updateProject } from '../data/store';
 
@@ -61,7 +62,9 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const [coe, setCoe] = useState<CoeWorkbook | null>(null);
   const [manual, setManual] = useState(false);
   const [saveIds, setSaveIds] = useState(true);
+  const [bulk, setBulk] = useState<File[] | null>(null);
   useEffect(() => { if (pending) { const f = pending; pending = null; open(f); } }, []);
+  const pick = (F: File[]) => { F = F.filter((f) => /\.(xlsx|csv)$/i.test(f.name) && !f.name.startsWith('~$')); if (F.length > 1) setBulk(F); else if (F[0]) open(F[0]); };
 
   async function open(f: File) {
     setErr(''); setCoe(null); setManual(false);
@@ -120,14 +123,15 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const t = reportTotals(report);
   const delta = prev ? compareReports(prev, report) : [];
 
+  if (bulk) return <BulkReports p={p} files={bulk} close={close} />;
   return (
     <>
       <div class="drawer-h"><div><div class="num muted" style={{ fontSize: '12px' }}>{p.code}</div><h2>Import financial report</h2></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
       <div class="drawer-b">
         <label class={`drop ${over ? 'on' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
-          onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer?.files[0]; if (f) open(f); }}>
-          <input type="file" hidden accept=".xlsx,.csv,text/csv" onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) open(f); }} />
-          <strong style={{ color: 'var(--ink)' }}>{file ? file.name : 'Drop an Excel (.xlsx) or CSV budget report'}</strong><br />{file ? `${file.rows.length} rows read · click to choose another` : 'or click to choose a file'}
+          onDrop={(e) => { e.preventDefault(); setOver(false); pick([...(e.dataTransfer?.files ?? [])]); }}>
+          <input type="file" hidden multiple accept=".xlsx,.csv,text/csv" onChange={(e) => pick([...((e.target as HTMLInputElement).files ?? [])])} />
+          <strong style={{ color: 'var(--ink)' }}>{file ? file.name : 'Drop one or many report workbooks (.xlsx) — or a CSV budget report'}</strong><br />{file ? `${file.rows.length} rows read · click to choose another` : 'or click to choose a file'}
         </label>
         {err && <ul class="errlist"><li>{err}</li></ul>}
         {file && (

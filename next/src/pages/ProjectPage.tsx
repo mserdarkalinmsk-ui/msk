@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { deleteProjects, deleteReport, deleteRisk, go, set, updateLine, updateProject, upsertRisk, useStore } from '../data/store';
-import { burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, riskScore, spendPoints } from '../domain/calc';
+import { category, burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, riskScore, spendPoints } from '../domain/calc';
 import { validUrl, type Project, type ReportingPeriod, type Risk } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
@@ -157,25 +157,26 @@ function Reports({ p }: { p: Project }) {
   const [b, setB] = useState(R.at(-1)?.id ?? '');
   const A = R.find((r) => r.id === a), B = R.find((r) => r.id === b);
   const D = A && B ? compareReports(A, B) : [];
-  if (!R.length) return <div class="card empty-page"><div><h2>No reports yet</h2><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button></div></div>;
+  if (!R.length) return <div class="card empty-page"><div><h2>No reports yet</h2><p>Drop one or many report workbooks — they are ordered by the date inside each report.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import reports</button></div></div>;
   return (
     <div class="grid g-12">
+      <ReportTimeline p={p} />
       <section class="card span-5">
         <div class="card-h"><div><h2>Versions</h2><p>Oldest first; change is spent since the previous report</p></div></div>
-        <ul class="att" style={{ marginTop: '12px' }}>
+        <ul class="att" style={{ marginTop: '12px', maxHeight: '440px', overflow: 'auto' }}>
           {R.map((r, i) => {
             const t = reportTotals(r), prev = i ? reportTotals(R[i - 1]).actual : 0;
             return (
               <li style={{ cursor: 'default', gridTemplateColumns: 'auto 1fr auto auto' }}>
                 <span class="badge neutral count num">{i + 1}</span>
                 <div style={{ minWidth: 0 }}><div class="t">{r.name}</div><div class="d">{date(r.date)} · {r.type}{r.fileName ? ` · ${r.fileName}` : ''}</div></div>
-                <div class="num" style={{ textAlign: 'right', fontSize: '13px' }}>{short(t.actual)}<div class="d" style={{ color: 'var(--ink-3)' }}>{i ? `+${short(t.actual - prev)}` : 'baseline'}</div></div>
+                <div class="num" style={{ textAlign: 'right', fontSize: '13px' }}>{short(t.actual)}<div class="d" style={{ color: 'var(--ink-3)' }}>{i ? `${t.actual - prev < 0 ? "" : "+"}${short(t.actual - prev)}` : 'baseline'}</div></div>
                 <button class="btn icon ghost" aria-label={`Remove ${r.name}`} title="Remove report" onClick={() => confirm(`Remove “${r.name}”? You can undo right after.`) && deleteReport(p.id, r.id)}>✕</button>
               </li>
             );
           })}
         </ul>
-        <div class="card-b"><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>+ Import report (Excel / CSV)</button></div>
+        <div class="card-b"><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>+ Import reports (one or many)</button></div>
       </section>
       <section class="card span-7">
         <div class="card-h" style={{ flexWrap: 'wrap' }}><div><h2>Compare versions</h2><p>Line-by-line change in spent and approved amounts</p></div>
@@ -281,8 +282,9 @@ function Risks({ p }: { p: Project }) {
   const open = R.filter((r) => (r.status ?? 'Open') === 'Open');
   const tone = (s: number) => (s >= 16 ? 'critical' : s >= 12 ? 'serious' : s >= 6 ? 'warning' : 'good');
   const cols: Column<Risk>[] = [
-    { key: 'score', label: 'Score', width: 80, value: (r) => riskScore(r), render: (r) => <span class={`badge ${tone(riskScore(r))}`}>{riskScore(r)}</span> },
-    { key: 'title', label: 'Risk', width: 220, pin: true, value: (r) => r.title },
+    { key: 'score', label: 'Score', width: 70, align: 'r', value: (r) => riskScore(r) },
+    { key: 'title', label: 'Risk', width: 320, pin: true, value: (r) => r.title, render: (r) => <span title={r.title}>{r.title}</span> },
+    { key: 'rating', label: 'Rating', width: 96, value: (r) => riskScore(r), render: (r) => { const s = riskScore(r); return <span class={`badge ${tone(s)}`}>{s >= 16 ? 'very high' : s >= 12 ? 'high' : s >= 6 ? 'medium' : 'low'}</span>; } },
     { key: 'category', label: 'Category', width: 120, value: (r) => r.category ?? '' },
     { key: 'l', label: 'Likelihood', width: 100, align: 'r', value: (r) => Number(r.likelihood || 0), edit: { type: 'select', options: ['1', '2', '3', '4', '5'], commit: (r, v) => upsertRisk(p.id, { ...r, likelihood: v }) } },
     { key: 'i', label: 'Impact', width: 90, align: 'r', value: (r) => Number(r.impact || 0), edit: { type: 'select', options: ['1', '2', '3', '4', '5'], commit: (r, v) => upsertRisk(p.id, { ...r, impact: v }) } },
@@ -311,11 +313,17 @@ function Risks({ p }: { p: Project }) {
       </section>
       <section class="card span-8" style={{ overflow: 'hidden' }}>
         <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Risk register</h2><p>Double-click likelihood, impact or status to change it</p></div>
-          <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'risk', projectId: p.id } })}>+ Add risk</button></div></div>
+          <div class="tools" style={{ display: 'flex', gap: '6px' }}><button class="btn" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Read from DoA</button><button class="btn primary" onClick={() => set({ drawer: { kind: 'risk', projectId: p.id } })}>+ Add risk</button></div></div>
         <DataTable rows={R} columns={cols} rowKey={(r) => r.id} title={`${p.code}-risks`} storageKey="pl-cols-risks" maxHeight={420}
           onOpen={(r) => set({ drawer: { kind: 'risk', projectId: p.id, id: r.id } })}
           actions={(sel, clear) => sel.length > 0 && <button class="btn danger" onClick={() => { sel.forEach((r) => deleteRisk(p.id, r.id)); clear(); }}>Delete {sel.length}</button>} />
       </section>
+      {(p.assumptions?.length ?? 0) > 0 && (
+        <section class="card span-12">
+          <div class="card-h"><div><h2>Assumptions</h2><p>From the DoA risk analysis · these must hold for the action to succeed</p></div></div>
+          <ol class="assume">{p.assumptions!.map((a) => <li>{a}</li>)}</ol>
+        </section>
+      )}
     </div>
   );
 }
@@ -338,5 +346,56 @@ function ResultsDocs({ p }: { p: Project }) {
         <div class="card-b">{facts.length > 0 && <dl class="dl" style={{ gridTemplateColumns: '110px 1fr' }}>{facts.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}</dl>}</div>
       </section>
     </div>
+  );
+}
+
+/** All reports of a project over time — as a chart, a table, or spending per budget heading. */
+function ReportTimeline({ p }: { p: Project }) {
+  const [view, setView] = useState<'chart' | 'table' | 'heading'>(() => (localStorage.getItem('pl-rt-view') as 'chart') || 'chart');
+  const pick = (v: typeof view) => { setView(v); try { localStorage.setItem('pl-rt-view', v); } catch { /* ignore */ } };
+  const R = reportsByDate(p).filter((r) => r.snapshot?.lines.length);
+  const budget = money(p).budget;
+  const rows = R.map((r, i) => {
+    const t = reportTotals(r), prev = i ? reportTotals(R[i - 1]) : null;
+    const months = prev ? (parseDate(r.date).getTime() - parseDate(R[i - 1].date).getTime()) / 2_629_800_000 : (parseDate(r.date).getTime() - parseDate(p.start).getTime()) / 2_629_800_000;
+    const delta = t.actual - (prev?.actual ?? 0);
+    return { r, t, delta, months, rate: months > 0 ? delta / months : 0 };
+  });
+  const H = [...new Set(R.flatMap((r) => r.snapshot!.lines.map((l) => category({ code: l.code, description: l.description ?? '' }))))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const byHead = (r: ReportingPeriod, h: string) => { const L = r.snapshot!.lines.filter((l) => category({ code: l.code, description: l.description ?? '' }) === h); return { spent: L.reduce((s, l) => s + (l.actual ?? 0), 0), approved: L.reduce((s, l) => s + (l.approved ?? 0), 0) }; };
+  if (R.length < 1) return null;
+  return (
+    <section class="card span-12" style={{ overflow: 'hidden' }}>
+      <div class="card-h"><div><h2>Reports over time</h2><p>{R.length} report{R.length > 1 ? 's' : ''} ordered by report date · {date(R[0].date)} → {date(R.at(-1)!.date)}</p></div>
+        <div class="seg" style={{ marginLeft: 'auto' }} role="group" aria-label="View">{([['chart', 'Chart'], ['table', 'Table'], ['heading', 'By heading']] as const).map(([k, l]) => <button aria-pressed={view === k} onClick={() => pick(k)}>{l}</button>)}</div></div>
+      {view === 'chart' && <div class="card-b"><Chart height={320} label="Spending per report" option={(t) => ({
+        ...base(t), grid: { left: 8, right: 16, top: 36, bottom: 8, containLabel: true },
+        legend: { top: 0, left: 0, textStyle: { color: t.ink2 }, itemWidth: 12, itemHeight: 8 },
+        tooltip: { ...(base(t).tooltip as object), trigger: 'axis', valueFormatter: (v: number) => full(v) },
+        xAxis: { type: 'category', data: rows.map((x) => date(x.r.date)), ...axisX(t) },
+        yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
+        dataZoom: rows.length > 12 ? [{ type: 'inside' }, { type: 'slider', height: 16, bottom: 0 }] : [],
+        series: [
+          { name: 'Spent in period', type: 'bar', data: rows.map((x) => Math.round(x.delta)), itemStyle: { color: t.c[0], opacity: 0.35, borderRadius: [3, 3, 0, 0] }, barMaxWidth: 28 },
+          { name: 'Spent (cumulative)', type: 'line', data: rows.map((x) => Math.round(x.t.actual)), symbolSize: 7, lineStyle: { width: 2.5, color: t.c[0] }, itemStyle: { color: t.c[0] } },
+          { name: 'Spent + committed', type: 'line', data: rows.map((x) => Math.round(x.t.exposure)), symbolSize: 5, lineStyle: { width: 1.5, type: 'dashed', color: t.c[1] }, itemStyle: { color: t.c[1] },
+            markLine: budget ? { silent: true, symbol: 'none', label: { formatter: 'Budget', color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'dotted' }, data: [{ yAxis: budget }] } : undefined },
+        ],
+      })} /></div>}
+      {view === 'table' && <div class="card-b table-scroll" style={{ maxHeight: '480px', overflow: 'auto' }}>
+        <table class="mini rt">
+          <thead><tr><th>Report date</th><th>Report</th><th class="r">Spent</th><th class="r">Change</th><th class="r">Per month</th><th class="r">Committed</th><th class="r">Spent + committed</th><th>Use of budget</th></tr></thead>
+          <tbody>{rows.map((x) => (
+            <tr><td class="num" style={{ whiteSpace: 'nowrap' }}>{date(x.r.date)}</td><td>{x.r.name}<div class="muted" style={{ fontSize: '11.5px' }}>{x.r.fileName}</div></td>
+              <td class="r num">{full(x.t.actual)}</td><td class="r num" style={{ color: x.delta < 0 ? 'var(--serious)' : undefined }}>{fmtDelta(x.delta)}</td><td class="r num">{full(x.rate)}</td>
+              <td class="r num">{full(x.t.committed)}</td><td class="r num">{full(x.t.exposure)}</td>
+              <td style={{ minWidth: '140px' }}><div class="delta-bar"><span style={{ width: `${Math.min(100, budget ? x.t.exposure / budget * 100 : 0)}%`, background: 'var(--c1)' }} /><b class="num">{pct(budget ? x.t.exposure / budget : 0)}</b></div></td></tr>))}</tbody>
+        </table></div>}
+      {view === 'heading' && <div class="card-b table-scroll" style={{ overflow: 'auto' }}>
+        <table class="mini rt rh">
+          <thead><tr><th class="stick">Heading</th>{R.map((r) => <th class="r num">{date(r.date)}</th>)}</tr></thead>
+          <tbody>{H.map((h) => <tr><td class="stick"><b>{h}</b></td>{R.map((r) => { const v = byHead(r, h), u = v.approved ? v.spent / v.approved : 0; return <td class="r num" style={{ background: `color-mix(in srgb, var(--c1) ${Math.round(Math.min(1, u) * 45)}%, transparent)` }} title={`${full(v.spent)} of ${full(v.approved)}`}>{pct(u)}</td>; })}</tr>)}</tbody>
+        </table><p class="muted" style={{ fontSize: '12px' }}>Share of each heading's budget spent at each report date.</p></div>}
+    </section>
   );
 }

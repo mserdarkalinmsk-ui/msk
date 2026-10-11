@@ -216,3 +216,6 @@ details.jt-row { border-top: 1px solid var(--line); }
 .gantt .gc.now::after { background: var(--critical); }
 .gantt .gs button { border: 0; cursor: pointer; }
 .gantt .gc { height: 34px; }
+.assume { margin: 0; padding: 8px 20px 18px 44px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 28px; font-size: 13px; line-height: 1.5; }
+.assume li::marker { color: var(--muted); font-weight: 700; }
+@media (max-width: 900px) { .assume { grid-template-columns: 1fr; } }

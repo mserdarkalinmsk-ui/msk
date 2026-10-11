@@ -65,13 +65,9 @@ export function plan(wb: Workbook, fileName: string, L: Ledger, taken = new Set<
       bh: m.bh, contractNo: m.contract, jp: m.jp, reportingPeriods: [], riskRegister: [],
     };
   }
-  const existing = (project.reportingPeriods ?? []).find((r) => r.date === date && r.snapshot?.workbook);
-  const report: ReportingPeriod = {
-    id: existing?.id ?? 'r' + Math.random().toString(36).slice(2, 9), name: `Interim report to ${date}`, type: 'Interim Financial Report', date, fileName, registeredAt: new Date().toISOString(),
-    snapshot: { format: 'CoE workbook', lines: toBudgetLines(wb), staffRecords: wb.staff, staffGroups: wb.staffGroups, workbook: summarize(wb, fileName) },
-  };
+  const { report, replaces: existing } = reportFrom(wb, fileName, project);
   for (const c of wb.checks) if (c.level === 'error') problems.push(c.text);
-  return { fileName, wb, match, matchedBy, project, report, replaces: existing?.id, guessed, problems };
+  return { fileName, wb, match, matchedBy, project, report, replaces: existing, guessed, problems };
 }
 
 /** Applies plans to a copy of the ledger: new projects are added, matched ones updated, the report upserted. */
@@ -109,4 +105,29 @@ export function planDiff(L: Ledger, pl: AutoPlan): DiffRow[] {
     ['Reports on file', String(before?.reportingPeriods?.length ?? 0), String(after.reportingPeriods?.length ?? 0)],
   ];
   return R.map(([label, b, a]) => ({ label, before: b, after: a, changed: b !== a }));
+}
+
+/** Report date of a workbook: end of the reporting period, else the situation date. */
+export const reportDate = (wb: Workbook) => wb.meta.periodTo || wb.meta.asAt || wb.meta.situationDate || '';
+
+/** A reporting period built from a financial report workbook; a report with the same date is replaced. */
+export function reportFrom(wb: Workbook, fileName: string, p: Project): { report: ReportingPeriod; replaces?: string } {
+  const date = reportDate(wb) || new Date().toISOString().slice(0, 10);
+  const existing = (p.reportingPeriods ?? []).find((r) => r.date === date && r.snapshot?.workbook);
+  return {
+    replaces: existing?.id,
+    report: {
+      id: existing?.id ?? 'r' + Math.random().toString(36).slice(2, 9), name: `Interim report to ${date}`, type: 'Interim Financial Report', date, fileName, registeredAt: new Date().toISOString(),
+      snapshot: { format: 'CoE workbook', lines: toBudgetLines(wb), staffRecords: wb.staff, staffGroups: wb.staffGroups, workbook: summarize(wb, fileName) },
+    },
+  };
+}
+
+/** Identifier conflicts between a workbook and the project it is being added to. */
+export function idConflicts(wb: Workbook, p: Project): string[] {
+  const m = wb.meta, out: string[] = [];
+  if (p.bh && m.bh && p.bh !== m.bh) out.push(`BH ${m.bh} ≠ ${p.bh}`);
+  if (p.contractNo && m.contract && p.contractNo !== m.contract) out.push(`contract ${m.contract} ≠ ${p.contractNo}`);
+  if (p.jp && m.jp && p.jp !== m.jp) out.push(`JP ${m.jp} ≠ ${p.jp}`);
+  return out;
 }

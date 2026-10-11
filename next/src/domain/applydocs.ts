@@ -21,6 +21,7 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
     for (const r of F.risks) { const i = R.findIndex((x) => x.title.toLowerCase() === r.title.toLowerCase()); if (i >= 0) R[i] = { ...R[i], ...r, id: R[i].id, status: R[i].status }; else R.push(r); }
   }
   // progress entered by hand survives a re-import of the logframe
+  if (c.risks && F.assumptions?.length) q.assumptions = F.assumptions;
   if (c.indicators && F.indicators.length) q.indicators = F.indicators.map((x) => { const o = q.indicators?.find((y) => y.indicator === x.indicator); return o?.current ? { ...x, current: o.current, asOf: o.asOf } : x; });
   if (c.notes !== false && F.notes && Object.keys(F.notes).length) q.budgetNotes = { ...(q.budgetNotes ?? {}), ...F.notes };
   q.documents = [...(q.documents ?? []).filter((d) => !docs.some((x) => x.name === d.name)), ...docs.map((d) => ({ ...d, importedAt: new Date().toISOString() }))];
@@ -33,6 +34,7 @@ export function mergeFindings(all: DocFindings[]): DocFindings {
   for (const f of all) {
     for (const [key, v] of Object.entries(f.contract)) if ((out.contract as Record<string, unknown>)[key] == null) (out.contract as Record<string, unknown>)[key] = v;
     if (f.acts.length > out.acts.length) { out.acts = f.acts; out.planMonths = f.planMonths; }
+    if (f.assumptions && f.assumptions.length > (out.assumptions?.length ?? 0)) out.assumptions = f.assumptions;
     for (const r of f.risks) if (!out.risks.some((x) => x.title.toLowerCase() === r.title.toLowerCase())) out.risks.push(r);
     if (f.indicators.length > out.indicators.length) out.indicators = f.indicators;
     if (f.notes) out.notes = { ...(out.notes ?? {}), ...f.notes };

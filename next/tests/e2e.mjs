@@ -314,6 +314,29 @@ async function page(opts) {
   await ctx.close();
 }
 
+// Many reports at once inside a project, ordered by the date in each report
+{
+  const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 } });
+  await p.goto(url + '#/project/geo'); await p.waitForSelector('.ph-title');
+  await p.click('.ph-actions button:has-text("Import report")');
+  await p.setInputFiles('.drawer input[type=file]', ['c', 'a', 'b'].map((k) => resolve(`tests/fixtures/series/report-${k}.xlsx`))); await p.waitForSelector('.drawer h2:has-text("Ordered by report date")', { timeout: 20000 });
+  const dates = await p.locator('.drawer tbody tr td:first-child').allTextContents();
+  check(dates.join('|') === '31 Mar 2026|30 Jun 2026|30 Sept 2026' || dates.join('|') === '31 Mar 2026|30 Jun 2026|30 Sep 2026', `bulk import sorted by report date (${dates.join(', ')})`);
+  check(await p.locator('.drawer :text("belongs to another project")').count() === 0, 'bulk import: no conflicts');
+  await p.screenshot({ path: `${shots}/bulk.png` });
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500);
+  await ptab(p, 'Reports'); await p.waitForTimeout(400);
+  check(await p.locator('h2:text-is("Reports over time")').count() === 1, 'reports over time shown');
+  await p.screenshot({ path: `${shots}/reports-chart.png`, fullPage: true });
+  await p.click('.seg button:has-text("Table")'); await p.waitForTimeout(150);
+  const rows = await p.locator('table.rt tbody tr').count();
+  await p.click('.seg button:has-text("By heading")'); await p.waitForTimeout(150);
+  check(rows >= 4 && await p.locator('table.rh tbody tr').count() >= 3, 'reports table and heading view');
+  await p.screenshot({ path: `${shots}/reports-heading.png`, fullPage: true });
+  check(errors.length === 0, 'bulk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 // Start data (no demo): real project, empty other countries
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
