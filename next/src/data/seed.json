@@ -4,7 +4,8 @@
    "id": "tr",
    "name": "Türkiye",
    "region": "South-East Europe",
-   "iso3": "TUR"
+   "iso3": "TUR",
+   "ccm": "00901"
   },
   {
    "id": "ge",
@@ -26,7 +27,7 @@
    "name": "Enhancing Foreign Language Education Quality in Türkiye",
    "country": "tr",
    "sector": "Human Rights",
-   "funding": "Joint Programme",
+   "funding": "EU",
    "start": "2024-07-12",
    "end": "2029-07-11",
    "budget": 5403333,
@@ -244,7 +245,10 @@
     "source": "Budget for all years - Enhancing Foreign Language Education Quality in Türkiye.pdf",
     "linesSum": 5049844,
     "importedAt": "2026-10-11T00:00:00Z"
-   }
+   },
+   "pmm": "3220",
+   "mae": "DG II",
+   "ccm": "00901"
   },
   {
    "id": "bh5210",
@@ -252,31 +256,35 @@
    "name": "Strengthening Rights and Conditions of Women in Prisons in Türkiye in line with International and EU Standards",
    "country": "tr",
    "sector": "Rule of Law",
-   "funding": "Window 1: Rule of law, fundamental rights",
-   "start": "2025-01-01",
-   "end": "2027-12-31",
-   "budget": 0,
+   "funding": "EU",
+   "start": "2026-01-01",
+   "end": "2029-09-30",
+   "budget": 4444450,
    "status": "Active",
    "bh": "5210",
-   "datesTbc": true,
    "reportingPeriods": [],
-   "riskRegister": []
+   "riskRegister": [],
+   "pmm": "3653",
+   "mae": "DG I",
+   "ccm": "00901"
   },
   {
    "id": "bh9413",
    "code": "BH9413",
-   "name": "Strengthening the Protection of Unaccompanied Migrant Children in Türkiye",
+   "name": "Strengthening the protection of unaccompanied migrant children in Türkiye",
    "country": "tr",
    "sector": "Human Rights",
-   "funding": "Joint Programme",
-   "start": "2025-01-01",
-   "end": "2027-12-31",
-   "budget": 0,
+   "funding": "Sweden",
+   "start": "2026-01-01",
+   "end": "2027-06-30",
+   "budget": 454773,
    "status": "Active",
    "bh": "9413",
-   "datesTbc": true,
    "reportingPeriods": [],
-   "riskRegister": []
+   "riskRegister": [],
+   "pmm": "4415",
+   "mae": "DG I",
+   "ccm": "00901"
   },
   {
    "id": "bh5212",
@@ -284,15 +292,17 @@
    "name": "Fostering civil society's support for women's access to justice in Türkiye",
    "country": "tr",
    "sector": "Rule of Law",
-   "funding": "Joint Programme",
-   "start": "2025-01-01",
-   "end": "2027-12-31",
-   "budget": 0,
+   "funding": "EU",
+   "start": "2025-12-22",
+   "end": "2028-12-21",
+   "budget": 1482000,
    "status": "Active",
    "bh": "5212",
-   "datesTbc": true,
    "reportingPeriods": [],
-   "riskRegister": []
+   "riskRegister": [],
+   "pmm": "4036",
+   "mae": "DG II",
+   "ccm": "00901"
   },
   {
    "id": "bh5260",
@@ -317,16 +327,18 @@
    "name": "Fostering Civil Society Participation in Access to Justice in Türkiye: Enhancing Human Rights in the Context of Migration and Environmental Justice",
    "country": "tr",
    "sector": "Rule of Law",
-   "funding": "Joint Programme",
-   "start": "2025-01-01",
-   "end": "2027-12-31",
-   "budget": 0,
+   "funding": "EU",
+   "start": "2025-12-22",
+   "end": "2028-12-21",
+   "budget": 2963000,
    "status": "Active",
    "bh": "5213",
-   "datesTbc": true,
    "reportingPeriods": [],
-   "riskRegister": []
+   "riskRegister": [],
+   "pmm": "4037",
+   "mae": "DG I",
+   "ccm": "00901"
   }
  ],
- "seedVersion": 2
+ "seedVersion": 3
 }
