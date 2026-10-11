@@ -341,7 +341,7 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .stmt .cd { color: var(--ink-3); font-size: 12px; margin-right: 4px; }
 .stmt .usedc { min-width: 140px; } .stmt .usedc { display: table-cell; } .stmt .usedc .minibar { display: inline-block; width: 80px; vertical-align: middle; margin-right: 8px; } .stmt .usedc .num { font-size: 12px; }
 .stmt tfoot td { position: sticky; background: var(--surface-2); font-weight: 700; font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.stmt tfoot tr.t1 td { bottom: 66px; border-top: 2px solid var(--ink-3); } .stmt tfoot tr.t2 td { bottom: 33px; font-weight: 500; } .stmt tfoot tr.t3 td { bottom: 0; border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); background: var(--surface); font-size: 14px; }
+.stmt tfoot tr td { bottom: var(--sb, 0); } .stmt tfoot tr.t1 td { border-top: 2px solid var(--ink-3); } .stmt tfoot tr.t2 td { font-weight: 500; } .stmt tfoot tr.t3 td { border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); background: var(--surface); font-size: 14px; }
 .stmt tfoot td:first-child { font-family: var(--font); }
 .stmt-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; padding: 10px var(--s5); }
 .lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .lg.over { background: var(--critical); } .lg.warn { background: var(--warn); }

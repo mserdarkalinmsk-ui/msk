@@ -66,10 +66,10 @@ export function Budget() {
           {(() => { const S = portfolioStatement(P); const B = P.reduce((s, p) => s + p.budget, 0); const el = B ? P.reduce((s, p) => s + p.budget * elapsedOf(p, TODAY), 0) / B : 0;
             return <Statement lines={S.lines} totals={S.totals} elapsed={el} title="portfolio-statement" />; })()}
         </section>
-        <section class="card span-12" style={{ overflow: 'hidden' }}>
-          <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Budget lines{cat && ` · ${cat}`}</h2><p>Latest report per project · double-click an amount to correct it</p></div></div>
+        <details class="card span-12 bl-fold" style={{ overflow: 'hidden' }}>
+          <summary class="card-h" style={{ paddingBottom: '12px', cursor: 'pointer' }}><div><h2>Budget lines by project{cat && ` · ${cat}`}</h2><p>Hidden by default · open to see or correct every line of every project</p></div></summary>
           <LineTable rows={R} cname={cname} />
-        </section>
+        </details>
       </div>
     </>
   );

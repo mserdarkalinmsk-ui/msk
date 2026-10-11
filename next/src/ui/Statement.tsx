@@ -46,8 +46,10 @@ export function Statement({ lines, totals, elapsed, title }: { lines: WbLine[]; 
     { key: 'au', label: 'Actual units', width: 0, value: (r) => r.leaf?.actual.units ?? '' }, { key: 'ar', label: 'Actual rate', width: 0, value: (r) => r.leaf?.actual.rate ?? '' }, { key: 'a', label: 'Spent', width: 0, value: (r) => r.sum.a },
     { key: 'sc', label: 'Spent and committed', width: 0, value: (r) => r.sum.sc }, { key: 'pl', label: 'Planned 12 months', width: 0, value: (r) => r.sum.pl }, { key: 'pr', label: 'Budget proposal', width: 0, value: (r) => r.sum.pr },
   ], rows);
+  const present = (['direct', 'admin', 'eligible'] as const).filter((k) => totals[k]);
+  // Sticky offsets from the rows actually shown, so a report without admin/total rows leaves no gap.
   const T = (k: 'direct' | 'admin' | 'eligible', label: string, cls: string) => totals[k] && (
-    <tr class={cls}><td class="tl" colSpan={full_ ? 4 : 1}>{label}</td>
+    <tr class={cls} style={{ ['--sb' as string]: `${(present.length - 1 - present.indexOf(k)) * 33}px` }}><td class="tl" colSpan={full_ ? 4 : 1}>{label}</td>
       <td class="r">{money(totals[k]!.budget)}</td>{full_ && <><td /><td /></>}<td class="r">{money(totals[k]!.actual)}</td><td class="r">{money(totals[k]!.sc)}</td>
       <td class="r">{pct(totals[k]!.budget ? totals[k]!.sc / totals[k]!.budget : 0)}</td>
       {hasPlan && <td class="r">{money(totals[k]!.planned)}</td>}{hasProp && <><td class="r">{money(totals[k]!.rounded ?? totals[k]!.proposal)}</td><td class="r">{money(v(totals[k]!.rounded ?? totals[k]!.proposal) - totals[k]!.budget)}</td></>}</tr>
