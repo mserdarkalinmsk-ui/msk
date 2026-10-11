@@ -10,8 +10,10 @@ export interface Triple { units: number | null; rate: number | null; cost: numbe
 export interface WbLine {
   code: string; description: string; unit: string; level: number; leaf: boolean;
   budget: Triple; actual: Triple; sc: number | null; planned?: Triple; proposal?: Triple; rounded?: Triple;
+  /** Budget of the part that has a proposal (portfolio sums mix projects with and without one). */
+  proposalBase?: number;
 }
-export interface WbTotals { budget: number; actual: number; sc: number; planned?: number; proposal?: number; rounded?: number }
+export interface WbTotals { budget: number; actual: number; sc: number; planned?: number; proposal?: number; rounded?: number; proposalBase?: number }
 export interface WbMeta {
   title?: string; contract?: string; jp?: string; bh?: string; periodFrom?: string; periodTo?: string; asAt?: string;
   plannedFrom?: string; plannedTo?: string; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
