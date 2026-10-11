@@ -4,7 +4,7 @@
  */
 import type { Activity, Risk } from './types';
 
-export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][]; geometry?: Geometry }
+export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][]; geometry?: Geometry; notes?: Record<string, BudgetNote> }
 /** Results of the layout readers for PDFs (shaded action-plan cells, logframe columns, annex tables). */
 export interface Geometry {
   acts: { code: string; name: string; group?: string; P?: number[]; E?: number[]; X?: number[] }[]; months: number; start?: string;
@@ -163,7 +163,7 @@ export function analyse(doc: Doc): DocFindings {
   const tPlan = actionPlan(doc), tRisk = risks(doc), tInd = indicators(doc);
   const plan = gPlan && gPlan.acts.length >= (tPlan?.acts.length ?? 0) ? gPlan : tPlan;
   const R = gRisk.length > tRisk.length ? gRisk : tRisk, I = gInd.length > tInd.length ? gInd : tInd;
-  const contract = contractFacts(doc), budget = approvedBudget(doc), notes = budgetNotes(doc);
+  const contract = contractFacts(doc), budget = approvedBudget(doc), notes = { ...budgetNotes(doc), ...(doc.notes ?? {}) };
   const nn = Object.keys(notes).length;
   const summary = [
     nn && `justification for ${nn} budget lines`,
@@ -236,4 +236,43 @@ export function budgetNotes(doc: Doc): Record<string, BudgetNote> {
     }
   }
   return out;
+}
+
+/* ---------- justification table from PDF layout ---------- */
+export interface PdfItem { s: string; x: number; y: number; w: number; h: number }
+export interface NoteColumns { unit: number; clar: number; just: number }
+
+/**
+ * Reads "Description | Unit | Clarification | Justification" from positioned PDF text. Cell text is wrapped
+ * and vertically centred, so each column's lines are grouped into blocks (split at gaps wider than a line)
+ * and every block is given to the line code whose row centre is nearest. Columns found on one page are
+ * reused on following pages without a header.
+ */
+export function notesFromLayout(items: PdfItem[], prev?: NoteColumns): { notes: Record<string, BudgetNote>; cols?: NoteColumns } {
+  const find = (re: RegExp) => items.find((i) => re.test(i.s));
+  const hc = find(/^clarification/i), hj = find(/^justification/i), hu = find(/^unit$/i);
+  const cols = hc && hj ? { unit: hu ? hu.x - 4 : hc.x - 60, clar: hc.x - 4, just: hj.x - 4 } : prev;
+  if (!cols) return { notes: {} };
+  const top = hc && hj ? Math.min(hc.y, hj.y) - 1 : Infinity;
+  const body = items.filter((i) => i.y < top && i.s.trim());
+  const anchors = body.filter((i) => i.x < cols.unit && /^\d{1,2}(?:\.\d{1,2}){1,4}\.?\s+\S/.test(i.s)).sort((a, b) => b.y - a.y);
+  if (!anchors.length) return { notes: {}, cols };
+  const blocks = (inCol: (i: PdfItem) => boolean) => {
+    const L = body.filter(inCol).sort((a, b) => b.y - a.y || a.x - b.x);
+    const lines: { y: number; h: number; t: string }[] = [];
+    for (const it of L) { const l = lines.find((x) => Math.abs(x.y - it.y) < Math.max(1.5, it.h * 0.4)); if (l) l.t += ' ' + it.s; else lines.push({ y: it.y, h: it.h || 7, t: it.s }); }
+    const out: { lines: typeof lines }[] = [];
+    for (const l of lines) { const b = out.at(-1); if (b && b.lines.at(-1)!.y - l.y < l.h * 1.9) b.lines.push(l); else out.push({ lines: [l] }); }
+    return out.map((b) => ({ y: (b.lines[0].y + b.lines.at(-1)!.y) / 2, t: clean(b.lines.map((x) => x.t).join(' ')) }));
+  };
+  const near = (y: number) => anchors.reduce((a, b) => (Math.abs(b.y - y) < Math.abs(a.y - y) ? b : a));
+  const notes: Record<string, BudgetNote> = {};
+  const get = (a: PdfItem) => { const m = a.s.match(/^(\d{1,2}(?:\.\d{1,2}){1,4})\.?\s+(.*)$/)!; return (notes[m[1]] ??= { description: clean(m[2]), clarification: '', justification: '' }); };
+  for (const a of anchors) get(a);
+  // description continuation lines (e.g. "80%)") join the nearest code
+  for (const b of blocks((i) => i.x < cols.unit && !anchors.includes(i))) { const n = get(near(b.y)); n.description = clean(`${n.description} ${b.t}`); }
+  for (const b of blocks((i) => i.x >= cols.clar && i.x < cols.just)) { const n = get(near(b.y)); n.clarification = clean(`${n.clarification} ${b.t}`); }
+  for (const b of blocks((i) => i.x >= cols.just)) { const n = get(near(b.y)); n.justification = clean(`${n.justification} ${b.t}`); }
+  for (const [k, v] of Object.entries(notes)) if (!v.clarification && !v.justification) delete notes[k];
+  return { notes, cols };
 }

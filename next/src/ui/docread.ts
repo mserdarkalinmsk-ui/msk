@@ -1,5 +1,5 @@
 import { unzip, readXlsx } from './xlsx';
-import type { Doc, Geometry } from '../domain/documents';
+import { notesFromLayout, type BudgetNote, type Doc, type Geometry, type NoteColumns } from '../domain/documents';
 import * as geoModule from './pdfgeom';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped port of the previous app's layout readers
 const geo = geoModule as any;
@@ -33,9 +33,12 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
   let table: string[][] = [];
   const G: Geometry = { acts: [], months: 0, indicators: [], risks: [] };
   const layouts: unknown[] = []; let template: unknown = null;
+  const notes: Record<string, BudgetNote> = {}; let noteCols: NoteColumns | undefined;
   for (let n = 1; n <= doc.numPages; n++) {
     const page = await doc.getPage(n);
     const tc = await page.getTextContent();
+    const pos = (tc.items as { str: string; transform: number[]; width: number; height: number }[]).map((i) => ({ s: i.str, x: i.transform[4], y: i.transform[5], w: i.width, h: i.height || Math.abs(i.transform[3]) }));
+    const jn = notesFromLayout(pos, noteCols); Object.assign(notes, jn.notes); noteCols = jn.cols;
     // Layout readers from the previous app (need a canvas; skipped where none exists, e.g. in unit tests)
     if (typeof document !== 'undefined') try {
       const items = tc.items as unknown[];
@@ -70,7 +73,7 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
   if (table.length) tables.push(table);
   if (layouts.length) try { G.indicators.push(...geo.pdfAnnexIndicators(layouts)); G.risks.push(...geo.pdfAnnexRisks(layouts)); } catch { /* best effort */ }
   await doc.destroy();
-  return { name, kind: 'pdf', paragraphs, tables, ...(G.acts.length || G.indicators.length || G.risks.length ? { geometry: G } : {}) };
+  return { name, kind: 'pdf', paragraphs, tables, ...(Object.keys(notes).length ? { notes } : {}), ...(G.acts.length || G.indicators.length || G.risks.length ? { geometry: G } : {}) };
 }
 
 export async function readDocument(f: File): Promise<Doc> {
