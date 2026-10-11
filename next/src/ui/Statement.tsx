@@ -13,7 +13,7 @@ interface Row { code: string; label: string; depth: number; leaf?: WbLine; sum: 
 function build(lines: WbLine[]) {
   const leaf = lines.filter((l) => l.leaf);
   const all = new Map<string, Row>();
-  const label = (code: string) => lines.find((l) => l.code === code)?.description ?? (code.split('.').length === 1 ? HEAD[code] ?? '' : '');
+  const label = (code: string) => lines.find((l) => l.code === code)?.description ?? lines.find((l) => l.code === `${code}.0`)?.description.replace(/\s*\(not broken down\)$/, '') ?? (code.split('.').length === 1 ? HEAD[code] ?? '' : '');
   for (const l of leaf) {
     const parts = l.code.split('.');
     for (let i = 1; i <= parts.length; i++) {
