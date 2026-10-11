@@ -29,7 +29,7 @@ function build(lines: WbLine[]) {
 }
 
 /** Financial statement in the layout of the official report: hierarchy, two-level headers, subtotals and totals. */
-export function Statement({ lines, totals, elapsed, title }: { lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
+export function Statement({ lines, totals, elapsed, title, layout }: { layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
   const [mode, setMode] = useState<'full' | 'compact'>('compact');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [hideEmpty, setHideEmpty] = useState(true);
@@ -97,9 +97,9 @@ export function Statement({ lines, totals, elapsed, title }: { lines: WbLine[]; 
             })}
           </tbody>
           <tfoot>
-            {T('direct', '7. Total direct eligible costs', 't1')}
-            {T('admin', '10. Administrative costs (7%)', 't2')}
-            {T('eligible', '11. Total eligible costs', 't3')}
+            {T('direct', `${layout?.direct ?? '7'}. Total direct eligible costs`, 't1')}
+            {T('admin', `${layout?.admin ?? (layout?.eligible === '9' ? '8' : '10')}. Administrative costs (7%)`, 't2')}
+            {T('eligible', `${layout?.eligible ?? '11'}. Total eligible costs`, 't3')}
           </tfoot>
         </table>
       </div>

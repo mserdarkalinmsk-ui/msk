@@ -128,7 +128,7 @@ export function FinancialReport({ p }: { p: Project }) {
               <button aria-pressed={view === 'pos'} onClick={() => setView('pos')}>Open POs ({openPO.length})</button>
             </div></div>
           </div>
-          {view === 'lines' && <Statement lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
+          {view === 'lines' && <Statement layout={(wb.meta as { layout?: Record<string, string> }).layout} lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
         </section>
