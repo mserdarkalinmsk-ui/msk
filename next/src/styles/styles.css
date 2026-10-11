@@ -473,3 +473,4 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 @page deck{size:A4 landscape;margin:0}
 @media print{.deck{page:deck;gap:0}.slide{break-after:page;border:none;border-radius:0;box-shadow:none;width:297mm;height:209mm;aspect-ratio:auto;padding:12mm 16mm 18mm !important;box-sizing:border-box}.sl-cover{padding:20mm 24mm !important}.sl-f{left:16mm;right:16mm;bottom:7mm}.slide .map-zoom,.slide button{display:none}}
 @media screen and (max-width:820px){.slide{aspect-ratio:auto;padding:20px 20px 48px}.sl-two,.sl-kpis,.sl-split,.sl-tl{grid-template-columns:1fr}.sl-cv-k{flex-wrap:wrap;gap:16px}.sl-cover h1{font-size:32px;max-width:none}}
+.tabs.tabs-wrap{flex-wrap:wrap;overflow:visible;row-gap:2px}.tabs.tabs-wrap>span{flex-shrink:0}

@@ -24,7 +24,7 @@ export function Reports() {
   return (
     <>
       <div class="no-print"><Filters /></div>
-      <div class="tabs no-print" role="tablist">
+      <div class="tabs tabs-wrap no-print" role="tablist">
         <button role="tab" aria-selected={tab === 'pack'} onClick={() => setTab('pack')}>Monthly pack</button>
         <button role="tab" aria-selected={tab === 'deck'} onClick={() => setTab('deck')}>Presentation</button>
         <button role="tab" aria-selected={tab === 'studio'} onClick={() => setTab('studio')}>Report studio</button>
