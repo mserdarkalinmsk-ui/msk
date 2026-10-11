@@ -8,6 +8,7 @@ import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
 import { full, month, pct, short, signedPct } from './format';
 import { readTable, ReportImport, RiskForm } from './ReportImport';
+import { ContractPanel } from './ContractPanel';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -25,6 +26,7 @@ export function Drawer() {
         {d.kind === 'project' && <ProjectView id={d.id} close={close} />}
         {d.kind === 'new-project' && <ProjectForm close={close} preset={d.country} />}
         {d.kind === 'report' && <ReportImport projectId={d.projectId} close={close} />}
+        {d.kind === 'contract' && <ContractPanel projectId={d.projectId} k={d.key} close={close} />}
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}

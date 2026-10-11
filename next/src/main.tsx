@@ -5,6 +5,9 @@ import { go, load, set, useStore } from './data/store';
 import { Overview } from './pages/Overview';
 import { Projects } from './pages/Projects';
 import { Budget } from './pages/Budget';
+import { People } from './pages/People';
+import { MapPage } from './pages/MapPage';
+import { Reports } from './pages/Reports';
 import { ProjectPage } from './pages/ProjectPage';
 import { Drawer } from './ui/Drawer';
 import { Palette, Toasts } from './ui/Palette';
@@ -24,7 +27,7 @@ function App() {
   return (
     <>
       <Shell title={title} crumb={crumb} actions={actions}>
-        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'project' ? <ProjectPage id={arg} key={arg} /> : <Placeholder id={head} />}
+        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports /> : head === 'project' ? <ProjectPage id={arg} key={arg} /> : <Placeholder id={head} />}
       </Shell>
       <Drawer />
       <Palette />

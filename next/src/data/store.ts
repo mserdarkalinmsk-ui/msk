@@ -9,7 +9,7 @@ export interface State {
   ledger: Ledger;
   route: string;
   filters: Filters;
-  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string };
+  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string };
   palette: boolean;
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];
@@ -148,6 +148,10 @@ export const upsertRisk = (pid: string, r: Risk) => editProject(pid, (p) => {
   const i = R.findIndex((x) => x.id === r.id); if (i >= 0) R[i] = r; else R.push(r);
 }, `Saved risk “${r.title}”`);
 export const deleteRisk = (pid: string, id: string) => editProject(pid, (p) => { p.riskRegister = (p.riskRegister ?? []).filter((r) => r.id !== id); }, 'Risk removed');
+export const setStaffOverride = (pid: string, key: string, o: import('../domain/staff').StaffOverride | null) => editProject(pid, (p) => {
+  const O = p.staffOverrides ?? (p.staffOverrides = {});
+  if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];
+}, o ? 'Contract details saved' : 'Contract details cleared');
 export function replaceLedger(l: Ledger, message: string) { commit(clone(l), message); }
 export function resetDemo() { commit(clone(seed as unknown as Ledger), 'Demo data restored'); }
 

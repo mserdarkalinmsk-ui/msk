@@ -177,7 +177,7 @@ export const axisMoney = (v: number) => (v === 0 ? '0' : Math.abs(v) >= 1e6 ? `â
 export const axisX = (t: Tokens) => ({ axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, hideOverlap: true }, splitLine: { show: false } });
 export const axisY = (t: Tokens) => ({ axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, fontFamily: t.mono, formatter: axisMoney }, splitLine: { lineStyle: { color: t.line } } });
 
-function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, budget: number) {
+export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, budget: number) {
   const pick = (k: 'actual' | 'plan' | 'low' | 'mid') => S.filter((x) => x[k] != null).map((x) => [x.t, x[k]]);
   const band = S.filter((x) => x.low != null).map((x) => [x.t, x.high! - x.low!]);
   const row = (c: string, name: string, v: number | null | undefined, dash = false) => v == null ? '' :
