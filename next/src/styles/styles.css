@@ -438,3 +438,5 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .ag-e:hover{background:var(--surface)}.ag-e small{grid-column:2/4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag-d{color:var(--ink-2);font-weight:600}
 .ag-e.t-bad{background:color-mix(in srgb,#e5484d 10%,var(--surface))}.ag-e.t-warn{background:color-mix(in srgb,#f5a524 8%,var(--surface))}
 .ag-over{margin-bottom:14px;padding:10px;border-radius:12px;background:color-mix(in srgb,#e5484d 7%,var(--surface));border:1px solid color-mix(in srgb,#e5484d 30%,var(--line))}.ag-over h3{margin:0 0 6px;font-size:13px;color:#e5484d}.ag-over .ag-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));max-height:none}
+.nt-b{margin:4px 0 8px;padding-left:20px;display:grid;gap:3px}.nt-b li{line-height:1.45}.nt-b li::marker{color:var(--c1)}
+.nt-g td{font-weight:700;background:color-mix(in srgb,var(--c1) 8%,var(--surface))}
