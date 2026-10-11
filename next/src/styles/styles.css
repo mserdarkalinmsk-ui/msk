@@ -367,3 +367,4 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .em-foot{font-size:11px;color:#666;margin-top:10px}
 @page em{size:A3 landscape;margin:10mm}@media print{.em{page:em;box-shadow:none;padding:0}}
 .em{padding-top:54px}.em-h{flex-wrap:nowrap;overflow-x:auto}.em-key caption{white-space:nowrap}.em-h>*{flex:none}
+.brief p{max-width:none}

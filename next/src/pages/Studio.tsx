@@ -172,15 +172,25 @@ export function Compare() {
   const scope = s.filters.country ? cname(s.filters.country) : 'All countries';
   const rows = P.map((p) => {
     const m = money(p), el = elapsed(p, TODAY), planned = m.budget * el, L = lines(p);
-    const hr = L.filter((l) => l.code.split('.')[0] === '1' && !L.some((x) => x !== l && x.code.startsWith(l.code + '.')));
-    const hrS = hr.reduce((a, l) => a + (l.actual ?? 0), 0), hrSC = hr.reduce((a, l) => a + lineExposure(l), 0);
-    const fc = L.reduce((a, l) => a + (l.forecast ?? 0), 0);
-    const under = fc ? Math.max(0, Math.round(m.budget - m.exposure - fc)) : 0;
-    const perf = planned ? m.spent / planned : 0, scp = planned ? m.exposure / planned : 0;
     const wb = latestWorkbook(p)?.snapshot?.workbook;
-    const ccm = wb?.situation?.[0]?.ccm ?? (p.contract as { ccm?: string } | undefined)?.ccm ?? '';
+    // Staff ratio as in the accounting system: remuneration articles (permanent + temporary staff) of the Situation budgétaire.
+    const SR = wb?.situation ?? [], staff = SR.filter((r) => /r[ée]mun|personnel|salar/i.test(r.description));
+    const sum = (R: typeof SR, f: (r: (typeof SR)[number]) => number) => R.reduce((a, r) => a + f(r), 0);
+    let sr = 0, scr = 0;
+    if (staff.length) {
+      const a = sum(SR, (r) => r.actual), sc = sum(SR, (r) => r.actual + r.po + r.da);
+      sr = a ? sum(staff, (r) => r.actual) / a : 0; scr = sc ? sum(staff, (r) => r.actual + r.po + r.da) / sc : 0;
+    } else {
+      const hr = L.filter((l) => /^1\.[12]\.1(\.|$)/.test(l.code) && !L.some((x) => x !== l && x.code.startsWith(l.code + '.')));
+      sr = m.spent ? hr.reduce((a, l) => a + (l.actual ?? 0), 0) / m.spent : 0; scr = m.exposure ? hr.reduce((a, l) => a + lineExposure(l), 0) / m.exposure : 0;
+    }
+    // Underspent forecast only when the report's forecast reaches the end date: amount − (S&C + planned to the end).
+    const toEnd = wb?.meta.plannedTo && wb.meta.plannedTo >= p.end.slice(0, 7);
+    const under = toEnd && wb?.totals.eligible?.planned != null ? Math.max(0, Math.round(m.budget - m.exposure - wb.totals.eligible.planned)) : 0;
+    const perf = planned ? m.spent / planned : 0, scp = planned ? m.exposure / planned : 0;
+    const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
     const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
-    return { p, m, planned, perf, scp, ccm, under, note, sr: m.spent ? hrS / m.spent : 0, scr: m.exposure ? hrSC / m.exposure : 0, pct: m.budget ? m.exposure / m.budget : 0 };
+    return { p, m, planned, perf, scp, ccm, under, note, sr, scr, pct: m.budget ? m.exposure / m.budget : 0 };
   }).sort((a, b) => b.perf - a.perf);
   const T = rows.reduce((a, r) => ({ b: a.b + r.m.budget, s: a.s + r.m.spent, sc: a.sc + r.m.exposure, pl: a.pl + r.planned, u: a.u + r.under,
     hs: a.hs + r.sr * r.m.spent, hsc: a.hsc + r.scr * r.m.exposure }), { b: 0, s: 0, sc: 0, pl: 0, u: 0, hs: 0, hsc: 0 });
@@ -220,7 +230,7 @@ export function Compare() {
         <tfoot><tr><td colSpan={12}>Grand Total</td><td class="r">{n0(T.b)}</td><td class="r">{n0(T.s)}</td><td class="r">{n0(T.sc)}</td><td class="r">{n0(T.b - T.sc)}</td><td class="r">{n0(T.u)}</td>
           <td class="em-sr">{dot(T.s ? T.hs / T.s : 0)}{p0(T.s ? T.hs / T.s : 0)}</td><td class="em-sr">{dot(T.sc ? T.hsc / T.sc : 0)}{p0(T.sc ? T.hsc / T.sc : 0)}</td><td>{p0(T.b ? T.sc / T.b : 0)}</td></tr></tfoot>
       </table></div>
-      <p class="em-foot no-print">Planned = project amount × share of the implementation period elapsed at today. Performance = spent ÷ planned; S&C = spent and committed. Staff ratio = heading 1 (human resources) as a share of spent / S&C. Underspent forecast = project amount − S&C − remaining forecast in the latest report.</p>
+      <p class="em-foot no-print">Planned = project amount × share of the implementation period elapsed at today. Performance = spent ÷ planned; S&C = spent and committed. Staff ratio = staff remuneration articles of the Situation budgétaire as a share of spent / S&C. Underspent forecast = project amount − S&C − planned expenditure, shown only when the report's forecast runs to the end date.</p>
     </article>
   );
 }
