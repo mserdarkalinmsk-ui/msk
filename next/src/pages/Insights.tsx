@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { go, useStore } from '../data/store';
 import { money } from '../domain/calc';
-import { ALERT_KINDS, alerts, changes, narrative, outcome, scenario, type Alert } from '../domain/insights';
+import { ALERT_KINDS, alerts, changes, status, outcome, scenario, type Alert } from '../domain/insights';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { parseAmount } from '../ui/csv';
@@ -103,12 +103,24 @@ export function History({ project }: { project?: string }) {
 
 /* ---------------- project: status in words + forecast ---------------- */
 export function StatusWords({ p }: { p: Project }) {
-  const S = narrative(p, TODAY);
-  const copy = () => navigator.clipboard?.writeText(S.join(' '));
+  const S = status(p, TODAY);
+  const [done, setDone] = useState(false);
+  const copy = () => { navigator.clipboard?.writeText(S.plain); setDone(true); setTimeout(() => setDone(false), 1500); };
   return (
-    <section class="card span-8">
-      <div class="card-h"><div><h2>Status in words</h2><p>Written from the figures — ready to paste into a report</p></div><button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={copy}>Copy</button></div>
-      <div class="card-b narr">{S.map((x) => <p>{x}</p>)}</div>
+    <section class={`card span-8 stw tone-${S.tone}`}>
+      <div class="stw-top">
+        <span class="stw-verdict">{S.verdict}</span>
+        <button class="btn ghost" style={{ marginLeft: 'auto', height: '28px' }} onClick={copy}>{done ? 'Copied ✓' : 'Copy as text'}</button>
+      </div>
+      <h3 class="stw-head">{S.headline}</h3>
+      <ul class="stw-list">
+        {S.points.map((x) => (
+          <li class={`t-${x.tone}`}>
+            <span class="stw-area">{x.area}</span>
+            <div><b>{x.head}</b><small>{x.text}</small></div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -119,7 +131,7 @@ export function ForecastCard({ p }: { p: Project }) {
   const tone = o.overrun > 1 ? 'critical' : o.utilisation < 0.7 ? 'serious' : o.utilisation < 0.85 ? 'warn' : 'good';
   return (
     <section class="card span-4">
-      <div class="card-h"><div><h2>End-of-project forecast</h2><p>{o.basis === 'no data' ? 'Needs at least one report' : `At the ${o.basis}`}</p></div></div>
+      <div class="card-h"><div><h2>End-of-project forecast</h2><p>{o.basis === 'no data' ? 'Needs at least one report' : o.basis === 'recent rate' ? 'Average since start, adjusted for recent months' : 'Average monthly spend since start'}</p></div></div>
       <div class="card-b fc">
         <div class="fc-big" style={{ color: `var(--${tone})` }}>{pct(o.utilisation)}<small>of budget used</small></div>
         <div class="meter fc-m"><span style={{ width: `${Math.min(100, use / 1.2 * 100)}%`, background: `var(--${tone})` }} /><i class="tick" style={{ left: `calc(${100 / 1.2}% - 1px)` }} /></div>

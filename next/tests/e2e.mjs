@@ -269,7 +269,7 @@ async function page(opts) {
   writeFileSync(`${shots}/portfolio.xlsx`, readFileSync(path));
   // project: words, forecast, scenario, history
   await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
-  check((await p.locator('.narr p').first().textContent()).includes('of the €'), 'status in words written');
+  check((await p.locator('.stw-head').textContent()).includes('spent at'), 'status in words written');
   check(await p.locator('.fc-big').count() === 1, 'end-of-project forecast shown');
   await p.screenshot({ path: `${shots}/project-summary.png`, fullPage: true });
   await p.click('.tabs button:has-text("Scenario")'); await p.waitForSelector('.scn-in');
