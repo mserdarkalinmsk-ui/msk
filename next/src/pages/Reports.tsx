@@ -1,6 +1,7 @@
 import { Compare, Studio } from './Studio';
 import { MonthlyPack } from './Pack';
 import { Agenda } from './Agenda';
+import { Deck } from './Deck';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { attention, burnGap, deadlines, elapsed, groupBy, money, portfolioSeries, totals, type Deadline } from '../domain/calc';
@@ -17,7 +18,7 @@ import { get } from '../data/store';
 const DTONE: Record<Deadline['status'], string> = { submitted: 'good', overdue: 'critical', due: 'serious', upcoming: 'neutral' };
 
 export function Reports() {
-  const [tab, setTab] = useState<'pack' | 'studio' | 'compare' | 'brief' | 'alerts' | 'changes' | 'compliance' | 'calendar' | 'history'>(() => (location.hash.split('/')[2] as 'alerts') || 'brief');
+  const [tab, setTab] = useState<'pack' | 'deck' | 'studio' | 'compare' | 'brief' | 'alerts' | 'changes' | 'compliance' | 'calendar' | 'history'>(() => (location.hash.split('/')[2] as 'alerts') || 'brief');
   const P = useStore((s) => filtered(s));
   const excel = () => download(`portfolio-${TODAY.toISOString().slice(0, 10)}.xlsx`, portfolioSheets(get().ledger, P, TODAY));
   return (
@@ -25,6 +26,7 @@ export function Reports() {
       <div class="no-print"><Filters /></div>
       <div class="tabs no-print" role="tablist">
         <button role="tab" aria-selected={tab === 'pack'} onClick={() => setTab('pack')}>Monthly pack</button>
+        <button role="tab" aria-selected={tab === 'deck'} onClick={() => setTab('deck')}>Presentation</button>
         <button role="tab" aria-selected={tab === 'studio'} onClick={() => setTab('studio')}>Report studio</button>
         <button role="tab" aria-selected={tab === 'compare'} onClick={() => setTab('compare')}>Expenditure monitoring</button>
         <button role="tab" aria-selected={tab === 'brief'} onClick={() => setTab('brief')}>Executive brief</button>
@@ -38,7 +40,7 @@ export function Reports() {
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
         </span>
       </div>
-      {tab === 'pack' ? <MonthlyPack /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
+      {tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }
