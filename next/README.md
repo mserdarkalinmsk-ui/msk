@@ -50,4 +50,4 @@ The sample data includes fictional demo staff so the People screens can be seen.
 ![Brief](docs/brief.png)
 
 ## Possible next steps
- People / contracts, Map, Reports & logframe, visual regression baselines.
+- Logframe / results indicators, a real map outline (needs an offline boundary file), and visual regression baselines.
