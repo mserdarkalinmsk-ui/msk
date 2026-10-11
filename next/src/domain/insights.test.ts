@@ -56,3 +56,15 @@ describe('xlsx writer', () => {
     expect(wb.read('Lines')[1]).toEqual(['1.1', '1234.5', 'a & <b>']);
   });
 });
+
+describe('budget headings', () => {
+  it('flags a heading moved beyond the flexibility ceiling', async () => {
+    const { headings } = await import('./insights');
+    const base = { lines: [{ code: '1.1', approved: 1000 }, { code: '2.1', approved: 1000 }], direct: 2000, admin: 0, contingency: 0, total: 2000, source: 'b.pdf', linesSum: 2000 };
+    const Q: Project = { ...P, approvedBudget: base, reportingPeriods: [{ id: 'r', name: 'r', type: 'Interim', date: '2025-12-31', snapshot: { lines: [{ code: '1.1', approved: 1200, actual: 100 }, { code: '2.1', approved: 800, actual: 0 }] } }] };
+    const H = headings(Q);
+    expect(H.flex).toBe(0.15);
+    expect(H.rows.map((r) => [r.code, r.status])).toEqual([['1', 'breach'], ['2', 'breach']]);
+    expect(alerts([Q], today).some((a) => a.id.includes(':heading:1'))).toBe(true);
+  });
+});

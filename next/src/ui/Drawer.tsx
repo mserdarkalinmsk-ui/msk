@@ -8,6 +8,7 @@ import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
 import { full, month, pct, short, signedPct } from './format';
 import { readCoe, readTable, ReportImport, RiskForm } from './ReportImport';
+import { saveFile } from './save';
 import { migrateBackup } from '../domain/insights';
 import { ContractPanel } from './ContractPanel';
 import { AppearancePanel } from './Appearance';
@@ -285,9 +286,7 @@ function ImportPanel({ close }: { close: () => void }) {
   const importable = good.filter((x) => { const k = x.d.code.toLowerCase(); if (dupInFile.has(k)) return false; dupInFile.add(k); return true; });
 
   const exportJSON = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(ledger, null, 2)], { type: 'application/json' }));
-    a.download = `portfolio-ledger-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    saveFile(`portfolio-ledger-${new Date().toISOString().slice(0, 10)}.json`, new Blob([JSON.stringify(ledger, null, 2)], { type: 'application/json' }));
   };
 
   return (

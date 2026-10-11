@@ -227,6 +227,8 @@ async function page(opts) {
   check(await p.locator('dd:has-text("700008888")').count() === 1, 'contract shown');
   await p.click('.tabs button:has-text("Indicators")'); await p.waitForTimeout(200);
   check(await p.locator('.lf-row:has-text("Judges trained")').count() === 1, 'indicators tab lists the logframe');
+  await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-now input').fill('50'); await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-now input').press('Tab'); await p.waitForTimeout(200);
+  check(await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-prog b').textContent() === '25%', 'indicator progress from the current value');
   await p.screenshot({ path: `${shots}/indicators.png`, fullPage: true });
   await p.click('.tabs button:has-text("Justification")'); await p.waitForTimeout(200);
   check(await p.locator('h2:text-is("Budget justification")').count() === 1, 'justification tab');
@@ -270,6 +272,7 @@ async function page(opts) {
   await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
   check((await p.locator('.stw-head').textContent()).includes('spent at'), 'status in words written');
   check(await p.locator('.fc-big').count() === 1, 'end-of-project forecast shown');
+  check(await p.locator('table.hd tbody tr').count() >= 3, 'budget headings vs approved budget');
   await p.screenshot({ path: `${shots}/project-summary.png`, fullPage: true });
   await p.click('.tabs button:has-text("Scenario")'); await p.waitForSelector('.scn-in');
   await p.locator('.scn-in').first().fill('-5000'); await p.locator('.scn-in').first().press('Tab');

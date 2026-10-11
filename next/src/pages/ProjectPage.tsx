@@ -14,7 +14,7 @@ import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
-import { ForecastCard, History, Scenario, StatusWords } from './Insights';
+import { ForecastCard, HeadingsCard, History, Scenario, StatusWords } from './Insights';
 import { alerts } from '../domain/insights';
 import { projectSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
@@ -108,6 +108,7 @@ function Summary({ p }: { p: Project }) {
           {!flags.length && <li style={{ cursor: 'default' }}><span class="badge good">ok</span><div class="d">Within all thresholds.</div><span /></li>}
         </ul>
       </section>
+      <HeadingsCard p={p} />
     </div>
   );
 }
