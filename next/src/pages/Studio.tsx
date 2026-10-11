@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { filtered, useStore } from '../data/store';
+import { filtered, set, useStore } from '../data/store';
 import { compareReports, elapsed, lineExposure, lines, money, planStats, reportsByDate, reportTotals, riskScore } from '../domain/calc';
 import { headings, outcome } from '../domain/insights';
 import { progress, tidy } from '../domain/logframe';
@@ -8,6 +8,8 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, pct } from '../ui/format';
 import { latestWorkbook } from './FinancialReport';
+import { catchUp, perfTrend, staffProjection, warningScore } from '../domain/monitor';
+import { HEADINGS } from '../domain/calc';
 import { download, type Cell, type SheetSpec } from '../ui/xlsxwrite';
 
 const SECTIONS = [
@@ -198,7 +200,9 @@ export function Compare() {
     const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
     const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : 0;
     const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
-    return { p, m, planned, perf, scp, ccm, under, note, sr, scr, sc, committed, staffCommitted, risk, pct: m.budget ? sc / m.budget : 0 };
+    const tr = perfTrend(p), dPerf = tr.length > 1 ? perf - tr.at(-2)!.perf : null;
+    return { p, m, planned, perf, scp, ccm, under, note, sr, scr, sc, committed, staffCommitted, risk, pct: m.budget ? sc / m.budget : 0, tr, dPerf,
+      ws: warningScore(p, TODAY, { perf, scp, staffRatio: sr }), cu: catchUp(p, TODAY), sp: staffProjection(p, TODAY, sr * m.spent) };
   });
   const SORTS: Record<string, (a: (typeof rows)[number], b: (typeof rows)[number]) => number> = {
     perf: (a, b) => b.perf - a.perf, scp: (a, b) => b.scp - a.scp, amount: (a, b) => b.m.budget - a.m.budget,
@@ -223,6 +227,7 @@ export function Compare() {
         <div class="seg"><button aria-pressed={group === 'overall'} onClick={() => { setGroup('overall'); keep('pl-em-group', 'overall'); }}>Overall</button><button aria-pressed={group === 'country'} onClick={() => { setGroup('country'); keep('pl-em-group', 'country'); }}>By country</button></div>
         <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); keep('pl-em-sort', v); }}>
           <option value="perf">Sort: Performance</option><option value="scp">Sort: S&C vs planned</option><option value="amount">Sort: Project amount</option><option value="title">Sort: Title</option><option value="end">Sort: End date</option><option value="bh">Sort: BH</option></select>
+        <label class="btn" title="Drop this month's report workbooks for all projects">⤒ Monthly update<input type="file" multiple accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = [...((e.target as HTMLInputElement).files ?? [])]; (e.target as HTMLInputElement).value = ''; if (f.length) set({ drawer: { kind: 'portfolio-import', files: f } }); }} /></label>
         <button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
       <header class="em-h">
         <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
@@ -242,7 +247,7 @@ export function Compare() {
         <tbody>{groups.map(({ c, R }) => { const t = tot(R), label = `${cname(c)} total · ${R.length} project${R.length > 1 ? 's' : ''} · spent vs planned ${p0(t.pl ? t.s / t.pl : 0)}`; return <>
           {group === 'country' && <tr class="em-grp"><td colSpan={20}>{cname(c)}</td></tr>}
           {R.map((r) => <tr>
-          <td class={`em-rate ${rateTone(r.perf)}`}>{p0(r.perf)}</td><td class={`em-rate ${rateTone(r.scp)}`}>{p0(r.scp)}</td>
+          <td class={`em-rate ${rateTone(r.perf)}`}>{p0(r.perf)}{r.dPerf != null && Math.abs(r.dPerf) >= 0.005 && <small class="em-tr" title="Change since the previous report">{r.dPerf > 0 ? '▲' : '▼'}{Math.abs(Math.round(r.dPerf * 100))}</small>}</td><td class={`em-rate ${rateTone(r.scp)}`}>{p0(r.scp)}</td>
           <td class="em-ccm">{r.ccm}</td><td class="em-title em-g">{r.p.name}</td><td>{cname(r.p.country)}</td><td class="em-g">{r.p.mae ?? ''}</td>
           <td><b>{r.p.pmm ?? r.p.jp ?? ''}</b></td><td class="em-g">{r.p.bh ?? ''}</td><td>{d8(r.p.start)}</td><td class="em-g">{d8(r.p.end)}</td><td>{r.p.funding ?? ''}</td>
           <td class={r.note === 'over' ? 'em-over' : r.note === 'under' ? 'em-under' : ''}>{r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : ''}</td>
@@ -261,6 +266,29 @@ export function Compare() {
           <tfoot><tr><td colSpan={2}>Total</td><td class="r">{n0(T.cm)}</td><td /><td class="r">{n0(T.rk)}</td><td class="r">{n0(T.cm - T.rk)}</td><td>{p0(tsc)}</td><td>{p0(T.pl ? (T.sc - T.rk) / T.pl : 0)}</td></tr></tfoot></table>
         <p class="em-note">Open commitments (purchase orders, staff excluded) are not yet spent. The risk share assumes that part of them may not turn into expenditure (cancelled, closed below value or delayed). <b>Adjusted S&C vs planned</b> = (spent + committed − at risk) ÷ planned — the spending rate to rely on if that share is lost.</p>
       </section>
+      <section class="em-risk">
+        <h3>Early warning — attention score (0–100)</h3>
+        <div class="ew-grid">{[...rows].sort((a, b) => b.ws.score - a.ws.score).map((r) => <div class={`ew ew-${r.ws.level}`}>
+          <div class="ew-top"><b class="ew-s">{r.ws.score}</b><div><b>{r.p.bh ? `BH ${r.p.bh}` : r.p.code}</b> · {r.p.name.slice(0, 60)}</div></div>
+          <div class="ew-bar"><span style={{ width: `${r.ws.score}%` }} /></div>
+          <ul>{r.ws.parts.slice(0, 3).map((x) => <li>{x.label} <span class="em-g">· {x.why}</span> <b>+{x.points}</b></li>)}{!r.ws.parts.length && <li class="em-g">No warning signals</li>}</ul>
+          {r.tr.length > 1 && <Spark v={r.tr.map((t) => t.perf)} />}
+        </div>)}</div>
+      </section>
+      <section class="em-risk">
+        <h3>Catch-up plan — monthly spending needed to be back on plan within 3 months</h3>
+        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Performance</th><th>Current monthly rate</th><th>Needed per month</th><th>× current pace</th><th>Largest gaps (heading: amount behind time)</th></tr></thead>
+          <tbody>{rows.filter((r) => r.perf < 0.9 && r.cu.need > 0).sort((a, b) => b.cu.need - a.cu.need).map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td>
+            <td class={`em-rate ${rateTone(r.perf)}`}>{p0(r.perf)}</td><td class="r">{n0(r.cu.rate)}</td><td class="r"><b>{n0(r.cu.need)}</b></td><td class={r.cu.factor > 2 ? 'em-up' : ''}>{r.cu.rate ? `${r.cu.factor.toFixed(1)}×` : '—'}</td>
+            <td style={{ textAlign: 'left' }}>{r.cu.gaps.map((g) => `${g.heading} ${HEADINGS[g.heading] ?? ''}: ${n0(g.gap)}`).join(' · ') || '—'}</td></tr>)}</tbody></table>
+        {!rows.some((r) => r.perf < 0.9 && r.cu.need > 0) && <p class="em-note">All projects are at 90% of plan or above.</p>}
+      </section>
+      <section class="em-risk">
+        <h3>Staff projection — staff cost to the end date at the current monthly cost</h3>
+        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Staff cost per month</th><th>Projected staff cost at end</th><th>Projected staff share of project amount</th><th>Active staff</th><th>Contracts ending before project end</th></tr></thead>
+          <tbody>{rows.map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td><td class="r">{n0(r.sp.monthly)}</td><td class="r">{n0(r.sp.projected)}</td>
+            <td class="em-sr">{dot(r.sp.share)}{p0(r.sp.share)}</td><td>{r.sp.active}</td><td class={r.sp.endingEarly ? 'em-up' : ''}>{r.sp.endingEarly}</td></tr>)}</tbody></table>
+      </section>
       <section class="em-method">
         <h3>How the figures are calculated</h3>
         <ol>
@@ -271,6 +299,8 @@ export function Compare() {
           <li><b>Left budget</b> = project amount − S&C. <b>S&C as % of project amount</b> = S&C ÷ project amount.</li>
           <li><b>Underspent/overspent forecast</b> = project amount − S&C − planned expenditure to the end date (only when the report's forecast covers the period to the end date).</li>
           <li><b>Staff ratio (spent)</b> = staff remuneration spent ÷ total spent; <b>(S&C)</b> = staff remuneration spent and committed ÷ total spent and committed (Situation budgétaire).</li>
+          <li><b>Trend</b> ▲▼ = change in performance since the previous financial report. <b>Early warning score</b> adds points for spending behind plan (up to 35), S&C above plan (15), staff ratio (up to 15), late activities (15), overdue reports (20) and a worsening trend (10); ≥50 high, 25–49 medium.</li>
+          <li><b>Catch-up plan</b> = (planned in 3 months − spent) ÷ 3, compared with the current monthly rate. <b>Staff projection</b> = staff spent ÷ months elapsed × months to the end.</li>
           <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments that may not be spent; <b>adjusted S&C vs planned</b> = (S&C − at risk) ÷ planned.</li>
           <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of unspent balance” when an underspend is forecast.</li>
         </ol>
@@ -278,4 +308,9 @@ export function Compare() {
       
     </article>
   );
+}
+
+function Spark({ v }: { v: number[] }) {
+  const max = Math.max(1, ...v), w = 120, h = 26, pts = v.map((x, i) => `${(i / (v.length - 1)) * w},${h - (x / max) * h}`).join(' ');
+  return <svg class="ew-sp" viewBox={`0 0 ${w} ${h + 2}`} width={w} height={h + 2}><line x1="0" x2={w} y1={h - h / max} y2={h - h / max} stroke="#bbb" stroke-dasharray="3 3" /><polyline points={pts} fill="none" stroke="#1f4e9c" stroke-width="1.8" /><title>Performance at each report: {v.map((x) => `${Math.round(x * 100)}%`).join(' → ')}</title></svg>;
 }
