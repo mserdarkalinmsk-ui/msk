@@ -287,7 +287,7 @@ function Risks({ p }: { p: Project }) {
     { key: 'l', label: 'Likelihood', width: 100, align: 'r', value: (r) => Number(r.likelihood || 0), edit: { type: 'select', options: ['1', '2', '3', '4', '5'], commit: (r, v) => upsertRisk(p.id, { ...r, likelihood: v }) } },
     { key: 'i', label: 'Impact', width: 90, align: 'r', value: (r) => Number(r.impact || 0), edit: { type: 'select', options: ['1', '2', '3', '4', '5'], commit: (r, v) => upsertRisk(p.id, { ...r, impact: v }) } },
     { key: 'status', label: 'Status', width: 100, value: (r) => r.status ?? 'Open', edit: { type: 'select', options: ['Open', 'Resolved'], commit: (r, v) => upsertRisk(p.id, { ...r, status: v }) } },
-    { key: 'mitigation', label: 'Mitigation', width: 300, value: (r) => r.mitigation ?? '' },
+    { key: 'mitigation', label: 'Mitigation', width: 300, value: (r) => (r.mitigation ?? '').replace(/[\uE000-\uF8FF]/g, '').replace(/\s+/g, ' ').trim() },
   ];
   return (
     <div class="grid g-12">

@@ -14,6 +14,7 @@ const SECTIONS = [
   ['indicators', 'Indicators'], ['activities', 'Activities'], ['risks', 'Risks'], ['staff', 'Staff'],
 ] as const;
 type Sec = (typeof SECTIONS)[number][0];
+const tx = (s?: string) => (s ?? '').replace(/[\uE000-\uF8FF]/g, '').replace(/\s*·\s*·\s*/g, ' · ').replace(/\s+/g, ' ').replace(/^[\s·]+|[\s·]+$/g, '');
 const pref = (k: string, d: string) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 
 /** Report studio: pick a project, a reporting period and sections → a print-ready report and a matching workbook. */
@@ -72,7 +73,7 @@ function build(p: Project, end?: R_, start?: R_) {
   const lRows: Cell[][] = L.map((l) => [l.code, l.description ?? '', l.approved ?? 0, l.actual ?? 0, l.approved ? pct((l.actual ?? 0) / l.approved) : '']);
   const iRows: Cell[][] = I.map((x) => [x.indicator.slice(0, 120), tidy(x.baseline), tidy(x.target), x.current ?? '', (() => { const v = progress(x); return v == null ? '' : `${Math.round(v * 100)}%`; })()]);
   const aRows: Cell[][] = (pl?.acts ?? []).map((a) => [a.code, a.name, a.done ? 'Done' : a.late ? 'Late' : a.status || 'Planned', a.plannedEnd ? `month ${a.plannedEnd}` : '']);
-  const kRows: Cell[][] = K.map((r) => [r.title, r.category ?? '', `${r.likelihood ?? '–'} × ${r.impact ?? '–'}`, r.mitigation ?? '', r.status ?? 'Open']);
+  const kRows: Cell[][] = K.map((r) => [tx(r.title), r.category ?? '', `${r.likelihood ?? '–'}×${r.impact ?? '–'}`, tx(r.mitigation), r.status ?? 'Open']);
   const sRows: Cell[][] = S.map((a) => [a.display, a.position, a.status, a.end ? date(a.end) : '']);
   const story = `By ${end ? date(end.date) : 'today'} the project had spent ${full(tEnd.actual)} (${pct(m.budget ? tEnd.actual / m.budget : 0)} of the budget) with ${pct(el)} of the implementation period elapsed${start ? `; ${full(periodSpend)} was spent since ${date(start.date)}` : ''}. Open commitments stand at ${full(tEnd.committed)}. ${o.basis === 'no data' ? '' : o.overrun ? `At the current rate the budget would be exceeded by ${full(o.overrun)}.` : `At the current rate ${pct(o.utilisation)} of the budget will be used by the end date; ${full(o.needRate)} a month would use it in full.`}`;
   const blocks: { sec: Sec; title: string; body: preact.JSX.Element }[] = [
