@@ -4,13 +4,20 @@
  */
 import type { Activity, Risk } from './types';
 
-export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][] }
-export interface Indicator { id: string; result: string; indicator: string; baseline: string; target: string; source: string }
+export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][]; geometry?: Geometry }
+/** Results of the layout readers for PDFs (shaded action-plan cells, logframe columns, annex tables). */
+export interface Geometry {
+  acts: { code: string; name: string; group?: string; P?: number[]; E?: number[]; X?: number[] }[]; months: number; start?: string;
+  indicators: { level?: string; result?: string; text: string; baseline?: string; target?: string; sources?: string; assumptions?: string }[];
+  risks: { title: string; category?: string; likelihood?: string; impact?: string; mitigation?: string; owner?: string }[];
+}
+export interface Indicator { id: string; result: string; indicator: string; baseline: string; target: string; source: string; assumptions?: string; level?: string }
+export interface BudgetNote { description: string; unit?: string; clarification: string; justification: string }
 export interface ContractFacts {
   number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;
-  repMonths?: number; progDays?: number; prefinancing?: number; jp?: string; bh?: string;
+  repMonths?: number; progDays?: number; finalMonths?: number; prefinancing?: number; flexPct?: number; contingencyPct?: number; jp?: string; bh?: string;
 }
-export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; summary: string[] }
+export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; notes?: Record<string, BudgetNote>; summary: string[] }
 
 /* ---------- helpers ---------- */
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -49,6 +56,20 @@ export function contractFacts(doc: Doc): ContractFacts {
   const mo = pick(/(?:implementation (?:period|duration)|duration of (?:the )?(?:action|implementation)|period of implementation)[^.]{0,80}?(\d{1,3})\s*months/i); if (mo) f.months = +mo;
   const st = pick(/(?:implementation (?:period )?shall start|shall (?:commence|start)|start date|commencement date|starting on)[^.]{0,80}?((?:\d{1,2}[./]\d{1,2}[./]\d{4})|(?:\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4})|\d{4}-\d{2}-\d{2})/i); if (st) f.start = anyDate(st);
   const en = pick(/(?:end date|shall end|until|ending on)[^.]{0,40}?((?:\d{1,2}[./]\d{1,2}[./]\d{4})|(?:\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4}))/i); if (en) f.end = anyDate(en);
+  // EU Contribution Agreement wording (patterns from the previous app, tested on real agreements)
+  const ca = pick(/CONTRIBUTION AGREEMENT\s+(?:EUROPEAN UNION\s+)?N°\s*(\d{5,})/i); if (ca && !f.number) f.number = ca;
+  const ct = pick(/title of this Contribution Agreement[^:]{0,40}is:\s*[“"]([^”"]{10,300})[”"]/i); if (ct) f.title = clean(ct);
+  const em = pick(/maximum total contribution of the contracting authority is EUR\s*([\d .,]+?\d)(?=\s*\()/i); if (em) f.euMax = amount(em) ?? f.euMax;
+  const ip = T.match(/implementation period of this Contribution Agreement is (\d+)\s*month\(?s?\)? from the (\d{2}\/\d{2}\/\d{4})/i); if (ip) { f.months = +ip[1]; f.start = anyDate(ip[2]); }
+  const tc = pick(/total cost of the Action is estimated at EUR\s*([\d.,]+\d)/i); if (tc) f.total = amount(tc) ?? f.total;
+  const pr = pick(/pre-financing rate is (\d+)\s*%/i); if (pr) f.prefinancing = +pr;
+  const fx = pick(/variation \(as the case may be in cumulative terms\) of (\d+)\s*% or less of the amount originally entered/i); if (fx) f.flexPct = +fx;
+  const cr = pick(/reserve for contingencies[^.]{0,140}?not exceeding (\d+)\s*%/i); if (cr) f.contingencyPct = +cr;
+  const sh = T.match(/(\d{1,3})\s*%\s*EU,\s*(\d{1,3})\s*%\s*([A-Za-z]{2,10})/i); if (sh) f.euShare = +sh[1];
+  const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, eighteen: 18, thirty: 30, sixty: 60, ninety: 90 };
+  const pdm = T.match(/progress reports shall be submitted within ([a-z]+|\d+)\s*\(?(\d+)?\)?\s*Days after the period/i); if (pdm) f.progDays = +(pdm[2] || W[pdm[1].toLowerCase()] || pdm[1]);
+  const fm = T.match(/final report shall be submitted, at the latest, ([a-z]+|\d+)\s*\(?(\d+)?\)?\s*months after the end of the Implementation Period/i); if (fm) f.finalMonths = +(fm[2] || W[fm[1].toLowerCase()] || fm[1]);
+  const rm = pick(/forecast budget for the subsequent (\d+) months/i); if (rm) f.repMonths = +rm;
   if (f.start && f.months && !f.end) f.end = addMonths(f.start, f.months);
   const rep = pick(/(?:report|reports)[^.]{0,80}?every\s+(\d{1,2})\s+months/i) ?? pick(/every\s+(\d{1,2})\s+months[^.]{0,60}?report/i); if (rep) f.repMonths = +rep;
   const pd = pick(/within\s+(\d{2,3})\s+days[^.]{0,80}?(?:end of|after)[^.]{0,40}?(?:reporting )?period/i); if (pd) f.progDays = +pd;
@@ -122,24 +143,36 @@ export function indicators(doc: Doc): Indicator[] {
   const f = findTable(doc, (h) => h.some((x) => x.includes('indicator')) && h.some((x) => /target|baseline/.test(x)));
   if (!f) return [];
   const col = (re: RegExp) => f.h.findIndex((x) => re.test(x));
-  const ri = col(/result|outcome|output|objective|level/), ii = col(/indicator/), bi = col(/baseline/), ti = col(/target/), si = col(/source|verification|means/);
-  let result = '';
+  const ri = col(/result|outcome|output|objective|level|intervention logic|results chain/), ii = col(/indicator/), bi = col(/baseline/), ti = col(/target/), si = col(/source|verification|means/), ai = col(/assumption/);
+  // Logframe levels: impact / overall objective → outcome / specific objective → outputs
+  const levelOf = (t: string) => /overall objective|impact/i.test(t) ? 'Impact' : /specific objective|outcome/i.test(t) ? 'Outcome' : /output|result\s*\d/i.test(t) ? 'Output' : /activit/i.test(t) ? 'Activity' : '';
+  let result = '', level = '', assumptions = '';
   return f.T.slice(f.i + 1).flatMap((r, k) => {
-    if (ri >= 0 && clean(r[ri] ?? '')) result = clean(r[ri]);
+    if (ri >= 0 && clean(r[ri] ?? '')) { result = clean(r[ri]); level = levelOf(result) || level; }
+    if (ai >= 0 && clean(r[ai] ?? '')) assumptions = clean(r[ai]);
     const ind = clean(r[ii] ?? ''); if (!ind) return [];
-    return [{ id: 'i' + k, result, indicator: ind, baseline: bi >= 0 ? clean(r[bi] ?? '') : '', target: ti >= 0 ? clean(r[ti] ?? '') : '', source: si >= 0 ? clean(r[si] ?? '') : '' }];
+    return [{ id: 'i' + k, result, indicator: ind, baseline: bi >= 0 ? clean(r[bi] ?? '') : '', target: ti >= 0 ? clean(r[ti] ?? '') : '', source: si >= 0 ? clean(r[si] ?? '') : '', ...(ai >= 0 ? { assumptions } : {}), ...(level ? { level } : {}) }];
   });
 }
 
 export function analyse(doc: Doc): DocFindings {
-  const contract = contractFacts(doc), plan = actionPlan(doc), R = risks(doc), I = indicators(doc), budget = approvedBudget(doc);
+  const G = doc.geometry;
+  const gPlan = G?.acts.length ? { acts: G.acts.map((a, i) => ({ id: 'g' + i, code: a.code, name: a.name, group: a.group || `Output ${a.code.split('.')[0]}`, P: a.P ?? [], E: a.E ?? [], X: a.X ?? [], status: '' })), months: G.months } : null;
+  const gInd: Indicator[] = (G?.indicators ?? []).map((x, i) => ({ id: 'gi' + i, result: x.result ?? '', indicator: x.text, baseline: x.baseline ?? '', target: x.target ?? '', source: x.sources ?? '', assumptions: x.assumptions, level: x.level }));
+  const gRisk: Risk[] = (G?.risks ?? []).filter((r) => r.title).map((r, i) => ({ id: 'gr' + i, title: r.title, category: r.category || 'Operational', likelihood: r.likelihood ?? '', impact: r.impact ?? '', mitigation: r.mitigation ?? '', owner: r.owner ?? '', status: 'Open' }));
+  const tPlan = actionPlan(doc), tRisk = risks(doc), tInd = indicators(doc);
+  const plan = gPlan && gPlan.acts.length >= (tPlan?.acts.length ?? 0) ? gPlan : tPlan;
+  const R = gRisk.length > tRisk.length ? gRisk : tRisk, I = gInd.length > tInd.length ? gInd : tInd;
+  const contract = contractFacts(doc), budget = approvedBudget(doc), notes = budgetNotes(doc);
+  const nn = Object.keys(notes).length;
   const summary = [
+    nn && `justification for ${nn} budget lines`,
     budget && `approved budget €${Math.round(budget.total).toLocaleString('en-GB')} (${budget.lines.length} lines)`,
     Object.keys(contract).length && `${Object.keys(contract).length} contract facts`,
     plan && `${plan.acts.length} activities over ${plan.months} months`,
     R.length && `${R.length} risks`, I.length && `${I.length} indicators`,
   ].filter(Boolean) as string[];
-  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, summary };
+  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, summary };
 }
 
 /* ---------- approved budget (CoE "Budget for all years" template, DoA annex) ---------- */
@@ -184,4 +217,23 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
   if (admin) out.push({ code: '10', description: 'Administrative costs', unit: '7%', approved: admin });
   return { lines: out, direct, admin, contingency, total: direct + contingency + admin, source: doc.name, linesSum: sum };
+}
+
+/* ---------- budget clarification & justification annex ---------- */
+/** Rows "code description | unit | clarification of the budget item | justification of the estimated costs", keyed by line code. */
+export function budgetNotes(doc: Doc): Record<string, BudgetNote> {
+  const out: Record<string, BudgetNote> = {};
+  for (const T of doc.tables) {
+    const hi = T.findIndex((r) => r.some((c) => /justification|clarification/i.test(c ?? '')));
+    if (hi < 0 || hi > 6) continue;
+    const h = T[hi].map((c) => clean(c ?? '').toLowerCase());
+    const ci = h.findIndex((x) => x.includes('clarification')), ji = h.findIndex((x) => x.includes('justification')), ui = h.findIndex((x) => x === 'unit');
+    for (const r of T.slice(hi + 1)) {
+      const m = clean(r[0] ?? '').match(/^(\d{1,2}(?:\.\d{1,2}){0,4})\.?\s+(.+)$/); if (!m) continue;
+      const clarification = ci >= 0 ? clean(r[ci] ?? '') : '', justification = ji >= 0 ? clean(r[ji] ?? '') : '';
+      if (!clarification && !justification) continue;
+      out[m[1]] = { description: m[2], unit: ui >= 0 ? clean(r[ui] ?? '') || undefined : undefined, clarification, justification };
+    }
+  }
+  return out;
 }

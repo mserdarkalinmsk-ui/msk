@@ -52,3 +52,22 @@ describe('approved budget', () => {
     expect(B.direct).toBe(493300); expect(B.linesSum).toBe(493300); expect(B.total).toBe(527831);
   });
 });
+
+describe('budget annex notes & logframe', () => {
+  it('reads clarification and justification per line', async () => {
+    const { budgetNotes } = await import('./documents');
+    const T = [['Description', 'Unit', 'Clarification of the budget items', 'Justification of the estimated costs'], ['1 Human resources'], ['1.1.1.2 Project manager (100%)', 'Per month', 'PM in charge of overall management', '1 full-time manager in Ankara for 60 months']];
+    expect(budgetNotes({ name: 'j.pdf', kind: 'pdf', paragraphs: [], tables: [T] })).toEqual({ '1.1.1.2': { description: 'Project manager (100%)', unit: 'Per month', clarification: 'PM in charge of overall management', justification: '1 full-time manager in Ankara for 60 months' } });
+  });
+  it('keeps logframe levels and assumptions', async () => {
+    const { indicators } = await import('./documents');
+    const T = [['Results chain', 'Indicators', 'Baselines', 'Targets', 'Sources of data', 'Assumptions'], ['Specific objective: better teaching', 'Share of trained teachers', '0', '60%', 'Survey', 'Ministry commitment'], ['', 'Number of modules', '0', '10', 'Reports', '']];
+    const I = indicators({ name: 'l.docx', kind: 'docx', paragraphs: [], tables: [T] });
+    expect(I.map((x) => [x.level, x.indicator, x.target, x.assumptions])).toEqual([['Outcome', 'Share of trained teachers', '60%', 'Ministry commitment'], ['Outcome', 'Number of modules', '10', 'Ministry commitment']]);
+  });
+  it('reads EU contribution agreement wording', async () => {
+    const { contractFacts } = await import('./documents');
+    const f = contractFacts({ name: 'c.pdf', kind: 'pdf', tables: [], paragraphs: ['CONTRIBUTION AGREEMENT N° 700001964', 'The implementation period of this Contribution Agreement is 60 months from the 12/07/2024.', 'The pre-financing rate is 30 %.', 'a variation (as the case may be in cumulative terms) of 15 % or less of the amount originally entered', 'progress reports shall be submitted within sixty (60) Days after the period'] });
+    expect([f.number, f.months, f.start, f.end, f.prefinancing, f.flexPct, f.progDays]).toEqual(['700001964', 60, '2024-07-12', '2029-07-11', 30, 15, 60]);
+  });
+});

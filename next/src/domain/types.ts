@@ -30,6 +30,8 @@ export interface Project {
   riskRegister?: Risk[];
   /** Approved budget baseline (DoA / budget annex). Sets the project budget until replaced by a newer approved budget. */
   approvedBudget?: import('./documents').ApprovedBudget;
+  /** Clarification and justification per budget line (budget annex), keyed by line code. */
+  budgetNotes?: Record<string, import('./documents').BudgetNote>;
 }
 
 export interface AuditEntry { at: string; message: string; project?: string }
