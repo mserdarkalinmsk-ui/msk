@@ -1,5 +1,6 @@
 import { Compare, Studio } from './Studio';
 import { MonthlyPack } from './Pack';
+import { Agenda } from './Agenda';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { attention, burnGap, deadlines, elapsed, groupBy, money, portfolioSeries, totals, type Deadline } from '../domain/calc';
@@ -30,7 +31,7 @@ export function Reports() {
         <button role="tab" aria-selected={tab === 'alerts'} onClick={() => setTab('alerts')}>Alert centre</button>
         <button role="tab" aria-selected={tab === 'changes'} onClick={() => setTab('changes')}>What changed</button>
         <button role="tab" aria-selected={tab === 'compliance'} onClick={() => setTab('compliance')}>Compliance & results</button>
-        <button role="tab" aria-selected={tab === 'calendar'} onClick={() => setTab('calendar')}>Reporting calendar</button>
+        <button role="tab" aria-selected={tab === 'calendar'} onClick={() => setTab('calendar')}>Calendar</button>
         <button role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}>History</button>
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
           <button class="btn" onClick={excel} title="All projects, budget lines, staff, alerts and calendar in one workbook">⤓ Excel</button>
@@ -122,7 +123,8 @@ function Calendar() {
         <div class="kpi"><span class="label">Later</span><span class="value">{n('upcoming')}</span><span class="ctx">scheduled until the final reports</span></div>
         <div class="kpi"><span class="label">Submitted</span><span class="value">{n('submitted')}</span><span class="ctx">periods covered by a report on file</span></div>
       </section>
-      <section class="card">
+      <Agenda />
+      <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>Reporting calendar</h2><p>From each contract: progress report every reporting period (due after the period end) and a final report after the project ends</p></div></div>
         <div class="card-b cal">
           {[...byMonth].map(([k, ds]) => (

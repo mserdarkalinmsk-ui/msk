@@ -429,3 +429,12 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .pack-pts li span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}.pack-pts li p{margin:0;line-height:1.5}
 .pack-pts .t-good{border-left-color:#30a46c}.pack-pts .t-warn{border-left-color:#f5a524}.pack-pts .t-bad{border-left-color:#e5484d}
 @media (max-width:640px){.pack-pts li{grid-template-columns:1fr;gap:2px}}
+.ag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ag-m{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}.ag-m.cur{border-color:var(--c1);box-shadow:0 0 0 2px color-mix(in srgb,var(--c1) 25%,transparent)}
+.ag-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.ag-n{display:flex;gap:4px}.ag-n span{color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px}
+.ag-list{display:grid;gap:4px;max-height:320px;overflow:auto}
+.ag-e{display:grid;grid-template-columns:22px auto 1fr;gap:2px 8px;align-items:baseline;text-align:left;border:1px solid var(--line);border-left:4px solid;border-radius:6px;padding:5px 8px;background:var(--surface-2);font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer}
+.ag-e:hover{background:var(--surface)}.ag-e small{grid-column:2/4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag-d{color:var(--ink-2);font-weight:600}
+.ag-e.t-bad{background:color-mix(in srgb,#e5484d 10%,var(--surface))}.ag-e.t-warn{background:color-mix(in srgb,#f5a524 8%,var(--surface))}
+.ag-over{margin-bottom:14px;padding:10px;border-radius:12px;background:color-mix(in srgb,#e5484d 7%,var(--surface));border:1px solid color-mix(in srgb,#e5484d 30%,var(--line))}.ag-over h3{margin:0 0 6px;font-size:13px;color:#e5484d}.ag-over .ag-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));max-height:none}

@@ -201,7 +201,7 @@ async function page(opts) {
   await p.emulateMedia({ media: 'print' });
   check(!(await p.locator('.side').isVisible()) && await p.locator('.brief').isVisible(), 'print view shows only the brief');
   await p.emulateMedia({ media: 'screen' });
-  await p.click('.tabs button:has-text("Reporting calendar")'); await p.waitForTimeout(300);
+  await p.click('.tabs button:has-text("Calendar")'); await p.waitForTimeout(300);
   check(await p.locator('.cal-i').count() >= 6, 'reporting calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
   // CoE workbook: global import refuses reports; they are added inside the project
