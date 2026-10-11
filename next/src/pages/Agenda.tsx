@@ -42,7 +42,8 @@ export function Agenda() {
   const [span, setSpan] = useState(6);
   const E = events(P).filter((e) => on[e.kind]);
   const now = TODAY.toISOString().slice(0, 7);
-  const overdue = E.filter((e) => e.day.slice(0, 7) < now && e.tone === 'bad');
+  const overdue = E.filter((e) => e.day.slice(0, 7) < now && e.tone === 'bad' && e.kind !== 'activity');
+  const lateBy = [...E.filter((e) => e.day.slice(0, 7) < now && e.kind === 'activity').reduce((m, e) => m.set(e.p.id, [...(m.get(e.p.id) ?? []), e]), new Map<string, Ev[]>()).values()];
   const months = Array.from({ length: span }, (_, i) => addMonths(now + '-01', i).slice(0, 7));
   const open = (e: Ev) => { go(`project/${e.p.id}`); const t = KIND[e.kind].tab; if (t) setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: t })), 60); };
   const chip = (e: Ev) => (
@@ -58,7 +59,7 @@ export function Agenda() {
           <div class="seg">{[3, 6, 12].map((n) => <button aria-pressed={span === n} onClick={() => setSpan(n)}>{n} mo</button>)}</div>
         </div></div>
       <div class="card-b">
-        {overdue.length > 0 && <div class="ag-over"><h3>Overdue</h3><div class="ag-list">{overdue.map(chip)}</div></div>}
+        {(overdue.length > 0 || lateBy.length > 0) && <div class="ag-over"><h3>Overdue</h3><div class="ag-list">{overdue.map(chip)}{lateBy.map((L) => <button class="ag-e t-warn" style={{ borderLeftColor: KIND.activity.color }} onClick={() => open(L[0])}><span class="num ag-d">{L.length}</span><b>{lab(L[0].p)}</b><span class="ag-t">activities past their planned end</span><small class="muted">oldest {date(L[0].day)}</small></button>)}</div></div>}
         <div class="ag-grid">{months.map((m) => { const X = E.filter((e) => e.day.slice(0, 7) === m); return (
           <div class={`ag-m${m === now ? ' cur' : ''}`}>
             <div class="ag-h"><b>{month(m + '-01')}</b><span class="ag-n">{(Object.keys(KIND) as Kind[]).map((k) => { const c = X.filter((e) => e.kind === k).length; return c ? <span style={{ background: KIND[k].color }}>{c}</span> : null; })}</span></div>
