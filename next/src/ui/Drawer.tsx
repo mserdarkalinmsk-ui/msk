@@ -3,7 +3,7 @@ import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { backupNow } from './Backup';
 import { AlertPanel } from './AlertPanel';
 import { useEffect, useState } from 'preact/hooks';
-import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, set, upsertCountry, upsertProject, useStore } from '../data/store';
+import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, restorePoints, set, upsertCountry, upsertProject, useStore } from '../data/store';
 import type { Country } from '../domain/types';
 import { burnGap, elapsed, lines, money, parseDate, riskScore, spendPoints, validateLedger } from '../domain/calc';
 import { normalizeSector, SECTORS, validUrl, type Ledger, type Project } from '../domain/types';
@@ -359,9 +359,10 @@ function ImportPanel({ close }: { close: () => void }) {
           <p class="muted" style={{ margin: 0, fontSize: '13px' }}>Data is stored in this browser. Export a backup before clearing browser data or moving computers.</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button class="btn" onClick={exportJSON}>Export JSON backup</button>
-            <button class="btn ghost" onClick={() => { resetDemo(); close(); }}>Restore demo data</button>
+            <button class="btn ghost" onClick={() => { if (confirm('Replace ALL current data with the start data? Export a backup first — this removes your reports and documents (undo is possible right after).')) { resetDemo(); close(); } }}>Reset to start data</button>
           </div>
         </section>
+        <RestorePoints close={close} />
       </div>
       {rows && (
         <div class="drawer-f">
@@ -465,3 +466,22 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
 }
 
 /** Plans every dropped workbook against the ledger and applies them in one undoable step. */
+
+/** Daily restore points kept in this browser: bring back the data as it was on an earlier day. */
+function RestorePoints({ close }: { close: () => void }) {
+  const [P, setP] = useState<Awaited<ReturnType<typeof restorePoints>> | null>(null);
+  useEffect(() => { restorePoints().then(setP); }, []);
+  const now = useStore((s) => s.ledger);
+  const nowReports = now.projects.reduce((a, p) => a + (p.reportingPeriods?.length ?? 0), 0);
+  return (
+    <section class="card" style={{ padding: '16px', display: 'grid', gap: '8px' }}>
+      <h3 style={{ margin: 0, fontSize: '14px' }}>Restore points</h3>
+      <p class="muted" style={{ margin: 0, fontSize: '13px' }}>A copy is kept each day you work (last 30 days). Now: {now.projects.length} projects, {nowReports} reports.</p>
+      {!P ? <span class="muted">Loading…</span> : !P.length ? <span class="muted">No restore points yet.</span> : (
+        <table class="mini"><thead><tr><th>Saved</th><th class="r">Projects</th><th class="r">Reports</th><th>Missing now</th><th /></tr></thead>
+          <tbody>{P.map((x) => { const miss = x.ledger.projects.filter((p) => !now.projects.some((q) => q.id === p.id || (p.bh && q.bh === p.bh))).map((p) => p.bh ? `BH ${p.bh}` : p.code);
+            return <tr><td>{x.key.endsWith('rescued') ? 'Rescued at load · ' : ''}{new Date(x.at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</td><td class="r num">{x.projects}</td><td class="r num">{x.reports}</td><td>{miss.join(', ') || '—'}</td>
+              <td><button class="btn" onClick={() => { if (confirm('Replace the current data with this restore point? (undo is possible right after)')) { replaceLedger(x.ledger, `Restored data from ${x.at.slice(0, 10)}`); close(); } }}>Restore</button></td></tr>; })}</tbody></table>)}
+    </section>
+  );
+}

@@ -14,7 +14,7 @@ export interface WbLine {
 export interface WbTotals { budget: number; actual: number; sc: number; planned?: number; proposal?: number; rounded?: number }
 export interface WbMeta {
   title?: string; contract?: string; jp?: string; bh?: string; periodFrom?: string; periodTo?: string; asAt?: string;
-  plannedFrom?: string; plannedTo?: string; situationDate?: string; situationPeriod?: string;
+  plannedFrom?: string; plannedTo?: string; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
 }
 export interface SituationRow { ccm: string; article: string; description: string; budget: number; da: number; po: number; invoice: number; actual: number; available: number; balance: number }
 export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string }
@@ -131,7 +131,7 @@ function readGrid(sh: Sheet) {
       // Numbering differs between templates (admin is 8 without a contingency row, 10 with one): classify by wording.
       const key: keyof Workbook['totals'] | undefined = /administrative|indirect/i.test(a) ? 'admin' : /contingency/i.test(a) ? 'contingency'
         : /total eligible costs/i.test(a) ? 'eligible' : /direct eligible/i.test(a) && /sub-?total|\(1\s*\+/i.test(a) ? 'direct' : undefined;
-      if (key) totals[key] = t;
+      if (key) { totals[key] = t; meta.layout = { ...meta.layout, [key]: tm[1] }; }
       continue;
     }
     const m = a.match(/^(\d+(?:\.\d+)*)\.?\s+(.+)$/);
@@ -228,6 +228,18 @@ export function reconcile(wb: Workbook): Check[] {
     const b = sum((l) => l.budget.cost), a = sum((l) => l.actual.cost);
     C.push({ ok: close(b, d.budget), level: close(b, d.budget) ? 'info' : 'error', text: `Budget lines add up to the direct-cost total (${eur(b)} vs ${eur(d.budget)})` });
     C.push({ ok: close(a, d.actual), level: close(a, d.actual) ? 'info' : 'error', text: `Actual lines add up to the direct-cost total (${eur(a)} vs ${eur(d.actual)})` });
+  }
+  // Template analysis: which totals rows exist and under which number, and whether they add up.
+  const lay = wb.meta.layout ?? {}, T = wb.totals;
+  if (Object.keys(lay).length) {
+    const parts = [['direct', 'direct costs'], ['contingency', 'contingency'], ['admin', 'administrative costs'], ['eligible', 'total eligible costs']].filter(([k]) => lay[k]).map(([k, l]) => `${lay[k]}. ${l}`);
+    C.push({ ok: true, level: 'info', text: `Template: ${parts.join(' · ')}${lay.contingency ? '' : ' (no contingency row)'}` });
+    if (!lay.admin) C.push({ ok: false, level: 'warning', text: 'No administrative-costs row found in the report — check the template' });
+    if (T.direct && T.eligible) {
+      const sumB = T.direct.budget + (T.contingency?.budget ?? 0) + (T.admin?.budget ?? 0), sumA = T.direct.actual + (T.contingency?.actual ?? 0) + (T.admin?.actual ?? 0);
+      const ok = close(sumB, T.eligible.budget) && close(sumA, T.eligible.actual);
+      C.push({ ok, level: ok ? 'info' : 'error', text: `Direct${T.contingency ? ' + contingency' : ''} + administrative costs = total eligible costs (budget ${eur(sumB)} vs ${eur(T.eligible.budget)}, actual ${eur(sumA)} vs ${eur(T.eligible.actual)})` });
+    }
   }
   const ad = wb.totals.admin;
   if (d && ad) {
