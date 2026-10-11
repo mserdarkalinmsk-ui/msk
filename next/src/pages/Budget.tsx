@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { filtered, go, set, updateLine, useStore } from '../data/store';
-import { byCategory, latestReport, parseDate, lineRows, reportsByDate, reportTotals, spendPoints, type LineRow } from '../domain/calc';
+import { byCategory, category, latestReport, parseDate, lineRows, reportsByDate, reportTotals, spendPoints, type LineRow } from '../domain/calc';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { full, month, pct, short } from '../ui/format';
@@ -40,7 +40,7 @@ export function Budget() {
   const P = filtered(state);
   const [cat, setCat] = useState('');
   const all = lineRows(P);
-  const R = cat ? all.filter((r) => r.description === cat) : all;
+  const R = cat ? all.filter((r) => category(r) === cat) : all;
   const C = byCategory(all);
   const approved = all.reduce((s, r) => s + r.approved, 0), exposure = all.reduce((s, r) => s + r.exposure, 0);
   const over = all.filter((r) => r.approved && r.exposure > r.approved);
@@ -106,7 +106,7 @@ function LineTable({ rows, cname }: { rows: LineRow[]; cname: (id: string) => st
   });
   const cols: Column<LineRow>[] = [
     { key: 'project', label: 'Project', width: 96, pin: true, value: (r) => r.project.code, render: (r) => <span class="num" style={{ fontWeight: 600 }}>{r.project.code}</span> },
-    { key: 'code', label: 'Line', width: 64, value: (r) => r.code, render: (r) => <span class="num muted">{r.code}</span> },
+    { key: 'code', label: 'Line', width: 84, value: (r) => r.code, render: (r) => <span class="num muted">{r.code}</span> },
     { key: 'desc', label: 'Description', width: 220, value: (r) => r.description },
     { key: 'country', label: 'Country', width: 100, value: (r) => cname(r.project.country) },
     { key: 'approved', label: 'Approved', width: 120, align: 'r', sum: true, format: full, value: (r) => r.approved, edit: edit('approved') },
@@ -119,7 +119,7 @@ function LineTable({ rows, cname }: { rows: LineRow[]; cname: (id: string) => st
   ];
   return (
     <DataTable rows={rows} columns={cols} rowKey={(r) => r.key} title="budget-lines" storageKey="pl-cols-lines" maxHeight={480}
-      groupBy={[{ label: 'project', key: (r) => `${r.project.code} · ${r.project.name}` }, { label: 'category', key: (r) => r.description }, { label: 'country', key: (r) => cname(r.project.country) }]}
+      groupBy={[{ label: 'project', key: (r) => `${r.project.code} · ${r.project.name}` }, { label: 'category', key: (r) => category(r) }, { label: 'country', key: (r) => cname(r.project.country) }]}
       onOpen={(r) => set({ drawer: { kind: 'project', id: r.project.id } })} />
   );
 }

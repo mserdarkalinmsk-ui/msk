@@ -121,7 +121,7 @@ function Lines({ p }: { p: Project }) {
   const ro = rep.id === '__approved'; // the approved baseline is replaced by a newer approved budget, not edited
   const ed = (f: 'approved' | 'actual' | 'committed') => ro ? undefined : ({ type: 'text' as const, commit: (r: LineV, v: string) => { const x = parseAmount(v); if (x != null && x >= 0) updateLine(p.id, rep.id, r.code, { [f]: x }); } });
   const cols: Column<LineV>[] = [
-    { key: 'code', label: 'Line', width: 70, pin: true, value: (r) => r.code, render: (r) => <span class="num">{r.code}</span> },
+    { key: 'code', label: 'Line', width: 84, pin: true, value: (r) => r.code, render: (r) => <span class="num">{r.code}</span> },
     { key: 'description', label: 'Description', width: 240, value: (r) => r.description, edit: ro ? undefined : { type: 'text', commit: (r, v) => updateLine(p.id, rep.id, r.code, { description: v }) } },
     { key: 'approved', label: 'Approved', width: 130, align: 'r', sum: true, format: full, value: (r) => r.approved, edit: ed('approved') },
     { key: 'actual', label: 'Spent', width: 130, align: 'r', sum: true, format: full, value: (r) => r.actual, edit: ed('actual') },
