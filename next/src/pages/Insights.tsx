@@ -212,6 +212,13 @@ export function HeadingsCard({ p }: { p: Project }) {
               <td style={{ minWidth: '160px' }}><div class="minibar"><span style={{ width: `${Math.min(100, r.baseline ? r.exposure / r.baseline * 100 : 0)}%`, background: r.overspend > 0 ? 'var(--serious)' : 'var(--c1)' }} /><i style={{ left: '100%' }} /></div></td>
               <td><span class={`badge ${T[r.status]}`}>{r.status === 'ok' ? 'within' : r.status === 'warn' ? 'watch' : 'amendment'}</span></td>
             </tr>))}</tbody>
+          <tfoot class="hd-f">
+            {([['Total direct costs', H.direct], ['Administrative costs (indirect)', H.admin], ...(H.contingency ? [['Contingency reserve', { baseline: H.contingency, approved: H.contingency, exposure: 0 }]] : []), ['Total budget', H.total]] as [string, { baseline: number; approved: number; exposure: number }][]).map(([k, v], i, a) => {
+              const ch = v.baseline ? (v.approved - v.baseline) / v.baseline : 0;
+              return <tr class={i === a.length - 1 ? 'hd-total' : ''}><td>{k}</td><td class="r num">{full(v.baseline)}</td><td class="r num">{full(v.approved)}</td><td class="r num">{Math.abs(ch) >= 0.0005 ? `${ch > 0 ? '+' : ''}${(ch * 100).toFixed(1)}%` : '—'}</td><td class="r num">{full(v.exposure)}</td>
+                <td><div class="minibar"><span style={{ width: `${Math.min(100, v.baseline ? v.exposure / v.baseline * 100 : 0)}%`, background: 'var(--c1)' }} /></div></td><td class="muted num">{v.baseline ? `${Math.round(v.exposure / v.baseline * 100)}%` : ''}</td></tr>;
+            })}
+          </tfoot>
         </table>
       </div>
     </section>

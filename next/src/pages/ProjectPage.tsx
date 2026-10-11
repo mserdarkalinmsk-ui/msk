@@ -36,6 +36,7 @@ export function ProjectPage({ id }: { id: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
   const countries = useStore((s) => s.ledger.countries);
   const [tab, setTab] = useState<Tab>('Summary');
+  useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2><p>It may have been deleted.</p><button class="btn" onClick={() => go('projects')}>All projects</button></div></div>;
   const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
   const reports = reportsByDate(p);
@@ -97,7 +98,7 @@ function Summary({ p }: { p: Project }) {
   return (
     <div class="grid g-12">
       <Cockpit p={p} />
-      <Attention flags={flags} />
+      <Attention flags={flags} pid={p.id} />
       {p.datesTbc && <StatusWords p={p} />}
       <ForecastCard p={p} />
       <section class="card span-8">
@@ -398,21 +399,21 @@ function ReportTimeline({ p }: { p: Project }) {
 }
 
 /** Needs attention: full width, worst first, repeated kinds (e.g. contract ends) folded into one row. */
-function Attention({ flags }: { flags: ReturnType<typeof alerts> }) {
+function Attention({ flags, pid }: { flags: ReturnType<typeof alerts>; pid: string }) {
   const order = { critical: 0, serious: 1, warning: 2, info: 3 } as Record<string, number>;
-  const G = new Map<string, { sev: string; title: string; detail: string; n: number; names: string[] }>();
+  const G = new Map<string, { sev: string; title: string; detail: string; n: number; names: string[]; kind: string; ids: string[] }>();
   for (const f of [...flags].sort((a, b) => order[a.severity] - order[b.severity])) {
     const m = f.title.match(/^([^:]+):\s*(.+)$/), k = m ? m[1] : f.id;
     const g = G.get(k);
-    if (g) { g.n++; g.names.push(m ? m[2] : f.title); g.title = `${m ? m[1] : f.title} · ${g.n}${/contract/i.test(k) ? " people" : ""}`; }
-    else G.set(k, { sev: f.severity, title: f.title, detail: f.detail, n: 1, names: [m ? m[2] : f.title] });
+    if (g) { g.ids.push(f.id); g.n++; g.names.push(m ? m[2] : f.title); g.title = `${m ? m[1] : f.title} · ${g.n}${/contract/i.test(k) ? " people" : ""}`; }
+    else G.set(k, { sev: f.severity, title: f.title, detail: f.detail, n: 1, names: [m ? m[2] : f.title], kind: f.kind, ids: [f.id] });
   }
   const rows = [...G.values()];
   for (const g of rows) if (g.n > 1) g.detail = g.names.join(', ') + ' · ' + g.detail.replace(/^[^·]*·\s*/, '');
   return (
     <section class="card span-12 attn">
       <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items, most serious first` : 'Nothing flagged — within all thresholds'}</p></div></div>
-      {rows.length > 0 && <ul class="attn-g">{rows.map((g) => <li class={`sev-${g.sev}`}><span class={`badge ${g.sev}`}>{g.sev}</span><div><b>{g.title}</b><small>{g.detail}</small></div></li>)}</ul>}
+      {rows.length > 0 && <ul class="attn-g">{rows.map((g) => <li class={`sev-${g.sev}`} tabIndex={0} role="button" onClick={() => set({ drawer: { kind: 'alert', projectId: pid, alertKind: g.kind, ids: g.ids } })} onKeyDown={(e) => e.key === 'Enter' && set({ drawer: { kind: 'alert', projectId: pid, alertKind: g.kind, ids: g.ids } })}><span class={`badge ${g.sev}`}>{g.sev}</span><div><b>{g.title}</b><small>{g.detail}</small></div></li>)}</ul>}
     </section>
   );
 }

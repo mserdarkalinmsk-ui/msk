@@ -1,6 +1,7 @@
-import { category, deadlines, elapsed, money, parseDate, reportsByDate } from '../domain/calc';
+import { category, deadlines, planStats, elapsed, money, parseDate, reportsByDate } from '../domain/calc';
 import { outcome } from '../domain/insights';
 import { tidy } from '../domain/logframe';
+import { roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, month, short } from '../ui/format';
@@ -53,22 +54,26 @@ export function IdentityCard({ p }: { p: Project }) {
     ['Final report', c.finalMonths ? `${c.finalMonths} months after end` : undefined],
     ['Flexibility', c.flexPct ? `${c.flexPct}% between headings` : undefined], ['Pre-financing', c.prefinancing ? short(Number(c.prefinancing)) : undefined],
   ].filter((x) => x[1]);
-  if (!goals.length && !outputs.length && !heads.length) return null;
+  const st = roster(p, TODAY), pl = planStats(p, TODAY);
+  const facts: [string | number, string, string][] = [
+    [I.length, 'indicators', 'Indicators'], [pl ? `${pl.done}/${pl.total}` : 0, 'activities done', 'Activity plan'],
+    [(p.riskRegister ?? []).length, 'risks', 'Risks'], [st.filter((a) => a.status === 'Active').length, 'active staff', 'People'],
+    [reportsByDate(p).filter((r) => !/approved budget/i.test(r.type)).length, 'reports', 'Reports'], [(p.documents ?? []).length, 'documents', 'Results & documents'],
+  ];
   return (
     <section class="card span-12 idc">
       <div class="card-h"><div><h2>Project identity</h2><p>Read from the documents on file — objectives, outputs, approved budget and contract terms</p></div>
         <button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => print()}>Print brief</button></div>
+      {(goals.length > 0 || outputs.length > 0) && <div class="idc-g2">
+        {goals.length > 0 && <div><h3>Objectives</h3><ol class="idc-goals">{goals.map((g) => <li>{g}</li>)}</ol></div>}
+        {outputs.length > 0 && <div><h3>Outputs</h3><ul class="idc-out">{outputs.map((o) => <li>{o}</li>)}</ul></div>}
+      </div>}
       <div class="idc-g">
-        <div>
-          {goals.length > 0 && <><h3>Objectives</h3><ol class="idc-goals">{goals.map((g) => <li>{g}</li>)}</ol></>}
-          {outputs.length > 0 && <><h3>Outputs</h3><ul class="idc-out">{outputs.map((o) => <li>{o}</li>)}</ul></>}
-        </div>
-        <div>
-          {heads.length > 0 && <><h3>Approved budget · {short(tot)}</h3>
-            <div class="idc-stack">{heads.map(([k, v], i) => <span style={{ flex: v, background: `var(--c${(i % 8) + 1})` }} title={`${k} ${short(v)}`} />)}</div>
-            <ul class="idc-heads">{heads.map(([k, v], i) => <li><i style={{ background: `var(--c${(i % 8) + 1})` }} />{k}<b class="num">{short(v)}</b><small>{Math.round(v / (tot || 1) * 100)}%</small></li>)}</ul></>}
-          {terms.length > 0 && <><h3>Contract terms</h3><dl class="idc-terms">{terms.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}</dl></>}
-        </div>
+        <div>{heads.length > 0 ? <><h3>Approved budget · {short(tot)}</h3>
+          <div class="idc-stack">{heads.map(([k, v], i) => <span style={{ flex: v, background: `var(--c${(i % 8) + 1})` }} title={`${k} ${short(v)}`} />)}</div>
+          <ul class="idc-heads">{heads.map(([k, v], i) => <li><i style={{ background: `var(--c${(i % 8) + 1})` }} />{k}<b class="num">{short(v)}</b><small>{Math.round(v / (tot || 1) * 100)}%</small></li>)}</ul></> : <><h3>Approved budget</h3><p class="muted">Add the approved budget to see its split by heading.</p></>}</div>
+        <div>{terms.length > 0 && <><h3>Contract terms</h3><dl class="idc-terms">{terms.map(([k, v]) => <><dt>{k}</dt><dd>{v}</dd></>)}</dl></>}</div>
+        <div><h3>On file</h3><div class="idc-facts">{facts.map(([n, l, t]) => <button class="idc-fact" onClick={() => dispatchEvent(new CustomEvent('pl-tab', { detail: t }))}><b class="num">{n}</b><span>{l}</span></button>)}</div></div>
       </div>
     </section>
   );
