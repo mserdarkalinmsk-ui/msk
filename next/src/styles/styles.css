@@ -374,3 +374,10 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .em-t td{white-space:nowrap}.em-t td.em-title{white-space:normal}
 .em-risk,.em-method{margin-top:18px}.em-risk h3,.em-method h3{font-size:13px;margin:0 0 6px;border-bottom:1px solid #999;padding-bottom:4px}
 .em-rt{width:auto;min-width:60%}.em-method ol{margin:0;padding-left:20px;font-size:11.5px;line-height:1.6;columns:2;column-gap:32px}.em-method li{break-inside:avoid;margin-bottom:3px}
+/* fit the monitoring sheet to the page width — no sideways scroll */
+.em-h{flex-wrap:wrap;overflow:visible;gap:14px 18px}
+.em .sd-scroll{overflow-x:visible}
+.em-t{font-size:10.5px;table-layout:auto}.em-t th{font-size:10px;padding:4px 3px}.em-t td{padding:3px 4px;white-space:normal}
+.em-t td.r,.em-t td.em-sr,.em-t td.em-rate{white-space:nowrap}
+.em-t td.em-title{min-width:180px;max-width:300px}
+.em-t td.em-g:not(.em-title){white-space:nowrap}
