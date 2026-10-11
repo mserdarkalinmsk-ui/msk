@@ -64,7 +64,40 @@ function open(): Promise<IDBDatabase | null> {
 }
 async function persist(l: Ledger) {
   const db = await open(); if (!db) return;
-  db.transaction(STORE, 'readwrite').objectStore(STORE).put(l, KEY);
+  const st = db.transaction(STORE, 'readwrite').objectStore(STORE);
+  st.put(l, KEY);
+  // One restore point per day (the first save of the day keeps the state before that day's changes); 30 days kept.
+  const day = new Date().toISOString().slice(0, 10), k = `${KEY}:snap:${day}`;
+  const q = st.get(k);
+  q.onsuccess = () => { if (!q.result) st.put({ at: new Date().toISOString(), ledger: prevSaved ?? l }, k); };
+  const keys = st.getAllKeys();
+  keys.onsuccess = () => { const S = (keys.result as string[]).filter((x) => String(x).startsWith(`${KEY}:snap:`)).sort(); for (const x of S.slice(0, Math.max(0, S.length - 30))) st.delete(x); };
+  prevSaved = l;
+}
+let prevSaved: Ledger | null = null;
+/** Restore points kept in this browser, newest first. */
+export async function restorePoints(): Promise<{ key: string; at: string; projects: number; reports: number; ledger: Ledger }[]> {
+  const db = await open(); if (!db) return [];
+  return new Promise((res) => {
+    const st = db.transaction(STORE).objectStore(STORE), out: { key: string; at: string; projects: number; reports: number; ledger: Ledger }[] = [];
+    const c = st.openCursor();
+    c.onsuccess = () => { const cur = c.result; if (!cur) { res(out.sort((a, b) => b.key.localeCompare(a.key))); return; }
+      const k = String(cur.key); if (k.startsWith(`${KEY}:snap:`) || k === `${KEY}:rescued`) { const v = cur.value as { at: string; ledger: Ledger }; out.push({ key: k, at: v.at, projects: v.ledger.projects.length, reports: v.ledger.projects.reduce((s, p) => s + (p.reportingPeriods?.length ?? 0), 0), ledger: v.ledger }); }
+      cur.continue(); };
+    c.onerror = () => res(out);
+  });
+}
+/** Repairs instead of discarding: impossible dates are put back into set-up rather than throwing the whole ledger away. */
+function repair(l: Ledger): Ledger {
+  const L = clone(l);
+  for (const p of L.projects) {
+    if (!p.start || isNaN(Date.parse(p.start))) p.start = new Date().toISOString().slice(0, 10);
+    if (!p.end || isNaN(Date.parse(p.end)) || p.end <= p.start) { const d = new Date(p.start); d.setUTCFullYear(d.getUTCFullYear() + 3); p.end = d.toISOString().slice(0, 10); p.datesTbc = true; }
+    if (!(Number(p.budget) >= 0)) p.budget = 0;
+    if (!p.name) p.name = p.code || p.id;
+  }
+  if (!Array.isArray(L.countries)) L.countries = [];
+  return L;
 }
 export async function load() {
   const db = await open();
@@ -73,7 +106,12 @@ export async function load() {
       const q = db.transaction(STORE).objectStore(STORE).get(KEY);
       q.onsuccess = () => res(q.result); q.onerror = () => res(undefined);
     });
-    if (l && !validateLedger(l).length) state = { ...state, ledger: mergeSeed(l) };
+    if (l && Array.isArray(l.projects)) {
+      // Never fall back to the start data when stored data has a problem — that silently lost work before.
+      if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
+      prevSaved = l;
+      state = { ...state, ledger: mergeSeed(validateLedger(l).length ? repair(l) : l) };
+    }
   }
   set({ ready: true });
 }
