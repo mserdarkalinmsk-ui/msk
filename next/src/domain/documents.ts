@@ -3,6 +3,7 @@
  * reduced to plain paragraphs + tables, then analysed for facts the ledger uses.
  */
 import type { Activity, Risk } from './types';
+import { joinLines } from './notes';
 
 export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][]; geometry?: Geometry; notes?: Record<string, BudgetNote> }
 /** Results of the layout readers for PDFs (shaded action-plan cells, logframe columns, annex tables). */
@@ -263,7 +264,7 @@ export function notesFromLayout(items: PdfItem[], prev?: NoteColumns): { notes: 
     for (const it of L) { const l = lines.find((x) => Math.abs(x.y - it.y) < Math.max(1.5, it.h * 0.4)); if (l) l.t += ' ' + it.s; else lines.push({ y: it.y, h: it.h || 7, t: it.s }); }
     const out: { lines: typeof lines }[] = [];
     for (const l of lines) { const b = out.at(-1); if (b && b.lines.at(-1)!.y - l.y < l.h * 1.9) b.lines.push(l); else out.push({ lines: [l] }); }
-    return out.map((b) => ({ y: (b.lines[0].y + b.lines.at(-1)!.y) / 2, t: clean(b.lines.map((x) => x.t).join(' ')) }));
+    return out.map((b) => ({ y: (b.lines[0].y + b.lines.at(-1)!.y) / 2, t: joinLines(b.lines.map((x) => x.t)) }));
   };
   const near = (y: number) => anchors.reduce((a, b) => (Math.abs(b.y - y) < Math.abs(a.y - y) ? b : a));
   const notes: Record<string, BudgetNote> = {};

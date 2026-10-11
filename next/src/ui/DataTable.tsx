@@ -20,6 +20,8 @@ interface Props<T> {
   columns: Column<T>[];
   rowKey: (r: T) => string;
   groupBy?: { label: string; key: (r: T) => string }[];
+  /** label of the grouping applied on first render */
+  defaultGroup?: string;
   onOpen?: (r: T) => void;
   actions?: (selected: T[], clear: () => void) => ComponentChildren;
   maxHeight?: number;
@@ -39,10 +41,10 @@ export function downloadCSV<T>(name: string, cols: Column<T>[], rows: T[]) {
 function loadWidths(k?: string): Record<string, number> { try { return k ? JSON.parse(localStorage.getItem(k) || '{}') : {}; } catch { return {}; } }
 
 /** Virtualised grid: sort, filter, resize, pinned first column, grouping with subtotals, selection, inline edit, CSV export. */
-export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, maxHeight = 520, title = 'table', storageKey }: Props<T>) {
+export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, maxHeight = 520, title = 'table', storageKey, defaultGroup = '' }: Props<T>) {
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
   const [q, setQ] = useState('');
-  const [group, setGroup] = useState('');
+  const [group, setGroup] = useState(defaultGroup);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [widths, setWidths] = useState<Record<string, number>>(() => loadWidths(storageKey));
   const [editing, setEditing] = useState<{ id: string; key: string } | null>(null);
@@ -111,7 +113,7 @@ export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, 
     }
     const content = c.render ? c.render(r) : c.format && typeof c.value(r) === 'number' ? c.format(c.value(r) as number) : c.value(r);
     return c.edit
-      ? <span class="editable" title="Double-click to edit" onDblClick={(e) => { e.stopPropagation(); setEditing({ id, key: c.key }); }}>{content}</span>
+      ? <span class="editable" title="Double-click to edit" onDblClick={(e) => { e.stopPropagation(); setEditing({ id, key: c.key }); }}>{content == null || content === '' ? <span class="muted">add…</span> : content}</span>
       : content;
   };
 

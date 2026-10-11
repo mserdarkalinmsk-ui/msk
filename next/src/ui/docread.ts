@@ -34,11 +34,12 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
   const G: Geometry = { acts: [], months: 0, indicators: [], risks: [] };
   const layouts: unknown[] = []; let template: unknown = null;
   const notes: Record<string, BudgetNote> = {}; let noteCols: NoteColumns | undefined;
+  const pages: { s: string; x: number; y: number; w: number; h: number }[][] = [];
   for (let n = 1; n <= doc.numPages; n++) {
     const page = await doc.getPage(n);
     const tc = await page.getTextContent();
     const pos = (tc.items as { str: string; transform: number[]; width: number; height: number }[]).map((i) => ({ s: i.str, x: i.transform[4], y: i.transform[5], w: i.width, h: i.height || Math.abs(i.transform[3]) }));
-    const jn = notesFromLayout(pos, noteCols); Object.assign(notes, jn.notes); noteCols = jn.cols;
+    pages.push(pos);
     // Layout readers from the previous app (need a canvas; skipped where none exists, e.g. in unit tests)
     if (typeof document !== 'undefined') try {
       const items = tc.items as unknown[];
@@ -71,6 +72,18 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
     }
   }
   if (table.length) tables.push(table);
+  // Running headers/footers (project title, contract number, page numbers) repeat on most pages; drop them
+  // so they do not end up inside table cells.
+  // Only text in the top/bottom band of a page counts (table text can repeat legitimately).
+  const band = (P: { y: number }[]) => { const ys = P.map((i) => i.y); const lo = Math.min(...ys), hi = Math.max(...ys); return (i: { y: number }) => i.y > hi - 30 || i.y < lo + 30; };
+  const edge = pages.map((P) => (P.length ? band(P) : () => false));
+  const seen = new Map<string, number>();
+  pages.forEach((P, k) => { for (const t of new Set(P.filter(edge[k]).map((i) => i.s.trim()).filter((x) => x.length > 2))) seen.set(t, (seen.get(t) ?? 0) + 1); });
+  const running = new Set([...seen].filter(([, n]) => pages.length > 1 && n >= Math.max(2, pages.length * 0.5)).map(([t]) => t));
+  pages.forEach((P, k) => {
+    const keep = P.filter((i) => !(edge[k](i) && (running.has(i.s.trim()) || /^(?:page\s*)?\d{1,3}(?:\s*(?:of|\/)\s*\d{1,3})?$/i.test(i.s.trim()))));
+    const jn = notesFromLayout(keep, noteCols); Object.assign(notes, jn.notes); noteCols = jn.cols;
+  });
   if (layouts.length) try { G.indicators.push(...geo.pdfAnnexIndicators(layouts)); G.risks.push(...geo.pdfAnnexRisks(layouts)); } catch { /* best effort */ }
   await doc.destroy();
   return { name, kind: 'pdf', paragraphs, tables, ...(Object.keys(notes).length ? { notes } : {}), ...(G.acts.length || G.indicators.length || G.risks.length ? { geometry: G } : {}) };

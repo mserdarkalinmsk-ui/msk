@@ -156,11 +156,24 @@
 .lf-bt b { font-size: 13px; } .lf-arrow { color: var(--muted); }
 .lf-ass { padding: 12px 20px; background: var(--warn-soft); font-size: 13px; } .lf-ass p { margin: 4px 0 0; }
 .jt { display: grid; margin-top: 12px; }
-.jt-row { display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 14px 20px; border-top: 1px solid var(--line); }
+details.jt-row { border-top: 1px solid var(--line); }
+.jt-row summary { display: grid; grid-template-columns: 70px 260px 1fr 110px; gap: 14px; align-items: center; padding: 10px 20px; cursor: pointer; list-style: none; }
+.jt-row summary::-webkit-details-marker { display: none; }
+.jt-row summary:hover { background: var(--surface-2); }
+.jt-row[open] summary { background: var(--surface-2); }
+.jt-code { font-size: 12px; font-weight: 700; color: var(--muted); }
+.jt-d { font-size: 13px; }
+.jt-p { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jt-a { text-align: right; font-size: 12.5px; font-weight: 650; }
+.jt-row[open] .jt-p { visibility: hidden; }
+.jt-body { padding: 4px 20px 16px 104px; display: grid; gap: 8px; }
+.jt-calc { font-size: 12.5px; color: var(--ink-2); }
+.jt-body p { margin: 0; font-size: 13px; line-height: 1.55; } .jt-body i { font-style: normal; display: block; font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 2px; }
+@media (max-width: 760px) { .jt-row summary { grid-template-columns: 60px 1fr auto; } .jt-p { display: none; } .jt-body { padding-left: 20px; } }
 .jt-row.empty { opacity: .6; }
 .jt-l { display: grid; gap: 3px; align-content: start; } .jt-l .num:first-child { font-size: 12px; color: var(--muted); font-weight: 700; } .jt-l small { color: var(--ink-2); font-size: 12.5px; }
 .jt-t p { margin: 0 0 8px; font-size: 13px; line-height: 1.5; } .jt-t i { display: block; margin-bottom: 2px; }
-@media (max-width: 760px) { .lf-row { grid-template-columns: 52px 1fr; } .lf-bt { grid-column: 1 / -1; } .jt-row { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .lf-row { grid-template-columns: 52px 1fr; } .lf-bt { grid-column: 1 / -1; } }
 .lf-row { grid-template-columns: 64px 1fr 260px 150px; }
 .lf-now { display: grid; gap: 4px; } .lf-now label { display: grid; gap: 2px; } .lf-now i { font-style: normal; font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .lf-now .input { height: 28px; width: 100%; }
@@ -180,3 +193,26 @@
 .subtabs button { height: 30px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
 .subtabs button[aria-selected="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .subtabs button[aria-selected="true"] .tab-n { background: rgba(255,255,255,.2); color: inherit; }
+.nt { margin-bottom: 10px; } .nt i { display: block; margin-bottom: 4px; }
+.nt-t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.nt-t td { padding: 4px 8px; border-top: 1px solid var(--line); vertical-align: top; line-height: 1.4; }
+.nt-t .nt-g td { background: var(--surface-2); font-weight: 650; }
+.nt-t .nt-c { width: 76px; color: var(--accent, var(--ink)); white-space: nowrap; }
+.nt-t td.r { width: 90px; white-space: nowrap; }
+.nt-t tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
+.nt-t .badge { margin-left: 6px; }
+/* activity plan timeline */
+.gantt-wrap { overflow: auto; max-height: 70vh; overscroll-behavior-x: contain; }
+.gantt .gsticky { position: sticky; z-index: 2; background: var(--surface); }
+.gantt .g0 { left: 0; } .gantt .g1 { box-shadow: 6px 0 8px -6px rgba(0,0,0,.15); }
+.gantt .gh { position: sticky; top: 0; z-index: 3; background: var(--surface); }
+.gantt .gh.gsticky { z-index: 4; }
+.gantt .gm { top: 26px; text-align: center; font-size: 10.5px; border-left: 1px solid transparent; }
+.gantt .gm.today { color: var(--critical); font-weight: 800; }
+.gantt .gy { font-weight: 700; color: var(--ink-2); border-left: 1px solid var(--line-strong); height: 26px; }
+.gantt .gg { background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.gantt .gg.gsticky { background: var(--surface-2); }
+.gantt .gc.ny { box-shadow: inset 1px 0 0 var(--line-strong); }
+.gantt .gc.now::after { background: var(--critical); }
+.gantt .gs button { border: 0; cursor: pointer; }
+.gantt .gc { height: 34px; }
