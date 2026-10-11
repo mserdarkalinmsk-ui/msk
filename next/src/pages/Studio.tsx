@@ -70,7 +70,17 @@ function build(p: Project, end?: R_, start?: R_) {
   const tbl = (head: string[], rows: Cell[][], r: number[] = []) => <table class="sd-t"><thead><tr>{head.map((h, i) => <th class={r.includes(i) ? 'r' : ''}>{h}</th>)}</tr></thead><tbody>{rows.map((x) => <tr>{x.map((c, i) => <td class={r.includes(i) ? 'r num' : ''}>{typeof c === 'number' ? full(c) : c}</td>)}</tr>)}</tbody></table>;
   const hRows: Cell[][] = [...H.rows.map((h) => [`${h.code} ${h.label}`, h.baseline, h.approved, h.exposure, h.baseline ? pct(h.exposure / h.baseline) : '']), ['Total direct costs', H.direct.baseline, H.direct.approved, H.direct.exposure, H.direct.baseline ? pct(H.direct.exposure / H.direct.baseline) : ''], ['Administrative costs', H.admin.baseline, H.admin.approved, H.admin.exposure, ''], ['Total budget', H.total.baseline, H.total.approved, H.total.exposure, H.total.baseline ? pct(H.total.exposure / H.total.baseline) : '']];
   const pRows: Cell[][] = deltas.slice(0, 15).map((d) => [d.code, d.description, (d.actual[1] - d.actual[0])]);
-  const lRows: Cell[][] = L.map((l) => [l.code, l.description ?? '', l.approved ?? 0, l.actual ?? 0, l.approved ? pct((l.actual ?? 0) / l.approved) : '']);
+  // Line analysis: approved (baseline) vs actual — units, unit cost and amount, with variances.
+  const base = new Map((p.approvedBudget?.lines ?? []).map((l) => [l.code, l]));
+  const leaf = L.filter((l) => !L.some((x) => x !== l && x.code.startsWith(l.code + '.')));
+  const LA = leaf.map((l) => {
+    const b = base.get(l.code);
+    const aU = b?.approvedUnits ?? l.approvedUnits ?? null, aR = b?.unitRate ?? l.unitRate ?? null, aA = b?.approved ?? l.approved ?? 0;
+    const rU = l.reportedUnits ?? null, act = l.actual ?? 0, rR = l.reportedUnitRate ?? (rU ? act / rU : null);
+    return { code: l.code, d: l.description ?? b?.description ?? '', unit: l.unit ?? b?.unit ?? '', aU, aR, aA, rU, rR, act,
+      dU: aU != null && rU != null ? rU - aU : null, dR: aR != null && rR != null ? rR - aR : null, dRp: aR && rR != null ? (rR - aR) / aR : null, left: aA - act, use: aA ? act / aA : null };
+  });
+  const lRows: Cell[][] = LA.map((x) => [x.code, x.d, x.unit, x.aU, x.aR, x.aA, x.rU, x.rR, x.act, x.dU, x.dRp == null ? '' : `${(x.dRp * 100).toFixed(1)}%`, x.left, x.use == null ? '' : pct(x.use)]);
   const iRows: Cell[][] = I.map((x) => [x.indicator.slice(0, 120), tidy(x.baseline), tidy(x.target), x.current ?? '', (() => { const v = progress(x); return v == null ? '' : `${Math.round(v * 100)}%`; })()]);
   const aRows: Cell[][] = (pl?.acts ?? []).map((a) => [a.code, a.name, a.done ? 'Done' : a.late ? 'Late' : a.status || 'Planned', a.plannedEnd ? `month ${a.plannedEnd}` : '']);
   const kRows: Cell[][] = K.map((r) => [tx(r.title), r.category ?? '', `${r.likelihood ?? '–'}×${r.impact ?? '–'}`, tx(r.mitigation), r.status ?? 'Open']);
@@ -80,7 +90,7 @@ function build(p: Project, end?: R_, start?: R_) {
     { sec: 'summary', title: '1. Summary', body: <><p>{story}</p><div class="sd-kpi"><div><span>Budget</span><b class="num">{full(m.budget)}</b></div><div><span>Spent</span><b class="num">{full(tEnd.actual)}</b></div><div><span>Committed</span><b class="num">{full(tEnd.committed)}</b></div><div><span>Forecast at end</span><b class="num">{full(o.projected)}</b></div></div></> },
     { sec: 'headings', title: '2. Budget by heading', body: tbl(['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], hRows, [1, 2, 3, 4]) },
     { sec: 'period', title: `3. Spending in the period${start ? ` (${date(start.date)} – ${end ? date(end.date) : ''})` : ''}`, body: start ? <><p>{full(periodSpend)} spent in the period. Largest movements:</p>{tbl(['Line', 'Description', 'Spent in period'], pRows, [2])}</> : <p class="muted">Choose a “from” report to show movements in the period.</p> },
-    { sec: 'lines', title: '4. Budget lines', body: L.length ? tbl(['Line', 'Description', 'Approved', 'Actual', 'Use'], lRows, [2, 3, 4]) : <p class="muted">No report lines.</p> },
+    { sec: 'lines', title: '4. Budget lines — units, unit costs and variances', body: LA.length ? <LineTable rows={LA} el={el} /> : <p class="muted">No report lines.</p> },
     { sec: 'indicators', title: '5. Indicators', body: I.length ? tbl(['Indicator', 'Baseline', 'Target', 'Current', 'Progress'], iRows, [4]) : <p class="muted">No indicators on file.</p> },
     { sec: 'activities', title: `6. Activities${pl ? ` · ${pl.done}/${pl.total} done, ${pl.late} late` : ''}`, body: aRows.length ? tbl(['Code', 'Activity', 'Status', 'Planned end'], aRows) : <p class="muted">No activity plan on file.</p> },
     { sec: 'risks', title: '7. Risks', body: kRows.length ? tbl(['Risk', 'Category', 'L × I', 'Mitigation', 'Status'], kRows) : <p class="muted">No risks recorded.</p> },
@@ -90,11 +100,58 @@ function build(p: Project, end?: R_, start?: R_) {
     { sec: 'summary', name: 'Summary', rows: [['Project', p.name], ['Code', p.code], ['Period to', end?.date ?? ''], ['Budget', m.budget], ['Spent', tEnd.actual], ['Committed', tEnd.committed], ['Forecast at end', o.projected], ['Narrative', story]] },
     { sec: 'headings', name: 'Headings', rows: [['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], ...hRows], money: [1, 2, 3] },
     { sec: 'period', name: 'Period', rows: [['Line', 'Description', 'Spent in period'], ...deltas.map((d) => [d.code, d.description, (d.actual[1] - d.actual[0])])], money: [2] },
-    { sec: 'lines', name: 'Lines', rows: [['Line', 'Description', 'Approved', 'Actual', 'Use'], ...lRows], money: [2, 3] },
+    { sec: 'lines', name: 'Lines', rows: [['Line', 'Description', 'Unit', 'Approved units', 'Approved unit cost', 'Approved amount', 'Actual units', 'Actual unit cost', 'Actual amount', 'Unit variance (+/−)', 'Unit cost variance %', 'Remaining', 'Use'], ...lRows], money: [4, 5, 7, 8, 11] },
     { sec: 'indicators', name: 'Indicators', rows: [['Indicator', 'Baseline', 'Target', 'Current', 'Progress'], ...iRows] },
     { sec: 'activities', name: 'Activities', rows: [['Code', 'Activity', 'Status', 'Planned end'], ...aRows] },
     { sec: 'risks', name: 'Risks', rows: [['Risk', 'Category', 'L x I', 'Mitigation', 'Status'], ...kRows] },
     { sec: 'staff', name: 'Staff', rows: [['Name', 'Position', 'Status', 'Contract end'], ...sRows] },
   ];
   return { blocks, sheets };
+}
+
+type LA = { code: string; d: string; unit: string; aU: number | null; aR: number | null; aA: number; rU: number | null; rR: number | null; act: number; dU: number | null; dR: number | null; dRp: number | null; left: number; use: number | null };
+const nf = (v: number | null, d = 0) => v == null ? '—' : v.toLocaleString('en-GB', { maximumFractionDigits: d });
+const sg = (v: number | null, d = 0) => v == null ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toLocaleString('en-GB', { maximumFractionDigits: d })}`;
+/** Budget lines by heading: approved vs actual units, unit cost and amount, with increases and decreases. */
+function LineTable({ rows, el }: { rows: LA[]; el: number }) {
+  const H = new Map<string, LA[]>(); for (const r of rows) { const k = r.code.split('.')[0]; H.set(k, [...(H.get(k) ?? []), r]); }
+  const tone = (r: LA) => r.use == null ? '' : r.use > 1 ? 'sd-bad' : r.use > el + 0.25 ? 'sd-warn' : r.use < el - 0.35 ? 'sd-low' : '';
+  const T = rows.reduce((a, r) => ({ aA: a.aA + r.aA, act: a.act + r.act }), { aA: 0, act: 0 });
+  const over = rows.filter((r) => r.left < 0).sort((a, b) => a.left - b.left).slice(0, 4);
+  const up = rows.filter((r) => (r.dRp ?? 0) > 0.05).sort((a, b) => (b.dRp ?? 0) - (a.dRp ?? 0)).slice(0, 4);
+  const dn = rows.filter((r) => (r.dRp ?? 0) < -0.05).sort((a, b) => (a.dRp ?? 0) - (b.dRp ?? 0)).slice(0, 4);
+  const idle = rows.filter((r) => r.aA > 0 && r.act === 0).sort((a, b) => b.aA - a.aA).slice(0, 4);
+  const unitsOver = rows.filter((r) => r.dU != null && r.aU && r.dU > 0).sort((a, b) => (b.dU! / b.aU!) - (a.dU! / a.aU!)).slice(0, 4);
+  const box = (t: string, cls: string, R: LA[], f: (r: LA) => string) => R.length ? <div class={`sd-kf ${cls}`}><b>{t}</b><ul>{R.map((r) => <li><span class="num">{r.code}</span> {r.d.slice(0, 48)} — <b>{f(r)}</b></li>)}</ul></div> : null;
+  return (
+    <>
+      <div class="sd-kfs">
+        {box('Over approved amount', 'bad', over, (r) => `${full(-r.left)} over (${pct(r.use ?? 0)})`)}
+        {box('Unit cost above budget', 'bad', up, (r) => `${full(r.rR ?? 0)} vs ${full(r.aR ?? 0)} (+${((r.dRp ?? 0) * 100).toFixed(1)}%)`)}
+        {box('Units above plan', 'warn', unitsOver, (r) => `${nf(r.rU, 1)} of ${nf(r.aU, 1)} ${r.unit.toLowerCase()}`)}
+        {box('Unit cost below budget (savings)', 'good', dn, (r) => `${full(r.rR ?? 0)} vs ${full(r.aR ?? 0)} (${((r.dRp ?? 0) * 100).toFixed(1)}%)`)}
+        {box('Not started — no spending yet', 'low', idle, (r) => `${full(r.aA)} unspent`)}
+        {!over.length && !up.length && !unitsOver.length && !dn.length && !idle.length && <div class="sd-kf good"><b>No line-level issues</b><ul><li>All lines within approved amounts and unit costs.</li></ul></div>}
+      </div>
+      <p class="sd-note">Approved = baseline budget; actual = latest report. Unit cost variance compares the actual average cost per unit with the budgeted rate. <span class="sd-bad">red</span> over budget · <span class="sd-warn">amber</span> spending well ahead of time ({pct(el)} elapsed) · <span class="sd-low">blue</span> well behind.</p>
+      <div class="sd-scroll"><table class="sd-t sd-lt">
+        <thead>
+          <tr><th rowSpan={2}>Line</th><th rowSpan={2}>Description</th><th colSpan={3} class="c sd-g1">Approved</th><th colSpan={3} class="c sd-g2">Actual</th><th colSpan={2} class="c sd-g3">Variance</th><th rowSpan={2} class="r">Remaining</th><th rowSpan={2} class="r">Use</th></tr>
+          <tr><th class="r sd-g1">Units</th><th class="r sd-g1">Unit cost</th><th class="r sd-g1">Amount</th><th class="r sd-g2">Units</th><th class="r sd-g2">Unit cost</th><th class="r sd-g2">Amount</th><th class="r sd-g3">Units ±</th><th class="r sd-g3">Unit cost ±</th></tr>
+        </thead>
+        <tbody>{[...H].map(([h, R]) => { const s = R.reduce((a, r) => ({ aA: a.aA + r.aA, act: a.act + r.act }), { aA: 0, act: 0 }); return <>
+          {R.map((r) => <tr class={tone(r)}>
+            <td class="num">{r.code}</td><td>{r.d}{r.unit && <small class="sd-u"> · {r.unit.toLowerCase()}</small>}</td>
+            <td class="r num">{nf(r.aU, 1)}</td><td class="r num">{r.aR == null ? '—' : full(r.aR)}</td><td class="r num">{full(r.aA)}</td>
+            <td class="r num">{nf(r.rU, 1)}</td><td class="r num">{r.rR == null ? '—' : full(r.rR)}</td><td class="r num"><b>{full(r.act)}</b></td>
+            <td class={`r num ${r.dU == null ? '' : r.dU > 0 ? 'up' : r.dU < 0 ? 'dn' : ''}`}>{sg(r.dU, 1)}</td>
+            <td class={`r num ${r.dRp == null ? '' : r.dRp > 0.005 ? 'up' : r.dRp < -0.005 ? 'dn' : ''}`}>{r.dRp == null ? '—' : `${sg(r.dR, 0)} (${sg(r.dRp * 100, 1)}%)`}</td>
+            <td class={`r num ${r.left < 0 ? 'up' : ''}`}>{full(r.left)}</td><td class="r num">{r.use == null ? '—' : pct(r.use)}</td>
+          </tr>)}
+          {R.length > 1 && <tr class="sd-sub"><td colSpan={4}>Sub-total {h}</td><td class="r num">{full(s.aA)}</td><td colSpan={2} /><td class="r num">{full(s.act)}</td><td colSpan={2} /><td class="r num">{full(s.aA - s.act)}</td><td class="r num">{s.aA ? pct(s.act / s.aA) : '—'}</td></tr>}
+        </>; })}</tbody>
+        <tfoot><tr class="sd-tot"><td colSpan={4}>Total</td><td class="r num">{full(T.aA)}</td><td colSpan={2} /><td class="r num">{full(T.act)}</td><td colSpan={2} /><td class="r num">{full(T.aA - T.act)}</td><td class="r num">{T.aA ? pct(T.act / T.aA) : '—'}</td></tr></tfoot>
+      </table></div>
+    </>
+  );
 }
