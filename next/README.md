@@ -19,6 +19,7 @@ exported/imported as a JSON backup (same `{countries, projects}` shape as the ea
 ## Phase 2
 - **Fixed sectors:** Human Rights, Democracy, Rule of Law (form dropdown; imports map variants and reject others).
 - **Countries:** add / edit / remove from the filter bar ("+ Country", "Manage countries") or Ctrl+K. A country with projects cannot be removed.
+- **Master list identifiers:** PMM number, budget head (BH), MAE/division and PMM link on every project (form, project header "PMM ↗" button, table column, search). Importing the master list (Excel/CSV) matches projects by code and updates them instead of creating duplicates; columns missing from the file keep their current values.
 - **Projects:** add from the top bar, a country row, or Ctrl+K; delete from the project page, the drawer, or several at once from the table selection. All undoable.
 - **Budget workspace:** approved vs used by cost category (click to focus), report history per project, every budget line in one table with inline correction.
 - **Project page** (`#/project/<id>`): Summary, Budget lines, Reports (versions + line-by-line comparison), Activity plan (Gantt: preparation / implementation / extension, overdue flags), Risks (5×5 matrix + editable register).
@@ -39,4 +40,5 @@ npm run e2e     # browser tests + screenshots (needs Chromium; CHROMIUM=/path)
 `src/domain/calc.ts` holds every financial calculation and has no UI code; `src/domain/calc.test.ts` reconciles it against the sample data.
 
 ## Next phase
-3. People / contracts, Map, Reports & logframe, visual regression baselines.
+3. People: staff derived from report staff lines (1.x.1.y codes, PO, contract dates, HQ / Local classification), contract renewals and coverage.
+4. People / contracts, Map, Reports & logframe, visual regression baselines.

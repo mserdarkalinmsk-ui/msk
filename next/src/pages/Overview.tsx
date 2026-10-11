@@ -1,6 +1,6 @@
 import { deleteProjects, filtered, set, updateProject, useStore } from '../data/store';
 import { attention, burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
-import { SECTORS, type Project } from '../domain/types';
+import { SECTORS, validUrl, type Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -144,6 +144,7 @@ export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cnam
   const cols: Column<Project>[] = [
     { key: 'code', label: 'Code', width: 96, pin: true, value: (p) => p.code, render: (p) => <span class="num" style={{ fontWeight: 600 }}>{p.code}</span> },
     { key: 'name', label: 'Name', width: 240, value: (p) => p.name, edit: { type: 'text', commit: (p, v) => v.trim() && updateProject(p.id, { name: v.trim() }) } },
+    { key: 'pmm', label: 'PMM', width: 90, value: (p) => p.pmm ?? '', render: (p) => validUrl(p.pmmUrl) ? <a class="num" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>{p.pmm || 'link'} ↗</a> : <span class="num">{p.pmm ?? ''}</span> },
     { key: 'country', label: 'Country', width: 110, value: (p) => cname(p.country) },
     { key: 'sector', label: 'Sector', width: 120, value: (p) => p.sector ?? '' },
     { key: 'budget', label: 'Budget', width: 110, align: 'r', sum: true, format: short, value: (p) => money(p).budget },

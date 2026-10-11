@@ -30,7 +30,7 @@ export function Palette() {
     { group: 'Actions', label: 'Theme: dark', run: () => setTheme('dark') },
     { group: 'Actions', label: 'Theme: follow system', run: () => setTheme('auto') },
     ...ROUTES.map((r) => ({ group: 'Go to', label: r.label, run: () => go(r.id) })),
-    ...projects.map((p) => ({ group: 'Projects', label: `${p.code} — ${p.name}`, run: () => go(`project/${p.id}`) })),
+    ...projects.map((p) => ({ group: 'Projects', label: `${p.code} — ${p.name}${p.pmm ? ` · PMM ${p.pmm}` : ''}`, run: () => go(`project/${p.id}`) })),
     ...projects.map((p) => ({ group: 'Import report', label: `Import report for ${p.code}`, run: () => set({ drawer: { kind: 'report', projectId: p.id } }) })),
   ], [projects]);
 

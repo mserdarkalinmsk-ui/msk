@@ -72,10 +72,18 @@ async function page(opts) {
   writeFileSync(`${shots}/t.csv`, csv);
   await p.setInputFiles('.drawer input[type=file]', `${shots}/t.csv`); await p.waitForTimeout(300);
   check(await p.locator('.drawer .field select').first().inputValue() === '0', 'CSV columns auto-matched');
-  check(await p.locator('text=1 ready · 1 with problems').count() === 1, 'CSV preview validates rows');
+  check(await p.locator('text=1 new · 0 updates · 1 with problems').count() === 1, 'CSV preview validates rows');
   await p.screenshot({ path: `${shots}/import.png` });
   await p.click('text=Import 1 row'); await p.waitForTimeout(300);
   check(await p.locator('.dt-cell:has-text("UA-X1")').count() > 0, 'CSV row imported');
+
+  // Master list import: updates existing projects by code and fills identifiers
+  await p.click('text=Import / backup');
+  writeFileSync(`${shots}/master.csv`, 'Code,PMM No,BH,MAE,PMM link\nTR-TSK,4521,30117,DGI,https://pmm.example.org/projects/4521\n');
+  await p.setInputFiles('.drawer input[type=file]', `${shots}/master.csv`); await p.waitForTimeout(300);
+  check(await p.locator('text=0 new · 1 updates').count() === 1, 'master list matches existing project by code');
+  await p.click('text=Import 1 row'); await p.waitForTimeout(300);
+  check(await p.locator('a:has-text("4521 ↗")').count() === 1, 'PMM number and link shown in project table');
 
   // Persistence across reload
   await p.reload(); await p.waitForSelector('.hero'); await p.waitForTimeout(500);
