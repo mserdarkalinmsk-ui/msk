@@ -42,7 +42,11 @@ export function plan(wb: Workbook, fileName: string, L: Ledger, taken = new Set<
   let project: Project;
   if (match) {
     project = { ...match, bh: match.bh || m.bh, contractNo: match.contractNo || m.contract, jp: match.jp || m.jp };
-    if (E && Math.abs(E.budget - match.budget) > 1) problems.push(`Workbook budget ${Math.round(E.budget).toLocaleString('en-GB')} differs from project budget ${Math.round(match.budget).toLocaleString('en-GB')}`);
+    // The workbook's total eligible budget (all years, incl. 7% admin) is authoritative for the project budget.
+    if (E && E.budget > 0 && Math.abs(E.budget - match.budget) > 1) {
+      guessed.push(`budget updated ${Math.round(match.budget).toLocaleString('en-GB')} → ${Math.round(E.budget).toLocaleString('en-GB')} (total eligible, all years)`);
+      project.budget = Math.round(E.budget * 100) / 100;
+    }
   } else {
     const country = guessCountry(m.title ?? '', L);
     if (!country) problems.push('Country not found in the title — choose it after import');
@@ -75,7 +79,7 @@ export function applyPlans(L: Ledger, plans: AutoPlan[]): Ledger {
   for (const pl of plans) {
     let p = N.projects.find((x) => x.id === pl.project.id);
     if (!p) { p = JSON.parse(JSON.stringify(pl.project)) as Project; N.projects.push(p); }
-    else Object.assign(p, { bh: pl.project.bh, contractNo: pl.project.contractNo, jp: pl.project.jp });
+    else Object.assign(p, { bh: pl.project.bh, contractNo: pl.project.contractNo, jp: pl.project.jp, budget: pl.project.budget });
     const R = p.reportingPeriods ?? (p.reportingPeriods = []);
     const i = R.findIndex((r) => r.id === pl.report.id);
     if (i >= 0) R[i] = pl.report; else R.push(pl.report);

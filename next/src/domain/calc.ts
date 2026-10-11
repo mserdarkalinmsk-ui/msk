@@ -272,7 +272,7 @@ export function checkReport(p: Project, r: ReportingPeriod): ReportCheck[] {
         out.push({ level: 'warning', text: `Line ${d.code}: cumulative actual fell from ${Math.round(d.actual[0]).toLocaleString('en-GB')} to ${Math.round(d.actual[1]).toLocaleString('en-GB')}` });
   }
   const t = reportTotals(r);
-  if (t.approved && Math.abs(t.approved - n(p.budget)) > 1) out.push({ level: 'warning', text: `Approved total (${Math.round(t.approved).toLocaleString('en-GB')}) differs from project budget (${Math.round(n(p.budget)).toLocaleString('en-GB')})` });
+  if (t.approved && Math.abs(t.approved - n(p.budget)) > 1) out.push({ level: 'warning', text: `Report total ${Math.round(t.approved).toLocaleString('en-GB')} differs from project budget ${Math.round(n(p.budget)).toLocaleString('en-GB')} (workbook imports update the budget)` });
   for (const l of L) if (n(l.approved) && lineExposure(l) > n(l.approved)) out.push({ level: 'warning', text: `Line ${l.code} is over its approved amount` });
   return out;
 }

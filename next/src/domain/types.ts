@@ -22,6 +22,8 @@ export interface Project {
   /** Organisational identifiers from the master project list */
   mae?: string; pmm?: string; bh?: string; pmmUrl?: string; contractNo?: string; jp?: string;
   staffOverrides?: Record<string, import('./staff').StaffOverride>;
+  indicators?: import('./documents').Indicator[];
+  documents?: { name: string; kind: string; importedAt: string; summary: string[] }[];
   reportingPeriods?: ReportingPeriod[];
   doa?: { start: string; months: number; acts: Activity[] };
   contract?: Record<string, unknown>;

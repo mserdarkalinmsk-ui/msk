@@ -206,6 +206,21 @@ async function page(opts) {
   check(await p.locator('.dt-total:has-text("€27,000")').count() === 1, 'open PO balance totals');
   await p.screenshot({ path: `${shots}/financial-report.png`, fullPage: true });
 
+  // Project documents → contract, plan, risks, indicators
+  await p.goto(url + '#/project/new'); await p.waitForSelector('.ph-title');
+  await p.click('.ph-actions button:has-text("Add documents")');
+  await p.setInputFiles('.drawer input[type=file]', [resolve('tests/fixtures/doa.docx'), resolve('tests/fixtures/contract.pdf')]);
+  await p.waitForSelector('.doc-find', { timeout: 15000 });
+  check(await p.locator('.doc-find').count() >= 5, 'documents: contract, dates, plan, risks and indicators found');
+  await p.screenshot({ path: `${shots}/documents.png` });
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400);
+  check((await p.locator('.ph-meta').textContent()).includes('Mar 2026'), 'implementation period updated from documents');
+  await p.click('.tabs button:has-text("Activity plan")'); await p.waitForTimeout(200);
+  check(await p.locator('.gantt .ga').count() === 3, 'action plan replaced from the DoA');
+  await p.click('.tabs button:has-text("Results & documents")'); await p.waitForTimeout(200);
+  check(await p.locator('td:has-text("Judges trained")').count() === 1 && await p.locator('dd:has-text("700008888")').count() === 1, 'indicators and contract shown');
+  await p.click('.tabs button:has-text("Reports")'); await p.click('.tabs button:has-text("Summary")');
+
   // Appearance options
   // dropping the same workbook again updates the project instead of duplicating it
   await p.click('text=Import / backup');

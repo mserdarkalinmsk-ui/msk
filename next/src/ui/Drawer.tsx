@@ -12,6 +12,7 @@ import type { Workbook as CoeWorkbook } from '../domain/workbook';
 import { applyPlans, plan, type AutoPlan } from '../domain/autoimport';
 import { ContractPanel } from './ContractPanel';
 import { AppearancePanel } from './Appearance';
+import { DocumentsPanel, setPendingDocs } from './DocumentsPanel';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -29,6 +30,7 @@ export function Drawer() {
         {d.kind === 'project' && <ProjectView id={d.id} close={close} />}
         {d.kind === 'new-project' && <ProjectForm close={close} preset={d.country} prefill={d.prefill} thenReport={d.thenReport} />}
         {d.kind === 'report' && <ReportImport projectId={d.projectId} close={close} />}
+        {d.kind === 'documents' && <DocumentsPanel projectId={d.projectId} close={close} />}
         {d.kind === 'appearance' && <AppearancePanel close={close} />}
         {d.kind === 'contract' && <ContractPanel projectId={d.projectId} k={d.key} close={close} />}
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
@@ -233,7 +235,12 @@ function ImportPanel({ close }: { close: () => void }) {
   const [coe, setCoe] = useState<{ wb: CoeWorkbook; file: File }[] | null>(null);
   const [busy, setBusy] = useState('');
 
+  const [docFiles, setDocFiles] = useState<File[]>([]);
+  const [docProject, setDocProject] = useState('');
   async function readMany(files: File[]) {
+    const D = files.filter((f) => /\.(pdf|docx)$/i.test(f.name));
+    setDocFiles(D); files = files.filter((f) => !D.includes(f));
+    if (!files.length) return;
     if (files.length === 1) return read(files[0]);
     setErr(''); setRows(null); setJson(null); setCoe(null);
     const out: { wb: CoeWorkbook; file: File }[] = [], skipped: string[] = [];
@@ -299,13 +306,21 @@ function ImportPanel({ close }: { close: () => void }) {
       <div class="drawer-b">
         <label class={`drop ${over ? 'on' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); const F = [...(e.dataTransfer?.files ?? [])]; if (F.length) readMany(F); }}>
-          <input type="file" multiple accept=".csv,.xlsx,.json,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
+          <input type="file" multiple accept=".csv,.xlsx,.json,.pdf,.docx,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
           <strong style={{ color: 'var(--ink)' }}>Drop financial report workbooks — one or many at once</strong><br />Projects are created or updated automatically. Also accepts a project list (Excel / CSV) or a JSON backup.
         </label>
         {err && <ul class="errlist"><li>{err}</li></ul>}
 
         {busy && <div class="muted" role="status" style={{ fontSize: '13px' }}><span class="spin" /> {busy}</div>}
         {coe && <AutoImport items={coe} close={close} />}
+        {docFiles.length > 0 && (
+          <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
+            <b>{docFiles.length} project document{docFiles.length > 1 ? 's' : ''}</b><div class="muted" style={{ fontSize: '12.5px' }}>{docFiles.map((f) => f.name).join(', ')}</div>
+            <div class="field"><label for="doc-proj">Project</label><select id="doc-proj" value={docProject} onChange={(e) => setDocProject((e.target as HTMLSelectElement).value)}>
+              <option value="">Choose a project…</option>{ledger.projects.map((p) => <option value={p.id}>{p.code} — {p.name}</option>)}</select></div>
+            <button class="btn primary" disabled={!docProject} onClick={() => { setPendingDocs(docFiles); set({ drawer: { kind: 'documents', projectId: docProject } }); }}>Read documents</button>
+          </section>
+        )}
         {json && (
           <section class="card card-b">
             <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>Backup file</h3>
