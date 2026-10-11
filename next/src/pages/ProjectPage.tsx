@@ -14,6 +14,7 @@ import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
+import { Cockpit } from './Cockpit';
 import { ForecastCard, HeadingsCard, ReadinessCard, History, Scenario, StatusWords } from './Insights';
 import { alerts } from '../domain/insights';
 import { projectSheets } from '../domain/exports';
@@ -95,7 +96,8 @@ function Summary({ p }: { p: Project }) {
   const flags = alerts([p], TODAY);
   return (
     <div class="grid g-12">
-      <StatusWords p={p} />
+      <Cockpit p={p} />
+      {p.datesTbc && <StatusWords p={p} />}
       <ForecastCard p={p} />
       <section class="card span-8">
         <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report</p></div></div>

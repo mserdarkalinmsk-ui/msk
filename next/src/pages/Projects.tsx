@@ -7,7 +7,8 @@ import { TODAY } from '../today';
 import { readiness } from '../domain/insights';
 import { date, pct, period, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
-import { Filters, ProjectTable } from './Overview';
+import { Filters, ProjectTable, axisX, axisY } from './Overview';
+import { base, Chart } from '../ui/Chart';
 
 const pref = (k: string, d: string) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
@@ -42,9 +43,9 @@ export function Projects() {
       </div>
       {view === 'list'
         ? <section class="card" style={{ overflow: 'hidden' }}><ProjectTable rows={P} cname={cname} maxHeight={Math.max(360, innerHeight - 260)} /></section>
-        : <div class="pgrid">{sorted.map((p, i) => <ProjectCard p={p} cname={cname} i={i} />)}
+        : <>{sorted.some((p) => !p.datesTbc) && <PaceMap P={sorted} />}<div class="pgrid">{sorted.map((p, i) => <ProjectCard p={p} cname={cname} i={i} />)}
             <button class="pcard pcard-add" onClick={() => set({ drawer: { kind: 'new-project' } })}><span>+</span>Add project<small>reports and documents go inside each project</small></button>
-          </div>}
+          </div></>}
     </>
   );
 }
@@ -96,5 +97,31 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
         {next && <span class={next.status === 'overdue' ? 'stale' : ''}>{next.status === 'overdue' ? 'report overdue' : `report due ${date(next.due)}`}</span>}
       </footer>}
     </article>
+  );
+}
+
+/** Portfolio pace: time elapsed vs budget spent, bubble = budget. Above the diagonal spends ahead of time. */
+function PaceMap({ P }: { P: Project[] }) {
+  const live = P.filter((p) => !p.datesTbc);
+  const pts = live.map((p) => { const m = money(p); return { p, x: Math.round(elapsed(p, TODAY) * 100), y: m.budget ? Math.round(m.spent / m.budget * 100) : 0, b: m.budget }; });
+  const maxB = Math.max(1, ...pts.map((d) => d.b));
+  return (
+    <section class="card pf-bubble">
+      <div class="card-h"><div><h2>Portfolio pace</h2><p>Across: time elapsed · up: budget spent · bubble size is budget · on the diagonal is on pace · click a bubble to open the project</p></div></div>
+      <div class="card-b"><Chart height={300} label="Portfolio pace" onClick={(d: { data?: { id?: string } }) => d.data?.id && go(`project/${d.data.id}`)} option={(t) => ({
+        ...base(t),
+        grid: { left: 8, right: 24, top: 16, bottom: 8, containLabel: true },
+        tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (d: { data: { name: string; value: number[] } }) => `<b>${d.data.name}</b><br/>${d.data.value[0]}% of time · ${d.data.value[1]}% spent<br/>Budget ${short(d.data.value[2])}` },
+        xAxis: { type: 'value', min: 0, max: 100, ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => `${v}%` } },
+        yAxis: { type: 'value', min: 0, max: (v: { max: number }) => Math.max(100, Math.ceil(v.max / 10) * 10), ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => `${v}%` } },
+        series: [
+          { type: 'line', data: [[0, 0], [100, 100]], symbol: 'none', silent: true, lineStyle: { color: t.plan, type: 'dashed', width: 1 },
+            markArea: { silent: true, itemStyle: { color: t.c[0], opacity: 0.05 }, data: [[{ coord: [0, 0] }, { coord: [100, 100] }]] } },
+          { type: 'scatter', data: pts.map((d) => ({ id: d.p.id, name: `${d.p.code} · ${d.p.name}`, value: [d.x, d.y, d.b],
+              symbolSize: 14 + 46 * Math.sqrt(d.b / maxB), itemStyle: { color: t.c[Math.max(0, SECTORS.indexOf(d.p.sector as never))] ?? t.c[0], opacity: 0.8, borderColor: t.surface, borderWidth: 2 },
+              label: { show: true, position: 'right', formatter: d.p.code, color: t.ink2, fontSize: 11 } })) },
+        ],
+      })} /></div>
+    </section>
   );
 }
