@@ -313,3 +313,6 @@ details.jt-row { border-top: 1px solid var(--line); }
 .sd-f{margin-top:32px;padding-top:10px;border-top:1px solid #dde3ee;font-size:11px;color:#888}
 @media (max-width:900px){.studio{grid-template-columns:1fr}.studio-c{position:static}.studio-doc{padding:24px 18px}}
 @media print{.studio{display:block}.studio-doc{box-shadow:none;padding:0;max-width:none}}
+.studio{grid-template-columns:minmax(0,270px) minmax(0,1fr)}
+.studio-c{min-width:0}.studio-c .select{width:100%;min-width:0;max-width:100%;text-overflow:ellipsis}
+.sd-t td{word-break:normal;overflow-wrap:anywhere}.sd-t td:nth-child(3){white-space:nowrap}

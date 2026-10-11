@@ -22,7 +22,8 @@ export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMo
 
 /* ---------- helpers ---------- */
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
+// Word symbol-font bullets arrive as private-use glyphs (\uF0B7 …): drop them.
+const clean = (s: string) => s.replace(/[\uE000-\uF8FF]/g, ' ').replace(/\s+/g, ' ').trim();
 export function amount(s: string): number | null {
   const t = s.replace(/[€\s ]|EUR/gi, '').replace(/'/g, '');
   if (!/\d/.test(t)) return null;
