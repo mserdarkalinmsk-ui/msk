@@ -6,10 +6,16 @@ export const parseDate = (s: string): Date => new Date(s + (s.length === 10 ? 'T
 const sum = <T>(a: T[], f: (x: T) => number) => a.reduce((s, x) => s + f(x), 0);
 
 /** Most recent reporting period that carries line-level figures. */
+/** Same month → the most recently imported report wins (a re-upload replaces an older reading of the same report). */
+export const byPeriodThenImport = (a: ReportingPeriod, b: ReportingPeriod) => {
+  const ia = a.snapshot?.workbook?.importedAt ?? a.registeredAt ?? '', ib = b.snapshot?.workbook?.importedAt ?? b.registeredAt ?? '';
+  return a.date.slice(0, 7).localeCompare(b.date.slice(0, 7)) || ia.localeCompare(ib) || a.date.localeCompare(b.date);
+};
+
 export function latestReport(p: Project): ReportingPeriod | undefined {
   return [...(p.reportingPeriods ?? [])]
     .filter((r) => r.snapshot?.lines?.length)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort(byPeriodThenImport)
     .at(-1);
 }
 
