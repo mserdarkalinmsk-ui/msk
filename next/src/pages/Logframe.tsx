@@ -6,7 +6,7 @@ export { num, progress, tidy };
 import type { Project } from '../domain/types';
 import { full } from '../ui/format';
 import { DataTable, type Column } from '../ui/DataTable';
-import { structureNote } from '../domain/notes';
+import { bulletNote, structureNote, tidyText } from '../domain/notes';
 
 const code = (s: string) => s.match(/^\s*(\d+(?:\.\d+)+)/)?.[1] ?? '';
 const out = (c: string) => c.split('.').slice(0, 2).join('.');
@@ -68,7 +68,7 @@ export function Justification({ p }: { p: Project }) {
               <summary>
                 <span class="num jt-code">{c}</span>
                 <b class="jt-d">{l?.description ?? n?.description}</b>
-                <span class="jt-p">{n ? (n.clarification || n.justification) : 'No justification on file'}</span>
+                <span class="jt-p">{n ? tidyText(n.clarification || n.justification || '') : 'No justification on file'}</span>
                 {l && <span class="num jt-a">{full(l.approved ?? 0)}</span>}
               </summary>
               <div class="jt-body">
@@ -86,7 +86,7 @@ export function Justification({ p }: { p: Project }) {
 /** Justification text: a calculation breakdown (outputs → activities → subtotal) becomes a table, prose stays prose. */
 function NoteText({ label, text }: { label: string; text: string }) {
   const S = structureNote(text);
-  if (!S) return <p><i>{label}</i>{text}</p>;
+  if (!S) { const B = bulletNote(text); return B ? <div class="nt"><i>{label}</i>{B.intro && <p>{B.intro}</p>}<ul class="nt-b">{B.items.map((x) => <li>{x[0].toUpperCase() + x.slice(1)}</li>)}</ul></div> : <p><i>{label}</i>{tidyText(text)}</p>; }
   const total = S.groups.reduce((s, g) => s + (g.subtotal ?? g.sum), 0);
   return (
     <div class="nt">
@@ -94,10 +94,10 @@ function NoteText({ label, text }: { label: string; text: string }) {
       {S.intro && <p>{S.intro}</p>}
       <table class="nt-t">
         <tbody>{S.groups.map((g) => <>
-          {g.title && <tr class="nt-g"><td colSpan={2}>{g.title}</td><td class="r num">{g.subtotal ?? g.sum}{S.unit ? ` ${S.unit}` : ''}{g.subtotal != null && Math.abs(g.subtotal - g.sum) > 0.01 && g.sum > 0 && <span class="badge warning" title={`Rows add up to ${g.sum}`}>≠ {g.sum}</span>}</td></tr>}
-          {g.rows.map((r) => <tr><td class="num nt-c">{r.code}</td><td>{r.text}</td><td class="r num muted">{r.qty ?? ''}</td></tr>)}
+          {g.title && <tr class="nt-g"><td colSpan={2}>{g.title}</td><td class="r num">{(g.subtotal ?? g.sum).toLocaleString('en-GB')}{S.unit ? ` ${S.unit}` : ''}{g.subtotal != null && Math.abs(g.subtotal - g.sum) > 0.01 && g.sum > 0 && <span class="badge warning" title={`Rows add up to ${g.sum}`}>≠ {g.sum}</span>}</td></tr>}
+          {g.rows.map((r) => <tr><td class="num nt-c">{r.code}</td><td>{r.text}</td><td class="r num muted">{r.qty != null ? r.qty.toLocaleString('en-GB') : ''}</td></tr>)}
         </>)}</tbody>
-        <tfoot><tr><td colSpan={2}>Total</td><td class="r num">{total}{S.unit ? ` ${S.unit}` : ''}</td></tr></tfoot>
+        <tfoot><tr><td colSpan={2}>Total</td><td class="r num">{total.toLocaleString('en-GB')}{S.unit ? ` ${S.unit}` : ''}</td></tr></tfoot>
       </table>
     </div>
   );
