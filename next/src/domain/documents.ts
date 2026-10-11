@@ -189,19 +189,23 @@ const NUM = /^-?[\d][\d.,' ]*$/;
  */
 export function approvedBudget(doc: Doc): ApprovedBudget | null {
   const lines: import('./types').BudgetLine[] = [];
-  let admin = 0, contingency = 0, direct = 0;
+  let admin = 0, contingency = 0, direct = 0, total = 0;
+  const subs = new Map<string, number>();
   for (const T of doc.tables) for (const raw of T) {
     const r = raw.map((c) => clean(c ?? '')).filter(Boolean);
     if (!r.length) continue;
     let head = r[0], rest = r.slice(1);
     // code may be its own cell ("1.1.2" | "Project manager")
     if (/^\d+(\.\d+)*\.?$/.test(head) && rest.length && !NUM.test(rest[0])) { head = `${head} ${rest[0]}`; rest = rest.slice(1); }
+    const st = head.match(/^sub-?total\s+(\d{1,2})\b/i);
+    if (st) { const v = rest.filter((c) => NUM.test(c) || c === '-').map((c) => (c === '-' ? 0 : amount(c) ?? 0)); if (!subs.has(st[1])) subs.set(st[1], v[0] ?? 0); continue; }
     const m = head.match(/^(\d{1,2}(?:\.\d{1,2}){0,4})\.?\s+(.{2,})$/); if (!m) continue;
     const code = m[1], desc = m[2];
     const nums = rest.filter((c) => NUM.test(c) || c === '-').map((c) => (c === '-' ? 0 : amount(c) ?? 0));
     const unit = rest.find((c) => /^per\b/i.test(c));
     if (/^sub-?total|^total/i.test(desc)) {
       if (/^7$/.test(code) || /direct eligible/i.test(desc)) direct = direct || nums[0] || 0;
+      if (/^11$/.test(code) || /total eligible costs/i.test(desc)) total = total || nums[0] || 0;
       continue;
     }
     if (code === '8' || /contingency/i.test(desc)) { contingency = nums[0] ?? 0; continue; }
@@ -212,10 +216,12 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
     else if (unit && nums.length === 0) continue; // unused template row
     else if (!unit && nums.length >= 1 && code.split('.').length >= 2) lines.push({ code, description: desc, approved: nums.at(-1) });
   }
-  const leaves = lines.filter((l) => (l.approved ?? 0) > 0 && !lines.some((x) => x !== l && x.code.startsWith(l.code + '.')));
+  // Each heading's own sub-total wins: rows under a heading whose sub-total is nil are template/other-table noise.
+  const leaves = lines.filter((l) => (l.approved ?? 0) > 0 && !lines.some((x) => x !== l && x.code.startsWith(l.code + '.')) && subs.get(l.code.split('.')[0]) !== 0);
   if (leaves.length < 3) return null;
   const sum = leaves.reduce((s, l) => s + (l.approved ?? 0), 0);
   if (!direct) direct = sum;
+  if (!admin && total > direct) admin = Math.round((total - direct - contingency) * 100) / 100;
   const out = [...leaves];
   if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
   if (admin) out.push({ code: '10', description: 'Administrative costs', unit: '7%', approved: admin });
