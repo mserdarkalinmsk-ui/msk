@@ -17,6 +17,9 @@ rows = [
   [P('1.1.1.4 Project officer (100%)'), 'Per month', P('PO organises activities.'), P('1 full-time PO for 60 months. ' + long)],
   [P('1.1.1.7 Project assistant (2 persons: 1 PA 100%, 1 PA 80%)'), 'Per month', P('2 PAs in Ankara for administration.'), P('Grade B2. ' + long)],
 ]
+rows += [[P(f'5.{k} Other item {k}'), 'Per item', P('Item clarification ' + str(k) + '. ' + long), P('Output 1.1: A.1.1.1: (2 STCs*5 days= 10 days) Sub Total: 10')] for k in range(1, 9)]
 t = Table(rows, colWidths=[150, 50, 260, 300])
 t.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), .4, colors.black), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), ('FONTSIZE', (0, 0), (-1, -1), 7), ('BACKGROUND', (0, 2), (-1, 2), colors.lightgreen)]))
-SimpleDocTemplate('tests/fixtures/justification.pdf', pagesize=landscape(A4)).build([t])
+def hf(c, d):
+    c.setFont('Helvetica', 8); c.drawRightString(800, 570, 'Demo Rights Programme'); c.drawRightString(800, 560, 'Contract n° 700000000'); c.drawString(40, 20, str(d.page))
+SimpleDocTemplate('tests/fixtures/justification.pdf', pagesize=landscape(A4)).build([t], onFirstPage=hf, onLaterPages=hf)

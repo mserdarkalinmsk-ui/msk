@@ -149,7 +149,14 @@ async function page(opts) {
   for (const t of ['Budget lines', 'Reports', 'Activity plan', 'Risks']) {
     await ptab(p, t); await p.waitForTimeout(250);
     await p.screenshot({ path: `${shots}/project-${t.split(' ')[0].toLowerCase()}.png`, fullPage: true });
-    if (t === 'Activity plan') check(await p.locator('.gantt .gc.e').count() > 10, 'activity plan renders');
+    if (t === 'Activity plan') {
+      check(await p.locator('.gantt .gc.e').count() > 10, 'activity plan renders');
+      const w0 = await p.evaluate(() => document.querySelector('.gantt').scrollWidth);
+      await p.click('.seg button:has-text("Months")'); await p.waitForTimeout(150);
+      check(await p.evaluate(() => document.querySelector('.gantt').scrollWidth) > w0 && await p.evaluate(() => document.querySelector('.gantt-wrap').scrollWidth > document.querySelector('.gantt-wrap').clientWidth), 'activity plan zooms and scrolls sideways');
+      await p.locator('.gantt .gs button').first().click(); await p.waitForTimeout(150);
+      await p.screenshot({ path: `${shots}/gantt.png` });
+    }
     if (t === 'Risks') check(await p.locator('.matrix .mx').count() === 25, 'risk matrix renders');
   }
   await ptab(p, 'Reports');
@@ -237,9 +244,10 @@ async function page(opts) {
   await ptab(p, 'Results & documents'); await p.waitForTimeout(200);
   check(await p.locator('dd:has-text("700008888")').count() === 1, 'contract shown');
   await ptab(p, 'Indicators'); await p.waitForTimeout(200);
-  check(await p.locator('.lf-row:has-text("Judges trained")').count() === 1, 'indicators tab lists the logframe');
-  await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-now input').fill('50'); await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-now input').press('Tab'); await p.waitForTimeout(200);
-  check(await p.locator('.lf-row', { hasText: 'Judges trained' }).locator('.lf-prog b').textContent() === '25%', 'indicator progress from the current value');
+  const ind = p.locator('.dt-row', { hasText: 'Judges trained' });
+  check(await ind.count() === 1 && await p.locator('.dt-group').count() >= 1, 'indicators table grouped by output');
+  await ind.locator('.editable').dblclick(); await ind.locator('input.dt-edit').fill('50'); await ind.locator('input.dt-edit').press('Enter'); await p.waitForTimeout(200);
+  check(await p.locator('.dt-row', { hasText: 'Judges trained' }).locator('.lf-prog b').textContent() === '25%', 'indicator progress from the current value');
   await p.screenshot({ path: `${shots}/indicators.png`, fullPage: true });
   await ptab(p, 'Justification'); await p.waitForTimeout(200);
   check(await p.locator('h2:text-is("Budget justification")').count() === 1, 'justification tab');
