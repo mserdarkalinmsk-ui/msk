@@ -1,3 +1,4 @@
+import { saveFile } from './save';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 
@@ -32,9 +33,7 @@ type Item<T> = { kind: 'row'; r: T } | { kind: 'group'; label: string; rows: T[]
 function csvCell(v: unknown) { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
 export function downloadCSV<T>(name: string, cols: Column<T>[], rows: T[]) {
   const body = [cols.map((c) => csvCell(c.label)).join(','), ...rows.map((r) => cols.map((c) => csvCell(c.value(r))).join(','))].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿' + body], { type: 'text/csv' }));
-  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  saveFile(name, new Blob(['\ufeff' + body], { type: 'text/csv' }));
 }
 
 function loadWidths(k?: string): Record<string, number> { try { return k ? JSON.parse(localStorage.getItem(k) || '{}') : {}; } catch { return {}; } }

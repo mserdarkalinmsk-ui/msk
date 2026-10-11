@@ -11,7 +11,7 @@ export interface Geometry {
   indicators: { level?: string; result?: string; text: string; baseline?: string; target?: string; sources?: string; assumptions?: string }[];
   risks: { title: string; category?: string; likelihood?: string; impact?: string; mitigation?: string; owner?: string }[];
 }
-export interface Indicator { id: string; result: string; indicator: string; baseline: string; target: string; source: string; assumptions?: string; level?: string }
+export interface Indicator { id: string; result: string; indicator: string; baseline: string; target: string; source: string; assumptions?: string; level?: string; current?: string; asOf?: string }
 export interface BudgetNote { description: string; unit?: string; clarification: string; justification: string }
 export interface ContractFacts {
   number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;

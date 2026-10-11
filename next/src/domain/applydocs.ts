@@ -20,7 +20,8 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
     const R = q.riskRegister ?? (q.riskRegister = []);
     for (const r of F.risks) { const i = R.findIndex((x) => x.title.toLowerCase() === r.title.toLowerCase()); if (i >= 0) R[i] = { ...R[i], ...r, id: R[i].id, status: R[i].status }; else R.push(r); }
   }
-  if (c.indicators && F.indicators.length) q.indicators = F.indicators;
+  // progress entered by hand survives a re-import of the logframe
+  if (c.indicators && F.indicators.length) q.indicators = F.indicators.map((x) => { const o = q.indicators?.find((y) => y.indicator === x.indicator); return o?.current ? { ...x, current: o.current, asOf: o.asOf } : x; });
   if (c.notes !== false && F.notes && Object.keys(F.notes).length) q.budgetNotes = { ...(q.budgetNotes ?? {}), ...F.notes };
   q.documents = [...(q.documents ?? []).filter((d) => !docs.some((x) => x.name === d.name)), ...docs.map((d) => ({ ...d, importedAt: new Date().toISOString() }))];
   return q;

@@ -1,4 +1,4 @@
-import { attention, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
+import { HEADINGS, attention, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
 import { daysUntil, renewals, roster } from './staff';
 import type { Ledger, Project } from './types';
 
@@ -52,6 +52,8 @@ export function alerts(ps: Project[], today: Date): Alert[] {
         out.push({ id: `${p.id}:deadline:${d.due}`, projectId: p.id, kind: 'deadline', severity: d.status === 'overdue' ? 'critical' : 'warning', title: `${d.kind} ${d.status}`, detail: `Period to ${d.periodEnd}`, due: d.due });
     const ps_ = planStats(p, today);
     if (ps_ && ps_.late) out.push({ id: `${p.id}:plan`, projectId: p.id, kind: 'plan', severity: ps_.late > 3 ? 'serious' : 'warning', title: `${ps_.late} activit${ps_.late > 1 ? 'ies' : 'y'} past planned month`, detail: `${ps_.done}/${ps_.total} done in month ${ps_.month}` });
+    for (const h of headings(p).rows) if (h.status === 'breach')
+      out.push({ id: `${p.id}:heading:${h.code}`, projectId: p.id, kind: 'line', severity: 'serious', title: `Heading ${h.code} ${h.label} beyond flexibility`, detail: Math.abs(h.change) * 100 > h.overspend * 100 ? `budget changed ${(h.change * 100).toFixed(1)}% from the approved baseline — needs an amendment` : `spent + committed ${(h.overspend * 100).toFixed(1)}% above the approved heading` });
     const left = daysUntil(p.end, today);
     if (left >= 0 && left <= 120) out.push({ id: `${p.id}:ending`, projectId: p.id, kind: 'ending', severity: left <= 45 ? 'serious' : 'warning', title: `Project ends in ${left} days`, detail: p.successor ? `Successor: ${p.successor}` : 'No successor recorded', due: p.end });
   }
@@ -141,4 +143,28 @@ export function migrateBackup(x: unknown): { ledger: unknown; from: 'current' | 
     return { from: 'previous app', ledger: { countries: s.countries ?? [], projects: s.projects, audit: (s.log ?? []).slice(0, 300).map((e) => ({ at: e.at ?? e.t ?? '', message: e.text ?? e.msg ?? String(e) })) } };
   }
   return { ledger: x, from: 'current' };
+}
+
+/* ---------------- budget heading flexibility ---------------- */
+export interface HeadingRow { code: string; label: string; baseline: number; approved: number; exposure: number; change: number; overspend: number; status: 'ok' | 'warn' | 'breach' }
+
+/**
+ * Compares each budget heading (1 Human resources, 2 Travel …) of the latest report with the approved
+ * baseline. Contracts allow moving money between headings up to a ceiling (typically 15 %) without an
+ * amendment; beyond it, or when spent + committed exceeds the heading by more than the ceiling, it is a breach.
+ */
+export function headings(p: Project): { flex: number; rows: HeadingRow[] } {
+  const flex = (Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 15) / 100;
+  const base = p.approvedBudget?.lines ?? [];
+  const cur = lines(p);
+  const key = (c: string) => c.split('.')[0];
+  const codes = [...new Set([...base, ...cur].map((l) => key(l.code)))].filter((c) => HEADINGS[c] && c !== '10').sort((a, b) => +a - +b);
+  const sum = (L: typeof cur, c: string, f: (l: (typeof cur)[number]) => number) => L.filter((l) => key(l.code) === c).reduce((s, l) => s + f(l), 0);
+  const rows = codes.map((c) => {
+    const baseline = sum(base.length ? base : cur, c, (l) => n(l.approved)), approved = sum(cur, c, (l) => n(l.approved)), exposure = sum(cur, c, lineExposure);
+    const change = baseline ? (approved - baseline) / baseline : 0, overspend = baseline ? exposure / baseline - 1 : 0;
+    const status: HeadingRow['status'] = Math.abs(change) > flex || overspend > flex ? 'breach' : Math.abs(change) > flex * 0.7 || overspend > 0 ? 'warn' : 'ok';
+    return { code: c, label: HEADINGS[c], baseline, approved, exposure, change, overspend, status };
+  });
+  return { flex, rows };
 }

@@ -1,3 +1,4 @@
+import { saveFile } from './save';
 /**
  * Minimal .xlsx writer (no dependencies): sheets of rows, bold frozen header,
  * number format for amounts, auto column widths. Files are stored uncompressed.
@@ -57,8 +58,5 @@ export function workbook(sheets: SheetSpec[]): Uint8Array {
 }
 
 export function download(name: string, sheets: SheetSpec[]) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([workbook(sheets) as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  return saveFile(name, new Blob([workbook(sheets) as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
 }

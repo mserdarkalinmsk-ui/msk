@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { go, useStore } from '../data/store';
 import { money } from '../domain/calc';
-import { ALERT_KINDS, alerts, changes, status, outcome, scenario, type Alert } from '../domain/insights';
+import { ALERT_KINDS, alerts, changes, headings, status, outcome, scenario, type Alert } from '../domain/insights';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { parseAmount } from '../ui/csv';
@@ -185,6 +185,31 @@ export function Scenario({ p }: { p: Project }) {
                 onChange={(e) => { const v = (e.target as HTMLInputElement).value.trim(); const x = v.startsWith('-') ? -(parseAmount(v.slice(1)) ?? 0) : parseAmount(v) ?? 0; const n = { ...d }; if (x) n[r.code] = x; else delete n[r.code]; setD(n); }} /></td>
               <td class="r num"><b>{full(r.revised)}</b></td><td class="r num">{r.delta ? `${r.share > 0 ? '+' : ''}${(r.share * 100).toFixed(1)}%` : ''}</td>
               <td>{r.flag && <span class="badge serious">{r.flag}</span>}</td>
+            </tr>))}</tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- project: budget headings vs approved baseline ---------------- */
+export function HeadingsCard({ p }: { p: Project }) {
+  const H = headings(p);
+  if (!H.rows.length) return null;
+  const T = { good: 'good', ok: 'good', warn: 'warning', breach: 'serious' } as const;
+  return (
+    <section class="card span-12">
+      <div class="card-h"><div><h2>Budget headings vs approved budget</h2><p>Transfers between headings up to {Math.round(H.flex * 100)}% need no amendment{p.approvedBudget ? ` · baseline: ${p.approvedBudget.source}` : ' · no approved budget on file, the latest report is used'}</p></div></div>
+      <div class="card-b table-scroll">
+        <table class="mini hd">
+          <thead><tr><th>Heading</th><th class="r">Approved baseline</th><th class="r">Current budget</th><th class="r">Change</th><th class="r">Spent + committed</th><th>Use of heading</th><th /></tr></thead>
+          <tbody>{H.rows.map((r) => (
+            <tr>
+              <td><b>{r.code}</b> {r.label}</td><td class="r num">{full(r.baseline)}</td><td class="r num">{full(r.approved)}</td>
+              <td class="r num" style={{ color: Math.abs(r.change) > H.flex ? 'var(--serious)' : undefined }}>{Math.abs(r.change) >= 0.0005 ? `${r.change > 0 ? '+' : ''}${(r.change * 100).toFixed(1)}%` : '—'}</td>
+              <td class="r num">{full(r.exposure)}</td>
+              <td style={{ minWidth: '160px' }}><div class="minibar"><span style={{ width: `${Math.min(100, r.baseline ? r.exposure / r.baseline * 100 : 0)}%`, background: r.overspend > 0 ? 'var(--serious)' : 'var(--c1)' }} /><i style={{ left: '100%' }} /></div></td>
+              <td><span class={`badge ${T[r.status]}`}>{r.status === 'ok' ? 'within' : r.status === 'warn' ? 'watch' : 'amendment'}</span></td>
             </tr>))}</tbody>
         </table>
       </div>
