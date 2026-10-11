@@ -157,8 +157,12 @@ async function page(opts) {
   check(await p.locator('.dt-cell:has-text("Local")').count() === 0, 'base filter shows only HQ staff');
 
   // Map + reports
-  await p.goto(url + '#/map'); await p.waitForSelector('.ccard'); await p.waitForTimeout(500);
-  check(await p.locator('.ccard').count() === 3, 'map lists every country');
+  await p.goto(url + '#/map'); await p.waitForSelector('.mapsvg'); await p.waitForTimeout(500);
+  check(await p.locator('.map-proj').count() === 3, 'map lists every country');
+  check(await p.locator('.mapsvg path.ctry.on').count() === 3, 'map colours the three portfolio countries');
+  await p.locator('.map-proj').first().click(); await p.waitForTimeout(400);
+  check(await p.locator('.map-side h2').textContent() === 'Türkiye', 'country drill-down opens');
+  await p.click('.seg button:has-text("Pace")'); await p.waitForTimeout(300);
   await p.screenshot({ path: `${shots}/map.png`, fullPage: true });
   await p.goto(url + '#/reports'); await p.waitForSelector('.brief'); await p.waitForTimeout(500);
   check((await p.locator('.brief p').first().textContent()).includes('has spent'), 'executive brief writes the financial summary');

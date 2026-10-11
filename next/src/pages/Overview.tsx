@@ -6,6 +6,9 @@ import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { full, month, pct, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
+import { MapView, type MapMode } from '../ui/MapView';
+import { mapData, ModeSwitch } from './MapPage';
+import { useState } from 'preact/hooks';
 
 const gapTone = (g: number) => (g < -0.3 ? 'serious' : g < -0.15 ? 'warning' : g > 0.1 ? 'serious' : 'good');
 const gapWord = (g: number) => (g < -0.15 ? 'Behind' : g > 0.1 ? 'Ahead' : 'On track');
@@ -110,6 +113,8 @@ export function Overview() {
           </ul>
         </section>
 
+        <OverviewMap />
+
         <section class="card span-7">
           <div class="card-h"><div><h2>Pacing by project</h2><p>Share of budget spent; the tick marks time elapsed. Click a bar for details.</p></div></div>
           <div class="card-b"><Chart height={Math.max(180, P.length * 40 + 40)} label="Spend share by project with elapsed time" onClick={(e) => e.data?.id && open(e.data.id)} option={(t) => pacingOption(t, P)} /></div>
@@ -137,6 +142,23 @@ export function Overview() {
         </section>
       </div>
     </>
+  );
+}
+
+function OverviewMap() {
+  const L = useStore((s) => s.ledger);
+  const f = useStore((s) => s.filters);
+  const [mode, setMode] = useState<MapMode>('budget');
+  const P = L.projects.filter((p) => !f.sector || p.sector === f.sector);
+  return (
+    <section class="card span-12">
+      <div class="card-h" style={{ alignItems: 'center' }}>
+        <div><h2>Portfolio map</h2><p>Numbers are project counts · select a country to filter the page · Ctrl + scroll to zoom</p></div>
+        <div class="tools"><ModeSwitch mode={mode} setMode={setMode} only={['budget', 'used', 'pace', 'attention']} /></div>
+      </div>
+      <div class="card-b"><MapView compact countries={L.countries} data={mapData(L.countries, P)} mode={mode} height={380} selected={f.country || undefined}
+        onSelect={(id) => set((s) => ({ filters: { ...s.filters, country: id ?? '' } }))} /></div>
+    </section>
   );
 }
 
