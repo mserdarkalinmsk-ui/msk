@@ -230,13 +230,14 @@ export function Compare() {
           <option value="perf">Sort: Performance</option><option value="scp">Sort: S&C vs planned</option><option value="amount">Sort: Project amount</option><option value="title">Sort: Title</option><option value="end">Sort: End date</option><option value="bh">Sort: BH</option></select>
         <label class="btn" title="Drop this month's report workbooks for all projects">⤒ Monthly update<input type="file" multiple accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = [...((e.target as HTMLInputElement).files ?? [])]; (e.target as HTMLInputElement).value = ''; if (f.length) set({ drawer: { kind: 'portfolio-import', files: f } }); }} /></label>
         <button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
-      <div class="gauges no-print">
+      <div class="gauges">
         <Gauge value={tp} label="Spent vs planned" sub={`${n0(T.s)} of ${n0(T.pl)} planned`} />
         <Gauge value={tsc} label="S&C vs planned" sub="staff commitments excluded" />
         <Gauge value={T.pl ? (T.sc - T.rk) / T.pl : 0} label="Adjusted S&C vs planned" sub={`after ${riskPct}% commitment risk`} />
         <Gauge value={T.s ? T.hs / T.s : 0} max={1} label="Staff ratio (spent)" bands={[[0.35, '#30a46c'], [0.5, '#f5a524'], [1, '#e5484d']]} />
         <Gauge value={rows.length ? rows.reduce((a, r) => a + r.ws.score, 0) / rows.length / 100 : 0} max={1} fmt={(v) => String(Math.round(v * 100))} label="Average attention score" sub={`${rows.filter((r) => r.ws.level === 'high').length} high · ${rows.filter((r) => r.ws.level === 'medium').length} medium`} bands={[[0.25, '#30a46c'], [0.5, '#f5a524'], [1, '#e5484d']]} />
       </div>
+      <Simulator rows={rows.map((r) => ({ id: r.p.id, label: `${r.p.bh ? `BH ${r.p.bh}` : r.p.code} · ${r.p.name}`, p: r.p, spent: r.m.spent, committed: r.committed, budget: r.m.budget, rate: r.cu.rate }))} riskPct={riskPct} />
       <header class="em-h">
         <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
           <tr><td>100%</td><td>-</td><td class="em-blue" /></tr><tr><td>90%</td><td>100%</td><td class="em-green" /></tr>
@@ -321,4 +322,52 @@ export function Compare() {
 function Spark({ v }: { v: number[] }) {
   const max = Math.max(1, ...v), w = 120, h = 26, pts = v.map((x, i) => `${(i / (v.length - 1)) * w},${h - (x / max) * h}`).join(' ');
   return <svg class="ew-sp" viewBox={`0 0 ${w} ${h + 2}`} width={w} height={h + 2}><line x1="0" x2={w} y1={h - h / max} y2={h - h / max} stroke="#bbb" stroke-dasharray="3 3" /><polyline points={pts} fill="none" stroke="#1f4e9c" stroke-width="1.8" /><title>Performance at each report: {v.map((x) => `${Math.round(x * 100)}%`).join(' → ')}</title></svg>;
+}
+
+type SimRow = { id: string; label: string; p: Project; spent: number; committed: number; budget: number; rate: number };
+const MS = 30.4375 * 86_400_000;
+/** What-if: monthly spending for the next N months → performance then, and the end-of-project outcome at that pace. */
+function Simulator({ rows, riskPct }: { rows: SimRow[]; riskPct: number }) {
+  const [id, setId] = useState('all');
+  const sel = id === 'all' ? rows : rows.filter((r) => r.id === id);
+  const cur = sel.reduce((a, r) => a + r.rate, 0);
+  const [mult, setMult] = useState(1), [months, setMonths] = useState(6);
+  const rate = cur * mult;
+  const now = TODAY.getTime(), at = now + months * MS;
+  let spentThen = 0, plannedThen = 0, endSpend = 0, budget = 0, needed = 0;
+  // The chosen amount is shared in proportion to what each project still needs per month (remaining budget ÷ months left).
+  const need = (r: SimRow) => { const ml = Math.max(0, (Date.parse(r.p.end) - now) / MS); return ml > 0 ? Math.max(0, r.budget - r.spent) / ml : 0; };
+  const needSum = sel.reduce((a, r) => a + need(r), 0) || 1;
+  for (const r of sel) {
+    const s0 = Date.parse(r.p.start), e0 = Date.parse(r.p.end), share = need(r) / needSum;
+    const myRate = rate * share, mLeft = Math.max(0, (e0 - now) / MS), h = Math.min(months, mLeft);
+    const sp = Math.min(r.budget, r.spent + myRate * h);
+    spentThen += sp; plannedThen += r.budget * Math.max(0, Math.min(1, (Math.min(at, e0) - s0) / (e0 - s0)));
+    endSpend += Math.min(r.budget * 1.2, r.spent + myRate * mLeft); budget += r.budget;
+    needed += mLeft > 0 ? Math.max(0, r.budget - r.spent) / mLeft : 0;
+  }
+  const committedSafe = sel.reduce((a, r) => a + r.committed, 0) * (1 - riskPct / 100);
+  const perf = plannedThen ? spentThen / plannedThen : 0, use = budget ? endSpend / budget : 0;
+  return (
+    <section class="sim">
+      <div class="sim-h"><h3>Scenario simulator</h3>
+        <select class="select" value={id} onChange={(e) => setId((e.target as HTMLSelectElement).value)} aria-label="Project"><option value="all">All projects in this view</option>{rows.map((r) => <option value={r.id}>{r.label.slice(0, 70)}</option>)}</select></div>
+      <div class="sim-c">
+        <label>Monthly spending <b class="num">{n0(rate)}</b> <small>({mult.toFixed(1)}× current {n0(cur)})</small>
+          <input type="range" min="0" max="4" step="0.1" value={mult} onInput={(e) => setMult(Number((e.target as HTMLInputElement).value))} /></label>
+        <label>For the next <b>{months} months</b>
+          <input type="range" min="1" max="24" step="1" value={months} onInput={(e) => setMonths(Number((e.target as HTMLInputElement).value))} /></label>
+        <div class="sim-q">
+          <button class="btn ghost" onClick={() => setMult(1)}>Current pace</button>
+          <button class="btn ghost" onClick={() => setMult(cur ? Math.min(4, needed / cur) : 1)}>Pace to use the full budget</button>
+        </div>
+      </div>
+      <div class="gauges">
+        <Gauge value={perf} label={`Spent vs planned in ${months} months`} sub={`${n0(spentThen)} of ${n0(plannedThen)} planned`} />
+        <Gauge value={plannedThen ? Math.min(2, (spentThen + committedSafe) / plannedThen) : 0} label="With commitments (after risk)" sub={`${riskPct}% of open commitments at risk`} />
+        <Gauge value={use} max={1.2} label="Budget used at end at this pace" bands={[[0.85, '#e5484d'], [0.95, '#f5a524'], [1.02, '#30a46c'], [1.2, '#e5484d']]} sub={use < 1 ? `${n0(budget - endSpend)} would stay unused` : `${n0(endSpend - budget)} over budget`} />
+      </div>
+      <p class="em-note">Needed to use the full budget by the end dates: <b>{n0(needed)}</b> per month ({cur ? `${(needed / cur).toFixed(1)}×` : '—'} the current pace). The current pace is each project's recent monthly spending; the scenario shares the chosen amount between the selected projects in proportion to what each still needs per month.</p>
+    </section>
+  );
 }
