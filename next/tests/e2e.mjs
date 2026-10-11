@@ -289,7 +289,7 @@ async function page(opts) {
   writeFileSync(`${shots}/portfolio.xlsx`, readFileSync(path));
   // project: words, forecast, scenario, history
   await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
-  check((await p.locator('.stw-head').textContent()).includes('spent at'), 'status in words written');
+  check((await p.locator('.ck-story').textContent()).includes('spent'), 'project story written');
   check(await p.locator('.fc-big').count() === 1, 'end-of-project forecast shown');
   check(await p.locator('table.hd tbody tr').count() >= 3, 'budget headings vs approved budget');
   check(await p.locator('.rd-list li').count() === 10, 'project file checklist');
