@@ -25,6 +25,8 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
   if (c.indicators && F.indicators.length) q.indicators = F.indicators.map((x) => { const o = q.indicators?.find((y) => y.indicator === x.indicator); return o?.current ? { ...x, current: o.current, asOf: o.asOf } : x; });
   if (c.notes !== false && F.notes && Object.keys(F.notes).length) q.budgetNotes = { ...(q.budgetNotes ?? {}), ...F.notes };
   q.documents = [...(q.documents ?? []).filter((d) => !docs.some((x) => x.name === d.name)), ...docs.map((d) => ({ ...d, importedAt: new Date().toISOString() }))];
+  // Once documents are on file the project is no longer in set-up: keep the known dates (contract dates win when found).
+  if (q.datesTbc && q.start && q.end) delete q.datesTbc;
   return q;
 }
 
