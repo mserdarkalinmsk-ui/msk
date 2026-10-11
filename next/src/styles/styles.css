@@ -406,3 +406,13 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .sim-q{display:flex;gap:6px}
 @media (max-width:900px){.sim-c{grid-template-columns:1fr}}
 @media print{.sim-c,.sim-q,.sim-h .select{display:none}.sim{break-inside:avoid;background:#fff}.gauges{break-inside:avoid}.gauge{box-shadow:none}}
+.pp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pp-k{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}.pp-k span{display:block;font-size:11.5px;color:var(--ink-2)}.pp-k b{font-size:20px;font-family:var(--mono)}
+.pp-k.c1{background:color-mix(in srgb,var(--c1) 14%,var(--surface));border-color:color-mix(in srgb,var(--c1) 40%,var(--line))}
+.pp-k.t-good{background:color-mix(in srgb,var(--good) 14%,var(--surface))}.pp-k.t-warning{background:color-mix(in srgb,var(--warn) 16%,var(--surface))}.pp-k.t-critical{background:color-mix(in srgb,var(--critical) 14%,var(--surface))}.pp-k.t-info{background:color-mix(in srgb,var(--c2) 14%,var(--surface))}
+.pp-note{margin:10px 0 0;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--c1) 10%,var(--surface));font-size:13px}
+.pp-h{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);margin:18px 0 8px}
+.pp-stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px}.pp-stack span{min-width:2px}
+.pp-leg{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}.pp-leg li{display:grid;grid-template-columns:10px 1fr auto 48px;gap:8px;align-items:center;font-size:13px}.pp-leg i{width:10px;height:10px;border-radius:3px}.pp-leg small{text-align:right;color:var(--ink-3)}
+.pp-rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}.pp-rows li{border:1px solid var(--line);border-left:4px solid;border-radius:8px;padding:8px 10px;cursor:pointer}.pp-rows li:hover{background:var(--surface-2)}
+.pp-top{display:flex;gap:8px;align-items:baseline;font-size:13px;min-width:0}.pp-top .muted{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp-bar{position:relative;height:8px;border-radius:4px;background:var(--surface-2);margin:6px 0 4px}.pp-bar span{position:absolute;inset:0 auto 0 0;border-radius:4px}.pp-bar i{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink-2)}

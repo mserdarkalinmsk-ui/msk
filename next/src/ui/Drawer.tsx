@@ -2,6 +2,7 @@ import { PortfolioImport } from './PortfolioImport';
 import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { backupNow } from './Backup';
 import { AlertPanel } from './AlertPanel';
+import { PeriodPanel } from './PeriodPanel';
 import { useEffect, useState } from 'preact/hooks';
 import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, restorePoints, set, upsertCountry, upsertProject, useStore } from '../data/store';
 import type { Country } from '../domain/types';
@@ -41,6 +42,7 @@ export function Drawer() {
         {d.kind === 'import' && <ImportPanel close={close} />}
         {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
         {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
+        {d.kind === 'period' && <PeriodPanel t={d.t} from={d.from} ids={d.ids} close={close} />}
       </div>
     </>
   );
