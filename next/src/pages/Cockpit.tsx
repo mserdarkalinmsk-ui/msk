@@ -63,7 +63,7 @@ export function IdentityCard({ p }: { p: Project }) {
   const st = roster(p, TODAY), pl = planStats(p, TODAY);
   const facts: [string | number, string, string][] = [
     [I.length, 'indicators', 'Indicators'], [pl ? `${pl.done}/${pl.total}` : 0, 'activities done', 'Activity plan'],
-    [(p.riskRegister ?? []).length, 'risks', 'Risks'], [st.filter((a) => a.status === 'Active').length, 'active staff', 'People'],
+    [(p.riskRegister ?? []).length, 'risks', 'Risks'], [st.filter((a) => a.status === 'Active').length, 'active staff', 'Staff'],
     [reportsByDate(p).filter((r) => !/approved budget/i.test(r.type)).length, 'reports', 'Reports'], [(p.documents ?? []).length, 'documents', 'Results & documents'],
   ];
   return (

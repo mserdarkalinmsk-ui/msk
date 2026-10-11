@@ -54,7 +54,7 @@ export function StaffBoard({ people: A, showProject }: { people: Person[]; showP
       </section>
       <div class="grid g-12">
         <section class="card span-8">
-          <div class="card-h"><div><h2>Coverage by recorded contract dates</h2><p>People under contract at each month end · gaps show where renewals are needed</p></div></div>
+          <div class="card-h"><div><h2>Coverage by recorded contract dates</h2><p>Staff under contract at each month end · gaps show where renewals are needed</p></div></div>
           <div class="card-b">
             <div class="legend" style={{ marginBottom: '4px' }}><span><i style={{ background: 'var(--c1)' }} />Local</span><span><i style={{ background: 'var(--c7)' }} />SxB / HQ</span>{C.some((c) => c.Unassigned) && <span><i style={{ background: 'var(--plan)' }} />Unassigned</span>}</div>
             <Chart height={280} label="Staff coverage by month" option={(t) => coverageOption(t, C)} />
@@ -76,7 +76,7 @@ export function StaffBoard({ people: A, showProject }: { people: Person[]; showP
           </ul>
         </section>
         <section class="card span-12" style={{ overflow: 'hidden' }}>
-          <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>People & positions</h2><p>Merged across all reports · click a person to see source rows and confirm contract dates</p></div></div>
+          <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Staff & positions</h2><p>Merged across all reports · click a person to see source rows and confirm contract dates</p></div></div>
           <PeopleTable rows={A} showProject={showProject} />
         </section>
       </div>
