@@ -154,7 +154,8 @@ export interface HeadingRow { code: string; label: string; baseline: number; app
  * baseline. Contracts allow moving money between headings up to a ceiling (typically 15 %) without an
  * amendment; beyond it, or when spent + committed exceeds the heading by more than the ceiling, it is a breach.
  */
-export function headings(p: Project): { flex: number; rows: HeadingRow[] } {
+type Sums = { baseline: number; approved: number; exposure: number };
+export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct: Sums; admin: Sums; contingency: number; total: Sums } {
   const flex = (Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 15) / 100;
   const base = p.approvedBudget?.lines ?? [];
   const cur = lines(p);
@@ -162,12 +163,18 @@ export function headings(p: Project): { flex: number; rows: HeadingRow[] } {
   const codes = [...new Set([...base, ...cur].map((l) => key(l.code)))].filter((c) => HEADINGS[c] && c !== '10').sort((a, b) => +a - +b);
   const sum = (L: typeof cur, c: string, f: (l: (typeof cur)[number]) => number) => L.filter((l) => key(l.code) === c).reduce((s, l) => s + f(l), 0);
   const rows = codes.map((c) => {
-    const baseline = sum(base.length ? base : cur, c, (l) => n(l.approved)), approved = sum(cur, c, (l) => n(l.approved)), exposure = sum(cur, c, lineExposure);
+    const inCur = cur.some((l) => key(l.code) === c);
+    const baseline = sum(base.length ? base : cur, c, (l) => n(l.approved)), approved = inCur ? sum(cur, c, (l) => n(l.approved)) : baseline, exposure = sum(cur, c, lineExposure);
     const change = baseline ? (approved - baseline) / baseline : 0, overspend = baseline ? exposure / baseline - 1 : 0;
     const status: HeadingRow['status'] = Math.abs(change) > flex || overspend > flex ? 'breach' : Math.abs(change) > flex * 0.7 || overspend > 0 ? 'warn' : 'ok';
     return { code: c, label: HEADINGS[c], baseline, approved, exposure, change, overspend, status };
   });
-  return { flex, rows };
+  const ab = p.approvedBudget, admCur = sum(cur, '10', (l) => n(l.approved)), admExp = sum(cur, '10', lineExposure);
+  const direct = { baseline: rows.reduce((s, r) => s + r.baseline, 0), approved: rows.reduce((s, r) => s + r.approved, 0), exposure: rows.reduce((s, r) => s + r.exposure, 0) };
+  const admin = { baseline: ab?.admin ?? (base.length ? sum(base, '10', (l) => n(l.approved)) : admCur), approved: admCur || ab?.admin || 0, exposure: admExp };
+  const contingency = ab?.contingency ?? 0;
+  const total = { baseline: ab?.total || direct.baseline + admin.baseline + contingency, approved: direct.approved + admin.approved + contingency, exposure: direct.exposure + admin.exposure };
+  return { flex, rows, direct, admin, contingency, total };
 }
 
 /* ---------------- set-up completeness ---------------- */

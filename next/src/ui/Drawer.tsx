@@ -1,3 +1,4 @@
+import { AlertPanel } from './AlertPanel';
 import { useEffect, useState } from 'preact/hooks';
 import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, set, upsertCountry, upsertProject, useStore } from '../data/store';
 import type { Country } from '../domain/types';
@@ -36,6 +37,7 @@ export function Drawer() {
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}
+        {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
       </div>
     </>
   );
