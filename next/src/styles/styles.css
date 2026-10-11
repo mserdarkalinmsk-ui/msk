@@ -381,3 +381,5 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .em-t td.r,.em-t td.em-sr,.em-t td.em-rate{white-space:nowrap}
 .em-t td.em-title{min-width:180px;max-width:300px}
 .em-t td.em-g:not(.em-title){white-space:nowrap}
+.em-rh{display:flex;align-items:center;gap:6px}.em-rsel{height:26px;padding:0 6px;font-size:12px;width:auto}
+.print-only{display:none}@media print{.print-only{display:inline}}

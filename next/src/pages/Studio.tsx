@@ -169,6 +169,7 @@ export function Compare() {
   const s = useStore((x) => x);
   const [group, setGroup] = useState(pref('pl-em-group', 'overall'));
   const [sort, setSort] = useState(pref('pl-em-sort', 'perf'));
+  const [riskPct, setRiskPct] = useState(Number(pref('pl-em-risk', '20')));
   const keep = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* */ } };
   const P = filtered(s).filter((p) => !p.datesTbc);
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
@@ -192,7 +193,7 @@ export function Compare() {
     const under0 = toEnd && wb?.totals.eligible?.planned != null ? wb.totals.eligible.planned : null;
     // Commitments exclude staff: staff POs (remuneration articles) are salaries already planned, not open purchases.
     const staffCommitted = staff.length ? sum(staff, (r) => r.po + r.da) : L.filter((l) => /^1\.[12]\.1(\.|$)/.test(l.code)).reduce((a, l) => a + Math.max(0, lineExposure(l) - (l.actual ?? 0)), 0);
-    const committed = Math.max(0, m.exposure - m.spent - staffCommitted), sc = m.spent + committed, risk = committed * 0.2;
+    const committed = Math.max(0, m.exposure - m.spent - staffCommitted), sc = m.spent + committed, risk = committed * riskPct / 100;
     const perf = planned ? m.spent / planned : 0, scp = planned ? sc / planned : 0;
     const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
     const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : 0;
@@ -254,8 +255,8 @@ export function Compare() {
           <td class="em-sr">{dot(T.s ? T.hs / T.s : 0)}{p0(T.s ? T.hs / T.s : 0)}</td><td class="em-sr">{dot(T.sc ? T.hsc / T.sc : 0)}{p0(T.sc ? T.hsc / T.sc : 0)}</td><td>{p0(T.b ? T.sc / T.b : 0)}</td></tr></tfoot>
       </table></div>
       <section class="em-risk">
-        <h3>Commitment risk — 20% of open commitments (staff excluded)</h3>
-        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Committed (excl. staff)</th><th>Staff commitments (excluded)</th><th>Risk 20%</th><th>Risk as % of left budget</th></tr></thead>
+        <h3 class="em-rh">Commitment risk — <span class="no-print"><select class="select em-rsel" value={String(riskPct)} aria-label="Risk share" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setRiskPct(Number(v)); keep('pl-em-risk', v); }}>{[0, 5, 10, 15, 20, 25, 30].map((v) => <option value={String(v)}>{v}%</option>)}</select></span><span class="print-only">{riskPct}%</span> of open commitments (staff excluded){riskPct !== 20 && <small class="em-g"> · standard 20%</small>}</h3>
+        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Committed (excl. staff)</th><th>Staff commitments (excluded)</th><th>Risk {riskPct}%</th><th>Risk as % of left budget</th></tr></thead>
           <tbody>{rows.filter((r) => r.committed > 0 || r.staffCommitted > 0).map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td><td class="r">{n0(r.committed)}</td><td class="r em-g">{n0(r.staffCommitted)}</td><td class="r"><b>{n0(r.risk)}</b></td><td>{p0(r.m.budget - r.sc > 0 ? r.risk / (r.m.budget - r.sc) : 0)}</td></tr>)}</tbody>
           <tfoot><tr><td colSpan={2}>Total</td><td class="r">{n0(T.cm)}</td><td /><td class="r">{n0(T.rk)}</td><td /></tr></tfoot></table>
       </section>
@@ -269,7 +270,7 @@ export function Compare() {
           <li><b>Left budget</b> = project amount − S&C. <b>S&C as % of project amount</b> = S&C ÷ project amount.</li>
           <li><b>Underspent/overspent forecast</b> = project amount − S&C − planned expenditure to the end date (only when the report's forecast covers the period to the end date).</li>
           <li><b>Staff ratio (spent)</b> = staff remuneration spent ÷ total spent; <b>(S&C)</b> = staff remuneration spent and committed ÷ total spent and committed (Situation budgétaire).</li>
-          <li><b>Commitment risk</b> = 20% of committed (excluding staff) — the share of open commitments assumed at risk of not being spent as planned.</li>
+          <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments assumed at risk of not being spent as planned.</li>
           <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of unspent balance” when an underspend is forecast.</li>
         </ol>
       </section>
