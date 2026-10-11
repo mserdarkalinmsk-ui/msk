@@ -116,11 +116,11 @@ async function page(opts) {
   // Countries: add, block removal while used, remove when empty
   p.on('dialog', (d) => d.accept());
   await p.click('text=+ Country');
-  await p.fill('#c-name', 'Moldova'); await p.fill('#c-iso', 'mda'); await p.click('.drawer .btn.primary:has-text("Add country")'); await p.waitForTimeout(250);
+  await p.fill('#c-name', 'Moldova'); await p.fill('#c-iso', 'mda'); check(await p.inputValue('#c-region') === 'Eastern Partnership', 'region filled from the country list'); await p.click('.drawer .btn.primary:has-text("Add country")'); await p.waitForTimeout(250);
   check(await p.locator('.chip:has-text("Moldova")').count() === 1, 'country added and shown as filter');
   await p.click('[aria-label="Remove Türkiye"]');
   check(await p.locator('.errlist:has-text("still use this country")').count() === 1, 'country with projects cannot be removed');
-  await p.click('[aria-label="Remove Moldova"]'); await p.waitForTimeout(250);
+  await p.click('[aria-label="Remove Republic of Moldova"]'); await p.waitForTimeout(250);
   check(await p.locator('.chip:has-text("Moldova")').count() === 0, 'empty country removed');
   await p.keyboard.press('Escape');
 
