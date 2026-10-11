@@ -256,9 +256,10 @@ export function Compare() {
       </table></div>
       <section class="em-risk">
         <h3 class="em-rh">Commitment risk — <span class="no-print"><select class="select em-rsel" value={String(riskPct)} aria-label="Risk share" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setRiskPct(Number(v)); keep('pl-em-risk', v); }}>{[0, 5, 10, 15, 20, 25, 30].map((v) => <option value={String(v)}>{v}%</option>)}</select></span><span class="print-only">{riskPct}%</span> of open commitments (staff excluded){riskPct !== 20 && <small class="em-g"> · standard 20%</small>}</h3>
-        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Committed (excl. staff)</th><th>Staff commitments (excluded)</th><th>Risk {riskPct}%</th><th>Risk as % of left budget</th></tr></thead>
-          <tbody>{rows.filter((r) => r.committed > 0 || r.staffCommitted > 0).map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td><td class="r">{n0(r.committed)}</td><td class="r em-g">{n0(r.staffCommitted)}</td><td class="r"><b>{n0(r.risk)}</b></td><td>{p0(r.m.budget - r.sc > 0 ? r.risk / (r.m.budget - r.sc) : 0)}</td></tr>)}</tbody>
-          <tfoot><tr><td colSpan={2}>Total</td><td class="r">{n0(T.cm)}</td><td /><td class="r">{n0(T.rk)}</td><td /></tr></tfoot></table>
+        <table class="em-t em-rt"><thead><tr><th class="em-title">Title</th><th>BH</th><th>Committed (excl. staff)</th><th>Staff commitments (excluded)</th><th>At risk of not being spent ({riskPct}%)</th><th>Expected to be spent</th><th>S&C vs planned</th><th>Adjusted S&C vs planned</th></tr></thead>
+          <tbody>{rows.filter((r) => r.committed > 0 || r.staffCommitted > 0).map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td><td class="r">{n0(r.committed)}</td><td class="r em-g">{n0(r.staffCommitted)}</td><td class="r"><b>{n0(r.risk)}</b></td><td class="r">{n0(r.committed - r.risk)}</td><td class={`em-rate ${rateTone(r.scp)}`}>{p0(r.scp)}</td><td class={`em-rate ${rateTone(r.planned ? (r.sc - r.risk) / r.planned : 0)}`}>{p0(r.planned ? (r.sc - r.risk) / r.planned : 0)}</td></tr>)}</tbody>
+          <tfoot><tr><td colSpan={2}>Total</td><td class="r">{n0(T.cm)}</td><td /><td class="r">{n0(T.rk)}</td><td class="r">{n0(T.cm - T.rk)}</td><td>{p0(tsc)}</td><td>{p0(T.pl ? (T.sc - T.rk) / T.pl : 0)}</td></tr></tfoot></table>
+        <p class="em-note">Open commitments (purchase orders, staff excluded) are not yet spent. The risk share assumes that part of them may not turn into expenditure (cancelled, closed below value or delayed). <b>Adjusted S&C vs planned</b> = (spent + committed − at risk) ÷ planned — the spending rate to rely on if that share is lost.</p>
       </section>
       <section class="em-method">
         <h3>How the figures are calculated</h3>
@@ -270,7 +271,7 @@ export function Compare() {
           <li><b>Left budget</b> = project amount − S&C. <b>S&C as % of project amount</b> = S&C ÷ project amount.</li>
           <li><b>Underspent/overspent forecast</b> = project amount − S&C − planned expenditure to the end date (only when the report's forecast covers the period to the end date).</li>
           <li><b>Staff ratio (spent)</b> = staff remuneration spent ÷ total spent; <b>(S&C)</b> = staff remuneration spent and committed ÷ total spent and committed (Situation budgétaire).</li>
-          <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments assumed at risk of not being spent as planned.</li>
+          <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments that may not be spent; <b>adjusted S&C vs planned</b> = (S&C − at risk) ÷ planned.</li>
           <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of unspent balance” when an underspend is forecast.</li>
         </ol>
       </section>
