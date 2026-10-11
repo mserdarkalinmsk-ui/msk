@@ -14,7 +14,7 @@ import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
-import { Cockpit } from './Cockpit';
+import { Cockpit, IdentityCard } from './Cockpit';
 import { ForecastCard, HeadingsCard, ReadinessCard, History, Scenario, StatusWords } from './Insights';
 import { alerts } from '../domain/insights';
 import { projectSheets } from '../domain/exports';
@@ -58,7 +58,7 @@ export function ProjectPage({ id }: { id: string }) {
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>
       </div>
-      <section class="hero" aria-label="Project figures">
+      <section class="hero ph-tiles" aria-label="Project figures">
         <div class="kpi lead">
           <span class="label">Spent to date</span><span class="value">{short(m.spent)}</span>
           <span class="ctx"><b>{pct(m.budget ? m.spent / m.budget : 0)}</b> of {full(m.budget)}</span>
@@ -97,6 +97,7 @@ function Summary({ p }: { p: Project }) {
   return (
     <div class="grid g-12">
       <Cockpit p={p} />
+      <Attention flags={flags} />
       {p.datesTbc && <StatusWords p={p} />}
       <ForecastCard p={p} />
       <section class="card span-8">
@@ -114,13 +115,7 @@ function Summary({ p }: { p: Project }) {
           ],
         })} /></div>
       </section>
-      <section class="card span-4">
-        <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items` : 'Nothing flagged'}</p></div></div>
-        <ul class="att" style={{ marginTop: '12px' }}>
-          {flags.map((f) => <li style={{ cursor: 'default' }}><span class={`badge ${f.severity}`}>{f.severity}</span><div><div class="t">{f.title}</div><div class="d">{f.detail}</div></div><span /></li>)}
-          {!flags.length && <li style={{ cursor: 'default' }}><span class="badge good">ok</span><div class="d">Within all thresholds.</div><span /></li>}
-        </ul>
-      </section>
+      <IdentityCard p={p} />
       <HeadingsCard p={p} />
       <ReadinessCard p={p} />
     </div>
@@ -398,6 +393,26 @@ function ReportTimeline({ p }: { p: Project }) {
           <thead><tr><th class="stick">Heading</th>{R.map((r) => <th class="r num">{date(r.date)}</th>)}</tr></thead>
           <tbody>{H.map((h) => <tr><td class="stick"><b>{h}</b></td>{R.map((r) => { const v = byHead(r, h), u = v.approved ? v.spent / v.approved : 0; return <td class="r num" style={{ background: `color-mix(in srgb, var(--c1) ${Math.round(Math.min(1, u) * 45)}%, transparent)` }} title={`${full(v.spent)} of ${full(v.approved)}`}>{pct(u)}</td>; })}</tr>)}</tbody>
         </table><p class="muted" style={{ fontSize: '12px' }}>Share of each heading's budget spent at each report date.</p></div>}
+    </section>
+  );
+}
+
+/** Needs attention: full width, worst first, repeated kinds (e.g. contract ends) folded into one row. */
+function Attention({ flags }: { flags: ReturnType<typeof alerts> }) {
+  const order = { critical: 0, serious: 1, warning: 2, info: 3 } as Record<string, number>;
+  const G = new Map<string, { sev: string; title: string; detail: string; n: number; names: string[] }>();
+  for (const f of [...flags].sort((a, b) => order[a.severity] - order[b.severity])) {
+    const m = f.title.match(/^([^:]+):\s*(.+)$/), k = m ? m[1] : f.id;
+    const g = G.get(k);
+    if (g) { g.n++; g.names.push(m ? m[2] : f.title); g.title = `${m ? m[1] : f.title} · ${g.n}${/contract/i.test(k) ? " people" : ""}`; }
+    else G.set(k, { sev: f.severity, title: f.title, detail: f.detail, n: 1, names: [m ? m[2] : f.title] });
+  }
+  const rows = [...G.values()];
+  for (const g of rows) if (g.n > 1) g.detail = g.names.join(', ') + ' · ' + g.detail.replace(/^[^·]*·\s*/, '');
+  return (
+    <section class="card span-12 attn">
+      <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items, most serious first` : 'Nothing flagged — within all thresholds'}</p></div></div>
+      {rows.length > 0 && <ul class="attn-g">{rows.map((g) => <li class={`sev-${g.sev}`}><span class={`badge ${g.sev}`}>{g.sev}</span><div><b>{g.title}</b><small>{g.detail}</small></div></li>)}</ul>}
     </section>
   );
 }
