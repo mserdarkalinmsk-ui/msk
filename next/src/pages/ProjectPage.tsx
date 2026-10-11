@@ -10,9 +10,10 @@ import { date, full, month, pct, short, signedPct } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { usedTone } from './Budget';
 import { StaffBoard } from './People';
+import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 
-const TABS = ['Summary', 'Budget lines', 'Reports', 'People', 'Activity plan', 'Risks'] as const;
+const TABS = ['Summary', 'Financial report', 'Budget lines', 'Reports', 'People', 'Activity plan', 'Risks'] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProjectPage({ id }: { id: string }) {
@@ -53,6 +54,7 @@ export function ProjectPage({ id }: { id: string }) {
         {TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}{counts[t] != null && <span class="tab-n">{counts[t]}</span>}</button>)}
       </div>
       {tab === 'Summary' && <Summary p={p} />}
+      {tab === 'Financial report' && <FinancialReport p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
       {tab === 'Reports' && <Reports p={p} />}
       {tab === 'People' && (roster(p, TODAY).length ? <StaffBoard people={roster(p, TODAY)} /> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}

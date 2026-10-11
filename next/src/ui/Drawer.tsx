@@ -7,8 +7,10 @@ import { TODAY } from '../today';
 import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
 import { full, month, pct, short, signedPct } from './format';
-import { readTable, ReportImport, RiskForm } from './ReportImport';
+import { readCoe, readTable, ReportImport, RiskForm, setPendingReport } from './ReportImport';
+import type { Workbook as CoeWorkbook } from '../domain/workbook';
 import { ContractPanel } from './ContractPanel';
+import { AppearancePanel } from './Appearance';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -24,8 +26,9 @@ export function Drawer() {
       <div class="scrim" onClick={close} />
       <div class="drawer" role="dialog" aria-modal="true">
         {d.kind === 'project' && <ProjectView id={d.id} close={close} />}
-        {d.kind === 'new-project' && <ProjectForm close={close} preset={d.country} />}
+        {d.kind === 'new-project' && <ProjectForm close={close} preset={d.country} prefill={d.prefill} thenReport={d.thenReport} />}
         {d.kind === 'report' && <ReportImport projectId={d.projectId} close={close} />}
+        {d.kind === 'appearance' && <AppearancePanel close={close} />}
         {d.kind === 'contract' && <ContractPanel projectId={d.projectId} k={d.key} close={close} />}
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
@@ -142,7 +145,8 @@ export function checkDraft(d: Draft, projects: Project[], selfId?: string): Part
   return e;
 }
 
-export function ProjectForm({ close, project, preset }: { close: () => void; project?: Project; preset?: string }) {
+export function ProjectForm({ close, project: editing, preset, prefill, thenReport }: { close: () => void; project?: Project; preset?: string; prefill?: Partial<Project>; thenReport?: boolean }) {
+  const project = editing ?? (prefill as Project | undefined);
   const { countries, projects } = useStore((s) => s.ledger);
   const [d, setD] = useState<Draft>({
     code: project?.code ?? '', name: project?.name ?? '', country: project?.country ?? preset ?? countries[0]?.id ?? '',
@@ -151,7 +155,7 @@ export function ProjectForm({ close, project, preset }: { close: () => void; pro
     mae: project?.mae ?? '', pmm: project?.pmm ?? '', bh: project?.bh ?? '', pmmUrl: project?.pmmUrl ?? '',
   });
   const [touched, setTouched] = useState(false);
-  const errs = checkDraft(d, projects, project?.id);
+  const errs = checkDraft(d, projects, editing?.id);
   const ok = !Object.keys(errs).length;
   const f = (k: keyof Draft, label: string, props: Record<string, unknown> = {}) => (
     <div class="field" data-invalid={touched && errs[k] ? '' : undefined}>
@@ -162,17 +166,18 @@ export function ProjectForm({ close, project, preset }: { close: () => void; pro
   );
   const save = () => {
     setTouched(true); if (!ok) return;
+    const id = editing?.id ?? 'p' + Date.now().toString(36);
     upsertProject({
-      ...(project ?? { id: 'p' + Date.now().toString(36), reportingPeriods: [], riskRegister: [] }),
+      ...(editing ?? { reportingPeriods: [], riskRegister: [], contractNo: prefill?.contractNo, jp: prefill?.jp }), id,
       code: d.code.trim(), name: d.name.trim(), country: d.country, sector: d.sector.trim(), funding: d.funding.trim(),
       start: parseDay(d.start)!, end: parseDay(d.end)!, budget: parseAmount(d.budget)!, status: d.status,
       mae: d.mae.trim() || undefined, pmm: d.pmm.trim() || undefined, bh: d.bh.trim() || undefined, pmmUrl: validUrl(d.pmmUrl) ?? undefined,
     } as Project);
-    close();
+    if (thenReport) set({ drawer: { kind: 'report', projectId: id } }); else close();
   };
   return (
     <>
-      <div class="drawer-h"><h2>{project ? `Edit ${project.code}` : 'New project'}</h2><X close={close} /></div>
+      <div class="drawer-h"><h2>{editing ? `Edit ${editing.code}` : 'New project'}</h2><X close={close} /></div>
       <form class="drawer-b" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <div class="form-2">{f('code', 'Code', { placeholder: 'TR-ABC', autoFocus: true })}{f('budget', 'Budget (€)', { inputMode: 'decimal', placeholder: '2 500 000' })}</div>
         {f('name', 'Name')}
@@ -197,7 +202,7 @@ export function ProjectForm({ close, project, preset }: { close: () => void; pro
         <div class="form-2">{f('mae', 'MAE / division')}{f('pmmUrl', 'PMM link', { type: 'url', placeholder: 'https://…' })}</div>
         <button type="submit" hidden />
       </form>
-      <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" onClick={save}>{project ? 'Save changes' : 'Add project'}</button></div>
+      <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" onClick={save}>{editing ? 'Save changes' : thenReport ? 'Add project and import report' : 'Add project'}</button></div>
     </>
   );
 }
@@ -224,9 +229,12 @@ function ImportPanel({ close }: { close: () => void }) {
   const [json, setJson] = useState<{ data: Ledger; errs: string[] } | null>(null);
   const [over, setOver] = useState(false);
   const [err, setErr] = useState('');
+  const [coe, setCoe] = useState<{ wb: CoeWorkbook; file: File } | null>(null);
 
   async function read(file: File) {
-    setErr(''); setRows(null); setJson(null);
+    setErr(''); setRows(null); setJson(null); setCoe(null);
+    const wb = await readCoe(file).catch(() => null);
+    if (wb) { setCoe({ wb, file }); return; }
     const text = await file.text();
     if (/\.json$/i.test(file.name) || text.trim().startsWith('{')) {
       try { const data = JSON.parse(text); setJson({ data, errs: validateLedger(data) }); } catch { setErr('This file is not valid JSON.'); }
@@ -278,10 +286,11 @@ function ImportPanel({ close }: { close: () => void }) {
         <label class={`drop ${over ? 'on' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer?.files[0]; if (f) read(f); }}>
           <input type="file" accept=".csv,.xlsx,.json,text/csv,application/json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) read(f); }} />
-          <strong style={{ color: 'var(--ink)' }}>Drop a project list (Excel or CSV) or a JSON backup</strong><br />or click to choose a file
+          <strong style={{ color: 'var(--ink)' }}>Drop a financial report workbook, a project list (Excel / CSV) or a JSON backup</strong><br />or click to choose a file
         </label>
         {err && <ul class="errlist"><li>{err}</li></ul>}
 
+        {coe && <WorkbookRoute wb={coe.wb} file={coe.file} />}
         {json && (
           <section class="card card-b">
             <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>Backup file</h3>
@@ -429,5 +438,33 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
         </section>
       </div>
     </>
+  );
+}
+
+/** Routes a recognised financial-report workbook to the matching project (by BH, contract or title). */
+function WorkbookRoute({ wb, file }: { wb: CoeWorkbook; file: File }) {
+  const { projects } = useStore((s) => s.ledger);
+  const m = wb.meta;
+  const words = (s: string) => new Set(s.toLowerCase().split(/[^a-zçğıöşü0-9]+/).filter((w) => w.length > 3));
+  const score = (p: Project) => (m.bh && p.bh === m.bh ? 100 : 0) + (m.contract && p.contractNo === m.contract ? 100 : 0) +
+    (m.title ? [...words(m.title)].filter((w) => words(p.name).has(w)).length * 10 : 0);
+  const ranked = projects.map((p) => ({ p, s: score(p) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s);
+  const [pick, setPick] = useState(ranked[0]?.p.id ?? '');
+  const go = (id: string) => { setPendingReport(file); set({ drawer: { kind: 'report', projectId: id } }); };
+  return (
+    <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><span class="badge good">Recognised</span><b>Financial report workbook</b></div>
+      <div style={{ fontSize: '13.5px' }}>{m.title ?? file.name}</div>
+      <div class="muted" style={{ fontSize: '12.5px' }}>{[m.contract && `Contract ${m.contract}`, m.jp && `JP ${m.jp}`, m.bh && `BH ${m.bh}`, m.periodTo && `to ${m.periodTo}`].filter(Boolean).join(' · ')}</div>
+      {ranked[0]?.s >= 100 && <div style={{ fontSize: '13px' }}>Matches <b>{ranked[0].p.code}</b> by {m.bh && ranked[0].p.bh === m.bh ? 'budget head' : 'contract number'}.</div>}
+      <div class="field"><label for="wb-proj">Import into</label>
+        <select id="wb-proj" value={pick} onChange={(e) => setPick((e.target as HTMLSelectElement).value)}>
+          <option value="">Choose a project…</option>{projects.map((p) => <option value={p.id}>{p.code} — {p.name}{p.bh ? ` (BH ${p.bh})` : ''}</option>)}
+        </select></div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <button class="btn primary" disabled={!pick} onClick={() => go(pick)}>Continue to report import</button>
+        <button class="btn" onClick={() => { setPendingReport(file); set({ drawer: { kind: 'new-project', thenReport: true, prefill: { name: m.title ?? '', bh: m.bh, contractNo: m.contract, jp: m.jp, start: m.periodFrom ?? '', budget: wb.totals.eligible?.budget ? Math.round(wb.totals.eligible.budget) : 0 } as Partial<Project> } }); }}>Create a new project from it</button>
+      </div>
+    </section>
   );
 }

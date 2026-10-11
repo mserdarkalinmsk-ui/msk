@@ -157,3 +157,11 @@ describe('reporting calendar', () => {
     expect(deadlines(p, T)[0].status).toBe('overdue');
   });
 });
+
+import { recentRate } from './calc';
+describe('forecast rate', () => {
+  it('is never negative when a later report shows lower cumulative spend', () => {
+    const p = { ...base, reportingPeriods: [...base.reportingPeriods!, { id: 'c', name: 'R2', type: 'Q', date: '2026-06-01', snapshot: { lines: [{ code: '1', approved: 600, actual: 100 }] } }] };
+    expect(recentRate(p)).toBe(0);
+  });
+});

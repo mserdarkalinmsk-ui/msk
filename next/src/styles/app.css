@@ -285,3 +285,11 @@ table.mini .r { text-align: right; }
 .map-proj { text-align: left; padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface); font: inherit; color: inherit; cursor: pointer; }
 .map-proj:hover { border-color: var(--line-strong); background: var(--surface-hover); }
 @media (max-width: 1000px) { .map-layout { grid-template-columns: 1fr; } .map-side { position: static; max-height: none; } }
+.wb-strip { display: flex; flex-wrap: wrap; gap: 0; align-items: stretch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: var(--s4); overflow: hidden; }
+.wb-strip > div { padding: 10px var(--s4); border-right: 1px solid var(--line); display: grid; gap: 2px; min-width: 0; }
+.wb-strip span { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+.wb-strip b { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+.wb-strip .btn { margin: auto var(--s4) auto auto; }
+.flow { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; }
+.flow li { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+.flow-d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }

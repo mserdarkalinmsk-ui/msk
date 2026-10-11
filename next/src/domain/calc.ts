@@ -70,12 +70,12 @@ export function spendAt(p: Project, t: number): number {
   return pts.at(-1)!.v;
 }
 
-/** Monthly spend rate from the last two reports (per 30.4 days). */
+/** Monthly spend rate from the last two reports (per 30.4 days); never negative — a correcting report must not project spending going backwards. */
 export function recentRate(p: Project): number {
   const pts = spendPoints(p);
   if (pts.length < 2) return 0;
   const a = pts.at(-2)!, b = pts.at(-1)!;
-  return ((b.v - a.v) / ((b.t - a.t) / DAY)) * 30.4375;
+  return Math.max(0, ((b.v - a.v) / ((b.t - a.t) / DAY)) * 30.4375);
 }
 
 export const monthEnd = (y: number, m: number) => Date.UTC(y, m + 1, 0);

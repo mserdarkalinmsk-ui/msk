@@ -39,6 +39,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
         </nav>
         <div class="side-foot">
           <button class="btn ghost" onClick={() => set({ drawer: { kind: 'import' } })}><Icon d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />Import / backup</button>
+          <button class="btn ghost" onClick={() => set({ drawer: { kind: 'appearance' } })}><Icon d="M12 3a9 9 0 0 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.6 4.6 0 0 0 22 9.8C22 6 17.5 3 12 3zM7 12a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />Appearance</button>
           <button class="btn ghost" onClick={() => setTheme(nextTheme)} aria-label="Change theme">
             <Icon d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" />Theme: {theme}
           </button>
