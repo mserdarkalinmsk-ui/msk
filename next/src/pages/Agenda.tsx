@@ -5,6 +5,7 @@ import { roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, month } from '../ui/format';
+import { downloadIcs } from '../ui/WeekDigest';
 
 type Kind = 'report' | 'contract' | 'activity' | 'project';
 export interface Ev { day: string; kind: Kind; p: Project; title: string; sub: string; tone: 'bad' | 'warn' | 'info' | 'good' }
@@ -53,6 +54,7 @@ export function Agenda() {
       <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Calendar</h2><p>Report deadlines, staff contract ends, planned activity ends and project end dates · click an item to open it</p></div>
         <div class="tools" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginLeft: 'auto' }}>
           {(Object.keys(KIND) as Kind[]).map((k) => <button class="chip" aria-pressed={on[k]} onClick={() => setOn({ ...on, [k]: !on[k] })}><i class="ag-dot" style={{ background: KIND[k].color }} />{KIND[k].label}</button>)}
+          <button class="btn" onClick={() => downloadIcs(E.filter((e) => e.day >= TODAY.toISOString().slice(0, 10)))} title="Import into Outlook, Google or phone calendar">📅 .ics</button>
           <div class="seg">{[3, 6, 12].map((n) => <button aria-pressed={span === n} onClick={() => setSpan(n)}>{n} mo</button>)}</div>
         </div></div>
       <div class="card-b">

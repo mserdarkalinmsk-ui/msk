@@ -22,7 +22,7 @@ async function ptab(p, name) {
 
 async function page(opts) {
   const ctx = await browser.newContext(opts);
-  const p = await ctx.newPage();
+  const p = await ctx.newPage(); await ctx.addInitScript(() => localStorage.setItem('pl-digest-seen', 'off'));
   const errors = [];
   p.on('pageerror', (e) => errors.push(e.message));
   p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
@@ -341,7 +341,7 @@ async function page(opts) {
 // Start data (no demo): real project, empty other countries
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const p = await ctx.newPage();
+  const p = await ctx.newPage(); await ctx.addInitScript(() => localStorage.setItem('pl-digest-seen', 'off'));
   await p.goto(url.replace('&demo', '') + '#/projects'); await p.waitForSelector('.ph-title, .pcard, .empty-page', { timeout: 10000 }).catch(() => {});
   await p.waitForTimeout(500);
   check(await p.locator('article.pcard').count() === 6 && await p.locator('article.pcard:has-text("Enhancing Foreign Language")').count() === 1, 'start data: six real Türkiye projects');
