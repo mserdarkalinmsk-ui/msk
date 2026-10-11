@@ -128,9 +128,15 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
         <defs>
           <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--map-line)" stroke-width="1" /></pattern>
           <filter id="lift" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy={2 * scale} stdDeviation={3 * scale} flood-opacity=".25" /></filter>
+          <radialGradient id="sea" cx="55%" cy="45%" r="75%"><stop offset="0" stop-color="var(--map-sea)" /><stop offset="1" stop-color="var(--map-sea-deep)" /></radialGradient>
+          <filter id="coast" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="dilate" radius={2.2 * scale} in="SourceAlpha" result="d" /><feGaussianBlur in="d" stdDeviation={2.5 * scale} result="b" /><feFlood flood-color="var(--map-coast)" /><feComposite in2="b" operator="in" /><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
-        <rect x={-600} y={-400} width={2400} height={1400} fill="var(--map-sea)" />
-        {SHAPES.map((s) => {
+        <rect x={-600} y={-400} width={2400} height={1400} fill="url(#sea)" />
+        <g class="grat" stroke="var(--map-grat)" stroke-width={0.6 * scale} fill="none" pointer-events="none">
+          {Array.from({ length: 25 }, (_, i) => <line x1={i * 50} y1={0} x2={i * 50} y2={620} />)}
+          {Array.from({ length: 13 }, (_, i) => <line x1={0} y1={i * 50} x2={1200} y2={i * 50} />)}
+        </g>
+        <g filter="url(#coast)">{SHAPES.map((s) => {
           const d = byShape.get(s.n), on = !!d?.projects, sel = !!(selected && d && d.id === selected);
           return (
             <path d={s.d} class={`ctry ${on ? 'on' : ''} ${sel ? 'sel' : ''}`} fill={fill(d, !!s.m)} stroke="var(--map-border)" stroke-width={(sel ? 2.5 : on ? 1.2 : 0.8) * scale}
@@ -140,15 +146,27 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
               <title>{s.n}</title>
             </path>
           );
-        })}
-        {SHAPES.filter((s) => s.m === 0 && !byShape.get(s.n)?.projects).map((s) => <path d={s.d} fill="url(#hatch)" pointer-events="none" opacity=".5" />)}
-        {[...byShape].filter(([, d]) => d.projects).map(([n, d]) => {
-          const s = SHAPES.find((x) => x.n === n)!, cx = s.b[0] + s.b[2] / 2, cy = s.b[1] + s.b[3] / 2, r = 12 * scale;
+        })}</g>
+        {SHAPES.filter((s) => s.m === 0 && !byShape.get(s.n)?.projects).map((s) => <path d={s.d} fill="url(#hatch)" pointer-events="none" opacity=".28" />)}
+        {[...byShape].filter(([, d]) => d.projects).sort((x, y) => y[1].budget - x[1].budget).map(([n, d]) => {
+          const s = SHAPES.find((x) => x.n === n)!, cx = s.b[0] + s.b[2] / 2, cy = s.b[1] + s.b[3] / 2;
+          const r = (13 + 15 * Math.sqrt(d.budget / max.budget)) * scale, used = Math.min(1, d.budget ? d.spent / d.budget : 0);
+          const C = 2 * Math.PI * (r - 2.5 * scale), sel = selected === d.id;
           return (
-            <g pointer-events="none" class="mbadge">
-              <circle cx={cx} cy={cy} r={r} fill="var(--ink)" stroke="var(--surface)" stroke-width={1.5 * scale} />
-              <text x={cx} y={cy} dy={4.2 * scale} text-anchor="middle" font-size={12 * scale} font-weight="700" fill="var(--surface)">{d.projects}</text>
-              {d.critical > 0 && <circle cx={cx + r * 0.8} cy={cy - r * 0.8} r={4 * scale} fill="#c8312f" stroke="var(--surface)" stroke-width={1 * scale} />}
+            <g class={`msym ${sel ? 'sel' : ''}`} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); onSelect?.(sel ? null : d.id); }}>
+              <circle cx={cx} cy={cy} r={r + 3 * scale} fill="var(--ink)" opacity=".12" />
+              <circle cx={cx} cy={cy} r={r} fill="var(--surface)" stroke="var(--ink)" stroke-opacity=".15" stroke-width={1 * scale} />
+              <circle cx={cx} cy={cy} r={r - 2.5 * scale} fill="none" stroke="var(--map-ring)" stroke-width={4 * scale} />
+              <circle cx={cx} cy={cy} r={r - 2.5 * scale} fill="none" stroke={d.critical ? '#c8312f' : 'var(--accent)'} stroke-width={4 * scale} stroke-linecap="round"
+                stroke-dasharray={`${C * used} ${C}`} transform={`rotate(-90 ${cx} ${cy})`} />
+              <text x={cx} y={cy} dy={4.5 * scale} text-anchor="middle" font-size={13 * scale} font-weight="750" fill="var(--ink)">{d.projects}</text>
+              {!compact && (() => { const t2 = `${short(d.budget)} · ${Math.round(used * 100)}% spent`, w = Math.max(d.name.length * 7.6, t2.length * 6.2) * scale + 14 * scale, lx0 = cx + r + 5 * scale, lx = lx0 + w > vb.x + vb.w - 8 * scale ? cx - r - 5 * scale - w : lx0;
+                return <g class="mlabel" pointer-events="none">
+                  <rect x={lx} y={cy - 16 * scale} width={w} height={32 * scale} rx={6 * scale} fill="var(--surface)" opacity=".94" stroke="var(--line)" stroke-width={0.8 * scale} />
+                  <text x={lx + 7 * scale} y={cy - 2 * scale} font-size={12.5 * scale} font-weight="700" fill="var(--ink)">{d.name}</text>
+                  <text x={lx + 7 * scale} y={cy + 11 * scale} font-size={10.5 * scale} fill="var(--ink-2)">{t2}</text>
+                </g>; })()}
+              {d.critical > 0 && <circle cx={cx + r * 0.72} cy={cy - r * 0.72} r={4.5 * scale} fill="#c8312f" stroke="var(--surface)" stroke-width={1.2 * scale} />}
             </g>
           );
         })}
@@ -177,7 +195,7 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
       <div class="map-legend">
         {legend && <><span>{legend[0]}</span><i style={{ background: mode === 'pace' ? 'linear-gradient(90deg,#d95926,#e9e8e4,#256abf)' : `linear-gradient(90deg,${SEQ.join(',')})` }} /><span>{legend[1]}</span></>}
         {mode === 'attention' && <><i class="dot" style={{ background: '#1f8a4c' }} />clear <i class="dot" style={{ background: '#c9540f' }} />serious <i class="dot" style={{ background: '#c8312f' }} />critical</>}
-        <span class="sep" /><i class="sw" style={{ background: 'var(--map-member)' }} />member, no projects <i class="sw hatch" />non-member
+        <span class="sep" /><i class="ring" />size = budget · ring = spent <span class="sep" /><i class="sw" style={{ background: 'var(--map-member)' }} />member <i class="sw hatch" />non-member
       </div>
     </div>
   );
