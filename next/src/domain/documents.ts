@@ -209,9 +209,10 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
       if (/^11$/.test(code) || /total eligible costs/i.test(desc)) total = total || nums[0] || 0;
       continue;
     }
-    if (code === '8' || /contingency/i.test(desc)) { contingency = nums[0] ?? 0; continue; }
-    if (code === '9') continue;
-    if (code === '10' || /administrative costs/i.test(desc)) { admin = admin || (nums[0] ?? 0); continue; }
+    // Admin is row 10 in templates with a contingency row and row 8 without one: classify by wording, not number.
+    if (/administrative costs|indirect costs/i.test(desc)) { admin = admin || (nums[0] ?? 0); continue; }
+    if (/contingency/i.test(desc)) { contingency = nums[0] ?? 0; continue; }
+    if (/^(8|9|10|11)$/.test(code)) continue;
     if (!code.includes('.') && !unit) continue; // heading row ("1 Human resources")
     if (unit && nums.length >= 3) lines.push({ code, description: desc, unit, approvedUnits: nums[0], unitRate: nums[1], approved: nums[2] });
     else if (unit && nums.length === 0) continue; // unused template row
