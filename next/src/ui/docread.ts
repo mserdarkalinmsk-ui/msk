@@ -42,10 +42,10 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
       const cells: string[] = []; let end = -1e9;
       for (const it of items) { if (it.x - end > 14 || !cells.length) cells.push(it.s); else cells[cells.length - 1] += (it.x - end > 1.5 ? ' ' : '') + it.s; end = it.x + it.w; }
       if (cells.length > 1) table.push(cells.map((c) => c.trim()));
-      else { if (table.length > 1) tables.push(table); table = []; paragraphs.push(cells[0].trim()); }
+      else { if (table.length) tables.push(table); table = []; paragraphs.push(cells[0].trim()); }
     }
   }
-  if (table.length > 1) tables.push(table);
+  if (table.length) tables.push(table);
   await doc.destroy();
   return { name, kind: 'pdf', paragraphs, tables };
 }

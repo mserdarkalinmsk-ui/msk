@@ -37,12 +37,12 @@ export function Projects() {
         </div>
         {view === 'cards' && <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); save('pl-projects-sort', v); }}>{SORTS.map((x) => <option value={x.id}>Sort: {x.label}</option>)}</select>}
         <span class="muted" style={{ fontSize: '12.5px' }}>{P.length} projects</span>
-        <button class="btn" style={{ marginLeft: 'auto' }} onClick={() => set({ drawer: { kind: 'import' } })}>Import report workbooks</button>
+        <button class="btn" style={{ marginLeft: 'auto' }} onClick={() => set({ drawer: { kind: 'import' } })}>Import project list</button>
       </div>
       {view === 'list'
         ? <section class="card" style={{ overflow: 'hidden' }}><ProjectTable rows={P} cname={cname} maxHeight={Math.max(360, innerHeight - 260)} /></section>
         : <div class="pgrid">{sorted.map((p, i) => <ProjectCard p={p} cname={cname} i={i} />)}
-            <button class="pcard pcard-add" onClick={() => set({ drawer: { kind: 'new-project' } })}><span>+</span>Add project<small>or drop report workbooks in Import</small></button>
+            <button class="pcard pcard-add" onClick={() => set({ drawer: { kind: 'new-project' } })}><span>+</span>Add project<small>reports and documents go inside each project</small></button>
           </div>}
     </>
   );

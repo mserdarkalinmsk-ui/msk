@@ -14,7 +14,7 @@ export function latestReport(p: Project): ReportingPeriod | undefined {
 }
 
 export function lines(p: Project): BudgetLine[] {
-  return latestReport(p)?.snapshot?.lines ?? [];
+  return latestReport(p)?.snapshot?.lines ?? p.approvedBudget?.lines ?? [];
 }
 
 /** Spent and committed come from the latest report; project-level fields are the fallback. */

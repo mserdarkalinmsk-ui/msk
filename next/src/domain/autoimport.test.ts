@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import seed from '../data/seed.json';
+import seed from '../data/demo.json';
 import { readXlsx } from '../ui/xlsx';
 import type { Ledger } from './types';
 import { parseWorkbook } from './workbook';

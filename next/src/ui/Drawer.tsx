@@ -7,13 +7,11 @@ import { TODAY } from '../today';
 import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
 import { full, month, pct, short, signedPct } from './format';
-import { readCoe, readTable, ReportImport, RiskForm, setPendingReport } from './ReportImport';
-import type { Workbook as CoeWorkbook } from '../domain/workbook';
-import { applyPlans, plan, planDiff, type AutoPlan } from '../domain/autoimport';
+import { readCoe, readTable, ReportImport, RiskForm } from './ReportImport';
 import { migrateBackup } from '../domain/insights';
 import { ContractPanel } from './ContractPanel';
 import { AppearancePanel } from './Appearance';
-import { DocumentsPanel, setPendingDocs } from './DocumentsPanel';
+import { DocumentsPanel } from './DocumentsPanel';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -233,30 +231,21 @@ function ImportPanel({ close }: { close: () => void }) {
   const [json, setJson] = useState<{ data: Ledger; errs: string[]; from: string } | null>(null);
   const [over, setOver] = useState(false);
   const [err, setErr] = useState('');
-  const [coe, setCoe] = useState<{ wb: CoeWorkbook; file: File }[] | null>(null);
   const [busy, setBusy] = useState('');
 
-  const [docFiles, setDocFiles] = useState<File[]>([]);
-  const [docProject, setDocProject] = useState('');
+  const ELSEWHERE = 'Financial reports and project documents are added inside their project (open the project → Import report / Add documents), so they can never land on the wrong project.';
   async function readMany(files: File[]) {
-    const D = files.filter((f) => /\.(pdf|docx)$/i.test(f.name));
-    setDocFiles(D); files = files.filter((f) => !D.includes(f));
-    if (!files.length) return;
-    if (files.length === 1) return read(files[0]);
-    setErr(''); setRows(null); setJson(null); setCoe(null);
-    const out: { wb: CoeWorkbook; file: File }[] = [], skipped: string[] = [];
-    for (const [i, f] of files.entries()) { setBusy(`Reading ${i + 1} of ${files.length}: ${f.name}`); const wb = await readCoe(f).catch(() => null); if (wb) out.push({ wb, file: f }); else skipped.push(f.name); }
-    setBusy('');
-    if (skipped.length) setErr(`Not recognised as financial report workbooks: ${skipped.join(', ')}`);
-    if (out.length) setCoe(out);
+    if (files.some((f) => /\.(pdf|docx)$/i.test(f.name))) { setErr(ELSEWHERE); return; }
+    if (files.length > 1) { setErr('Drop one project list or backup file at a time.'); return; }
+    return read(files[0]);
   }
 
   async function read(file: File) {
-    setErr(''); setRows(null); setJson(null); setCoe(null);
+    setErr(''); setRows(null); setJson(null);
     setBusy(`Reading ${file.name}…`);
     const wb = await readCoe(file).catch(() => null);
     setBusy('');
-    if (wb) { setCoe([{ wb, file }]); return; }
+    if (wb) { setErr(`${file.name} is a financial report${wb.meta.title ? ` for “${wb.meta.title}”` : ''}. ${ELSEWHERE}`); return; }
     const text = await file.text();
     if (/\.json$/i.test(file.name) || text.trim().startsWith('{')) {
       try { const { ledger: data, from } = migrateBackup(JSON.parse(text)); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
@@ -307,25 +296,12 @@ function ImportPanel({ close }: { close: () => void }) {
       <div class="drawer-b">
         <label class={`drop ${over ? 'on' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); const F = [...(e.dataTransfer?.files ?? [])]; if (F.length) readMany(F); }}>
-          <input type="file" multiple accept=".csv,.xlsx,.json,.pdf,.docx,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
-          <strong style={{ color: 'var(--ink)' }}>Drop financial report workbooks — one or many at once</strong><br />Projects are created or updated automatically. Also accepts a project list (Excel / CSV) or a JSON backup.
+          <input type="file" multiple accept=".csv,.xlsx,.json,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
+          <strong style={{ color: 'var(--ink)' }}>Drop a project list (Excel / CSV) or a JSON backup</strong><br />Financial reports and project documents are added inside each project.
         </label>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <label class="btn">Choose a folder…<input type="file" hidden {...{ webkitdirectory: '', directory: '' }} onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])].filter((f) => /\.(xlsx|pdf|docx)$/i.test(f.name) && !f.name.startsWith('~$')); if (F.length) readMany(F); }} /></label>
-          <span class="muted" style={{ fontSize: '12.5px' }}>Every workbook in the folder is matched to its project automatically.</span>
-        </div>
         {err && <ul class="errlist"><li>{err}</li></ul>}
 
         {busy && <div class="muted" role="status" style={{ fontSize: '13px' }}><span class="spin" /> {busy}</div>}
-        {coe && <AutoImport items={coe} close={close} />}
-        {docFiles.length > 0 && (
-          <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
-            <b>{docFiles.length} project document{docFiles.length > 1 ? 's' : ''}</b><div class="muted" style={{ fontSize: '12.5px' }}>{docFiles.map((f) => f.name).join(', ')}</div>
-            <div class="field"><label for="doc-proj">Project</label><select id="doc-proj" value={docProject} onChange={(e) => setDocProject((e.target as HTMLSelectElement).value)}>
-              <option value="">Choose a project…</option>{ledger.projects.map((p) => <option value={p.id}>{p.code} — {p.name}</option>)}</select></div>
-            <button class="btn primary" disabled={!docProject} onClick={() => { setPendingDocs(docFiles); set({ drawer: { kind: 'documents', projectId: docProject } }); }}>Read documents</button>
-          </section>
-        )}
         {json && (
           <section class="card card-b">
             <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>{json.from === 'previous app' ? 'Backup from the previous Portfolio Ledger' : 'Backup file'}</h3>
@@ -477,51 +453,3 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
 }
 
 /** Plans every dropped workbook against the ledger and applies them in one undoable step. */
-function AutoImport({ items, close }: { items: { wb: CoeWorkbook; file: File }[]; close: () => void }) {
-  const ledger = useStore((s) => s.ledger);
-  const [countryFix, setCountryFix] = useState<Record<string, string>>({});
-  const [skip, setSkip] = useState<Set<number>>(new Set());
-  const taken = new Set<string>();
-  const plans: AutoPlan[] = items.map((x) => plan(x.wb, x.file.name, ledger, taken)).map((p, i) =>
-    !p.match && countryFix[i] ? { ...p, project: { ...p.project, country: countryFix[i] }, problems: p.problems.filter((x) => !/Country/.test(x)) } : p);
-  const chosen = plans.filter((_, i) => !skip.has(i));
-  const blocked = chosen.filter((p) => !p.match && p.problems.some((x) => /Country/.test(x)));
-  const apply = () => {
-    replaceLedger(applyPlans(ledger, chosen), `Imported ${chosen.length} workbook${chosen.length > 1 ? 's' : ''}: ${chosen.filter((p) => !p.match).length} new, ${chosen.filter((p) => p.match).length} updated`);
-    close();
-  };
-  return (
-    <section class="card">
-      <div class="card-h"><div><h2>{items.length} financial report workbook{items.length > 1 ? 's' : ''}</h2><p>{plans.filter((p) => !p.match).length} new projects · {plans.filter((p) => p.match).length} updates · nothing to type</p></div></div>
-      <ul class="att" style={{ marginTop: '10px' }}>
-        {plans.map((p, i) => (
-          <li style={{ cursor: 'default', gridTemplateColumns: 'auto 1fr auto', alignItems: 'start', opacity: skip.has(i) ? .45 : 1 }}>
-            <input type="checkbox" checked={!skip.has(i)} aria-label={`Include ${p.fileName}`} onChange={() => setSkip((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; })} />
-            <div style={{ minWidth: 0, display: 'grid', gap: '3px' }}>
-              <div class="t" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span class={`badge ${p.match ? 'neutral' : 'good'}`}>{p.match ? 'update' : 'new'}</span>
-                <span class="num">{p.project.code}</span><span style={{ fontWeight: 500 }}>{p.project.name}</span>
-              </div>
-              <div class="d">{p.match ? `matched by ${p.matchedBy}` : `${p.project.sector} · ${p.project.start} → ${p.project.end}`} · report to {p.report.date}{p.replaces ? ' (replaces same-date report)' : ''} · {p.fileName}</div>
-              {p.guessed.length > 0 && <div class="d">Guessed: {p.guessed.join('; ')}</div>}
-              {p.problems.map((x) => <div class="d" style={{ color: 'var(--serious)' }}>{x}</div>)}
-              {!skip.has(i) && <table class="diff"><thead><tr><th></th><th>Before</th><th>After</th></tr></thead><tbody>
-                {planDiff(ledger, p).map((d) => <tr class={d.changed ? 'chg' : ''}><td>{d.label}</td><td class="num">{d.before}</td><td class="num">{d.after}</td></tr>)}
-              </tbody></table>}
-              {!p.match && p.problems.some((x) => /Country/.test(x)) && (
-                <select class="select" style={{ height: '28px', width: 'fit-content' }} value={countryFix[i] ?? ''} onChange={(e) => setCountryFix({ ...countryFix, [i]: (e.target as HTMLSelectElement).value })} aria-label="Country">
-                  <option value="">Choose country…</option>{ledger.countries.map((c) => <option value={c.id}>{c.name}</option>)}
-                </select>
-              )}
-            </div>
-            <button class="btn ghost" style={{ height: '26px' }} title="Open the detailed import for this file" disabled={!p.match} onClick={() => { setPendingReport(items[i].file); set({ drawer: { kind: 'report', projectId: p.match!.id } }); }}>Details</button>
-          </li>
-        ))}
-      </ul>
-      <div class="card-b" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        {blocked.length > 0 && <span class="muted" style={{ fontSize: '12.5px' }}>Choose a country for {blocked.length} new project{blocked.length > 1 ? 's' : ''}</span>}
-        <button class="btn primary" style={{ marginLeft: 'auto' }} disabled={!chosen.length || blocked.length > 0} onClick={apply}>Import {chosen.length} workbook{chosen.length === 1 ? '' : 's'}</button>
-      </div>
-    </section>
-  );
-}

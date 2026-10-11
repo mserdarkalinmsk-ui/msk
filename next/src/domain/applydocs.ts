@@ -1,7 +1,7 @@
 import type { DocFindings } from './documents';
 import type { Project } from './types';
 
-export interface DocChoices { contract: boolean; dates: boolean; budget: boolean; plan: boolean; risks: boolean; indicators: boolean }
+export interface DocChoices { approved: boolean; contract: boolean; dates: boolean; budget: boolean; plan: boolean; risks: boolean; indicators: boolean }
 
 /** Merges document findings into a copy of the project. */
 export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: { name: string; kind: string; summary: string[] }[]): Project {
@@ -12,7 +12,9 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
     if (k.number) q.contractNo = k.number;
   }
   if (c.dates) { if (k.start) q.start = k.start; if (k.end) q.end = k.end; }
-  if (c.budget && k.total) q.budget = k.total;
+  if (c.approved && F.budget) { q.approvedBudget = { ...F.budget, importedAt: new Date().toISOString() }; q.budget = Math.round(F.budget.total * 100) / 100; }
+  else if (c.budget && k.total && !q.approvedBudget) q.budget = k.total;
+  if (c.contract) { if (k.jp && !q.jp) q.jp = k.jp; if (k.bh && !q.bh) q.bh = k.bh; }
   if (c.plan && F.acts.length) q.doa = { start: k.start ?? q.doa?.start ?? q.start, months: k.months ?? F.planMonths ?? q.doa?.months ?? 36, acts: F.acts.map((a) => ({ ...a, status: q.doa?.acts.find((x) => x.code === a.code)?.status ?? '' })) };
   if (c.risks && F.risks.length) {
     const R = q.riskRegister ?? (q.riskRegister = []);
@@ -31,6 +33,7 @@ export function mergeFindings(all: DocFindings[]): DocFindings {
     if (f.acts.length > out.acts.length) { out.acts = f.acts; out.planMonths = f.planMonths; }
     for (const r of f.risks) if (!out.risks.some((x) => x.title.toLowerCase() === r.title.toLowerCase())) out.risks.push(r);
     if (f.indicators.length > out.indicators.length) out.indicators = f.indicators;
+    if (f.budget && (!out.budget || f.budget.lines.length > out.budget.lines.length)) out.budget = f.budget;
   }
   return out;
 }
