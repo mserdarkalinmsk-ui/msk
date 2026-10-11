@@ -228,15 +228,22 @@ export function lineRows(ps: Project[]): LineRow[] {
 }
 
 /** Lines grouped by description (cost category) across projects. */
+/** Budget headings of the standard template; line codes start with the heading number (1.1.2 → Human resources). */
+export const HEADINGS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment and supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other', '8': 'Contingency reserve', '10': 'Administrative costs' };
+/** Category of a line: its budget heading when the code is numbered, otherwise the description. */
+export const category = (r: { code: string; description: string }) => {
+  const h = r.code.match(/^(\d{1,2})(?:\.|$)/)?.[1];
+  return h && HEADINGS[h] ? `${h} ${HEADINGS[h]}` : r.description.trim();
+};
 export function byCategory(rows: LineRow[]) {
   const m = new Map<string, { key: string; approved: number; actual: number; committed: number; exposure: number; lines: number }>();
   for (const r of rows) {
-    const k = r.description.trim();
+    const k = category(r);
     const g = m.get(k) ?? { key: k, approved: 0, actual: 0, committed: 0, exposure: 0, lines: 0 };
     g.approved += r.approved; g.actual += r.actual; g.committed += r.committed; g.exposure += r.exposure; g.lines++;
     m.set(k, g);
   }
-  return [...m.values()].sort((a, b) => b.approved - a.approved);
+  return [...m.values()].sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
 }
 
 export function reportTotals(r: ReportingPeriod) {
