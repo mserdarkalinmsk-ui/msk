@@ -90,7 +90,7 @@ export function Overview() {
       <div class="grid g-12">
         <section class="card span-8">
           <div class="card-h" style={{ alignItems: 'center' }}>
-            <div><h2>Spending over time</h2><p>{sm === 'cumulative' ? 'Cumulative actual spend, linear plan and forecast range (recent burn rate ±20%)' : sm === 'monthly' ? 'Spend added each month (interpolated between reports) against the linear plan' : 'Cumulative spend stacked by country'}</p></div>
+            <div><h2>Spending over time</h2><p>{sm === 'cumulative' ? 'Cumulative actual spend, linear plan and forecast range (recent burn rate ±20%)' : sm === 'monthly' ? 'Spend added each month (interpolated between reports) against the linear plan' : 'Cumulative spend stacked by country'} · click a month for its breakdown</p></div>
             <div class="tools"><div class="seg">{(['cumulative', 'monthly', 'country'] as const).map((m) => <button aria-pressed={sm === m} onClick={() => setSm(m)}>{m === 'cumulative' ? 'Cumulative' : m === 'monthly' ? 'Monthly' : 'By country'}</button>)}</div></div>
           </div>
           <div class="card-b" style={{ paddingTop: '8px' }}>
@@ -99,7 +99,12 @@ export function Overview() {
               <span><i class="dash" />Linear plan</span>
               <span><i style={{ background: 'var(--c2)', opacity: .25 }} />Forecast range</span>
             </div>}
-            <Chart height={300} label="Spending over time" option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
+            <Chart height={300} label="Spending over time" onAxisClick={(x) => {
+              const A = S.filter((v) => v.actual != null);
+              const tt = sm === 'monthly' ? A[Math.round(x) + 1]?.t : A.reduce((b, v) => Math.abs(v.t - x) < Math.abs(b.t - x) ? v : b, A[0])?.t;
+              const i = S.findIndex((v) => v.t === tt);
+              if (i > 0) set({ drawer: { kind: 'period', t: S[i].t, from: S[i - 1].t, ids: P.map((p) => p.id) } });
+            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
           </div>
         </section>
 

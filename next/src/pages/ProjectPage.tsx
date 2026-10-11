@@ -105,8 +105,11 @@ function Summary({ p }: { p: Project }) {
       {p.datesTbc && <StatusWords p={p} />}
       <ForecastCard p={p} />
       <section class="card span-8">
-        <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report</p></div></div>
-        <div class="card-b"><Chart height={300} label="Project spend over time" option={(t) => ({
+        <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report · click a month for its breakdown</p></div></div>
+        <div class="card-b"><Chart height={300} label="Project spend over time" onAxisClick={(x) => {
+          const d = new Date(x), t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0), from = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0);
+          set({ drawer: { kind: 'period', t, from, ids: [p.id] } });
+        }} option={(t) => ({
           ...base(t),
           grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
           tooltip: { ...(base(t).tooltip as object), trigger: 'axis', valueFormatter: (v: number) => full(v) },

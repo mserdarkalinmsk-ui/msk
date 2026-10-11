@@ -34,18 +34,26 @@ export function base(t: Tokens): EChartsCoreOption {
   };
 }
 
-interface Props { option: (t: Tokens) => EChartsCoreOption; height: number; onClick?: (p: any) => void; label: string }
+interface Props { option: (t: Tokens) => EChartsCoreOption; height: number; onClick?: (p: any) => void; onAxisClick?: (x: number) => void; label: string }
 
-export function Chart({ option, height, onClick, label }: Props) {
+export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const inst = useRef<echarts.ECharts | null>(null);
   const theme = useStore((s) => s.theme);
   const clickRef = useRef(onClick); clickRef.current = onClick;
+  const axisRef = useRef(onAxisClick); axisRef.current = onAxisClick;
 
   useEffect(() => {
     const c = echarts.init(el.current!, undefined, { renderer: 'svg' });
     inst.current = c;
     c.on('click', (p) => clickRef.current?.(p));
+    // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
+    c.getZr().on('click', (ev: any) => {
+      const pt = [ev.offsetX, ev.offsetY];
+      if (!axisRef.current || !c.containPixel({ gridIndex: 0 }, pt)) return;
+      const v = c.convertFromPixel({ gridIndex: 0 }, pt) as number[];
+      if (v && isFinite(v[0])) axisRef.current(v[0]);
+    });
     const ro = new ResizeObserver(() => c.resize());
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
@@ -56,5 +64,5 @@ export function Chart({ option, height, onClick, label }: Props) {
   useEffect(() => { inst.current?.setOption(option(tokens()), true); });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
-  return <div role="img" aria-label={label} style={{ height: `${height}px`, width: '100%' }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
+  return <div role="img" aria-label={label} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
 }
