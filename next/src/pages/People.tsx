@@ -7,6 +7,7 @@ import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { date, month, pct } from '../ui/format';
 import { axisX, axisY, Filters } from './Overview';
+import { StaffReport } from './StaffReport';
 
 export const statusTone = (s: Person['status']) => (s === 'Active' ? 'good' : s === 'Upcoming' ? 'neutral' : s === 'Ended' ? 'neutral' : 'warning');
 export const daysTone = (d: number) => (d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning');
@@ -28,7 +29,7 @@ export function People() {
       </div>
       {!everyone.length
         ? <div class="card empty-page"><div><h2>No staff records yet</h2><p>Staff are read from the “Purchase Orders” sheet of imported financial reports (lines 1.x.1.y).</p></div></div>
-        : <StaffBoard people={A} showProject />}
+        : <><StaffBoard people={A} showProject /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffReport projects={P} /></div></>}
     </>
   );
 }

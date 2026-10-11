@@ -8,6 +8,7 @@ import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { date, full, month, pct, short } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
+import { Statement } from '../ui/Statement';
 
 const HEADINGS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment & supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other' };
 
@@ -114,15 +115,15 @@ export function FinancialReport({ p }: { p: Project }) {
 
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px', alignItems: 'center' }}>
-            <div><h2>{view === 'lines' ? 'Budget lines' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
-              <p>{view === 'lines' ? 'Every line of the report with the forecast and proposal columns' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
+            <div><h2>{view === 'lines' ? 'Financial statement' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
+              <p>{view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
             <div class="tools"><div class="seg">
-              <button aria-pressed={view === 'lines'} onClick={() => setView('lines')}>Lines</button>
+              <button aria-pressed={view === 'lines'} onClick={() => setView('lines')}>Statement</button>
               <button aria-pressed={view === 'rates'} onClick={() => setView('rates')}>Units & rates</button>
               <button aria-pressed={view === 'pos'} onClick={() => setView('pos')}>Open POs ({openPO.length})</button>
             </div></div>
           </div>
-          {view === 'lines' && <LinesTable lines={leaf.filter((l) => v(l.budget.cost) || v(l.actual.cost) || v(l.sc) || v(l.planned?.cost) || v(l.rounded?.cost ?? l.proposal?.cost))} />}
+          {view === 'lines' && <Statement lines={wb.lines} totals={wb.totals} elapsed={el} title={`${p.code}-financial-statement`} />}
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
         </section>
@@ -132,21 +133,6 @@ export function FinancialReport({ p }: { p: Project }) {
 }
 
 const v = (x: number | null | undefined) => x ?? 0;
-function LinesTable({ lines }: { lines: WbLine[] }) {
-  const cols: Column<WbLine>[] = [
-    { key: 'code', label: 'Line', width: 76, pin: true, value: (l) => l.code, render: (l) => <span class="num">{l.code}</span> },
-    { key: 'd', label: 'Description', width: 230, value: (l) => l.description },
-    { key: 'b', label: 'Budget', width: 116, align: 'r', sum: true, format: full, value: (l) => v(l.budget.cost) },
-    { key: 'a', label: 'Spent', width: 116, align: 'r', sum: true, format: full, value: (l) => v(l.actual.cost) },
-    { key: 'sc', label: 'Spent + committed', width: 140, align: 'r', sum: true, format: full, value: (l) => v(l.sc) },
-    { key: 'u', label: 'Used', width: 150, value: (l) => (l.budget.cost ? v(l.sc) / l.budget.cost : 0), render: (l) => { const u = l.budget.cost ? v(l.sc) / l.budget.cost : 0; return <div class="bar-cell"><div class="minibar"><span style={{ width: `${Math.min(100, u * 100)}%`, background: u > 1 ? 'var(--critical)' : 'var(--c1)' }} /></div><span class="num" style={{ fontSize: '12px' }}>{pct(u)}</span></div>; } },
-    { key: 'p', label: 'Planned 12 m', width: 120, align: 'r', sum: true, format: full, value: (l) => v(l.planned?.cost) },
-    { key: 'pr', label: 'Proposal', width: 116, align: 'r', sum: true, format: full, value: (l) => v(l.rounded?.cost ?? l.proposal?.cost) },
-    { key: 'dv', label: 'Proposal − budget', width: 140, align: 'r', sum: true, format: full, value: (l) => v(l.rounded?.cost ?? l.proposal?.cost) - v(l.budget.cost), render: (l) => { const d = v(l.rounded?.cost ?? l.proposal?.cost) - v(l.budget.cost); return <span style={{ color: d > 0.5 ? 'var(--serious)' : d < -0.5 ? 'var(--good)' : 'var(--ink-3)' }}>{Math.abs(d) < 0.5 ? '—' : `${d > 0 ? '+' : '−'}${full(Math.abs(d))}`}</span>; } },
-  ];
-  return <DataTable rows={lines} columns={cols} rowKey={(l) => l.code} title="report-lines" storageKey="pl-cols-wblines" maxHeight={520} groupBy={[{ label: 'heading', key: (l) => `${l.code.split('.')[0]} ${HEADINGS[l.code.split('.')[0]] ?? ''}` }]} />;
-}
-
 function RatesTable({ lines, el }: { lines: WbLine[]; el: number }) {
   const cols: Column<WbLine>[] = [
     { key: 'code', label: 'Line', width: 76, pin: true, value: (l) => l.code, render: (l) => <span class="num">{l.code}</span> },

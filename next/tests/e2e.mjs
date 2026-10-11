@@ -129,6 +129,7 @@ async function page(opts) {
   // Budget workspace
   await p.goto(url + '#/budget'); await p.waitForSelector('.hero'); await p.waitForTimeout(600);
   check(await p.locator('.dt-total:has-text("Total · 36")').count() === 1, 'budget lines table totals all 36 lines');
+  check(await p.locator('table.stmt tfoot tr.t3 td:has-text("Total eligible")').count() === 1, 'portfolio statement on the budget page');
   await p.screenshot({ path: `${shots}/budget.png`, fullPage: true });
 
   // Project page tabs + Excel report import
@@ -162,6 +163,8 @@ async function page(opts) {
   await p.fill('#ct-end', '2027-12-31'); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(300);
   const row = p.locator('.dt-row', { hasText: firstName });
   check(await row.locator('text=31 Dec 2027').count() > 0 && await row.locator('.badge.good:has-text("✓")').count() > 0, 'confirmed contract date overrides the source');
+  check(await p.locator('h2:text-is("Staff report")').count() === 1, 'staff report section');
+  await p.click('.seg button:has-text("Cost per person")'); await p.waitForTimeout(150); await p.click('.seg button:has-text("Staff lines")');
   await p.click('.seg button:has-text("SxB / HQ")'); await p.waitForTimeout(200);
   check(await p.locator('.dt-cell:has-text("Local")').count() === 0, 'base filter shows only HQ staff');
 
@@ -202,6 +205,10 @@ async function page(opts) {
   await p.click('.tabs button:has-text("Financial report")'); await p.waitForTimeout(700);
   check(await p.locator('.wb-strip :text("700009999")').count() === 1, 'financial report tab shows the contract');
   check(await p.locator('.att li:has-text("20% above budget rate")').count() === 1, 'unit-rate check shown');
+  check(await p.locator('table.stmt tfoot tr.t3').count() === 1, 'financial statement with totals block');
+  await p.locator('table.stmt .tw').first().click(); await p.waitForTimeout(100);
+  check(await p.locator('table.stmt tbody tr').count() < 8, 'statement heading collapses');
+  await p.click('.seg button:has-text("Units & rates")'); await p.waitForTimeout(100);
   await p.click('.seg button:has-text("Open POs")'); await p.waitForTimeout(200);
   check(await p.locator('.dt-total:has-text("€27,000")').count() === 1, 'open PO balance totals');
   await p.screenshot({ path: `${shots}/financial-report.png`, fullPage: true });

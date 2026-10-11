@@ -10,6 +10,7 @@ import { date, full, month, pct, short, signedPct } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { usedTone } from './Budget';
 import { StaffBoard } from './People';
+import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
 
@@ -58,7 +59,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Financial report' && <FinancialReport p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
       {tab === 'Reports' && <Reports p={p} />}
-      {tab === 'People' && (roster(p, TODAY).length ? <StaffBoard people={roster(p, TODAY)} /> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
+      {tab === 'People' && (roster(p, TODAY).length ? <><StaffBoard people={roster(p, TODAY)} /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffReport projects={[p]} /></div></> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
       {tab === 'Activity plan' && <Plan p={p} />}
       {tab === 'Risks' && <Risks p={p} />}
       {tab === 'Results & documents' && <ResultsDocs p={p} />}

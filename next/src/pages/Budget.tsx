@@ -6,6 +6,32 @@ import { DataTable, type Column } from '../ui/DataTable';
 import { full, month, pct, short } from '../ui/format';
 import { parseAmount } from '../ui/csv';
 import { axisMoney, axisX, axisY, Filters } from './Overview';
+import { Statement } from '../ui/Statement';
+import type { WbLine, WbTotals } from '../domain/workbook';
+import type { Project } from '../domain/types';
+import { elapsed as elapsedOf, lines as linesOf } from '../domain/calc';
+import { TODAY } from '../today';
+
+/** Sums the latest report lines of several projects by line code into one statement. */
+export function portfolioStatement(P: Project[]) {
+  const by = new Map<string, WbLine>();
+  for (const p of P) for (const l of linesOf(p)) {
+    const w = by.get(l.code) ?? { code: l.code, description: l.description ?? '', unit: l.unit ?? '', level: l.code.split('.').length, leaf: true,
+      budget: { units: 0, rate: null, cost: 0 }, actual: { units: 0, rate: null, cost: 0 }, sc: 0, planned: { units: null, rate: null, cost: 0 }, rounded: { units: null, rate: null, cost: 0 } };
+    w.budget.cost! += l.approved ?? 0; w.budget.units! += l.approvedUnits ?? 0; w.actual.cost! += l.actual ?? 0; w.actual.units! += l.reportedUnits ?? 0;
+    w.sc! += l.spentCommitted ?? (l.actual ?? 0) + (l.committed ?? 0); w.planned!.cost! += l.forecast ?? 0; w.rounded!.cost! += l.roundedBudget ?? l.proposedBudget ?? 0;
+    by.set(l.code, w);
+  }
+  const L = [...by.values()].map((w) => ({ ...w, budget: { ...w.budget, rate: w.budget.units ? w.budget.cost! / w.budget.units : null, units: w.budget.units || null }, actual: { ...w.actual, rate: w.actual.units ? w.actual.cost! / w.actual.units : null, units: w.actual.units || null },
+    planned: w.planned!.cost ? w.planned : undefined, rounded: w.rounded!.cost ? w.rounded : undefined }));
+  for (const l of L) l.leaf = !L.some((o) => o !== l && o.code.startsWith(l.code + '.'));
+  const adminL = L.find((l) => l.code === '10'), D = L.filter((l) => l.leaf && l.code !== '10');
+  const t = (A: WbLine[]): WbTotals => ({ budget: A.reduce((s, l) => s + (l.budget.cost ?? 0), 0), actual: A.reduce((s, l) => s + (l.actual.cost ?? 0), 0), sc: A.reduce((s, l) => s + (l.sc ?? 0), 0),
+    planned: A.reduce((s, l) => s + (l.planned?.cost ?? 0), 0) || undefined, rounded: A.reduce((s, l) => s + (l.rounded?.cost ?? 0), 0) || undefined });
+  const direct = t(D), admin = adminL ? t([adminL]) : undefined;
+  const eligible = admin ? { budget: direct.budget + admin.budget, actual: direct.actual + admin.actual, sc: direct.sc + admin.sc, planned: direct.planned != null ? direct.planned + (admin.planned ?? 0) : undefined, rounded: direct.rounded != null ? direct.rounded + (admin.rounded ?? 0) : undefined } : undefined;
+  return { lines: L.filter((l) => l.code !== '10'), totals: { direct, admin, eligible } };
+}
 
 export const usedTone = (u: number) => (u > 1.1 ? 'critical' : u > 1 ? 'serious' : u > 0.9 ? 'warning' : 'good');
 
@@ -54,6 +80,11 @@ export function Budget() {
         <section class="card span-5">
           <div class="card-h"><div><h2>Report history</h2><p>Cumulative reported spend per project, one point per report</p></div></div>
           <div class="card-b"><Chart height={Math.max(260, C.length * 46 + 40)} label="Cumulative spend per project by report" onClick={(e) => e.seriesId && go(`project/${e.seriesId}`)} option={(t) => historyOption(t, P)} /></div>
+        </section>
+        <section class="card span-12" style={{ overflow: 'hidden' }}>
+          <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Portfolio financial statement</h2><p>All filtered projects summed by budget line, in the layout of the official report</p></div></div>
+          {(() => { const S = portfolioStatement(P); const B = P.reduce((s, p) => s + p.budget, 0); const el = B ? P.reduce((s, p) => s + p.budget * elapsedOf(p, TODAY), 0) / B : 0;
+            return <Statement lines={S.lines} totals={S.totals} elapsed={el} title="portfolio-statement" />; })()}
         </section>
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Budget lines{cat && ` · ${cat}`}</h2><p>Latest report per project · double-click an amount to correct it</p></div></div>
