@@ -13,8 +13,8 @@ const DAY = 86_400_000;
 const ITEMS: { k: string; label: string; hint: string }[] = [
   { k: 'narrative', label: 'Final narrative report', hint: 'Results against the logframe, lessons learned' },
   { k: 'financial', label: 'Final financial report', hint: 'All costs to the end date, in the approved budget format' },
-  { k: 'verification', label: 'Expenditure verification / audit', hint: 'Report of the auditor if required by the contract' },
-  { k: 'payment', label: 'Request for final payment', hint: 'Balance of the EU contribution, or recovery of unused pre-financing' },
+  { k: 'verification', label: 'Expenditure verification and audit', hint: 'Report of the auditor if required by the contract' },
+  { k: 'payment', label: 'Final payment claim', hint: 'Balance of the EU contribution, or recovery of unused pre-financing' },
   { k: 'assets', label: 'Transfer of equipment and assets', hint: 'Hand-over certificates to the beneficiary institutions' },
   { k: 'staff', label: 'Staff and consultant contracts closed', hint: 'No contract running beyond the end date' },
   { k: 'commitments', label: 'Open purchase orders settled', hint: 'All commitments paid or cancelled' },
