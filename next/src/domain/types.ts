@@ -1,4 +1,4 @@
-export interface Country { id: string; name: string; region?: string; iso3?: string }
+export interface Country { id: string; name: string; region?: string; iso3?: string; /** Default CCM (cost centre) for projects in this country */ ccm?: string }
 
 export interface BudgetLine {
   code: string; description?: string; approved?: number | null; actual?: number | null;
@@ -22,7 +22,7 @@ export interface Project {
   /** Start/end are placeholders until the DoA, contract or a confirmed edit sets them. */
   datesTbc?: boolean;
   /** Organisational identifiers from the master project list */
-  mae?: string; pmm?: string; bh?: string; pmmUrl?: string; contractNo?: string; jp?: string;
+  mae?: string; pmm?: string; bh?: string; ccm?: string; pmmUrl?: string; contractNo?: string; jp?: string;
   staffOverrides?: Record<string, import('./staff').StaffOverride>;
   indicators?: import('./documents').Indicator[];
   documents?: { name: string; kind: string; importedAt: string; summary: string[] }[];

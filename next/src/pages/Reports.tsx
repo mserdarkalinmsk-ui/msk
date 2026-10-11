@@ -67,7 +67,7 @@ function Brief() {
       <section>
         <h3>Financial position</h3>
         <p>
-          The {scope.toLowerCase() === 'whole portfolio' ? 'portfolio' : scope} has spent <b>{full(T.spent)}</b> ({pct(T.burn)}) of a {full(T.budget)} budget with {pct(T.elapsed)} of implementation time elapsed,
+          {scope.toLowerCase() === 'whole portfolio' ? 'The portfolio' : `The ${scope} portfolio`} has spent <b>{full(T.spent)}</b> ({pct(T.burn)}) of a {full(T.budget)} budget with {pct(T.elapsed)} of implementation time elapsed,
           {Math.abs(gap) < 0.05 ? ' broadly in line with a linear plan.' : gap < 0 ? ` ${Math.abs(Math.round(gap * 100))} percentage points behind a linear plan.` : ` ${Math.round(gap * 100)} percentage points ahead of a linear plan.`}
           {' '}A further {full(T.committed)} is committed, leaving {full(T.remaining)} uncommitted.
           {final != null && <> At the recent burn rate, end-of-period spend is projected at <b>{full(final)}</b> ({pct(T.budget ? final / T.budget : 0)} of budget).</>}

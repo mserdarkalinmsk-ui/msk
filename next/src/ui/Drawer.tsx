@@ -129,7 +129,7 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
   );
 }
 
-type Draft = Record<'code' | 'name' | 'country' | 'sector' | 'funding' | 'start' | 'end' | 'budget' | 'status' | 'mae' | 'pmm' | 'bh' | 'pmmUrl', string>;
+type Draft = Record<'code' | 'name' | 'country' | 'sector' | 'funding' | 'start' | 'end' | 'budget' | 'status' | 'mae' | 'pmm' | 'bh' | 'ccm' | 'pmmUrl', string>;
 
 export function checkDraft(d: Draft, projects: Project[], selfId?: string): Partial<Record<keyof Draft, string>> {
   const e: Partial<Record<keyof Draft, string>> = {};
@@ -157,7 +157,7 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
     code: project?.code ?? '', name: project?.name ?? '', country: project?.country ?? preset ?? countries[0]?.id ?? '',
     sector: normalizeSector(project?.sector) ?? '', funding: project?.funding ?? '', start: project?.start ?? '', end: project?.end ?? '',
     budget: project ? String(project.budget) : '', status: project?.status ?? 'Active',
-    mae: project?.mae ?? '', pmm: project?.pmm ?? '', bh: project?.bh ?? '', pmmUrl: project?.pmmUrl ?? '',
+    mae: project?.mae ?? '', pmm: project?.pmm ?? '', bh: project?.bh ?? '', ccm: project?.ccm ?? '', pmmUrl: project?.pmmUrl ?? '',
   });
   const [touched, setTouched] = useState(false);
   const errs = checkDraft(d, projects, editing?.id);
@@ -176,7 +176,7 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
       ...(editing ?? { reportingPeriods: [], riskRegister: [], contractNo: prefill?.contractNo, jp: prefill?.jp }), id,
       code: d.code.trim(), name: d.name.trim(), country: d.country, sector: d.sector.trim(), funding: d.funding.trim(),
       start: parseDay(d.start)!, end: parseDay(d.end)!, budget: parseAmount(d.budget)!, status: d.status,
-      mae: d.mae.trim() || undefined, pmm: d.pmm.trim() || undefined, bh: d.bh.trim() || undefined, pmmUrl: validUrl(d.pmmUrl) ?? undefined,
+      mae: d.mae.trim() || undefined, pmm: d.pmm.trim() || undefined, bh: d.bh.trim() || undefined, ccm: d.ccm.trim() || undefined, pmmUrl: validUrl(d.pmmUrl) ?? undefined,
       // placeholder dates stay flagged until someone actually changes them
       datesTbc: editing?.datesTbc && parseDay(d.start) === editing.start && parseDay(d.end) === editing.end ? true : undefined,
     } as Project);
@@ -205,7 +205,7 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
           </div>
         </div>
         <h3 style={{ margin: '8px 0 0', fontSize: '13px', color: 'var(--ink-2)' }}>Identifiers</h3>
-        <div class="form-2">{f('pmm', 'PMM number', { inputMode: 'numeric' })}{f('bh', 'Budget head (BH)', { inputMode: 'numeric' })}</div>
+        <div class="form-2">{f('pmm', 'PMM number', { inputMode: 'numeric' })}{f('bh', 'Budget head (BH)', { inputMode: 'numeric' })}{f('ccm', 'CCM', { inputMode: 'numeric', placeholder: 'e.g. 00901' })}</div>
         <div class="form-2">{f('mae', 'MAE / division')}{f('pmmUrl', 'PMM link', { type: 'url', placeholder: 'https://…' })}</div>
         <button type="submit" hidden />
       </form>
@@ -225,6 +225,7 @@ const FIELDS = [
   { key: 'funding', label: 'Funding', req: false, alias: ['funding', 'donor', 'source'] },
   { key: 'pmm', label: 'PMM number', req: false, alias: ['pmm', 'pmm no', 'pmm number', 'pmm id', 'pmm no.'] },
   { key: 'bh', label: 'Budget head', req: false, alias: ['bh', 'budget head', 'budgethead'] },
+  { key: 'ccm', label: 'CCM', req: false, alias: ['ccm', 'cost centre', 'cost center'] },
   { key: 'mae', label: 'MAE / division', req: false, alias: ['mae', 'division', 'directorate'] },
   { key: 'pmmUrl', label: 'PMM link', req: false, alias: ['pmm link', 'pmm url', 'link', 'url', 'pmmurl'] },
 ] as const;
@@ -278,7 +279,7 @@ function ImportPanel({ close }: { close: () => void }) {
       code: g('code'), name: keep('name', g('name')), country: keep('country', countryId(g('country')) ?? ''), sector: keep('sector', normalizeSector(g('sector')) ?? ''),
       funding: keep('funding', g('funding')), start: keep('start', parseDay(g('start')) ?? g('start')), end: keep('end', parseDay(g('end')) ?? g('end')),
       budget: keep('budget', g('budget')), status: existing?.status ?? 'Active',
-      mae: keep('mae', g('mae')), pmm: keep('pmm', g('pmm')), bh: keep('bh', g('bh')), pmmUrl: keep('pmmUrl', g('pmmUrl')),
+      mae: keep('mae', g('mae')), pmm: keep('pmm', g('pmm')), bh: keep('bh', g('bh')), ccm: keep('ccm', g('ccm')), pmmUrl: keep('pmmUrl', g('pmmUrl')),
     };
     const e = checkDraft(d, ledger.projects, existing?.id);
     if (g('country') && !d.country) e.country = `Unknown country “${g('country')}” (add it under Manage countries)`;
@@ -365,7 +366,7 @@ function ImportPanel({ close }: { close: () => void }) {
             const L: Ledger = JSON.parse(JSON.stringify(ledger));
             importable.forEach((x, i) => {
               const fields = { code: x.d.code, name: x.d.name, country: x.d.country, sector: x.d.sector, funding: x.d.funding, start: parseDay(x.d.start)!, end: parseDay(x.d.end)!, budget: parseAmount(x.d.budget)!,
-                mae: x.d.mae.trim() || undefined, pmm: x.d.pmm.trim() || undefined, bh: x.d.bh.trim() || undefined, pmmUrl: validUrl(x.d.pmmUrl) ?? undefined };
+                mae: x.d.mae.trim() || undefined, pmm: x.d.pmm.trim() || undefined, bh: x.d.bh.trim() || undefined, ccm: x.d.ccm?.trim() || undefined, pmmUrl: validUrl(x.d.pmmUrl) ?? undefined };
               const at = L.projects.findIndex((p) => p.id === x.existing?.id);
               if (at >= 0) L.projects[at] = { ...L.projects[at], ...fields };
               else L.projects.push({ id: `p${Date.now().toString(36)}${i}`, ...fields, status: 'Active', reportingPeriods: [], riskRegister: [] });
@@ -389,12 +390,12 @@ export function checkCountry(c: Country, all: Country[], selfId?: string) {
 function CountryPanel({ close, edit: initial }: { close: () => void; edit?: string }) {
   const { countries, projects } = useStore((s) => s.ledger);
   const [edit, setEdit] = useState<string | null>(initial ?? null);
-  const [d, setD] = useState<Country>({ id: '', name: '', region: '', iso3: '' });
+  const [d, setD] = useState<Country>({ id: '', name: '', region: '', iso3: '', ccm: '' });
   const [err, setErr] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState('');
   useEffect(() => {
     const c = countries.find((x) => x.id === edit);
-    setD(c ? { region: '', iso3: '', ...c } : { id: '', name: '', region: '', iso3: '' }); setErr({});
+    setD(c ? { region: '', iso3: '', ccm: '', ...c } : { id: '', name: '', region: '', iso3: '', ccm: '' }); setErr({});
   }, [edit]);
   const regions = [...new Set(countries.map((c) => c.region).filter(Boolean))] as string[];
   const save = () => {
@@ -402,7 +403,7 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
     setErr(e as Record<string, string>); if (Object.keys(e).length) return;
     let id = d.id;
     if (!id) { const b = (d.iso3 || d.name).toLowerCase().replace(/[^a-z]/g, '').slice(0, 3) || 'c'; id = b; let i = 2; while (countries.some((c) => c.id === id)) id = b + i++; }
-    upsertCountry({ id, name: d.name.trim(), region: d.region?.trim() || undefined, iso3: d.iso3?.toUpperCase() || undefined });
+    upsertCountry({ id, name: d.name.trim(), region: d.region?.trim() || undefined, iso3: d.iso3?.toUpperCase() || undefined, ccm: d.ccm?.trim() || undefined });
     setEdit(null);
   };
   return (
@@ -423,6 +424,8 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
               <div class="field" data-invalid={err.iso3 ? '' : undefined}><label for="c-iso">ISO code</label>
                 <input id="c-iso" maxLength={3} value={d.iso3} placeholder="TUR" onInput={(e) => setD({ ...d, iso3: (e.target as HTMLInputElement).value })} />
                 {err.iso3 && <span class="err">{err.iso3}</span>}</div>
+              <div class="field"><label for="c-ccm">CCM</label>
+                <input id="c-ccm" inputMode="numeric" value={d.ccm} placeholder="00901" onInput={(e) => setD({ ...d, ccm: (e.target as HTMLInputElement).value })} /></div>
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button class="btn" onClick={() => setEdit(null)}>Cancel</button>
