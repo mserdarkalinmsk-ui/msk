@@ -14,7 +14,7 @@ export interface State {
   ledger: Ledger;
   route: string;
   filters: Filters;
-  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'documents'; projectId: string } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] };
+  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] };
   palette: boolean;
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];

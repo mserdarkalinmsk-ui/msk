@@ -1,3 +1,4 @@
+import { PortfolioImport } from './PortfolioImport';
 import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { backupNow } from './Backup';
 import { AlertPanel } from './AlertPanel';
@@ -38,6 +39,7 @@ export function Drawer() {
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}
+        {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
         {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
       </div>
     </>
@@ -243,6 +245,7 @@ function ImportPanel({ close }: { close: () => void }) {
   const ELSEWHERE = 'Financial reports and project documents are added inside their project (open the project → Import report / Add documents), so they can never land on the wrong project.';
   async function readMany(files: File[]) {
     if (files.some((f) => /\.(pdf|docx)$/i.test(f.name))) { setErr(ELSEWHERE); return; }
+    if (files.length > 1 && files.every((f) => /\.xls[xm]$/i.test(f.name))) { set({ drawer: { kind: 'portfolio-import', files } }); return; }
     if (files.length > 1) { setErr('Drop one project list or backup file at a time.'); return; }
     return read(files[0]);
   }
