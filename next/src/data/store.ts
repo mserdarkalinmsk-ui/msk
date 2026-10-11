@@ -168,5 +168,5 @@ export function filtered(s: State): Project[] {
   const qq = q.trim().toLowerCase();
   return s.ledger.projects.filter((p) =>
     (!country || p.country === country) && (!sector || p.sector === sector) &&
-    (!qq || `${p.code} ${p.name} ${p.sector} ${p.funding}`.toLowerCase().includes(qq)));
+    (!qq || `${p.code} ${p.name} ${p.sector} ${p.funding} ${p.pmm ?? ''} ${p.bh ?? ''}`.toLowerCase().includes(qq)));
 }

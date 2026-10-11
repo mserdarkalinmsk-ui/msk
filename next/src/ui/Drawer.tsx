@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, set, upsertCountry, upsertProject, useStore } from '../data/store';
 import type { Country } from '../domain/types';
 import { burnGap, elapsed, lines, money, parseDate, riskScore, spendPoints, validateLedger } from '../domain/calc';
-import { normalizeSector, SECTORS, type Ledger, type Project } from '../domain/types';
+import { normalizeSector, SECTORS, validUrl, type Ledger, type Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart } from './Chart';
 import { parseAmount, parseCSV, parseDay } from './csv';
@@ -96,6 +96,10 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
           <dt>Budget</dt><dd class="num">{full(m.budget)}</dd>
           <dt>Committed</dt><dd class="num">{full(m.committed)}</dd>
           <dt>Status</dt><dd>{p.status || 'Active'}</dd>
+          {p.pmm && <><dt>PMM</dt><dd class="num">{p.pmm}</dd></>}
+          {p.bh && <><dt>Budget head</dt><dd class="num">{p.bh}</dd></>}
+          {p.mae && <><dt>MAE</dt><dd>{p.mae}</dd></>}
+          {validUrl(p.pmmUrl) && <><dt>PMM link</dt><dd><a href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer">Open in PMM ↗</a></dd></>}
         </dl>
         {risks.length > 0 && (
           <section class="card"><div class="card-h"><h2>Open risks</h2></div>
@@ -115,7 +119,7 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
   );
 }
 
-type Draft = Record<'code' | 'name' | 'country' | 'sector' | 'funding' | 'start' | 'end' | 'budget' | 'status', string>;
+type Draft = Record<'code' | 'name' | 'country' | 'sector' | 'funding' | 'start' | 'end' | 'budget' | 'status' | 'mae' | 'pmm' | 'bh' | 'pmmUrl', string>;
 
 export function checkDraft(d: Draft, projects: Project[], selfId?: string): Partial<Record<keyof Draft, string>> {
   const e: Partial<Record<keyof Draft, string>> = {};
@@ -130,6 +134,9 @@ export function checkDraft(d: Draft, projects: Project[], selfId?: string): Part
   if (!s) e.start = 'Use YYYY-MM-DD';
   if (!en) e.end = 'Use YYYY-MM-DD';
   else if (s && en <= s) e.end = 'Must be after start';
+  if (d.pmm && !/^\d+$/.test(d.pmm.trim())) e.pmm = 'Digits only';
+  if (d.bh && !/^\d+$/.test(d.bh.trim())) e.bh = 'Digits only';
+  if (d.pmmUrl && !validUrl(d.pmmUrl)) e.pmmUrl = 'Full http(s) link, no login in the link';
   return e;
 }
 
@@ -139,6 +146,7 @@ export function ProjectForm({ close, project, preset }: { close: () => void; pro
     code: project?.code ?? '', name: project?.name ?? '', country: project?.country ?? preset ?? countries[0]?.id ?? '',
     sector: normalizeSector(project?.sector) ?? '', funding: project?.funding ?? '', start: project?.start ?? '', end: project?.end ?? '',
     budget: project ? String(project.budget) : '', status: project?.status ?? 'Active',
+    mae: project?.mae ?? '', pmm: project?.pmm ?? '', bh: project?.bh ?? '', pmmUrl: project?.pmmUrl ?? '',
   });
   const [touched, setTouched] = useState(false);
   const errs = checkDraft(d, projects, project?.id);
@@ -156,6 +164,7 @@ export function ProjectForm({ close, project, preset }: { close: () => void; pro
       ...(project ?? { id: 'p' + Date.now().toString(36), reportingPeriods: [], riskRegister: [] }),
       code: d.code.trim(), name: d.name.trim(), country: d.country, sector: d.sector.trim(), funding: d.funding.trim(),
       start: parseDay(d.start)!, end: parseDay(d.end)!, budget: parseAmount(d.budget)!, status: d.status,
+      mae: d.mae.trim() || undefined, pmm: d.pmm.trim() || undefined, bh: d.bh.trim() || undefined, pmmUrl: validUrl(d.pmmUrl) ?? undefined,
     } as Project);
     close();
   };
@@ -181,6 +190,9 @@ export function ProjectForm({ close, project, preset }: { close: () => void; pro
             <select id="f-status" value={d.status} onChange={(e) => setD({ ...d, status: (e.target as HTMLSelectElement).value })}>{['Active', 'Pipeline', 'Closed'].map((o) => <option>{o}</option>)}</select>
           </div>
         </div>
+        <h3 style={{ margin: '8px 0 0', fontSize: '13px', color: 'var(--ink-2)' }}>Identifiers</h3>
+        <div class="form-2">{f('pmm', 'PMM number', { inputMode: 'numeric' })}{f('bh', 'Budget head (BH)', { inputMode: 'numeric' })}</div>
+        <div class="form-2">{f('mae', 'MAE / division')}{f('pmmUrl', 'PMM link', { type: 'url', placeholder: 'https://…' })}</div>
         <button type="submit" hidden />
       </form>
       <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" onClick={save}>{project ? 'Save changes' : 'Add project'}</button></div>
@@ -197,6 +209,10 @@ const FIELDS = [
   { key: 'end', label: 'End', req: true, alias: ['end', 'end date', 'bitiş', 'to'] },
   { key: 'sector', label: 'Sector', req: true, alias: ['sector', 'sektör', 'theme'] },
   { key: 'funding', label: 'Funding', req: false, alias: ['funding', 'donor', 'source'] },
+  { key: 'pmm', label: 'PMM number', req: false, alias: ['pmm', 'pmm no', 'pmm number', 'pmm id', 'pmm no.'] },
+  { key: 'bh', label: 'Budget head', req: false, alias: ['bh', 'budget head', 'budgethead'] },
+  { key: 'mae', label: 'MAE / division', req: false, alias: ['mae', 'division', 'directorate'] },
+  { key: 'pmmUrl', label: 'PMM link', req: false, alias: ['pmm link', 'pmm url', 'link', 'url', 'pmmurl'] },
 ] as const;
 
 function ImportPanel({ close }: { close: () => void }) {
@@ -229,11 +245,19 @@ function ImportPanel({ close }: { close: () => void }) {
   };
   const parsed = rows?.slice(1).map((r, i) => {
     const g = (k: string) => (map[k] != null ? (r[map[k]] ?? '').trim() : '');
-    const d: Draft = { code: g('code'), name: g('name'), country: countryId(g('country')) ?? '', sector: normalizeSector(g('sector')) ?? '', funding: g('funding'), start: parseDay(g('start')) ?? g('start'), end: parseDay(g('end')) ?? g('end'), budget: g('budget'), status: 'Active' };
-    const e = checkDraft(d, ledger.projects);
+    const existing = ledger.projects.find((p) => p.code.toLowerCase() === g('code').toLowerCase());
+    // Columns missing from the file keep the existing project's values.
+    const keep = (k: string, v: string) => (map[k] == null && existing ? String((existing as unknown as Record<string, unknown>)[k] ?? '') : v);
+    const d: Draft = {
+      code: g('code'), name: keep('name', g('name')), country: keep('country', countryId(g('country')) ?? ''), sector: keep('sector', normalizeSector(g('sector')) ?? ''),
+      funding: keep('funding', g('funding')), start: keep('start', parseDay(g('start')) ?? g('start')), end: keep('end', parseDay(g('end')) ?? g('end')),
+      budget: keep('budget', g('budget')), status: existing?.status ?? 'Active',
+      mae: keep('mae', g('mae')), pmm: keep('pmm', g('pmm')), bh: keep('bh', g('bh')), pmmUrl: keep('pmmUrl', g('pmmUrl')),
+    };
+    const e = checkDraft(d, ledger.projects, existing?.id);
     if (g('country') && !d.country) e.country = `Unknown country “${g('country')}” (add it under Manage countries)`;
     if (g('sector') && !d.sector) e.sector = `Unknown sector “${g('sector')}”`;
-    return { line: i + 2, d, e };
+    return { line: i + 2, d, e, existing };
   }) ?? [];
   const good = parsed.filter((x) => !Object.keys(x.e).length);
   const dupInFile = new Set<string>();
@@ -283,14 +307,14 @@ function ImportPanel({ close }: { close: () => void }) {
               </div>
             </section>
             <section class="card">
-              <div class="card-h"><div><h2>Preview</h2><p>{importable.length} ready · {parsed.length - importable.length} with problems</p></div></div>
+              <div class="card-h"><div><h2>Preview</h2><p>{importable.filter((x) => !x.existing).length} new · {importable.filter((x) => x.existing).length} updates · {parsed.length - importable.length} with problems</p></div></div>
               <ul class="att" style={{ marginTop: '8px', maxHeight: '280px', overflow: 'auto' }}>
                 {parsed.slice(0, 200).map((x) => {
                   const bad = Object.entries(x.e);
                   return (
                     <li style={{ cursor: 'default' }}>
                       <span class={`badge ${bad.length ? 'critical' : 'good'}`}>Row {x.line}</span>
-                      <div><div class="t">{x.d.code || '—'} · {x.d.name || '—'}</div>
+                      <div><div class="t">{x.d.code || '—'} · {x.d.name || '—'} {x.existing && !bad.length && <span class="badge neutral count">update</span>}</div>
                         <div class="d">{bad.length ? bad.map(([k, v]) => `${k}: ${v}`).join(' · ') : `${short(parseAmount(x.d.budget) ?? 0)} · ${x.d.start} → ${x.d.end}`}</div></div><span />
                     </li>
                   );
@@ -314,7 +338,13 @@ function ImportPanel({ close }: { close: () => void }) {
           <button class="btn" onClick={() => setRows(null)}>Cancel</button>
           <button class="btn primary" disabled={!importable.length} onClick={() => {
             const L: Ledger = JSON.parse(JSON.stringify(ledger));
-            importable.forEach((x, i) => L.projects.push({ id: `p${Date.now().toString(36)}${i}`, code: x.d.code, name: x.d.name, country: x.d.country, sector: x.d.sector, funding: x.d.funding, start: x.d.start, end: x.d.end, budget: parseAmount(x.d.budget)!, status: 'Active', reportingPeriods: [], riskRegister: [] }));
+            importable.forEach((x, i) => {
+              const fields = { code: x.d.code, name: x.d.name, country: x.d.country, sector: x.d.sector, funding: x.d.funding, start: parseDay(x.d.start)!, end: parseDay(x.d.end)!, budget: parseAmount(x.d.budget)!,
+                mae: x.d.mae.trim() || undefined, pmm: x.d.pmm.trim() || undefined, bh: x.d.bh.trim() || undefined, pmmUrl: validUrl(x.d.pmmUrl) ?? undefined };
+              const at = L.projects.findIndex((p) => p.id === x.existing?.id);
+              if (at >= 0) L.projects[at] = { ...L.projects[at], ...fields };
+              else L.projects.push({ id: `p${Date.now().toString(36)}${i}`, ...fields, status: 'Active', reportingPeriods: [], riskRegister: [] });
+            });
             replaceLedger(L, `Imported ${importable.length} project${importable.length > 1 ? 's' : ''}`); close();
           }}>Import {importable.length} row{importable.length === 1 ? '' : 's'}</button>
         </div>

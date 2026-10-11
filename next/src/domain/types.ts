@@ -17,6 +17,8 @@ export interface Project {
   id: string; code: string; name: string; country: string; sector?: string; funding?: string;
   start: string; end: string; budget: number; spent?: number; committed?: number; fte?: number;
   successor?: string; status?: string;
+  /** Organisational identifiers from the master project list */
+  mae?: string; pmm?: string; bh?: string; pmmUrl?: string;
   reportingPeriods?: ReportingPeriod[];
   doa?: { start: string; months: number; acts: Activity[] };
   contract?: Record<string, unknown>;
@@ -30,10 +32,17 @@ export type Sector = (typeof SECTORS)[number];
 
 /** Maps free-text sector names (any case, common variants, Turkish) to the fixed list. */
 export function normalizeSector(s: string | undefined): Sector | null {
-  const t = (s ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+  // Fold case and accents (incl. Turkish İ/ı) so "İnsan Hakları" matches "insan haklari".
+  const t = (s ?? '').trim().replace(/[İI]/g, 'i').replace(/ı/g, 'i').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[\s_-]+/g, ' ');
   if (!t) return null;
-  if (/^(human rights?|hr|insan haklar[ıi])$/.test(t)) return 'Human Rights';
+  if (/^(human rights?|hr|insan haklari)$/.test(t)) return 'Human Rights';
   if (/^(democracy|democratic|demokrasi)$/.test(t)) return 'Democracy';
-  if (/^(rule of law|rol|hukukun üstünlüğü|hukukun ustunlugu)$/.test(t)) return 'Rule of Law';
+  if (/^(rule of law|rol|hukukun ustunlugu)$/.test(t)) return 'Rule of Law';
   return null;
+}
+
+/** Only plain http(s) links without embedded credentials are accepted. */
+export function validUrl(v: string | undefined): string | null {
+  const t = (v ?? '').trim(); if (!t) return null;
+  try { const u = new URL(t); return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.href : null; } catch { return null; }
 }

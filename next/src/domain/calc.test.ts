@@ -118,3 +118,19 @@ describe('budget lines', () => {
     expect(s.late).toBeGreaterThanOrEqual(0);
   });
 });
+
+import { normalizeSector, validUrl } from './types';
+describe('identifiers', () => {
+  it('accepts only safe http(s) links', () => {
+    expect(validUrl('https://pmm.example.org/p/123')).toBe('https://pmm.example.org/p/123');
+    expect(validUrl('javascript:alert(1)')).toBeNull();
+    expect(validUrl('https://user:pw@x.org')).toBeNull();
+    expect(validUrl('pmm/123')).toBeNull();
+  });
+  it('normalises sector names', () => {
+    expect(normalizeSector('rule_of_law')).toBe('Rule of Law');
+    expect(normalizeSector('İnsan Hakları')).toBe('Human Rights');
+    expect(normalizeSector('HUKUKUN ÜSTÜNLÜĞÜ')).toBe('Rule of Law');
+    expect(normalizeSector('Health')).toBeNull();
+  });
+});

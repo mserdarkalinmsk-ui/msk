@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { deleteProjects, deleteReport, deleteRisk, go, set, updateLine, upsertRisk, useStore } from '../data/store';
 import { attention, burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, riskScore, spendPoints } from '../domain/calc';
-import type { Project, ReportingPeriod, Risk } from '../domain/types';
+import { validUrl, type Project, type ReportingPeriod, type Risk } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { parseAmount } from '../ui/csv';
@@ -26,10 +26,11 @@ export function ProjectPage({ id }: { id: string }) {
     <>
       <div class="ph">
         <div style={{ minWidth: 0 }}>
-          <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span>{month(p.start)} → {month(p.end)}</span><span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
+          <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span>{month(p.start)} → {month(p.end)}</span>{p.pmm && <span>PMM <b class="num">{p.pmm}</b></span>}{p.bh && <span>BH <b class="num">{p.bh}</b></span>}{p.mae && <span>MAE <b>{p.mae}</b></span>}<span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
           <h2 class="ph-title">{p.name}</h2>
         </div>
         <div class="ph-actions">
+          {validUrl(p.pmmUrl) && <a class="btn" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`Open PMM for ${p.name}`}>PMM ↗</a>}
           <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
