@@ -29,7 +29,7 @@ export function AlertPanel({ projectId, kind, ids, close }: { projectId: string;
     body = <table class="mini ap-t"><thead><tr><th>Code</th><th>Activity</th><th class="r">Planned end</th></tr></thead>
       <tbody>{late.map((a) => <tr><td class="num">{a.code}</td><td>{a.name}</td><td class="r num">month {a.plannedEnd}</td></tr>)}</tbody></table>;
   } else if (kind === 'contract') {
-    tab = 'People';
+    tab = 'Staff';
     const R = renewals(roster(p, TODAY), TODAY, 90);
     body = <table class="mini ap-t"><thead><tr><th>Name</th><th>Position</th><th>Ends</th><th class="r">Days</th></tr></thead>
       <tbody>{R.map((a) => <tr><td>{a.display}</td><td>{a.position}</td><td class="num">{date(a.end)}</td><td class="r num">{daysUntil(a.end, TODAY)}</td></tr>)}</tbody></table>;

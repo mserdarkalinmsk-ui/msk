@@ -22,14 +22,14 @@ import { projectSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
 import { ProjectForesight } from './Depletion';
 
-const TABS = ['Summary', 'Financial report', 'Budget lines', 'Scenario', 'Revision', 'Closure', 'Reports', 'People', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
+const TABS = ['Summary', 'Financial report', 'Budget lines', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
 /** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
 const GROUPS: { label: string; tabs: Tab[] }[] = [
   { label: 'Summary', tabs: ['Summary'] },
   { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
   { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
-  { label: 'People', tabs: ['People'] },
+  { label: 'Staff', tabs: ['Staff'] },
   { label: 'Documents', tabs: ['Results & documents', 'History'] },
 ];
 const LABEL: Partial<Record<Tab, string>> = { 'Results & documents': 'Documents' };
@@ -43,7 +43,7 @@ export function ProjectPage({ id }: { id: string }) {
   const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
   const reports = reportsByDate(p);
   const plan = planStats(p, TODAY);
-  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, People: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };
+  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, Staff: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };
   return (
     <>
       <div class="ph">
@@ -81,7 +81,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Financial report' && <FinancialReport p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
       {tab === 'Reports' && <Reports p={p} />}
-      {tab === 'People' && (roster(p, TODAY).length ? <><StaffBoard people={roster(p, TODAY)} /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffReport projects={[p]} /></div></> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
+      {tab === 'Staff' && (roster(p, TODAY).length ? <><StaffBoard people={roster(p, TODAY)} /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffReport projects={[p]} /></div></> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
       {tab === 'Activity plan' && <Plan p={p} />}
       {tab === 'Risks' && <Risks p={p} />}
       {tab === 'Results & documents' && <ResultsDocs p={p} />}

@@ -171,7 +171,7 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/report-import.png` });
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(300);
   check(await p.locator('.att li').count() === nReports + 1, 'imported report added as a new version');
-  await ptab(p, 'People'); await p.waitForTimeout(300);
+  await ptab(p, 'Staff'); await p.waitForTimeout(300);
   check(await p.locator('.dt-cell:has-text("Ayla Testova")').count() === 1, 'staff read from the Purchase Orders sheet');
 
   // People: renewal queue → confirm contract dates

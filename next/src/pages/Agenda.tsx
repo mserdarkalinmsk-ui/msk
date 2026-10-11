@@ -11,7 +11,7 @@ type Kind = 'report' | 'contract' | 'activity' | 'project';
 export interface Ev { day: string; kind: Kind; p: Project; title: string; sub: string; tone: 'bad' | 'warn' | 'info' | 'good' }
 const KIND: Record<Kind, { label: string; color: string; tab?: string }> = {
   report: { label: 'Reports', color: '#e5484d', tab: 'Reports' },
-  contract: { label: 'Staff contracts', color: '#8e4ec6', tab: 'People' },
+  contract: { label: 'Staff contracts', color: '#8e4ec6', tab: 'Staff' },
   activity: { label: 'Activities', color: '#f5a524', tab: 'Activity plan' },
   project: { label: 'Project ends', color: '#3b82c4' },
 };

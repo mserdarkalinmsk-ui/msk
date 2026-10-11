@@ -46,7 +46,7 @@ export function Palette() {
     const tab = (id: string, t: string) => () => { go(`project/${id}`); setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: t })), 60); };
     return [
       ...projects.flatMap((p) => lines(p).map((l) => ({ group: 'Budget lines', label: `${p.bh ? `BH ${p.bh}` : p.code} · ${l.code} ${l.description ?? ''}`, hint: short(l.approved ?? 0), run: tab(p.id, 'Budget lines') }))),
-      ...projects.flatMap((p) => roster(p, TODAY).map((a) => ({ group: 'People', label: `${a.display} — ${a.position} · ${p.bh ? `BH ${p.bh}` : p.code}`, hint: a.status, run: tab(p.id, 'People') }))),
+      ...projects.flatMap((p) => roster(p, TODAY).map((a) => ({ group: 'Staff', label: `${a.display} — ${a.position} · ${p.bh ? `BH ${p.bh}` : p.code}`, hint: a.status, run: tab(p.id, 'People') }))),
     ];
   }, [projects, open]);
 

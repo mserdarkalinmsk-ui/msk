@@ -129,7 +129,7 @@ export function Deck() {
         </div>
       </Slide>
 
-      <Slide n={9} of={of} scope={scope} title="People" sub="Staff paid from the projects">
+      <Slide n={9} of={of} scope={scope} title="Staff" sub="Staff paid from the projects">
         <div class="sl-kpis">
           <div><span>Active staff</span><b>{active.length}</b></div>
           <div><span>Contracts ending ≤ 90 days</span><b style={{ color: ren.length ? '#c27c0e' : undefined }}>{ren.length}</b></div>
