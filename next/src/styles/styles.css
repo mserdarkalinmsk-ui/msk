@@ -392,3 +392,10 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .ew-bar{height:5px;background:#e5e5e5;border-radius:3px;margin:6px 0}.ew-bar span{display:block;height:100%;border-radius:3px;background:#555}
 .ew-high .ew-bar span{background:#d9534f}.ew-medium .ew-bar span{background:#e8b96a}.ew-low .ew-bar span{background:#4f9a7a}
 .ew ul{margin:0;padding-left:16px}.ew li b{float:right}.ew-sp{margin-top:6px}.em-up{color:#c00;font-weight:700}
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
+.gauge{display:flex;flex-direction:column;align-items:center;padding:12px 10px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-1)}
+.gauge svg{width:100%;max-width:180px}.gauge b{font-size:24px;margin-top:-34px;letter-spacing:-.02em}.gauge span{font-size:12px;font-weight:600;color:var(--ink-2);margin-top:6px;text-align:center}
+.gauge small{font-size:11px;color:var(--ink-3);text-align:center}
+.em .gauges .gauge{background:#fff;border-color:#e3e3e3}
+.ck-g{margin:14px 0 0}.ck-g .gauge{box-shadow:none;background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.gauge b{margin-top:2px}

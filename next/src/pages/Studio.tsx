@@ -8,6 +8,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, pct } from '../ui/format';
 import { latestWorkbook } from './FinancialReport';
+import { Gauge } from '../ui/Gauge';
 import { catchUp, perfTrend, staffProjection, warningScore } from '../domain/monitor';
 import { HEADINGS } from '../domain/calc';
 import { download, type Cell, type SheetSpec } from '../ui/xlsxwrite';
@@ -229,6 +230,13 @@ export function Compare() {
           <option value="perf">Sort: Performance</option><option value="scp">Sort: S&C vs planned</option><option value="amount">Sort: Project amount</option><option value="title">Sort: Title</option><option value="end">Sort: End date</option><option value="bh">Sort: BH</option></select>
         <label class="btn" title="Drop this month's report workbooks for all projects">⤒ Monthly update<input type="file" multiple accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = [...((e.target as HTMLInputElement).files ?? [])]; (e.target as HTMLInputElement).value = ''; if (f.length) set({ drawer: { kind: 'portfolio-import', files: f } }); }} /></label>
         <button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+      <div class="gauges no-print">
+        <Gauge value={tp} label="Spent vs planned" sub={`${n0(T.s)} of ${n0(T.pl)} planned`} />
+        <Gauge value={tsc} label="S&C vs planned" sub="staff commitments excluded" />
+        <Gauge value={T.pl ? (T.sc - T.rk) / T.pl : 0} label="Adjusted S&C vs planned" sub={`after ${riskPct}% commitment risk`} />
+        <Gauge value={T.s ? T.hs / T.s : 0} max={1} label="Staff ratio (spent)" bands={[[0.35, '#30a46c'], [0.5, '#f5a524'], [1, '#e5484d']]} />
+        <Gauge value={rows.length ? rows.reduce((a, r) => a + r.ws.score, 0) / rows.length / 100 : 0} max={1} fmt={(v) => String(Math.round(v * 100))} label="Average attention score" sub={`${rows.filter((r) => r.ws.level === 'high').length} high · ${rows.filter((r) => r.ws.level === 'medium').length} medium`} bands={[[0.25, '#30a46c'], [0.5, '#f5a524'], [1, '#e5484d']]} />
+      </div>
       <header class="em-h">
         <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
           <tr><td>100%</td><td>-</td><td class="em-blue" /></tr><tr><td>90%</td><td>100%</td><td class="em-green" /></tr>
