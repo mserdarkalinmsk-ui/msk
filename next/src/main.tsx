@@ -1,3 +1,4 @@
+import { WeekDigest } from './ui/WeekDigest';
 import { render } from 'preact';
 import './styles/tokens.css';
 import './styles/app.css';
@@ -43,6 +44,7 @@ function App() {
       </Shell>
       <Drawer />
       <Palette />
+      <WeekDigest />
       <Toasts />
     </>
   );
