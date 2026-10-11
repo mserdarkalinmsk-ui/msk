@@ -71,3 +71,21 @@ describe('budget annex notes & logframe', () => {
     expect([f.number, f.months, f.start, f.end, f.prefinancing, f.flexPct, f.progDays]).toEqual(['700001964', 60, '2024-07-12', '2029-07-11', 30, 15, 60]);
   });
 });
+
+describe('justification PDF', () => {
+  it('assigns wrapped, vertically centred cell text to the right line', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { readPdf } = await import('../ui/docread');
+    const b = readFileSync('tests/fixtures/justification.pdf');
+    const d = await readPdf(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength), 'justification.pdf');
+    const N = d.notes!;
+    expect(Object.keys(N)).toEqual(['1.1.1.2', '1.1.1.3', '1.1.1.4', '1.1.1.7']);
+    expect(N['1.1.1.2'].clarification).toMatch(/^PM in charge of overall management .* 4\.3\.2\.$/);
+    expect(N['1.1.1.2'].justification).toMatch(/^1 full-time manager in Ankara for 60 months\. .*various factors\.$/);
+    expect(N['1.1.1.3'].clarification).toMatch(/^SPO assists the PM/);
+    expect(N['1.1.1.3'].justification).toBe('1 full-time officer for 48 months.');
+    expect(N['1.1.1.4'].clarification).toBe('PO organises activities.');
+    expect(N['1.1.1.7'].description).toBe('Project assistant (2 persons: 1 PA 100%, 1 PA 80%)');
+    expect(N['1.1.1.7'].justification).toMatch(/^Grade B2\./);
+  }, 20000);
+});
