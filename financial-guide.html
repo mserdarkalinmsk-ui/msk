@@ -1025,6 +1025,48 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .next-act em.on { background: var(--c1); border-color: var(--c1); color: #fff; }
 @media (max-width: 700px) { .next-act { flex-wrap: wrap; } }
 .card.case-form { position: sticky; } @media (max-width: 980px) { .card.case-form { position: static; } }
+/* Focused reader panel: one lead idea, calm body, obligations gathered in one box. */
+.rd-text { display: grid; gap: 14px; }
+.rd-text p { margin: 0; font-size: 15px; line-height: 1.75; color: var(--ink-2); max-width: 72ch; }
+.rd-text .rd-lead { font-size: 18px; line-height: 1.55; color: var(--navy); font-weight: 500; letter-spacing: -.005em; }
+.rd-rules { border-radius: 14px; padding: 14px 16px; background: var(--panel-2); border: 1px solid var(--line); }
+.rd-rules small, .rd-tipbox small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--navy); margin-bottom: 8px; }
+.rd-rules ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rd-rules li { position: relative; padding-left: 28px; font-size: 14.5px; line-height: 1.6; color: var(--ink); }
+.rd-rules li::before { content: "✓"; position: absolute; left: 0; top: 2px; width: 19px; height: 19px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; background: var(--navy); }
+.rd-tipbox { border-left: 3px solid var(--c3); padding: 4px 0 4px 14px; }
+.rd-tipbox small { color: var(--c3); } .rd-tipbox p { font-size: 14px; }
+
+/* ---------- essentials learning flow ---------- */
+.lf { display: grid; gap: 16px; }
+.lf-dots { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.lf-dots button { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line-2); background: var(--panel); color: var(--muted); font: 600 13px var(--font); cursor: pointer; }
+.lf-dots button.ok { background: var(--good); border-color: var(--good); color: #fff; }
+.lf-dots button.on { border-color: var(--navy); color: var(--navy); box-shadow: 0 0 0 4px color-mix(in srgb, var(--navy) 15%, transparent); }
+.lf-dots button.ok.on { color: #fff; }
+.lf-dots span { margin-left: 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.lf-card { display: grid; grid-template-columns: 240px minmax(0, 1fr); border-radius: 22px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 24px 50px -36px var(--navy); }
+.lf-left { display: flex; flex-direction: column; justify-content: space-between; gap: 20px; padding: 26px 24px; color: #fff; background: linear-gradient(160deg, var(--c), color-mix(in srgb, var(--c) 55%, var(--navy))); }
+.lf-cat { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.lf-fig { font-size: 30px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; word-break: break-word; }
+.lf-main { padding: 28px 30px 22px; display: flex; flex-direction: column; }
+.lf-main h2 { margin: 0 0 10px; font-size: 26px; letter-spacing: -.02em; color: var(--navy); }
+.lf-main > p { margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink-2); max-width: 66ch; }
+.lf-q { margin-top: 22px; padding: 16px 18px; border-radius: 16px; background: var(--panel-2); border: 1px solid var(--line); }
+.lf-q small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.lf-q b { display: block; margin: 4px 0 12px; font-size: 15.5px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+.lf-btns { display: flex; gap: 8px; }
+.lf-btns button { min-width: 96px; padding: 9px 18px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel); font: 600 14px var(--font); color: var(--ink); cursor: pointer; }
+.lf-btns button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.lf-btns button.right { background: var(--good); border-color: var(--good); color: #fff; } .lf-btns button.wrong { background: var(--risk); border-color: var(--risk); color: #fff; }
+.lf-fb { margin: 12px 0 0; font-size: 14px; line-height: 1.55; } .lf-fb.good { color: var(--good); } .lf-fb.bad { color: var(--risk); }
+.lf-retry { margin-left: 6px; border: 0; background: none; color: var(--accent); font: 600 13.5px var(--font); text-decoration: underline; cursor: pointer; }
+.lf-main footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 20px; }
+.lf-main footer a:not(.btn) { font-size: 13.5px; color: var(--c); font-weight: 600; text-decoration: none; }
+.lf-main footer span { display: flex; gap: 8px; }
+.lf-done { padding: 14px 18px; border-radius: 14px; background: var(--good-soft); color: var(--good); font-size: 14.5px; }
+@media (max-width: 760px) { .lf-card { grid-template-columns: minmax(0, 1fr); } .lf-left { flex-direction: row; align-items: center; } .lf-fig { font-size: 22px; } .lf-main { padding: 20px; } }
+.case-bar.empty { text-align: left; }
 
 </style>
 </head>
@@ -7697,7 +7739,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:40</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:42</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -7744,21 +7786,53 @@ window.FG_CONTENT = {
 
   /* ---------- the twelve essentials (all from the Procurement Guide; €184,000 replaces €171,000) ---------- */
   const ESSENTIALS = [
-    ["Value", "Three routes, set by value", "€2,000 / €6,000 · €184,000", "Up to €2,000 (goods, general services, works) or €6,000 (intellectual services): direct award. Above that: competitive bidding. From €184,000: international public call for tenders.", "Thresholds & Procedure"],
-    ["Value", "Count the whole need — never split", "Full period", "The threshold is the total foreseeable value of the need, excluding VAT, over the whole period, including renewals, lots and call-offs. Artificial splitting is prohibited and is a fraud red flag.", "Thresholds & Procedure"],
-    ["Competition", "Competition is the default", "3 suppliers", "Competitive bidding invites at least three potential suppliers. A direct award above the low-value limits is exceptional: unforeseen urgency not caused by the buyer, technical requirements, or considerations of fact or law.", "Market & Suppliers"],
-    ["Approval", "No approval, no launch", "CCM · DLAPIL · TB", "The CCM approves the tender documents in writing. Extrabudgetary funding between €55,000 and €184,000 needs a DLAPIL Legal Compliance Review first (5 working days). International calls need Tenders Board authorisation — never retroactively.", "Authorise & Launch"],
-    ["Fairness", "Criteria are fixed once published", "Locked", "Exclusion, eligibility and award criteria and their weightings cannot be changed or subdivided after publication. Price normally weighs at least 20 points.", "Tender Design"],
-    ["Fairness", "Same information for everyone", "Q&A", "Answer bidders only through the published question-and-answer procedure, so every bidder has the same information at the same time. Never share details of a future call in advance.", "Authorise & Launch"],
-    ["Evaluation", "Gates before scores", "3 gates", "An offer is first checked for admissibility, then exclusion, then eligibility (pass or fail). Only the remaining offers are scored against the published award criteria, with a written justification.", "Open & Evaluate"],
-    ["Evaluation", "Clarify, never change an offer", "Art. 17.2", "You may ask a bidder to clarify, but the offer itself cannot change. A missing financial offer or an unsigned act of engagement cannot be fixed after opening.", "Open & Evaluate"],
-    ["Award", "Sign the winner, then inform the others", "15 days", "Sign with the selected supplier first, then notify unsuccessful bidders within 15 days, disclosing only the winner's name, country and amount.", "Negotiate & Award"],
-    ["Contract", "PO first, signature second, work third", "PO", "A purchase order must exist in FIMS before any contract is signed, and no supplier may start work before the Organisation has signed.", "Contract Signing"],
-    ["Contract", "Amend before expiry, watch the ceiling", "€184,000", "Amendments are made before the contract expires and never change its scope. A framework contract awarded by competitive bidding must never exceed €184,000.", "Contract Management"],
-    ["Integrity", "Declare, refuse, archive", "10 years", "Declare your interests every year by the end of January, accept no gifts, and keep the complete procurement file for 10 years — missing justifications are a recurring audit finding.", "Performance & Filing"],
+    ["Value", "Three routes, set by value", "€2,000 / €6,000 · €184,000", "Up to €2,000 (goods, general services, works) or €6,000 (intellectual services): direct award. Above that: competitive bidding. From €184,000: international public call for tenders.", "Thresholds & Procedure", ["A \u20ac4,000 translation service (an intellectual service) can be awarded directly.", true, "Yes: the direct-award ceiling is \u20ac6,000 for intellectual services."]],
+    ["Value", "Count the whole need — never split", "Full period", "The threshold is the total foreseeable value of the need, excluding VAT, over the whole period, including renewals, lots and call-offs. Artificial splitting is prohibited and is a fraud red flag.", "Thresholds & Procedure", ["Three yearly contracts of \u20ac70,000 for the same need can each follow competitive bidding.", false, "No: the whole need is \u20ac210,000 over the period, so it is an international public call."]],
+    ["Competition", "Competition is the default", "3 suppliers", "Competitive bidding invites at least three potential suppliers. A direct award above the low-value limits is exceptional: unforeseen urgency not caused by the buyer, technical requirements, or considerations of fact or law.", "Market & Suppliers", ["Above the low-value limit, a direct award is allowed whenever the buyer prefers a supplier.", false, "No: only for unforeseen urgency not caused by the buyer, technical requirements, or fact or law."]],
+    ["Approval", "No approval, no launch", "CCM · DLAPIL · TB", "The CCM approves the tender documents in writing. Extrabudgetary funding between €55,000 and €184,000 needs a DLAPIL Legal Compliance Review first (5 working days). International calls need Tenders Board authorisation — never retroactively.", "Authorise & Launch", ["The Tenders Board can approve the launch of an international call after it has been published.", false, "No: the Tenders Board cannot approve a launch retroactively."]],
+    ["Fairness", "Criteria are fixed once published", "Locked", "Exclusion, eligibility and award criteria and their weightings cannot be changed or subdivided after publication. Price normally weighs at least 20 points.", "Tender Design", ["Award weightings may be adjusted after opening if the offers are very different.", false, "No: criteria and weightings are locked once the call is published."]],
+    ["Fairness", "Same information for everyone", "Q&A", "Answer bidders only through the published question-and-answer procedure, so every bidder has the same information at the same time. Never share details of a future call in advance.", "Authorise & Launch", ["A bidder who phones with a question can be answered directly to save time.", false, "No: answers go through the published Q&A so every bidder gets the same information."]],
+    ["Evaluation", "Gates before scores", "3 gates", "An offer is first checked for admissibility, then exclusion, then eligibility (pass or fail). Only the remaining offers are scored against the published award criteria, with a written justification.", "Open & Evaluate", ["An offer that fails an eligibility criterion is still scored on the award criteria.", false, "No: eligibility is pass or fail; only eligible offers are scored."]],
+    ["Evaluation", "Clarify, never change an offer", "Art. 17.2", "You may ask a bidder to clarify, but the offer itself cannot change. A missing financial offer or an unsigned act of engagement cannot be fixed after opening.", "Open & Evaluate", ["A missing financial offer can be requested from the bidder after opening.", false, "No: you may clarify an offer, never complete or change it."]],
+    ["Award", "Sign the winner, then inform the others", "15 days", "Sign with the selected supplier first, then notify unsuccessful bidders within 15 days, disclosing only the winner's name, country and amount.", "Negotiate & Award", ["Unsuccessful bidders are informed before the contract with the winner is signed.", false, "No: sign with the winner first, then inform the others within 15 days."]],
+    ["Contract", "PO first, signature second, work third", "PO", "A purchase order must exist in FIMS before any contract is signed, and no supplier may start work before the Organisation has signed.", "Contract Signing", ["A supplier may start work once the CCM has approved the award, before the PO exists.", false, "No: PO first, signature second, work third."]],
+    ["Contract", "Amend before expiry, watch the ceiling", "€184,000", "Amendments are made before the contract expires and never change its scope. A framework contract awarded by competitive bidding must never exceed €184,000.", "Contract Management", ["A framework contract awarded by competitive bidding may grow to \u20ac200,000 through amendments.", false, "No: it must never exceed \u20ac184,000."]],
+    ["Integrity", "Declare, refuse, archive", "10 years", "Declare your interests every year by the end of January, accept no gifts, and keep the complete procurement file for 10 years — missing justifications are a recurring audit finding.", "Performance & Filing", ["The procurement file must be kept for 10 years.", true, "Yes: missing justifications are a recurring audit finding."]],
   ];
   const known = () => FG.store.get("pr:known", {});
   const knownCount = () => Object.keys(known()).length;
+
+
+  /* ---------- learning flow: one rule at a time, confirmed by a true/false check ---------- */
+  function learnPage(list, set, base, nextHref, nextLabel) {
+    const kn = FG.store.get(set, {}), k = Object.keys(kn).length, ans = FG.store.get(set + ":ans", {});
+    let i = FG.store.get(set + ":at", 0); if (i >= list.length) i = 0;
+    const [cat, title, fig, text, stage, q] = list[i], a = ans[i];
+    const done = k === list.length;
+    return `<div class="lf">
+      <div class="lf-dots" role="tablist">${list.map((x, j) => `<button type="button" data-lf="${j}" data-set="${set}" class="${kn[j] ? "ok" : ""}${j === i ? " on" : ""}" aria-label="Rule ${j + 1}: ${esc(x[1])}">${kn[j] ? "✓" : j + 1}</button>`).join("")}<span>${k} / ${list.length} learnt</span></div>
+      <article class="lf-card" style="--c:var(--c${(i % 4) + 1})">
+        <div class="lf-left"><span class="lf-cat">Rule ${i + 1} · ${esc(cat)}</span><div class="lf-fig">${esc(fig)}</div></div>
+        <div class="lf-main"><h2>${esc(title)}</h2><p>${esc(text)}</p>
+          <div class="lf-q"><small>Check yourself</small><b>${esc(q[0])}</b>
+            <div class="lf-btns">${[["true", "True"], ["false", "False"]].map(([v, l]) => `<button type="button" data-lfa="${v}" data-i="${i}" data-set="${set}" class="${a ? (String(q[1]) === v ? "right" : a === v ? "wrong" : "") : ""}" ${a ? "disabled" : ""}>${l}</button>`).join("")}</div>
+            ${a ? `<p class="lf-fb ${a === String(q[1]) ? "good" : "bad"}">${a === String(q[1]) ? "Correct. " : "Not quite. "}${esc(q[2])}${a !== String(q[1]) ? ` <button type="button" class="lf-retry" data-lfr="${i}" data-set="${set}">Try again</button>` : ""}</p>` : ""}</div>
+          <footer><a href="#/${base}/${slug(stage)}">Read more in “${esc(stage)}” →</a>
+            <span>${i ? `<button type="button" class="btn sm ghost" data-lf="${i - 1}" data-set="${set}">← Previous</button>` : ""}${i < list.length - 1 ? `<button type="button" class="btn sm primary" data-lf="${i + 1}" data-set="${set}">Next rule →</button>` : `<a class="btn sm primary" href="${nextHref}">${nextLabel} →</a>`}</span></footer></div>
+      </article>
+      ${done ? `<div class="lf-done"><b>All ${list.length} rules learnt.</b> <a href="${nextHref}">${nextLabel} →</a></div>` : ""}</div>`;
+  }
+  document.addEventListener("click", (e) => {
+    const go = e.target.closest("[data-lf]"), ans = e.target.closest("[data-lfa]"), retry = e.target.closest("[data-lfr]");
+    if (retry) { const all = FG.store.get(retry.dataset.set + ":ans", {}); delete all[retry.dataset.lfr]; FG.store.set(retry.dataset.set + ":ans", all); FG.refresh(); }
+    if (go) { FG.store.set(go.dataset.set + ":at", +go.dataset.lf); FG.refresh(); }
+    if (ans) {
+      const set = ans.dataset.set, i = ans.dataset.i, all = FG.store.get(set + ":ans", {}); all[i] = ans.dataset.lfa; FG.store.set(set + ":ans", all);
+      const list = set === "pr:known" ? ESSENTIALS : G_ESSENTIALS, right = String(list[i][5][1]) === ans.dataset.lfa;
+      if (right) { const kn = FG.store.get(set, {}); kn[i] = 1; FG.store.set(set, kn); }
+      FG.refresh();
+    }
+  });
 
   /* ---------- hub ---------- */
   route("procurement", {
@@ -7784,21 +7858,11 @@ window.FG_CONTENT = {
   route("procurement/essentials", {
     section: "procurement",
     crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"], ["Essentials", "procurement/essentials"]],
-    render() {
-      const kn = known(), k = knownCount();
-      return { html: `${ui.head("Procurement · step 1", "The essentials", "")}
-        <div class="ess-top card"><div class="ess-ring" style="--p:${Math.round((k / ESSENTIALS.length) * 100)}"><span><b>${k}</b>/${ESSENTIALS.length}</span></div>
-          <div><b>Read each rule, then mark it as learnt.</b><p class="muted small">Open a rule for the detail and a link to the stage of the guide where it applies. When all twelve are learnt, test yourself at the end of the page.</p></div>
-          <a class="btn primary" href="#/procurement/my-case">Next: plan my case →</a></div>
-        <section class="ess-grid">${ESSENTIALS.map(([cat, title, fig, text, stage], i) => `<article class="ess${kn[i] ? " known" : ""}" style="--c:var(--c${(i % 4) + 1})">
-          <header><span class="ess-cat">${String(i + 1).padStart(2, "0")} · ${esc(cat)}</span><span class="ess-fig">${esc(fig)}</span></header>
-          <h3>${esc(title)}</h3><p>${esc(text)}</p>
-          <footer><a href="${stageLink(stage)}">${esc(stage)} →</a><button type="button" class="ess-btn" data-known="${i}" data-set="pr:known" aria-pressed="${!!kn[i]}">${kn[i] ? "✓ Learnt" : "Mark as learnt"}</button></footer></article>`).join("")}</section>` };
-    },
-  });
+    render: () => ({ html: `${ui.head("Procurement · step 1 · learn one rule at a time", "The essentials", "")}${learnPage(ESSENTIALS, "pr:known", "procurement", "#/procurement/my-case", "Plan my case")}` }),
+  });;
   FG.QUIZ_AT["procurement/essentials"] = "procurement";
   document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-known]"); if (!b) return;
+    const b = e.target.closest("[data-known]"); if (!b) return; // legacy toggle
     const set = b.dataset.set, kn = FG.store.get(set, {}), i = b.dataset.known; if (kn[i]) delete kn[i]; else kn[i] = 1; FG.store.set(set, kn); FG.refresh();
   });
 
@@ -7863,18 +7927,18 @@ window.FG_CONTENT = {
 
   /* =================== GRANTS (Rule 1374) =================== */
   const G_ESSENTIALS = [
-    ["Purpose", "Two purposes, both required", "2", "A grant must both help the grantee reach its own objectives and advance the Organisation's values or policies. Both conditions are cumulative.", "Foundations"],
-    ["Value", "€15,000 decides the procedure", "€15,000", "Below €15,000 the Commitments Officer may award directly (G9.2A). From €15,000 a published call for proposals is the rule.", "Procedure"],
-    ["Value", "Count the whole procedure", "5 × €10,000", "The threshold is the total budget of the procedure, not each grant: five grants of €10,000 make €50,000, so a call is required.", "Principles"],
-    ["Value", "Exceptions are strict", "Art. 2.1.3", "From €15,000 a direct award needs an exceptional circumstance — an unforeseeable emergency, grantee characteristics making a call impossible, or an action leaving no scope for a call — justified in G9.2B.", "Procedure"],
-    ["Money", "The Council never pays everything", "Co-financing", "The grantee contributes own or third-party resources: staff, contributions in kind or income generated by the action.", "Principles"],
-    ["Money", "No retroactivity, no profit, one grant", "1", "Costs cannot be incurred before the closing date for proposals, total funding cannot exceed the budgeted expenses, and one action receives only one grant.", "Principles"],
-    ["Money", "Eligible costs pass seven tests", "7% indirect", "Necessary, value for money, incurred in the period, recorded and verifiable, tax-compliant, supported by documents and in the budget. Indirect costs are capped at 7%.", "Costs"],
-    ["Roles", "Decide, run, evaluate", "CO · Co-ordinator · Committee", "The Commitments Officer decides and signs, the Co-ordinator (G3.1) runs the procedure, the Evaluation Committee (G13.1) evaluates — with conflict-of-interest declarations (G13.4).", "Roles"],
-    ["Fairness", "Criteria are published and fixed", "Weighted", "Exclusion, eligibility and weighted award criteria are set in the call and cannot be changed afterwards. Clarifications must never improve a proposal.", "Criteria"],
-    ["Selection", "Score 0–5, decide with reasons", "0–5", "Each member scores every criterion 0–5 (G14.3); the consensus report (G14.4) averages them; the Commitments Officer decides with reasons (G14.6).", "Evaluation"],
-    ["Selection", "Inform within 15 days", "15 days", "Unsuccessful applicants are informed within 15 calendar days and may enquire; a complaint can follow within 30 days of the reply.", "Complaints"],
-    ["Agreement", "Always in writing, never more money", "G17.2", "The grant agreement is always written (G17.2A or G17.2B). Amendments may change management details but never increase the total grant.", "Agreement"],
+    ["Purpose", "Two purposes, both required", "2", "A grant must both help the grantee reach its own objectives and advance the Organisation's values or policies. Both conditions are cumulative.", "Foundations", ["A grant that only advances the Council's own objectives, without helping the grantee, is valid.", false, "No: both purposes are required."]],
+    ["Value", "€15,000 decides the procedure", "€15,000", "Below €15,000 the Commitments Officer may award directly (G9.2A). From €15,000 a published call for proposals is the rule.", "Procedure", ["A single grant of \u20ac12,000 may be awarded directly with Template G9.2A.", true, "Yes: below \u20ac15,000 the Commitments Officer may award directly."]],
+    ["Value", "Count the whole procedure", "5 × €10,000", "The threshold is the total budget of the procedure, not each grant: five grants of €10,000 make €50,000, so a call is required.", "Principles", ["Five grants of \u20ac10,000 can each be awarded directly because each is below \u20ac15,000.", false, "No: the procedure totals \u20ac50,000, so a call is required."]],
+    ["Value", "Exceptions are strict", "Art. 2.1.3", "From €15,000 a direct award needs an exceptional circumstance — an unforeseeable emergency, grantee characteristics making a call impossible, or an action leaving no scope for a call — justified in G9.2B.", "Procedure", ["From \u20ac15,000, a direct award is possible whenever the call would take too long.", false, "No: only the strict exceptional circumstances of Article 2.1.3."]],
+    ["Money", "The Council never pays everything", "Co-financing", "The grantee contributes own or third-party resources: staff, contributions in kind or income generated by the action.", "Principles", ["The Council may finance 100% of a project if the grantee has no resources.", false, "No: co-financing is required (staff, in kind or income generated)."]],
+    ["Money", "No retroactivity, no profit, one grant", "1", "Costs cannot be incurred before the closing date for proposals, total funding cannot exceed the budgeted expenses, and one action receives only one grant.", "Principles", ["Costs incurred before the closing date for proposals can be eligible.", false, "No: there is no retroactivity."]],
+    ["Money", "Eligible costs pass seven tests", "7% indirect", "Necessary, value for money, incurred in the period, recorded and verifiable, tax-compliant, supported by documents and in the budget. Indirect costs are capped at 7%.", "Costs", ["Indirect costs may reach 10% of the eligible costs.", false, "No: indirect eligible costs are capped at 7%."]],
+    ["Roles", "Decide, run, evaluate", "CO · Co-ordinator · Committee", "The Commitments Officer decides and signs, the Co-ordinator (G3.1) runs the procedure, the Evaluation Committee (G13.1) evaluates — with conflict-of-interest declarations (G13.4).", "Roles", ["The Co-ordinator decides on the award of the grants.", false, "No: the Commitments Officer decides; the Co-ordinator runs the procedure."]],
+    ["Fairness", "Criteria are published and fixed", "Weighted", "Exclusion, eligibility and weighted award criteria are set in the call and cannot be changed afterwards. Clarifications must never improve a proposal.", "Criteria", ["A clarification request may let an applicant improve its proposal.", false, "No: clarifications must never change the substance of a proposal."]],
+    ["Selection", "Score 0–5, decide with reasons", "0–5", "Each member scores every criterion 0–5 (G14.3); the consensus report (G14.4) averages them; the Commitments Officer decides with reasons (G14.6).", "Evaluation", ["Each Evaluation Committee member scores every award criterion from 0 to 5.", true, "Yes: G14.3, averaged in the consensus report G14.4."]],
+    ["Selection", "Inform within 15 days", "15 days", "Unsuccessful applicants are informed within 15 calendar days and may enquire; a complaint can follow within 30 days of the reply.", "Complaints", ["Unsuccessful applicants must be informed within 15 calendar days.", true, "Yes, and they may then enquire and complain."]],
+    ["Agreement", "Always in writing, never more money", "G17.2", "The grant agreement is always written (G17.2A or G17.2B). Amendments may change management details but never increase the total grant.", "Agreement", ["An amendment can increase the total grant if the project grows.", false, "No: amendments never increase the total amount."]],
   ];
   const gKnown = () => FG.store.get("gr:known", {});
   route("grants", {
@@ -7897,17 +7961,8 @@ window.FG_CONTENT = {
   route("grants/essentials", {
     section: "grants",
     crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Essentials", "grants/essentials"]],
-    render() {
-      const kn = gKnown(), k = Object.keys(kn).length;
-      return { html: `${ui.head("Grants · step 1", "The essentials", "")}
-        <div class="ess-top card"><div class="ess-ring" style="--p:${Math.round((k / G_ESSENTIALS.length) * 100)}"><span><b>${k}</b>/${G_ESSENTIALS.length}</span></div>
-          <div><b>Read each rule, then mark it as learnt.</b><p class="muted small">Each rule links to the stage of the guide where it applies. Test yourself at the end of the page.</p></div>
-          <a class="btn primary" href="#/grants/my-grant">Next: plan my grant →</a></div>
-        <section class="ess-grid">${G_ESSENTIALS.map(([cat, title, fig, text, stage], i) => `<article class="ess${kn[i] ? " known" : ""}" style="--c:var(--c${(i % 4) + 1})">
-          <header><span class="ess-cat">${String(i + 1).padStart(2, "0")} · ${esc(cat)}</span><span class="ess-fig">${esc(fig)}</span></header><h3>${esc(title)}</h3><p>${esc(text)}</p>
-          <footer><a href="#/grants/${slug(stage)}">${esc(stage)} →</a><button type="button" class="ess-btn" data-known="${i}" data-set="gr:known" aria-pressed="${!!kn[i]}">${kn[i] ? "✓ Learnt" : "Mark as learnt"}</button></footer></article>`).join("")}</section>` };
-    },
-  });
+    render: () => ({ html: `${ui.head("Grants · step 1 · learn one rule at a time", "The essentials", "")}${learnPage(G_ESSENTIALS, "gr:known", "grants", "#/grants/my-grant", "Plan my grant")}` }),
+  });;
   FG.QUIZ_AT["grants/essentials"] = "grant";
   const G_DEFAULT = { what: "", budget: "", grantees: "1", funding: "bo", kind: "project", months: "", ground: "none", deadline: "" };
   function grantForm(c) {
@@ -8092,7 +8147,7 @@ window.FG_CONTENT = {
   const sentenceKind = (x) => (/\b(must|mandatory|required|never|may not|cannot|shall|prohibited|only if)\b/i.test(x) ? "rule" : /\b(recommend|good practice|best practice|advis|should|useful)\w*/i.test(x) ? "tip" : "");
   // Sentence split that respects abbreviations (e.g., i.e., Art., No., Ch., etc.) and numbered references (4.9.2).
   const ABBR = /\b(e\.g|i\.e|etc|No|Nos|Art|Arts|Ch|Chap|para|paras|p|pp|vs|cf|incl|excl|approx|min|max|Mr|Ms|Dr|St|Co|Ltd|[A-Z])\.$/;
-  const splitSentences = (t) => String(t).split(/(?<=[.!?])\s+(?=[A-Z€“"(])/).reduce((out, x) => { if (out.length && ABBR.test(out[out.length - 1])) out[out.length - 1] += " " + x; else out.push(x); return out; }, []);
+  const splitSentences = (t) => String(t).replace(/([.!?])\s+(?=[A-Z€“"(])/g, "$1\u0001").split("\u0001").filter(Boolean).reduce((out, x) => { if (out.length && ABBR.test(out[out.length - 1])) out[out.length - 1] += " " + x; else out.push(x); return out; }, []);
   function reader(key, sections) {
     const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
@@ -8101,8 +8156,11 @@ window.FG_CONTENT = {
         <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
       <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
         <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
-        <div class="rd-text">${(() => { const parts = splitSentences(body), kinds = parts.map(sentenceKind);
-          return `<p>${parts.map((x, j) => kinds[j] ? `<mark class="rd-${kinds[j]}"><i aria-hidden="true">${icon[kinds[j]]}</i>${esc(x)}</mark>` : esc(x)).join(" ")}</p>`; })()}</div>
+        <div class="rd-text">${(() => { const parts = splitSentences(body), lead = parts.shift() || "";
+          const rules = parts.filter((x) => sentenceKind(x) === "rule"), tips = parts.filter((x) => sentenceKind(x) === "tip"), rest = parts.filter((x) => !sentenceKind(x));
+          return `<p class="rd-lead">${esc(lead)}</p>${rest.length ? `<p>${esc(rest.join(" "))}</p>` : ""}
+            ${rules.length ? `<div class="rd-rules"><small>Rules to follow</small><ul>${rules.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+            ${tips.length ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(tips.join(" "))}</p></div>` : ""}`; })()}</div>
         <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
   }
   // Switches panels in place (no re-render), so the page never jumps.
@@ -8928,7 +8986,7 @@ window.FG_CONTENT = {
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.lf-left,.lf-q,.lf-dots,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();
