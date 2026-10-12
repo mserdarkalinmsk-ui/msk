@@ -48,7 +48,7 @@
     return `<div data-checklist="${esc(id)}"><h3 class="small" style="text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">${esc(title)}</h3><div class="checklist">${items.map(([a, b], i) => `<label class="check ${t[i] ? "done" : ""}"><input type="checkbox" data-i="${i}" ${t[i] ? "checked" : ""}><div><b>${esc(a)}</b><small>${esc(b)}</small></div></label>`).join("")}</div></div>`;
   }
   route("po-file", {
-    crumbs: () => [["PO file", "po-file"]],
+    crumbs: () => [["Projects", "projects"], ["PO file", "po-file"]],
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.poServices[service];
       const signedId = `po:${service}:signed`, supportId = `po:${service}:support`;
@@ -91,7 +91,7 @@
 
   /* ---------- payment file ---------- */
   route("payment-file", {
-    crumbs: () => [["Payment file", "payment-file"]],
+    crumbs: () => [["Projects", "projects"], ["Payment file", "payment-file"]],
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.payServices[service] || { signed: [], support: [] };
       const row = VISA_ROWS.find((r) => (r[3] || []).includes(service)) || VISA_ROWS[3];
@@ -118,7 +118,7 @@
 
   /* ---------- year-end ---------- */
   route("year-end", {
-    crumbs: () => [["Year-end closing", "year-end"]],
+    crumbs: () => [["Projects", "projects"], ["Year-end closing", "year-end"]],
     render() {
       const phase = FG.store.get("eoy:phase", 0), p = C.eoyPhases[phase], meta = C.eoyPhaseMeta[phase] || {};
       const f = FG.store.get("eoy:fy", { delivery: "current", invoice: "yes", budget: "annual" }), r = E.yearAllocation(f);
@@ -164,7 +164,7 @@
   /* ---------- petty cash ---------- */
   const PETTY_CHECKS = [["CCM approval", "Approval obtained before the expense is made."], ["Limit check", "Expense is within the applicable Projects / OB limit."], ["Purpose & coding", "Reason for the expense and coding are clear."], ["Receipt / invoice", "Readable supporting evidence is available."], ["File complete", "Approval and supporting evidence are kept together."]];
   route("petty-cash", {
-    crumbs: () => [["Petty cash", "petty-cash"]],
+    crumbs: () => [["Projects", "projects"], ["Petty cash", "petty-cash"]],
     render() {
       const f = FG.store.get("petty", { budget: "project", amount: "", approved: "" }), r = E.pettyCash({ budget: f.budget === "ob" ? "ob" : "project", amount: f.amount, approved: !!f.approved });
       return { html: `${ui.head("Project finance · quick control", "Petty cash", "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.")}
@@ -195,7 +195,7 @@
   ];
   const tree = (nodes) => `<ul>${nodes.map((n) => (Array.isArray(n) ? `<li style="list-style:none"><details open><summary>${esc(n[0])}</summary>${tree(n[1])}</details></li>` : `<li>${esc(n)}</li>`)).join("")}</ul>`;
   route("filing", {
-    crumbs: () => [["Filing & audit", "filing"]],
+    crumbs: () => [["Projects", "projects"], ["Filing & audit", "filing"]],
     render() {
       const proc = pick("filing:p", Object.keys(C.filingMap), "Procurement");
       return { html: `${ui.head("Project documentation · DMS & audit readiness", "Filing & audit trail", "Keep project, procurement and financial records easy to find, easy to verify and ready for review.", `<a class="btn primary" href="#/engines/audit-readiness">Audit readiness check</a>`)}
@@ -240,8 +240,9 @@
         <div class="stage-nav">${i > 0 ? `<button class="btn" data-flow="${i - 1}">← Previous</button>` : "<span></span>"}${i < stages.length - 1 ? `<button class="btn primary" data-flow="${i + 1}">Next stage →</button>` : ""}</div>
       </div></section>`;
   }
+  const FLOW_SECTION = { "po-request": "foma-po", "payment-request": "foma-pay", "mission-order": "foma-mission", "expense-claim": "foma-claim" };
   const flowRoute = (key, title, lead, stages) => route(`foma/${key}`, {
-    section: "foma", crumbs: () => [["FOMA", "foma"], [title, `foma/${key}`]],
+    section: FLOW_SECTION[key], crumbs: () => [["FOMA", "foma"], [title, `foma/${key}`]],
     render: () => ({ html: handoverPage(key, title, lead, stages), mount: (root) => onClick(root, "data-flow", (i) => { FG.store.set(`foma:${key}`, +i); FG.refresh(); }) }),
   });
   flowRoute("po-request", "PO request process", "Follow the request from preparation to the issued purchase order.", C.fomaPoStages);

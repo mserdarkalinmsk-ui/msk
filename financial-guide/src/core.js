@@ -25,7 +25,7 @@
     { title: "File & audit", sub: "Evidence trail", path: "filing", sections: ["filing"] },
   ];
   // Each area has its own colour; views read it through --accent.
-  FG.TONES = { home: 1, engines: 4, analysis: 6, procurement: 1, grants: 4, "po-file": 5, foma: 5, "payment-file": 2, "petty-cash": 3, "foma-reports": 5, "foma-forecast": 3, "year-end": 3, filing: 2, scenarios: 4, roles: 1, links: 1, rules: 4, glossary: 5 };
+  FG.TONES = { home: 1, engines: 4, analysis: 6, procurement: 1, grants: 4, "po-file": 5, foma: 5, "payment-file": 2, "petty-cash": 3, "foma-reports": 5, "foma-forecast": 3, "year-end": 3, filing: 2, scenarios: 4, roles: 1, links: 1, rules: 4, glossary: 5, projects: 1, tools: 3, vat: 6, events: 4, "foma-po": 2, "foma-pay": 2, "foma-mission": 5, "foma-claim": 5 };
 
   /* ---------- store: localStorage when available, memory otherwise ---------- */
   const KEY = "fg.v15";

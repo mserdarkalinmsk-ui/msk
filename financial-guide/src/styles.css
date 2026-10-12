@@ -495,3 +495,17 @@ mark.amt { background: color-mix(in srgb, var(--accent) 12%, transparent); color
 .tb > span { font-size: 12px; font-weight: 700; color: var(--muted); background: var(--sunken); padding: 2px 8px; border-radius: 10px; }
 .tb.on > span { background: var(--accent); color: #fff; }
 @media (max-width: 860px) { .tbranches { grid-template-columns: minmax(0, 1fr); } .tn { min-width: 0; width: 100%; } }
+
+/* Home hubs: the four entry points of the guide */
+.hubs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.hub { --tone: var(--accent); position: relative; display: grid; align-content: start; gap: 6px; min-height: 230px; padding: 20px; border-radius: 18px; text-decoration: none; color: var(--ink); border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent); background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tone) 30%, transparent), transparent 60%), linear-gradient(160deg, color-mix(in srgb, var(--tone) 16%, var(--panel)), var(--panel)); box-shadow: var(--shadow); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease; }
+.hub:hover { transform: translateY(-4px); box-shadow: 0 18px 40px color-mix(in srgb, var(--tone) 28%, transparent); }
+.hub small { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.hub i { font-style: normal; width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; margin: 10px 0 8px; font-size: 22px; color: #fff; background: linear-gradient(135deg, var(--tone), color-mix(in srgb, var(--tone) 55%, #fff)); box-shadow: 0 8px 20px color-mix(in srgb, var(--tone) 40%, transparent); }
+.hub b { font-size: 24px; font-weight: 800; letter-spacing: -.02em; text-transform: uppercase; }
+.hub em { font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--tone); }
+.hub span { font-size: 13px; color: var(--ink-2); padding-right: 44px; }
+.hub u { position: absolute; right: 18px; bottom: 18px; width: 38px; height: 38px; border-radius: 19px; display: grid; place-items: center; text-decoration: none; background: var(--panel); box-shadow: var(--shadow); font-weight: 700; transition: transform .2s; }
+.hub:hover u { transform: translateX(3px); background: var(--tone); color: #fff; }
+@media (max-width: 1100px) { .hubs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .hubs { grid-template-columns: minmax(0, 1fr); } .hub { min-height: 0; } }

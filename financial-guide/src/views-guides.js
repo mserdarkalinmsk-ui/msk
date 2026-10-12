@@ -5,15 +5,61 @@
   const E = window.FG_ENGINES;
 
   // Sidebar follows the life of a project: plan → commit → pay → report → close, then tools and reference.
+  // Same top-level structure as the original guide: Projects, FOMA, Tools, Decision Engines.
   FG.nav = [
-    { title: "Workspace", items: [{ title: "Overview", path: "home", icon: "⌂" }, { title: "Decision engines", path: "engines", icon: "◇" }, { title: "Financial analysis", path: "analysis", icon: "⌁" }] },
-    { title: "1 · Plan & procure", items: [{ title: "Procurement", path: "procurement", icon: "⚖" }, { title: "Grants", path: "grants", icon: "✦" }] },
-    { title: "2 · Commit", items: [{ title: "PO file", path: "po-file", icon: "▤" }, { title: "FOMA workflows", path: "foma", icon: "↹" }] },
-    { title: "3 · Pay", items: [{ title: "Payment file", path: "payment-file", icon: "€" }, { title: "Petty cash", path: "petty-cash", icon: "¢" }] },
-    { title: "4 · Report & forecast", items: [{ title: "Financial reporting", path: "foma/reports", icon: "▥", section: "foma-reports" }, { title: "Forecast & revision", path: "foma/forecast", icon: "↗", section: "foma-forecast" }] },
-    { title: "5 · Close & file", items: [{ title: "Year-end closing", path: "year-end", icon: "◷" }, { title: "Filing & audit", path: "filing", icon: "▦" }] },
-    { title: "Learn & reference", items: [{ title: "Rules at a glance", path: "rules", icon: "§" }, { title: "Glossary", path: "glossary", icon: "Aa" }, { title: "Scenario practice", path: "scenarios", icon: "◆" }, { title: "Roles & documents", path: "roles", icon: "◎" }, { title: "Links & guidelines", path: "links", icon: "↗" }] },
+    { title: "Start", items: [{ title: "Home", path: "home", icon: "⌂" }] },
+    { title: "Projects · Project Team", items: [
+      { title: "Projects overview", path: "projects", icon: "▤" },
+      { title: "Procurement", path: "procurement", icon: "⚖" }, { title: "Grants", path: "grants", icon: "✦" },
+      { title: "PO file", path: "po-file", icon: "↔" }, { title: "Payment file", path: "payment-file", icon: "€" },
+      { title: "End of year", path: "year-end", icon: "◷" }, { title: "Petty cash", path: "petty-cash", icon: "¢" },
+      { title: "VAT procedures", path: "vat", icon: "%" }, { title: "Events & GDD", path: "events", icon: "◈" },
+      { title: "Filing management", path: "filing", icon: "▦" }, { title: "Useful links", path: "links", icon: "↗" } ] },
+    { title: "FOMA · Field operations", items: [
+      { title: "FOMA overview", path: "foma", icon: "▦" },
+      { title: "PO request", path: "foma/po-request", icon: "🧾", section: "foma-po" }, { title: "Payment request", path: "foma/payment-request", icon: "💳", section: "foma-pay" },
+      { title: "Mission order", path: "foma/mission-order", icon: "✈", section: "foma-mission" }, { title: "Expense claim", path: "foma/expense-claim", icon: "◎", section: "foma-claim" },
+      { title: "Financial reports", path: "foma/reports", icon: "▥", section: "foma-reports" }, { title: "Forecast", path: "foma/forecast", icon: "↗", section: "foma-forecast" } ] },
+    { title: "Tools", items: [{ title: "Tools & templates", path: "tools", icon: "▣" }, { title: "Rules at a glance", path: "rules", icon: "§" }, { title: "Glossary", path: "glossary", icon: "Aa" }, { title: "Scenario practice", path: "scenarios", icon: "◆" }, { title: "Roles & documents", path: "roles", icon: "◎" }] },
+    { title: "Decision Engines", items: [{ title: "All engines", path: "engines", icon: "◇" }, { title: "Financial analysis", path: "analysis", icon: "⌁" }] },
   ];
+  const HUBS = [
+    ["01 / Project finance", "Projects", "Project Team", "Procurement, grants, PO and payment files, year-end, petty cash and filing.", "projects", 1, "▤"],
+    ["02 / Field operations", "FOMA", "Field offices", "PO and payment requests, missions, expense claims, reports and forecast.", "foma", 2, "▦"],
+    ["03 / Practical resources", "Tools", "Templates & checklists", "Documents, checklists, calculators, rules, glossary and practice.", "tools", 3, "▣"],
+    ["04 / Smart guidance", "Decision Engines", "Your case → route", "Answer a few questions and get the route, controls and file pack.", "engines", 4, "◇"],
+  ];
+  const PROJECT_ITEMS = [
+    ["⚖", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract execution.", "procurement"],
+    ["✦", "Grant", "Grant procedures, calls, evaluation and agreement preparation.", "grants"],
+    ["↔", "PO & payment files", "Prepare the PO, continue through delivery and complete the payment package.", "po-file"],
+    ["◷", "End of year procedure", "Year-end closure, commitments, reporting and clean-up.", "year-end"],
+    ["€", "Petty cash", "Petty cash rules, reconciliation and supporting evidence.", "petty-cash"],
+    ["▤", "Filing management", "Evidence maps, DMS structure, naming and audit-ready filing.", "filing"],
+    ["↗", "Useful links & guidelines", "Compact access to systems, controlled templates and guidance.", "links"],
+    ["◈", "Events & GDD", "Event-related finance, logistics and GDD support.", "events"],
+    ["%", "VAT procedures", "VAT checks, exemptions, supporting documents and follow-up.", "vat"],
+  ];
+  route("projects", {
+    crumbs: () => [["Projects", "projects"]],
+    render: () => ({ html: `${FG.ui.head("01 / Project finance · Project Team", "Projects", "Project finance guidance, operational workflows and practical tools for day-to-day implementation.")}
+      <div class="modules">${PROJECT_ITEMS.map(([i, t, d, p], k) => p ? `<a class="module" style="--tone:var(--c${(k % 6) + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`
+        : `<div class="module" style="--tone:var(--faint);opacity:.7"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small>${FG.ui.tag("In preparation")}</span></div>`).join("")}</div>` }),
+  });
+  route("tools", {
+    crumbs: () => [["Tools", "tools"]],
+    render: () => {
+      const groups = [
+        ["Templates & documents", [["Roles & documents", "Who does what and which evidence each module expects.", "roles"], ["PO document builder", "Signed and supporting documents by service type.", "po-file"], ["Payment file builder", "Finance-ready payment package.", "payment-file"], ["Filing & DMS structure", "Evidence map and audit documents.", "filing"], ["Useful links & templates", "Manuals, templates and internal systems.", "links"]]],
+        ["Checklists", [["Payment readiness", "Pre-flight check before sending the file.", "engines/payment-readiness"], ["Audit readiness", "Decision trail, approvals and evidence.", "engines/audit-readiness"], ["Year-end checklist", "2026 project-team closing list.", "year-end"], ["Petty cash check", "Limit and pre-spend approval.", "petty-cash"], ["Grant cost eligibility", "Core cost test before commitment.", "grants/costs"]]],
+        ["Calculators", [["Procedure decision tree", "Value, type and funding → procedure.", "rules"], ["What-if simulator", "Budget Heading change → route.", "engines/what-if"], ["Financial analysis", "Budget vs actual from Excel.", "analysis"], ["Which financial year?", "2026 allocation table.", "year-end"]]],
+        ["Learn", [["Rules at a glance", "Every threshold with its source.", "rules"], ["Glossary", "Terms and abbreviations.", "glossary"], ["Scenario practice", "48 cases with feedback.", "scenarios"]]],
+      ];
+      return { html: `${FG.ui.head("03 / Practical resources", "Tools", "Templates, checklists, calculators and practical resources.")}
+        ${groups.map(([g, items], k) => `<div class="section-title"><h2>${esc(g)}</h2></div><div class="modules">${items.map(([t, d, p]) => `<a class="module" style="--tone:var(--c${k + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${esc(t[0])}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`).join("")}</div>`).join("")}` };
+    },
+  });
+
 
   /* ---------- home ---------- */
   const TASKS = [
@@ -43,7 +89,8 @@
       const caseItems = FG.case.items(), practice = FG.store.get("scenarioAnswers", {}), answered = Object.keys(practice).length;
       const correct = Object.values(practice).filter((x) => x.ok).length;
       return { html: `
-        <div class="hero">
+        <div class="hubs">${HUBS.map(([k, t, sub, d, p, c, ic]) => `<a class="hub" style="--tone:var(--c${c})" href="#/${p}"><small>${esc(k)}</small><i aria-hidden="true">${ic}</i><b>${esc(t)}</b><em>${esc(sub)}</em><span>${esc(d)}</span><u aria-hidden="true">→</u></a>`).join("")}</div>
+        <div class="hero mt">
           <section class="card hero-main">
             <div class="eyebrow">Financial & Procurement Guide</div>
             <h1>What do you need to do?</h1>
@@ -76,10 +123,10 @@
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
   function lifecycle(cfg) {
     const stages = cfg.stages;
-    route(cfg.base, { section: cfg.base, crumbs: () => [[cfg.title, cfg.base]], render: () => ({ html: "", mount() { FG.go(`${cfg.base}/${slug(stages[FG.store.get(cfg.base + ":last", 0)].name)}`); } }) });
+    route(cfg.base, { section: cfg.base, crumbs: () => [["Projects", "projects"], [cfg.title, cfg.base]], render: () => ({ html: "", mount() { FG.go(`${cfg.base}/${slug(stages[FG.store.get(cfg.base + ":last", 0)].name)}`); } }) });
     route(`${cfg.base}/:stage`, {
       section: cfg.base,
-      crumbs: (p) => [[cfg.title, cfg.base], [(stages.find((s) => slug(s.name) === p.stage) || stages[0]).name, `${cfg.base}/${p.stage}`]],
+      crumbs: (p) => [["Projects", "projects"], [cfg.title, cfg.base], [(stages.find((s) => slug(s.name) === p.stage) || stages[0]).name, `${cfg.base}/${p.stage}`]],
       render(p) {
         let i = stages.findIndex((s) => slug(s.name) === p.stage); if (i < 0) i = 0;
         FG.store.set(cfg.base + ":last", i);
@@ -177,7 +224,7 @@
     return (root) => root.addEventListener("click", (e) => { const b = e.target.closest("[data-flow]"); if (b) { FG.store.set(key, +b.dataset.flow); FG.refresh(); } });
   }
 
-  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/launch-and-publication", "VAT Procedures": "links", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
+  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/launch-and-publication", "VAT Procedures": "vat", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
   lifecycle({
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
@@ -248,7 +295,7 @@
 
   /* ---------- links ---------- */
   route("links", {
-    crumbs: () => [["Links & guidelines", "links"]],
+    crumbs: () => [["Projects", "projects"], ["Useful links", "links"]],
     render() {
       const cat = FG.store.get("links:cat", "All"), q = FG.store.get("links:q", "");
       const cats = ["All", ...new Set(C.usefulLinks.map((l) => l.cat))];

@@ -97,6 +97,15 @@ console.log("Unit checks passed.");
     await page.waitForSelector(".hbar");
     assert.ok((await page.textContent("#content")).includes("over budget") || (await page.textContent("#content")).includes("Over"));
     await page.screenshot({ path: path.join(shots, `analysis-${vp.width}.png`), fullPage: false });
+    // VAT and Events logic.
+    const L = await page.evaluate(() => ({
+      big: FG.logic.paymentMethod(6000, 0).title, month: FG.logic.paymentMethod(4000, 27000).title, card: FG.logic.paymentMethod(4000, 1000).title,
+      due: FG.logic.paymentDue("2026-03-01", "2026-03-10").due.toISOString().slice(0, 10),
+      ev: FG.logic.eventBudget([{ item: "a", initial: 100, final: 120 }, { item: "b", initial: 50, final: 50 }]),
+    }));
+    assert.equal(L.big, "Bank transfer"); assert.equal(L.month, "Bank transfer"); assert.equal(L.card, "Card possible as an exception");
+    assert.equal(L.due, "2026-05-09");
+    assert.equal(L.ev.diff, 20); assert.equal(L.ev.changed.length, 1);
     // Real upload path with CSV files (Excel uses the same parser after SheetJS reads the sheet).
     await page.evaluate(() => { location.hash = "#/analysis"; });
     await page.click("[data-add]");

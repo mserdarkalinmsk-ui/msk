@@ -507,6 +507,20 @@ mark.amt { background: color-mix(in srgb, var(--accent) 12%, transparent); color
 .tb.on > span { background: var(--accent); color: #fff; }
 @media (max-width: 860px) { .tbranches { grid-template-columns: minmax(0, 1fr); } .tn { min-width: 0; width: 100%; } }
 
+/* Home hubs: the four entry points of the guide */
+.hubs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.hub { --tone: var(--accent); position: relative; display: grid; align-content: start; gap: 6px; min-height: 230px; padding: 20px; border-radius: 18px; text-decoration: none; color: var(--ink); border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent); background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tone) 30%, transparent), transparent 60%), linear-gradient(160deg, color-mix(in srgb, var(--tone) 16%, var(--panel)), var(--panel)); box-shadow: var(--shadow); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease; }
+.hub:hover { transform: translateY(-4px); box-shadow: 0 18px 40px color-mix(in srgb, var(--tone) 28%, transparent); }
+.hub small { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.hub i { font-style: normal; width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; margin: 10px 0 8px; font-size: 22px; color: #fff; background: linear-gradient(135deg, var(--tone), color-mix(in srgb, var(--tone) 55%, #fff)); box-shadow: 0 8px 20px color-mix(in srgb, var(--tone) 40%, transparent); }
+.hub b { font-size: 24px; font-weight: 800; letter-spacing: -.02em; text-transform: uppercase; }
+.hub em { font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--tone); }
+.hub span { font-size: 13px; color: var(--ink-2); padding-right: 44px; }
+.hub u { position: absolute; right: 18px; bottom: 18px; width: 38px; height: 38px; border-radius: 19px; display: grid; place-items: center; text-decoration: none; background: var(--panel); box-shadow: var(--shadow); font-weight: 700; transition: transform .2s; }
+.hub:hover u { transform: translateX(3px); background: var(--tone); color: #fff; }
+@media (max-width: 1100px) { .hubs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .hubs { grid-template-columns: minmax(0, 1fr); } .hub { min-height: 0; } }
+
 </style>
 </head>
 <body>
@@ -5861,7 +5875,7 @@ window.FG_CONTENT = {
     { title: "File & audit", sub: "Evidence trail", path: "filing", sections: ["filing"] },
   ];
   // Each area has its own colour; views read it through --accent.
-  FG.TONES = { home: 1, engines: 4, analysis: 6, procurement: 1, grants: 4, "po-file": 5, foma: 5, "payment-file": 2, "petty-cash": 3, "foma-reports": 5, "foma-forecast": 3, "year-end": 3, filing: 2, scenarios: 4, roles: 1, links: 1, rules: 4, glossary: 5 };
+  FG.TONES = { home: 1, engines: 4, analysis: 6, procurement: 1, grants: 4, "po-file": 5, foma: 5, "payment-file": 2, "petty-cash": 3, "foma-reports": 5, "foma-forecast": 3, "year-end": 3, filing: 2, scenarios: 4, roles: 1, links: 1, rules: 4, glossary: 5, projects: 1, tools: 3, vat: 6, events: 4, "foma-po": 2, "foma-pay": 2, "foma-mission": 5, "foma-claim": 5 };
 
   /* ---------- store: localStorage when available, memory otherwise ---------- */
   const KEY = "fg.v15";
@@ -6159,15 +6173,61 @@ window.FG_CONTENT = {
   const E = window.FG_ENGINES;
 
   // Sidebar follows the life of a project: plan → commit → pay → report → close, then tools and reference.
+  // Same top-level structure as the original guide: Projects, FOMA, Tools, Decision Engines.
   FG.nav = [
-    { title: "Workspace", items: [{ title: "Overview", path: "home", icon: "⌂" }, { title: "Decision engines", path: "engines", icon: "◇" }, { title: "Financial analysis", path: "analysis", icon: "⌁" }] },
-    { title: "1 · Plan & procure", items: [{ title: "Procurement", path: "procurement", icon: "⚖" }, { title: "Grants", path: "grants", icon: "✦" }] },
-    { title: "2 · Commit", items: [{ title: "PO file", path: "po-file", icon: "▤" }, { title: "FOMA workflows", path: "foma", icon: "↹" }] },
-    { title: "3 · Pay", items: [{ title: "Payment file", path: "payment-file", icon: "€" }, { title: "Petty cash", path: "petty-cash", icon: "¢" }] },
-    { title: "4 · Report & forecast", items: [{ title: "Financial reporting", path: "foma/reports", icon: "▥", section: "foma-reports" }, { title: "Forecast & revision", path: "foma/forecast", icon: "↗", section: "foma-forecast" }] },
-    { title: "5 · Close & file", items: [{ title: "Year-end closing", path: "year-end", icon: "◷" }, { title: "Filing & audit", path: "filing", icon: "▦" }] },
-    { title: "Learn & reference", items: [{ title: "Rules at a glance", path: "rules", icon: "§" }, { title: "Glossary", path: "glossary", icon: "Aa" }, { title: "Scenario practice", path: "scenarios", icon: "◆" }, { title: "Roles & documents", path: "roles", icon: "◎" }, { title: "Links & guidelines", path: "links", icon: "↗" }] },
+    { title: "Start", items: [{ title: "Home", path: "home", icon: "⌂" }] },
+    { title: "Projects · Project Team", items: [
+      { title: "Projects overview", path: "projects", icon: "▤" },
+      { title: "Procurement", path: "procurement", icon: "⚖" }, { title: "Grants", path: "grants", icon: "✦" },
+      { title: "PO file", path: "po-file", icon: "↔" }, { title: "Payment file", path: "payment-file", icon: "€" },
+      { title: "End of year", path: "year-end", icon: "◷" }, { title: "Petty cash", path: "petty-cash", icon: "¢" },
+      { title: "VAT procedures", path: "vat", icon: "%" }, { title: "Events & GDD", path: "events", icon: "◈" },
+      { title: "Filing management", path: "filing", icon: "▦" }, { title: "Useful links", path: "links", icon: "↗" } ] },
+    { title: "FOMA · Field operations", items: [
+      { title: "FOMA overview", path: "foma", icon: "▦" },
+      { title: "PO request", path: "foma/po-request", icon: "🧾", section: "foma-po" }, { title: "Payment request", path: "foma/payment-request", icon: "💳", section: "foma-pay" },
+      { title: "Mission order", path: "foma/mission-order", icon: "✈", section: "foma-mission" }, { title: "Expense claim", path: "foma/expense-claim", icon: "◎", section: "foma-claim" },
+      { title: "Financial reports", path: "foma/reports", icon: "▥", section: "foma-reports" }, { title: "Forecast", path: "foma/forecast", icon: "↗", section: "foma-forecast" } ] },
+    { title: "Tools", items: [{ title: "Tools & templates", path: "tools", icon: "▣" }, { title: "Rules at a glance", path: "rules", icon: "§" }, { title: "Glossary", path: "glossary", icon: "Aa" }, { title: "Scenario practice", path: "scenarios", icon: "◆" }, { title: "Roles & documents", path: "roles", icon: "◎" }] },
+    { title: "Decision Engines", items: [{ title: "All engines", path: "engines", icon: "◇" }, { title: "Financial analysis", path: "analysis", icon: "⌁" }] },
   ];
+  const HUBS = [
+    ["01 / Project finance", "Projects", "Project Team", "Procurement, grants, PO and payment files, year-end, petty cash and filing.", "projects", 1, "▤"],
+    ["02 / Field operations", "FOMA", "Field offices", "PO and payment requests, missions, expense claims, reports and forecast.", "foma", 2, "▦"],
+    ["03 / Practical resources", "Tools", "Templates & checklists", "Documents, checklists, calculators, rules, glossary and practice.", "tools", 3, "▣"],
+    ["04 / Smart guidance", "Decision Engines", "Your case → route", "Answer a few questions and get the route, controls and file pack.", "engines", 4, "◇"],
+  ];
+  const PROJECT_ITEMS = [
+    ["⚖", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract execution.", "procurement"],
+    ["✦", "Grant", "Grant procedures, calls, evaluation and agreement preparation.", "grants"],
+    ["↔", "PO & payment files", "Prepare the PO, continue through delivery and complete the payment package.", "po-file"],
+    ["◷", "End of year procedure", "Year-end closure, commitments, reporting and clean-up.", "year-end"],
+    ["€", "Petty cash", "Petty cash rules, reconciliation and supporting evidence.", "petty-cash"],
+    ["▤", "Filing management", "Evidence maps, DMS structure, naming and audit-ready filing.", "filing"],
+    ["↗", "Useful links & guidelines", "Compact access to systems, controlled templates and guidance.", "links"],
+    ["◈", "Events & GDD", "Event-related finance, logistics and GDD support.", "events"],
+    ["%", "VAT procedures", "VAT checks, exemptions, supporting documents and follow-up.", "vat"],
+  ];
+  route("projects", {
+    crumbs: () => [["Projects", "projects"]],
+    render: () => ({ html: `${FG.ui.head("01 / Project finance · Project Team", "Projects", "Project finance guidance, operational workflows and practical tools for day-to-day implementation.")}
+      <div class="modules">${PROJECT_ITEMS.map(([i, t, d, p], k) => p ? `<a class="module" style="--tone:var(--c${(k % 6) + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`
+        : `<div class="module" style="--tone:var(--faint);opacity:.7"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small>${FG.ui.tag("In preparation")}</span></div>`).join("")}</div>` }),
+  });
+  route("tools", {
+    crumbs: () => [["Tools", "tools"]],
+    render: () => {
+      const groups = [
+        ["Templates & documents", [["Roles & documents", "Who does what and which evidence each module expects.", "roles"], ["PO document builder", "Signed and supporting documents by service type.", "po-file"], ["Payment file builder", "Finance-ready payment package.", "payment-file"], ["Filing & DMS structure", "Evidence map and audit documents.", "filing"], ["Useful links & templates", "Manuals, templates and internal systems.", "links"]]],
+        ["Checklists", [["Payment readiness", "Pre-flight check before sending the file.", "engines/payment-readiness"], ["Audit readiness", "Decision trail, approvals and evidence.", "engines/audit-readiness"], ["Year-end checklist", "2026 project-team closing list.", "year-end"], ["Petty cash check", "Limit and pre-spend approval.", "petty-cash"], ["Grant cost eligibility", "Core cost test before commitment.", "grants/costs"]]],
+        ["Calculators", [["Procedure decision tree", "Value, type and funding → procedure.", "rules"], ["What-if simulator", "Budget Heading change → route.", "engines/what-if"], ["Financial analysis", "Budget vs actual from Excel.", "analysis"], ["Which financial year?", "2026 allocation table.", "year-end"]]],
+        ["Learn", [["Rules at a glance", "Every threshold with its source.", "rules"], ["Glossary", "Terms and abbreviations.", "glossary"], ["Scenario practice", "48 cases with feedback.", "scenarios"]]],
+      ];
+      return { html: `${FG.ui.head("03 / Practical resources", "Tools", "Templates, checklists, calculators and practical resources.")}
+        ${groups.map(([g, items], k) => `<div class="section-title"><h2>${esc(g)}</h2></div><div class="modules">${items.map(([t, d, p]) => `<a class="module" style="--tone:var(--c${k + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${esc(t[0])}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`).join("")}</div>`).join("")}` };
+    },
+  });
+
 
   /* ---------- home ---------- */
   const TASKS = [
@@ -6197,7 +6257,8 @@ window.FG_CONTENT = {
       const caseItems = FG.case.items(), practice = FG.store.get("scenarioAnswers", {}), answered = Object.keys(practice).length;
       const correct = Object.values(practice).filter((x) => x.ok).length;
       return { html: `
-        <div class="hero">
+        <div class="hubs">${HUBS.map(([k, t, sub, d, p, c, ic]) => `<a class="hub" style="--tone:var(--c${c})" href="#/${p}"><small>${esc(k)}</small><i aria-hidden="true">${ic}</i><b>${esc(t)}</b><em>${esc(sub)}</em><span>${esc(d)}</span><u aria-hidden="true">→</u></a>`).join("")}</div>
+        <div class="hero mt">
           <section class="card hero-main">
             <div class="eyebrow">Financial & Procurement Guide</div>
             <h1>What do you need to do?</h1>
@@ -6230,10 +6291,10 @@ window.FG_CONTENT = {
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
   function lifecycle(cfg) {
     const stages = cfg.stages;
-    route(cfg.base, { section: cfg.base, crumbs: () => [[cfg.title, cfg.base]], render: () => ({ html: "", mount() { FG.go(`${cfg.base}/${slug(stages[FG.store.get(cfg.base + ":last", 0)].name)}`); } }) });
+    route(cfg.base, { section: cfg.base, crumbs: () => [["Projects", "projects"], [cfg.title, cfg.base]], render: () => ({ html: "", mount() { FG.go(`${cfg.base}/${slug(stages[FG.store.get(cfg.base + ":last", 0)].name)}`); } }) });
     route(`${cfg.base}/:stage`, {
       section: cfg.base,
-      crumbs: (p) => [[cfg.title, cfg.base], [(stages.find((s) => slug(s.name) === p.stage) || stages[0]).name, `${cfg.base}/${p.stage}`]],
+      crumbs: (p) => [["Projects", "projects"], [cfg.title, cfg.base], [(stages.find((s) => slug(s.name) === p.stage) || stages[0]).name, `${cfg.base}/${p.stage}`]],
       render(p) {
         let i = stages.findIndex((s) => slug(s.name) === p.stage); if (i < 0) i = 0;
         FG.store.set(cfg.base + ":last", i);
@@ -6331,7 +6392,7 @@ window.FG_CONTENT = {
     return (root) => root.addEventListener("click", (e) => { const b = e.target.closest("[data-flow]"); if (b) { FG.store.set(key, +b.dataset.flow); FG.refresh(); } });
   }
 
-  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/launch-and-publication", "VAT Procedures": "links", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
+  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/launch-and-publication", "VAT Procedures": "vat", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
   lifecycle({
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
@@ -6402,7 +6463,7 @@ window.FG_CONTENT = {
 
   /* ---------- links ---------- */
   route("links", {
-    crumbs: () => [["Links & guidelines", "links"]],
+    crumbs: () => [["Projects", "projects"], ["Useful links", "links"]],
     render() {
       const cat = FG.store.get("links:cat", "All"), q = FG.store.get("links:q", "");
       const cats = ["All", ...new Set(C.usefulLinks.map((l) => l.cat))];
@@ -6474,7 +6535,7 @@ window.FG_CONTENT = {
     return `<div data-checklist="${esc(id)}"><h3 class="small" style="text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">${esc(title)}</h3><div class="checklist">${items.map(([a, b], i) => `<label class="check ${t[i] ? "done" : ""}"><input type="checkbox" data-i="${i}" ${t[i] ? "checked" : ""}><div><b>${esc(a)}</b><small>${esc(b)}</small></div></label>`).join("")}</div></div>`;
   }
   route("po-file", {
-    crumbs: () => [["PO file", "po-file"]],
+    crumbs: () => [["Projects", "projects"], ["PO file", "po-file"]],
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.poServices[service];
       const signedId = `po:${service}:signed`, supportId = `po:${service}:support`;
@@ -6517,7 +6578,7 @@ window.FG_CONTENT = {
 
   /* ---------- payment file ---------- */
   route("payment-file", {
-    crumbs: () => [["Payment file", "payment-file"]],
+    crumbs: () => [["Projects", "projects"], ["Payment file", "payment-file"]],
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.payServices[service] || { signed: [], support: [] };
       const row = VISA_ROWS.find((r) => (r[3] || []).includes(service)) || VISA_ROWS[3];
@@ -6544,7 +6605,7 @@ window.FG_CONTENT = {
 
   /* ---------- year-end ---------- */
   route("year-end", {
-    crumbs: () => [["Year-end closing", "year-end"]],
+    crumbs: () => [["Projects", "projects"], ["Year-end closing", "year-end"]],
     render() {
       const phase = FG.store.get("eoy:phase", 0), p = C.eoyPhases[phase], meta = C.eoyPhaseMeta[phase] || {};
       const f = FG.store.get("eoy:fy", { delivery: "current", invoice: "yes", budget: "annual" }), r = E.yearAllocation(f);
@@ -6590,7 +6651,7 @@ window.FG_CONTENT = {
   /* ---------- petty cash ---------- */
   const PETTY_CHECKS = [["CCM approval", "Approval obtained before the expense is made."], ["Limit check", "Expense is within the applicable Projects / OB limit."], ["Purpose & coding", "Reason for the expense and coding are clear."], ["Receipt / invoice", "Readable supporting evidence is available."], ["File complete", "Approval and supporting evidence are kept together."]];
   route("petty-cash", {
-    crumbs: () => [["Petty cash", "petty-cash"]],
+    crumbs: () => [["Projects", "projects"], ["Petty cash", "petty-cash"]],
     render() {
       const f = FG.store.get("petty", { budget: "project", amount: "", approved: "" }), r = E.pettyCash({ budget: f.budget === "ob" ? "ob" : "project", amount: f.amount, approved: !!f.approved });
       return { html: `${ui.head("Project finance · quick control", "Petty cash", "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.")}
@@ -6621,7 +6682,7 @@ window.FG_CONTENT = {
   ];
   const tree = (nodes) => `<ul>${nodes.map((n) => (Array.isArray(n) ? `<li style="list-style:none"><details open><summary>${esc(n[0])}</summary>${tree(n[1])}</details></li>` : `<li>${esc(n)}</li>`)).join("")}</ul>`;
   route("filing", {
-    crumbs: () => [["Filing & audit", "filing"]],
+    crumbs: () => [["Projects", "projects"], ["Filing & audit", "filing"]],
     render() {
       const proc = pick("filing:p", Object.keys(C.filingMap), "Procurement");
       return { html: `${ui.head("Project documentation · DMS & audit readiness", "Filing & audit trail", "Keep project, procurement and financial records easy to find, easy to verify and ready for review.", `<a class="btn primary" href="#/engines/audit-readiness">Audit readiness check</a>`)}
@@ -6666,8 +6727,9 @@ window.FG_CONTENT = {
         <div class="stage-nav">${i > 0 ? `<button class="btn" data-flow="${i - 1}">← Previous</button>` : "<span></span>"}${i < stages.length - 1 ? `<button class="btn primary" data-flow="${i + 1}">Next stage →</button>` : ""}</div>
       </div></section>`;
   }
+  const FLOW_SECTION = { "po-request": "foma-po", "payment-request": "foma-pay", "mission-order": "foma-mission", "expense-claim": "foma-claim" };
   const flowRoute = (key, title, lead, stages) => route(`foma/${key}`, {
-    section: "foma", crumbs: () => [["FOMA", "foma"], [title, `foma/${key}`]],
+    section: FLOW_SECTION[key], crumbs: () => [["FOMA", "foma"], [title, `foma/${key}`]],
     render: () => ({ html: handoverPage(key, title, lead, stages), mount: (root) => onClick(root, "data-flow", (i) => { FG.store.set(`foma:${key}`, +i); FG.refresh(); }) }),
   });
   flowRoute("po-request", "PO request process", "Follow the request from preparation to the issued purchase order.", C.fomaPoStages);
@@ -7290,6 +7352,141 @@ window.FG_CONTENT = {
   });
   RULES.forEach(([t, , rows]) => rows.forEach((r) => FG.addIndex(`${r[0]} (${t})`, r[1], "rules", "Rule", r[2])));
   void E;
+})();
+
+</script>
+<script>
+/* views-modules.js */
+/* VAT procedures and Events & GDD modules. Rules come from the guide's own content
+   (procurement stage "VAT, Invoice & Payment", Event Management PO/payment packages, best practice). */
+(function () {
+  "use strict";
+  const { C, esc, euro, ui, route } = FG;
+  const stage = C.procurementStages.find((s) => s.name === "Contract Execution & Payment");
+  const sec = Object.fromEntries(stage.sections);
+
+  /* ---------- pure logic (exported for tests) ---------- */
+  const CARD_SINGLE = 5000, CARD_MONTHLY = 30000;
+  FG.logic = FG.logic || {};
+  // Card payments are exceptions: ≤ €5,000 per purchase and ≤ €30,000 Organisation-wide per month.
+  FG.logic.paymentMethod = function (amount, monthUsed) {
+    amount = Math.max(0, Number(amount) || 0); monthUsed = Math.max(0, Number(monthUsed) || 0);
+    if (!amount) return { tone: "warn", title: "Enter the amount", text: "Bank transfer to the contractual account is the standard route." };
+    if (amount > CARD_SINGLE) return { tone: "risk", title: "Bank transfer", text: `${euro(amount)} is above the ${euro(CARD_SINGLE)} single card-purchase limit. Pay by transfer to the bank account stipulated in the contract.` };
+    if (amount + monthUsed > CARD_MONTHLY) return { tone: "risk", title: "Bank transfer", text: `This purchase would take monthly card use to ${euro(amount + monthUsed)}, above the ${euro(CARD_MONTHLY)} Organisation-wide monthly limit.` };
+    return { tone: "warn", title: "Card possible as an exception", text: `Within the ${euro(CARD_SINGLE)} single and ${euro(CARD_MONTHLY)} monthly limits (${euro(CARD_MONTHLY - monthUsed - amount)} left this month). Card payments remain exceptions — transfer is preferred.` };
+  };
+  // Default payment term: 60 days from receipt of invoice or execution, whichever is later.
+  FG.logic.paymentDue = function (invoiceDate, executionDate, days = 60) {
+    const a = invoiceDate ? new Date(invoiceDate) : null, b = executionDate ? new Date(executionDate) : null;
+    const base = a && b ? (a > b ? a : b) : a || b; if (!base || isNaN(base)) return null;
+    const due = new Date(base); due.setDate(due.getDate() + days);
+    return { base, due, from: base === a ? "invoice receipt" : "execution" };
+  };
+  // Initial vs final event budget; every changed line needs a reason and CCM approval evidence when material.
+  FG.logic.eventBudget = function (lines) {
+    const rows = lines.filter((l) => l.item || Number(l.initial) || Number(l.final)).map((l) => {
+      const initial = Number(l.initial) || 0, final = Number(l.final) || 0, diff = final - initial;
+      return { ...l, initial, final, diff, pct: initial ? (diff / initial) * 100 : final ? 100 : 0 };
+    });
+    const initial = rows.reduce((a, r) => a + r.initial, 0), final = rows.reduce((a, r) => a + r.final, 0);
+    return { rows, initial, final, diff: final - initial, pct: initial ? ((final - initial) / initial) * 100 : 0, changed: rows.filter((r) => r.diff !== 0) };
+  };
+
+  /* ---------- VAT procedures ---------- */
+  const INVOICE_FIELDS = [["supplier", "Supplier identified", "Name and address match the contract / PO."], ["number", "Invoice number", "Unique invoice reference."], ["vat", "VAT number if applicable", "Supplier VAT number where the supplier is VAT-registered."], ["deliverables", "Deliverables described", "Matches the accepted contractual deliverables."], ["fees", "Fees / subtotals", "Applicable fee and subtotals shown."], ["total", "Total amount", "Equals the accepted amount; VAT treatment as agreed before signature."], ["modalities", "Payment modalities", "Bank details match the account stipulated in the contract."], ["addressee", "Addressed to the Council of Europe", "Correct addressee on the invoice."]];
+  const VAT_STEPS = [
+    ["Before signature", "Clarify VAT", "Establish the supplier's VAT status and place of taxation before signing and sending the contract / order form. Protocol is the point of contact for VAT questions.", ["Supplier VAT status confirmed", "Place of taxation identified", "Protocol consulted where unclear", "VAT treatment written into the contract / order form"]],
+    ["PO submission", "Check exemption", "Check VAT exemption or tax rules before submitting the PO — never assume a supplier is always tax-exempt.", ["Exemption / tax rule checked for this supplier and service", "Amounts in the PO consistent with the agreed VAT treatment"]],
+    ["Invoice", "Verify particulars", "The invoice must carry the particulars below and match the contract and accepted deliverables.", ["All invoice particulars present", "VAT on the invoice matches the agreed treatment"]],
+    ["Payment", "Pay correctly", sec["Payment route"], ["Bank account matches the contract", "Payment date respects the agreed terms"]],
+    ["Filing", "Keep the VAT trail", "File VAT correspondence and evidence in the DMS under Project Contract Documents → VAT, together with the invoice and payment evidence.", ["VAT correspondence filed", "Invoice and payment evidence filed together"]],
+  ];
+  route("vat", {
+    crumbs: () => [["Projects", "projects"], ["VAT procedures", "vat"]],
+    render() {
+      const step = Math.min(FG.store.get("vat:step", 0), VAT_STEPS.length - 1), s = VAT_STEPS[step];
+      const inv = FG.store.get("vat:invoice", {}), invDone = INVOICE_FIELDS.filter(([k]) => inv[k]).length;
+      const pay = FG.store.get("vat:pay", { amount: "", month: "", invoiceDate: "", executionDate: "" });
+      const m = FG.logic.paymentMethod(pay.amount, pay.month), due = FG.logic.paymentDue(pay.invoiceDate, pay.executionDate);
+      return { html: `${ui.head("Projects · VAT", "VAT procedures", "VAT is a procurement planning issue as well as a payment issue: clarify it before signature, check it at PO and invoice, and keep the trail.", `<a class="btn" href="#/procurement/contract-execution-and-payment">Procurement stage 12</a><a class="btn primary" href="#/payment-file">Payment file</a>`)}
+        ${ui.callout("warn", "Key rule", stage.warning)}
+        <section class="card mt"><div class="card-head"><div><h3>VAT across the file</h3><small>Step ${step + 1} of ${VAT_STEPS.length}</small></div></div><div class="card-body stack">
+          ${ui.flowHeader(VAT_STEPS, step, (x, j) => `<small>${j + 1} · ${esc(x[0].toUpperCase())}</small><b>${esc(x[1])}</b>`)}
+          <p>${esc(s[2])}</p>${ui.checklist(`vat:step${step}`, s[3], `${s[1]} — checks`)}
+        </div></section>
+        <div class="grid g2 mt">
+          <section class="card"><div class="card-head"><div><h3>Invoice particulars check</h3><small>${esc(sec["Invoice content"])}</small></div>${ui.tag(`${invDone}/${INVOICE_FIELDS.length}`, invDone === INVOICE_FIELDS.length ? "good" : "warn")}</div><div class="card-body stack">
+            <div class="checklist" data-invoice>${INVOICE_FIELDS.map(([k, t, d]) => `<label class="check ${inv[k] ? "done" : ""}"><input type="checkbox" data-k="${k}" ${inv[k] ? "checked" : ""}><div><b>${esc(t)}</b><small>${esc(d)}</small></div></label>`).join("")}</div>
+            ${invDone === INVOICE_FIELDS.length ? ui.callout("good", "Invoice can be processed", "All particulars are present. Attach acceptance evidence and continue with the payment file.") : ui.callout("risk", "Return to supplier", `Missing: ${INVOICE_FIELDS.filter(([k]) => !inv[k]).map((f) => f[1]).join(", ")}.`)}
+            <button class="btn sm" data-inv-reset>New invoice</button></div></section>
+          <section class="card"><div class="card-head"><div><h3>Payment method & due date</h3><small>Card: ≤ ${euro(CARD_SINGLE)} per purchase, ≤ ${euro(CARD_MONTHLY)} per month. Default term: 60 days.</small></div></div><div class="card-body stack">
+            <form class="grid g2" data-pay>${ui.number("amount", pay.amount, "Amount (€)")}${ui.number("month", pay.month, "Card use this month so far (€)")}
+              <label class="field"><span>Invoice received</span><input class="input" type="date" name="invoiceDate" value="${esc(pay.invoiceDate)}"></label><label class="field"><span>Execution / acceptance</span><input class="input" type="date" name="executionDate" value="${esc(pay.executionDate)}"></label></form>
+            ${ui.callout(m.tone, m.title, m.text)}
+            ${due ? ui.callout("info", `Payment due by ${FG.fmtDate(due.due)}`, `60 days from ${due.from} (${FG.fmtDate(due.base)}), the later of the two dates — unless the contract sets other negotiated terms.`) : `<p class="small muted">Enter the invoice and execution dates to compute the default due date.</p>`}
+          </div></section>
+        </div>`,
+        mount(root) {
+          root.addEventListener("click", (e) => {
+            const f = e.target.closest("[data-flow]"); if (f) { FG.store.set("vat:step", +f.dataset.flow); FG.refresh(); }
+            if (e.target.closest("[data-inv-reset]")) { FG.store.set("vat:invoice", {}); FG.refresh(); }
+          });
+          root.querySelector("[data-invoice]").addEventListener("change", (e) => { const v = FG.store.get("vat:invoice", {}); v[e.target.dataset.k] = e.target.checked ? 1 : 0; FG.store.set("vat:invoice", v); FG.refresh(); });
+          const form = root.querySelector("[data-pay]");
+          form.addEventListener("change", () => { FG.store.set("vat:pay", Object.fromEntries(new FormData(form))); FG.refresh(); });
+        } };
+    },
+  });
+
+  /* ---------- Events & GDD ---------- */
+  const EV_STEPS = [
+    ["Plan", "Work plan & call-off", "Define the event in the work plan, run the call-off and keep all financial offers, technical proposals and cancellation policies for the assessment.", C.poServices["Event Management"].support.slice(0, 4).map((d) => d[0])],
+    ["Commit", "Event Management PO", "Submit the PO package. The selected financial proposal is signed by the CCM after the PO is opened; no service starts before the PO is issued.", C.poServices["Event Management"].signed.map((d) => d[0])],
+    ["Deliver", "Run the event", "Collect delivery evidence as the event happens: signature list, agenda, accommodation, transfer and travel records, photos.", ["Signature list", "Agenda", "Accommodation / transfer / travel records", "Event photo"]],
+    ["Reconcile", "Final budget", "Compare the final budget with the initial one. Keep e-mails on significant financial changes with CCM approval, and exchange-rate evidence where amounts were in another currency.", ["Final budget signed by Project Manager / Officer", "CCM approval e-mails for significant changes", "Exchange-rate document"]],
+    ["Pay", "Payment file", "Build the Event Management payment package and send it to Finance.", C.payServices["Event Management"].support.map((d) => d[0])],
+  ];
+  route("events", {
+    crumbs: () => [["Projects", "projects"], ["Events & GDD", "events"]],
+    render() {
+      const step = Math.min(FG.store.get("ev:step", 0), EV_STEPS.length - 1), s = EV_STEPS[step];
+      const lines = FG.store.get("ev:budget", [{ item: "Venue", initial: 4000, final: 4000 }, { item: "Catering", initial: 2500, final: 3100 }, { item: "Interpretation", initial: 3000, final: 2600 }, { item: "Travel & accommodation", initial: 6000, final: 6400 }]);
+      const b = FG.logic.eventBudget(lines);
+      const fx = FG.store.get("ev:fx", { amount: "", currency: "TRY", rate: "", source: "" }), fxEur = Number(fx.amount) && Number(fx.rate) ? Number(fx.amount) / Number(fx.rate) : null;
+      const links = C.usefulLinks.filter((l) => /EventS|GDD/.test(l.title));
+      return { html: `${ui.head("Projects · Events", "Events & GDD", "Event-related finance from the call-off to the payment file: the Event Management PO and payment packages, budget reconciliation and exchange-rate evidence.", links.map((l) => `<a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.title)} ↗</a>`).join(""))}
+        <section class="card"><div class="card-head"><div><h3>Event finance workflow</h3><small>Step ${step + 1} of ${EV_STEPS.length}</small></div></div><div class="card-body stack">
+          ${ui.flowHeader(EV_STEPS, step, (x, j) => `<small>${j + 1} · ${esc(x[0].toUpperCase())}</small><b>${esc(x[1])}</b>`)}
+          <p>${esc(s[2])}</p>${ui.checklist(`ev:step${step}`, s[3], "Documents for this step")}</div></section>
+        <section class="card mt"><div class="card-head"><div><h3>Initial vs final event budget</h3><small>Every change needs a reason; significant financial changes need CCM approval evidence in the payment file.</small></div>${ui.tag(`${b.diff >= 0 ? "+" : ""}${euro(b.diff)} (${b.pct.toFixed(1)}%)`, b.diff > 0 ? "warn" : "good")}</div><div class="card-body stack">
+          <div class="table-wrap"><table class="t" data-evb><thead><tr><th>Item</th><th class="n">Initial (€)</th><th class="n">Final (€)</th><th class="n">Change</th><th></th></tr></thead><tbody>
+            ${b.rows.map((r, i) => `<tr><td><input class="input" data-i="${i}" data-f="item" value="${esc(r.item)}" aria-label="Item"></td><td><input class="input" type="number" min="0" data-i="${i}" data-f="initial" value="${r.initial}" aria-label="Initial amount"></td><td><input class="input" type="number" min="0" data-i="${i}" data-f="final" value="${r.final}" aria-label="Final amount"></td><td class="n" style="color:${r.diff > 0 ? "var(--warn)" : r.diff < 0 ? "var(--good)" : "inherit"}">${r.diff >= 0 ? "+" : ""}${euro(r.diff)}<small>${r.pct.toFixed(1)}%</small></td><td><button class="btn ghost sm" data-del="${i}" aria-label="Remove ${esc(r.item)}">×</button></td></tr>`).join("")}
+          </tbody><tfoot><tr><td>Total</td><td class="n">${euro(b.initial)}</td><td class="n">${euro(b.final)}</td><td class="n">${b.diff >= 0 ? "+" : ""}${euro(b.diff)}</td><td></td></tr></tfoot></table></div>
+          <div class="row"><button class="btn sm" data-add>＋ Add item</button><span class="spacer"></span></div>
+          ${b.changed.length ? ui.callout("warn", `${b.changed.length} item(s) changed`, `Document the reason for: ${b.changed.map((r) => r.item || "unnamed item").join(", ")}. Attach CCM approval e-mails for significant changes and the final budget signed by the Project Manager / Officer.`) : ui.callout("good", "No change", "Final budget equals the initial budget.")}
+        </div></section>
+        <div class="grid g2 mt">
+          <section class="card"><div class="card-head"><div><h3>Exchange-rate evidence</h3><small>For costs incurred in another currency.</small></div></div><form class="card-body form" data-fx>
+            <div class="grid g3">${ui.number("amount", fx.amount, "Amount in local currency")}<label class="field"><span>Currency</span><input class="input" name="currency" value="${esc(fx.currency)}" maxlength="3"></label>${ui.number("rate", fx.rate, `Rate (${esc(fx.currency || "XXX")} per €1)`)}</div>
+            <label class="field"><span>Rate source and date</span><input class="input" name="source" value="${esc(fx.source)}" placeholder="e.g. official rate of the month, date"></label>
+            ${fxEur != null ? ui.callout(fx.source ? "good" : "warn", `${euro(fxEur, 2)}`, fx.source ? `Keep this rate (${fx.source}) as the exchange-rate document in the payment file.` : "Record the rate source and date — the payment file needs the exchange-rate evidence.") : `<p class="small muted">Enter amount and rate to convert.</p>`}</form></section>
+          <section class="card"><div class="card-head"><h3>Best practice</h3></div><div class="card-body">${ui.pairs([...C.payBestPractice, ...C.poBestPractice].filter((x) => /event/i.test(x.join(" "))))}</div></section>
+        </div>`,
+        mount(root) {
+          const save = (l) => { FG.store.set("ev:budget", l); FG.refresh(); };
+          root.addEventListener("click", (e) => {
+            const f = e.target.closest("[data-flow]"); if (f) { FG.store.set("ev:step", +f.dataset.flow); FG.refresh(); }
+            if (e.target.closest("[data-add]")) save([...lines, { item: "", initial: 0, final: 0 }]);
+            const d = e.target.closest("[data-del]"); if (d) save(lines.filter((_, i) => i !== +d.dataset.del));
+          });
+          root.querySelector("[data-evb]").addEventListener("change", (e) => { const i = +e.target.dataset.i; if (isNaN(i)) return; const l = lines.map((x) => ({ ...x })); l[i][e.target.dataset.f] = e.target.dataset.f === "item" ? e.target.value : Number(e.target.value) || 0; save(l); });
+          const fxf = root.querySelector("[data-fx]"); fxf.addEventListener("change", () => { FG.store.set("ev:fx", Object.fromEntries(new FormData(fxf))); FG.refresh(); });
+        } };
+    },
+  });
+  FG.addIndex("VAT procedures", "VAT before signature, invoice particulars, card limits, payment terms", "vat", "Module", "vat tax exemption protocol invoice card 5000 30000 60 days");
+  FG.addIndex("Events & GDD", "Event Management PO and payment, final budget, exchange rates", "events", "Module", "event conference call-off exchange rate gdd final budget");
 })();
 
 </script>
