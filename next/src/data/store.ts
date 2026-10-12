@@ -197,6 +197,33 @@ export function updateProject(id: string, patch: Partial<Project>) {
   const p = state.ledger.projects.find((x) => x.id === id); if (!p) return;
   upsertProject({ ...clone(p), ...patch });
 }
+/** Adds an office report (same office and date replaces), creating the office from the file on first import. */
+export function upsertOfficeReport(r: import('../domain/office').OfficeReport, country = 'tr') {
+  const L = clone(state.ledger), O = (L.offices ??= []);
+  let o = O.find((x) => (r.ccm && x.ccm === r.ccm) || x.name === r.office);
+  if (!o) { o = { id: `office-${r.ccm ?? O.length + 1}`, name: r.office, country, ccm: r.ccm, bh: r.bh, reports: [] }; O.push(o); }
+  const i = o.reports.findIndex((x) => x.date === r.date);
+  if (i >= 0) o.reports[i] = r; else o.reports.push(r);
+  if (r.hasPlan) o.name = r.office; // the office's own report names it properly (the system export only has the CCM label)
+  o.reports.sort((a, b) => a.date.localeCompare(b.date));
+  // System exports carry no line budgets: take them from the office's forecast of the same year (whichever came first).
+  for (const x of o.reports.filter((x) => !x.hasPlan)) {
+    const ref = o.reports.filter((y) => y.hasPlan && y.year === x.year).sort((a, b) => Math.abs(Date.parse(a.date) - Date.parse(x.date)) - Math.abs(Date.parse(b.date) - Date.parse(x.date)))[0];
+    if (!ref) continue;
+    const by = new Map(ref.lines.map((l) => [l.code, l]));
+    for (const l of ref.lines) if (!x.lines.some((y) => y.code === l.code)) x.lines.push({ ...l, ob: { budget: l.ob.budget, sc: 0, planned: 0 }, ls: { budget: l.ls.budget, sc: 0, planned: 0 }, note: undefined });
+    for (const l of x.lines) { const b = by.get(l.code); if (b) { l.ob.budget = b.ob.budget; l.ls.budget = b.ls.budget; l.heading = b.heading; l.description = b.description; } }
+    x.lines.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+    x.office = ref.office;
+  }
+  commit(L, `Office budget ${o.name} · ${r.date}`);
+}
+export function deleteOfficeReport(officeId: string, reportId: string) {
+  const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  o.reports = o.reports.filter((r) => r.id !== reportId);
+  if (!o.reports.length) L.offices = L.offices!.filter((x) => x !== o);
+  commit(L, `Removed office report`);
+}
 export function deleteProjects(ids: string[]) {
   const L = clone(state.ledger);
   L.projects = L.projects.filter((p) => !ids.includes(p.id));

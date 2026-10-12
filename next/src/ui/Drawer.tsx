@@ -1,3 +1,4 @@
+import { readOfficeFile } from './officeImport';
 import { SharePanel } from './Share';
 import { PortfolioImport } from './PortfolioImport';
 import { COUNTRY_LIST, countryInfo } from '../domain/countries';
@@ -6,7 +7,7 @@ import { AlertPanel } from './AlertPanel';
 import { PeriodPanel } from './PeriodPanel';
 import { SmartImport } from './SmartImport';
 import { useEffect, useState } from 'preact/hooks';
-import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, restorePoints, set, upsertCountry, upsertProject, useStore } from '../data/store';
+import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, restorePoints, set, upsertCountry, upsertProject, upsertOfficeReport, useStore } from '../data/store';
 import type { Country } from '../domain/types';
 import { burnGap, elapsed, lines, money, parseDate, riskScore, spendPoints, validateLedger } from '../domain/calc';
 import { normalizeSector, SECTORS, validUrl, type Ledger, type Project } from '../domain/types';
@@ -258,6 +259,9 @@ function ImportPanel({ close }: { close: () => void }) {
   async function read(file: File) {
     setErr(''); setRows(null); setJson(null);
     setBusy(`Reading ${file.name}…`);
+    // An office running-cost budget (Ordinary Budget, BH 0127) goes to the Offices page, not to a project.
+    const off = await readOfficeFile(file).catch(() => null);
+    if (off) { setBusy(''); upsertOfficeReport(off); close(); go('offices'); return; }
     const wb = await readCoe(file).catch(() => null);
     setBusy('');
     if (wb) { set({ drawer: { kind: 'smart-import', files: [file] } }); return; }
