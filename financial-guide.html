@@ -750,6 +750,15 @@ body::after { left: -50%; right: -50%; bottom: -35%; height: 70%; background-ima
 }
 @media (max-width: 520px) { .pj-col.two { grid-template-columns: minmax(0, 1fr); } }
 
+/* ---------- performance: no continuous repaints, no live blur ---------- */
+*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+body::before, body::after { animation: none !important; will-change: auto; }
+.page-head h1, .fx-hero h1 span { animation: none !important; background-position: 0 0; }
+.module::before, .tile::before, .task::before, .fx-hub::before { animation-play-state: paused; }
+.module:hover::before, .tile:hover::before, .task:hover::before, .fx-hub:hover::before { animation-play-state: running; }
+.top { background: color-mix(in srgb, var(--bg) 94%, transparent); }
+.card, .module, .tile, .kpis, .task, .journey a, .tablist, .search-btn, .icon-btn { background: var(--panel); }
+
 </style>
 </head>
 <body>
