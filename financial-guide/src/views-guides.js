@@ -86,11 +86,11 @@
   route("home", {
     section: "home",
     render() {
-      const caseItems = FG.case.items(), modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
+      const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
       const meters = [90, 70, 80, 100], counts = ["09 modules", "06 workflows", "20+ tools", `${String(engines).padStart(2, "0")} engines`];
       return { html: `
         <section class="fx-hero">
-          <span class="fx-status"><b aria-hidden="true"></b>Guide online · ${modules} pages · ${engines} engines${caseItems.length ? ` · My Case ${String(caseItems.length).padStart(2, "0")}` : ""}</span>
+          <span class="fx-status"><b aria-hidden="true"></b>Guide online · ${modules} pages · ${engines} engines</span>
           <h1>Guidance. Decisions.<br><span>Templates. One place.</span></h1>
           <p>Choose your space. Every path ends with the applicable rule, the route for your case and the documents to keep.</p>
         </section>

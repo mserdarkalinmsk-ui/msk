@@ -83,12 +83,10 @@ console.log("Unit checks passed.");
       if (info.len < 150) problems.push(`${vp.width} ${p}: almost empty (${info.len} chars)`);
       if (info.wide > 1) problems.push(`${vp.width} ${p}: horizontal overflow ${info.wide}px`);
     }
-    // Interactions: engine recompute, save to case, sample analysis, search palette, scenarios.
+    // Interactions: engine recompute, sample analysis, search palette, scenarios.
     await page.evaluate(() => { location.hash = "#/engines/procurement"; });
     await page.fill("[name=amount]", "190000");
     assert.match(await page.textContent("#result h2"), /International Public Call/);
-    await page.click("[data-save-case]");
-    assert.equal(await page.textContent("#caseCount"), "1");
     await page.evaluate(() => { location.hash = "#/engines/budget-revision"; });
     await page.selectOption("[name=project]", "vc");
     await page.waitForSelector("[name=donor]");

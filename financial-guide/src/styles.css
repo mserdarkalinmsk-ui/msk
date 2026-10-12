@@ -677,3 +677,13 @@ body::after { left: -50%; right: -50%; bottom: -35%; height: 70%; background-ima
 .pace .lbl { fill: var(--ink-2); font-weight: 600; }
 @keyframes fxDraw { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
 @media (max-width: 860px) { .viz-row { grid-template-columns: minmax(0, 1fr); } .donut { flex-direction: column; align-items: stretch; } .donut svg { margin: auto; } }
+
+/* ---------- no-sidebar shell ---------- */
+.app.no-side { grid-template-columns: minmax(0, 1fr); }
+.app.no-side .top { display: flex; align-items: center; gap: 16px; }
+.app.no-side .top .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; padding: 0; border: 0; }
+.app.no-side .top .top-actions { margin-left: auto; }
+.app.no-side .crumbs { max-width: 1240px; width: 100%; margin: 14px auto 0; padding: 0 28px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.app.no-side .content { max-width: 1240px; width: 100%; margin: 0 auto; }
+.foot { max-width: 1240px; width: 100%; margin: 24px auto 0; padding: 16px 28px 28px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--line); }
+@media (max-width: 640px) { .app.no-side .crumbs, .foot { padding: 0 16px; } .app.no-side .top .brand small { display: none; } }

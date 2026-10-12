@@ -1,4 +1,4 @@
-/* Core: helpers, persistent store, router, shell (navigation, search, My Case, theme). */
+/* Core: helpers, persistent store, router, shell (navigation, search, theme). */
 (function () {
   "use strict";
   const C = window.FG_CONTENT;
@@ -127,7 +127,7 @@
     const confidence = r.confidence && r.score != null ? `<div class="block"><h3>Decision confidence</h3><div class="score ${r.score >= 85 ? "good" : r.score >= 70 ? "warn" : "risk"}"><div class="ring" style="--p:${r.score}"><b>${r.score}%</b></div><div><h4>${esc(r.confidence[0])}</h4><p>${esc(r.confidence[1])}</p></div></div></div>` : "";
     return `<section class="card decision" aria-live="polite">
       <div class="decision-hero ${r.tone}"><div class="eyebrow">${esc(r.kicker)}</div><h2>${esc(r.route)}</h2><p>${esc(r.summary)}</p>
-        <div class="row">${r.meta.map(([k, v]) => ui.tag(`${k}: ${v}`)).join("")}<span class="spacer"></span>${opts.save !== false ? `<button class="btn sm no-print" data-save-case>Save to My Case</button>` : ""}</div></div>
+        <div class="row">${r.meta.map(([k, v]) => ui.tag(`${k}: ${v}`)).join("")}<span class="spacer"></span></div></div>
       <div class="decision-body">${ui.kpis(r.kpis)}${scale}${fit}
         ${FG.ui.tabs("decision", [
           ["why", "Why this result", `<div class="reasons">${r.reasons.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>`, r.reasons.length],
@@ -137,29 +137,6 @@
         ])}
         ${opts.footer || ""}
       </div></section>`;
-  };
-
-  /* ---------- My Case ---------- */
-  FG.case = {
-    items: () => FG.store.get("case", []),
-    add(item) {
-      const items = FG.case.items().filter((x) => x.engine !== item.engine);
-      items.unshift({ ...item, at: new Date().toISOString() });
-      FG.store.set("case", items.slice(0, 20));
-      FG.updateCaseBadge();
-      FG.toast("Saved to My Case");
-    },
-    remove(i) { const items = FG.case.items(); items.splice(i, 1); FG.store.set("case", items); FG.updateCaseBadge(); FG.renderCase(); },
-    clear() { FG.store.set("case", []); FG.store.set("caseNote", ""); FG.updateCaseBadge(); FG.renderCase(); },
-  };
-  FG.updateCaseBadge = () => { const n = FG.case.items().length, b = $("#caseCount"); if (b) { b.textContent = n; b.hidden = !n; } };
-  FG.renderCase = function () {
-    const items = FG.case.items(), body = $("#caseBody");
-    body.innerHTML = `<p class="muted small">Decisions you save from the engines are kept here, in this browser only, so the case context follows you between modules.</p>
-      <label class="field"><span>Case notes</span><textarea class="input" id="caseNote" rows="4" placeholder="Project, supplier, reference numbers, open questions…">${esc(FG.store.get("caseNote", ""))}</textarea></label>
-      ${items.length ? items.map((x, i) => `<div class="case-item"><header><div><small>${esc(x.kicker)}</small><b>${esc(x.route)}</b></div><button class="icon-btn" data-remove-case="${i}" aria-label="Remove ${esc(x.route)}">×</button></header><p class="small muted mt">${esc(x.summary)}</p><div class="row mt">${x.meta.map(([k, v]) => FG.ui.tag(`${k}: ${v}`)).join("")}</div><div class="row mt"><a class="btn sm" href="#/${esc(x.path)}">Open engine</a><small>${esc(fmtDate(x.at))}</small></div></div>`).join("")
-        : `<div class="empty"><b>No saved decisions yet</b>Run a decision engine and choose “Save to My Case”.</div>`}
-      <div class="row"><button class="btn sm" id="casePrint">Print case summary</button><span class="spacer"></span>${items.length ? `<button class="btn ghost sm" id="caseClear">Clear case</button>` : ""}</div>`;
   };
 
   /* ---------- router ---------- */
@@ -208,7 +185,6 @@
   window.addEventListener("hashchange", () => {
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
     FG.refresh(false);
-    closeSide();
     if (changedPage) { window.scrollTo(0, 0); $("#content").focus({ preventScroll: true }); }
   });
 
@@ -234,8 +210,7 @@
     const input = $("#paletteInput"); input.value = ""; results = search(""); sel = 0; renderResults(); input.focus();
   };
   function closeOverlays() {
-    ["#palette", "#overlay", "#caseDrawer"].forEach((s) => $(s).classList.remove("open"));
-    closeSide();
+    ["#palette", "#overlay"].forEach((s) => $(s).classList.remove("open"));
   }
   FG.closeOverlays = closeOverlays;
 
@@ -257,29 +232,23 @@
     if (theme === "system") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", theme);
     const btn = $("#themeBtn"); if (btn) { btn.innerHTML = ICON[theme]; btn.setAttribute("aria-label", `Theme: ${theme}. Change theme`); }
   }
-  function closeSide() { $("#side")?.classList.remove("open"); if (!$("#palette").classList.contains("open") && !$("#caseDrawer").classList.contains("open")) $("#overlay").classList.remove("open"); }
 
   /* ---------- shell ---------- */
   FG.start = function () {
     const groups = FG.nav;
     document.body.innerHTML = `<a class="skip" href="#content">Skip to content</a>
-<div class="app">
-  <aside class="side" id="side" aria-label="Main navigation">
-    <a class="brand" href="#/home"><span class="brand-mark" aria-hidden="true">FG</span><span><b>Financial Guide</b><small>Council of Europe</small></span></a>
-    <nav class="nav">${groups.map((g) => `<div class="nav-group"><span>${esc(g.title)}</span>${g.items.map((it) => `<a href="#/${it.path}" data-section="${it.section || it.path.split("/")[0]}"><i aria-hidden="true">${esc(it.icon)}</i>${esc(it.title)}</a>`).join("")}</div>`).join("")}</nav>
-    <div class="side-foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation.</div>
-  </aside>
+<div class="app no-side">
   <div class="main">
     <header class="top">
-      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation">${ICON.menu}</button>
-      <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
+      <a class="brand" href="#/home"><span class="brand-mark" aria-hidden="true">FG</span><span><b>Financial Guide</b><small>Council of Europe</small></span></a>
       <div class="top-actions">
         <button class="search-btn" id="searchBtn" aria-label="Search the guide">${ICON.search}<span>Search the guide…</span><kbd>Ctrl K</kbd></button>
-        <button class="icon-btn" id="caseBtn" aria-label="Open My Case">${ICON.case}<span class="badge-dot" id="caseCount" hidden>0</span></button>
         <button class="icon-btn" id="themeBtn" aria-label="Change theme"></button>
       </div>
     </header>
+    <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation.</footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -288,28 +257,12 @@
   <ul id="paletteList" role="listbox"></ul>
   <div class="hint"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span></div>
 </div>
-<aside class="drawer" id="caseDrawer" aria-label="My Case" aria-hidden="true">
-  <div class="drawer-head"><b>My Case</b><button class="icon-btn" id="caseClose" aria-label="Close My Case">${ICON.close}</button></div>
-  <div class="drawer-body" id="caseBody"></div>
-</aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 
     applyTheme(FG.store.get("theme", "system"));
     $("#themeBtn").onclick = () => { const order = ["system", "light", "dark"], next = order[(order.indexOf(FG.store.get("theme", "system")) + 1) % 3]; FG.store.set("theme", next); applyTheme(next); FG.toast(`Theme: ${next}`); };
-    $("#menuBtn").onclick = () => { $("#side").classList.add("open"); $("#overlay").classList.add("open"); };
     $("#searchBtn").onclick = FG.openPalette;
     $("#overlay").onclick = closeOverlays;
-    const openCase = () => { FG.renderCase(); $("#caseDrawer").classList.add("open"); $("#caseDrawer").setAttribute("aria-hidden", "false"); $("#overlay").classList.add("open"); $("#caseClose").focus(); };
-    $("#caseBtn").onclick = openCase;
-    FG.openCase = openCase;
-    $("#caseClose").onclick = () => { $("#caseDrawer").setAttribute("aria-hidden", "true"); closeOverlays(); };
-    $("#caseDrawer").addEventListener("click", (e) => {
-      const rm = e.target.closest("[data-remove-case]"); if (rm) FG.case.remove(+rm.dataset.removeCase);
-      if (e.target.closest("#caseClear")) FG.case.clear();
-      if (e.target.closest("#casePrint")) printCase();
-      if (e.target.closest("a")) closeOverlays();
-    });
-    $("#caseDrawer").addEventListener("input", (e) => { if (e.target.id === "caseNote") FG.store.set("caseNote", e.target.value); });
     $("#paletteInput").addEventListener("input", (e) => { results = search(e.target.value); sel = 0; renderResults(); });
     $("#paletteInput").addEventListener("keydown", (e) => {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + results.length) % Math.max(1, results.length); renderResults(); }
@@ -321,19 +274,7 @@
       else if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); FG.openPalette(); }
       else if (e.key === "Escape") closeOverlays();
     });
-    // "Save to My Case" on any decision card.
-    $("#content").addEventListener("click", (e) => {
-      if (!e.target.closest("[data-save-case]")) return;
-      const r = FG.lastDecision; if (r) FG.case.add({ engine: r.engine, path: FG.path(), kicker: r.kicker, route: r.route, summary: r.summary, meta: r.meta });
-    });
-    FG.updateCaseBadge();
     FG.refresh(false);
   };
 
-  function printCase() {
-    const items = FG.case.items(), w = window.open("", "_blank");
-    if (!w) { FG.toast("Allow pop-ups to print the case summary"); return; }
-    w.document.write(`<!doctype html><meta charset="utf-8"><title>My Case</title><style>body{font:14px/1.5 system-ui,sans-serif;margin:32px;color:#111}h1{font-size:20px}section{border-top:1px solid #ccc;padding:10px 0}small{color:#666}</style><h1>My Case — ${esc(fmtDate(new Date()))}</h1><p>${esc(FG.store.get("caseNote", "")).replace(/\n/g, "<br>")}</p>${items.map((x) => `<section><small>${esc(x.kicker)}</small><h2 style="font-size:16px;margin:2px 0">${esc(x.route)}</h2><p>${esc(x.summary)}</p><small>${x.meta.map((m) => esc(m.join(": "))).join(" · ")} · ${esc(fmtDate(x.at))}</small></section>`).join("")}`);
-    w.document.close(); w.focus(); w.print();
-  }
 })();
