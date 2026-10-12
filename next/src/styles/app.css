@@ -97,6 +97,7 @@ kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 4px; border: 
 .hero { display: grid; grid-template-columns: minmax(300px, 1.35fr) repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-1); overflow: hidden; margin-bottom: var(--s4); }
 .kpi { padding: var(--s5); border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .kpi:first-child { border-left: 0; }
+@media (min-width: 1181px) { .hero:has(> .kpi:nth-child(5)) { grid-template-columns: minmax(0, .9fr) minmax(260px, 1.35fr) repeat(3, minmax(0, 1fr)); } }
 .kpi .label { font-size: var(--fs-sm); color: var(--ink-2); font-weight: 550; display: flex; gap: var(--s2); align-items: center; }
 .kpi .value { font: 600 var(--fs-2xl)/1.1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
 .kpi.lead .value { font-size: var(--fs-hero); letter-spacing: -.04em; }

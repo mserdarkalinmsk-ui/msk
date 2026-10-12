@@ -1,3 +1,4 @@
+import { budgetRank } from './intake';
 import type { DocFindings } from './documents';
 import type { Project } from './types';
 
@@ -12,7 +13,7 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
     if (k.number) q.contractNo = k.number;
   }
   if (c.dates) { if (k.start) q.start = k.start; if (k.end) q.end = k.end; if (k.start && k.end) delete q.datesTbc; }
-  if (c.approved && F.budget) { q.approvedBudget = { ...F.budget, importedAt: new Date().toISOString() }; q.budget = Math.round(F.budget.total * 100) / 100; }
+  if (c.approved && F.budget && (!q.approvedBudget || budgetRank(F.budget.source) >= budgetRank(q.approvedBudget.source))) { q.approvedBudget = { ...F.budget, importedAt: new Date().toISOString() }; q.budget = Math.round(F.budget.total * 100) / 100; }
   else if (c.budget && k.total && !q.approvedBudget) q.budget = k.total;
   if (c.contract) { if (k.jp && !q.jp) q.jp = k.jp; if (k.bh && !q.bh) q.bh = k.bh; }
   if (c.plan && F.acts.length) q.doa = { start: k.start ?? q.doa?.start ?? q.start, months: k.months ?? F.planMonths ?? q.doa?.months ?? 36, acts: F.acts.map((a) => ({ ...a, status: q.doa?.acts.find((x) => x.code === a.code)?.status ?? '' })) };

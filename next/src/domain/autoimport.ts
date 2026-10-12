@@ -1,4 +1,5 @@
-import { toBudgetLines, summarize, type Workbook } from './workbook';
+import { snapshotOf } from './intake';
+import type { Workbook } from './workbook';
 import { extractionLines } from './extraction';
 export { extractionLines };
 import { latestReport, lines, money } from './calc';
@@ -121,7 +122,7 @@ export function reportFrom(wb: Workbook, fileName: string, p: Project): { report
     report: {
       id: existing?.id ?? 'r' + Math.random().toString(36).slice(2, 9), name: `Interim report to ${date}`, type: 'Interim Financial Report', date, fileName, registeredAt: new Date().toISOString(),
       ...(wb.meta.extraction ? { name: `System extraction to ${date}`, type: 'System extraction' } : {}),
-      snapshot: { format: wb.meta.extraction ? 'CoE system extraction' : 'CoE workbook', lines: wb.meta.extraction ? extractionLines(wb, p) : toBudgetLines(wb), staffRecords: wb.staff, staffGroups: wb.staffGroups, workbook: summarize(wb, fileName) },
+      snapshot: snapshotOf(wb, p, fileName),
     },
   };
 }
