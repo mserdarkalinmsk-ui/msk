@@ -549,3 +549,5 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .ap-years{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:10px}.ap-years div{border:1px solid var(--line);border-radius:10px;padding:8px 12px}.ap-years span{display:block;font-size:12px;color:var(--ink-2)}.ap-years b{font-size:20px}.ap-years small{display:block;font-size:11px;color:var(--ink-3)}
 .ap-years .past{background:var(--surface-2)}.ap-years .cur{border-color:var(--c1);background:color-mix(in srgb,var(--c1) 8%,var(--surface))}
 .ap-plan tfoot td{font-weight:700;border-top:2px solid var(--line-strong)}
+.cm-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.cm-chips>.muted{font-size:12px;min-width:70px}
+.cm-sum tr.sel td{background:color-mix(in srgb,var(--accent,#3b82c4) 10%,transparent)}.cm-sum tfoot td{border-top:2px solid var(--line-strong);font-weight:600}.cm-sum .cm-bar{display:block}
