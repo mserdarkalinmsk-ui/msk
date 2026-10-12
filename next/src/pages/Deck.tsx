@@ -101,7 +101,7 @@ export function Deck() {
     ...(P.some((p) => { const d = (parseDate(p.end).getTime() - TODAY.getTime()) / 864e5; return d > 0 && d < 183; }) ? ['Prepare closure and final reports for projects ending within six months.'] : []),
     `Next update after the ${month(new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() + 1, 1)).getTime())} financial reports.`,
   ];
-  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
+  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, app: s.ledger.brand?.title, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
     staff: active, renewals: ren.length, offices: hasOffice ? officeRows(get().ledger.offices ?? []).map((o) => ({ name: o.o.name, ob: o.T.ob.budget, sc: o.T.ob.sc, end: o.end, request: o.request })) : [],
     events: E, catchUp: CU.map(({ x, c }) => ({ p: x.p, perf: x.perf, rate: c.rate, need: c.need })), steps: STEPS, pages: PP, MS, NS }).catch((e) => alert(`PowerPoint export failed: ${(e as Error).message}`));
   const NS = {
@@ -258,7 +258,7 @@ export function Deck() {
           <dt>Forecast</dt><dd>Recent monthly spending rate continued to the end date, ±20% band; capped at each project's budget.</dd>
           <dt>Trend</dt><dd>Change in spent vs planned since the previous financial report, in percentage points.</dd>
           <dt>Risk score</dt><dd>Likelihood × impact (1–5 each) from the project risk registers.</dd>
-          <dt>Source</dt><dd>Financial report workbooks and contract documents loaded in the Portfolio Ledger; figures at {date(today)}.</dd>
+          <dt>Source</dt><dd>Financial report workbooks and contract documents loaded in the {s.ledger.brand?.title || 'Portfolio Ledger'}; figures at {date(today)}.</dd>
         </dl>
       </Slide>
     </div>

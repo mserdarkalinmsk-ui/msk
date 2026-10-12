@@ -94,17 +94,43 @@ function persist(l: Ledger) {
   ptimer = setTimeout(() => { const x = pending; pending = null; if (x) void write(x); }, 250);
 }
 if (typeof window !== 'undefined') window.addEventListener('pagehide', () => { if (pending) { clearTimeout(ptimer); const x = pending; pending = null; void write(x); } });
+/* Storage is split: the ledger without its projects under META, each project under its own key. A save writes only the
+   projects whose object changed since the last save (changes copy only the touched project), so saving stays quick however
+   many reports and workbooks the other projects hold. */
+const META = `${KEY}:m`, PK = `${KEY}:p:`, PRANGE = () => IDBKeyRange.bound(PK, PK + '\uffff');
+const written = new Map<string, Project>();
 async function write(l: Ledger) {
   const db = await open(); if (!db) return;
   const st = db.transaction(STORE, 'readwrite').objectStore(STORE);
-  st.put(l, KEY);
+  st.put({ ...l, projects: [], ids: l.projects.map((p) => p.id) }, META);
+  const ids = new Set<string>();
+  for (const p of l.projects) { ids.add(p.id); if (written.get(p.id) !== p) { st.put(p, PK + p.id); written.set(p.id, p); } }
+  for (const id of [...written.keys()]) if (!ids.has(id)) { st.delete(PK + id); written.delete(id); }
   // One restore point per day (the first save of the day keeps the state before that day's changes); 30 days kept.
   const day = new Date().toISOString().slice(0, 10), k = `${KEY}:snap:${day}`;
-  const q = st.get(k);
-  q.onsuccess = () => { if (!q.result) st.put({ at: new Date().toISOString(), ledger: prevSaved ?? l }, k); };
-  const keys = st.getAllKeys();
-  keys.onsuccess = () => { const S = (keys.result as string[]).filter((x) => String(x).startsWith(`${KEY}:snap:`)).sort(); for (const x of S.slice(0, Math.max(0, S.length - 30))) st.delete(x); };
+  const q = st.getKey(k);
+  q.onsuccess = () => { if (q.result === undefined) st.put({ at: new Date().toISOString(), ledger: prevSaved ?? l }, k); };
+  const keys = st.getAllKeys(IDBKeyRange.bound(`${KEY}:snap:`, `${KEY}:snap:\uffff`));
+  keys.onsuccess = () => { const S = (keys.result as string[]).sort(); for (const x of S.slice(0, Math.max(0, S.length - 30))) st.delete(x); };
   prevSaved = l;
+}
+/** Reads the stored ledger: the split form, or the older single record (moved to the split form on the next save). */
+function readStored(db: IDBDatabase): Promise<{ l?: Ledger; legacy: boolean }> {
+  return new Promise((res) => {
+    const st = db.transaction(STORE).objectStore(STORE);
+    const m = st.get(META), ps = st.getAll(PRANGE()), old = st.get(KEY);
+    st.transaction.oncomplete = () => {
+      const meta = m.result as (Ledger & { ids?: string[] }) | undefined;
+      if (meta && Array.isArray(meta.ids)) {
+        const by = new Map((ps.result as Project[]).map((p) => [p.id, p]));
+        const projects = meta.ids.map((id) => by.get(id)).filter((p): p is Project => !!p);
+        for (const p of projects) written.set(p.id, p);
+        const { ids: _ids, ...rest } = meta;
+        res({ l: { ...rest, projects }, legacy: false });
+      } else res({ l: old.result as Ledger | undefined, legacy: true });
+    };
+    st.transaction.onerror = () => res({ legacy: true });
+  });
 }
 let prevSaved: Ledger | null = null;
 /** Restore points kept in this browser, newest first. */
@@ -149,16 +175,15 @@ export async function load() {
   if (READONLY) { set({ ready: true }); return; }
   const db = await open();
   if (db) {
-    const l = await new Promise<Ledger | undefined>((res) => {
-      const q = db.transaction(STORE).objectStore(STORE).get(KEY);
-      q.onsuccess = () => res(q.result); q.onerror = () => res(undefined);
-    });
+    const { l, legacy } = await readStored(db);
     if (l && Array.isArray(l.projects)) {
       // Never fall back to the start data when stored data has a problem — that silently lost work before.
       if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
       prevSaved = l;
       l.projects = l.projects.map(relayExtractions);
       state = { ...state, ledger: EMBED ? l : mergeSeed(validateLedger(l).length ? repair(l) : l) };
+      // Move the older single record to the split form once; it is kept as that day's restore point.
+      if (legacy) { void write(state.ledger).then(() => open()).then((d) => d?.transaction(STORE, 'readwrite').objectStore(STORE).delete(KEY)); }
     }
   }
   set({ ready: true });

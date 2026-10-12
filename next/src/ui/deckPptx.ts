@@ -8,7 +8,7 @@ import { date, month, pct, short } from './format';
 
 /** Everything the deck shows, computed once on the Presentation screen. */
 export interface DeckModel {
-  aud: 'management' | 'donor'; scope: string; logo?: string; cname: (id: string) => string; lab: (p: Project) => string;
+  aud: 'management' | 'donor'; scope: string; logo?: string; app?: string; cname: (id: string) => string; lab: (p: Project) => string;
   P: Project[]; T: { budget: number; spent: number; committed: number; exposure: number; remaining: number; elapsed: number; burn: number };
   perf: number; band: string; bandWord: (b: string) => string; PL: number; final: number | null;
   series: { t: number; actual: number | null; plan: number; mid: number | null }[];
@@ -204,7 +204,7 @@ export async function exportPptx(m: DeckModel) {
       ['Forecast', "Recent monthly spending rate continued to the end date, ±20% band; capped at each project's budget."],
       ['Trend', 'Change in spent vs planned since the previous financial report, in percentage points.'],
       ['Risk score', 'Likelihood × impact (1–5 each) from the project risk registers.'],
-      ['Source', `Financial report workbooks and contract documents loaded in the Portfolio Ledger; figures at ${date(today)}.`],
+      ['Source', `Financial report workbooks and contract documents loaded in the ${m.app || 'Portfolio Ledger'}; figures at ${date(today)}.`],
     ], { colW: [2.4, 9.93] });
   }
 
