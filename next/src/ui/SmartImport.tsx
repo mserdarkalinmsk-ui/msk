@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { get, go, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
 import { applyFindings, mergeFindings } from '../domain/applydocs';
 import { reportDate, reportFrom } from '../domain/autoimport';
+import { readCheck } from '../domain/intake';
 import { analyse, type DocFindings } from '../domain/documents';
 import type { Project, ReportingPeriod } from '../domain/types';
 import type { Workbook } from '../domain/workbook';
@@ -12,7 +13,7 @@ import { matchProject } from './PortfolioImport';
 import { readCoe } from './ReportImport';
 
 type Kind = 'office' | 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 'other' | 'error';
-interface Row { file: File; kind: Kind; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string }
+interface Row { file: File; kind: Kind; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string; force?: boolean }
 const KIND: Record<Kind, { label: string; color: string }> = {
   office: { label: 'Office budget', color: '#0e7490' },
   report: { label: 'Financial report', color: '#3b82c4' }, budget: { label: 'Approved budget', color: '#30a46c' }, plan: { label: 'DoA / action plan', color: '#8e4ec6' },
@@ -86,7 +87,9 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
     return () => { live = false; };
   }, []);
   const setPid = (i: number, pid: string) => setRows((R) => R!.map((r, k) => (k === i ? { ...r, pid, why: pid ? 'chosen' : '' } : r)));
-  const usable = (r: Row) => r.pid && r.kind !== 'error' && r.kind !== 'other';
+  const chk = (r: Row) => { const p = r.wb && r.pid ? P.find((x) => x.id === r.pid) : undefined; return p ? readCheck(r.wb!, p) : null; };
+  // A report whose lines would not add up to the file (or that belongs to another project) waits until forced.
+  const usable = (r: Row) => r.pid && r.kind !== 'error' && r.kind !== 'other' && (r.force || !chk(r)?.blocking);
   const ok = rows?.filter(usable) ?? [], nOff = rows?.filter((r) => r.kind === 'office').length ?? 0;
   const apply = () => {
     // Office budgets first (oldest first, so a raw export can borrow line budgets from a forecast of the same import).
@@ -122,6 +125,8 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
             <li style={{ borderLeftColor: KIND[r.kind].color }} class={usable(r) ? '' : 'off'}>
               <div class="si-top"><span class="si-k" style={{ color: KIND[r.kind].color }}>{KIND[r.kind].label}</span><b title={r.file.name}>{r.file.name}</b></div>
               {r.note && <small class="muted">{r.note.slice(0, 160)}</small>}
+              {(() => { const c = chk(r); return c && <div class="si-chk">{c.checks.map((x) => <div class={`badge ${x.level === 'ok' ? 'good' : x.level === 'error' ? 'critical' : 'warning'}`} style={{ whiteSpace: 'normal', textAlign: 'left', marginTop: '4px' }}>{x.level === 'ok' ? '✓' : '!'} {x.text}</div>)}
+                {c.blocking && <label style={{ display: 'block', marginTop: '4px', fontSize: '12px' }}><input type="checkbox" checked={!!r.force} onChange={(e) => setRows((R) => R!.map((y, k) => (k === i ? { ...y, force: (e.target as HTMLInputElement).checked } : y)))} /> Import anyway</label>}</div>; })()}
               {r.kind === 'office' && <div class="si-p"><span class="badge good">goes to Offices · {r.office!.office}</span></div>}
               {r.kind !== 'error' && r.kind !== 'other' && r.kind !== 'office' && <div class="si-p"><select class="select" value={r.pid} onChange={(e) => setPid(i, (e.target as HTMLSelectElement).value)} aria-label="Project">
                 <option value="">— choose project —</option>{P.map((p) => <option value={p.id}>{lab(p)}</option>)}</select>

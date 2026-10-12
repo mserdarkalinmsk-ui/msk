@@ -273,7 +273,7 @@ details.jt-row { border-top: 1px solid var(--line); }
 .ck-chips span.bad{background:color-mix(in srgb,var(--critical) 12%,var(--surface));color:var(--critical)}
 .ph-tiles{gap:10px;background:transparent;border:0;box-shadow:none;padding:0}
 .ph-tiles .kpi{border:0 !important;border-radius:var(--r-lg);padding:14px 18px;--t:var(--c1);background:color-mix(in srgb,var(--t) 10%,var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t) 22%,transparent)}
-.ph-tiles .kpi:nth-child(2){--t:var(--c3)}.ph-tiles .kpi:nth-child(3){--t:var(--c2)}.ph-tiles .kpi:nth-child(4){--t:var(--c5)}
+.ph-tiles .kpi:nth-child(1){--t:var(--ink-2)}.ph-tiles .kpi:nth-child(2){--t:var(--c1)}.ph-tiles .kpi:nth-child(3){--t:var(--c3)}.ph-tiles .kpi:nth-child(4){--t:var(--c2)}.ph-tiles .kpi:nth-child(5){--t:var(--c5)}
 .ph-tiles .kpi .value{font-size:26px}.ph-tiles .kpi.lead .value{font-size:30px}
 .ph-tiles .kpi .label{color:color-mix(in srgb,var(--t) 70%,var(--ink))}
 .attn-g{list-style:none;margin:0;padding:4px 16px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}

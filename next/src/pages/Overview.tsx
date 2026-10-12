@@ -59,6 +59,11 @@ export function Overview() {
     <>
       <Filters />
       <section class="hero" aria-label="Key figures">
+        <div class="kpi">
+          <span class="label">Total budget</span>
+          <span class="value"><Count value={T.budget} format={short} /></span>
+          <span class="ctx">{T.projects} project{T.projects === 1 ? '' : 's'} · {short(T.budget - T.exposure)} not yet spent or committed</span>
+        </div>
         <div class="kpi lead">
           <span class="label">Spent to date</span>
           <span class="value"><Count value={T.spent} format={short} /></span>
