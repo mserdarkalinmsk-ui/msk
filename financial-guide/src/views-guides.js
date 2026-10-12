@@ -40,11 +40,33 @@
     ["◈", "Events & GDD", "Event-related finance, logistics and GDD support.", "events"],
     ["%", "VAT procedures", "VAT checks, exemptions, supporting documents and follow-up.", "vat"],
   ];
+  // Projects: the financial life cycle as three phases (commit → spend → close) with their modules.
+  const PHASES = [
+    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
+    ["02", "Spend", "Order, receive and pay", 2, [["PO & payment files", "PO, delivery and payment package.", "po-file", "CORE"], ["Petty cash", "Limits, approval and reconciliation.", "petty-cash"], ["VAT procedures", "Exemptions and supporting documents.", "vat"], ["Events & GDD", "Event budget, logistics and GDD.", "events"]]],
+    ["03", "Close", "Year-end and audit trail", 3, [["End of year", "Cut-off, allocation and closing checklist.", "year-end", "DEADLINE"], ["Filing management", "Evidence map, DMS and naming.", "filing"]]],
+  ];
   route("projects", {
     crumbs: () => [["Projects", "projects"]],
-    render: () => ({ html: `${FG.ui.head("01 / Project finance · Project Team", "Projects", "Project finance guidance, operational workflows and practical tools for day-to-day implementation.")}
-      <div class="modules">${PROJECT_ITEMS.map(([i, t, d, p], k) => p ? `<a class="module" style="--tone:var(--c${(k % 6) + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`
-        : `<div class="module" style="--tone:var(--faint);opacity:.7"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small>${FG.ui.tag("In preparation")}</span></div>`).join("")}</div>` }),
+    render: () => {
+      const L = E.LIMITS;
+      const lifecycle = { procurement: C.procurementStages.length, grants: C.grantStages.length };
+      const done = (base) => Object.keys(FG.store.get(base + ":visited", {})).length;
+      const pct = (base) => lifecycle[base] ? Math.round((done(base) / lifecycle[base]) * 100) : null;
+      const steps = lifecycle.procurement + lifecycle.grants, completed = Math.round(((done("procurement") + done("grants")) / steps) * 100);
+      const modules = PHASES.reduce((n, ph) => n + ph[4].length, 0);
+      const card = ([t, d, p, badge], c) => { const v = pct(p); return `<a class="pj-mod${badge ? " key" : ""}" style="--c:var(--c${c})" href="#/${p}">
+        <span class="pj-r"><b>${esc(t)}</b>${badge ? `<span class="pj-badge">${badge}</span>` : lifecycle[p] ? `<em>${lifecycle[p]} steps</em>` : ""}</span>
+        <small>${esc(d)}</small>${v !== null ? `<span class="pj-bar" title="${v}% of steps opened"><i style="width:${v}%"></i></span>` : ""}</a>`; };
+      const rules = [[L.lowGoods, "Direct award · goods & services"], [L.lowIntellectual, "Direct award · intellectual services"], [L.legalReview, "E-procurement · legal review (XB)"], [L.international, "International public call"]];
+      return { html: `<header class="pj-head"><div>${FG.ui.head("01 / Project finance · Project Team", "Projects", "The financial life cycle of a project, from commitment to closure. Select a module to open its procedure, controls and documents.")}</div>
+        <div class="pj-kpis"><div><small>MODULES</small><b>${modules}</b></div><div><small>PROCEDURE STEPS</small><b>${steps}</b></div><div><small>STEPS OPENED</small><b>${completed}%</b></div></div></header>
+        <div class="pj-chev">${PHASES.map(([n, t, sub, c]) => `<div style="--c:var(--c${c})"><small>PHASE ${n}</small><b>${t}</b><span>${sub}</span></div>`).join("")}</div>
+        <div class="pj-cols">${PHASES.map(([, , , c, mods]) => `<div class="pj-col${mods.length > 2 ? " two" : ""}">${mods.map((m) => card(m, c)).join("")}</div>`).join("")}
+          <div class="pj-flow">CONTRACT SIGNED<i></i>PO RAISED → RECEIVED → INVOICE PAID<i></i>BOOKS CLOSED · FILE ARCHIVED</div></div>
+        <div class="pj-bottom"><section class="pj-box"><h3>KEY THRESHOLDS · PROCUREMENT</h3><div class="pj-rules">${rules.map(([v, t]) => `<a href="#/rules"><b>${euro(v)}</b><span>${t}</span></a>`).join("")}</div></section>
+          <section class="pj-box pj-links"><h3>RESOURCES</h3><a href="#/links">Useful links & guidelines →</a><a href="#/roles">Roles & documents →</a><a href="#/glossary">Glossary →</a></section></div>` };
+    },
   });
   route("tools", {
     crumbs: () => [["Tools", "tools"]],
