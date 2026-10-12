@@ -204,11 +204,11 @@ async function page(opts) {
   await p.click('.tabs button:has-text("Calendar")'); await p.waitForTimeout(300);
   check(await p.locator('.cal-i').count() >= 6, 'reporting calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
-  // CoE workbook: global import refuses reports; they are added inside the project
+  // CoE workbook dropped on the global import: recognised and offered to its project via Smart import
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
   await p.click('text=Import / backup');
   await p.setInputFiles('.drawer .drop input', resolve('tests/fixtures/coe-report.xlsx')); await p.waitForTimeout(600);
-  check(await p.locator('.drawer .errlist:has-text("inside their project")').count() === 1, 'global import sends reports to their project');
+  check(await p.locator('.drawer .si-l li').count() === 1 && await p.locator('.drawer:has-text("Financial report")').count() === 1, 'global import routes a report to Smart import');
   await p.keyboard.press('Escape');
   await p.goto(url + '#/project/tsk'); await p.waitForSelector('.ph-title');
   await p.click('.ph-actions button:has-text("Import report")');
