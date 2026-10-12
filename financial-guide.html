@@ -934,6 +934,90 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .tabpanel, .rd-panel, .stage-card .card-body { animation: quickIn .14s ease-out both; }
 .page-head.compact { padding-bottom: 0; margin-bottom: 14px; align-items: center; }
 
+/* ---------- procurement hub ---------- */
+.hub-paths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.hub-path { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 8%, var(--panel)), var(--panel) 60%); border: 1px solid color-mix(in srgb, var(--c) 25%, var(--line)); color: inherit; text-decoration: none; transition: transform .2s, box-shadow .2s; }
+.hub-path:hover { transform: translateY(-3px); box-shadow: 0 18px 36px -22px var(--c); }
+.hub-n { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--c); color: #fff; font-weight: 700; font-size: 17px; box-shadow: 0 8px 18px -8px var(--c); }
+.hub-path h2 { margin: 6px 0 0; font-size: 20px; }
+.hub-path p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.5; flex: 1; }
+.hub-meta { font-size: 12.5px; color: var(--muted); }
+.hub-meta i { display: block; height: 5px; margin-top: 6px; border-radius: 5px; background: var(--sunken); overflow: hidden; }
+.hub-meta u { display: block; height: 100%; background: var(--c); border-radius: 5px; }
+.hub-cta { color: var(--c); font-size: 14px; margin-top: 4px; }
+.hub-strip { margin-top: 18px; padding: 18px 22px 8px; }
+.hub-strip b { display: block; color: var(--navy); font-size: 16px; }
+/* ---------- essentials ---------- */
+.ess-top { display: flex; align-items: center; gap: 18px; padding: 16px 20px; margin-bottom: 16px; }
+.ess-top > div:nth-child(2) { flex: 1; } .ess-top p { margin: 2px 0 0; }
+.ess-ring { --p: 0; flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--good) calc(var(--p) * 1%), var(--sunken) 0); }
+.ess-ring span { width: 50px; height: 50px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+.ess-ring b { font-size: 17px; color: var(--navy); }
+.ess-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.ess { display: flex; flex-direction: column; padding: 18px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c); transition: box-shadow .2s, transform .2s; }
+.ess:hover { box-shadow: 0 14px 30px -20px var(--c); transform: translateY(-2px); }
+.ess header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ess-cat { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.ess-fig { font-size: 13px; font-weight: 700; color: var(--navy); background: color-mix(in srgb, var(--c) 12%, var(--panel)); padding: 3px 9px; border-radius: 8px; white-space: nowrap; }
+.ess h3 { margin: 10px 0 6px; font-size: 17px; color: var(--navy); }
+.ess p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); flex: 1; }
+.ess footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ess footer a { font-size: 12.5px; color: var(--c); text-decoration: none; font-weight: 600; }
+.ess-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font: 600 12.5px var(--font); color: var(--ink-2); cursor: pointer; }
+.ess-btn:hover { border-color: var(--good); color: var(--good); }
+.ess.known { background: color-mix(in srgb, var(--good) 5%, var(--panel)); }
+.ess.known .ess-btn { background: var(--good); border-color: var(--good); color: #fff; }
+/* ---------- my case ---------- */
+.case-layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+.case-form { position: sticky; top: calc(var(--top) + 12px); }
+.case-out { gap: 16px; }
+.case-hero { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 22px 24px; border-radius: 18px; color: #fff; background: linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 55%, var(--c))); box-shadow: 0 18px 40px -24px var(--navy); }
+.case-hero small { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.case-hero h2 { margin: 2px 0 4px; color: #fff; font-size: 24px; }
+.case-hero p { margin: 0; opacity: .85; font-size: 14px; }
+.case-kpis { display: flex; gap: 10px; }
+.case-kpis div { min-width: 110px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,.12); }
+.case-kpis b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.case-kpis span { font-size: 11.5px; opacity: .8; }
+.case-kpis .bad { background: color-mix(in srgb, var(--risk) 55%, transparent); }
+.chain { list-style: none; margin: 0; padding: 16px 20px; display: grid; gap: 0; }
+.chain li { position: relative; display: flex; gap: 14px; padding-bottom: 16px; }
+.chain li:not(:last-child)::before { content: ""; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: var(--line); }
+.chain li > span { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--navy); color: #fff; font-weight: 700; font-size: 13px; }
+.chain b { font-size: 14.5px; color: var(--navy); } .chain p { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+.lg { display: inline-block; padding: 0 6px; border-radius: 5px; font-weight: 600; font-size: 11px; }
+.lg.src, .g-track i.src { background: var(--c1); color: #fff; }
+.lg.assumed { background: var(--sunken); color: var(--ink-2); border: 1px dashed var(--line-2); }
+.gantt { padding: 12px 20px 18px; display: grid; gap: 6px; }
+.g-row { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 14px; align-items: center; }
+.g-lab { font-size: 13.5px; font-weight: 500; } .g-lab small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; }
+.g-track { position: relative; height: 22px; border-radius: 6px; background: var(--panel-2); }
+.g-track i { position: absolute; top: 3px; bottom: 3px; border-radius: 5px; }
+.g-track i.assumed { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c1) 35%, var(--panel)) 0 6px, color-mix(in srgb, var(--c1) 22%, var(--panel)) 6px 12px); }
+.radar { padding: 14px 20px 18px; display: grid; gap: 8px; }
+.rk { padding: 10px 14px; border-radius: 12px; border-left: 4px solid var(--info); background: var(--info-soft); }
+.rk.warn { border-color: var(--warn); background: var(--warn-soft); } .rk.risk { border-color: var(--risk); background: var(--risk-soft); }
+.rk b { font-size: 14px; } .rk p { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.case-stages { padding: 14px 20px 18px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.cs { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); text-decoration: none; color: var(--ink); font-size: 13px; }
+.cs em { font-style: normal; font-weight: 700; color: var(--muted); font-size: 12px; } .cs small { grid-column: 2; font-size: 11px; color: var(--muted); }
+.cs.key { border-color: var(--c1); background: color-mix(in srgb, var(--c1) 7%, var(--panel)); } .cs.key small { color: var(--c1); font-weight: 600; }
+.cs.skip { opacity: .5; border-style: dashed; }
+.case-empty { border-style: dashed; }
+/* case bar on stage pages + case-aware track */
+.case-bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin-bottom: 12px; border-radius: 14px; background: var(--navy); color: #fff; text-decoration: none; }
+.case-bar small { display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .7; font-weight: 600; }
+.case-bar b { font-size: 14px; } .case-bar > span:nth-child(2) { flex: 1; min-width: 0; }
+.case-bar-note { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.14); white-space: nowrap; }
+.case-bar u { text-decoration: none; font-weight: 600; font-size: 13px; }
+.case-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c2); box-shadow: 0 0 0 4px rgba(255,255,255,.15); flex: none; }
+.case-bar.empty { background: var(--panel); color: var(--ink); border: 1px dashed var(--accent-line); } .case-bar.empty small { color: var(--accent); opacity: 1; } .case-bar.empty u { color: var(--accent); }
+.rt-node.skip em { border-style: dashed; opacity: .45; } .rt-node.skip span { opacity: .45; text-decoration: line-through; text-decoration-color: var(--line-2); }
+.rt-node.key:not(.on) em::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--c3); border: 2px solid var(--panel); }
+@media (max-width: 980px) { .hub-paths, .case-layout { grid-template-columns: minmax(0, 1fr); } .case-form { position: static; } .g-row { grid-template-columns: minmax(0, 1fr); gap: 4px; } .case-bar-note { display: none; } }
+@media print { .case-form, .case-bar, .top, .crumbs, .foot, .mq, .next-step { display: none !important; } .case-layout { display: block; } .case-hero { color: #000; background: none; border: 1px solid #999; } .case-hero h2 { color: #000; } }
+.case-layout > .card, .case-out > :first-child { margin-top: 0; }
+
 </style>
 </head>
 <body>
@@ -7178,7 +7262,75 @@ window.FG_CONTENT = {
     return { tone: "warn", title: "2026 part accrued; 2027 part not accrued", text: "For a service spanning 2026–2027 with no invoice at year-end, the 2026 delivered/performed part is accrued. No provision is made for the 2027 CCA part.", action: annual ? "Annual budget: after the 2026 treatment, create the required 2027 PO for the remaining delivery." : "Special account: the PO remains open until the 2027 part is recorded." };
   }
 
-  return { LIMITS, euro, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
+
+  /* ---------- procurement case planner ----------
+     Facts marked `src` come from the Procurement Guide; durations marked `assumed` are planning
+     assumptions shown as such in the UI. Working days exclude weekends only. */
+  const addWorkdays = (date, n) => { const d = new Date(date); let left = Math.abs(n); const step = n < 0 ? -1 : 1; while (left > 0) { d.setDate(d.getDate() + step); if (d.getDay() % 6) left--; } return d; };
+  function procurementCase(input, today = new Date()) {
+    const value = num(input.value), type = input.type || "general", xb = input.funding === "xb";
+    const need = input.need || "oneoff", ground = input.ground || "none";
+    const low = type === "intellectual" ? LIMITS.lowIntellectual : LIMITS.lowGoods;
+    const intl = value >= LIMITS.international, lcr = xb && value >= LIMITS.legalReview && !intl;
+    let route, key;
+    if (value <= low) { key = "direct-low"; route = "Direct award"; }
+    else if (ground !== "none") { key = "direct-exc"; route = "Direct award on exceptional grounds"; }
+    else if (intl) { key = "international"; route = "International public call for tenders"; }
+    else { key = "competitive"; route = "Competitive bidding procedure"; }
+    const contract = need === "variable" ? "Framework agreement" : need === "recurring" ? "Framework contract" : "One-off contract";
+
+    // Approval chain, in order.
+    const approvals = [];
+    if (key === "direct-low") approvals.push(["Buyer entity", "Awards directly on the basis of the supplier's expertise and value for money; keeps the justification on file.", "src"]);
+    else {
+      if (lcr) approvals.push(["DLAPIL · Legal Compliance Review", "Mandatory for extrabudgetary funding between €55,000 and €184,000, before the CCM. Processed within 5 working days of a complete request.", "src"]);
+      if (key === "direct-exc") approvals.push(intl ? ["Tenders Board", "The CCM submits the direct-award request (specification, total cost, justification) to the Tenders Board.", "src"] : ["CCM", "Decides on the memorandum: specification, estimated total cost and the exceptional ground relied on.", "src"]);
+      if (key === "competitive") approvals.push(["CCM", "Approves the tender documents in writing before launch, and later the award.", "src"]);
+      if (key === "international") approvals.push(["CCM → Tenders Board", "The CCM sends the tender documents with an explanatory note; the Tenders Board authorises the launch (members have at least 48 hours) and later decides on the award.", "src"]);
+    }
+
+    // Timeline in working days: [label, days, basis]. Reverse-scheduled from the deadline when given.
+    const steps = [["Define the need & market analysis", 10, "assumed"]];
+    if (key !== "direct-low") steps.push([key === "direct-exc" ? "Memorandum & justification" : "Tender file & act of engagement", key === "international" ? 20 : 10, "assumed"]);
+    if (lcr) steps.push(["Legal Compliance Review (DLAPIL)", 5, "src"]);
+    if (key === "competitive" || key === "direct-exc") steps.push(["CCM approval", 5, "assumed"]);
+    if (key === "international") steps.push(["Tenders Board launch approval", 10, "assumed"]);
+    if (key === "competitive") steps.push(["Invitation & submission period", 10, "assumed"]);
+    if (key === "international") steps.push(["Publication (minimum three weeks)", 15, "src"]);
+    if (key === "competitive" || key === "international") steps.push(["Opening & evaluation", 10, "assumed"], [key === "international" ? "Tenders Board award decision" : "CCM award approval", key === "international" ? 10 : 5, "assumed"]);
+    steps.push(["Contract review & signature", key === "direct-low" ? 3 : 10, "assumed"]);
+    const total = steps.reduce((a, x) => a + x[1], 0);
+    const deadline = input.deadline ? new Date(input.deadline) : null;
+    let cursor = deadline ? addWorkdays(deadline, -total) : new Date(today);
+    const start = new Date(cursor);
+    const timeline = steps.map(([label, days, basis]) => { const from = new Date(cursor); cursor = addWorkdays(cursor, days); return { label, days, basis, from, to: new Date(cursor) }; });
+    const late = deadline && start < today;
+
+    const docs = {
+      "direct-low": [["Need description", "What, quantity, period and estimated value."], ["Offer / quotation", "From the selected supplier."], ["Value-for-money note", "Why this supplier and price are appropriate."], ["Purchase order / contract", "Signed before the service starts."], ["Delivery acceptance & invoice", "Before payment."]],
+      "direct-exc": [["Memorandum", "Specification, estimated total cost and the exceptional ground."], ...(lcr ? [["LCR request & DLAPIL visa", "Request form titled “Request for LCR”, with the memorandum."]] : []), [intl ? "Tenders Board decision" : "CCM decision", "Written approval of the direct award."], ["Negotiated offer", "From the supplier retained."], ["Signed contract", "Reviewed and signed by the authorised signatory."]],
+      competitive: [["Tender file", "Rules, criteria and requirements."], ["Act of engagement", "Supplier details and financial offer."], ["Technical specifications", "Where separate from the tender file."], ["List of invited suppliers", "At least three potential suppliers."], ...(lcr ? [["LCR request & DLAPIL visa", "Before the CCM approval."]] : []), ["CCM approval of the documents", "Written, before launch."], ["Opening record & analysis table", "Admissibility, exclusion, eligibility and award scoring."], ["Award approval", "CCM decision on the proposed award."], ["Notification letters", "Unsuccessful tenderers informed within 15 days of notifying the winner."], ["Signed contract", "After contract review."]],
+      international: [["Tender file & act of engagement", "With appendices."], ["Explanatory note / memo to the Tenders Board", "Template on the Tenders Board website."], ["Tenders Board launch authorisation", "Before publication."], ["Publication on the e-procurement platform", "Deadline of at least three weeks."], ["Opening record & analysis table", "Admissibility, exclusion, eligibility and award scoring."], ["Tenders Board award decision", "Validates the results and the award."], ["Notification letters", "Unsuccessful tenderers informed within 15 days of notifying the winner."], ["Signed contract", "After contract review."]],
+    }[key];
+
+    const risks = [];
+    if (!intl && value >= 0.85 * LIMITS.international) risks.push(["risk", "Close to €184,000", "If the value may exceed the threshold (extensions, amendments, higher bids), the guide recommends an international public call. The Tenders Board cannot approve a launch retroactively."]);
+    if (need !== "oneoff" && contract !== "Framework agreement" && value <= low) risks.push(["warn", "Recurring need at low value", "Assess the whole foreseeable need over the full period: splitting a recurring need to stay below a threshold is not allowed."]);
+    if (need === "variable" && !intl) risks.push(["warn", "Framework agreement below €184,000", "Framework agreements need a mini-competition for each call-off and are rarely recommended below €184,000."]);
+    if (key === "direct-exc") risks.push(["warn", "Exceptional direct award", "Only for unforeseen urgency not attributable to the buyer, technical requirements, or considerations of fact or law. Document the ground precisely."]);
+    if (lcr) risks.push(["info", "Legal Compliance Review is mandatory", "Extrabudgetary funding between €55,000 and €184,000: no CCM approval before the DLAPIL visa."]);
+    if (late) risks.push(["risk", "Behind schedule", `To meet the deadline the procedure should have started by ${start.toISOString().slice(0, 10)}. Consider a later deadline or a reduced scope.`]);
+    const pub = timeline.find((t) => /Publication|Invitation/.test(t.label));
+    if (pub && [6, 7].includes(pub.from.getMonth())) risks.push(["warn", "Publication during the summer break", "The guide advises against launching calls for tenders during the summer break."]);
+    if (key !== "direct-low") risks.push(["info", "Offer validity", "Offers are valid for 180 calendar days from the submission deadline; plan evaluation and award within that period."]);
+
+    // Relevance of each of the 15 guide stages for this route.
+    const skipFor = { "direct-low": ["Tender Design", "Terms & Specifications", "Open & Evaluate", "Negotiate & Award"], "direct-exc": ["Tender Design", "Open & Evaluate"], competitive: [], international: [] }[key];
+    const keyFor = { "direct-low": ["Thresholds & Procedure", "Contract Signing"], "direct-exc": ["Thresholds & Procedure", "Authorise & Launch", "Negotiate & Award"], competitive: ["Tender Design", "Authorise & Launch", "Open & Evaluate"], international: ["Tender Design", "Authorise & Launch", "Open & Evaluate", "Negotiate & Award"] }[key];
+    return { key, route, contract, value, approvals, timeline, total, start, deadline, late, docs, risks, skip: skipFor, keyStages: keyFor, lcr, intl };
+  }
+
+  return { LIMITS, euro, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
 });
 
 </script>
@@ -7482,7 +7634,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:24</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:33</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -7511,6 +7663,130 @@ window.FG_CONTENT = {
     FG.refresh(false);
   };
 
+})();
+
+</script>
+<script>
+/* views-case.js */
+/* Procurement hub: learn the essentials first, then plan your own case, then follow the stage-by-stage guide.
+   Registered before the lifecycle guide so "procurement", "procurement/essentials" and "procurement/my-case"
+   are matched ahead of "procurement/:stage". */
+(function () {
+  "use strict";
+  const { esc, euro, slug, ui, route } = FG;
+  const E = window.FG_ENGINES;
+  const L = E.LIMITS;
+  const stageLink = (name) => `#/procurement/${slug(name)}`;
+  const fmt = (d) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  /* ---------- the twelve essentials (all from the Procurement Guide; €184,000 replaces €171,000) ---------- */
+  const ESSENTIALS = [
+    ["Value", "Three routes, set by value", "€2,000 / €6,000 · €184,000", "Up to €2,000 (goods, general services, works) or €6,000 (intellectual services): direct award. Above that: competitive bidding. From €184,000: international public call for tenders.", "Thresholds & Procedure"],
+    ["Value", "Count the whole need — never split", "Full period", "The threshold is the total foreseeable value of the need, excluding VAT, over the whole period, including renewals, lots and call-offs. Artificial splitting is prohibited and is a fraud red flag.", "Thresholds & Procedure"],
+    ["Competition", "Competition is the default", "3 suppliers", "Competitive bidding invites at least three potential suppliers. A direct award above the low-value limits is exceptional: unforeseen urgency not caused by the buyer, technical requirements, or considerations of fact or law.", "Market & Suppliers"],
+    ["Approval", "No approval, no launch", "CCM · DLAPIL · TB", "The CCM approves the tender documents in writing. Extrabudgetary funding between €55,000 and €184,000 needs a DLAPIL Legal Compliance Review first (5 working days). International calls need Tenders Board authorisation — never retroactively.", "Authorise & Launch"],
+    ["Fairness", "Criteria are fixed once published", "Locked", "Exclusion, eligibility and award criteria and their weightings cannot be changed or subdivided after publication. Price normally weighs at least 20 points.", "Tender Design"],
+    ["Fairness", "Same information for everyone", "Q&A", "Answer bidders only through the published question-and-answer procedure, so every bidder has the same information at the same time. Never share details of a future call in advance.", "Authorise & Launch"],
+    ["Evaluation", "Gates before scores", "3 gates", "An offer is first checked for admissibility, then exclusion, then eligibility (pass or fail). Only the remaining offers are scored against the published award criteria, with a written justification.", "Open & Evaluate"],
+    ["Evaluation", "Clarify, never change an offer", "Art. 17.2", "You may ask a bidder to clarify, but the offer itself cannot change. A missing financial offer or an unsigned act of engagement cannot be fixed after opening.", "Open & Evaluate"],
+    ["Award", "Sign the winner, then inform the others", "15 days", "Sign with the selected supplier first, then notify unsuccessful bidders within 15 days, disclosing only the winner's name, country and amount.", "Negotiate & Award"],
+    ["Contract", "PO first, signature second, work third", "PO", "A purchase order must exist in FIMS before any contract is signed, and no supplier may start work before the Organisation has signed.", "Contract Signing"],
+    ["Contract", "Amend before expiry, watch the ceiling", "€184,000", "Amendments are made before the contract expires and never change its scope. A framework contract awarded by competitive bidding must never exceed €184,000.", "Contract Management"],
+    ["Integrity", "Declare, refuse, archive", "10 years", "Declare your interests every year by the end of January, accept no gifts, and keep the complete procurement file for 10 years — missing justifications are a recurring audit finding.", "Performance & Filing"],
+  ];
+  const known = () => FG.store.get("pr:known", {});
+  const knownCount = () => Object.keys(known()).length;
+
+  /* ---------- hub ---------- */
+  route("procurement", {
+    section: "procurement",
+    crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"]],
+    render() {
+      const k = knownCount(), c = FG.store.get("pcase", null), r = c && Number(c.value) ? E.procurementCase(c) : null;
+      const stages = FG.C.procurementStages, last = FG.store.get("procurement:last", 0), visited = Object.keys(FG.store.get("procurement:visited", {})).length;
+      const paths = [
+        ["1", "Learn the essentials", "Twelve rules every buyer must know before starting — with the numbers to remember.", "procurement/essentials", `${k} of ${ESSENTIALS.length} learnt`, k / ESSENTIALS.length, 1, k ? "Continue" : "Start here"],
+        ["2", "Plan my case", r ? `${esc(c.what || "Your purchase")} · ${euro(r.value)} → ${r.route}` : "Answer five questions: get your route, approvals, timeline, documents and risks.", "procurement/my-case", r ? `Start by ${fmt(r.start)}` : "Not started", r ? 1 : 0, 2, r ? "Open my case" : "Plan a case"],
+        ["3", "Follow the guide", `${stages.length} stages in three phases, from preparing the need to filing.`, `procurement/${slug(stages[last].name)}`, `${visited} of ${stages.length} stages opened`, visited / stages.length, 3, visited ? `Continue at ${stages[last].name}` : "Open stage 1"],
+      ];
+      return { html: `${ui.head("Projects · Procurement", "Procurement", "")}
+        <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})">
+          <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
+          <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
+        <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
+    },
+  });
+
+  /* ---------- essentials ---------- */
+  route("procurement/essentials", {
+    section: "procurement",
+    crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"], ["Essentials", "procurement/essentials"]],
+    render() {
+      const kn = known(), k = knownCount();
+      return { html: `${ui.head("Procurement · step 1", "The essentials", "")}
+        <div class="ess-top card"><div class="ess-ring" style="--p:${Math.round((k / ESSENTIALS.length) * 100)}"><span><b>${k}</b>/${ESSENTIALS.length}</span></div>
+          <div><b>Read each rule, then mark it as learnt.</b><p class="muted small">Open a rule for the detail and a link to the stage of the guide where it applies. When all twelve are learnt, test yourself at the end of the page.</p></div>
+          <a class="btn primary" href="#/procurement/my-case">Next: plan my case →</a></div>
+        <section class="ess-grid">${ESSENTIALS.map(([cat, title, fig, text, stage], i) => `<article class="ess${kn[i] ? " known" : ""}" style="--c:var(--c${(i % 4) + 1})">
+          <header><span class="ess-cat">${String(i + 1).padStart(2, "0")} · ${esc(cat)}</span><span class="ess-fig">${esc(fig)}</span></header>
+          <h3>${esc(title)}</h3><p>${esc(text)}</p>
+          <footer><a href="${stageLink(stage)}">${esc(stage)} →</a><button type="button" class="ess-btn" data-known="${i}" aria-pressed="${!!kn[i]}">${kn[i] ? "✓ Learnt" : "Mark as learnt"}</button></footer></article>`).join("")}</section>` };
+    },
+  });
+  FG.QUIZ_AT["procurement/essentials"] = "procurement";
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-known]"); if (!b) return;
+    const kn = known(), i = b.dataset.known; if (kn[i]) delete kn[i]; else kn[i] = 1; FG.store.set("pr:known", kn); FG.refresh();
+  });
+
+  /* ---------- my case ---------- */
+  const DEFAULT = { what: "", type: "general", value: "", funding: "ordinary", need: "oneoff", ground: "none", deadline: "" };
+  function caseForm(c) {
+    return `<form class="card case-form" data-case>
+      <div class="card-head"><div><h3>Your purchase</h3><small>Saved in this browser only.</small></div><button type="button" class="btn sm ghost" data-case-clear>Clear</button></div>
+      <div class="card-body stack">
+        <label class="field"><span>What are you buying?</span><input class="input" name="what" value="${esc(c.what)}" placeholder="e.g. Translation services for the project"></label>
+        ${ui.select("type", [["general", "Goods / general services / works"], ["intellectual", "Intellectual services"]], c.type, "Type of purchase")}
+        ${ui.number("value", c.value, "Total foreseeable value (€, excl. VAT)", "Whole period: renewals, lots and call-offs included.")}
+        ${ui.select("funding", [["ordinary", "Ordinary Budget"], ["xb", "Extrabudgetary (wholly or partly)"]], c.funding, "Funding")}
+        ${ui.select("need", [["oneoff", "One-off, clearly defined"], ["recurring", "Recurring, defined units"], ["variable", "Recurring, variable or complex"]], c.need, "Nature of the need")}
+        ${ui.select("ground", [["none", "No — normal competition"], ["urgency", "Unforeseen urgency not caused by us"], ["technical", "Technical requirements"], ["law", "Considerations of fact or law"]], c.ground, "Exceptional ground for a direct award?")}
+        <label class="field"><span>Needed by (contract signed)</span><input class="input" type="date" name="deadline" value="${esc(c.deadline)}"></label>
+      </div></form>`;
+  }
+  function caseResult(c) {
+    if (!Number(c.value)) return `<div class="case-empty card card-pad"><b>Enter the total foreseeable value</b><p class="muted">Your route, approvals, timeline, document pack and risk radar appear here as you type.</p></div>`;
+    const r = E.procurementCase(c), tl = r.timeline, t0 = tl[0].from.getTime(), t1 = tl[tl.length - 1].to.getTime(), span = Math.max(1, t1 - t0);
+    const tone = { "direct-low": 2, "direct-exc": 4, competitive: 1, international: 3 }[r.key];
+    return `<section class="case-hero" style="--c:var(--c${tone})"><div><small>Your route</small><h2>${esc(r.route)}</h2><p>${esc(c.what || "Your purchase")} · ${euro(r.value)} excl. VAT · ${esc(r.contract)}</p></div>
+        <div class="case-kpis"><div><b>${r.approvals.length}</b><span>approval${r.approvals.length > 1 ? "s" : ""}</span></div><div><b>${r.total}</b><span>working days</span></div><div class="${r.late ? "bad" : ""}"><b>${fmt(r.start)}</b><span>${r.late ? "should have started" : r.deadline ? "start at the latest" : "earliest signature " + fmt(tl[tl.length - 1].to)}</span></div></div></section>
+      <section class="card"><div class="card-head"><div><h3>Approval map</h3><small>Who validates, in this order.</small></div></div>
+        <ol class="chain">${r.approvals.map(([who, what], i) => `<li><span>${i + 1}</span><div><b>${esc(who)}</b><p>${esc(what)}</p></div></li>`).join("")}</ol></section>
+      <section class="card"><div class="card-head"><div><h3>Timeline</h3><small>${r.deadline ? `Reverse-scheduled from ${fmt(r.deadline)}.` : "Forward from today — add a date to plan backwards."} <span class="lg src">Guide</span> durations come from the Procurement Guide; <span class="lg assumed">Planning</span> durations are assumptions to adjust with your unit.</small></div></div>
+        <div class="gantt">${tl.map((s) => `<div class="g-row"><span class="g-lab">${esc(s.label)}<small>${s.days} wd · ${fmt(s.from)} → ${fmt(s.to)}</small></span><span class="g-track"><i class="${s.basis}" style="left:${((s.from - t0) / span) * 100}%;width:${Math.max(1.5, ((s.to - s.from) / span) * 100)}%"></i></span></div>`).join("")}</div></section>
+      <section class="card"><div class="card-head"><div><h3>Risk radar</h3><small>Specific to this case.</small></div></div>
+        <div class="radar">${r.risks.length ? r.risks.map(([lvl, t, d]) => `<div class="rk ${lvl}"><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join("") : `<p class="muted">No specific risk detected for these facts.</p>`}</div></section>
+      ${ui.checklist(`pcase:${r.key}`, r.docs, "Document pack")}
+      <section class="card"><div class="card-head"><div><h3>Your stages</h3><small>The guide, filtered for this route.</small></div></div>
+        <div class="case-stages">${FG.C.procurementStages.map((s, i) => { const st = r.skip.includes(s.name) ? "skip" : r.keyStages.includes(s.name) ? "key" : ""; return `<a class="cs ${st}" href="${stageLink(s.name)}"><em>${i + 1}</em><span>${esc(s.name)}</span>${st === "skip" ? "<small>Not needed</small>" : st === "key" ? "<small>Key for you</small>" : ""}</a>`; }).join("")}</div></section>
+      <div class="row no-print"><button type="button" class="btn" data-case-print>Print case summary</button><a class="btn primary" href="${stageLink((FG.C.procurementStages.find((s) => r.keyStages.includes(s.name)) || FG.C.procurementStages[0]).name)}">Go to my first key stage →</a></div>`;
+  }
+  FG.procurementCase = () => { const c = FG.store.get("pcase", null); return c && Number(c.value) ? E.procurementCase(c) : null; };
+  route("procurement/my-case", {
+    section: "procurement",
+    crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"], ["My case", "procurement/my-case"]],
+    render() {
+      const c = { ...DEFAULT, ...FG.store.get("pcase", {}) };
+      return { html: `${ui.head("Procurement · step 2", "Plan my case", "")}<div class="case-layout">${caseForm(c)}<div class="case-out stack" id="caseOut">${caseResult(c)}</div></div>`,
+        mount(root) {
+          const form = root.querySelector("[data-case]"), out = root.querySelector("#caseOut");
+          // Results update in place while typing; the form itself is never re-rendered.
+          form.addEventListener("input", () => { const v = Object.fromEntries(new FormData(form)); FG.store.set("pcase", v); out.innerHTML = caseResult(v); if (FG.enrich) FG.enrich(out); });
+          root.querySelector("[data-case-clear]").onclick = () => { FG.store.set("pcase", null); FG.refresh(); };
+          root.addEventListener("click", (e) => { if (e.target.closest("[data-case-print]")) window.print(); });
+        } };
+    },
+  });
 })();
 
 </script>
@@ -7714,14 +7990,18 @@ window.FG_CONTENT = {
         const phaseOf = (j) => (order.find(([k]) => k === j) || [0, 0])[1], pc = (pi) => `var(--c${(pi % 4) + 1})`;
         const pos = order.findIndex(([j]) => j === i), fill = order.length > 1 ? (pos / (order.length - 1)) * 100 : 0;
         const ph = phaseOf(i);
-        const map = `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
+        const caseR = cfg.base === "procurement" && FG.procurementCase ? FG.procurementCase() : null, pcase = caseR && FG.store.get("pcase", {});
+        const caseBar = cfg.base !== "procurement" ? "" : caseR
+          ? `<a class="case-bar" href="#/procurement/my-case"><span class="case-dot"></span><span><small>My case</small><b>${esc(pcase.what || "Your purchase")} · ${euro(caseR.value)} → ${esc(caseR.route)}</b></span><span class="case-bar-note">${caseR.skip.includes(s.name) ? "This stage is not needed for your route" : caseR.keyStages.includes(s.name) ? "Key stage for your route" : "Applies to your route"}</span><u>Open →</u></a>`
+          : `<a class="case-bar empty" href="#/procurement/my-case"><span class="case-dot"></span><span><small>Personalise</small><b>Plan my case: see only the stages, approvals and documents that apply to your purchase</b></span><u>Start →</u></a>`;
+        const map = caseBar + `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
           <div class="rt-head"><div><span class="eyebrow">Your route</span><b>Stage ${i + 1} of ${stages.length} · ${esc(cfg.phases[ph][0])}</b></div>
             <div class="rt-tools"><div class="pmap-ring" style="--p:${overall}" title="Checklist progress across all stages"><span>${overall}%</span></div>
             ${i > 0 ? `<a class="rt-arrow" href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage">←</a>` : `<span class="rt-arrow off">←</span>`}${i < stages.length - 1 ? `<a class="rt-arrow" href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage">→</a>` : `<span class="rt-arrow off">→</span>`}</div></div>
           <div class="rt-scroll"><div class="rt-grid">
             ${cfg.phases.map(([t, names], pi) => `<div class="rt-phase${pi === ph ? " on" : ""}" style="--c:${pc(pi)};grid-column:span ${names.length}"><small>Phase ${pi + 1}</small><b>${esc(t)}</b></div>`).join("")}
             <div class="rt-line" style="grid-column:1 / -1"><i style="width:calc(${fill}% * (1 - 1 / var(--n)))"></i></div>
-            ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "";
+            ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = (j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "") + (caseR && caseR.skip.includes(stages[j].name) ? " skip" : caseR && caseR.keyStages.includes(stages[j].name) ? " key" : "");
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
         const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections.map(([t, body]) => { const more = cfg.note && cfg.note(t); return [t, more && more !== body ? `${body} ${more}` : body]; }))}
@@ -8483,7 +8763,7 @@ window.FG_CONTENT = {
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();

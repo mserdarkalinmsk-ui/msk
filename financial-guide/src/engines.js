@@ -236,5 +236,73 @@
     return { tone: "warn", title: "2026 part accrued; 2027 part not accrued", text: "For a service spanning 2026–2027 with no invoice at year-end, the 2026 delivered/performed part is accrued. No provision is made for the 2027 CCA part.", action: annual ? "Annual budget: after the 2026 treatment, create the required 2027 PO for the remaining delivery." : "Special account: the PO remains open until the 2027 part is recorded." };
   }
 
-  return { LIMITS, euro, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
+
+  /* ---------- procurement case planner ----------
+     Facts marked `src` come from the Procurement Guide; durations marked `assumed` are planning
+     assumptions shown as such in the UI. Working days exclude weekends only. */
+  const addWorkdays = (date, n) => { const d = new Date(date); let left = Math.abs(n); const step = n < 0 ? -1 : 1; while (left > 0) { d.setDate(d.getDate() + step); if (d.getDay() % 6) left--; } return d; };
+  function procurementCase(input, today = new Date()) {
+    const value = num(input.value), type = input.type || "general", xb = input.funding === "xb";
+    const need = input.need || "oneoff", ground = input.ground || "none";
+    const low = type === "intellectual" ? LIMITS.lowIntellectual : LIMITS.lowGoods;
+    const intl = value >= LIMITS.international, lcr = xb && value >= LIMITS.legalReview && !intl;
+    let route, key;
+    if (value <= low) { key = "direct-low"; route = "Direct award"; }
+    else if (ground !== "none") { key = "direct-exc"; route = "Direct award on exceptional grounds"; }
+    else if (intl) { key = "international"; route = "International public call for tenders"; }
+    else { key = "competitive"; route = "Competitive bidding procedure"; }
+    const contract = need === "variable" ? "Framework agreement" : need === "recurring" ? "Framework contract" : "One-off contract";
+
+    // Approval chain, in order.
+    const approvals = [];
+    if (key === "direct-low") approvals.push(["Buyer entity", "Awards directly on the basis of the supplier's expertise and value for money; keeps the justification on file.", "src"]);
+    else {
+      if (lcr) approvals.push(["DLAPIL · Legal Compliance Review", "Mandatory for extrabudgetary funding between €55,000 and €184,000, before the CCM. Processed within 5 working days of a complete request.", "src"]);
+      if (key === "direct-exc") approvals.push(intl ? ["Tenders Board", "The CCM submits the direct-award request (specification, total cost, justification) to the Tenders Board.", "src"] : ["CCM", "Decides on the memorandum: specification, estimated total cost and the exceptional ground relied on.", "src"]);
+      if (key === "competitive") approvals.push(["CCM", "Approves the tender documents in writing before launch, and later the award.", "src"]);
+      if (key === "international") approvals.push(["CCM → Tenders Board", "The CCM sends the tender documents with an explanatory note; the Tenders Board authorises the launch (members have at least 48 hours) and later decides on the award.", "src"]);
+    }
+
+    // Timeline in working days: [label, days, basis]. Reverse-scheduled from the deadline when given.
+    const steps = [["Define the need & market analysis", 10, "assumed"]];
+    if (key !== "direct-low") steps.push([key === "direct-exc" ? "Memorandum & justification" : "Tender file & act of engagement", key === "international" ? 20 : 10, "assumed"]);
+    if (lcr) steps.push(["Legal Compliance Review (DLAPIL)", 5, "src"]);
+    if (key === "competitive" || key === "direct-exc") steps.push(["CCM approval", 5, "assumed"]);
+    if (key === "international") steps.push(["Tenders Board launch approval", 10, "assumed"]);
+    if (key === "competitive") steps.push(["Invitation & submission period", 10, "assumed"]);
+    if (key === "international") steps.push(["Publication (minimum three weeks)", 15, "src"]);
+    if (key === "competitive" || key === "international") steps.push(["Opening & evaluation", 10, "assumed"], [key === "international" ? "Tenders Board award decision" : "CCM award approval", key === "international" ? 10 : 5, "assumed"]);
+    steps.push(["Contract review & signature", key === "direct-low" ? 3 : 10, "assumed"]);
+    const total = steps.reduce((a, x) => a + x[1], 0);
+    const deadline = input.deadline ? new Date(input.deadline) : null;
+    let cursor = deadline ? addWorkdays(deadline, -total) : new Date(today);
+    const start = new Date(cursor);
+    const timeline = steps.map(([label, days, basis]) => { const from = new Date(cursor); cursor = addWorkdays(cursor, days); return { label, days, basis, from, to: new Date(cursor) }; });
+    const late = deadline && start < today;
+
+    const docs = {
+      "direct-low": [["Need description", "What, quantity, period and estimated value."], ["Offer / quotation", "From the selected supplier."], ["Value-for-money note", "Why this supplier and price are appropriate."], ["Purchase order / contract", "Signed before the service starts."], ["Delivery acceptance & invoice", "Before payment."]],
+      "direct-exc": [["Memorandum", "Specification, estimated total cost and the exceptional ground."], ...(lcr ? [["LCR request & DLAPIL visa", "Request form titled “Request for LCR”, with the memorandum."]] : []), [intl ? "Tenders Board decision" : "CCM decision", "Written approval of the direct award."], ["Negotiated offer", "From the supplier retained."], ["Signed contract", "Reviewed and signed by the authorised signatory."]],
+      competitive: [["Tender file", "Rules, criteria and requirements."], ["Act of engagement", "Supplier details and financial offer."], ["Technical specifications", "Where separate from the tender file."], ["List of invited suppliers", "At least three potential suppliers."], ...(lcr ? [["LCR request & DLAPIL visa", "Before the CCM approval."]] : []), ["CCM approval of the documents", "Written, before launch."], ["Opening record & analysis table", "Admissibility, exclusion, eligibility and award scoring."], ["Award approval", "CCM decision on the proposed award."], ["Notification letters", "Unsuccessful tenderers informed within 15 days of notifying the winner."], ["Signed contract", "After contract review."]],
+      international: [["Tender file & act of engagement", "With appendices."], ["Explanatory note / memo to the Tenders Board", "Template on the Tenders Board website."], ["Tenders Board launch authorisation", "Before publication."], ["Publication on the e-procurement platform", "Deadline of at least three weeks."], ["Opening record & analysis table", "Admissibility, exclusion, eligibility and award scoring."], ["Tenders Board award decision", "Validates the results and the award."], ["Notification letters", "Unsuccessful tenderers informed within 15 days of notifying the winner."], ["Signed contract", "After contract review."]],
+    }[key];
+
+    const risks = [];
+    if (!intl && value >= 0.85 * LIMITS.international) risks.push(["risk", "Close to €184,000", "If the value may exceed the threshold (extensions, amendments, higher bids), the guide recommends an international public call. The Tenders Board cannot approve a launch retroactively."]);
+    if (need !== "oneoff" && contract !== "Framework agreement" && value <= low) risks.push(["warn", "Recurring need at low value", "Assess the whole foreseeable need over the full period: splitting a recurring need to stay below a threshold is not allowed."]);
+    if (need === "variable" && !intl) risks.push(["warn", "Framework agreement below €184,000", "Framework agreements need a mini-competition for each call-off and are rarely recommended below €184,000."]);
+    if (key === "direct-exc") risks.push(["warn", "Exceptional direct award", "Only for unforeseen urgency not attributable to the buyer, technical requirements, or considerations of fact or law. Document the ground precisely."]);
+    if (lcr) risks.push(["info", "Legal Compliance Review is mandatory", "Extrabudgetary funding between €55,000 and €184,000: no CCM approval before the DLAPIL visa."]);
+    if (late) risks.push(["risk", "Behind schedule", `To meet the deadline the procedure should have started by ${start.toISOString().slice(0, 10)}. Consider a later deadline or a reduced scope.`]);
+    const pub = timeline.find((t) => /Publication|Invitation/.test(t.label));
+    if (pub && [6, 7].includes(pub.from.getMonth())) risks.push(["warn", "Publication during the summer break", "The guide advises against launching calls for tenders during the summer break."]);
+    if (key !== "direct-low") risks.push(["info", "Offer validity", "Offers are valid for 180 calendar days from the submission deadline; plan evaluation and award within that period."]);
+
+    // Relevance of each of the 15 guide stages for this route.
+    const skipFor = { "direct-low": ["Tender Design", "Terms & Specifications", "Open & Evaluate", "Negotiate & Award"], "direct-exc": ["Tender Design", "Open & Evaluate"], competitive: [], international: [] }[key];
+    const keyFor = { "direct-low": ["Thresholds & Procedure", "Contract Signing"], "direct-exc": ["Thresholds & Procedure", "Authorise & Launch", "Negotiate & Award"], competitive: ["Tender Design", "Authorise & Launch", "Open & Evaluate"], international: ["Tender Design", "Authorise & Launch", "Open & Evaluate", "Negotiate & Award"] }[key];
+    return { key, route, contract, value, approvals, timeline, total, start, deadline, late, docs, risks, skip: skipFor, keyStages: keyFor, lcr, intl };
+  }
+
+  return { LIMITS, euro, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
 });
