@@ -145,7 +145,7 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
         <g filter="url(#coast)">{SHAPES.map((s) => {
           const d = byShape.get(s.n), on = !!d?.projects, sel = !!(selected && d && d.id === selected);
           return (
-            <path d={s.d} class={`ctry ${on ? 'on' : ''} ${sel ? 'sel' : ''}`} fill={on ? 'var(--map-member)' : fill(d, !!s.m)} stroke="var(--map-border)" stroke-width={(sel ? 2.5 : on ? 1.2 : 0.8) * scale}
+            <path d={s.d} class={`ctry ${on ? 'under' : ''}`} fill={on ? 'var(--map-member)' : fill(d, !!s.m)} stroke="var(--map-border)" stroke-width={(sel ? 2.5 : on ? 1.2 : 0.8) * scale}
               filter={sel || hover?.n === s.n && on ? 'url(#lift)' : undefined}
               onPointerMove={(e) => { if (drag.current?.moved) return; const r = svg.current!.getBoundingClientRect(); setHover({ n: s.n, x: e.clientX - r.left, y: e.clientY - r.top }); }}
               onClick={() => { if (drag.current?.moved) return; on ? onSelect?.(sel ? null : d!.id) : onSelect?.(null); }}>
