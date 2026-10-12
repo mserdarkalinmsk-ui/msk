@@ -621,3 +621,4 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
   .offices .card-h{break-after:avoid}
 }
 @media print{.offices .of-doc-t{break-before:page}}
+.gate{min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg)}.gate-c{display:grid;gap:14px;padding:28px;max-width:420px;width:100%}.gate-c h1{margin:0;font-size:22px}.gate-c p{margin:0}

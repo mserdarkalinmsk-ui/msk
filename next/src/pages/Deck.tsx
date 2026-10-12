@@ -3,7 +3,7 @@ import { exportPptx } from '../ui/deckPptx';
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { resultRows } from '../domain/results';
-import { filtered, get, useStore } from '../data/store';
+import { EMBED, filtered, get, useStore } from '../data/store';
 import { byCategory, elapsed, HEADINGS, groupBy, lineRows, money, parseDate, portfolioSeries, riskScore, totals } from '../domain/calc';
 import { alerts } from '../domain/insights';
 import { catchUp } from '../domain/monitor';
@@ -50,7 +50,8 @@ const savePref = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON
 /** Donor presentation: landscape slides that print one per page, from cover to annex. */
 export function Deck() {
   const s = useStore((x) => x);
-  const [aud, setAud] = useState<Audience>(() => readPref('pl-deck-aud', 'management'));
+  const forced = EMBED?.audience === 'donor';
+  const [aud, setAud] = useState<Audience>(() => (forced ? 'donor' : readPref('pl-deck-aud', 'management')));
   const [pages, setPages] = useState<boolean>(() => readPref('pl-deck-pages', true));
   const [notes, setNotes] = useState<boolean>(() => readPref('pl-deck-notes', false));
   const mg = aud === 'management';
@@ -117,7 +118,7 @@ export function Deck() {
   };
   return (
     <div class="deck">
-      <div class="no-print deck-tools"><div class="seg" role="group" aria-label="Audience">{(['management', 'donor'] as const).map((a) => <button aria-pressed={aud === a} onClick={() => { setAud(a); savePref('pl-deck-aud', a); }}>{a === 'management' ? 'Management' : 'Donor'}</button>)}</div>
+      <div class="no-print deck-tools">{!forced && <div class="seg" role="group" aria-label="Audience">{(['management', 'donor'] as const).map((a) => <button aria-pressed={aud === a} onClick={() => { setAud(a); savePref('pl-deck-aud', a); }}>{a === 'management' ? 'Management' : 'Donor'}</button>)}</div>}
         <label class="muted" style={{ fontSize: '12.5px' }}><input type="checkbox" checked={pages} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; setPages(v); savePref('pl-deck-pages', v); }} /> One page per project</label>
         <label class="muted" style={{ fontSize: '12.5px' }}><input type="checkbox" checked={notes} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; setNotes(v); savePref('pl-deck-notes', v); }} /> Speaker notes</label>
         <p class="muted" style={{ margin: 0, flex: 1 }}>{of} slides · {mg ? 'internal: staff names, office costs and catch-up plans included' : 'for the donor: results and indicators, no internal staff or office detail'} · A4 landscape</p><button class="btn" onClick={pptx}>⤓ PowerPoint</button><button class="btn primary" onClick={() => print()}>⎙ Save as PDF</button></div>

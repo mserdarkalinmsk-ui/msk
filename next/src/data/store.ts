@@ -21,10 +21,11 @@ export interface State {
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];
   ready: boolean;
+  /** shared copy waiting for its password */ locked?: boolean;
 }
 
 /** A shared copy carries its data inside the file (see ui/Share): read once, before anything renders. */
-export interface Embed { id: string; at: string; mode: 'view' | 'edit'; from?: string; scope: string; ledger: Ledger }
+export interface Embed { id: string; at: string; mode: 'view' | 'edit'; from?: string; scope: string; ledger?: Ledger; /** password-protected data */ enc?: import('../ui/crypto').Sealed; /** donor version: internal detail removed */ audience?: 'donor' }
 export const EMBED: Embed | null = (() => { try { const t = document.getElementById('pl-embed')?.textContent; return t ? JSON.parse(t) as Embed : null; } catch { return null; } })();
 export const READONLY = EMBED?.mode === 'view';
 /** The page as it was served (before rendering), so a shared copy can be written out with data inside. */
@@ -34,7 +35,7 @@ const DB = 'portfolio-ledger-next', STORE = 'kv', KEY = DEMO ? 'demo' : EMBED ? 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
 let state: State = {
-  ledger: clone((EMBED?.ledger ?? seed) as unknown as Ledger),
+  ledger: clone((EMBED ? EMBED.ledger ?? { countries: [], projects: [] } : seed) as unknown as Ledger),
   route: (location.hash.slice(2) || 'overview'),
   filters: { country: '', sector: '', q: '' },
   drawer: null,
@@ -122,9 +123,21 @@ function repair(l: Ledger): Ledger {
   if (!Array.isArray(L.countries)) L.countries = [];
   return L;
 }
+/** Opens a password-protected shared copy; false when the password is wrong. */
+export async function unlock(pw: string): Promise<boolean> {
+  if (!EMBED?.enc) return true;
+  const { open: openSealed } = await import('../ui/crypto');
+  const t = await openSealed(EMBED.enc, pw); if (t == null) return false;
+  EMBED.ledger = JSON.parse(t) as Ledger;
+  state = { ...state, ledger: clone(EMBED.ledger) };
+  set({ locked: false, ready: false });
+  await load();
+  return true;
+}
 export async function load() {
   // Ask the browser to keep this data even when disk space runs low (otherwise it may be cleared silently).
   try { void navigator.storage?.persist?.(); } catch { /* not supported */ }
+  if (EMBED?.enc && !EMBED.ledger) { set({ ready: true, locked: true }); return; }
   if (READONLY) { set({ ready: true }); return; }
   const db = await open();
   if (db) {
