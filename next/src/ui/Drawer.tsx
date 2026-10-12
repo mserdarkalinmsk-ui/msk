@@ -1,3 +1,4 @@
+import { SharePanel } from './Share';
 import { PortfolioImport } from './PortfolioImport';
 import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { backupNow } from './Backup';
@@ -37,6 +38,7 @@ export function Drawer() {
         {d.kind === 'report' && <ReportImport projectId={d.projectId} close={close} />}
         {d.kind === 'documents' && <DocumentsPanel projectId={d.projectId} close={close} />}
         {d.kind === 'appearance' && <AppearancePanel close={close} />}
+        {d.kind === 'share' && <SharePanel close={close} />}
         {d.kind === 'contract' && <ContractPanel projectId={d.projectId} k={d.key} close={close} />}
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}

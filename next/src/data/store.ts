@@ -14,18 +14,25 @@ export interface State {
   ledger: Ledger;
   route: string;
   filters: Filters;
-  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'smart-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] } | { kind: 'period'; t: number; from: number; ids: string[] };
+  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'share' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'smart-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] } | { kind: 'period'; t: number; from: number; ids: string[] };
   palette: boolean;
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];
   ready: boolean;
 }
 
-const DB = 'portfolio-ledger-next', STORE = 'kv', KEY = DEMO ? 'demo' : 'ledger-v2';
+/** A shared copy carries its data inside the file (see ui/Share): read once, before anything renders. */
+export interface Embed { id: string; at: string; mode: 'view' | 'edit'; from?: string; scope: string; ledger: Ledger }
+export const EMBED: Embed | null = (() => { try { const t = document.getElementById('pl-embed')?.textContent; return t ? JSON.parse(t) as Embed : null; } catch { return null; } })();
+export const READONLY = EMBED?.mode === 'view';
+/** The page as it was served (before rendering), so a shared copy can be written out with data inside. */
+export const SOURCE = (() => { const h = document.documentElement.cloneNode(true) as HTMLElement; h.querySelector('#pl-embed')?.remove(); for (const a of [...h.attributes]) if (a.name.startsWith('data-')) h.removeAttribute(a.name); return '<!doctype html>\n' + h.outerHTML; })();
+// A shared copy keeps its own storage slot, so opening it never mixes with the recipient's own ledger.
+const DB = 'portfolio-ledger-next', STORE = 'kv', KEY = DEMO ? 'demo' : EMBED ? `shared:${EMBED.id}` : 'ledger-v2';
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
 let state: State = {
-  ledger: clone(seed as unknown as Ledger),
+  ledger: clone((EMBED?.ledger ?? seed) as unknown as Ledger),
   route: (location.hash.slice(2) || 'overview'),
   filters: { country: '', sector: '', q: '' },
   drawer: null,
@@ -47,7 +54,9 @@ export function set(patch: Partial<State> | ((s: State) => Partial<State>)) {
 }
 export function useStore<T>(sel: (s: State) => T): T {
   const [, force] = useState(0);
-  useEffect(() => { const f = () => force((x) => x + 1); subs.add(f); return () => { subs.delete(f); }; }, []);
+  // A change between the first render and subscribing (e.g. a shared copy is ready at once) re-renders here.
+  const seen = state;
+  useEffect(() => { const f = () => force((x) => x + 1); subs.add(f); if (state !== seen) f(); return () => { subs.delete(f); }; }, []);
   return sel(state);
 }
 
@@ -69,6 +78,7 @@ function openDb(): Promise<IDBDatabase | null> {
 // Rapid edits (bulk imports, typing) write once: the latest ledger is saved 250 ms after the last change.
 let pending: Ledger | null = null, ptimer: ReturnType<typeof setTimeout> | undefined;
 function persist(l: Ledger) {
+  if (READONLY) return;
   pending = l; clearTimeout(ptimer);
   ptimer = setTimeout(() => { const x = pending; pending = null; if (x) void write(x); }, 250);
 }
@@ -113,6 +123,7 @@ function repair(l: Ledger): Ledger {
 export async function load() {
   // Ask the browser to keep this data even when disk space runs low (otherwise it may be cleared silently).
   try { void navigator.storage?.persist?.(); } catch { /* not supported */ }
+  if (READONLY) { set({ ready: true }); return; }
   const db = await open();
   if (db) {
     const l = await new Promise<Ledger | undefined>((res) => {
@@ -123,7 +134,7 @@ export async function load() {
       // Never fall back to the start data when stored data has a problem — that silently lost work before.
       if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
       prevSaved = l;
-      state = { ...state, ledger: mergeSeed(validateLedger(l).length ? repair(l) : l) };
+      state = { ...state, ledger: EMBED ? l : mergeSeed(validateLedger(l).length ? repair(l) : l) };
     }
   }
   set({ ready: true });
@@ -164,6 +175,7 @@ export function toast(text: string, undo?: () => void) {
   setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 6000);
 }
 export function commit(next: Ledger, message: string, project?: string) {
+  if (READONLY) { toast('This is a view-only copy — changes are not saved'); return; }
   history.push(state.ledger);
   next.audit = [{ at: new Date().toISOString(), message, ...(project ? { project } : {}) }, ...(next.audit ?? [])].slice(0, 300);
   if (history.length > 50) history.shift();
