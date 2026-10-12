@@ -138,6 +138,29 @@
   // Plain text of a section (structured or legacy prose) for search.
   const sectionText = (b) => (typeof b === "string" ? b : [b.lead, ...(b.items || []).map((x) => x.join(" ")), ...(b.must || []), b.tip].filter(Boolean).join(" "));
   // A section reads as: one lead idea → named items (numbered when ordered) → obligations → good practice.
+
+  /* ---------- item icons: picked from the term, so every list gets a meaningful pictogram ---------- */
+  const ICONS = [
+    [/compet|tender|bid|offer/i, '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'],
+    [/object|impartial|neutral|bias/i, '<path d="M12 3v18M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/>'],
+    [/transparen|publi|disclos|open/i, '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'],
+    [/exclusiv|rotat|period|recurr|renew/i, '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'],
+    [/equal|same|fair/i, '<path d="M5 9h14M5 15h14"/>'],
+    [/discrimin|group|divers|people|staff|member/i, '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 20a4.5 4.5 0 0 1 8 0"/>'],
+    [/fraud|corrupt|ethic|interest|gift|conflict/i, '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'],
+    [/budget|cost|fund|pay|price|value|financ|€|invoice/i, '<rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="3"/><path d="M6 10v.01M18 15v.01"/>'],
+    [/contract|agreement|sign|legal|rule|instruction|law/i, '<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/>'],
+    [/time|deadline|day|date|durat|year|month/i, '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
+    [/evaluat|criteri|score|assess|check|review|audit|control/i, '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/>'],
+    [/supplier|market|vendor|company|partner/i, '<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/>'],
+    [/risk|warn|sanction|complain|appeal/i, '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/>'],
+    [/document|file|record|archiv|template|form/i, '<path d="M4 4h6l2 2h8v14H4z"/>'],
+    [/need|specif|scope|requir|object/i, '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'],
+    [/approv|author|board|committee|decision|validat/i, '<path d="M4 21h16M6 21V10M10 21V10M14 21V10M18 21V10M3 10l9-6 9 6z"/>'],
+    [/communicat|email|notif|inform|letter/i, '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'],
+    [/deliver|goods|ship|works|service/i, '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>'],
+  ];
+  const iconFor = (t) => { const m = ICONS.find(([r]) => r.test(t)); return m ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${m[1]}</svg>` : ""; };
   function sectionHtml(b) {
     if (typeof b === "string") {
       const parts = splitSentences(b), lead = parts.shift() || "", rules = parts.filter((x) => sentenceKind(x) === "rule"), rest = parts.filter((x) => sentenceKind(x) !== "rule");
@@ -145,7 +168,7 @@
     }
     const items = b.items || [];
     return `<p class="rd-lead">${esc(b.lead)}</p>${b.body ? `<p>${esc(b.body)}</p>` : ""}
-      ${items.length ? `<div class="rd-items ${b.ordered ? "ordered" : ""}" style="--n:${items.length}"><small>${items.length} ${b.ordered ? "steps" : "points"}</small><ol>${items.map(([t, d], k) => `<li><span>${b.ordered ? k + 1 : esc(String(t).match(/^[a-z]\)/i) ? String(t).slice(0, 1) : k + 1)}</span><div><b>${esc(String(t).replace(/^[a-z]\)\s*/i, ""))}</b><p>${esc(d)}</p></div></li>`).join("")}</ol></div>` : ""}
+      ${items.length ? `<div class="rd-items ${b.ordered ? "ordered" : ""}" style="--n:${items.length}"><div class="rd-ih"><small>${items.length} ${b.ordered ? "steps" : "points"}</small>${items.length > 2 ? `<button type="button" class="rd-recall" data-recall>Test my recall</button>` : ""}</div><ol>${items.map(([t, d], k) => { const ic = b.ordered ? "" : iconFor(String(t)); return `<li${ic ? ' class="has-ic"' : ""}><span>${ic ? `${ic}<i>${k + 1}</i>` : b.ordered ? k + 1 : esc(String(t).match(/^[a-z]\)/i) ? String(t).slice(0, 1) : k + 1)}</span><div><b>${esc(String(t).replace(/^[a-z]\)\s*/i, ""))}</b><p>${esc(d)}</p></div></li>`; }).join("")}</ol></div>` : ""}
       ${(b.must || []).length ? `<div class="rd-rules"><small>Rules to follow</small><ul>${b.must.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       ${b.tip ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(b.tip)}</p></div>` : ""}`;
   }
@@ -244,6 +267,9 @@
     FG.openSheet(`Key figure · ${btn.dataset.stage}`, label.charAt(0).toUpperCase() + label.slice(1), html);
   }
   document.addEventListener("click", (e) => {
+    const r = e.target.closest("[data-recall]");
+    if (r) { const box = r.closest(".rd-items"), on = box.classList.toggle("recall"); box.querySelectorAll("li").forEach((li) => li.classList.remove("shown")); r.textContent = on ? "Show all" : "Test my recall"; return; }
+    const li = e.target.closest(".rd-items.recall li"); if (li) li.classList.add("shown");
     const j = e.target.closest("[data-rd-jump]");
     if (j) { const tab = document.querySelector('[data-tab="guide"],[role="tab"][data-id="guide"]'); if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
       const go = document.querySelector(`.rd-nav [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
