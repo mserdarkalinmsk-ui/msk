@@ -297,6 +297,11 @@ export function fixProject(pid: string, fix: import('../domain/health').AutoFix,
   for (const r of removed) toTrash(L, { kind: r.kind, label: `${r.label} (${p.code})`, data: r.data, pid });
   L.projects[i] = p; commit(L, fix === 'use-approved' ? `${p.code}: budget set from the approved budget` : `${p.code}: ${removed.length} duplicate${removed.length === 1 ? '' : 's'} moved to the trash`, p.code);
 }
+/** The organisation's logo and name shown in the menu, the browser tab and on covers (null removes it). */
+export function setBrand(brand: { logo?: string; name?: string; title?: string } | null) {
+  const L = draft(state.ledger); if (brand) L.brand = brand; else delete L.brand;
+  commit(L, brand ? 'Name and logo saved' : 'Name and logo removed');
+}
 /** Ticks or unticks a task of the monthly checklist. */
 export function setCheck(month: string, key: string, done: boolean) {
   const L = draft(state.ledger), C = { ...(L.checklist ?? {}) }, M = { ...(C[month] ?? {}) };

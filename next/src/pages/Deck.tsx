@@ -101,7 +101,7 @@ export function Deck() {
     ...(P.some((p) => { const d = (parseDate(p.end).getTime() - TODAY.getTime()) / 864e5; return d > 0 && d < 183; }) ? ['Prepare closure and final reports for projects ending within six months.'] : []),
     `Next update after the ${month(new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() + 1, 1)).getTime())} financial reports.`,
   ];
-  const pptx = () => exportPptx({ aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
+  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
     staff: active, renewals: ren.length, offices: hasOffice ? officeRows(get().ledger.offices ?? []).map((o) => ({ name: o.o.name, ob: o.T.ob.budget, sc: o.T.ob.sc, end: o.end, request: o.request })) : [],
     events: E, catchUp: CU.map(({ x, c }) => ({ p: x.p, perf: x.perf, rate: c.rate, need: c.need })), steps: STEPS, pages: PP, MS, NS }).catch((e) => alert(`PowerPoint export failed: ${(e as Error).message}`));
   const NS = {
@@ -125,12 +125,13 @@ export function Deck() {
 
       <section class="slide sl-cover">
         <div class="sl-cv">
+          {s.ledger.brand?.logo && <img class="sl-logo" src={s.ledger.brand.logo} alt="" />}
           <div class="sl-k">{mg ? 'Management review' : 'Progress report to the donor'} · {date(today)}</div>
           <h1>{scope === 'Portfolio' ? 'Joint programme portfolio' : scope}</h1>
           <p class="sl-lead">Financial and operational status of {P.length} project{P.length > 1 ? 's' : ''} in {nCountries} countr{nCountries > 1 ? 'ies' : 'y'}</p>
           <div class="sl-cv-k"><div><b>{short(T.budget)}</b><span>total budget</span></div><div><b>{short(T.spent)}</b><span>spent to date</span></div><div><b style={{ color: BAND_C[band] }}>{pct(perf)}</b><span>of planned spending</span></div></div>
         </div>
-        <div class="sl-f"><span>Prepared from the Portfolio Ledger · figures at {date(today)}</span><span>1 / {of}</span></div>
+        <div class="sl-f"><span>Prepared from the {s.ledger.brand?.title || 'Portfolio Ledger'} · figures at {date(today)}</span><span>1 / {of}</span></div>
       </section>
 
       <Slide n={2} of={of} scope={scope} title="Executive summary" msg={MS.executive} sub="The position in one page" notes={NS.executive}>
