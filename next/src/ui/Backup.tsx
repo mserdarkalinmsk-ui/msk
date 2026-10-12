@@ -21,11 +21,13 @@ export function BackupBanner() {
   const days = last ? Math.floor((Date.now() - Date.parse(last)) / 86_400_000) : null;
   const lastChange = useStore((s) => s.ledger.audit?.[0]?.at);
   const changed = !last || (lastChange && lastChange > last);
-  if (!audit || !changed || (days != null && days < 7) || (snooze && Date.now() < Date.parse(snooze))) return null;
+  // Many changes since the last backup (a big import day) prompt sooner than the weekly reminder.
+  const since = useStore((s) => (last ? (s.ledger.audit ?? []).filter((a) => a.at > last).length : 0));
+  if (!audit || !changed || (days != null && days < 7 && since < 25) || (snooze && Date.now() < Date.parse(snooze))) return null;
   return (
     <div class="bk-banner no-print" role="status">
       <span class="bk-i">⛁</span>
-      <span><b>{last ? `Last backup ${days} days ago` : 'No backup yet'}</b> — your data lives only in this browser. Save a copy to keep it safe.</span>
+      <span><b>{!last ? 'No backup yet' : since >= 25 && days! < 7 ? `${since} changes since your last backup` : `Last backup ${days} days ago`}</b> — your data lives only in this browser. Save a copy to keep it safe.</span>
       <button class="btn primary" onClick={async () => { await backupNow(); tick((x) => x + 1); }}>Back up now</button>
       <button class="btn ghost" onClick={() => { write(S, new Date(Date.now() + 3 * 86_400_000).toISOString()); tick((x) => x + 1); }}>Later</button>
     </div>

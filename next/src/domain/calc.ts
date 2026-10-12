@@ -19,7 +19,17 @@ export function latestReport(p: Project): ReportingPeriod | undefined {
     .at(-1);
 }
 
+// Every screen asks for the same project's lines many times per render: remember them per project object,
+// re-reading when its reports or approved budget change (edits replace these, so a stale read cannot survive).
+const linesCache = new WeakMap<Project, { rp: unknown; n: number; ab: unknown; L: BudgetLine[] }>();
 export function lines(p: Project): BudgetLine[] {
+  const c = linesCache.get(p), rp = p.reportingPeriods, k = rp?.length ?? 0;
+  if (c && c.rp === rp && c.n === k && c.ab === p.approvedBudget) return c.L;
+  const L = readLines(p);
+  linesCache.set(p, { rp, n: k, ab: p.approvedBudget, L });
+  return L;
+}
+function readLines(p: Project): BudgetLine[] {
   const r = latestReport(p);
   if (!r) return p.approvedBudget?.lines ?? [];
   const L = r.snapshot!.lines, T = r.snapshot!.workbook?.totals;
@@ -37,11 +47,14 @@ export function money(p: Project) {
   const L = lines(p);
   const hasActual = L.some((l) => l.actual != null);
   const spent = hasActual ? sum(L, (l) => n(l.actual)) : n(p.spent);
-  const hasCommitted = L.some((l) => l.committed != null);
-  const committed = hasCommitted ? sum(L, (l) => n(l.committed)) : n(p.committed);
+  // Same rule as the budget-lines table: a line without a committed figure derives it from spent + committed.
+  const hasCommitted = L.some((l) => l.committed != null || l.spentCommitted != null);
+  const committed = hasCommitted ? sum(L, lineCommitted) : n(p.committed);
   const budget = n(p.budget);
-  const remaining = budget - spent - committed;
-  return { budget, spent, committed, exposure: spent + committed, remaining };
+  // Exposure follows the report's own spent + committed column (as headings and the statement do), so a
+  // rounding gap between actual + committed and S&C never shows two different totals.
+  const exposure = hasActual || hasCommitted ? sum(L, lineExposure) : spent + committed;
+  return { budget, spent, committed, exposure, remaining: budget - exposure };
 }
 
 /** Fraction of the implementation period elapsed at `today`, clamped to [0, 1]. */

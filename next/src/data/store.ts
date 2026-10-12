@@ -52,7 +52,11 @@ export function useStore<T>(sel: (s: State) => T): T {
 }
 
 /* ---------- persistence (IndexedDB, fails soft) ---------- */
+let dbp: Promise<IDBDatabase | null> | null = null;
 function open(): Promise<IDBDatabase | null> {
+  return (dbp ??= openDb().then((d) => { if (!d) dbp = null; else d.onclose = () => { dbp = null; }; return d; }));
+}
+function openDb(): Promise<IDBDatabase | null> {
   return new Promise((res) => {
     try {
       const r = indexedDB.open(DB, 1);
@@ -62,7 +66,14 @@ function open(): Promise<IDBDatabase | null> {
     } catch { res(null); }
   });
 }
-async function persist(l: Ledger) {
+// Rapid edits (bulk imports, typing) write once: the latest ledger is saved 250 ms after the last change.
+let pending: Ledger | null = null, ptimer: ReturnType<typeof setTimeout> | undefined;
+function persist(l: Ledger) {
+  pending = l; clearTimeout(ptimer);
+  ptimer = setTimeout(() => { const x = pending; pending = null; if (x) void write(x); }, 250);
+}
+if (typeof window !== 'undefined') window.addEventListener('pagehide', () => { if (pending) { clearTimeout(ptimer); const x = pending; pending = null; void write(x); } });
+async function write(l: Ledger) {
   const db = await open(); if (!db) return;
   const st = db.transaction(STORE, 'readwrite').objectStore(STORE);
   st.put(l, KEY);
@@ -100,6 +111,8 @@ function repair(l: Ledger): Ledger {
   return L;
 }
 export async function load() {
+  // Ask the browser to keep this data even when disk space runs low (otherwise it may be cleared silently).
+  try { void navigator.storage?.persist?.(); } catch { /* not supported */ }
   const db = await open();
   if (db) {
     const l = await new Promise<Ledger | undefined>((res) => {
