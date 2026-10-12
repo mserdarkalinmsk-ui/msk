@@ -257,10 +257,11 @@ export function upsertCountry(c: Country) {
   commit(L, i >= 0 ? `Saved ${c.name}` : `Added ${c.name}`);
 }
 /** Removes a country; refuses while projects still reference it. */
-export function deleteCountry(id: string): string | null {
+export function deleteCountry(id: string, withProjects = false): string | null {
   const used = state.ledger.projects.filter((p) => p.country === id).length;
-  if (used) return `${used} project${used > 1 ? 's' : ''} still use this country. Move or delete them first.`;
+  if (used && !withProjects) return `${used} project${used > 1 ? 's' : ''} still use this country. Move or delete them first.`;
   const L = clone(state.ledger);
+  L.projects = L.projects.filter((p) => p.country !== id);
   const c = L.countries.find((x) => x.id === id);
   L.countries = L.countries.filter((x) => x.id !== id);
   if (state.filters.country === id) set({ filters: { ...state.filters, country: '' } });

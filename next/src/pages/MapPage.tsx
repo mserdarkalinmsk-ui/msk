@@ -43,6 +43,7 @@ export function MapPage() {
         </select>
         <span class="muted" style={{ fontSize: '12.5px' }}>{MODES.find((m) => m.id === mode)!.hint} · drag to pan, scroll to zoom</span>
         <button class="chip" style={{ marginLeft: 'auto', borderStyle: 'dashed' }} onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })}>+ Country</button>
+        <button class="btn ghost" style={{ height: '28px' }} onClick={() => set({ drawer: { kind: 'countries' } })}>Manage countries</button>
       </div>
       <div class="map-layout">
         <section class="card map-main">
