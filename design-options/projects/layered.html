@@ -1,0 +1,59 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1e3a6e;--c1:#2f6fd6;--c2:#16938a;--c3:#c98a1a;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f4f6fb;--mono:"JetBrains Mono",monospace}
+*{box-sizing:border-box}body{margin:0;font-family:"Space Grotesk",sans-serif;color:var(--ink);background:linear-gradient(180deg,#eef3fb,var(--bg) 340px)}
+.top{display:flex;align-items:center;gap:10px;padding:14px 28px;border-bottom:1px solid var(--line);background:#fff}
+.mark{width:32px;height:32px;border-radius:9px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}.top b{font-size:13px;letter-spacing:.04em}.top small{display:block;font:9.5px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 28px 40px}.crumb{font-size:13px;color:var(--muted)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:18px 0 26px}.eyebrow{font:12px var(--mono);letter-spacing:.16em;color:var(--c1)}
+h1{font-size:36px;letter-spacing:-.03em;margin:6px 0 4px;color:var(--navy)}.lead{color:var(--muted);margin:0;max-width:620px}
+.kpis{display:flex;gap:10px}.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-width:120px}.kpi b{font-size:22px;color:var(--navy);display:block}.kpi small{font:10.5px var(--mono);letter-spacing:.1em;color:var(--muted)}
+.chev{display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:6px;margin-bottom:0}
+.chev div{--c:var(--c1);position:relative;background:var(--c);color:#fff;padding:14px 22px 14px 34px;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 50%,calc(100% - 18px) 100%,0 100%,18px 50%)}
+.chev div:first-child{clip-path:polygon(0 0,calc(100% - 18px) 0,100% 50%,calc(100% - 18px) 100%,0 100%);border-radius:10px 0 0 10px;padding-left:22px}
+.chev div:last-child{clip-path:polygon(0 0,100% 0,100% 100%,0 100%,18px 50%);border-radius:0 10px 10px 0}
+.chev small{font:11px var(--mono);letter-spacing:.14em;opacity:.8}.chev b{display:block;font-size:17px}.chev span{font-size:12.5px;opacity:.85}
+.cols{display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:6px;background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;padding:18px 0 6px;position:relative}
+.col{padding:0 16px;border-right:1px dashed var(--line);display:grid;gap:10px;align-content:start}.col:last-child{border:0}.col.two{grid-template-columns:1fr 1fr}
+.mod{--c:var(--c1);display:block;border:1px solid var(--line);border-left:3px solid var(--c);border-radius:10px;padding:12px 14px;text-decoration:none;color:inherit;background:#fff;transition:box-shadow .2s,transform .2s}
+.mod:hover{box-shadow:0 10px 24px -14px #1e3a6e66;transform:translateY(-2px)}
+.mod .r{display:flex;justify-content:space-between;align-items:center}.mod b{font-size:14.5px}.mod em{font:normal 10.5px var(--mono);color:var(--muted)}
+.mod p{margin:4px 0 8px;font-size:12.5px;color:var(--muted);line-height:1.45}.bar{height:3px;background:#eef1f6;border-radius:3px}.bar i{display:block;height:100%;width:var(--w);background:var(--c);border-radius:3px}
+.mod.key{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 6%,#fff),#fff)}.badge{font:10px var(--mono);letter-spacing:.08em;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 35%,#fff);padding:2px 6px;border-radius:5px}
+.flow{grid-column:1/-1;margin:14px 16px 10px;display:flex;align-items:center;gap:10px;font:11px var(--mono);color:var(--muted);letter-spacing:.06em}.flow i{flex:1;height:1px;background:repeating-linear-gradient(90deg,#cbd5e1 0 6px,transparent 6px 12px)}
+.bottom{margin-top:48px!important;display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px}
+.box h3{margin:0 0 10px;font:11px var(--mono);letter-spacing:.14em;color:var(--muted)}.rules{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.rules div{border-radius:10px;background:#f6f8fb;padding:10px 12px}.rules b{display:block;color:var(--navy);font-size:17px}.rules span{font-size:12px;color:var(--muted)}
+.links a{display:block;padding:7px 0;border-bottom:1px solid var(--line);color:var(--navy);text-decoration:none;font-size:13.5px}.links a:last-child{border:0}
+
+/* ---- 3D layered ---- */
+.scene{perspective:1600px;margin-top:6px}
+.board{transform-style:preserve-3d;transform:rotateX(var(--rx,14deg)) rotateY(var(--ry,-6deg));transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.base{position:absolute;inset:-18px -18px -26px;border-radius:24px;background:linear-gradient(135deg,#dfe7f4,#eef2f9);transform:translateZ(-60px);box-shadow:0 60px 90px -40px #1e3a6e66;border:1px solid #d5deec}
+.base::after{content:"";position:absolute;inset:0;border-radius:24px;background-image:linear-gradient(#1e3a6e0d 1px,transparent 1px),linear-gradient(90deg,#1e3a6e0d 1px,transparent 1px);background-size:32px 32px}
+.chev{transform:translateZ(46px);filter:drop-shadow(0 18px 18px #1e3a6e40)}
+.chev div{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 88%,#fff),var(--c))}
+.cols{transform:translateZ(14px);transform-style:preserve-3d;box-shadow:0 30px 50px -30px #1e3a6e55,0 1px 0 #fff inset;background:#ffffffee}
+.col{transform-style:preserve-3d}
+.mod{transform:translateZ(18px);box-shadow:0 1px 0 #fff inset,0 8px 16px -10px #1e3a6e40,0 2px 3px #1e3a6e14}
+.mod:hover{transform:translateZ(46px);box-shadow:0 26px 40px -18px color-mix(in srgb,var(--c) 60%,transparent)}
+.mod.key{transform:translateZ(30px)}
+.flow{transform:translateZ(8px)}
+.layer-tag{position:absolute;left:-14px;font:10px var(--mono);letter-spacing:.14em;color:#94a3b8;writing-mode:vertical-rl;transform:rotate(180deg) translateZ(0)}
+.bottom{transform:translateZ(0)}
+</style></head><body><div class="top"><span class="mark">FG</span><span><b>FINANCIAL GUIDE</b><small>COUNCIL OF EUROPE</small></span></div>
+<div class="wrap"><div class="crumb">Home / <b>Projects</b></div>
+<div class="head"><div><div class="eyebrow">01 / PROJECT FINANCE · PROJECT TEAM</div><h1>Projects</h1><p class="lead">The financial life cycle of a project, from commitment to closure. Select a module to open its procedure, controls and documents.</p></div>
+<div class="kpis"><div class="kpi"><small>MODULES</small><b>8</b></div><div class="kpi"><small>PROCEDURE STEPS</small><b>25</b></div><div class="kpi"><small>COMPLETED</small><b>31%</b></div></div></div>
+<div class="scene"><div class="board" id="board" style="position:relative"><div class="base"></div><div class="chev"><div><small>PHASE 01</small><b>Commit</b><span>Select the procedure and sign</span></div><div style="--c:var(--c2)"><small>PHASE 02</small><b>Spend</b><span>Order, receive and pay</span></div><div style="--c:var(--c3)"><small>PHASE 03</small><b>Close</b><span>Year-end and audit trail</span></div></div>
+<div class="cols" id="cols"></div></div></div>
+<div class="bottom"><div class="box"><h3>KEY THRESHOLDS · PROCUREMENT</h3><div class="rules"><div><b>€2,000</b><span>Single quotation</span></div><div><b>€6,000</b><span>Three quotations</span></div><div><b>€55,000</b><span>Restricted call</span></div><div><b>€184,000</b><span>International call</span></div></div></div>
+<div class="box links"><h3>RESOURCES</h3><a href="#">Useful links & guidelines →</a><a href="#">Templates & documents →</a><a href="#">Glossary →</a></div></div></div>
+<script>
+const m=(t,d,meta,w,c,key)=>`<a class="mod ${key?"key":""}" style="--c:var(--${c})" href="#"><div class="r"><b>${t}</b>${key?`<span class="badge">${key}</span>`:`<em>${meta}</em>`}</div><p>${d}</p><div class="bar"><i style="--w:${w}%"></i></div></a>`;
+document.getElementById("cols").innerHTML=`<div class="col">${m("Procurement","Thresholds, tender, evaluation and contract.","13 steps",40,"c1","CORE")}${m("Grant","Call, criteria, evaluation and agreement.","12 steps",15,"c1")}</div>
+<div class="col two">${m("PO & payment files","PO, delivery and payment package.","9 checks",60,"c2","CORE")}${m("Petty cash","Limits, approval and reconciliation.","4 checks",0,"c2")}${m("VAT procedures","Exemptions and supporting documents.","5 checks",0,"c2")}${m("Events & GDD","Event budget, logistics and GDD.","6 checks",20,"c2")}</div>
+<div class="col">${m("End of year","Cut-off, allocation and closing checklist.","2026",0,"c3","DEADLINE")}${m("Filing management","Evidence map, DMS and naming.","8 folders",30,"c3")}</div>
+<div class="flow">CONTRACT SIGNED<i></i>PO RAISED → GOODS / SERVICES RECEIVED → INVOICE PAID<i></i>BOOKS CLOSED · FILE ARCHIVED</div>`;
+const b=document.getElementById("board");addEventListener("mousemove",e=>{const x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;b.style.setProperty("--ry",(x*10-4)+"deg");b.style.setProperty("--rx",(10-y*8)+"deg")});
+</script></body></html>
