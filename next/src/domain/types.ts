@@ -40,7 +40,7 @@ export interface Project {
 }
 
 export interface AuditEntry { at: string; message: string; project?: string }
-export interface Ledger { countries: Country[]; projects: Project[]; /** newest first */ audit?: AuditEntry[] }
+export interface Ledger { countries: Country[]; projects: Project[]; /** programme offices' own running-cost budgets */ offices?: import('./office').Office[]; /** newest first */ audit?: AuditEntry[] }
 
 export const SECTORS = ['Human Rights', 'Democracy', 'Rule of Law'] as const;
 export type Sector = (typeof SECTORS)[number];

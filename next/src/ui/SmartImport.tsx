@@ -1,5 +1,6 @@
+import { readOfficeFile } from './officeImport';
 import { useEffect, useState } from 'preact/hooks';
-import { get, updateProject, upsertProject } from '../data/store';
+import { get, go, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
 import { applyFindings, mergeFindings } from '../domain/applydocs';
 import { reportDate, reportFrom } from '../domain/autoimport';
 import { analyse, type DocFindings } from '../domain/documents';
@@ -10,9 +11,10 @@ import { date, full } from './format';
 import { matchProject } from './PortfolioImport';
 import { readCoe } from './ReportImport';
 
-type Kind = 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 'other' | 'error';
-interface Row { file: File; kind: Kind; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string }
+type Kind = 'office' | 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 'other' | 'error';
+interface Row { file: File; kind: Kind; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string }
 const KIND: Record<Kind, { label: string; color: string }> = {
+  office: { label: 'Office budget', color: '#0e7490' },
   report: { label: 'Financial report', color: '#3b82c4' }, budget: { label: 'Approved budget', color: '#30a46c' }, plan: { label: 'DoA / action plan', color: '#8e4ec6' },
   contract: { label: 'Contract', color: '#c27c0e' }, logframe: { label: 'Logframe / risks', color: '#0e9384' }, other: { label: 'Not recognised', color: '#8b8d98' }, error: { label: 'Unreadable', color: '#e5484d' },
 };
@@ -58,7 +60,9 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       for (const f of files.filter((f) => !f.name.startsWith('~$') && /\.(xlsx|xlsm|pdf|docx|txt)$/i.test(f.name))) {
         let r: Row | null = null;
         try {
-        if (/\.xls[xm]$/i.test(f.name)) {
+        const off = await readOfficeFile(f).catch(() => null);
+        if (off) r = { file: f, kind: 'office', office: off, date: off.date, pid: '', why: '', note: `${off.office} · situation ${date(off.date)} · ordinary budget ${full(off.lines.reduce((a, l) => a + l.ob.budget, 0) || off.situation?.budget || 0)}${off.hasPlan ? ' · with forecast' : ' · system export'}` };
+        if (!r && /\.xls[xm]$/i.test(f.name)) {
           const wb = await readCoe(f).catch(() => null);
           const rd = wb ? reportDate(wb) : '';
           if (wb && rd && !isNaN(Date.parse(rd)) && (wb.totals.direct || wb.lines.length > 5)) {
@@ -83,8 +87,10 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
   }, []);
   const setPid = (i: number, pid: string) => setRows((R) => R!.map((r, k) => (k === i ? { ...r, pid, why: pid ? 'chosen' : '' } : r)));
   const usable = (r: Row) => r.pid && r.kind !== 'error' && r.kind !== 'other';
-  const ok = rows?.filter(usable) ?? [];
+  const ok = rows?.filter(usable) ?? [], nOff = rows?.filter((r) => r.kind === 'office').length ?? 0;
   const apply = () => {
+    // Office budgets first (oldest first, so a raw export can borrow line budgets from a forecast of the same import).
+    for (const r of (rows ?? []).filter((x) => x.kind === 'office').sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))) upsertOfficeReport(r.office!);
     for (const pid of new Set(ok.map((r) => r.pid))) {
       let p = get().ledger.projects.find((x) => x.id === pid)!;
       const D = ok.filter((r) => r.pid === pid && r.F);
@@ -102,6 +108,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       }
     }
     close();
+    if (nOff && !ok.length) go('offices');
   };
   const lab = (p: Project) => `${p.bh ? `BH ${p.bh}` : p.code} · ${p.name.slice(0, 50)}`;
   const nFiles = files.length;
@@ -115,14 +122,15 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
             <li style={{ borderLeftColor: KIND[r.kind].color }} class={usable(r) ? '' : 'off'}>
               <div class="si-top"><span class="si-k" style={{ color: KIND[r.kind].color }}>{KIND[r.kind].label}</span><b title={r.file.name}>{r.file.name}</b></div>
               {r.note && <small class="muted">{r.note.slice(0, 160)}</small>}
-              {r.kind !== 'error' && r.kind !== 'other' && <div class="si-p"><select class="select" value={r.pid} onChange={(e) => setPid(i, (e.target as HTMLSelectElement).value)} aria-label="Project">
+              {r.kind === 'office' && <div class="si-p"><span class="badge good">goes to Offices · {r.office!.office}</span></div>}
+              {r.kind !== 'error' && r.kind !== 'other' && r.kind !== 'office' && <div class="si-p"><select class="select" value={r.pid} onChange={(e) => setPid(i, (e.target as HTMLSelectElement).value)} aria-label="Project">
                 <option value="">— choose project —</option>{P.map((p) => <option value={p.id}>{lab(p)}</option>)}</select>
                 {r.pid ? <span class="badge good">{r.why === 'chosen' ? 'chosen' : `matched by ${r.why}`}</span> : <span class="badge warning">no match — choose</span>}</div>}
             </li>))}</ul>
           <p class="muted" style={{ fontSize: '11.5px' }}>Reports are added to the project's reports (same month is replaced). Budgets, contracts, DoA/action plans, logframes and justifications update the project as in “Add documents”. Nothing leaves this browser.</p>
         </>}
       </div>
-      <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok.length} onClick={apply}>Import {ok.length} file{ok.length === 1 ? '' : 's'} into {new Set(ok.map((r) => r.pid)).size} project{new Set(ok.map((r) => r.pid)).size === 1 ? '' : 's'}</button></div>
+      <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok.length && !nOff} onClick={apply}>Import {ok.length + nOff} file{ok.length + nOff === 1 ? '' : 's'}{ok.length ? ` into ${new Set(ok.map((r) => r.pid)).size} project${new Set(ok.map((r) => r.pid)).size === 1 ? '' : 's'}` : ''}{nOff ? `${ok.length ? ' +' : ''} ${nOff} office budget${nOff > 1 ? 's' : ''}` : ''}</button></div>
     </>
   );
 }
