@@ -177,6 +177,7 @@
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
+            ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
           ])}</div>
           ${related.length ? `<div class="row mt"><span class="small muted">Related:</span>${related.map(([t, p]) => `<a class="tag" href="#/${p}">${esc(t)}</a>`).join("")}</div>` : ""}
           <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>`;
@@ -257,9 +258,9 @@
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
     stages: C.procurementStages, engine: ["Procurement Route engine", "engines/procurement"], practice: "procurement",
-    phases: [["Define the need", ["Foundations", "Need & Planning"]], ["Choose structure", ["Contract Types"]], ["Determine procedure", ["Thresholds & Procedure"]], ["Design & compete", ["Tender Design", "Launch & Publication", "Evaluation", "Clarification & Negotiation"]], ["Award & contract", ["Award", "Contract Signing"]], ["Execute · pay · file", ["Contract Management", "Contract Execution & Payment", "Filing & Audit Trail"]]],
-    checklist: (s) => C.procurementChecklists[s.name] || [],
-    bestPractice: (s) => C.procurementBestPractice[s.name],
+    phases: C.procurementPhases,
+    checklist: (s) => s.checklist || [],
+    bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
     widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign },
@@ -287,11 +288,10 @@
     base: "grants", title: "Grants", eyebrow: "Grants · lifecycle & decision support",
     lead: "Confirm the grant route, choose the procedure, prepare the call and evaluation, formalise the agreement and keep implementation audit-ready (Rule 1374).",
     stages: C.grantStages, engine: ["Grant Procedure engine", "engines/grant-procedure"], practice: "grant",
-    phases: [["Frame the grant", ["Foundations", "Principles", "Procedure", "Roles"]], ["Design the call", ["Criteria", "Costs", "Call"]], ["Select", ["Submission", "Evaluation"]], ["Agree & manage", ["Agreement", "Amendments", "Filing"]]],
-    checklist: (s) => C.grantChecklists[s.name] || [],
-    bestPractice: (s) => C.grantBestPractice[Object.keys(C.grantBestPractice).find((k) => k === s.name || k.startsWith(s.name + " "))],
-    note: (t) => C.grantNotes[t] || C.grantNotes[Object.keys(C.grantNotes).find((k) => k.toLowerCase().startsWith(t.toLowerCase()))],
-    link: () => null,
+    phases: C.grantPhases,
+    checklist: (s) => s.checklist || [],
+    bestPractice: (s) => s.best,
+    link: (l) => (C.grantStages.some((x) => x.name === l) ? [l, `grants/${slug(l)}`] : null),
     widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget },
     mount: {
       Procedure: (root) => root.querySelector("[name=grantQuick]").addEventListener("change", (e) => { FG.store.set("grantQuick", Number(e.target.value) || 0); FG.refresh(); }),
