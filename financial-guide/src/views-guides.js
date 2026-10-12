@@ -229,15 +229,22 @@
         <p class="mt"><b>Documents</b></p><ul>${r.docs.map((d) => `<li>${esc(d[0])}: <span class="muted">${esc(d[1])}</span></li>`).join("")}</ul></div></details>`).join("")}</div>
       </div></section>`;
   }
+  function procRuler(value, type, funding) {
+    const L = E.LIMITS, low = type === "intellectual" ? L.lowIntellectual : L.lowGoods, xb = funding === "xb";
+    return FG.ui.ruler({ value, max: 400000,
+      marks: [[low, "Direct-award limit"], [L.legalReview, xb ? "Legal review (XB)" : "E-procurement"], [L.international, "Tenders Board"]],
+      zones: [[0, low, "Direct award", "--c2"], [low, L.legalReview, "Competitive bidding", "--c1"], [L.legalReview, L.international, xb ? "Competitive + legal review" : "Competitive · e-procurement", "--c4"], [L.international, 400000, "International public call", "--c3"]] });
+  }
   function mountSelector(root) {
     const form = root.querySelector("[data-selector]");
     const run = () => {
       const v = Object.fromEntries(new FormData(form));
       FG.store.set("selector", v);
       const out = root.querySelector("#selectorOut");
-      if (!Number(v.amount)) { out.innerHTML = `<p class="small muted">Enter the estimated value to see the route.</p>`; return; }
+      out.innerHTML = procRuler(Number(v.amount) || 0, v.type, v.funding);
+      if (!Number(v.amount)) { out.insertAdjacentHTML("beforeend", `<p class="small muted mt">Enter the estimated value to see the route.</p>`); return; }
       const r = E.procurement({ amount: v.amount, type: v.type, funding: v.funding });
-      out.innerHTML = ui.callout(r.tone === "good" ? "good" : "warn", r.route, `${r.kpis[2][1]}. ${r.flags[r.flags.length - 1][0]}. `) + `<a class="btn sm mt" href="#/engines/procurement">Open the full Procurement Route engine →</a>`;
+      out.insertAdjacentHTML("beforeend", ui.callout(r.tone === "good" ? "good" : "warn", r.route, `${r.kpis[2][1]}. ${r.flags[r.flags.length - 1][0]}. `) + `<a class="btn sm mt" href="#/engines/procurement">Open the full Procurement Route engine →</a>`);
     };
     form.addEventListener("input", run); form.addEventListener("submit", (e) => e.preventDefault()); run();
   }
@@ -264,16 +271,27 @@
     bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign },
+    widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
   /* ---------- grant widgets ---------- */
+  const procGates = () => FG.ui.funnel("Evaluation gates", [
+    ["Admissibility", "Offer received on time, complete and in the required form.", "inadmissible: not evaluated further", "formal"],
+    ["Exclusion criteria", "Signed declaration; no exclusion ground applies (plus restrictive-measures check for EU funds).", "tenderer excluded", "pass / fail"],
+    ["Eligibility criteria", "Minimum legal, financial and technical capacity requirements are met.", "offer is ineligible", "pass / fail"],
+    ["Award criteria", "Published weighted criteria, with a written justification for every score.", null, "scored"],
+    ["Award decision", "CCM, or the Tenders Board from €184,000, approves the proposed award.", null, "decision"]]);
+  const grantGates = () => FG.ui.funnel("Selection gates", [
+    ["Receipt & opening", "Proposal received by the deadline in the required form, then opened and numbered.", "late proposals are rejected", "formal"],
+    ["Exclusion & eligibility", "Co-ordinator prepares the draft report; the Evaluation Committee adopts it.", "applicant eliminated", "pass / fail"],
+    ["Award criteria", "Committee members assess against the published weighted criteria and agree a consensus report.", null, "scored"],
+    ["Decision", "The Commitments Officer decides on the award and applicants are informed.", null, "decision"]]);
   function grantProcedureWidget() {
     const amount = FG.store.get("grantQuick", 18000), r = E.grantProcedure({ amount });
     return `<section class="card"><div class="card-head"><div><h3>Procedure route</h3><small>The €15,000 threshold applies to the total grant-award procedure budget, not to each grantee.</small></div><a class="btn sm" href="#/engines/grant-procedure">Full engine</a></div><div class="card-body grid g2">
       ${ui.number("grantQuick", amount, "Total procedure budget (€)")}
-      <div>${ui.callout(r.tone === "good" ? "good" : "warn", r.route, `Template: ${r.kpis[2][1]}. ${amount >= 15000 ? "Direct award at or above €15,000 is possible only under strictly interpreted exceptions (G9.2B)." : "Below the threshold: direct award (G9.2A)."}`)}</div></div></section>`;
+      <div>${FG.ui.ruler({ value: amount, max: 60000, marks: [[15000, "Call for proposals"]], zones: [[0, 15000, "Direct award (G9.2A)", "--c2"], [15000, 60000, "Call for proposals", "--c1"]] })}${ui.callout(r.tone === "good" ? "good" : "warn", r.route, `Template: ${r.kpis[2][1]}. ${amount >= 15000 ? "Direct award at or above €15,000 is possible only under strictly interpreted exceptions (G9.2B)." : "Below the threshold: direct award (G9.2A)."}`)}</div></div></section>`;
   }
   function grantCostsWidget() {
     const st = FG.store.get("grantCost", { necessary: 1, period: 1, budgeted: 1, verifiable: 1 }), r = E.grantCost(st);
@@ -293,7 +311,7 @@
     checklist: (s) => s.checklist || [],
     bestPractice: (s) => s.best,
     link: (l) => (C.grantStages.some((x) => x.name === l) ? [l, `grants/${slug(l)}`] : null),
-    widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget },
+    widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget, Evaluation: grantGates },
     mount: {
       Procedure: (root) => root.querySelector("[name=grantQuick]").addEventListener("change", (e) => { FG.store.set("grantQuick", Number(e.target.value) || 0); FG.refresh(); }),
       Costs: (root) => {

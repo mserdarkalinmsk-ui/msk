@@ -141,6 +141,24 @@
 
   // Path → scenario category: a compact self-check appears only at the end of each module.
   FG.QUIZ_AT = {};
+  /* ---------- advanced visuals ---------- */
+  // Threshold ruler: piecewise-log scale so small and large thresholds are both readable.
+  // zones: [[from, to, label, colourVar]], marks: [[value, label]], value: the case amount (optional).
+  FG.ui.ruler = function ({ zones, marks, value, max }) {
+    const stops = [0, ...marks.map(([v]) => v), max];
+    const pos = (v) => { v = Math.max(0, Math.min(max, v)); for (let k = 1; k < stops.length; k++) if (v <= stops[k]) return ((k - 1) + (v - stops[k - 1]) / (stops[k] - stops[k - 1])) / (stops.length - 1) * 100; return 100; };
+    const hit = value > 0 ? zones.find(([a, b]) => value > a && value <= b) || zones[zones.length - 1] : null;
+    return `<div class="ruler no-enrich" role="img" aria-label="Threshold ruler${hit ? `: ${esc(euro(value))} falls in ${esc(hit[2])}` : ""}">
+      <div class="ruler-track">${zones.map(([a, b, l, c]) => `<span class="ruler-zone${hit && hit[2] === l ? " on" : ""}" style="left:${pos(a)}%;width:${pos(b) - pos(a)}%;--c:var(${c})"><em>${esc(l)}</em></span>`).join("")}
+        ${value > 0 ? `<i class="ruler-pin" style="left:${pos(value)}%"><b>${esc(euro(value))}</b></i>` : ""}</div>
+      <div class="ruler-marks">${marks.map(([v, l]) => `<span style="left:${pos(v)}%"><b>${esc(euro(v))}</b>${l ? `<small>${esc(l)}</small>` : ""}</span>`).join("")}</div></div>`;
+  };
+  // Gate funnel: each gate narrows the field; shows what is tested and what happens on failure.
+  FG.ui.funnel = function (title, gates) {
+    return `<section class="card funnel no-enrich"><div class="card-head"><div><h3>${esc(title)}</h3><small>Each gate must be passed before the next one is applied.</small></div></div>
+      <ol class="funnel-list">${gates.map(([t, test, fail, kind], k) => `<li style="--w:${100 - k * (55 / Math.max(1, gates.length - 1))}%;--c:var(--c${(k % 4) + 1})"><div class="funnel-bar"><span>${k + 1}</span><b>${esc(t)}</b><em>${esc(kind || "")}</em></div><p>${esc(test)}${fail ? `<small>If not: ${esc(fail)}</small>` : ""}</p></li>`).join("")}</ol></section>`;
+  };
+
   /* ---------- router ---------- */
   FG.route = function (pattern, def) {
     const keys = [];
