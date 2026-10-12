@@ -238,13 +238,23 @@ export function setOfficeCountry(officeId: string, country: string) {
   const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
   o.country = country; commit(L, `${o.name} → ${country.toUpperCase()}`);
 }
+/** Deleting is for the admin: the password is asked once per browser session. Guards mistakes, not a real lock (the file is offline). */
+export function isAdmin(): boolean {
+  try { if (sessionStorage.getItem('pl-admin') === '1') return true; } catch { /* ignore */ }
+  const ok = typeof prompt === 'function' && prompt('Admin password to delete') === 'MSK';
+  if (ok) try { sessionStorage.setItem('pl-admin', '1'); } catch { /* ignore */ }
+  else if (typeof alert === 'function') alert('Only the admin can delete.');
+  return ok;
+}
 export function deleteOfficeReport(officeId: string, reportId: string) {
+  if (!isAdmin()) return;
   const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
   o.reports = o.reports.filter((r) => r.id !== reportId);
   if (!o.reports.length) L.offices = L.offices!.filter((x) => x !== o);
   commit(L, `Removed office report`);
 }
 export function deleteProjects(ids: string[]) {
+  if (!isAdmin()) return;
   const L = clone(state.ledger);
   L.projects = L.projects.filter((p) => !ids.includes(p.id));
   commit(L, `Deleted ${ids.length} project${ids.length > 1 ? 's' : ''}`);
@@ -260,6 +270,7 @@ export function upsertCountry(c: Country) {
 export function deleteCountry(id: string, withProjects = false): string | null {
   const used = state.ledger.projects.filter((p) => p.country === id).length;
   if (used && !withProjects) return `${used} project${used > 1 ? 's' : ''} still use this country. Move or delete them first.`;
+  if (!isAdmin()) return 'Only the admin can delete.';
   const L = clone(state.ledger);
   L.projects = L.projects.filter((p) => p.country !== id);
   const c = L.countries.find((x) => x.id === id);
@@ -278,7 +289,7 @@ export const upsertReport = (pid: string, r: ReportingPeriod) => editProject(pid
   const i = R.findIndex((x) => x.id === r.id); if (i >= 0) R[i] = r; else R.push(r);
   R.sort((a, b) => a.date.localeCompare(b.date));
 }, `Saved ${r.name}`);
-export const deleteReport = (pid: string, rid: string) => editProject(pid, (p) => { p.reportingPeriods = (p.reportingPeriods ?? []).filter((r) => r.id !== rid); }, 'Report removed');
+export const deleteReport = (pid: string, rid: string) => isAdmin() && editProject(pid, (p) => { p.reportingPeriods = (p.reportingPeriods ?? []).filter((r) => r.id !== rid); }, 'Report removed');
 export function updateLine(pid: string, rid: string, code: string, patch: Record<string, number | string | null>) {
   editProject(pid, (p) => {
     const l = p.reportingPeriods?.find((r) => r.id === rid)?.snapshot?.lines.find((x) => x.code === code);
@@ -291,7 +302,7 @@ export const upsertRisk = (pid: string, r: Risk) => editProject(pid, (p) => {
   const R = p.riskRegister ?? (p.riskRegister = []);
   const i = R.findIndex((x) => x.id === r.id); if (i >= 0) R[i] = r; else R.push(r);
 }, `Saved risk “${r.title}”`);
-export const deleteRisk = (pid: string, id: string) => editProject(pid, (p) => { p.riskRegister = (p.riskRegister ?? []).filter((r) => r.id !== id); }, 'Risk removed');
+export const deleteRisk = (pid: string, id: string) => isAdmin() && editProject(pid, (p) => { p.riskRegister = (p.riskRegister ?? []).filter((r) => r.id !== id); }, 'Risk removed');
 export const setStaffOverride = (pid: string, key: string, o: import('../domain/staff').StaffOverride | null) => editProject(pid, (p) => {
   const O = p.staffOverrides ?? (p.staffOverrides = {});
   if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];

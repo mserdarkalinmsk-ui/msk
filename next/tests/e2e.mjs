@@ -114,12 +114,14 @@ async function page(opts) {
   check(JSON.stringify(opts) === JSON.stringify(['All sectors', 'Human Rights', 'Democracy', 'Rule of Law']), 'sector filter has the three sectors');
 
   // Countries: add, block removal while used, remove when empty
-  p.on('dialog', (d) => d.accept());
+  let pw = 'wrong';
+  p.on('dialog', (d) => d.accept(d.type() === 'prompt' ? pw : undefined));
   await p.click('text=+ Country');
   await p.fill('#c-name', 'Moldova'); await p.fill('#c-iso', 'mda'); check(await p.inputValue('#c-region') === 'Eastern Partnership', 'region filled from the country list'); await p.click('.drawer .btn.primary:has-text("Add country")'); await p.waitForTimeout(250);
   check(await p.locator('.chip:has-text("Moldova")').count() === 1, 'country added and shown as filter');
-  await p.click('[aria-label="Remove Türkiye"]');
-  check(await p.locator('.errlist:has-text("still use this country")').count() === 1, 'country with projects cannot be removed');
+  await p.click('[aria-label="Remove Republic of Moldova"]'); await p.waitForTimeout(250);
+  check(await p.locator('.chip:has-text("Moldova")').count() === 1, 'removal needs the admin password');
+  pw = 'MSK';
   await p.click('[aria-label="Remove Republic of Moldova"]'); await p.waitForTimeout(250);
   check(await p.locator('.chip:has-text("Moldova")').count() === 0, 'empty country removed');
   await p.keyboard.press('Escape');
