@@ -136,8 +136,14 @@ export function Deck() {
           <div><span>Projects with staff</span><b>{new Set(active.map((a) => a.project.id)).size}</b></div>
           <div><span>All records</span><b>{people.length}</b></div>
         </div>
-        {ren.length ? <table class="mini sl-t"><thead><tr><th>Name</th><th>Position</th><th>Project</th><th>Contract ends</th></tr></thead>
-          <tbody>{ren.slice(0, 8).map((a) => <tr><td>{a.display}</td><td>{a.position}</td><td>{lab(a.project)}</td><td class="num">{a.end ? date(a.end) : '—'}</td></tr>)}</tbody></table> : <p class="sl-empty">No contract ends in the next 90 days.</p>}
+        {/* Every active staff member, by project; contracts ending within 90 days highlighted. Two columns when long. */}
+        {active.length ? (() => {
+          const L = [...active].sort((a, b) => lab(a.project).localeCompare(lab(b.project)) || (a.end ?? '').localeCompare(b.end ?? '') || a.display.localeCompare(b.display));
+          const soon = new Set(ren), cols = L.length > 12 ? [L.slice(0, Math.ceil(L.length / 2)), L.slice(Math.ceil(L.length / 2))] : [L];
+          return <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols.length}, 1fr)`, gap: '18px' }}>{cols.map((C) => <table class="mini sl-t sl-staff"><thead><tr><th>Name</th><th>Position</th><th>Project</th><th>Contract ends</th></tr></thead>
+            <tbody>{C.map((a) => <tr><td>{a.display}</td><td>{a.position}</td><td>{lab(a.project)}</td><td class="num" style={soon.has(a) ? { color: '#c27c0e', fontWeight: 700 } : undefined}>{a.end ? date(a.end) : '—'}</td></tr>)}</tbody></table>)}</div>;
+        })() : <p class="sl-empty">No active staff on file.</p>}
+        {ren.length > 0 && <p class="sl-empty" style={{ marginTop: '8px' }}><b style={{ color: '#c27c0e' }}>Orange</b> = contract ends within 90 days.</p>}
       </Slide>
 
       <Slide n={10} of={of} scope={scope} title="Upcoming milestones" sub="Next 90 days: reports due, planned activity ends and project end dates">
