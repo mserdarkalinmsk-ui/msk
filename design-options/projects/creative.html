@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1e3a6e;--c1:#2f6fd6;--c2:#16938a;--c3:#c98a1a;--c4:#5b4bb7;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f4f6fb;--mono:"JetBrains Mono",monospace}
+*{box-sizing:border-box}body{margin:0;font-family:"Space Grotesk",sans-serif;color:var(--ink);background:radial-gradient(40% 40% at 10% 0%,#2f6fd61f,transparent 70%),radial-gradient(35% 40% at 95% 15%,#16938a1a,transparent 70%),var(--bg)}
+.top{display:flex;align-items:center;gap:10px;padding:14px 28px;border-bottom:1px solid var(--line);background:#ffffffb0}
+.mark{width:32px;height:32px;border-radius:11px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}.top b{font-size:13px;letter-spacing:.04em}.top small{display:block;font:9.5px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 28px 40px}.eyebrow{font:12px var(--mono);letter-spacing:.16em;color:var(--c1)}h1{font-size:38px;letter-spacing:-.03em;margin:6px 0 4px;color:var(--navy)}.lead{color:var(--muted);margin:0 0 24px}
+.stage{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 20px 50px -30px #1e3a6e55;position:relative;overflow:hidden}
+svg text{font-family:"Space Grotesk"}.lbl{font-size:15px;font-weight:600;fill:var(--ink)}.sub{font:11px var(--mono);fill:var(--muted)}
+.line{fill:none;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+.flow{fill:none;stroke:#fff;stroke-width:3;stroke-dasharray:2 18;stroke-linecap:round;animation:f 1.6s linear infinite}@keyframes f{to{stroke-dashoffset:-40}}
+.st circle.o{fill:#fff;stroke-width:5}.st:hover circle.o{r:17}.st{cursor:pointer}.st circle{transition:r .2s}
+.legend{display:flex;gap:18px;padding:14px 22px;border-top:1px solid var(--line);font:12px var(--mono);color:var(--muted)}.legend i{display:inline-block;width:22px;height:6px;border-radius:4px;margin-right:6px;vertical-align:middle}
+.tip{position:absolute;right:22px;bottom:66px;width:270px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 16px 40px -20px #1e3a6e66}
+.tip b{font-size:16px}.tip p{font-size:12.5px;color:var(--muted);margin:4px 0 10px}.tip ol{margin:0;padding-left:18px;font-size:13px;line-height:1.7}.tip a{display:inline-block;margin-top:10px;font-size:13px;color:#fff;background:var(--navy);padding:7px 14px;border-radius:10px;text-decoration:none}
+.orb text.l{font-size:13px;font-weight:600;fill:var(--ink)}.ring{fill:none;stroke-dasharray:3 7}
+.orbit{animation:spin 80s linear infinite;transform-origin:600px 330px}.orbit .node{animation:spin 80s linear infinite reverse;transform-box:fill-box;transform-origin:center}@keyframes spin{to{transform:rotate(360deg)}}
+</style></head><body><div class="top"><span class="mark">FG</span><span><b>FINANCIAL GUIDE</b><small>COUNCIL OF EUROPE</small></span></div>
+<div class="wrap"><div class="eyebrow">01 / PROJECT FINANCE · PROJECT TEAM</div><h1>Projects</h1><p class="lead" id="lead"></p><div class="stage" id="v"></div></div>
+<script>
+const C={c1:"#2f6fd6",c2:"#16938a",c3:"#c98a1a",c4:"#5b4bb7"};
+const v=document.getElementById("v"),lead=document.getElementById("lead");
+if(location.hash!=="#orbit"){
+lead.textContent="Every project travels the same lines. Pick your station — the map shows where you are and what comes next.";
+const st=[[110,250,"Procurement","13 stops","c1"],[110,420,"Grant","12 stops","c1"],[360,335,"PO file","Interchange","c2"],[560,190,"Petty cash","4 checks","c2"],[560,480,"Events & GDD","6 checks","c2"],[720,335,"Payment file","9 checks","c2"],[820,190,"VAT","5 checks","c2"],[960,335,"End of year","2026","c3"],[1120,335,"Filing","Terminus","c3"]];
+v.innerHTML=`<svg viewBox="0 0 1240 600" width="100%">
+<defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#eef1f6"/></pattern></defs><rect width="1240" height="600" fill="url(#g)"/>
+<text x="60" y="70" class="sub" fill="${C.c1}">LINE 1 · COMMIT</text><text x="480" y="70" class="sub">LINE 2 · SPEND</text><text x="930" y="70" class="sub">LINE 3 · CLOSE</text>
+${[["M110 250 C 230 250 240 335 360 335","c1"],["M110 420 C 230 420 240 335 360 335","c1"],["M360 335 H 720","c2"],["M360 335 C 450 335 470 190 560 190 H 820 C 900 190 900 335 960 335","c2"],["M360 335 C 450 335 470 480 560 480 C 660 480 650 335 720 335","c2"],["M720 335 H 1120","c3"]].map(([d,c])=>`<path class="line" d="${d}" stroke="${C[c]}"/><path class="flow" d="${d}"/>`).join("")}
+${st.map(([x,y,t,s,c],i)=>`<g class="st"><circle class="o" cx="${x}" cy="${y}" r="${s=="Interchange"||s=="Terminus"?18:14}" stroke="${C[c]}"/>${s=="Interchange"?`<circle cx="${x}" cy="${y}" r="7" fill="${C.c2}"/>`:""}<text x="${x}" y="${y+(y>400?-34:y<250?-30:44)}" text-anchor="middle" class="lbl">${t}</text><text x="${x}" y="${y+(y>400?-18:y<250?-14:60)}" text-anchor="middle" class="sub">${s}</text></g>`).join("")}
+<circle cx="110" cy="250" r="26" fill="none" stroke="${C.c1}" stroke-width="2" opacity=".4"><animate attributeName="r" values="18;34;18" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".5;0;.5" dur="2.4s" repeatCount="indefinite"/></circle>
+<text x="110" y="205" text-anchor="middle" class="sub" fill="${C.c1}">YOU ARE HERE</text></svg>
+<div class="tip"><span class="sub" style="font:11px var(--mono);color:${C.c1}">STATION · LINE 1</span><br><b>Procurement</b><p>Thresholds, tender, evaluation and contract.</p><ol><li>Define the need</li><li>Pick the procedure</li><li>Evaluate & award</li></ol><a href="#">Board this line →</a></div>
+<div class="legend"><span><i style="background:${C.c1}"></i>Commit</span><span><i style="background:${C.c2}"></i>Spend</span><span><i style="background:${C.c3}"></i>Close</span><span style="margin-left:auto">Resources: Useful links · Templates · Rules · Glossary</span></div>`;
+}else{
+lead.textContent="Your project at the centre. Each ring is a phase; modules orbit the stage they belong to.";
+const rings=[[150,"c1",[["Procurement",0],["Grant",180]]],[240,"c2",[["PO & payment",30],["Petty cash",120],["VAT",210],["Events & GDD",300]]],[320,"c3",[["End of year",75],["Filing",255]]]];
+v.innerHTML=`<svg viewBox="0 0 1200 660" width="100%" class="orb"><defs><radialGradient id="core"><stop offset="0" stop-color="#2f6fd6"/><stop offset="1" stop-color="#1e3a6e"/></radialGradient></defs>
+${rings.map(([r,c])=>`<ellipse class="ring" cx="600" cy="330" rx="${r*1.55}" ry="${r*.9}" stroke="${C[c]}" stroke-width="2"/>`).join("")}
+${rings.map(([r,c,m],k)=>m.map(([t,a])=>{const x=600+Math.cos(a*Math.PI/180)*r*1.55,y=330+Math.sin(a*Math.PI/180)*r*.9;return `<g><circle cx="${x}" cy="${y}" r="30" fill="#fff" stroke="${C[c]}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="10" fill="${C[c]}"/><text class="l" x="${x}" y="${y+50}" text-anchor="middle">${t}</text></g>`}).join("")).join("")}
+<circle cx="600" cy="330" r="70" fill="url(#core)"/><circle cx="600" cy="330" r="86" fill="none" stroke="#2f6fd6" opacity=".3"><animate attributeName="r" values="76;100;76" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values=".4;0;.4" dur="3s" repeatCount="indefinite"/></circle>
+<text x="600" y="324" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">YOUR</text><text x="600" y="346" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">PROJECT</text>
+<text x="600" y="${330-150*.9-14}" text-anchor="middle" class="sub" fill="${C.c1}">COMMIT</text><text x="600" y="${330-240*.9-14}" text-anchor="middle" class="sub">SPEND</text><text x="600" y="${330-320*.9+30}" text-anchor="middle" class="sub">CLOSE</text></svg>
+<div class="legend"><span><i style="background:${C.c1}"></i>Commit</span><span><i style="background:${C.c2}"></i>Spend</span><span><i style="background:${C.c3}"></i>Close</span><span style="margin-left:auto">Hover a planet to preview · click to open</span></div>`;}
+</script></body></html>
