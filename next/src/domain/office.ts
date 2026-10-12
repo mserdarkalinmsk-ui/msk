@@ -6,12 +6,16 @@ export interface OfficeLine { code: string; heading: string; description: string
 export interface OfficeEntry { line: string; doc: string; description: string; supplier: string; amount: number; spent: number; committed: number; status: string; date: string; fund: 'ob' | 'ls'; gl: boolean }
 export interface OfficeSituation { budget: number; da: number; po: number; invoice: number; actual: number; available: number }
 export interface OfficeReport {
+  /** label of the CCM in the system export, e.g. "Bureau ANKARA" */
+  ccmName?: string;
   id: string; date: string; year: number; file: string; importedAt: string;
   office: string; ccm?: string; bh?: string;
   /** Lines from the office's own report/forecast sheet; absent in a raw system export (then carried from an earlier report). */
   lines: OfficeLine[]; hasPlan: boolean; situation?: OfficeSituation; entries: OfficeEntry[];
 }
-export interface Office { id: string; name: string; country: string; ccm?: string; bh?: string; reports: OfficeReport[] }
+/** A finding on a line, explained by the user: e.g. security booked on 1.10 that belongs to 1.1, corrected in the system. */
+export interface OfficeNote { text: string; resolved: boolean; moveTo?: string; at: string }
+export interface Office { id: string; name: string; country: string; ccm?: string; bh?: string; reports: OfficeReport[]; /** by `${year}:${line}` */ notes?: Record<string, OfficeNote> }
 
 const num = (v: unknown) => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
 const low = (s: unknown) => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -93,22 +97,36 @@ export function readOffice(wb: Workbook, file: string, prev?: OfficeReport): Off
   }
   const date = plan?.date || sDate || new Date().toISOString().slice(0, 10);
   const office = plan?.office || prev?.office || (ccmName ? ccmName.replace(/^bureau\s+/i, '').replace(/\b\w/g, (x) => x.toUpperCase()).replace(/(\w+)/, (w) => w[0] + w.slice(1).toLowerCase()) + ' Office' : 'Programme office');
-  return { id: `${bh ?? 'office'}-${date}`, date, year: +date.slice(0, 4), file, importedAt: new Date().toISOString(), office, ccm, bh, lines, hasPlan: !!plan?.lines.length, situation, entries: E };
+  return { ccmName, id: `${bh ?? 'office'}-${date}`, date, year: +date.slice(0, 4), file, importedAt: new Date().toISOString(), office, ccm, bh, lines, hasPlan: !!plan?.lines.length, situation, entries: E };
 }
 
+export type Fund = 'ob' | 'ls';
+export interface FundCalc { left: number; leftAfterPlan: number; use: number; flag?: string }
 export interface OfficeView {
-  r: OfficeReport; lines: (OfficeLine & { left: number; leftAfterPlan: number; use: number; flag?: string })[];
-  T: { ob: OfficeAmounts & { left: number }; ls: OfficeAmounts & { left: number } }; yearShare: number;
+  r: OfficeReport; lines: (OfficeLine & { c: Record<Fund, FundCalc> })[];
+  T: Record<Fund, OfficeAmounts & { left: number }>; yearShare: number;
 }
-/** Totals, balances and warnings of a report: overspent lines, lines over the time share of the year, plans beyond budget. */
+/** Totals, balances and warnings per fund: overspent lines, lines over the time share of the year, plans beyond budget. */
 export function officeView(r: OfficeReport): OfficeView {
   const d = new Date(r.date + 'T00:00:00Z'), y0 = Date.UTC(r.year, 0, 1), y1 = Date.UTC(r.year + 1, 0, 1);
   const yearShare = Math.min(1, Math.max(0, (d.getTime() - y0) / (y1 - y0)));
-  const lines = r.lines.map((l) => {
-    const left = l.ob.budget - l.ob.sc, leftAfterPlan = left - l.ob.planned, use = l.ob.budget ? l.ob.sc / l.ob.budget : l.ob.sc ? Infinity : 0;
-    const flag = l.ob.sc > 0.5 && !l.ob.budget ? 'spent without a budget' : left < -0.5 ? 'over budget' : r.hasPlan && leftAfterPlan < -0.5 ? 'plan exceeds budget' : l.ob.budget > 500 && use > yearShare + 0.35 ? 'ahead of the year' : undefined;
-    return { ...l, left, leftAfterPlan, use, flag };
-  });
-  const sum = (k: 'ob' | 'ls') => { const o = { budget: 0, sc: 0, planned: 0 }; for (const l of r.lines) { o.budget += l[k].budget; o.sc += l[k].sc; o.planned += l[k].planned; } return { ...o, left: o.budget - o.sc - o.planned }; };
+  const calc = (a: OfficeAmounts): FundCalc => {
+    const left = a.budget - a.sc, leftAfterPlan = left - a.planned, use = a.budget ? a.sc / a.budget : a.sc ? Infinity : 0;
+    const flag = a.sc > 0.5 && !a.budget ? 'spent without a budget' : left < -0.5 ? 'over budget' : r.hasPlan && leftAfterPlan < -0.5 ? 'plan exceeds budget' : a.budget > 500 && use > yearShare + 0.35 ? 'ahead of the year' : undefined;
+    return { left, leftAfterPlan, use, flag };
+  };
+  const lines = r.lines.map((l) => ({ ...l, c: { ob: calc(l.ob), ls: calc(l.ls) } }));
+  const sum = (k: Fund) => { const o = { budget: 0, sc: 0, planned: 0 }; for (const l of r.lines) { o.budget += l[k].budget; o.sc += l[k].sc; o.planned += l[k].planned; } return { ...o, left: o.budget - o.sc - o.planned }; };
   return { r, lines, T: { ob: sum('ob'), ls: sum('ls') }, yearShare };
+}
+
+/** Country of an office from its CCM label or name (Bureau ANKARA → tr). */
+const CITY: [RegExp, string, string][] = [
+  [/ankara|istanbul|t[uü]rk/i, 'tr', 'Türkiye'], [/tbilisi|georgia/i, 'ge', 'Georgia'], [/kyiv|kiev|ukrain/i, 'ua', 'Ukraine'], [/tirana|albania/i, 'al', 'Albania'],
+  [/chi[sș]in[aă]u|moldova/i, 'md', 'Moldova'], [/yerevan|armenia/i, 'am', 'Armenia'], [/baku|azerbaijan/i, 'az', 'Azerbaijan'], [/belgrade|serbia/i, 'rs', 'Serbia'],
+  [/sarajevo|bosnia/i, 'ba', 'Bosnia and Herzegovina'], [/podgorica|montenegro/i, 'me', 'Montenegro'], [/skopje|macedonia/i, 'mk', 'North Macedonia'], [/pristina|prishtin|kosovo/i, 'xk', 'Kosovo'],
+];
+export function officeCountry(text: string): { id: string; name: string } | null {
+  const m = CITY.find(([re]) => re.test(text));
+  return m ? { id: m[1], name: m[2] } : null;
 }
