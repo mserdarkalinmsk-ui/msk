@@ -58,7 +58,7 @@ export function IdentityCard({ p }: { p: Project }) {
     ['Contract', c.number ?? p.contractNo], ['Duration', c.months ? `${c.months} months` : `${month(p.start)} – ${month(p.end)}`],
     ['Reporting', c.repMonths ? `every ${c.repMonths} months, due +${c.progDays ?? 60} days` : undefined],
     ['Final report', c.finalMonths ? `${c.finalMonths} months after end` : undefined],
-    ['Flexibility', c.flexPct ? `${c.flexPct}% between headings` : undefined], ['Pre-financing', c.prefinancing ? short(Number(c.prefinancing)) : undefined],
+    ['Flexibility', '25% between headings'], ['Pre-financing', c.prefinancing ? short(Number(c.prefinancing)) : undefined],
   ].filter((x) => x[1]);
   const st = roster(p, TODAY), pl = planStats(p, TODAY);
   const facts: [string | number, string, string][] = [
