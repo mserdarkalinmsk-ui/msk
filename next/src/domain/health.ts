@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 import { byPeriodThenImport, latestReport, parseDate, reportsByDate } from './calc';
 import { headings } from './insights';
 import type { Project } from './types';
@@ -53,7 +54,7 @@ export function health(p: Project, today: Date): Health {
         const r7 = T.direct.budget ? T.admin.budget / T.direct.budget : 0;
         if (r7 > 0.0705) add('warn', `Administrative costs are ${(r7 * 100).toFixed(1)}% of direct costs (max 7%)`, 'reports');
       }
-    } else if (!last.snapshot!.lines.some((l) => l.code === '10')) add('warn', 'Report read without the CoE layout — no administrative-costs line', 'report');
+    } else if (!last.snapshot!.lines.some((l) => l.code === ADMIN_LINE)) add('warn', 'Report read without the CoE layout — no administrative-costs line', 'report');
   }
 
   const ab = p.approvedBudget;

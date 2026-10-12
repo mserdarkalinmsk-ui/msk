@@ -1,3 +1,4 @@
+import { FORMAT, REPORT_TYPES } from '../domain/terms';
 import { useEffect, useState } from 'preact/hooks';
 import { upsertReport, upsertRisk, useStore } from '../data/store';
 import { checkReport, compareReports, reportsByDate, reportTotals } from '../domain/calc';
@@ -49,7 +50,7 @@ export function detectHeader(rows: string[][]) {
   return { at: 0, map: {} as Partial<Record<LK, number>> };
 }
 
-const TYPES = ['Latest Approved Budget', 'Interim Financial Report', 'Quarterly Financial Report', 'Yearly / Annual Report', 'Final Report'];
+const TYPES = REPORT_TYPES;
 
 export function ReportImport({ projectId, close }: { projectId: string; close: () => void }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === projectId)) as Project;
@@ -57,7 +58,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const [sheet, setSheet] = useState('');
   const [head, setHead] = useState(0);
   const [map, setMap] = useState<Partial<Record<LK, number>>>({});
-  const [meta, setMeta] = useState({ name: '', type: TYPES[1], date: new Date().toISOString().slice(0, 10) });
+  const [meta, setMeta] = useState<{ name: string; type: string; date: string }>({ name: '', type: TYPES[1], date: new Date().toISOString().slice(0, 10) });
   const [err, setErr] = useState('');
   const [over, setOver] = useState(false);
   const [coe, setCoe] = useState<CoeWorkbook | null>(null);
@@ -105,7 +106,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   // Staff contracts are read from every sheet of the workbook (Purchase Orders + GL).
   const staff = useCoe ? { records: coe!.staff, groups: coe!.staffGroups } : file?.wb ? extractStaff(file.wb.sheets.map((n) => ({ name: n, R: file.wb!.read(n) }))) : null;
   const report: ReportingPeriod = { id: 'r' + Date.now().toString(36), name: meta.name.trim() || 'Report', type: meta.type, date: reportDate ?? meta.date, fileName: file?.name, registeredAt: new Date().toISOString(),
-    snapshot: snap ? { ...snap, lines } : { format: 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}) } };
+    snapshot: snap ? { ...snap, lines } : { format: FORMAT.imported, lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}) } };
   const idWarn: string[] = [], idErr: string[] = [];
   if (useCoe) {
     if (p.bh && coe!.meta.bh && p.bh !== coe!.meta.bh) idErr.push(`This file is for budget head ${coe!.meta.bh}, but ${p.code} has budget head ${p.bh}`);

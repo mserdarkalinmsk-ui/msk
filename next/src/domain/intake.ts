@@ -1,3 +1,4 @@
+import { ADMIN_LINE, FORMAT } from './terms';
 import { EXTRACTION, extractionLines } from './extraction';
 import type { BudgetLine, Project, ReportingPeriod } from './types';
 import { summarize, toBudgetLines, type Workbook } from './workbook';
@@ -8,7 +9,7 @@ import { summarize, toBudgetLines, type Workbook } from './workbook';
  */
 export function snapshotOf(wb: Workbook, p: Project, fileName?: string): NonNullable<ReportingPeriod['snapshot']> {
   const ext = !!wb.meta.extraction;
-  return { format: ext ? EXTRACTION : 'CoE workbook', lines: ext ? extractionLines(wb, p) : toBudgetLines(wb), ...(wb.staff?.length ? { staffRecords: wb.staff, staffGroups: wb.staffGroups } : {}), workbook: summarize(wb, fileName) };
+  return { format: ext ? EXTRACTION : FORMAT.workbook, lines: ext ? extractionLines(wb, p) : toBudgetLines(wb), ...(wb.staff?.length ? { staffRecords: wb.staff, staffGroups: wb.staffGroups } : {}), workbook: summarize(wb, fileName) };
 }
 
 export interface ReadCheck { level: 'ok' | 'warning' | 'error'; text: string }
@@ -45,7 +46,7 @@ export function readCheck(wb: Workbook, p: Project, lines: BudgetLine[] = snapsh
   if (p.contractNo && m.contract && p.contractNo !== m.contract) C.push({ level: 'error', text: `File is for contract ${m.contract}, the project has ${p.contractNo}` });
   if (p.approvedBudget?.lines?.length) {
     const codes = new Set(p.approvedBudget.lines.map((l) => l.code));
-    const out = lines.filter((l) => l.code !== '10' && !codes.has(l.code) && !/\.0$/.test(l.code) && (n(l.actual) || n(l.spentCommitted)));
+    const out = lines.filter((l) => l.code !== ADMIN_LINE && !codes.has(l.code) && !/\.0$/.test(l.code) && (n(l.actual) || n(l.spentCommitted)));
     if (out.length) C.push({ level: 'warning', text: `Not in the approved budget: ${out.map((l) => `${l.code} (${eur(n(l.spentCommitted) || n(l.actual))})`).join(', ')}` });
     const eb = !m.extraction ? T.eligible?.budget : undefined;
     if (eb && Math.abs(eb - p.approvedBudget.total) > 1) C.push({ level: 'warning', text: `Budget in the file ${eur(eb)} differs from the approved budget ${eur(p.approvedBudget.total)} (${p.approvedBudget.source}); the approved budget is kept` });

@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 import { deadlines, elapsed, forecastRate, lineExposure, lines, money, parseDate, planStats, reportsByDate, reportTotals } from './calc';
 import { roster } from './staff';
 import type { Project } from './types';
@@ -39,7 +40,7 @@ export function catchUp(p: Project, today: Date, months = 3) {
   const el = elapsed(p, today), L = lines(p);
   const H = new Map<string, { budget: number; spent: number }>();
   for (const l of L.filter((l) => !L.some((x) => x !== l && x.code.startsWith(l.code + '.')))) {
-    const k = l.code.split('.')[0]; if (k === '10' || k === '8') continue;
+    const k = l.code.split('.')[0]; if (k === ADMIN_LINE || k === '8') continue;
     const h = H.get(k) ?? { budget: 0, spent: 0 }; h.budget += l.approved ?? 0; h.spent += lineExposure(l); H.set(k, h);
   }
   const gaps = [...H].map(([k, h]) => ({ heading: k, gap: h.budget * el - h.spent })).filter((g) => g.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 2);

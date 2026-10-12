@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 /**
  * Project documents (contract, Description of Action, action plan, logframe…) in any format are
  * reduced to plain paragraphs + tables, then analysed for facts the ledger uses.
@@ -232,7 +233,7 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   if (!admin && total > direct) admin = Math.round((total - direct - contingency) * 100) / 100;
   const out = [...leaves];
   if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
-  if (admin) out.push({ code: '10', description: 'Administrative costs', unit: '7%', approved: admin });
+  if (admin) out.push({ code: ADMIN_LINE, description: 'Administrative costs', unit: '7%', approved: admin });
   return { lines: out, names, direct, admin, contingency, total: direct + contingency + admin, source: doc.name, linesSum: sum };
 }
 

@@ -20,7 +20,6 @@ import { portfolioSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
 import { get } from '../data/store';
 
-
 type Tab = 'annual' | 'closure' | 'units' | 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'results' | 'calendar' | 'compliance' | 'health' | 'history';
 const GROUPS: { label: string; tabs: [Tab, string][] }[] = [
   { label: 'Summary', tabs: [['pack', 'Monthly pack'], ['deck', 'Presentation'], ['studio', 'Project report']] },

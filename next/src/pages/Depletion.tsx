@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from '../domain/terms';
 import { HEADINGS, lineExposure, lines, money, parseDate, reportsByDate } from '../domain/calc';
 import { headings } from '../domain/insights';
 import { catchUp } from '../domain/monitor';
@@ -38,8 +39,8 @@ export function depletion(p: Project): { rows: HeadRow[]; asOf: number; monthsLe
 export function transfers(p: Project, D: HeadRow[]) {
   const flex = headings(p).flex;
   const base = new Map(headings(p).rows.map((r) => [r.code, r.baseline]));
-  const need = D.filter((r) => r.status === 'over' && r.code !== '10').map((r) => ({ r }));
-  const give = D.filter((r) => r.status === 'under' && r.code !== '10').map((r) => ({ r, amt: Math.max(0, r.budget * (1 - r.endUse) * 0.8) }));
+  const need = D.filter((r) => r.status === 'over' && r.code !== ADMIN_LINE).map((r) => ({ r }));
+  const give = D.filter((r) => r.status === 'under' && r.code !== ADMIN_LINE).map((r) => ({ r, amt: Math.max(0, r.budget * (1 - r.endUse) * 0.8) }));
   const out: { from: string; to: string; amount: number; capped: boolean }[] = [];
   for (const n of need) {
     let want = Math.max(0, (n.r.endUse - 1) * n.r.budget);

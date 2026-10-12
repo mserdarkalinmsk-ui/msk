@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 import type { BudgetNote } from './documents';
 
 export interface VarLine { code: string; d: string; aA: number; act: number; use: number | null; dRp: number | null; dU: number | null; unit: string }
@@ -14,7 +15,7 @@ const just = (n?: BudgetNote) => (n?.justification || n?.clarification || '').re
 export function variances(L: VarLine[], elapsed: number, budget: number, notes: Record<string, BudgetNote> = {}): Variance[] {
   const out: Variance[] = [];
   for (const l of L) {
-    if (l.code === '10' || !l.aA) continue;
+    if (l.code === ADMIN_LINE || !l.aA) continue;
     const big = l.aA >= budget * 0.005, n = notes[l.code], j = just(n), why = j ? ` The line was budgeted for: ${j}` : '';
     if (l.use != null && l.use > 1.005) out.push({ code: l.code, d: l.d, kind: 'overspent', facts: `${eur(l.act)} spent against ${eur(l.aA)} approved (${pc(l.use)}).`,
       draft: `Expenditure on this line exceeded the approved amount by ${eur(l.act - l.aA)} (${pc(l.use - 1)}). [Explain the reason, e.g. higher demand or prices.] The excess is covered within the flexibility allowed between budget headings and does not change the total budget.${why}` });
