@@ -38,7 +38,22 @@ export function Commitments() {
   const P = filtered(s);
   const [only, setOnly] = useState<'all' | 'nostaff' | 'flag'>('nostaff');
   const [b, setB] = useState(-1);
-  const all = openPOs(P).sort((a, c) => c.balance - a.balance);
+  // Country and project selection work together: a PO shows when its country and its project are both selected (empty = all).
+  const [selC, setSelC] = useState<string[]>([]), [selP, setSelP] = useState<string[]>([]);
+  const [sumBy, setSumBy] = useState<'project' | 'country'>('project');
+  const tog = (a: string[], v: string) => (a.includes(v) ? a.filter((x) => x !== v) : [...a, v]);
+  const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id.toUpperCase();
+  const every = openPOs(P).sort((a, c) => c.balance - a.balance);
+  const all = every.filter((x) => (!selC.length || selC.includes(x.p.country)) && (!selP.length || selP.includes(x.p.id)));
+  const scope = every.filter((x) => !selC.length || selC.includes(x.p.country));
+  const groupRows = (L: OpenPO[], key: (x: OpenPO) => string) => [...L.reduce((m, x) => {
+    const k = key(x), g = m.get(k) ?? { k, n: 0, amount: 0, paid: 0, open: 0, staff: 0, review: 0, old: 0, projects: new Set<string>() };
+    g.n++; g.amount += x.amount; g.paid += x.spent; g.open += x.balance; if (x.staff) g.staff += x.balance; if (x.flags.length) g.review += x.balance; if (x.age > 183) g.old += x.balance; g.projects.add(x.p.id);
+    return m.set(k, g);
+  }, new Map<string, { k: string; n: number; amount: number; paid: number; open: number; staff: number; review: number; old: number; projects: Set<string> }>()).values()].sort((a, c) => c.open - a.open);
+  const byProject = groupRows(scope, (x) => x.p.id), byCountry = groupRows(every, (x) => x.p.country);
+  const countries = [...new Set(every.map((x) => x.p.country))];
+  const projOf = (id: string) => P.find((p) => p.id === id)!;
   const rows = all.filter((x) => (only === 'all' || (only === 'nostaff' ? !x.staff : x.flags.length > 0)) && (b < 0 || x.bucket === b));
   const tot = all.reduce((a, x) => a + x.balance, 0), flagged = all.filter((x) => x.flags.length), flaggedTot = flagged.reduce((a, x) => a + x.balance, 0);
   const byB = BUCKETS.map((_, i) => all.filter((x) => x.bucket === i).reduce((a, x) => a + x.balance, 0));
@@ -46,8 +61,10 @@ export function Commitments() {
   const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
   const noWb = P.filter((p) => !latestWorkbook(p)?.snapshot?.workbook).length;
   const xlsx = () => download(`open-commitments-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Open POs', money: [6, 7, 8], rows: [
-    ['Project', 'PO', 'Line', 'Description', 'Supplier', 'Encumbered', 'PO amount', 'Paid', 'Open balance', 'Age (days)', 'Staff', 'Flags'],
-    ...all.map((x) => [lab(x.p), x.po, x.line, x.description || x.nature, x.supplier, x.date, x.amount, x.spent, x.balance, x.age, x.staff ? 'yes' : '', x.flags.join('; ')])] }]);
+    ['Project', 'PO', 'Line', 'Description', 'Supplier', 'Encumbered', 'PO amount', 'Paid', 'Open balance', 'Age (days)', 'Staff', 'Flags', 'Country'],
+    ...all.map((x) => [lab(x.p), x.po, x.line, x.description || x.nature, x.supplier, x.date, x.amount, x.spent, x.balance, x.age, x.staff ? 'yes' : '', x.flags.join('; '), cname(x.p.country)])] },
+    { name: 'By project', money: [3, 4, 5, 6, 7, 8], rows: [['Project', 'Country', 'POs', 'Amount', 'Paid', 'Open', 'Staff', 'Older than 6 m', 'To review'], ...groupRows(all, (x) => x.p.id).map((g) => [lab(projOf(g.k)), cname(projOf(g.k).country), g.n, g.amount, g.paid, g.open, g.staff, g.old, g.review])] },
+    { name: 'By country', money: [3, 4, 5, 6, 7, 8], rows: [['Country', 'Projects', 'POs', 'Amount', 'Paid', 'Open', 'Staff', 'Older than 6 m', 'To review'], ...groupRows(all, (x) => x.p.country).map((g) => [cname(g.k), g.projects.size, g.n, g.amount, g.paid, g.open, g.staff, g.old, g.review])] }]);
   return (
     <>
       <section class="hero" aria-label="Open commitments">
@@ -57,6 +74,23 @@ export function Commitments() {
         <div class="kpi"><span class="label">Largest supplier</span><span class="value" style={{ fontSize: '20px' }}>{sup[0] ? short(sup[0][1]) : '—'}</span><span class="ctx">{sup[0]?.[0] ?? ''}</span></div>
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
+        <section class="card span-12">
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Summary by {sumBy}</h2><p>Click rows to select · countries and projects can be combined · the whole page follows the selection</p></div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}><div class="seg"><button aria-pressed={sumBy === 'project'} onClick={() => setSumBy('project')}>By project</button><button aria-pressed={sumBy === 'country'} onClick={() => setSumBy('country')}>By country</button></div>
+              {(selC.length > 0 || selP.length > 0) && <button class="btn ghost" onClick={() => { setSelC([]); setSelP([]); }}>Clear selection</button>}</div></div>
+          <div class="card-b" style={{ display: 'grid', gap: '10px' }}>
+            <div class="cm-chips"><span class="muted">Countries</span>{countries.map((c) => <button class={`chip${selC.includes(c) ? ' on' : ''}`} aria-pressed={selC.includes(c)} onClick={() => { setSelC(tog(selC, c)); setSelP([]); }}>{cname(c)}</button>)}</div>
+            <div class="cm-chips"><span class="muted">Projects</span>{byProject.map((g) => <button class={`chip${selP.includes(g.k) ? ' on' : ''}`} aria-pressed={selP.includes(g.k)} onClick={() => setSelP(tog(selP, g.k))}>{lab(projOf(g.k))}</button>)}</div>
+            <div class="table-scroll"><table class="mini cm-sum"><thead><tr><th>{sumBy === 'project' ? 'Project' : 'Country'}</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Paid</th><th class="r">Open</th><th class="r">of which staff</th><th class="r">Older than 6 m</th><th class="r">To review</th><th style={{ width: '22%' }}>Share of open</th></tr></thead>
+              <tbody>{(sumBy === 'project' ? byProject : byCountry).map((g) => { const on = sumBy === 'project' ? selP.includes(g.k) : selC.includes(g.k), max = Math.max(...(sumBy === 'project' ? byProject : byCountry).map((x) => x.open), 1);
+                return <tr class={`click${on ? ' sel' : ''}`} onClick={() => (sumBy === 'project' ? setSelP(tog(selP, g.k)) : (setSelC(tog(selC, g.k)), setSelP([])))}>
+                  <td><input type="checkbox" checked={on} tabIndex={-1} style={{ marginRight: '8px' }} /><b>{sumBy === 'project' ? lab(projOf(g.k)) : cname(g.k)}</b>{sumBy === 'project' ? <small class="muted"> {cname(projOf(g.k).country)}</small> : <small class="muted"> {g.projects.size} projects</small>}</td>
+                  <td class="r num">{g.n}</td><td class="r num">{full(g.amount)}</td><td class="r num">{full(g.paid)}</td><td class="r num"><b>{full(g.open)}</b></td><td class="r num">{full(g.staff)}</td>
+                  <td class="r num">{full(g.old)}</td><td class="r num" style={{ color: g.review ? '#e5484d' : undefined }}>{full(g.review)}</td><td><span class="cm-bar"><i style={{ width: `${g.open / max * 100}%` }} /></span></td></tr>; })}</tbody>
+              <tfoot><tr><td><b>{selC.length || selP.length ? 'Selected' : 'Total'}</b></td><td class="r num">{all.length}</td><td class="r num">{full(all.reduce((a, x) => a + x.amount, 0))}</td><td class="r num">{full(all.reduce((a, x) => a + x.spent, 0))}</td><td class="r num"><b>{full(tot)}</b></td>
+                <td class="r num">{full(all.filter((x) => x.staff).reduce((a, x) => a + x.balance, 0))}</td><td class="r num">{full(byB[2] + byB[3])}</td><td class="r num">{full(flaggedTot)}</td><td /></tr></tfoot></table></div>
+          </div>
+        </section>
         <section class="card span-7"><div class="card-h"><div><h2>Age of open balances</h2><p>Since the PO was encumbered · click a bar to filter</p></div></div>
           <div class="card-b"><div class="cm-age">{BUCKETS.map((x, i) => <button class={`cm-b${b === i ? ' on' : ''}`} onClick={() => setB(b === i ? -1 : i)}>
             <span class="cm-l">{x.k}</span><span class="cm-bar"><i style={{ width: `${tot ? byB[i] / tot * 100 : 0}%`, background: x.color }} /></span><b class="num">{short(byB[i])}</b><small class="muted">{all.filter((y) => y.bucket === i).length} POs</small></button>)}</div></div></section>
