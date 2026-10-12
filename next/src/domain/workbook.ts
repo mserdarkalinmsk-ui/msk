@@ -16,7 +16,8 @@ export interface WbLine {
 export interface WbTotals { budget: number; actual: number; sc: number; planned?: number; proposal?: number; rounded?: number; proposalBase?: number }
 export interface WbMeta {
   title?: string; contract?: string; jp?: string; bh?: string; periodFrom?: string; periodTo?: string; asAt?: string;
-  plannedFrom?: string; plannedTo?: string; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
+  plannedFrom?: string; plannedTo?: string;
+  /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
 }
 export interface SituationRow { ccm: string; article: string; description: string; budget: number; da: number; po: number; invoice: number; actual: number; available: number; balance: number }
 export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string }
@@ -165,8 +166,31 @@ export function parseWorkbook(sheets: Sheet[]): Workbook {
   const grids = sheets.map((s) => ({ s, g: readGrid(s) })).filter((x) => x.g && x.g.lines.length);
   const best = grids.find((x) => x.g!.hasForecast) ?? grids[0];
   const report = grids.find((x) => !x.g!.hasForecast);
-  const lines = best?.g!.lines ?? [];
-  const totals = { ...(report?.g!.totals ?? {}), ...(best?.g!.totals ?? {}) };
+  let lines = best?.g!.lines ?? [];
+  const totals: Workbook['totals'] = { ...(report?.g!.totals ?? {}), ...(best?.g!.totals ?? {}) };
+  // A raw system extraction has no report grid: sum the posted entries (POs, invoices, GL) per reporting line.
+  if (!lines.length) {
+    const co = table(sheets, ['reportingline', 'spentcomeur']);
+    if (co) {
+      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source') };
+      const by = new Map<string, { a: number; sc: number; u: number }>(); let un = 0;
+      for (const r of co.rows) {
+        if (!cell(r, C.src) || /^total/i.test(cell(r, C.src))) continue;
+        const code = cell(r, C.line);
+        if (!/^\d+(\.\d+)*$/.test(code) || code === '0') { un += z(r[C.sc]); continue; }
+        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += z(r[C.u]); by.set(code, x);
+      }
+      if (by.size) {
+        meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un;
+        const ad = by.get('10'); by.delete('10');
+        lines = [...by].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })).map(([code, x]) => ({ code, description: '', unit: '', level: code.split('.').length, leaf: true,
+          budget: { units: null, rate: null, cost: null }, actual: { units: x.u || null, rate: null, cost: x.a }, sc: x.sc }));
+        // Totals block as in a report: direct lines, administrative costs (line 10, the levy on tranches) and eligible.
+        const d = { budget: 0, actual: lines.reduce((a, l) => a + (l.actual.cost ?? 0), 0), sc: lines.reduce((a, l) => a + (l.sc ?? 0), 0) };
+        Object.assign(totals, { direct: d, ...(ad ? { admin: { budget: 0, actual: ad.a, sc: ad.sc }, eligible: { budget: 0, actual: d.actual + ad.a, sc: d.sc + ad.sc } } : {}) });
+      }
+    }
+  }
   Object.assign(meta, Object.fromEntries(Object.entries(best?.g!.meta ?? {}).filter(([, v]) => v)));
   for (const s of sheets) { const t = String(s.R[0]?.[0] ?? '').trim(); if (!meta.title && grids.some((g) => g.s === s) && t && !/^\d/.test(t)) meta.title = t.split(/\r?\n/)[0].trim(); }
 
@@ -214,6 +238,11 @@ export function parseWorkbook(sheets: Sheet[]): Workbook {
   const { records: staff, groups: staffGroups } = extractStaff(sheets);
   const wb: Workbook = { meta, lines, totals, situation, pos, monthly, movements, staff, staffGroups, sheets: sheets.map((s) => s.name), checks: [] };
   wb.checks = reconcile(wb);
+  if (meta.extraction) {
+    wb.checks = wb.checks.filter((c) => c.level !== 'error');
+    wb.checks.unshift({ ok: true, level: 'info', text: `System extraction: ${lines.length} reporting lines summed from the posted entries; budgets, descriptions and administrative costs come from the project's approved budget or last full report.` });
+    if (meta.unallocated) wb.checks.push({ ok: false, level: 'warning', text: `${eur(meta.unallocated)} posted without a reporting line (e.g. levies on a tranche) — not in the line totals.` });
+  }
   return wb;
 }
 

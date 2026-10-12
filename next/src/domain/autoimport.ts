@@ -1,6 +1,6 @@
 import { toBudgetLines, summarize, type Workbook } from './workbook';
 import { latestReport, lines, money } from './calc';
-import { normalizeSector, type Ledger, type Project, type ReportingPeriod, type Sector } from './types';
+import { normalizeSector, type BudgetLine, type Ledger, type Project, type ReportingPeriod, type Sector } from './types';
 
 /**
  * Turns a parsed financial-report workbook into a project update without manual entry:
@@ -118,9 +118,30 @@ export function reportFrom(wb: Workbook, fileName: string, p: Project): { report
     replaces: existing?.id,
     report: {
       id: existing?.id ?? 'r' + Math.random().toString(36).slice(2, 9), name: `Interim report to ${date}`, type: 'Interim Financial Report', date, fileName, registeredAt: new Date().toISOString(),
-      snapshot: { format: 'CoE workbook', lines: toBudgetLines(wb), staffRecords: wb.staff, staffGroups: wb.staffGroups, workbook: summarize(wb, fileName) },
+      ...(wb.meta.extraction ? { name: `System extraction to ${date}`, type: 'System extraction' } : {}),
+      snapshot: { format: wb.meta.extraction ? 'CoE system extraction' : 'CoE workbook', lines: wb.meta.extraction ? extractionLines(wb, p) : toBudgetLines(wb), staffRecords: wb.staff, staffGroups: wb.staffGroups, workbook: summarize(wb, fileName) },
     },
   };
+}
+
+/**
+ * Lines of a raw system extraction in the standard report shape: every line of the approved budget (or of the
+ * latest full report) with its amount and description, spent and spent + committed summed from the entries.
+ */
+export function extractionLines(wb: Workbook, p: Project): BudgetLine[] {
+  const full = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length && r.snapshot.format !== 'CoE system extraction').sort((a, b) => a.date.localeCompare(b.date)).at(-1)?.snapshot!.lines;
+  const base = p.approvedBudget?.lines?.length ? p.approvedBudget.lines : full ?? [];
+  const leafs = base.filter((l) => !base.some((x) => x !== l && x.code.startsWith(l.code + '.')));
+  const got = new Map(wb.lines.map((l) => [l.code, l]));
+  const ad = wb.totals.admin; if (ad) got.set('10', { code: '10', description: '', unit: '', level: 1, leaf: true, budget: { units: null, rate: null, cost: null }, actual: { units: null, rate: null, cost: ad.actual }, sc: ad.sc });
+  const out: BudgetLine[] = leafs.map((b) => {
+    // Entries posted on a parent code of a broken-down line stay on their own row below.
+    const e = got.get(b.code); got.delete(b.code);
+    const actual = e?.actual.cost ?? 0, sc = e?.sc ?? actual;
+    return { code: b.code, description: b.description, unit: b.unit, approved: b.approved ?? 0, approvedUnits: b.approvedUnits ?? null, unitRate: b.unitRate ?? null, actual: b.code === '10' && !e ? 0 : actual, spentCommitted: b.code === '10' && !e ? 0 : sc, committed: Math.max(0, sc - actual), reportedUnits: e?.actual.units ?? null, reportedUnitRate: null } as BudgetLine;
+  });
+  for (const [code, e] of got) out.push({ code, description: `Line ${code} (not in the approved budget)`, approved: 0, actual: e.actual.cost ?? 0, spentCommitted: e.sc ?? 0, committed: Math.max(0, (e.sc ?? 0) - (e.actual.cost ?? 0)), reportedUnits: e.actual.units ?? null } as BudgetLine);
+  return out.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
 }
 
 /** Identifier conflicts between a workbook and the project it is being added to. */
