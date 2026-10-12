@@ -3,7 +3,8 @@ import { render } from 'preact';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/styles.css';
-import { go, load, set, useStore } from './data/store';
+import { EMBED, go, load, set, unlock, useStore } from './data/store';
+import { useState } from 'preact/hooks';
 import { Overview } from './pages/Overview';
 import { Projects } from './pages/Projects';
 import { Budget } from './pages/Budget';
@@ -22,7 +23,23 @@ import { TODAY } from './today';
 let memo: [unknown, number] = [null, 0];
 const urgent = (ps: import('./domain/types').Project[]) => memo[0] === ps ? memo[1] : (memo = [ps, alerts(ps, TODAY).filter((a) => a.severity !== 'warning').length])[1];
 
+/** Password screen of a protected shared copy. */
+function Gate() {
+  const [pw, setPw] = useState(''), [err, setErr] = useState(''), [busy, setBusy] = useState(false);
+  const go_ = async (e: Event) => { e.preventDefault(); setBusy(true); const ok = await unlock(pw); setBusy(false); if (!ok) setErr('Wrong password'); };
+  return (
+    <div class="gate"><form class="card gate-c" onSubmit={go_}>
+      <h1>Portfolio Ledger</h1>
+      <p class="muted">Shared copy{EMBED?.from ? ` from ${EMBED.from}` : ''} · {EMBED?.scope}. The data is encrypted — enter the password you received.</p>
+      <div class="field"><label for="gate-pw">Password</label><input id="gate-pw" type="password" autoFocus value={pw} onInput={(e) => { setPw((e.target as HTMLInputElement).value); setErr(''); }} /></div>
+      {err && <p class="badge critical" role="alert" style={{ margin: 0 }}>{err}</p>}
+      <button class="btn primary" disabled={!pw || busy}>{busy ? 'Opening…' : 'Open'}</button>
+    </form></div>
+  );
+}
+
 function App() {
+  const locked = useStore((s) => s.locked);
   const route = useStore((s) => s.route);
   const ready = useStore((s) => s.ready);
   const [head, arg] = route.split('/');
@@ -38,6 +55,7 @@ function App() {
     </button>
     <button class="btn primary" onClick={() => set({ drawer: { kind: 'new-project' } })}>+ <span class="hide-sm">New project</span></button>
   </>);
+  if (locked) return <Gate />;
   return (
     <>
       <Shell title={title} crumb={crumb} actions={actions}>
