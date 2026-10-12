@@ -365,3 +365,8 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 }
 @media print { .page .tw { display: none !important; } .page:has(> .em) { page: em; } }
 @media print { .em > .gauges, .em > .sim { display: none !important; } }
+@media (min-width: 901px) {
+  .shell.side-hidden { grid-template-columns: minmax(0, 1fr); }
+  .shell.side-hidden .side, .shell.side-hidden .side-spacer { display: none; }
+  .shell.side-hidden .main { grid-column: 1; }
+}

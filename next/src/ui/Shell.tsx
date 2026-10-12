@@ -27,10 +27,16 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
   const theme = useStore((s) => s.theme);
   const ledger = useStore((s) => s.ledger);
   const [open, setOpen] = useState(false);
+  // Wide screens: the button hides / shows the sidebar (room for wide tables); narrow screens: it opens the menu.
+  const [hidden, setHidden] = useState(() => { try { return localStorage.getItem('pl-side') === 'hidden'; } catch { return false; } });
+  const menu = () => {
+    if (matchMedia('(max-width: 900px)').matches) return setOpen(true);
+    const h = !hidden; setHidden(h); try { localStorage.setItem('pl-side', h ? 'hidden' : 'shown'); } catch { /* ignore */ }
+  };
   const flags = attention(ledger.projects, TODAY).filter((f) => f.severity !== 'warning').length;
   const nextTheme = theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto';
   return (
-    <div class="shell">
+    <div class={`shell${hidden ? ' side-hidden' : ''}`}>
       <aside class={`side ${open ? 'open' : ''}`} aria-label="Main navigation">
         <div class="brand"><i>PL</i>Portfolio Ledger</div>
         <nav class="nav">
@@ -56,7 +62,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
       <div class="side-spacer" />
       <div class="main">
         <header class="top">
-          <button class="btn icon ghost menu-btn" aria-label="Open menu" onClick={() => setOpen(true)}><Icon d="M4 6h16M4 12h16M4 18h16" /></button>
+          <button class="btn icon ghost menu-btn" aria-label={hidden ? 'Show menu' : 'Menu'} title={hidden ? 'Show the menu' : 'Hide the menu (more room)'} onClick={menu}><Icon d="M4 6h16M4 12h16M4 18h16" /></button>
           {crumb}<h1>{title}</h1>
           <span class="grow" />
           <button class="search hide-sm" onClick={() => set({ palette: true })}>
