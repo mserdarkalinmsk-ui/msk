@@ -5,6 +5,7 @@ import { Deck } from './Deck';
 import { HealthPage } from './Health';
 import { Commitments } from './Commitments';
 import { MonthCompare } from './MonthCompare';
+import { UnitCosts } from './UnitCosts';
 import { useState } from 'preact/hooks';
 import { filtered, useStore } from '../data/store';
 import { deadlines, type Deadline } from '../domain/calc';
@@ -17,10 +18,10 @@ import { download } from '../ui/xlsxwrite';
 import { get } from '../data/store';
 
 
-type Tab = 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'calendar' | 'compliance' | 'health' | 'history';
+type Tab = 'units' | 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'calendar' | 'compliance' | 'health' | 'history';
 const GROUPS: { label: string; tabs: [Tab, string][] }[] = [
   { label: 'Summary', tabs: [['pack', 'Monthly pack'], ['deck', 'Presentation'], ['studio', 'Project report']] },
-  { label: 'Finance', tabs: [['compare', 'Expenditure monitoring'], ['changes', 'Month comparison'], ['commit', 'Commitments']] },
+  { label: 'Finance', tabs: [['compare', 'Expenditure monitoring'], ['changes', 'Month comparison'], ['commit', 'Commitments'], ['units', 'Unit costs']] },
   { label: 'Follow-up', tabs: [['alerts', 'Alerts'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results']] },
   { label: 'Data', tabs: [['health', 'Data health'], ['history', 'Change history']] },
 ];
@@ -43,7 +44,7 @@ export function Reports() {
         </span>
       </div>
       <div class="subtabs no-print" role="tablist" aria-label={g.label}>{g.tabs.map(([k, l]) => <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-      {tab === 'commit' ? <Commitments /> : tab === 'health' ? <HealthPage /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
+      {tab === 'units' ? <UnitCosts /> : tab === 'commit' ? <Commitments /> : tab === 'health' ? <HealthPage /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }

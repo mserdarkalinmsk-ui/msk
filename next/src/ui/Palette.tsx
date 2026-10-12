@@ -37,7 +37,7 @@ export function Palette() {
     { group: 'Actions', label: 'Theme: dark', run: () => setTheme('dark') },
     { group: 'Actions', label: 'Theme: follow system', run: () => setTheme('auto') },
     ...ROUTES.map((r) => ({ group: 'Go to', label: r.label, run: () => go(r.id) })),
-    ...[['pack', 'Monthly pack'], ['compare', 'Expenditure monitoring'], ['studio', 'Project report'], ['alerts', 'Alerts'], ['changes', 'Month comparison'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results'], ['history', 'Change history'], ['health', 'Data health'], ['commit', 'Commitments (open POs)'], ['deck', 'Presentation']].map(([k, l]) => ({ group: 'Reports', label: l, run: () => go(`reports/${k}`) })),
+    ...[['pack', 'Monthly pack'], ['compare', 'Expenditure monitoring'], ['studio', 'Project report'], ['alerts', 'Alerts'], ['changes', 'Month comparison'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results'], ['history', 'Change history'], ['health', 'Data health'], ['commit', 'Commitments (open POs)'], ['units', 'Unit costs benchmark'], ['deck', 'Presentation']].map(([k, l]) => ({ group: 'Reports', label: l, run: () => go(`reports/${k}`) })),
     ...countries.map((c) => ({ group: 'Filter by country', label: c.name, run: () => { set((s) => ({ filters: { ...s.filters, country: c.id } })); } })),
     ...projects.map((p) => ({ group: 'Projects', label: `${p.code} — ${p.name}${p.bh ? ` · BH ${p.bh}` : ''}${p.pmm ? ` · PMM ${p.pmm}` : ''}${p.mae ? ` · MAE ${p.mae}` : ''}`, run: () => go(`project/${p.id}`) })),
     ...projects.map((p) => ({ group: 'Import report', label: `Import report for ${p.code}`, run: () => set({ drawer: { kind: 'report', projectId: p.id } }) })),
