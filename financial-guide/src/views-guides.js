@@ -210,7 +210,7 @@
           <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
-          ${ui.head(cfg.eyebrow, cfg.title, cfg.lead, `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
+          ${ui.head(cfg.eyebrow, cfg.title, "", `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>

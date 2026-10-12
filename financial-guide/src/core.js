@@ -45,7 +45,7 @@
   /* ---------- UI fragments shared by views ---------- */
   FG.ui = {
     head(eyebrow, title, lead, actions = "") {
-      return `<header class="page-head"><div><div class="eyebrow">${esc(eyebrow)}</div><h1>${esc(title)}</h1>${lead ? `<p>${esc(lead)}</p>` : ""}</div>${actions ? `<div class="actions">${actions}</div>` : ""}</header>`;
+      return `<header class="page-head${lead ? "" : " compact"}"><div><div class="eyebrow">${esc(eyebrow)}</div><h1>${esc(title)}</h1>${lead ? `<p>${esc(lead)}</p>` : ""}</div>${actions ? `<div class="actions">${actions}</div>` : ""}</header>`;
     },
     tag: (text, tone = "") => `<span class="tag ${tone}">${esc(text)}</span>`,
     callout: (tone, title, text, icon = tone === "warn" ? "!" : tone === "good" ? "✓" : "i") => `<div class="callout ${tone}"><i aria-hidden="true">${icon}</i><div>${title ? `<b>${esc(title)}</b>` : ""}${esc(text)}</div></div>`,

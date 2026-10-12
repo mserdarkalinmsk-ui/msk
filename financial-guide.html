@@ -932,6 +932,7 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 @keyframes quickIn { from { opacity: .35; } to { opacity: 1; } }
 .content > div { animation: quickIn .16s ease-out both; }
 .tabpanel, .rd-panel, .stage-card .card-body { animation: quickIn .14s ease-out both; }
+.page-head.compact { padding-bottom: 0; margin-bottom: 14px; align-items: center; }
 
 </style>
 </head>
@@ -7230,7 +7231,7 @@ window.FG_CONTENT = {
   /* ---------- UI fragments shared by views ---------- */
   FG.ui = {
     head(eyebrow, title, lead, actions = "") {
-      return `<header class="page-head"><div><div class="eyebrow">${esc(eyebrow)}</div><h1>${esc(title)}</h1>${lead ? `<p>${esc(lead)}</p>` : ""}</div>${actions ? `<div class="actions">${actions}</div>` : ""}</header>`;
+      return `<header class="page-head${lead ? "" : " compact"}"><div><div class="eyebrow">${esc(eyebrow)}</div><h1>${esc(title)}</h1>${lead ? `<p>${esc(lead)}</p>` : ""}</div>${actions ? `<div class="actions">${actions}</div>` : ""}</header>`;
     },
     tag: (text, tone = "") => `<span class="tag ${tone}">${esc(text)}</span>`,
     callout: (tone, title, text, icon = tone === "warn" ? "!" : tone === "good" ? "✓" : "i") => `<div class="callout ${tone}"><i aria-hidden="true">${icon}</i><div>${title ? `<b>${esc(title)}</b>` : ""}${esc(text)}</div></div>`,
@@ -7481,7 +7482,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:15</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:24</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -7727,7 +7728,7 @@ window.FG_CONTENT = {
           <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
-          ${ui.head(cfg.eyebrow, cfg.title, cfg.lead, `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
+          ${ui.head(cfg.eyebrow, cfg.title, "", `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
