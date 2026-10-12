@@ -176,11 +176,34 @@
   FG.go = (path) => { location.hash = "#/" + path; };
 
   let current = null;
+  // Identify an element by a stable attribute so it can be found again after a re-render.
+  const KEYS = ["id", "name", "data-tab", "data-k", "data-rd-go", "data-flow", "data-opt", "data-cat", "data-s", "data-p", "data-c"];
+  const sig = (el) => { const k = KEYS.find((a) => el.hasAttribute && el.hasAttribute(a)); return k ? `[${k}="${CSS.escape(el.getAttribute(k))}"]` : null; };
+  function snapshot(root) {
+    const a = document.activeElement, f = a && root.contains(a) ? sig(a) : null;
+    return {
+      focus: f, sel: f && a.selectionStart != null ? [a.selectionStart, a.selectionEnd] : null,
+      details: [...root.querySelectorAll("details")].map((d) => d.open),
+      scrollers: [...root.querySelectorAll(".rt-scroll, .table-wrap, .tablist, .rd-nav")].map((x) => x.scrollLeft),
+      panels: [...root.querySelectorAll("[data-rd]")].map((rd) => { const b = rd.querySelector('.rd-nav [aria-selected="true"]'); return b ? b.dataset.rdGo : null; }),
+    };
+  }
+  function restore(root, m) {
+    root.querySelectorAll("details").forEach((d, i) => { if (m.details[i] !== undefined) d.open = m.details[i]; });
+    root.querySelectorAll(".rt-scroll, .table-wrap, .tablist, .rd-nav").forEach((x, i) => { if (m.scrollers[i]) x.scrollLeft = m.scrollers[i]; });
+    root.querySelectorAll("[data-rd]").forEach((rd, i) => { const k = m.panels[i]; if (k != null) rd.querySelector(`.rd-nav [data-rd-go="${k}"]`)?.click(); });
+    if (m.focus) { const el = root.querySelector(m.focus); if (el) { el.focus({ preventScroll: true }); if (m.sel && el.setSelectionRange) try { el.setSelectionRange(...m.sel); } catch (e) {} } }
+  }
   FG.refresh = function (keepScroll = true) {
     const y = window.scrollY, path = FG.path(), hit = match(path) || match("home");
+    const main = $("#content"), old = main.firstElementChild;
+    // In-place refresh (an interaction on the same page): remember what the reader was doing so the
+    // new render is indistinguishable from an update — no entry animation, same focus, same open panels.
+    const inPlace = keepScroll && !!old, memo = inPlace ? snapshot(old) : null;
     const view = hit.route.render(hit.params) || {};
-    const main = $("#content"), root = document.createElement("div");
+    const root = document.createElement("div");
     root.innerHTML = view.html || "";
+    if (inPlace) { document.documentElement.classList.add("quiet"); root.classList.add("still"); }
     main.replaceChildren(root);
     current = { path, hit };
     const crumbs = [["Home", "home"], ...(hit.route.crumbs ? hit.route.crumbs(hit.params) : [])];
@@ -202,7 +225,9 @@
       bar.innerHTML = `<span>Step ${step + 1} of ${FG.JOURNEY.length} · ${esc(FG.JOURNEY[step].title)}</span><a href="#/${n.path}"><small>Next step</small><b>${esc(n.title)} →</b></a>`;
       root.appendChild(bar);
     }
+    if (memo) restore(root, memo);
     if (keepScroll) { window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); }
+    if (inPlace) requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("quiet")));
   };
   window.addEventListener("hashchange", () => {
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
