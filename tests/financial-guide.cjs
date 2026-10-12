@@ -37,6 +37,26 @@ assert.equal(E.pettyCash({ amount: 99, approved: false }).title, "Do not spend y
 assert.equal(E.yearAllocation({ delivery: "next", budget: "special" }).title, "Not 2026 expenditure");
 assert.equal(E.readiness("x", [["a", "A"], ["b", "B"]], { a: true }).route, "Not ready");
 
+/* ---- procurement case planner ---- */
+{
+  const T = new Date("2026-10-12");
+  const pc = (x) => E.procurementCase(x, T);
+  assert.equal(pc({ value: 1500 }).key, "direct-low");
+  assert.equal(pc({ value: 5000, type: "intellectual" }).key, "direct-low");
+  assert.equal(pc({ value: 5000 }).key, "competitive");
+  assert.equal(pc({ value: 184000 }).key, "international");
+  assert.equal(pc({ value: 20000, ground: "urgency" }).key, "direct-exc");
+  assert.ok(pc({ value: 90000, funding: "xb" }).lcr);
+  assert.ok(!pc({ value: 90000 }).lcr);
+  assert.ok(!pc({ value: 200000, funding: "xb" }).lcr);
+  assert.ok(pc({ value: 170000 }).risks.some((r) => /184,000/.test(r[1])));
+  assert.ok(pc({ value: 250000, deadline: "2026-12-01" }).late);
+  assert.ok(pc({ value: 90000 }).eproc.mandatory);
+  assert.ok(!pc({ value: 40000 }).eproc.mandatory);
+  assert.equal(pc({ value: 90000, need: "variable" }).contract, "Framework agreement");
+  const d = pc({ value: 90000, deadline: "2027-02-01" }); assert.equal(d.timeline[d.timeline.length - 1].to.toISOString().slice(0, 10), "2027-02-01");
+}
+
 /* ---- browser ---- */
 (async () => {
   const { chromium } = require("playwright");

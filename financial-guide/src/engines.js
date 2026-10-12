@@ -298,10 +298,25 @@
     if (pub && [6, 7].includes(pub.from.getMonth())) risks.push(["warn", "Publication during the summer break", "The guide advises against launching calls for tenders during the summer break."]);
     if (key !== "direct-low") risks.push(["info", "Offer validity", "Offers are valid for 180 calendar days from the submission deadline; plan evaluation and award within that period."]);
 
+    // E-procurement platform (Ch. 6.1): mandatory for international calls from 1 Jan 2026, above €55,000 from 1 Apr 2026,
+    // and for all tenders above the low-value limits from 1 Jan 2027. Judged on the planned launch date.
+    const launch = (timeline.find((t) => /Publication|Invitation/.test(t.label)) || timeline[0]).from;
+    const eDate = key === "international" ? "2026-01-01" : value >= LIMITS.legalReview ? "2026-04-01" : value > low ? "2027-01-01" : null;
+    const eproc = key === "direct-low" || key === "direct-exc" || !eDate ? { mandatory: false, text: "Not a tender: the e-procurement platform is not required." }
+      : launch >= new Date(eDate) ? { mandatory: true, text: `Mandatory: tenders of this type launched from ${eDate} go through the Council of Europe e-procurement platform.` }
+      : { mandatory: false, text: `Becomes mandatory for this type of tender from ${eDate}; using it already is recommended.` };
+    if (eproc.mandatory) risks.unshift(["info", "E-procurement platform mandatory", eproc.text]);
+    const first = {
+      "direct-low": ["Document the need and get an offer", "Describe what you need and its total value, obtain the offer from the supplier with the right expertise and note why it is good value."],
+      "direct-exc": [lcr ? "Prepare the memorandum and request the Legal Compliance Review" : `Prepare the memorandum to the ${intl ? "Tenders Board (via the CCM)" : "CCM"}`, "State the specification, the estimated total cost and precisely which exceptional ground applies, with the evidence."],
+      competitive: ["Draft the tender file and act of engagement", `Use the DLAPIL templates, fix the exclusion, eligibility and weighted award criteria, and list at least three potential suppliers${lcr ? "; then send everything to DLAPIL for the Legal Compliance Review" : ""}.`],
+      international: ["Prepare the tender file and the memo to the Tenders Board", "Use the DLAPIL templates and the Tenders Board memo template; plan a submission period of at least three weeks on the e-procurement platform."],
+    }[key];
+    const nextAction = { title: first[0], text: first[1], by: timeline[0].to };
     // Relevance of each of the 15 guide stages for this route.
     const skipFor = { "direct-low": ["Tender Design", "Terms & Specifications", "Open & Evaluate", "Negotiate & Award"], "direct-exc": ["Tender Design", "Open & Evaluate"], competitive: [], international: [] }[key];
     const keyFor = { "direct-low": ["Thresholds & Procedure", "Contract Signing"], "direct-exc": ["Thresholds & Procedure", "Authorise & Launch", "Negotiate & Award"], competitive: ["Tender Design", "Authorise & Launch", "Open & Evaluate"], international: ["Tender Design", "Authorise & Launch", "Open & Evaluate", "Negotiate & Award"] }[key];
-    return { key, route, contract, value, approvals, timeline, total, start, deadline, late, docs, risks, skip: skipFor, keyStages: keyFor, lcr, intl };
+    return { key, route, contract, value, eproc, nextAction, approvals, timeline, total, start, deadline, late, docs, risks, skip: skipFor, keyStages: keyFor, lcr, intl };
   }
 
   return { LIMITS, euro, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
