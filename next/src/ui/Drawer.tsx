@@ -451,7 +451,7 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
           </section>
         )}
         <section class="card">
-          <div class="card-h" style={{ alignItems: 'center' }}><div><h2>{countries.length} countries</h2><p>A country can be removed once it has no projects</p></div>
+          <div class="card-h" style={{ alignItems: 'center' }}><div><h2>{countries.length} countries</h2><p>Removing a country also removes its projects (a restore point is kept)</p></div>
             <div class="tools">{edit == null && <button class="btn" onClick={() => { setMsg(''); setEdit('new'); }}>+ Add country</button>}</div></div>
           <ul class="att" style={{ marginTop: '12px' }}>
             {countries.map((c) => {
@@ -463,7 +463,7 @@ function CountryPanel({ close, edit: initial }: { close: () => void; edit?: stri
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button class="btn ghost" title="Add a project in this country" onClick={() => set({ drawer: { kind: 'new-project', country: c.id } })}>+ Project</button>
                     <button class="btn ghost" onClick={() => { setMsg(''); setEdit(c.id); }}>Edit</button>
-                    <button class="btn ghost danger" aria-label={`Remove ${c.name}`} title={P.length ? 'Has projects' : 'Remove'} onClick={() => setMsg(deleteCountry(c.id) ?? '')}>Remove</button>
+                    <button class="btn ghost danger" aria-label={`Remove ${c.name}`} title={P.length ? 'Has projects' : 'Remove'} onClick={() => { if (confirm(P.length ? `Remove ${c.name} and its ${P.length} project${P.length > 1 ? 's' : ''}? A restore point is kept (Settings → Backup).` : `Remove ${c.name}?`)) setMsg(deleteCountry(c.id, true) ?? ''); }}>Remove</button>
                   </div>
                 </li>
               );
