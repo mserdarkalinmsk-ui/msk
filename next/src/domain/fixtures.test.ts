@@ -81,3 +81,18 @@ describe('data check', () => {
     expect(applyFix(p, 'dedupe-docs').p.documents!.map((d) => d.name)).toEqual(['B (1).xlsx']);
   });
 });
+
+describe('monthly checklist', () => {
+  it('asks for a fresh report per running project and ticks it once one is in', async () => {
+    const { monthTasks } = await import('./checklist');
+    const wb = parseWorkbook(sheets(X as Record<string, string[][]>));
+    const base = { id: 'p', code: 'P', name: 'P', country: 'tr', start: '2026-01-01', end: '2028-01-01', budget: 1000, bh: '5260' } as unknown as Project;
+    const L = (p: Project) => ({ countries: [], projects: [p] });
+    const ctx = { events: [], officeRequests: [] };
+    const t0 = monthTasks(L(base), new Date('2026-10-12'), ctx).find((t) => t.key === 'extract:p')!;
+    expect(t0.done).toBe(false);
+    const withRep = { ...base, reportingPeriods: [{ id: 'r', name: 'x', type: 'x', date: '2026-09-21', snapshot: snapshotOf(wb, base) }] } as Project;
+    expect(monthTasks(L(withRep), new Date('2026-10-12'), ctx).find((t) => t.key === 'extract:p')!.done).toBe(true);
+    expect(monthTasks(L(withRep), new Date('2026-12-12'), ctx).find((t) => t.key === 'extract:p')!.done).toBe(false);
+  });
+});

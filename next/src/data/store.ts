@@ -297,6 +297,13 @@ export function fixProject(pid: string, fix: import('../domain/health').AutoFix,
   for (const r of removed) toTrash(L, { kind: r.kind, label: `${r.label} (${p.code})`, data: r.data, pid });
   L.projects[i] = p; commit(L, fix === 'use-approved' ? `${p.code}: budget set from the approved budget` : `${p.code}: ${removed.length} duplicate${removed.length === 1 ? '' : 's'} moved to the trash`, p.code);
 }
+/** Ticks or unticks a task of the monthly checklist. */
+export function setCheck(month: string, key: string, done: boolean) {
+  const L = draft(state.ledger), C = { ...(L.checklist ?? {}) }, M = { ...(C[month] ?? {}) };
+  if (done) M[key] = new Date().toISOString(); else delete M[key];
+  C[month] = M; L.checklist = C;
+  commit(L, done ? 'Task done' : 'Task reopened');
+}
 export function emptyTrash() { if (!isAdmin()) return; const L = draft(state.ledger); L.trash = []; commit(L, 'Trash emptied'); }
 export function deleteDocument(pid: string, name: string) {
   if (!isAdmin()) return;
