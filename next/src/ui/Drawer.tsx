@@ -3,6 +3,7 @@ import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { backupNow } from './Backup';
 import { AlertPanel } from './AlertPanel';
 import { PeriodPanel } from './PeriodPanel';
+import { SmartImport } from './SmartImport';
 import { useEffect, useState } from 'preact/hooks';
 import { deleteCountry, deleteProjects, get, go, replaceLedger, resetDemo, restorePoints, set, upsertCountry, upsertProject, useStore } from '../data/store';
 import type { Country } from '../domain/types';
@@ -40,6 +41,7 @@ export function Drawer() {
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}
+        {d.kind === 'smart-import' && <SmartImport files={d.files} close={close} />}
         {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
         {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
         {d.kind === 'period' && <PeriodPanel t={d.t} from={d.from} ids={d.ids} close={close} />}
@@ -244,10 +246,9 @@ function ImportPanel({ close }: { close: () => void }) {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState('');
 
-  const ELSEWHERE = 'Financial reports and project documents are added inside their project (open the project → Import report / Add documents), so they can never land on the wrong project.';
   async function readMany(files: File[]) {
-    if (files.some((f) => /\.(pdf|docx)$/i.test(f.name))) { setErr(ELSEWHERE); return; }
-    if (files.length > 1 && files.every((f) => /\.xls[xm]$/i.test(f.name))) { set({ drawer: { kind: 'portfolio-import', files } }); return; }
+    // Documents or several workbooks: recognise each file and route it to its project.
+    if (files.some((f) => /\.(pdf|docx)$/i.test(f.name)) || (files.length > 1 && files.every((f) => /\.(xls[xm]|pdf|docx|txt)$/i.test(f.name)))) { set({ drawer: { kind: 'smart-import', files } }); return; }
     if (files.length > 1) { setErr('Drop one project list or backup file at a time.'); return; }
     return read(files[0]);
   }
@@ -257,7 +258,7 @@ function ImportPanel({ close }: { close: () => void }) {
     setBusy(`Reading ${file.name}…`);
     const wb = await readCoe(file).catch(() => null);
     setBusy('');
-    if (wb) { setErr(`${file.name} is a financial report${wb.meta.title ? ` for “${wb.meta.title}”` : ''}. ${ELSEWHERE}`); return; }
+    if (wb) { set({ drawer: { kind: 'smart-import', files: [file] } }); return; }
     const text = await file.text();
     if (/\.json$/i.test(file.name) || text.trim().startsWith('{')) {
       try { const { ledger: data, from } = migrateBackup(JSON.parse(text)); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
@@ -306,9 +307,10 @@ function ImportPanel({ close }: { close: () => void }) {
       <div class="drawer-b">
         <label class={`drop ${over ? 'on' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); const F = [...(e.dataTransfer?.files ?? [])]; if (F.length) readMany(F); }}>
-          <input type="file" multiple accept=".csv,.xlsx,.json,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
-          <strong style={{ color: 'var(--ink)' }}>Drop a project list (Excel / CSV) or a JSON backup</strong><br />Financial reports and project documents are added inside each project.
+          <input type="file" multiple accept=".csv,.xlsx,.xlsm,.json,.pdf,.docx,text/csv,application/json" hidden onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; if (F.length) readMany(F); }} />
+          <strong style={{ color: 'var(--ink)' }}>Drop anything: reports, budgets, DoA, contracts, a project list or a JSON backup</strong><br />Several files at once are recognised one by one and sent to their projects (by BH, JP, PMM or contract number).
         </label>
+        <label class="btn" style={{ justifySelf: 'start' }}>📁 Choose a whole folder<input type="file" hidden multiple {...{ webkitdirectory: '' }} onChange={(e) => { const F = [...((e.target as HTMLInputElement).files ?? [])]; (e.target as HTMLInputElement).value = ''; if (F.length) set({ drawer: { kind: 'smart-import', files: F } }); }} /></label>
         {err && <ul class="errlist"><li>{err}</li></ul>}
 
         {busy && <div class="muted" role="status" style={{ fontSize: '13px' }}><span class="spin" /> {busy}</div>}

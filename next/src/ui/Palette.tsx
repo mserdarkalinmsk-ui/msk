@@ -29,6 +29,7 @@ export function Palette() {
     { group: 'Actions', label: 'Add project', hint: 'N', run: () => set({ drawer: { kind: 'new-project' } }) },
     { group: 'Actions', label: 'Add country', run: () => set({ drawer: { kind: 'countries', edit: 'new' } }) },
     { group: 'Actions', label: 'Manage countries', run: () => set({ drawer: { kind: 'countries' } }) },
+    { group: 'Actions', label: 'Smart import: reports, budgets, DoA, contracts (many files or a folder)', run: () => set({ drawer: { kind: 'import' } }) },
     { group: 'Actions', label: 'Import Excel, CSV or backup', run: () => set({ drawer: { kind: 'import' } }) },
     { group: 'Actions', label: 'Undo last change', hint: 'Ctrl Z', run: undo },
     { group: 'Actions', label: 'Appearance: design direction, accent, density', run: () => set({ drawer: { kind: 'appearance' } }) },
