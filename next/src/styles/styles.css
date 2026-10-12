@@ -624,3 +624,7 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .gate{min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg)}.gate-c{display:grid;gap:14px;padding:28px;max-width:420px;width:100%}.gate-c h1{margin:0;font-size:22px}.gate-c p{margin:0}
 /* Print: the project's figure tiles only on the Summary print; other tabs keep the title line and start with their content. */
 @media print{.ph-tiles-tab{display:none !important}}
+.guide-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;padding:0 20px 20px}
+.guide-s{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface)}
+.guide-s h3{margin:0 0 8px;font-size:15px}.guide-s ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px;line-height:1.45}.guide-s .linkish{margin-top:8px;font-size:13px}
+@media print{.guide-g{grid-template-columns:1fr 1fr;gap:8px;padding:0}.guide-s{break-inside:avoid;padding:8px 10px}.guide-s ul{font-size:10.5px;gap:3px}.guide .card-h p{display:none}}

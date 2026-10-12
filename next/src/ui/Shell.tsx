@@ -15,6 +15,7 @@ export const ROUTES = [
   { id: 'offices', label: 'Offices', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4', ready: true },
   { id: 'map', label: 'Map', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14', ready: true },
   { id: 'reports', label: 'Reports', icon: 'M6 3h9l4 4v14H6zM14 3v5h5', ready: true },
+  { id: 'guide', label: 'Guide', icon: 'M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2zM4 21V5M9 7h6M9 11h6', ready: true },
 ];
 
 export const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
