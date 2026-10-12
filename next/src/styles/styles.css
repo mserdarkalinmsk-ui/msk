@@ -651,3 +651,17 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
   .guide-g{grid-template-columns:1fr 1fr;gap:6px}.guide-s{break-inside:avoid;padding:7px 10px;gap:4px;box-shadow:none}.gd-si{width:22px;height:22px}.gd-si svg{width:13px;height:13px}.gd-sh h3{font-size:11.5px}.gd-n{font-size:13px}
   .guide-s ul{font-size:9.3px;gap:2px;line-height:1.35}.gd-foot{padding:6px 10px;font-size:9.5px}}
 @media print{.gd-flow{grid-template-columns:repeat(5,1fr) !important}.gd-hero{flex-direction:row !important}}
+/* ---------- Monthly checklist ---------- */
+.ck{display:grid;gap:14px}
+.ck-h{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:20px 24px}.ck-h h2{margin:2px 0 6px;font-size:24px}.ck-h p{margin:0;max-width:760px;font-size:13px}
+.ck-k{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
+.ck-ring{--p:0;flex:none;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--good) calc(var(--p) * 1%),var(--line) 0);position:relative}
+.ck-ring::before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--surface)}.ck-ring b{position:relative;font:700 18px var(--mono)}
+.ck-g h2{display:flex;align-items:center;gap:8px}.ck-i{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--surface-2);font-size:14px}
+.ck-l{list-style:none;margin:0;padding:0 8px 8px}
+.ck-l li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--line)}
+.ck-l li.done .ck-t b{text-decoration:line-through;color:var(--ink-3)}
+.ck-box input{width:18px;height:18px;accent-color:var(--good);cursor:pointer}.ck-box input:disabled{cursor:default}
+.ck-t{flex:1;display:grid;gap:2px}.ck-t b{font-weight:550;font-size:13.5px}.ck-t small{font-size:12px}
+@media print{.ck-g{break-inside:auto}.ck-l li{break-inside:avoid;padding:5px 8px}.ck-ring{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.ck-go{border:0 !important;background:none !important;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}.ck-go:hover{text-decoration:underline}
