@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { go } from '../data/store';
+import { go, useStore } from '../data/store';
 
 type Lang = 'en' | 'tr';
 interface Step { t: Record<Lang, string>; b: Record<Lang, string[]>; to?: string; icon?: string; c?: string }
@@ -45,12 +45,13 @@ export function Guide() {
   const [lang, setLang] = useState<Lang>(() => { try { return (localStorage.getItem('pl-guide-lang') as Lang) || 'tr'; } catch { return 'tr'; } });
   const pick = (l: Lang) => { setLang(l); try { localStorage.setItem('pl-guide-lang', l); } catch { /* ignore */ } };
   const tr = lang === 'tr';
+  const title = useStore((st) => st.ledger.brand?.title) || 'Portfolio Ledger';
   return (
     <article class="guide">
       <header class="gd-hero">
         <div>
           <div class="gd-k">{tr ? 'Kullanım rehberi' : 'User guide'}</div>
-          <h1>Portfolio Ledger</h1>
+          <h1>{title}</h1>
           <p>{tr ? 'Proje ve ofis bütçelerini tek yerden izleyin, raporları dakikalar içinde hazırlayın. Bu sayfa ekibin ihtiyaç duyduğu her şeyi özetler.' : 'Follow project and office budgets in one place and prepare reports in minutes. This page sums up what the team needs.'}</p>
         </div>
         <div class="gd-tools no-print">
