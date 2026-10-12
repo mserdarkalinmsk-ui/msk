@@ -130,3 +130,46 @@ export function officeCountry(text: string): { id: string; name: string } | null
   const m = CITY.find(([re]) => re.test(text));
   return m ? { id: m[1], name: m[2] } : null;
 }
+
+export interface PaceLine { code: string; description: string; budget: number; sc: number; officeEnd: number; paceEnd: number; gap: number; low: boolean; monthly: number }
+/**
+ * Year-end estimate from the actual pace: payments so far spread over the share of the year gone, never below
+ * what is already spent + committed. Compared with the office's own forecast (spent + committed + foreseen).
+ */
+export function officePace(r: OfficeReport, fund: Fund = 'ob'): { lines: PaceLine[]; officeEnd: number; paceEnd: number; yearShare: number } {
+  const ys = officeView(r).yearShare || 1 / 12;
+  const paid = new Map<string, number>(), months = new Map<string, Set<string>>();
+  for (const e of r.entries.filter((e) => e.fund === fund)) {
+    paid.set(e.line, (paid.get(e.line) ?? 0) + e.spent);
+    if (e.spent > 0.5 && e.date) months.set(e.line, (months.get(e.line) ?? new Set()).add(e.date.slice(0, 7)));
+  }
+  const lines = r.lines.filter((l) => l[fund].budget || l[fund].sc || l[fund].planned).map((l) => {
+    const a = l[fund], p = paid.get(l.code) ?? a.sc, officeEnd = a.sc + a.planned;
+    // Only recurring costs (paid in 3+ different months) are projected at their pace; one-off purchases
+    // (insurance, a renovation) would be wildly overstated, so the office forecast stands for those.
+    const recurring = (months.get(l.code)?.size ?? 0) >= 3;
+    const paceEnd = recurring ? Math.max(a.sc, p / ys) : Math.max(a.sc, officeEnd), gap = paceEnd - officeEnd;
+    return { code: l.code, description: l.description, budget: a.budget, sc: a.sc, officeEnd, paceEnd, gap, low: r.hasPlan && gap > Math.max(250, officeEnd * 0.15), monthly: p / (ys * 12) };
+  });
+  return { lines, officeEnd: lines.reduce((s, l) => s + l.officeEnd, 0), paceEnd: lines.reduce((s, l) => s + l.paceEnd, 0), yearShare: ys };
+}
+
+export interface Transfer { from: string; fromDesc: string; to: string; toDesc: string; amount: number }
+/**
+ * Covers lines short after the forecast with the room other lines keep after their own forecast (and pace),
+ * largest needs first; what cannot be covered is the additional budget to request. Lines a note marks as
+ * corrected (booked on the wrong line) are left out.
+ */
+export function transferPlan(r: OfficeReport, skip: (code: string) => boolean = () => false): { transfers: Transfer[]; needs: { code: string; description: string; need: number; covered: number }[]; request: number; spare: number } {
+  const pace = new Map(officePace(r).lines.map((l) => [l.code, l.paceEnd]));
+  const L = r.lines.filter((l) => !skip(l.code));
+  const room = L.map((l) => ({ l, v: Math.floor(l.ob.budget - Math.max(l.ob.sc + l.ob.planned, pace.get(l.code) ?? 0)) })).filter((x) => x.v >= 50).sort((a, b) => b.v - a.v);
+  const needs = L.map((l) => ({ code: l.code, description: l.description, need: Math.ceil(l.ob.sc + l.ob.planned - l.ob.budget), covered: 0 })).filter((x) => x.need > 0).sort((a, b) => b.need - a.need);
+  const transfers: Transfer[] = [];
+  for (const n of needs) for (const d of room) {
+    if (n.covered >= n.need) break; if (d.v <= 0) continue;
+    const amt = Math.min(d.v, n.need - n.covered); d.v -= amt; n.covered += amt;
+    transfers.push({ from: d.l.code, fromDesc: d.l.description, to: n.code, toDesc: n.description, amount: amt });
+  }
+  return { transfers, needs, request: needs.reduce((s, n) => s + n.need - n.covered, 0), spare: room.reduce((s, d) => s + d.v, 0) };
+}
