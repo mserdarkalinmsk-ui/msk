@@ -132,7 +132,9 @@
   /* ---------- guided reader: numbered steps, one focused panel, read tracking ---------- */
   // Sentences are typed so obligations stand out: "must / mandatory / never" → rule, "recommended / good practice" → tip.
   const sentenceKind = (x) => (/\b(must|mandatory|required|never|may not|cannot|shall|prohibited|only if)\b/i.test(x) ? "rule" : /\b(recommend|good practice|best practice|advis|should|useful)\w*/i.test(x) ? "tip" : "");
-  const splitSentences = (t) => String(t).split(/(?<=[.!?])\s+(?=[A-Z€0-9“"(])/).filter(Boolean);
+  // Sentence split that respects abbreviations (e.g., i.e., Art., No., Ch., etc.) and numbered references (4.9.2).
+  const ABBR = /\b(e\.g|i\.e|etc|No|Nos|Art|Arts|Ch|Chap|para|paras|p|pp|vs|cf|incl|excl|approx|min|max|Mr|Ms|Dr|St|Co|Ltd|[A-Z])\.$/;
+  const splitSentences = (t) => String(t).split(/(?<=[.!?])\s+(?=[A-Z€“"(])/).reduce((out, x) => { if (out.length && ABBR.test(out[out.length - 1])) out[out.length - 1] += " " + x; else out.push(x); return out; }, []);
   function reader(key, sections) {
     const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
@@ -141,7 +143,8 @@
         <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
       <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
         <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
-        <ul class="rd-lines">${splitSentences(body).map((x) => { const kd = sentenceKind(x); return `<li class="${kd}">${kd ? `<span class="rd-kind" title="${label[kd]}">${icon[kd]}</span>` : `<span class="rd-dot"></span>`}<p>${esc(x)}</p></li>`; }).join("")}</ul>
+        <div class="rd-text">${(() => { const parts = splitSentences(body), kinds = parts.map(sentenceKind);
+          return `<p>${parts.map((x, j) => kinds[j] ? `<mark class="rd-${kinds[j]}"><i aria-hidden="true">${icon[kinds[j]]}</i>${esc(x)}</mark>` : esc(x)).join(" ")}</p>`; })()}</div>
         <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
   }
   // Switches panels in place (no re-render), so the page never jumps.
