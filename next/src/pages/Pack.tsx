@@ -1,3 +1,4 @@
+import { OfficeSummary } from './OfficeSummary';
 import { filtered, go, useStore } from '../data/store';
 import { deadlines, elapsed, money, parseDate, portfolioSeries, totals } from '../domain/calc';
 import { Chart } from '../ui/Chart';
@@ -107,6 +108,7 @@ export function MonthlyPack() {
             </tr>); })}</tbody>
         </table>
       </section>
+      {(s.ledger.offices ?? []).length > 0 && <section class="pack-s"><h3>Office running costs</h3><OfficeSummary variant="pack" /></section>}
       {A.length > 0 && <section class="pack-s"><h3>Top alerts</h3>
         <ul class="pack-al">{A.map((a) => <li><span class={`badge ${a.severity}`}>{a.severity}</span><b>{(() => { const q = P.find((p) => p.id === a.projectId); return q ? lab(q) : ''; })()}</b> {a.title} <span class="muted">— {a.detail}</span></li>)}</ul></section>}
       <section class="pack-s pack-break"><h3>Expenditure monitoring</h3><Compare /></section>

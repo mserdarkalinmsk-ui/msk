@@ -1,5 +1,6 @@
+import { OfficeSummary } from './OfficeSummary';
 import type { ComponentChildren } from 'preact';
-import { filtered, useStore } from '../data/store';
+import { filtered, get, useStore } from '../data/store';
 import { byCategory, elapsed, HEADINGS, groupBy, lineRows, money, parseDate, portfolioSeries, riskScore, totals } from '../domain/calc';
 import { alerts } from '../domain/insights';
 import { catchUp } from '../domain/monitor';
@@ -51,7 +52,7 @@ export function Deck() {
   const final = S.at(-1)?.mid ?? null;
   const CU = M.filter((x) => x.now === 'red' || x.now === 'amber').map((x) => ({ x, c: catchUp(x.p, TODAY, 3) })).filter((y) => y.c.need > 0).slice(0, 5);
   const nCountries = new Set(P.map((p) => p.country)).size;
-  const of = 12;
+  const hasOffice = (get().ledger.offices ?? []).some((o) => o.reports.length), of = hasOffice ? 13 : 12;
   return (
     <div class="deck">
       <div class="no-print deck-tools"><p class="muted">{of} slides, A4 landscape · uses the filters above · print or save as PDF to share</p><button class="btn primary" onClick={() => print()}>⎙ Save as PDF</button></div>
@@ -146,11 +147,15 @@ export function Deck() {
         {ren.length > 0 && <p class="sl-empty" style={{ marginTop: '8px' }}><b style={{ color: '#c27c0e' }}>Orange</b> = contract ends within 90 days.</p>}
       </Slide>
 
-      <Slide n={10} of={of} scope={scope} title="Upcoming milestones" sub="Next 90 days: reports due, planned activity ends and project end dates">
+      {hasOffice && <Slide n={10} of={of} scope={scope} title="Office running costs" sub="Programme offices' own budgets — Ordinary Budget and LS & Pagoda, latest situation and year-end outlook">
+        <OfficeSummary variant="slide" />
+      </Slide>}
+
+      <Slide n={10+(hasOffice ? 1 : 0)} of={of} scope={scope} title="Upcoming milestones" sub="Next 90 days: reports due, planned activity ends and project end dates">
         {E.length ? <ul class="sl-tl">{E.map((e) => <li style={{ borderLeftColor: KIND_C[e.kind] }}><span class="num">{date(e.day)}</span><b>{lab(e.p)}</b><span>{cut(e.title, 70)}</span><small>{e.sub}</small></li>)}</ul> : <p class="sl-empty">Nothing scheduled in the next 90 days.</p>}
       </Slide>
 
-      <Slide n={11} of={of} scope={scope} title="Next steps" sub="What is needed to get back on plan within three months">
+      <Slide n={11+(hasOffice ? 1 : 0)} of={of} scope={scope} title="Next steps" sub="What is needed to get back on plan within three months">
         {CU.length ? <table class="mini sl-t"><thead><tr><th>Project</th><th class="r">Now</th><th class="r">Current pace / month</th><th class="r">Needed / month</th><th class="r">Factor</th><th>Focus headings</th></tr></thead>
           <tbody>{CU.map(({ x, c }) => <tr><td><b>{lab(x.p)}</b> {cut(x.p.name, 48)}</td><td class="r num" style={{ color: BAND_C[x.now] }}>{Math.round(x.perf * 100)}%</td><td class="r num">{short(c.rate)}</td><td class="r num"><b>{short(c.need)}</b></td><td class="r num">{c.rate ? `${c.factor.toFixed(1)}×` : '—'}</td><td>{c.gaps.map((g) => HEADINGS[g.heading] ?? g.heading).join(', ') || '—'}</td></tr>)}</tbody></table> : <p class="sl-empty">All projects are on or near plan — no catch-up needed.</p>}
         <ol class="sl-steps">
@@ -162,7 +167,7 @@ export function Deck() {
         </ol>
       </Slide>
 
-      <Slide n={12} of={of} scope={scope} title="Annex — method and definitions" cls="sl-annex">
+      <Slide n={12+(hasOffice ? 1 : 0)} of={of} scope={scope} title="Annex — method and definitions" cls="sl-annex">
         <dl class="sl-def">
           <dt>Planned to date</dt><dd>Budget × share of the implementation period elapsed (linear plan).</dd>
           <dt>Spent vs planned</dt><dd>Actual spending ÷ planned to date. Blue ≥ 100%, green 90–100%, amber 70–90%, red below 70%.</dd>

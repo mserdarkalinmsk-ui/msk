@@ -594,3 +594,4 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .of-months{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;height:120px;align-items:end}.of-months span{display:grid;grid-template-rows:1fr auto;height:100%;align-items:end;text-align:center}.of-months i{display:block;background:#1d5fa8;border-radius:4px 4px 0 0;min-height:2px}.of-months small{font-size:10.5px;color:var(--muted)}
 .of-tr{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:900px){.of-tr{grid-template-columns:1fr}}.of-tr h3{font-size:13px;margin:0 0 6px}
 .of-doc-t{display:none}@media print{.of-doc-t{display:block}}
+.of-u{display:inline-block;position:relative;width:60px;height:6px;border-radius:3px;background:var(--line);margin-right:6px;vertical-align:middle;overflow:visible}.of-u i{display:block;height:100%;border-radius:3px}.of-u u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
