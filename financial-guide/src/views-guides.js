@@ -222,20 +222,25 @@
     const lim = ((R && R.limits) || []).filter((l) => has(String(l.value)));
     return { text: hits.sort((a, b) => a.length - b.length).find((x) => x.length > 40) || hits[0] || "", lim: lim.length > 0 };
   }
-  function briefHtml(cfg, s, ph, pc) {
+  function briefHtml(cfg, s, ph, pc, idx) {
     const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
     const steps = [["Understand", s.understand, "Why this stage exists"], ["Do", s.do, "What you actually do"], ["Control", s.check, "How you know it is done"]];
     const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
     return `<div class="sb">
-      <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<span class="sh-src">${s.sections.length} topics · ${musts.length} key rules</span><button type="button" class="sh-print" data-print>⎙ One-page summary</button></div>
-        <h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
+      <div class="sb-hero" style="--c:${pc(ph)}"><span class="sb-num" aria-hidden="true">${String(idx + 1).padStart(2, "0")}</span>
+        <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<button type="button" class="sh-print" data-print>⎙ One-page summary</button></div>
+          <h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
+        ${(() => { const rd = Object.keys(FG.store.get(`read:${cfg.base}:${s.name}`, {})).length, cl = cfg.checklist(s), t = FG.ticks(`${cfg.base}:${s.name}`), ck = cl.filter((_, k) => t[k]).length;
+          const m = (lab, a, b, tab) => `<button type="button" class="sb-meter" data-go-tab="${tab}" style="--p:${b ? Math.round((a / b) * 100) : 0}"><i></i><b>${a}<small>/${b}</small></b><span>${lab}</span></button>`;
+          return `<div class="sb-meters">${m("topics read", rd, s.sections.length, "guide")}${m("checks done", ck, cl.length, "check")}<button type="button" class="sb-meter rules" data-go-tab="rules"><b>${musts.length}</b><span>key rules</span></button></div>`; })()}
+      </div>
       <div class="sb-grid">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
           <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
-          return `<details class="sb-fact"><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${f.text ? `<p>${esc(f.text)}</p>` : ""}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && n[v]; return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
       </div>
     </div>`;
   }
@@ -278,6 +283,8 @@
     FG.openSheet(`Key figure · ${btn.dataset.stage}`, label.charAt(0).toUpperCase() + label.slice(1), html);
   }
   document.addEventListener("click", (e) => {
+    const gt = e.target.closest("[data-go-tab]");
+    if (gt) { const tab = document.querySelector(`.tablist [data-tab="${gt.dataset.goTab}"]`); if (tab) { tab.click(); const box = tab.closest(".tabs"); window.scrollTo({ top: box.getBoundingClientRect().top + scrollY - 70, behavior: "smooth" }); } return; }
     const r = e.target.closest("[data-recall]");
     if (r) { const box = r.closest(".rd-items"), on = box.classList.toggle("recall"); box.querySelectorAll("li").forEach((li) => li.classList.remove("shown")); r.textContent = on ? "Show all" : "Test my recall"; return; }
     const rate = e.target.closest("[data-rate]");
@@ -343,9 +350,12 @@
         const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
+          <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
+            <nav>${[["guide", "Guidance"], ["rules", "Key rules"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
+            <span class="sb-mini-arrows">${i > 0 ? `<a href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage" tabindex="-1">←</a>` : ""}${i < stages.length - 1 ? `<a href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage" tabindex="-1">→</a>` : ""}</span></div>
           ${map}
           <section class="card stage-card mt"><div class="card-body">
-            ${briefHtml(cfg, s, ph, pc)}
+            ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
@@ -366,6 +376,9 @@
             sc.addEventListener("scroll", () => { FG.trackScroll = sc.scrollLeft; }, { passive: true });
           }
           mountReader(root);
+          document.querySelectorAll("body > .sb-mini").forEach((x) => x.remove());
+          const mini = root.querySelector(".sb-mini"), hero = root.querySelector(".sb-hero"); if (mini) document.body.append(mini);
+          if (mini && hero && "IntersectionObserver" in window) { if (FG.miniObs) FG.miniObs.disconnect(); FG.miniObs = new IntersectionObserver(([en]) => mini.classList.toggle("show", !en.isIntersecting && en.boundingClientRect.top < 0)); FG.miniObs.observe(hero); }
           if (widgetMount) widgetMount(root);
         } };
       },

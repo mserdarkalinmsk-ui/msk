@@ -230,7 +230,7 @@
     if (keepScroll) { window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); }
     if (inPlace) requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("quiet")));
   };
-  window.addEventListener("hashchange", () => { if (FG.closeOverlays && document.querySelector(".sheet.open")) FG.closeOverlays();
+  window.addEventListener("hashchange", () => { document.querySelectorAll("body > .sb-mini").forEach((x) => x.remove()); if (FG.closeOverlays && document.querySelector(".sheet.open")) FG.closeOverlays();
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
     // Moving between stages of the same module keeps the reader where they are.
     FG.refresh(!changedPage);

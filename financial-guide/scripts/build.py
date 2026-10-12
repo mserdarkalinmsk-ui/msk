@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / 'src'
-SCRIPTS = ['content.generated.js', 'content.procurement.js', 'content.grants.js', 'quiz.procurement.js', 'quiz.grants.js', 'engines.js', 'core.js', 'views-case.js',
+SCRIPTS = ['content.generated.js', 'content.procurement.js', 'content.grants.js', 'content.facts.js', 'quiz.procurement.js', 'quiz.grants.js', 'engines.js', 'core.js', 'views-case.js',
            'views-guides.js', 'views-operations.js', 'views-engines.js', 'views-analysis.js', 'views-reference.js', 'views-modules.js']
 
 template = (SRC / 'index.html').read_text()

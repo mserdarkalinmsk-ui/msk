@@ -1289,3 +1289,43 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .rv summary { cursor: pointer; font-weight: 600; }
 .rv p { margin: 8px 0; font-size: 14px; color: var(--ink-2); }
 .rv a { font-size: 13px; color: #2d6bd8; }
+
+/* ---------- stage hero ---------- */
+.stage-card { overflow: hidden; }
+.sb-hero { position: relative; margin: -16px -20px 0; padding: 24px 20px 20px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: end;
+  background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--c) 16%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in srgb, var(--c) 6%, var(--panel)), var(--panel));
+  border-bottom: 1px solid var(--line); }
+.sb-num { position: absolute; right: 18px; top: -18px; font-size: 128px; font-weight: 800; letter-spacing: -.06em; line-height: 1; color: color-mix(in srgb, var(--c) 10%, transparent); pointer-events: none; }
+.sb-top { position: relative; }
+.sb-meters { position: relative; display: flex; gap: 10px; }
+.sb-meter { --p: 0; display: grid; justify-items: center; gap: 2px; min-width: 92px; padding: 10px 12px 9px; border-radius: 14px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 85%, transparent); font: inherit; cursor: pointer; position: relative; overflow: hidden; transition: transform .15s, border-color .15s; }
+.sb-meter:hover { transform: translateY(-2px); border-color: var(--c); }
+.sb-meter i { position: absolute; left: 0; bottom: 0; height: 3px; width: calc(var(--p) * 1%); background: var(--c); }
+.sb-meter b { font-size: 22px; color: var(--ink); line-height: 1.1; }
+.sb-meter b small { font-size: 13px; color: var(--muted); font-weight: 600; }
+.sb-meter span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.sb-meter.rules b { color: #b03a2e; }
+.sb-grid { margin-top: 20px; }
+@media (max-width: 900px) { .sb-hero { grid-template-columns: 1fr; } .sb-num { font-size: 88px; } .sb-meter { flex: 1; min-width: 0; } }
+
+/* sticky mini header */
+.sb-mini { position: fixed; z-index: 40; top: 64px; left: 50%; transform: translate(-50%, -12px); opacity: 0; pointer-events: none; width: min(1180px, calc(100% - 24px)); display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 12px; border-radius: 14px; background: color-mix(in srgb, var(--panel) 97%, transparent); border: 1px solid var(--line); box-shadow: 0 14px 30px -20px #0b1f44; transition: transform .2s ease, opacity .2s ease; }
+.sb-mini.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.sb-mini-n { flex: none; height: 30px; min-width: 42px; padding: 0 8px; border-radius: 9px; display: grid; place-items: center; grid-auto-flow: column; gap: 1px; background: var(--c); color: #fff; font-weight: 700; font-size: 14px; }
+.sb-mini-n small { font-size: 10px; opacity: .8; }
+.sb-mini > b { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.sb-mini nav { display: flex; gap: 4px; }
+.sb-mini nav button { border: 0; background: none; font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 8px; cursor: pointer; color: var(--ink-2); }
+.sb-mini nav button:hover { background: color-mix(in srgb, #2d6bd8 9%, var(--panel)); color: #2d6bd8; }
+.sb-mini-arrows { display: flex; gap: 4px; }
+.sb-mini-arrows a { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; border: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+@media (max-width: 700px) { .sb-mini nav { display: none; } }
+@media print { .sb-mini { display: none !important; } }
+.sb-note { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--panel); border-left: 3px solid #2d6bd8; }
+.sb-note > p { margin: 0; font-size: 13.5px; line-height: 1.55; }
+.sb-why { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.sb-why small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #a5630c; }
+.sb-why p { margin: 2px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.sb-ref { display: inline-block; margin-top: 8px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.sb-fact .sb-note + .sb-more { padding-top: 0; }
+.sb-fact .sb-note p { border: 0; background: none; padding: 0; margin-bottom: 0; border-radius: 0; }
