@@ -108,7 +108,8 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
 
   const hd = hover ? byShape.get(hover.n) : undefined;
   const hs = hover ? SHAPES.find((s) => s.n === hover.n) : undefined;
-  const legend = mode === 'budget' ? [short(Math.min(...active.map((d) => d.budget), max.budget)), short(max.budget)]
+  const minB = Math.min(...active.map((d) => d.budget), max.budget);
+  const legend = mode === 'budget' ? (active.length > 1 && max.budget - minB > 1 ? [short(minB), short(max.budget)] : null)
     : mode === 'used' ? ['0%', '100%'] : mode === 'staff' ? ['0', String(max.staff)] : mode === 'pace' ? ['behind', 'ahead'] : null;
   const scale = vb.w / size.w; // map units per screen pixel
 
@@ -148,6 +149,8 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
           );
         })}</g>
         {SHAPES.filter((s) => s.m === 0 && !byShape.get(s.n)?.projects).map((s) => <path d={s.d} fill="url(#hatch)" pointer-events="none" opacity=".28" />)}
+        {!compact && SHAPES.filter((x) => !byShape.get(x.n)?.projects && (x.n.length * 7.2 + 10) * scale < x.b[2] && x.b[3] / scale > 30 && x.b[0] + x.b[2] > vb.x && x.b[0] < vb.x + vb.w && x.b[1] + x.b[3] > vb.y && x.b[1] < vb.y + vb.h).map((x) => (
+          <text class="mname" x={x.b[0] + x.b[2] / 2} y={x.b[1] + x.b[3] / 2} text-anchor="middle" font-size={10.5 * scale} fill={x.m ? 'var(--ink-3)' : 'var(--ink-3)'} opacity={x.m ? 0.9 : 0.55} pointer-events="none" stroke-width={2.5 * scale} letter-spacing={0.6 * scale}>{(x.n === 'Turkey' ? 'Türkiye' : x.n).toUpperCase()}</text>))}
         {[...byShape].filter(([, d]) => d.projects).sort((x, y) => y[1].budget - x[1].budget).map(([n, d]) => {
           const s = SHAPES.find((x) => x.n === n)!, cx = s.b[0] + s.b[2] / 2, cy = s.b[1] + s.b[3] / 2;
           const r = (13 + 15 * Math.sqrt(d.budget / max.budget)) * scale, used = Math.min(1, d.budget ? d.spent / d.budget : 0);
@@ -175,7 +178,7 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
         <button aria-label="Zoom in" onClick={() => zoom(1 / 1.35)}>+</button>
         <button aria-label="Zoom out" onClick={() => zoom(1.35)}>−</button>
         <button aria-label="Fit portfolio" title="Fit portfolio" onClick={() => setVb(home)}>⤢</button>
-        <button aria-label="Whole map" title="Whole map" onClick={() => setVb(clamp({ ...FULL }, ar))}>◯</button>
+        <button aria-label="Whole map" title="Whole map" onClick={() => setVb(clamp({ ...FULL }, ar))} style={{ fontSize: '11px', fontWeight: 700 }}>ALL</button>
       </div>
       {hover && hs && (
         <div class="map-tip" style={{ left: `${Math.min(hover.x + 14, (svg.current?.clientWidth ?? 600) - 250)}px`, top: `${Math.max(8, hover.y - 10)}px` }}>
