@@ -12,6 +12,7 @@ import { People } from './pages/People';
 import { MapPage } from './pages/MapPage';
 import { Offices } from './pages/Offices';
 import { Reports } from './pages/Reports';
+import { Guide } from './pages/Guide';
 import { ProjectPage } from './pages/ProjectPage';
 import { Drawer } from './ui/Drawer';
 import { Palette, Toasts } from './ui/Palette';
@@ -60,7 +61,7 @@ function App() {
   return (
     <>
       <Shell title={title} crumb={crumb} actions={actions}>
-        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'offices' ? <Offices /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports key={route} /> : head === 'project' ? <ProjectPage id={arg} key={arg} /> : <Placeholder id={head} />}
+        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'offices' ? <Offices /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports key={route} /> : head === 'project' ? <ProjectPage id={arg} key={arg} /> : head === 'guide' ? <Guide /> : <Placeholder id={head} />}
       </Shell>
       <Drawer />
       <Palette />
