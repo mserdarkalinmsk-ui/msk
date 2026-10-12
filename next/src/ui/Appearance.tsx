@@ -77,6 +77,15 @@ async function shrink(f: File): Promise<string> {
 function BrandSection() {
   const brand = useStore((s) => s.ledger.brand);
   const [err, setErr] = useState('');
+  const [url, setUrl] = useState('');
+  // A link is read once and kept inside the data (works offline); when the site does not allow that, the link itself is kept.
+  const pickUrl = async () => {
+    const u = url.trim(); if (!/^https?:\/\//i.test(u)) return setErr('Paste a link starting with https://');
+    setErr('');
+    try { const r = await fetch(u); if (!r.ok) throw new Error(); const blob = await r.blob(); setBrand({ ...(brand ?? {}), logo: await shrink(new File([blob], 'logo', { type: blob.type || 'image/png' })) }); }
+    catch { setBrand({ ...(brand ?? {}), logo: u }); setErr('The site does not allow copying the image, so the link is used: the logo shows when online, and not in PowerPoint. For offline use, download the image and choose it as a file.'); }
+    setUrl('');
+  };
   const pickFile = async (f?: File) => { if (!f) return; if (!/^image\//.test(f.type)) return setErr('Choose an image (PNG, JPG or SVG)'); setErr(''); setBrand({ ...(brand ?? {}), logo: await shrink(f) }); };
   return (
     <section style={{ display: 'grid', gap: '10px' }}>
@@ -85,6 +94,7 @@ function BrandSection() {
       <div class="brand-pick">
         <div class="brand-prev">{brand?.logo ? <img src={brand.logo} alt="Logo" /> : <span class="muted">No logo</span>}</div>
         <div style={{ display: 'grid', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}><input class="input" style={{ minWidth: '220px' }} placeholder="or paste an image link (https://…)" value={url} onInput={(e) => setUrl((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === 'Enter' && pickUrl()} /><button class="btn" disabled={!url.trim()} onClick={pickUrl}>Use link</button></div>
           <label class="btn">Choose image…<input type="file" accept="image/*" hidden onChange={(e) => pickFile((e.target as HTMLInputElement).files?.[0])} /></label>
           {brand?.logo && <button class="btn ghost" onClick={() => setBrand({ ...brand, logo: undefined })}>Remove logo</button>}
         </div>
