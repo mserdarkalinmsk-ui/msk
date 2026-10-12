@@ -75,6 +75,7 @@
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})">
           <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
+        <a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to instructions</small></div><u>Open →</u></a>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
     },
   });
@@ -180,6 +181,7 @@
       return { html: `${ui.head("Projects · Grants", "Grants", "")}
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})"><span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
+        <a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to instructions with templates</small></div><u>Open →</u></a>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The €15,000 threshold — total budget of the procedure</b></div>${FG.ui.ruler({ max: 60000, marks: [[L.grant, "Call for proposals"]], zones: [[0, L.grant, "Direct award (G9.2A)", "--c2"], [L.grant, 60000, "Call for proposals", "--c1"]] })}</section>` };
     },
   });
@@ -230,5 +232,26 @@
           root.addEventListener("click", (e) => { if (e.target.closest("[data-case-print]")) window.print(); });
         } };
     },
+  });
+
+  /* ---------- quick reference: contract types, limits, roles, how-to ---------- */
+  function referencePage(R, base) {
+    if (!R) return `<p class="muted">Reference data not available.</p>`;
+    const tabs = [];
+    if ((R.contractTypes || []).length) tabs.push(["types", "Contract types", `<div class="ct-grid">${R.contractTypes.map((c, i) => `<article class="ct" style="--c:var(--c${i + 1})"><h3>${esc(c.name)}</h3>
+      ${[["Use when", c.useWhen], ["Suppliers", c.suppliers], ["Orders", c.ordering], ["Duration", c.duration], ["Key control", c.control]].filter((x) => x[1]).map(([k, v]) => `<div><small>${k}</small><p>${esc(v)}</p></div>`).join("")}</article>`).join("")}</div>`, R.contractTypes.length]);
+    if ((R.limits || []).length) tabs.push(["limits", "Limits & deadlines", `<div class="lim">${R.limits.map((l) => `<div class="lim-row"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p><span>${esc(l.who || "")}</span></div>`).join("")}</div>`, R.limits.length]);
+    if ((R.roles || []).length) tabs.push(["roles", "Roles", `<div class="role-grid">${R.roles.map((r) => `<article class="role"><h3>${esc(r.name)}</h3><p>${esc(r.does)}</p>${r.when ? `<small>${esc(r.when)}</small>` : ""}</article>`).join("")}</div>`, R.roles.length]);
+    if ((R.howTo || []).length) tabs.push(["howto", "How to", `<div class="howto">${R.howTo.map((h) => `<details class="ht"><summary><b>${esc(h.title)}</b><span>${esc(h.who || "")}${h.source ? ` · ${esc(h.source)}` : ""}</span></summary>
+      <ol>${h.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>${(h.templates || []).length ? `<p class="small muted">Templates: ${h.templates.map(esc).join(", ")}</p>` : ""}</details>`).join("")}</div>`, R.howTo.length]);
+    return ui.tabs(base + ":ref", tabs);
+  }
+  route("procurement/reference", {
+    section: "procurement", crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"], ["Quick reference", "procurement/reference"]],
+    render: () => ({ html: `${ui.head("Procurement · quick reference", "Quick reference", "")}${referencePage(FG.C.procurementReference, "procurement")}` }),
+  });
+  route("grants/reference", {
+    section: "grants", crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Quick reference", "grants/reference"]],
+    render: () => ({ html: `${ui.head("Grants · quick reference", "Quick reference", "")}${referencePage(FG.C.grantReference, "grants")}` }),
   });
 })();

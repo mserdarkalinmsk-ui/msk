@@ -1078,6 +1078,33 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .rd-items b { display: block; font-size: 14.5px; color: var(--navy); }
 .rd-items li p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
 
+/* ---------- quick reference ---------- */
+.hub-ref { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding: 14px 20px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.hub-ref:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.hub-ref > span { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--navy); color: #fff; font-weight: 700; font-size: 18px; }
+.hub-ref div { flex: 1; } .hub-ref b { display: block; color: var(--navy); font-size: 15.5px; } .hub-ref small { color: var(--muted); font-size: 13px; } .hub-ref u { text-decoration: none; color: var(--accent); font-weight: 600; }
+.ct-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.ct { border-radius: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c); padding: 18px; display: grid; gap: 10px; align-content: start; }
+.ct h3 { margin: 0; font-size: 18px; color: var(--navy); }
+.ct small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.ct p { margin: 2px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.lim { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel); }
+.lim-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 220px; gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.lim-row:last-child { border-bottom: 0; } .lim-row:nth-child(even) { background: var(--panel-2); }
+.lim-row b { font-size: 16px; color: var(--navy); font-variant-numeric: tabular-nums; } .lim-row p { margin: 0; font-size: 14px; color: var(--ink); line-height: 1.5; }
+.lim-row span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.role { padding: 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+.role h3 { margin: 0 0 6px; font-size: 15.5px; color: var(--navy); } .role p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); } .role small { display: block; margin-top: 8px; font-size: 12px; color: var(--accent); font-weight: 600; }
+.howto { display: grid; gap: 10px; }
+.ht { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.ht summary { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 14px 18px; cursor: pointer; list-style: none; }
+.ht summary::-webkit-details-marker { display: none; }
+.ht summary b { color: var(--navy); font-size: 15px; } .ht summary span { font-size: 12.5px; color: var(--muted); text-align: right; }
+.ht ol { margin: 0; padding: 4px 18px 14px 40px; display: grid; gap: 8px; font-size: 14px; line-height: 1.55; } .ht > p { padding: 0 18px 14px; margin: 0; }
+.ht[open] { box-shadow: var(--shadow); border-color: var(--accent-line); }
+@media (max-width: 760px) { .lim-row { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+
 </style>
 </head>
 <body>
@@ -7749,7 +7776,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:45</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:47</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -7860,6 +7887,7 @@ window.FG_CONTENT = {
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})">
           <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
+        <a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to instructions</small></div><u>Open →</u></a>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
     },
   });
@@ -7965,6 +7993,7 @@ window.FG_CONTENT = {
       return { html: `${ui.head("Projects · Grants", "Grants", "")}
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})"><span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
+        <a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to instructions with templates</small></div><u>Open →</u></a>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The €15,000 threshold — total budget of the procedure</b></div>${FG.ui.ruler({ max: 60000, marks: [[L.grant, "Call for proposals"]], zones: [[0, L.grant, "Direct award (G9.2A)", "--c2"], [L.grant, 60000, "Call for proposals", "--c1"]] })}</section>` };
     },
   });
@@ -8015,6 +8044,27 @@ window.FG_CONTENT = {
           root.addEventListener("click", (e) => { if (e.target.closest("[data-case-print]")) window.print(); });
         } };
     },
+  });
+
+  /* ---------- quick reference: contract types, limits, roles, how-to ---------- */
+  function referencePage(R, base) {
+    if (!R) return `<p class="muted">Reference data not available.</p>`;
+    const tabs = [];
+    if ((R.contractTypes || []).length) tabs.push(["types", "Contract types", `<div class="ct-grid">${R.contractTypes.map((c, i) => `<article class="ct" style="--c:var(--c${i + 1})"><h3>${esc(c.name)}</h3>
+      ${[["Use when", c.useWhen], ["Suppliers", c.suppliers], ["Orders", c.ordering], ["Duration", c.duration], ["Key control", c.control]].filter((x) => x[1]).map(([k, v]) => `<div><small>${k}</small><p>${esc(v)}</p></div>`).join("")}</article>`).join("")}</div>`, R.contractTypes.length]);
+    if ((R.limits || []).length) tabs.push(["limits", "Limits & deadlines", `<div class="lim">${R.limits.map((l) => `<div class="lim-row"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p><span>${esc(l.who || "")}</span></div>`).join("")}</div>`, R.limits.length]);
+    if ((R.roles || []).length) tabs.push(["roles", "Roles", `<div class="role-grid">${R.roles.map((r) => `<article class="role"><h3>${esc(r.name)}</h3><p>${esc(r.does)}</p>${r.when ? `<small>${esc(r.when)}</small>` : ""}</article>`).join("")}</div>`, R.roles.length]);
+    if ((R.howTo || []).length) tabs.push(["howto", "How to", `<div class="howto">${R.howTo.map((h) => `<details class="ht"><summary><b>${esc(h.title)}</b><span>${esc(h.who || "")}${h.source ? ` · ${esc(h.source)}` : ""}</span></summary>
+      <ol>${h.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>${(h.templates || []).length ? `<p class="small muted">Templates: ${h.templates.map(esc).join(", ")}</p>` : ""}</details>`).join("")}</div>`, R.howTo.length]);
+    return ui.tabs(base + ":ref", tabs);
+  }
+  route("procurement/reference", {
+    section: "procurement", crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"], ["Quick reference", "procurement/reference"]],
+    render: () => ({ html: `${ui.head("Procurement · quick reference", "Quick reference", "")}${referencePage(FG.C.procurementReference, "procurement")}` }),
+  });
+  route("grants/reference", {
+    section: "grants", crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Quick reference", "grants/reference"]],
+    render: () => ({ html: `${ui.head("Grants · quick reference", "Quick reference", "")}${referencePage(FG.C.grantReference, "grants")}` }),
   });
 })();
 
