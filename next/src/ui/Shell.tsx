@@ -22,6 +22,9 @@ export const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg>
 );
 
+/** Two letters for the badge when no logo is set: the first letters of the first two words (Portfolio Ledger → PL, CoE Portfolio → CP). */
+const initials = (t: string) => (t.match(/[A-Za-zÀ-ž0-9]+/g) ?? ['P']).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+
 export function Shell({ title, crumb, actions, children }: { title: string; crumb?: ComponentChildren; actions?: ComponentChildren; children: ComponentChildren }) {
   const route = useStore((s) => s.route);
   const theme = useStore((s) => s.theme);
@@ -43,7 +46,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
   return (
     <div class={`shell${hidden ? ' side-hidden' : ''}`}>
       <aside class={`side ${open ? 'open' : ''}`} aria-label="Main navigation">
-        <div class="brand">{ledger.brand?.logo ? <img class="brand-logo" src={ledger.brand.logo} alt={ledger.brand.name ?? "Logo"} /> : <i>PL</i>}<span>{ledger.brand?.title || 'Portfolio Ledger'}{ledger.brand?.name && <small class="brand-org">{ledger.brand.name}</small>}</span></div>
+        <div class="brand">{ledger.brand?.logo ? <img class="brand-logo" src={ledger.brand.logo} alt={ledger.brand.name ?? "Logo"} /> : <i>{initials(appTitle)}</i>}<span>{ledger.brand?.title || 'Portfolio Ledger'}{ledger.brand?.name && <small class="brand-org">{ledger.brand.name}</small>}</span></div>
         <nav class="nav">
           {ROUTES.map((r) => (
             <a href={`#/${r.id}`} aria-current={route === r.id || (r.id === 'projects' && route.startsWith('project/')) ? 'page' : undefined} class={r.ready ? '' : 'soon'} onClick={() => setOpen(false)}>
