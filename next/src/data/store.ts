@@ -8,6 +8,7 @@ const seed = DEMO ? demo : real;
 import type { Country, Ledger, Project, ReportingPeriod, Risk } from '../domain/types';
 import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
+import { EXTRACTION, extractionLines } from '../domain/extraction';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -135,6 +136,7 @@ export async function load() {
       // Never fall back to the start data when stored data has a problem — that silently lost work before.
       if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
       prevSaved = l;
+      l.projects = l.projects.map(relayExtractions);
       state = { ...state, ledger: EMBED ? l : mergeSeed(validateLedger(l).length ? repair(l) : l) };
     }
   }
@@ -188,7 +190,13 @@ export function undo() {
   const prev = history.pop(); if (!prev) return;
   set({ ledger: prev }); persist(prev); toast('Change undone');
 }
-export function upsertProject(p: Project) {
+/** System extractions keep their lines laid on the project's current approved budget (it may arrive later). */
+function relayExtractions(p: Project): Project {
+  if (!p.reportingPeriods?.some((r) => r.snapshot?.format === EXTRACTION && r.snapshot.workbook)) return p;
+  return { ...p, reportingPeriods: p.reportingPeriods.map((r) => (r.snapshot?.format === EXTRACTION && r.snapshot.workbook ? { ...r, snapshot: { ...r.snapshot, lines: extractionLines(r.snapshot.workbook, p) } } : r)) };
+}
+export function upsertProject(p0: Project) {
+  const p = relayExtractions(p0);
   const L = clone(state.ledger);
   const i = L.projects.findIndex((x) => x.id === p.id);
   if (i >= 0) L.projects[i] = p; else L.projects.push(p);
