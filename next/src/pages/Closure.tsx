@@ -2,25 +2,14 @@ import { useState } from 'preact/hooks';
 import { updateProject } from '../data/store';
 import { deadlines, HEADINGS, lineExposure, lines, money, n, parseDate } from '../domain/calc';
 import { headings, outcome } from '../domain/insights';
-import { roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
+import { closureSteps } from '../domain/closure';
 import { date, full, pct } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { latestWorkbook } from './FinancialReport';
 
 const DAY = 86_400_000;
-const ITEMS: { k: string; label: string; hint: string }[] = [
-  { k: 'narrative', label: 'Final narrative report', hint: 'Results against the logframe, lessons learned' },
-  { k: 'financial', label: 'Final financial report', hint: 'All costs to the end date, in the approved budget format' },
-  { k: 'verification', label: 'Expenditure verification and audit', hint: 'Report of the auditor if required by the contract' },
-  { k: 'payment', label: 'Final payment claim', hint: 'Balance of the EU contribution, or recovery of unused pre-financing' },
-  { k: 'assets', label: 'Transfer of equipment and assets', hint: 'Hand-over certificates to the beneficiary institutions' },
-  { k: 'staff', label: 'Staff and consultant contracts closed', hint: 'No contract running beyond the end date' },
-  { k: 'commitments', label: 'Open purchase orders settled', hint: 'All commitments paid or cancelled' },
-  { k: 'visibility', label: 'Visibility and communication deliverables', hint: 'Publications, final event, EU visibility requirements' },
-  { k: 'archive', label: 'Project file archived', hint: 'Documents kept for the period required by the contract' },
-];
 
 /** Closure: what still has to be done before and after the end date, and the final balance of the contribution. */
 export function Closure({ p }: { p: Project }) {
@@ -28,31 +17,30 @@ export function Closure({ p }: { p: Project }) {
   const m = money(p), o = outcome(p, TODAY);
   const final = deadlines(p, TODAY).find((d) => d.kind === 'Final report');
   const left = Math.round((parseDate(p.end).getTime() - TODAY.getTime()) / DAY);
-  const R = roster(p, TODAY), beyond = R.filter((a) => a.status === 'Active' && a.end && a.end > p.end);
   const wb = latestWorkbook(p)?.snapshot?.workbook;
   const recv = c.received ?? (wb ? wb.movements.filter((x) => x.funding).reduce((s, x) => s + x.amount, 0) : 0);
-  const openPO = wb ? wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5).reduce((s, x) => s + x.balance, 0) : m.committed;
   const share = c.euShare ?? (Number((p.contract as { euShare?: number } | undefined)?.euShare) || 100);
   const eligible = Math.min(o.projected, m.budget), due = eligible * share / 100, balance = due - recv;
-  const auto: Record<string, boolean | undefined> = { staff: R.length ? beyond.length === 0 : undefined, commitments: wb ? openPO < 1 : undefined };
-  const isDone = (k: string) => done[k] ?? auto[k] ?? false;
-  const nDone = ITEMS.filter((i) => isDone(i.k)).length;
+  const steps = closureSteps(p, TODAY, wb);
+  const nDone = steps.filter((x) => x.state === 'done').length;
   const save = (patch: Partial<NonNullable<Project['closure']>>) => updateProject(p.id, { closure: { ...c, ...patch } });
   return (
     <div class="grid g-12">
       <section class="hero ph-tiles span-12">
         <div class="kpi lead"><span class="label">End date</span><span class="value">{left >= 0 ? `${left} days` : 'ended'}</span><span class="ctx">{date(p.end)}</span></div>
         <div class="kpi"><span class="label">Final report due</span><span class="value" style={{ fontSize: '22px' }}>{final ? date(final.due) : '—'}</span><span class="ctx">{final?.status ?? 'set reporting terms in the contract'}</span></div>
-        <div class="kpi"><span class="label">Closure checklist</span><span class="value">{nDone}/{ITEMS.length}</span><span class="ctx">{nDone === ITEMS.length ? 'complete' : `${ITEMS.length - nDone} to do`}</span></div>
+        <div class="kpi"><span class="label">Closure checklist</span><span class="value">{nDone}/{steps.length}</span><span class="ctx">{nDone === steps.length ? 'complete' : `${steps.filter((x) => x.state === 'overdue').length} overdue · ${steps.length - nDone} to do`}</span></div>
         <div class="kpi"><span class="label">{balance >= 0 ? 'Final payment expected' : 'To be recovered'}</span><span class="value" style={{ color: balance < 0 ? 'var(--critical)' : undefined }}>{full(Math.abs(balance))}</span><span class="ctx">at the current forecast</span></div>
       </section>
       <section class="card span-7">
-        <div class="card-h"><div><h2>Closure checklist</h2><p>Tick when done · some items are checked from the data on file</p></div></div>
-        <ul class="cl-list">{ITEMS.map((i) => {
-          const v = isDone(i.k), fromData = done[i.k] == null && auto[i.k] != null;
-          return <li class={v ? 'done' : ''}><label><input type="checkbox" checked={v} onChange={() => save({ done: { ...done, [i.k]: !v } })} />
-            <div><b>{i.label}</b><small>{i.hint}{fromData ? ' · from data' : ''}{i.k === 'staff' && beyond.length ? ` · ${beyond.length} contract(s) end after the project` : ''}{i.k === 'commitments' && openPO > 1 ? ` · ${full(openPO)} still open` : ''}</small></div></label></li>;
-        })}</ul>
+        <div class="card-h"><div><h2>Closure timeline</h2><p>Each step is due relative to the end date ({date(p.end)}) · tick when done · some are checked from the data on file</p></div></div>
+        <ol class="ct">{steps.map((st) => (
+          <li class={`ct-${st.state}`}><span class="ct-dot" />
+            <label><input type="checkbox" checked={st.state === 'done'} onChange={() => save({ done: { ...done, [st.k]: st.state !== 'done' } })} />
+              <div><div class="ct-top"><b>{st.label}</b><span class={`badge ${st.state === 'done' ? 'good' : st.state === 'overdue' ? 'critical' : st.state === 'due' ? 'warning' : 'neutral'}`}>{st.state === 'done' ? 'done' : st.state === 'overdue' ? 'overdue' : st.state === 'due' ? 'due soon' : 'upcoming'}</span></div>
+                <small>{st.hint}{st.auto ? ` · ${st.auto}` : ''}</small>
+                <small class="ct-when num">{date(st.due)} · {st.offset === 0 ? 'end date' : st.offset < 0 ? `${-st.offset} month${st.offset < -1 ? 's' : ''} before the end` : `${st.offset} month${st.offset > 1 ? 's' : ''} after the end`}</small></div></label></li>))}
+        </ol>
       </section>
       <section class="card span-5">
         <div class="card-h"><div><h2>Final balance</h2><p>Forecast eligible costs × EU share − contributions received</p></div></div>

@@ -539,3 +539,10 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .uc-t td,.uc-t th{padding:4px 6px}.uc-bad{color:#e5484d;font-weight:700}.uc-low{color:#30a46c}
 @media screen and (max-width:640px){.uc-list{grid-template-columns:1fr}}
 .uc-nc{display:block;font-size:11px;color:var(--ink-3);font-style:italic}
+.ct{list-style:none;margin:0;padding:8px 20px 16px;position:relative}.ct::before{content:"";position:absolute;left:29px;top:16px;bottom:24px;width:2px;background:var(--line)}
+.ct li{position:relative;padding:6px 0 6px 30px}.ct-dot{position:absolute;left:4px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--surface-2);border:2px solid var(--line-strong)}
+.ct-done .ct-dot{background:#30a46c;border-color:#30a46c}.ct-overdue .ct-dot{background:#e5484d;border-color:#e5484d}.ct-due .ct-dot{background:#f5a524;border-color:#f5a524}
+.ct label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:8px 10px;border-radius:8px}.ct label:hover{background:var(--surface-2)}.ct-overdue label{background:color-mix(in srgb,#e5484d 6%,var(--surface))}
+.ct-top{display:flex;gap:8px;align-items:center;justify-content:space-between}.ct small{display:block;color:var(--ink-2);font-size:12px}.ct .ct-when{color:var(--ink-3);margin-top:2px}.ct-done b{text-decoration:line-through;color:var(--ink-2)}
+.clt-h{text-align:center;font-size:11px;white-space:nowrap}.clt-h small{display:block;color:var(--ink-3);font-weight:500}
+.clt-c{text-align:center}.clt-c span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;color:#fff;font-size:12px;font-weight:800;border:1px solid var(--line)}
