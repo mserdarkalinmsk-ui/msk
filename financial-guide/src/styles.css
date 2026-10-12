@@ -826,3 +826,16 @@ small, .small { font-size: 12.5px; }
 @media (max-width: 860px) { .ucf { grid-template-columns: minmax(0, 1fr); } .ucf li:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -13px; transform: translateX(-50%); } }
 .rt-phase { display: flex; flex-direction: column; justify-content: flex-start; }
 .rt-phase b { white-space: normal; font-size: 12.5px; line-height: 1.25; overflow: visible; }
+
+/* ---------- memory aids: rule of thumb, key facts, worked example ---------- */
+.mem { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.mem-rule { flex: 2 1 320px; padding: 14px 18px; border-radius: 14px; color: #fff; background: linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 70%, var(--c1))); box-shadow: 0 10px 24px -14px var(--navy); }
+.mem-rule small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.mem-rule b { display: block; font-size: 17px; line-height: 1.35; margin-top: 2px; }
+.mem-fact { flex: 1 1 150px; padding: 12px 14px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
+.mem-fact b { display: block; font-size: 20px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.mem-fact span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.example { display: flex; gap: 12px; padding: 14px 16px; margin-bottom: 14px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--c2) 45%, var(--line)); background: color-mix(in srgb, var(--c2) 6%, var(--panel)); }
+.example > span { color: var(--c2); font-size: 14px; margin-top: 2px; }
+.example small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c2); }
+.example p { margin: 3px 0 0; font-size: 14px; line-height: 1.55; }
