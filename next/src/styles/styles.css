@@ -551,3 +551,5 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .ap-plan tfoot td{font-weight:700;border-top:2px solid var(--line-strong)}
 .cm-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.cm-chips>.muted{font-size:12px;min-width:70px}
 .cm-sum tr.sel td{background:color-mix(in srgb,var(--accent,#3b82c4) 10%,transparent)}.cm-sum tfoot td{border-top:2px solid var(--line-strong);font-weight:600}.cm-sum .cm-bar{display:block}
+.sh-opt{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:10px;cursor:pointer}.sh-opt input{margin-top:3px}
+.sh-banner{background:color-mix(in srgb,#3b82c4 10%,var(--surface));border-color:color-mix(in srgb,#3b82c4 35%,transparent)}
