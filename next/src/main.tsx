@@ -17,6 +17,7 @@ import { Drawer } from './ui/Drawer';
 import { Palette, Toasts } from './ui/Palette';
 import { Placeholder, ROUTES, Shell } from './ui/Shell';
 import { applyPrefs } from './ui/Appearance';
+import { loadCharts } from './ui/Chart';
 import { alerts } from './domain/insights';
 import { TODAY } from './today';
 
@@ -72,3 +73,5 @@ function App() {
 applyPrefs();
 render(<App />, document.getElementById('app')!);
 load();
+// Charts are not needed for the first paint: fetch the library right after it.
+requestAnimationFrame(() => setTimeout(() => void loadCharts(), 0));

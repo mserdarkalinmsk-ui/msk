@@ -5,7 +5,7 @@ import { extractionLines, isExtraction } from './extraction';
 const DAY = 86_400_000;
 export const n = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 export const parseDate = (s: string): Date => new Date(s + (s.length === 10 ? 'T00:00:00Z' : ''));
-const sum = <T>(a: T[], f: (x: T) => number) => a.reduce((s, x) => s + f(x), 0);
+const sum = <T>(a: T[], f: (x: T, i: number) => number) => a.reduce((s, x, i) => s + f(x, i), 0);
 
 /** Most recent reporting period that carries line-level figures. */
 /** Same month → the most recently imported report wins (a re-upload replaces an older reading of the same report). */
@@ -80,7 +80,16 @@ export function monthsBetween(a: Date, b: Date) {
 }
 
 /** Cumulative actual spend known at each report date (start at 0 on the project start). */
+// Spend points are asked for per month and per project while building series: read them once per project version.
+const ptsCache = new WeakMap<Project, { rp: unknown; st: string; v: { t: number; v: number }[] }>();
 export function spendPoints(p: Project): { t: number; v: number }[] {
+  const c = ptsCache.get(p);
+  if (c && c.rp === p.reportingPeriods && c.st === p.start) return c.v;
+  const v = readSpendPoints(p);
+  ptsCache.set(p, { rp: p.reportingPeriods, st: p.start, v });
+  return v;
+}
+function readSpendPoints(p: Project): { t: number; v: number }[] {
   const pts = (p.reportingPeriods ?? [])
     .filter((r) => r.snapshot?.lines?.length)
     .map((r) => ({ t: parseDate(r.date).getTime(), v: sum(r.snapshot!.lines, (l) => n(l.actual)) }))
@@ -135,24 +144,34 @@ export interface SeriesPoint { t: number; actual: number | null; plan: number; l
  * linear plan (budget × elapsed), and a forecast band from the recent rate
  * (±20 %), capped at each project's budget.
  */
+let seriesMemo: { ps: Project[]; t: number; v: SeriesPoint[] } | null = null;
 export function portfolioSeries(ps: Project[], today: Date): SeriesPoint[] {
+  // Overview, pack and deck ask for the same series: reuse it while the projects (objects) are unchanged.
+  const m = seriesMemo;
+  if (m && m.t === today.getTime() && m.ps.length === ps.length && m.ps.every((p, i) => p === ps[i])) return m.v;
+  const v = buildSeries(ps, today);
+  seriesMemo = { ps: [...ps], t: today.getTime(), v };
+  return v;
+}
+function buildSeries(ps: Project[], today: Date): SeriesPoint[] {
   ps = ps.filter((p) => !p.datesTbc);
   if (!ps.length) return [];
   const s0 = new Date(Math.min(...ps.map((p) => parseDate(p.start).getTime())));
   const e0 = new Date(Math.max(...ps.map((p) => parseDate(p.end).getTime())));
   const lastReport = Math.max(...ps.map((p) => spendPoints(p).at(-1)!.t));
+  const rates = ps.map((p) => forecastRate(p, today).rate);
   const out: SeriesPoint[] = [];
   for (let y = s0.getUTCFullYear(), m = s0.getUTCMonth(); ; m++) {
     const t = monthEnd(y, m);
     const plan = sum(ps, (p) => n(p.budget) * elapsed(p, new Date(t)));
     const isPast = t <= lastReport;
     const proj = (k: number) =>
-      sum(ps, (p) => {
-        const last = spendPoints(p).at(-1)!;
+      sum(ps, (p, i) => {
+        const last = spendPoints(p).at(-1)!, rate = rates[i];
         const base = spendAt(p, Math.min(t, last.t));
         const end = parseDate(p.end).getTime();
         const months = Math.max(0, (Math.min(t, end) - last.t) / DAY / 30.4375);
-        return Math.min(n(p.budget), base + forecastRate(p, today).rate * k * months);
+        return Math.min(n(p.budget), base + rate * k * months);
       });
     out.push({
       t,
