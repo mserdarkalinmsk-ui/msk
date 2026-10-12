@@ -151,12 +151,13 @@ export interface HeadingRow { code: string; label: string; baseline: number; app
 
 /**
  * Compares each budget heading (1 Human resources, 2 Travel …) of the latest report with the approved
- * baseline. Contracts allow moving money between headings up to a ceiling (typically 15 %) without an
+ * baseline. Contracts allow moving money between headings up to a ceiling (25 % in this portfolio) without an
  * amendment; beyond it, or when spent + committed exceeds the heading by more than the ceiling, it is a breach.
  */
 type Sums = { baseline: number; approved: number; exposure: number };
 export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct: Sums; admin: Sums; contingency: number; total: Sums } {
-  const flex = (Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 15) / 100;
+  // Heading flexibility: 25% between headings (portfolio rule), unless the project sets its own.
+  const flex = (Number((p as { flexPct?: number }).flexPct) || 25) / 100;
   const base = p.approvedBudget?.lines ?? [];
   const cur = lines(p);
   const key = (c: string) => c.split('.')[0];
