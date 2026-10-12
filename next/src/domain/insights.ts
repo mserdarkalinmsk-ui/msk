@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 import { HEADINGS, attention, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
 import { daysUntil, renewals, roster } from './staff';
 import type { Ledger, Project } from './types';
@@ -161,7 +162,7 @@ export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct
   const base = p.approvedBudget?.lines ?? [];
   const cur = lines(p);
   const key = (c: string) => c.split('.')[0];
-  const codes = [...new Set([...base, ...cur].map((l) => key(l.code)))].filter((c) => HEADINGS[c] && c !== '10' && c !== '8').sort((a, b) => +a - +b);
+  const codes = [...new Set([...base, ...cur].map((l) => key(l.code)))].filter((c) => HEADINGS[c] && c !== ADMIN_LINE && c !== '8').sort((a, b) => +a - +b);
   const sum = (L: typeof cur, c: string, f: (l: (typeof cur)[number]) => number) => L.filter((l) => key(l.code) === c).reduce((s, l) => s + f(l), 0);
   const rows = codes.map((c) => {
     const inCur = cur.some((l) => key(l.code) === c);

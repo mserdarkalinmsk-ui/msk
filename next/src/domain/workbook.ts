@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 import { extractStaff, n2, type Sheet, type StaffGroup, type StaffRecord } from './staff';
 
 /**
@@ -305,7 +306,7 @@ export function toBudgetLines(wb: Workbook) {
     return { code: l.code, description: l.description, unit: l.unit, approved: l.budget.cost ?? 0, approvedUnits: l.budget.units, unitRate: l.budget.rate, actual, spentCommitted: sc, committed: Math.max(0, sc - actual), reportedUnits: l.actual.units, reportedUnitRate: l.actual.rate, forecast: l.planned?.cost ?? null, proposedBudget: l.proposal?.cost ?? null, roundedBudget: l.rounded?.cost ?? null };
   });
   const ad = wb.totals.admin;
-  if (ad && (ad.budget || ad.actual)) L.push({ code: '10', description: 'Administrative costs', unit: '7%', approved: ad.budget, approvedUnits: null, unitRate: null, actual: ad.actual, spentCommitted: ad.sc, committed: Math.max(0, ad.sc - ad.actual), reportedUnits: null, reportedUnitRate: null, forecast: ad.planned ?? null, proposedBudget: ad.proposal ?? null, roundedBudget: ad.rounded ?? null });
+  if (ad && (ad.budget || ad.actual)) L.push({ code: ADMIN_LINE, description: 'Administrative costs', unit: '7%', approved: ad.budget, approvedUnits: null, unitRate: null, actual: ad.actual, spentCommitted: ad.sc, committed: Math.max(0, ad.sc - ad.actual), reportedUnits: null, reportedUnitRate: null, forecast: ad.planned ?? null, proposedBudget: ad.proposal ?? null, roundedBudget: ad.rounded ?? null });
   return L;
 }
 

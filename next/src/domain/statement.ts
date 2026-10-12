@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from './terms';
 import { lines as linesOf, reportsByDate } from './calc';
 import type { Project } from './types';
 import type { WbLine, WbTotals } from './workbook';
@@ -24,11 +25,11 @@ export function portfolioStatement(P: Project[]) {
   const L = [...by.values()].map((w) => ({ ...w, budget: { ...w.budget, rate: w.budget.units ? w.budget.cost! / w.budget.units : null, units: w.budget.units || null }, actual: { ...w.actual, rate: w.actual.units ? w.actual.cost! / w.actual.units : null, units: w.actual.units || null },
     planned: w.planned!.cost ? w.planned : undefined, rounded: w.rounded!.cost ? w.rounded : undefined }));
   for (const l of L) l.leaf = !L.some((o) => o !== l && o.code.startsWith(l.code + '.'));
-  const adminL = L.find((l) => l.code === '10'), D = L.filter((l) => l.leaf && l.code !== '10');
+  const adminL = L.find((l) => l.code === ADMIN_LINE), D = L.filter((l) => l.leaf && l.code !== ADMIN_LINE);
   const t = (A: WbLine[]): WbTotals => ({ budget: A.reduce((s, l) => s + (l.budget.cost ?? 0), 0), actual: A.reduce((s, l) => s + (l.actual.cost ?? 0), 0), sc: A.reduce((s, l) => s + (l.sc ?? 0), 0),
     planned: A.reduce((s, l) => s + (l.planned?.cost ?? 0), 0) || undefined, rounded: A.reduce((s, l) => s + (l.rounded?.cost ?? 0), 0) || undefined, proposalBase: A.reduce((s, l) => s + (l.proposalBase ?? 0), 0) });
   const direct = t(D), admin = adminL ? t([adminL]) : undefined;
   const eligible = admin ? { budget: direct.budget + admin.budget, actual: direct.actual + admin.actual, sc: direct.sc + admin.sc, planned: direct.planned != null ? direct.planned + (admin.planned ?? 0) : undefined, rounded: direct.rounded != null ? direct.rounded + (admin.rounded ?? 0) : undefined, proposalBase: (direct.proposalBase ?? 0) + (admin.proposalBase ?? 0) } : undefined;
-  return { lines: L.filter((l) => l.code !== '10'), totals: { direct, admin, eligible }, names };
+  return { lines: L.filter((l) => l.code !== ADMIN_LINE), totals: { direct, admin, eligible }, names };
 }
 

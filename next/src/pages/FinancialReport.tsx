@@ -1,3 +1,4 @@
+import { ADMIN_LINE } from '../domain/terms';
 import { enrichExtraction } from '../domain/extraction';
 import { useState } from 'preact/hooks';
 import { set } from '../data/store';
@@ -211,7 +212,7 @@ function fundLabel(d: string) {
 /** Older imports may lack the admin and total rows: take admin from the project's lines (rebuilt there) and add it up. */
 function fillTotals(p: Project, T: WorkbookSummary['totals']): WorkbookSummary['totals'] {
   if (T.admin && T.eligible) return T;
-  const a = lines(p).find((l) => l.code === '10');
+  const a = lines(p).find((l) => l.code === ADMIN_LINE);
   const admin = T.admin ?? (a ? { budget: a.approved ?? 0, actual: a.actual ?? 0, sc: a.spentCommitted ?? (a.actual ?? 0) } : undefined);
   const eligible = T.eligible ?? (T.direct && admin ? { budget: T.direct.budget + (T.contingency?.budget ?? 0) + admin.budget, actual: T.direct.actual + (T.contingency?.actual ?? 0) + admin.actual, sc: T.direct.sc + (T.contingency?.sc ?? 0) + admin.sc } : undefined);
   return { ...T, admin, eligible };
