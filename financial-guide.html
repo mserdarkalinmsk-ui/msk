@@ -1126,6 +1126,51 @@ button.mem-fact:hover { border-color: var(--accent); box-shadow: var(--shadow); 
 button.mem-fact i { display: block; margin-top: 8px; font-style: normal; font-size: 12px; font-weight: 600; color: var(--accent); }
 @media print { .sheet { display: none !important; } }
 
+/* ---------- route finder + lanes ---------- */
+.rf { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 0; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 24px 50px -38px var(--navy); }
+.rf-in { padding: 24px; color: #fff; background: linear-gradient(150deg, var(--navy), color-mix(in srgb, var(--navy) 65%, var(--c1))); display: grid; gap: 14px; align-content: start; }
+.rf-in .eyebrow { color: rgba(255,255,255,.7); } .rf-in h3 { margin: -6px 0 0; color: #fff; font-size: 20px; }
+.rf-amount span, .rf-segs span { display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; opacity: .8; margin-bottom: 6px; }
+.rf-amount div { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 14px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); }
+.rf-amount em { font-style: normal; font-size: 24px; font-weight: 700; opacity: .8; }
+.rf-amount input { flex: 1; min-width: 0; border: 0; background: none; color: #fff; font: 700 28px var(--font); outline: none; padding: 4px 0; font-variant-numeric: tabular-nums; }
+.rf-amount input::placeholder { color: rgba(255,255,255,.4); }
+.rf-segs { display: grid; gap: 12px; } .rf-segs > div { display: flex; flex-wrap: wrap; gap: 6px; } .rf-segs > div > span { width: 100%; margin: 0; }
+.rf-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.rf-seg b { display: inline-block; padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,.3); cursor: pointer; transition: background .15s; }
+.rf-seg input:checked + b { background: #fff; color: var(--navy); border-color: #fff; }
+.rf-seg input:focus-visible + b { outline: 2px solid #fff; outline-offset: 2px; }
+.rf-out { padding: 10px 24px 22px; display: grid; gap: 4px; align-content: start; }
+.rf-res { padding: 14px 16px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
+.rf-res small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.rf-res > b { display: block; font-size: 20px; color: var(--navy); margin: 2px 0 8px; }
+.rf-chain, .lane-who > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rf-chain span, .lane-who span { padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--panel); border: 1px solid var(--line); color: var(--ink); }
+.rf-chain i, .lane-who i { font-style: normal; color: var(--muted); font-size: 12px; }
+.rf-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; } .rf-tags span { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; background: var(--sunken); color: var(--ink-2); }
+.rf-tags .on { background: var(--c1); color: #fff; } .rf-tags .warn { background: var(--warn-soft); color: var(--warn); } .rf-tags .risk { background: var(--risk-soft); color: var(--risk); }
+.rf-res a { font-size: 13.5px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.rf-hint { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+.lane { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c); transition: transform .25s, box-shadow .25s, opacity .25s; }
+.lane header { display: flex; gap: 12px; align-items: center; }
+.lane-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: var(--c); font-size: 17px; box-shadow: 0 8px 16px -8px var(--c); }
+.lane header b { display: block; font-size: 16.5px; color: var(--navy); } .lane header small { font-size: 13px; font-weight: 600; color: var(--c); }
+.lane > p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.lane small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.lane-who small, .lane-ctl small { display: block; margin-bottom: 6px; }
+.lane-ctl p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.lane details { border-top: 1px solid var(--line); padding-top: 8px; }
+.lane summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--c); }
+.lane ol, .lane ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; } .lane li b { display: block; color: var(--ink); } .lane li span { color: var(--muted); }
+.lane.hit { transform: translateY(-4px); box-shadow: 0 0 0 2px var(--c), 0 24px 44px -24px var(--c); }
+.lane.dim { opacity: .5; }
+.specials { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.special { display: flex; gap: 14px; padding: 16px; border-radius: 16px; background: color-mix(in srgb, var(--c) 7%, var(--panel)); border: 1px solid color-mix(in srgb, var(--c) 25%, var(--line)); }
+.special > span { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--c); color: #fff; font-weight: 800; font-size: 14px; }
+.special b { display: block; color: var(--navy); font-size: 14.5px; } .special p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+@media (max-width: 960px) { .rf, .lanes, .specials { grid-template-columns: minmax(0, 1fr); } }
+
 </style>
 </head>
 <body>
@@ -8352,7 +8397,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:55</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 20:00</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -8950,27 +8995,37 @@ window.FG_CONTENT = {
       ${CONTRACT_ROWS.map((r) => `<tr><td><b>${esc(r[0])}</b><small>${esc(r[1])}</small></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td>${esc(r[6])}</td></tr>`).join("")}
       </tbody></table></div></div></section>`;
   }
+  // Route finder: value, type and funding in → the matching lane lights up with its approvals, controls, steps and documents.
+  const LANES = [
+    ["direct", "◆", 2, "Direct award", (lo) => `Up to ${euro(lo)}`, "Low-value, clearly defined need. Competition is not required solely because of value, provided the direct-award conditions are met.", ["Buyer entity", "CCM validation"], "Document the need and the value-for-money basis; keep the file."],
+    ["competitive", "◇", 1, "Competitive bidding", (lo) => `${euro(lo)} – €184,000`, "Default route above the direct-award limit. Invite at least three potential suppliers.", ["Buyer entity", "DLAPIL review if extrabudgetary ≥ €55,000", "CCM approval"], "Assess the whole foreseeable need; never split to stay below a threshold."],
+    ["international", "✦", 3, "International public call", () => "From €184,000", "The total foreseeable need reaches the international threshold. Plan the longer publication, evaluation and approval route.", ["Buyer entity", "CCM", "Tenders Board"], "Tenders Board authorises the launch and the award; at least three weeks' publication."],
+  ];
   function thresholdMatrix() {
-    const st = FG.store.get("selector", { amount: "", type: "general", funding: "ordinary" });
-    const routes = C.thresholdRoutes;
-    return `<section class="card"><div class="card-head"><div><h3>Threshold matrix</h3><small>Total foreseeable value of the need, excluding VAT, over the full period of reference.</small></div></div>
-      <div class="card-body stack"><div class="table-wrap"><table class="t"><thead><tr><th>Value</th><th>Procedure</th><th>When to use it</th><th>Key control</th></tr></thead><tbody>
-        <tr><td><b>≤ €2,000</b><small>Goods · general services · works</small><b>≤ €6,000</b><small>Intellectual services</small></td><td><b>Direct Award</b></td><td>Low-value, clearly defined need. Competition is not required solely because of value, provided the direct-award conditions are met.</td><td>Document the need, price / value-for-money basis and keep the procurement file.</td></tr>
-        <tr><td><b>&gt; low-value limit and &lt; €184,000</b></td><td><b>Competitive Bidding</b></td><td>Default route above the direct-award limit. Invite at least three potential suppliers where applicable.</td><td>Assess the whole foreseeable need; never split purchases to stay below a threshold.</td></tr>
-        <tr><td><b>≥ €184,000</b><small>Total foreseeable need</small></td><td><b>International Public Call</b></td><td>Estimated need reaches the international threshold. Plan the longer publication, evaluation and approval route.</td><td>International tender route and Tenders Board controls.</td></tr>
-      </tbody></table></div>
-      <div class="grid g2">${ui.callout("info", "Special option · buying at public prices below €10,000", "Within competitive bidding, publicly available prices from three or more suppliers may be compared instead of issuing invitations, where the conditions are met and screenshots are archived.")}
-      ${ui.callout("warn", "Additional control · XB / mixed funding €55,000 to < €184,000", "Legal Compliance Review is required before CCM approval. It does not replace the procurement procedure; it is an additional validation step.")}</div>
-      <form class="card card-pad" data-selector style="box-shadow:none;background:var(--panel-2)"><div class="eyebrow">Quick procedure check</div><div class="grid g3 mt">
-        ${ui.number("amount", st.amount, "Estimated value (€, excl. VAT)")}
-        ${ui.select("type", [["general", "Goods / general services / works"], ["intellectual", "Intellectual services"]], st.type, "Purchase type")}
-        ${ui.select("funding", [["ordinary", "Ordinary Budget"], ["xb", "Extrabudgetary / mixed"]], st.funding, "Funding")}
-      </div><div id="selectorOut" class="mt"></div></form>
-      <div class="grid g3">${Object.values(routes).map((r) => `<details class="card card-pad" style="box-shadow:none"><summary style="cursor:pointer"><div class="eyebrow">${esc(r.k)}</div><b>${esc(r.title)}</b><p class="small muted">${esc(r.desc)}</p></summary>
-        <div class="mt small"><div class="row">${ui.tag(r.authority, "accent")}${ui.tag(r.validation)}${ui.tag("Digital: " + r.digital)}</div>
-        <ol class="mt">${r.steps.map((s) => `<li><b>${esc(s[0])}</b> — ${esc(s[1])}</li>`).join("")}</ol>
-        <p class="mt"><b>Documents</b></p><ul>${r.docs.map((d) => `<li>${esc(d[0])}: <span class="muted">${esc(d[1])}</span></li>`).join("")}</ul></div></details>`).join("")}</div>
-      </div></section>`;
+    const st = FG.store.get("selector", { amount: "", type: "general", funding: "ordinary" }), routes = C.thresholdRoutes;
+    const lo = st.type === "intellectual" ? E.LIMITS.lowIntellectual : E.LIMITS.lowGoods;
+    return `<section class="rf" data-selector-wrap>
+      <form class="rf-in" data-selector>
+        <div class="eyebrow">Route finder</div><h3>Where does your purchase fall?</h3>
+        <label class="rf-amount"><span>Total foreseeable value, excl. VAT</span><div><em>€</em><input type="number" inputmode="decimal" min="0" step="any" name="amount" value="${esc(st.amount)}" placeholder="e.g. 90000"></div></label>
+        <div class="rf-segs"><div><span>Purchase type</span>${["general", "intellectual"].map((v) => `<label class="rf-seg"><input type="radio" name="type" value="${v}" ${st.type === v ? "checked" : ""}><b>${v === "general" ? "Goods / services / works" : "Intellectual services"}</b></label>`).join("")}</div>
+          <div><span>Funding</span>${["ordinary", "xb"].map((v) => `<label class="rf-seg"><input type="radio" name="funding" value="${v}" ${st.funding === v ? "checked" : ""}><b>${v === "ordinary" ? "Ordinary Budget" : "Extrabudgetary / mixed"}</b></label>`).join("")}</div></div>
+      </form>
+      <div class="rf-out" id="selectorOut"></div>
+    </section>
+    <div class="lanes">${LANES.map(([k, ic, c, title, range, when, who, control]) => { const r = routes[k];
+      return `<article class="lane" data-lane="${k}" style="--c:var(--c${c})">
+        <header><span class="lane-ic">${ic}</span><div><b>${title}</b><small data-range="${k}">${esc(range(lo))}</small></div></header>
+        <p>${esc(when)}</p>
+        <div class="lane-who"><small>Who approves</small><div>${who.map((w, i) => `${i ? '<i aria-hidden="true">→</i>' : ""}<span>${esc(w)}</span>`).join("")}</div></div>
+        <div class="lane-ctl"><small>Key control</small><p>${esc(control)}</p></div>
+        <details><summary>${r.steps.length} steps</summary><ol>${r.steps.map((x) => `<li><b>${esc(x[0])}</b><span>${esc(x[1])}</span></li>`).join("")}</ol></details>
+        <details><summary>${r.docs.length} documents</summary><ul>${r.docs.map((d) => `<li><b>${esc(d[0])}</b><span>${esc(d[1])}</span></li>`).join("")}</ul></details>
+      </article>`; }).join("")}</div>
+    <div class="specials">
+      <div class="special" style="--c:var(--c5)"><span>€10k</span><div><b>Special option · public prices below €10,000</b><p>Within competitive bidding, publicly available prices from three or more suppliers may be compared instead of issuing invitations, where the conditions are met and screenshots are archived.</p></div></div>
+      <div class="special" style="--c:var(--c3)"><span>LCR</span><div><b>Extra control · extrabudgetary €55,000 – €184,000</b><p>A DLAPIL Legal Compliance Review (5 working days) is required before CCM approval. It adds a validation step; it does not replace the procedure.</p></div></div>
+    </div>`;
   }
   function procRuler(value, type, funding) {
     const L = E.LIMITS, low = type === "intellectual" ? L.lowIntellectual : L.lowGoods, xb = funding === "xb";
@@ -8981,16 +9036,21 @@ window.FG_CONTENT = {
   function mountSelector(root) {
     const form = root.querySelector("[data-selector]");
     const run = () => {
-      const v = Object.fromEntries(new FormData(form));
+      const v = Object.fromEntries(new FormData(form)), amount = Number(v.amount) || 0;
       FG.store.set("selector", v);
-      const out = root.querySelector("#selectorOut");
-      out.innerHTML = procRuler(Number(v.amount) || 0, v.type, v.funding);
-      if (!Number(v.amount)) { out.insertAdjacentHTML("beforeend", `<p class="small muted mt">Enter the estimated value to see the route.</p>`); return; }
-      const r = E.procurement({ amount: v.amount, type: v.type, funding: v.funding });
-      out.insertAdjacentHTML("beforeend", ui.callout(r.tone === "good" ? "good" : "warn", r.route, `${r.kpis[2][1]}. ${r.flags[r.flags.length - 1][0]}. `) + `<a class="btn sm mt" href="#/engines/procurement">Open the full Procurement Route engine →</a>`);
+      const lo = v.type === "intellectual" ? E.LIMITS.lowIntellectual : E.LIMITS.lowGoods;
+      LANES.forEach(([k, , , , range]) => { const el = root.querySelector(`[data-range="${k}"]`); if (el) el.textContent = range(lo); });
+      const r = amount ? E.procurementCase({ value: amount, type: v.type, funding: v.funding }) : null;
+      const lane = r ? (r.key === "direct-low" ? "direct" : r.key) : null;
+      root.querySelectorAll("[data-lane]").forEach((el) => { el.classList.toggle("hit", el.dataset.lane === lane); el.classList.toggle("dim", !!lane && el.dataset.lane !== lane); });
+      root.querySelector("#selectorOut").innerHTML = `${procRuler(amount, v.type, v.funding)}${r ? `<div class="rf-res"><small>Your route</small><b>${esc(r.route)}</b>
+        <div class="rf-chain">${r.approvals.map(([w], i) => `${i ? '<i aria-hidden="true">→</i>' : ""}<span>${esc(w)}</span>`).join("")}</div>
+        <div class="rf-tags"><span class="${r.eproc.mandatory ? "on" : ""}">${r.eproc.mandatory ? "e-procurement mandatory" : "e-procurement not required"}</span>${r.lcr ? '<span class="warn">Legal Compliance Review</span>' : ""}${r.risks.filter((x) => x[0] === "risk").map((x) => `<span class="risk">${esc(x[1])}</span>`).join("")}</div>
+        <a href="#/procurement/my-case">Plan this as my case →</a></div>` : `<p class="rf-hint">Type a value to see your route light up.</p>`}`;
     };
-    form.addEventListener("input", run); form.addEventListener("submit", (e) => e.preventDefault()); run();
+    form.addEventListener("input", run); form.addEventListener("change", run); form.addEventListener("submit", (e) => e.preventDefault()); run();
   }
+
   function tenderDesign() {
     const i = FG.store.get("tender:i", 0), s = C.tenderDesign[i];
     const list = (title, items) => items && items.length ? `<div><small>${esc(title)}</small><ul>${items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
@@ -9659,7 +9719,7 @@ window.FG_CONTENT = {
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.sh-fig,.lf-left,.lf-q,.lf-dots,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.rf,.lanes,.specials,.sh-fig,.lf-left,.lf-q,.lf-dots,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();

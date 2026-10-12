@@ -299,27 +299,37 @@
       ${CONTRACT_ROWS.map((r) => `<tr><td><b>${esc(r[0])}</b><small>${esc(r[1])}</small></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td>${esc(r[6])}</td></tr>`).join("")}
       </tbody></table></div></div></section>`;
   }
+  // Route finder: value, type and funding in → the matching lane lights up with its approvals, controls, steps and documents.
+  const LANES = [
+    ["direct", "◆", 2, "Direct award", (lo) => `Up to ${euro(lo)}`, "Low-value, clearly defined need. Competition is not required solely because of value, provided the direct-award conditions are met.", ["Buyer entity", "CCM validation"], "Document the need and the value-for-money basis; keep the file."],
+    ["competitive", "◇", 1, "Competitive bidding", (lo) => `${euro(lo)} – €184,000`, "Default route above the direct-award limit. Invite at least three potential suppliers.", ["Buyer entity", "DLAPIL review if extrabudgetary ≥ €55,000", "CCM approval"], "Assess the whole foreseeable need; never split to stay below a threshold."],
+    ["international", "✦", 3, "International public call", () => "From €184,000", "The total foreseeable need reaches the international threshold. Plan the longer publication, evaluation and approval route.", ["Buyer entity", "CCM", "Tenders Board"], "Tenders Board authorises the launch and the award; at least three weeks' publication."],
+  ];
   function thresholdMatrix() {
-    const st = FG.store.get("selector", { amount: "", type: "general", funding: "ordinary" });
-    const routes = C.thresholdRoutes;
-    return `<section class="card"><div class="card-head"><div><h3>Threshold matrix</h3><small>Total foreseeable value of the need, excluding VAT, over the full period of reference.</small></div></div>
-      <div class="card-body stack"><div class="table-wrap"><table class="t"><thead><tr><th>Value</th><th>Procedure</th><th>When to use it</th><th>Key control</th></tr></thead><tbody>
-        <tr><td><b>≤ €2,000</b><small>Goods · general services · works</small><b>≤ €6,000</b><small>Intellectual services</small></td><td><b>Direct Award</b></td><td>Low-value, clearly defined need. Competition is not required solely because of value, provided the direct-award conditions are met.</td><td>Document the need, price / value-for-money basis and keep the procurement file.</td></tr>
-        <tr><td><b>&gt; low-value limit and &lt; €184,000</b></td><td><b>Competitive Bidding</b></td><td>Default route above the direct-award limit. Invite at least three potential suppliers where applicable.</td><td>Assess the whole foreseeable need; never split purchases to stay below a threshold.</td></tr>
-        <tr><td><b>≥ €184,000</b><small>Total foreseeable need</small></td><td><b>International Public Call</b></td><td>Estimated need reaches the international threshold. Plan the longer publication, evaluation and approval route.</td><td>International tender route and Tenders Board controls.</td></tr>
-      </tbody></table></div>
-      <div class="grid g2">${ui.callout("info", "Special option · buying at public prices below €10,000", "Within competitive bidding, publicly available prices from three or more suppliers may be compared instead of issuing invitations, where the conditions are met and screenshots are archived.")}
-      ${ui.callout("warn", "Additional control · XB / mixed funding €55,000 to < €184,000", "Legal Compliance Review is required before CCM approval. It does not replace the procurement procedure; it is an additional validation step.")}</div>
-      <form class="card card-pad" data-selector style="box-shadow:none;background:var(--panel-2)"><div class="eyebrow">Quick procedure check</div><div class="grid g3 mt">
-        ${ui.number("amount", st.amount, "Estimated value (€, excl. VAT)")}
-        ${ui.select("type", [["general", "Goods / general services / works"], ["intellectual", "Intellectual services"]], st.type, "Purchase type")}
-        ${ui.select("funding", [["ordinary", "Ordinary Budget"], ["xb", "Extrabudgetary / mixed"]], st.funding, "Funding")}
-      </div><div id="selectorOut" class="mt"></div></form>
-      <div class="grid g3">${Object.values(routes).map((r) => `<details class="card card-pad" style="box-shadow:none"><summary style="cursor:pointer"><div class="eyebrow">${esc(r.k)}</div><b>${esc(r.title)}</b><p class="small muted">${esc(r.desc)}</p></summary>
-        <div class="mt small"><div class="row">${ui.tag(r.authority, "accent")}${ui.tag(r.validation)}${ui.tag("Digital: " + r.digital)}</div>
-        <ol class="mt">${r.steps.map((s) => `<li><b>${esc(s[0])}</b> — ${esc(s[1])}</li>`).join("")}</ol>
-        <p class="mt"><b>Documents</b></p><ul>${r.docs.map((d) => `<li>${esc(d[0])}: <span class="muted">${esc(d[1])}</span></li>`).join("")}</ul></div></details>`).join("")}</div>
-      </div></section>`;
+    const st = FG.store.get("selector", { amount: "", type: "general", funding: "ordinary" }), routes = C.thresholdRoutes;
+    const lo = st.type === "intellectual" ? E.LIMITS.lowIntellectual : E.LIMITS.lowGoods;
+    return `<section class="rf" data-selector-wrap>
+      <form class="rf-in" data-selector>
+        <div class="eyebrow">Route finder</div><h3>Where does your purchase fall?</h3>
+        <label class="rf-amount"><span>Total foreseeable value, excl. VAT</span><div><em>€</em><input type="number" inputmode="decimal" min="0" step="any" name="amount" value="${esc(st.amount)}" placeholder="e.g. 90000"></div></label>
+        <div class="rf-segs"><div><span>Purchase type</span>${["general", "intellectual"].map((v) => `<label class="rf-seg"><input type="radio" name="type" value="${v}" ${st.type === v ? "checked" : ""}><b>${v === "general" ? "Goods / services / works" : "Intellectual services"}</b></label>`).join("")}</div>
+          <div><span>Funding</span>${["ordinary", "xb"].map((v) => `<label class="rf-seg"><input type="radio" name="funding" value="${v}" ${st.funding === v ? "checked" : ""}><b>${v === "ordinary" ? "Ordinary Budget" : "Extrabudgetary / mixed"}</b></label>`).join("")}</div></div>
+      </form>
+      <div class="rf-out" id="selectorOut"></div>
+    </section>
+    <div class="lanes">${LANES.map(([k, ic, c, title, range, when, who, control]) => { const r = routes[k];
+      return `<article class="lane" data-lane="${k}" style="--c:var(--c${c})">
+        <header><span class="lane-ic">${ic}</span><div><b>${title}</b><small data-range="${k}">${esc(range(lo))}</small></div></header>
+        <p>${esc(when)}</p>
+        <div class="lane-who"><small>Who approves</small><div>${who.map((w, i) => `${i ? '<i aria-hidden="true">→</i>' : ""}<span>${esc(w)}</span>`).join("")}</div></div>
+        <div class="lane-ctl"><small>Key control</small><p>${esc(control)}</p></div>
+        <details><summary>${r.steps.length} steps</summary><ol>${r.steps.map((x) => `<li><b>${esc(x[0])}</b><span>${esc(x[1])}</span></li>`).join("")}</ol></details>
+        <details><summary>${r.docs.length} documents</summary><ul>${r.docs.map((d) => `<li><b>${esc(d[0])}</b><span>${esc(d[1])}</span></li>`).join("")}</ul></details>
+      </article>`; }).join("")}</div>
+    <div class="specials">
+      <div class="special" style="--c:var(--c5)"><span>€10k</span><div><b>Special option · public prices below €10,000</b><p>Within competitive bidding, publicly available prices from three or more suppliers may be compared instead of issuing invitations, where the conditions are met and screenshots are archived.</p></div></div>
+      <div class="special" style="--c:var(--c3)"><span>LCR</span><div><b>Extra control · extrabudgetary €55,000 – €184,000</b><p>A DLAPIL Legal Compliance Review (5 working days) is required before CCM approval. It adds a validation step; it does not replace the procedure.</p></div></div>
+    </div>`;
   }
   function procRuler(value, type, funding) {
     const L = E.LIMITS, low = type === "intellectual" ? L.lowIntellectual : L.lowGoods, xb = funding === "xb";
@@ -330,16 +340,21 @@
   function mountSelector(root) {
     const form = root.querySelector("[data-selector]");
     const run = () => {
-      const v = Object.fromEntries(new FormData(form));
+      const v = Object.fromEntries(new FormData(form)), amount = Number(v.amount) || 0;
       FG.store.set("selector", v);
-      const out = root.querySelector("#selectorOut");
-      out.innerHTML = procRuler(Number(v.amount) || 0, v.type, v.funding);
-      if (!Number(v.amount)) { out.insertAdjacentHTML("beforeend", `<p class="small muted mt">Enter the estimated value to see the route.</p>`); return; }
-      const r = E.procurement({ amount: v.amount, type: v.type, funding: v.funding });
-      out.insertAdjacentHTML("beforeend", ui.callout(r.tone === "good" ? "good" : "warn", r.route, `${r.kpis[2][1]}. ${r.flags[r.flags.length - 1][0]}. `) + `<a class="btn sm mt" href="#/engines/procurement">Open the full Procurement Route engine →</a>`);
+      const lo = v.type === "intellectual" ? E.LIMITS.lowIntellectual : E.LIMITS.lowGoods;
+      LANES.forEach(([k, , , , range]) => { const el = root.querySelector(`[data-range="${k}"]`); if (el) el.textContent = range(lo); });
+      const r = amount ? E.procurementCase({ value: amount, type: v.type, funding: v.funding }) : null;
+      const lane = r ? (r.key === "direct-low" ? "direct" : r.key) : null;
+      root.querySelectorAll("[data-lane]").forEach((el) => { el.classList.toggle("hit", el.dataset.lane === lane); el.classList.toggle("dim", !!lane && el.dataset.lane !== lane); });
+      root.querySelector("#selectorOut").innerHTML = `${procRuler(amount, v.type, v.funding)}${r ? `<div class="rf-res"><small>Your route</small><b>${esc(r.route)}</b>
+        <div class="rf-chain">${r.approvals.map(([w], i) => `${i ? '<i aria-hidden="true">→</i>' : ""}<span>${esc(w)}</span>`).join("")}</div>
+        <div class="rf-tags"><span class="${r.eproc.mandatory ? "on" : ""}">${r.eproc.mandatory ? "e-procurement mandatory" : "e-procurement not required"}</span>${r.lcr ? '<span class="warn">Legal Compliance Review</span>' : ""}${r.risks.filter((x) => x[0] === "risk").map((x) => `<span class="risk">${esc(x[1])}</span>`).join("")}</div>
+        <a href="#/procurement/my-case">Plan this as my case →</a></div>` : `<p class="rf-hint">Type a value to see your route light up.</p>`}`;
     };
-    form.addEventListener("input", run); form.addEventListener("submit", (e) => e.preventDefault()); run();
+    form.addEventListener("input", run); form.addEventListener("change", run); form.addEventListener("submit", (e) => e.preventDefault()); run();
   }
+
   function tenderDesign() {
     const i = FG.store.get("tender:i", 0), s = C.tenderDesign[i];
     const list = (title, items) => items && items.length ? `<div><small>${esc(title)}</small><ul>${items.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
