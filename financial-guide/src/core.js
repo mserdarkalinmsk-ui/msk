@@ -219,7 +219,8 @@
     const quizCat = FG.QUIZ_AT[path];
     if (quizCat && FG.ui.quiz) root.insertAdjacentHTML("beforeend", FG.ui.quiz(quizCat));
     const step = FG.JOURNEY.findIndex((j) => j.sections.includes(section));
-    if (step >= 0 && FG.JOURNEY[step + 1]) {
+    // Procurement and grants have their own route; the generic journey bar would compete with it.
+    if (step >= 0 && FG.JOURNEY[step + 1] && !["procurement", "grants"].includes(section)) {
       const n = FG.JOURNEY[step + 1], bar = document.createElement("nav");
       bar.className = "next-step no-print"; bar.setAttribute("aria-label", "Next step in the journey");
       bar.innerHTML = `<span>Step ${step + 1} of ${FG.JOURNEY.length} · ${esc(FG.JOURNEY[step].title)}</span><a href="#/${n.path}"><small>Next step</small><b>${esc(n.title)} →</b></a>`;

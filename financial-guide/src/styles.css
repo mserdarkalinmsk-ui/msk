@@ -1203,3 +1203,4 @@ button.mem-fact i { display: block; margin-top: 8px; font-style: normal; font-si
 .qz-miss { padding: 14px 20px 18px; display: grid; gap: 12px; } .qz-miss div { padding-left: 12px; border-left: 3px solid var(--risk); }
 .qz-miss b { font-size: 14.5px; } .qz-miss p { margin: 4px 0; font-size: 14px; color: var(--ink-2); } .qz-miss a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 @media (max-width: 760px) { .hub-sec { grid-template-columns: minmax(0, 1fr); } .qz-end { flex-direction: column; } .qz-lv div { grid-template-columns: minmax(0, 1fr) 80px 36px; } .qz-card { padding: 20px; } .qz-opts.tf { grid-template-columns: 1fr 1fr; } }
+.qz-mscn { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; font-style: italic; }
