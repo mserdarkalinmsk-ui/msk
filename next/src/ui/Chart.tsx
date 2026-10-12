@@ -4,7 +4,18 @@ import { useStore } from '../data/store';
 
 /** The chart library is loaded once, after the first screen is drawn; charts appear as soon as it is ready. */
 let lib: Promise<typeof import('./echartsSetup')> | null = null;
-export const loadCharts = () => (lib ??= import('./echartsSetup'));
+type Lib = typeof import('./echartsSetup');
+let mod: Lib | null = null;
+export const loadCharts = () => (lib ??= import('./echartsSetup').then((m) => (mod = m)));
+
+/** Charts below the fold are drawn when they come near the screen; printing draws them all first. */
+const waiting = new Map<Element, () => void>();
+const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { io!.unobserve(e.target); waiting.get(e.target)?.(); waiting.delete(e.target); } }, { rootMargin: '300px' }) : null;
+const drawAll = () => { for (const [el, go] of waiting) { io?.unobserve(el); go(); } waiting.clear(); };
+if (typeof window !== 'undefined') addEventListener('beforeprint', drawAll);
+const whenVisible = (el: Element, go: () => void) => { if (!io || (typeof matchMedia === 'function' && matchMedia('print').matches)) return go(); waiting.set(el, go); io.observe(el); return () => { io.unobserve(el); waiting.delete(el); }; };
+/** Draws every chart still waiting (before an export or print started from code). */
+export const drawAllCharts = drawAll;
 
 /** Resolved design tokens, read at render time so charts follow the theme. */
 export function tokens() {
@@ -44,7 +55,8 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
 
   useEffect(() => {
     let off = () => {}, dead = false;
-    loadCharts().then(({ echarts }) => {
+    // Drawn synchronously once the library is in (so a chart revealed by printing is on the page before the snapshot).
+    const draw = ({ echarts }: Lib) => {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c;
@@ -63,8 +75,9 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     const re = () => c.setOption(optRef.current(tokens()), true);
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
     off = () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
-    });
-    return () => { dead = true; off(); };
+    };
+    const stopWait = whenVisible(el.current!, () => { if (mod) draw(mod); else void loadCharts().then(draw); });
+    return () => { dead = true; stopWait?.(); off(); };
   }, []);
   useEffect(() => { inst.current?.setOption(option(tokens()), true); });
   void theme;

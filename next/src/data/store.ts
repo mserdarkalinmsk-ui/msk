@@ -33,6 +33,14 @@ export const SOURCE = (() => { const h = document.documentElement.cloneNode(true
 // A shared copy keeps its own storage slot, so opening it never mixes with the recipient's own ledger.
 const DB = 'portfolio-ledger-next', STORE = 'kv', KEY = DEMO ? 'demo' : EMBED ? `shared:${EMBED.id}` : 'ledger-v2';
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
+/**
+ * A new ledger for a change: the lists are copied, the projects and offices in them are shared. A mutation copies only
+ * the object it changes (own*), so a change costs the size of that object — not of every report in the portfolio — and
+ * unchanged projects keep their identity, which keeps the per-project caches warm.
+ */
+const draft = (l: Ledger): Ledger => ({ ...l, projects: [...l.projects], countries: [...l.countries], ...(l.offices ? { offices: [...l.offices] } : {}), ...(l.trash ? { trash: [...l.trash] } : {}) });
+const ownProject = (L: Ledger, id?: string) => { const i = L.projects.findIndex((p) => p.id === id); return i < 0 ? undefined : (L.projects[i] = clone(L.projects[i])); };
+const ownOffice = (L: Ledger, id: string) => { const i = (L.offices ?? []).findIndex((o) => o.id === id); return i < 0 ? undefined : (L.offices![i] = clone(L.offices![i])); };
 
 let state: State = {
   ledger: clone((EMBED ? EMBED.ledger ?? { countries: [], projects: [] } : seed) as unknown as Ledger),
@@ -164,7 +172,11 @@ const SEED_VERSION = 3;
 function mergeSeed(l: Ledger): Ledger {
   const v = (l as Ledger & { seedVersion?: number }).seedVersion ?? 1;
   if (DEMO) return l;
-  const S = seed as unknown as Ledger, L = clone(l);
+  const S = seed as unknown as Ledger;
+  // Copy the stored data only when something below changes it (the copy of a large ledger costs time on every opening).
+  const needs = v < SEED_VERSION || l.projects.some((x) => { const p = S.projects.find((y) => y.id === x.id || (y.bh && y.bh === x.bh)); return p && !p.datesTbc && (x.datesTbc || x.end <= x.start || (Date.parse(x.end) - Date.parse(x.start)) < 90 * 864e5); });
+  if (!needs) return l;
+  const L = clone(l);
   // Projects whose real dates are now in the start data leave set-up, whatever this browser's start-data version.
   let fixed = false;
   for (const x of L.projects) { const p = S.projects.find((y) => y.id === x.id || (y.bh && y.bh === x.bh)); if (p && !p.datesTbc && (x.datesTbc || x.end <= x.start || (Date.parse(x.end) - Date.parse(x.start)) < 90 * 864e5)) { x.start = p.start; x.end = p.end; delete x.datesTbc; fixed = true; } /* set-up or implausible dates (e.g. end read wrongly from a document) */ }
@@ -210,21 +222,23 @@ function relayExtractions(p: Project): Project {
 }
 export function upsertProject(p0: Project) {
   const p = relayExtractions(p0);
-  const L = clone(state.ledger);
+  const L = draft(state.ledger);
   const i = L.projects.findIndex((x) => x.id === p.id);
   if (i >= 0) L.projects[i] = p; else L.projects.push(p);
   commit(L, i >= 0 ? `Saved ${p.code}` : `Added ${p.code}`, p.code);
 }
 export function updateProject(id: string, patch: Partial<Project>) {
   const p = state.ledger.projects.find((x) => x.id === id); if (!p) return;
-  upsertProject({ ...clone(p), ...patch });
+  upsertProject({ ...p, ...patch });
 }
 /** Adds an office report (same office and date replaces), creating the office from the file on first import. */
 export function upsertOfficeReport(r: import('../domain/office').OfficeReport, country?: string) {
-  const L = clone(state.ledger), O = (L.offices ??= []);
+  const L = draft(state.ledger), O = (L.offices ??= []);
   // Country from the CCM label or office name (Bureau ANKARA → Türkiye), else the country filter in use.
   const c = country ?? officeCountry(`${r.ccmName ?? ''} ${r.office}`)?.id ?? (state.filters.country || L.countries[0]?.id || '');
   let o = O.find((x) => (r.ccm && x.ccm === r.ccm) || x.name === r.office);
+  if (o) o = ownOffice(L, o.id);
+  r = clone(r);
   if (!o) { o = { id: `office-${r.ccm ?? O.length + 1}`, name: r.office, country: c, ccm: r.ccm, bh: r.bh, reports: [] }; O.push(o); }
   const i = o.reports.findIndex((x) => x.date === r.date);
   if (i >= 0) o.reports[i] = r; else o.reports.push(r);
@@ -243,12 +257,12 @@ export function upsertOfficeReport(r: import('../domain/office').OfficeReport, c
   commit(L, `Office budget ${o.name} · ${r.date}`);
 }
 export function setOfficeNote(officeId: string, key: string, note: import('../domain/office').OfficeNote | null) {
-  const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  const L = draft(state.ledger), o = ownOffice(L, officeId); if (!o) return;
   const N = { ...(o.notes ?? {}) }; if (note) N[key] = note; else delete N[key]; o.notes = N;
   commit(L, note ? `${o.name} line ${key.split(':')[1]}: ${note.resolved ? 'corrected' : 'note'}` : 'Note removed');
 }
 export function setOfficeCountry(officeId: string, country: string) {
-  const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  const L = draft(state.ledger), o = ownOffice(L, officeId); if (!o) return;
   o.country = country; commit(L, `${o.name} → ${country.toUpperCase()}`);
 }
 /** Deleting is for the admin: the password is asked once per browser session. Guards mistakes, not a real lock (the file is offline). */
@@ -264,32 +278,33 @@ function toTrash(L: Ledger, t: Omit<TrashItem, 'id' | 'at'>) {
   L.trash = [{ ...clone(t), id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), at: new Date().toISOString() } as TrashItem, ...(L.trash ?? [])].slice(0, 100);
 }
 export function restoreTrash(id: string) {
-  const L = clone(state.ledger), t = L.trash?.find((x) => x.id === id); if (!t) return;
-  const P = (pid?: string) => L.projects.find((p) => p.id === pid);
+  const L = draft(state.ledger), t0 = L.trash?.find((x) => x.id === id); if (!t0) return;
+  const t = clone(t0);
+  const P = (pid?: string) => ownProject(L, pid);
   if (t.kind === 'project') { if (!L.projects.some((p) => p.id === (t.data as Project).id)) L.projects.push(t.data as Project); }
   else if (t.kind === 'country') { if (!L.countries.some((c) => c.id === (t.data as Country).id)) L.countries.push(t.data as Country); for (const p of t.projects ?? []) if (!L.projects.some((x) => x.id === p.id)) L.projects.push(p); }
   else if (t.kind === 'report') { const p = P(t.pid); if (!p) return toast('The project is gone — restore it first'); (p.reportingPeriods ??= []).push(t.data as ReportingPeriod); p.reportingPeriods.sort((a, b) => a.date.localeCompare(b.date)); }
   else if (t.kind === 'document') { const p = P(t.pid); if (!p) return toast('The project is gone — restore it first'); (p.documents ??= []).push(t.data as NonNullable<Project['documents']>[number]); }
   else if (t.kind === 'risk') { const p = P(t.pid); if (!p) return toast('The project is gone — restore it first'); (p.riskRegister ??= []).push(t.data as Risk); }
-  else if (t.kind === 'office-report') { const d = t.data as { office: import('../domain/office').Office; report: import('../domain/office').OfficeReport }; const o = (L.offices ??= []).find((x) => x.id === t.officeId); if (o) o.reports.push(d.report); else L.offices.push({ ...d.office, reports: [d.report] }); }
+  else if (t.kind === 'office-report') { const d = t.data as { office: import('../domain/office').Office; report: import('../domain/office').OfficeReport }; const o = t.officeId ? ownOffice(L, t.officeId) : undefined; L.offices ??= []; if (o) o.reports.push(d.report); else L.offices.push({ ...d.office, reports: [d.report] }); }
   L.trash = L.trash!.filter((x) => x.id !== id);
   commit(L, `Restored ${t.label}`, t.pid);
 }
 /** A one-click fix from Data check; anything it removes goes to the trash. */
 export function fixProject(pid: string, fix: import('../domain/health').AutoFix, f: typeof import('../domain/health').applyFix) {
-  const L = clone(state.ledger), i = L.projects.findIndex((p) => p.id === pid); if (i < 0) return;
+  const L = draft(state.ledger), i = L.projects.findIndex((p) => p.id === pid); if (i < 0) return;
   const { p, removed } = f(L.projects[i], fix);
   for (const r of removed) toTrash(L, { kind: r.kind, label: `${r.label} (${p.code})`, data: r.data, pid });
   L.projects[i] = p; commit(L, fix === 'use-approved' ? `${p.code}: budget set from the approved budget` : `${p.code}: ${removed.length} duplicate${removed.length === 1 ? '' : 's'} moved to the trash`, p.code);
 }
-export function emptyTrash() { if (!isAdmin()) return; const L = clone(state.ledger); L.trash = []; commit(L, 'Trash emptied'); }
+export function emptyTrash() { if (!isAdmin()) return; const L = draft(state.ledger); L.trash = []; commit(L, 'Trash emptied'); }
 export function deleteDocument(pid: string, name: string) {
   if (!isAdmin()) return;
   editProject(pid, (p) => { const d = p.documents?.find((x) => x.name === name); if (!d) return; p.documents = p.documents!.filter((x) => x !== d); toTrash(L0!, { kind: 'document', label: `${name} (${p.code})`, data: d, pid }); }, 'Document removed');
 }
 export function deleteOfficeReport(officeId: string, reportId: string) {
   if (!isAdmin()) return;
-  const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  const L = draft(state.ledger), o = ownOffice(L, officeId); if (!o) return;
   const rep = o.reports.find((r) => r.id === reportId); if (rep) toTrash(L, { kind: 'office-report', label: `${o.name} · ${rep.date}`, data: { office: { ...o, reports: [] }, report: rep }, officeId });
   o.reports = o.reports.filter((r) => r.id !== reportId);
   if (!o.reports.length) L.offices = L.offices!.filter((x) => x !== o);
@@ -297,13 +312,13 @@ export function deleteOfficeReport(officeId: string, reportId: string) {
 }
 export function deleteProjects(ids: string[]) {
   if (!isAdmin()) return;
-  const L = clone(state.ledger);
+  const L = draft(state.ledger);
   for (const p of L.projects.filter((p) => ids.includes(p.id))) toTrash(L, { kind: 'project', label: `${p.code} ${p.name}`, data: p });
   L.projects = L.projects.filter((p) => !ids.includes(p.id));
   commit(L, `Deleted ${ids.length} project${ids.length > 1 ? 's' : ''}`);
 }
 export function upsertCountry(c: Country) {
-  const L = clone(state.ledger);
+  const L = draft(state.ledger);
   const i = L.countries.findIndex((x) => x.id === c.id);
   if (i >= 0) L.countries[i] = c; else L.countries.push(c);
   L.countries.sort((a, b) => a.name.localeCompare(b.name));
@@ -314,7 +329,7 @@ export function deleteCountry(id: string, withProjects = false): string | null {
   const used = state.ledger.projects.filter((p) => p.country === id).length;
   if (used && !withProjects) return `${used} project${used > 1 ? 's' : ''} still use this country. Move or delete them first.`;
   if (!isAdmin()) return 'Only the admin can delete.';
-  const L = clone(state.ledger);
+  const L = draft(state.ledger);
   const c = L.countries.find((x) => x.id === id);
   if (c) toTrash(L, { kind: 'country', label: c.name, data: c, projects: L.projects.filter((p) => p.country === id) });
   L.projects = L.projects.filter((p) => p.country !== id);
@@ -325,8 +340,8 @@ export function deleteCountry(id: string, withProjects = false): string | null {
 }
 let L0: Ledger | null = null;
 function editProject(id: string, f: (p: Project) => void, message: string) {
-  const L = clone(state.ledger);
-  const p = L.projects.find((x) => x.id === id); if (!p) return;
+  const L = draft(state.ledger);
+  const p = ownProject(L, id); if (!p) return;
   L0 = L; f(p); L0 = null; commit(L, message, p.code);
 }
 export const upsertReport = (pid: string, r: ReportingPeriod) => editProject(pid, (p) => {
