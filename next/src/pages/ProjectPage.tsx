@@ -12,6 +12,7 @@ import { axisMoney, axisX, axisY } from './Overview';
 import { usedTone } from './Budget';
 import { StaffBoard } from './People';
 import { StaffPlanCard } from './StaffPlan';
+import { AnnualPlanCard } from './AnnualPlan';
 import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
 import { roster } from '../domain/staff';
@@ -23,12 +24,12 @@ import { projectSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
 import { ProjectForesight } from './Depletion';
 
-const TABS = ['Summary', 'Financial report', 'Budget lines', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
+const TABS = ['Summary', 'Financial report', 'Budget lines', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
 /** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
 const GROUPS: { label: string; tabs: Tab[] }[] = [
   { label: 'Summary', tabs: ['Summary'] },
-  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
+  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Annual plan', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
   { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
   { label: 'Staff', tabs: ['Staff'] },
   { label: 'Documents', tabs: ['Results & documents', 'History'] },
@@ -88,6 +89,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Results & documents' && <ResultsDocs p={p} />}
       {tab === 'Indicators' && <Indicators p={p} />}
       {tab === 'Justification' && <Justification p={p} />}
+      {tab === 'Annual plan' && <AnnualPlanCard p={p} />}
       {tab === 'Scenario' && <><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
       {tab === 'Revision' && <div class="grid g-12"><Revision p={p} /></div>}
       {tab === 'Closure' && <Closure p={p} />}
