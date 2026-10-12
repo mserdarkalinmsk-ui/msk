@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1e3a6e;--c1:#2f6fd6;--c2:#16938a;--c3:#c98a1a;--c4:#5b4bb7;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f4f6fb;
+--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--r-sm:8px;--r:14px;--r-lg:22px;--ease:cubic-bezier(.2,.8,.2,1);--mono:"JetBrains Mono",monospace}
+*{box-sizing:border-box}body{margin:0;font-family:"Space Grotesk",sans-serif;color:var(--ink);background:radial-gradient(40% 40% at 10% 0%,#2f6fd61f,transparent 70%),radial-gradient(35% 40% at 95% 15%,#16938a1a,transparent 70%),var(--bg);min-height:100vh}
+.top{display:flex;align-items:center;gap:10px;padding:14px 28px;border-bottom:1px solid var(--line);background:#ffffffb0;backdrop-filter:blur(14px)}
+.mark{width:32px;height:32px;border-radius:11px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.top b{font-size:13px;letter-spacing:.04em}.top small{display:block;font:9.5px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.wrap{max-width:1240px;margin:0 auto;padding:var(--s5) 28px var(--s7)}
+.crumb{font-size:13px;color:var(--muted)}.eyebrow{font:12px var(--mono);letter-spacing:.16em;color:var(--c1);margin-top:var(--s5)}
+h1{font-size:38px;letter-spacing:-.03em;margin:6px 0 4px;color:var(--navy)}.lead{color:var(--muted);margin:0 0 var(--s6);max-width:640px}
+.tag{font:11px var(--mono);letter-spacing:.08em;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 12%,#fff);color:var(--c)}
+.mod{display:flex;gap:var(--s3);align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:var(--s4);text-decoration:none;color:inherit;transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+.mod:hover{transform:translateY(-3px);box-shadow:0 14px 30px -12px color-mix(in srgb,var(--c) 45%,transparent)}
+.ico{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 60%,#fff));box-shadow:0 8px 16px -6px var(--c)}
+.mod b{display:block;font-size:15px}.mod small{color:var(--muted);font-size:12.5px;line-height:1.45;display:block;margin-top:2px}
+.bar{height:4px;border-radius:4px;background:#eef1f6;margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;width:var(--w);background:var(--c);border-radius:4px}
+.meta{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--muted);margin-top:6px}
+/* A: horizontal journey */
+.journey{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:var(--s5);position:relative}
+.phase{--c:var(--c1);border-radius:var(--r-lg);padding:var(--s5);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 9%,#fff),#ffffffcc);border:1px solid color-mix(in srgb,var(--c) 22%,var(--line));position:relative}
+.phase:not(:last-child)::after{content:"";position:absolute;right:-22px;top:46px;width:20px;height:2px;background:linear-gradient(90deg,var(--c),transparent)}
+.ph-head{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4)}.num{width:34px;height:34px;border-radius:50%;border:2px solid var(--c);color:var(--c);display:grid;place-items:center;font:600 14px var(--mono)}
+.ph-head h2{margin:0;font-size:18px}.ph-head p{margin:0;font-size:12.5px;color:var(--muted)}
+.list{display:grid;gap:var(--s3)}.phase.wide .list{grid-template-columns:1fr 1fr}
+.res{margin-top:var(--s5);display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;padding:var(--s4) var(--s5);border:1px dashed var(--line);border-radius:var(--r);background:#ffffff99}
+.res span{font:11px var(--mono);letter-spacing:.14em;color:var(--muted);margin-right:var(--s2)}.res a{font-size:13px;color:var(--navy);text-decoration:none;padding:6px 12px;border-radius:999px;background:#fff;border:1px solid var(--line)}
+/* B: vertical timeline */
+.tl{position:relative;padding-left:64px}.tl::before{content:"";position:absolute;left:22px;top:10px;bottom:10px;width:3px;border-radius:3px;background:linear-gradient(var(--c1),var(--c2),var(--c3))}
+.step{--c:var(--c1);position:relative;margin-bottom:var(--s6)}.step .num{position:absolute;left:-60px;top:0;width:40px;height:40px;background:#fff;box-shadow:0 0 0 6px var(--bg)}
+.step h2{margin:6px 0 2px;font-size:20px}.step>p{margin:0 0 var(--s4);color:var(--muted);font-size:13.5px}
+.row{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--s3)}
+</style></head><body><div class="top"><span class="mark">FG</span><span><b>FINANCIAL GUIDE</b><small>COUNCIL OF EUROPE</small></span></div>
+<div class="wrap"><div class="crumb">Home / <b>Projects</b></div><div class="eyebrow">01 / PROJECT FINANCE · PROJECT TEAM</div><h1>Projects</h1>
+<p class="lead">Follow the money through the life of a project: commit it, spend it, then close and file it.</p><div id="v"></div></div>
+<script>
+const P=[["01","Commit","Choose the procedure and sign","c1",[["⚖","Procurement","Thresholds, tender, evaluation and contract.","13 steps",40],["✦","Grant","Call, criteria, evaluation and agreement.","12 steps",15]]],
+["02","Spend","Order, receive and pay","c2",[["↔","PO & payment files","PO, delivery and payment package.","9 checks",60],["€","Petty cash","Limits, approval and reconciliation.","4 checks",0],["%","VAT procedures","Exemptions and supporting documents.","5 checks",0],["◈","Events & GDD","Event budget, logistics and GDD.","6 checks",20]]],
+["03","Close","Year-end and audit trail","c3",[["◷","End of year","Cut-off, allocation and closing list.","2026",0],["▤","Filing management","Evidence map, DMS and naming.","8 folders",30]]]];
+const mod=([i,t,d,m,w],c)=>`<a class="mod" style="--c:var(--${c})" href="#"><span class="ico">${i}</span><span style="flex:1"><b>${t}</b><small>${d}</small><div class="bar"><i style="--w:${w}%"></i></div><div class="meta"><span>${m}</span><span>${w}%</span></div></span></a>`;
+const res=`<div class="res"><span>RESOURCES</span><a href="#">Useful links & guidelines</a><a href="#">Templates</a><a href="#">Rules at a glance</a><a href="#">Glossary</a></div>`;
+document.getElementById("v").innerHTML=location.hash==="#b"
+?`<div class="tl">${P.map(([n,t,s,c,m])=>`<section class="step" style="--c:var(--${c})"><span class="num">${n}</span><span class="tag" style="--c:var(--${c})">PHASE ${n}</span><h2>${t}</h2><p>${s}</p><div class="row">${m.map(x=>mod(x,c)).join("")}</div></section>`).join("")}</div>${res}`
+:`<div class="journey">${P.map(([n,t,s,c,m])=>`<section class="phase ${m.length>2?"wide":""}" style="--c:var(--${c})"><div class="ph-head"><span class="num">${n}</span><div><h2>${t}</h2><p>${s}</p></div></div><div class="list">${m.map(x=>mod(x,c)).join("")}</div></section>`).join("")}</div>${res}`;
+</script></body></html>
