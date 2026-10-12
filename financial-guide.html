@@ -884,6 +884,40 @@ small, .small { font-size: 12.5px; }
 .build { float: right; opacity: .7; }
 @media (min-width: 900px) { .rt-scroll { overflow-x: hidden; } .rt-grid { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); min-width: 0; } }
 
+/* ---------- guided reader ---------- */
+.rd { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: start; }
+.rd-side { position: sticky; top: calc(var(--top) + 12px); }
+.rd-prog { padding: 4px 4px 12px; font-size: 12.5px; color: var(--muted); }
+.rd-prog b { color: var(--navy); }
+.rd-prog i { display: block; height: 6px; margin-top: 6px; border-radius: 6px; background: var(--sunken); overflow: hidden; }
+.rd-prog u { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--c1), var(--c2)); transition: width .35s ease; }
+.rd-nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; position: relative; }
+.rd-nav::before { content: ""; position: absolute; left: 21px; top: 18px; bottom: 18px; width: 2px; background: var(--line); }
+.rd-nav button { position: relative; width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid transparent; border-radius: 12px; background: none; color: var(--ink-2); font: 500 13.5px/1.3 var(--font); text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.rd-nav button:hover { background: var(--panel); border-color: var(--line); }
+.rd-nav em { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font: 600 11.5px var(--font); font-style: normal; background: var(--panel); border: 2px solid var(--line-2); color: var(--muted); }
+.rd-nav button.read em { background: var(--good); border-color: var(--good); color: #fff; }
+.rd-nav button[aria-selected="true"] { background: var(--panel); border-color: var(--accent-line); color: var(--navy); font-weight: 600; box-shadow: var(--shadow); }
+.rd-nav button[aria-selected="true"] em { border-color: var(--accent); background: var(--accent); color: #fff; }
+.rd-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px 16px; box-shadow: var(--shadow); animation: stageIn .22s ease; }
+.rd-panel header small { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.rd-panel h3 { margin: 2px 0 12px; font-size: 19px; color: var(--navy); }
+.rd-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rd-lines li { display: flex; gap: 12px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; }
+.rd-lines p { margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--ink); }
+.rd-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; margin: 9px 7px 0; background: var(--line-2); }
+.rd-kind { flex: none; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 700; margin-top: 2px; }
+.rd-lines li.rule { background: color-mix(in srgb, var(--risk) 6%, transparent); }
+.rd-lines li.rule .rd-kind { background: var(--risk); color: #fff; }
+.rd-lines li.tip { background: color-mix(in srgb, var(--c3) 7%, transparent); }
+.rd-lines li.tip .rd-kind { background: var(--c3); color: #fff; }
+.rd-panel footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+@media (max-width: 860px) { .rd { grid-template-columns: minmax(0, 1fr); } .rd-side { position: static; } .rd-nav { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; } .rd-nav::before { display: none; } }
+
+/* ---------- performance: own layers for the fixed backdrop, skip off-screen work ---------- */
+body::before, body::after { transform: translateZ(0); backface-visibility: hidden; }
+.foot, .mq, .pj-bottom, .next-step, .tabpanel:not(:first-child) { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+
 </style>
 </head>
 <body>
@@ -7407,7 +7441,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 18:57</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:05</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -7572,6 +7606,47 @@ window.FG_CONTENT = {
     },
   });
 
+  /* ---------- guided reader: numbered steps, one focused panel, read tracking ---------- */
+  // Sentences are typed so obligations stand out: "must / mandatory / never" → rule, "recommended / good practice" → tip.
+  const sentenceKind = (x) => (/\b(must|mandatory|required|never|may not|cannot|shall|prohibited|only if)\b/i.test(x) ? "rule" : /\b(recommend|good practice|best practice|advis|should|useful)\w*/i.test(x) ? "tip" : "");
+  const splitSentences = (t) => String(t).split(/(?<=[.!?])\s+(?=[A-Z€0-9“"(])/).filter(Boolean);
+  function reader(key, sections) {
+    const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
+    const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
+    return `<div class="rd" data-rd="${esc(key)}">
+      <div class="rd-side"><div class="rd-prog"><span><b data-rd-count>${done}</b> of ${n} read</span><i><u data-rd-bar style="width:${Math.round((done / n) * 100)}%"></u></i></div>
+        <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
+      <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
+        <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
+        <ul class="rd-lines">${splitSentences(body).map((x) => { const kd = sentenceKind(x); return `<li class="${kd}">${kd ? `<span class="rd-kind" title="${label[kd]}">${icon[kd]}</span>` : `<span class="rd-dot"></span>`}<p>${esc(x)}</p></li>`; }).join("")}</ul>
+        <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
+  }
+  // Switches panels in place (no re-render), so the page never jumps.
+  function mountReader(root) {
+    root.querySelectorAll("[data-rd]").forEach((rd) => {
+      const key = "read:" + rd.dataset.rd, n = rd.querySelectorAll("[data-rd-panel]").length;
+      const show = (k) => {
+        rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; });
+        rd.querySelectorAll(".rd-nav [data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
+      };
+      const mark = (k) => {
+        const read = FG.store.get(key, {}); read[k] = 1; FG.store.set(key, read);
+        const b = rd.querySelector(`.rd-nav [data-rd-go="${k}"]`); b.classList.add("read"); b.querySelector("em").textContent = "✓";
+        const done = Object.keys(read).length; rd.querySelector("[data-rd-count]").textContent = done; rd.querySelector("[data-rd-bar]").style.width = `${Math.round((done / n) * 100)}%`;
+      };
+      rd.addEventListener("click", (e) => {
+        const go = e.target.closest("[data-rd-go]"), next = e.target.closest("[data-rd-next]");
+        if (go) show(+go.dataset.rdGo);
+        if (next) { const k = +next.dataset.rdNext; mark(k); if (k < n - 1) show(k + 1); }
+      });
+      rd.addEventListener("keydown", (e) => {
+        if (!e.target.closest(".rd-nav") || !/Arrow(Up|Down)/.test(e.key)) return;
+        e.preventDefault(); const cur = +rd.querySelector('.rd-nav [aria-selected="true"]').dataset.rdGo, k = Math.max(0, Math.min(n - 1, cur + (e.key === "ArrowDown" ? 1 : -1)));
+        show(k); rd.querySelector(`.rd-nav [data-rd-go="${k}"]`).focus();
+      });
+    });
+  }
+
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
   function lifecycle(cfg) {
     const stages = cfg.stages;
@@ -7605,7 +7680,7 @@ window.FG_CONTENT = {
             ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "";
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
-        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}<div class="accordion">${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}</div>
+        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections.map(([t, body]) => { const more = cfg.note && cfg.note(t); return [t, more && more !== body ? `${body} ${more}` : body]; }))}
           <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
@@ -7634,6 +7709,7 @@ window.FG_CONTENT = {
             if (on.offsetLeft < sc.scrollLeft || on.offsetLeft + on.offsetWidth > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2;
             sc.addEventListener("scroll", () => { FG.trackScroll = sc.scrollLeft; }, { passive: true });
           }
+          mountReader(root);
           if (widgetMount) widgetMount(root);
         } };
       },

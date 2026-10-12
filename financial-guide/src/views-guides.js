@@ -129,6 +129,47 @@
     },
   });
 
+  /* ---------- guided reader: numbered steps, one focused panel, read tracking ---------- */
+  // Sentences are typed so obligations stand out: "must / mandatory / never" → rule, "recommended / good practice" → tip.
+  const sentenceKind = (x) => (/\b(must|mandatory|required|never|may not|cannot|shall|prohibited|only if)\b/i.test(x) ? "rule" : /\b(recommend|good practice|best practice|advis|should|useful)\w*/i.test(x) ? "tip" : "");
+  const splitSentences = (t) => String(t).split(/(?<=[.!?])\s+(?=[A-Z€0-9“"(])/).filter(Boolean);
+  function reader(key, sections) {
+    const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
+    const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
+    return `<div class="rd" data-rd="${esc(key)}">
+      <div class="rd-side"><div class="rd-prog"><span><b data-rd-count>${done}</b> of ${n} read</span><i><u data-rd-bar style="width:${Math.round((done / n) * 100)}%"></u></i></div>
+        <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
+      <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
+        <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
+        <ul class="rd-lines">${splitSentences(body).map((x) => { const kd = sentenceKind(x); return `<li class="${kd}">${kd ? `<span class="rd-kind" title="${label[kd]}">${icon[kd]}</span>` : `<span class="rd-dot"></span>`}<p>${esc(x)}</p></li>`; }).join("")}</ul>
+        <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
+  }
+  // Switches panels in place (no re-render), so the page never jumps.
+  function mountReader(root) {
+    root.querySelectorAll("[data-rd]").forEach((rd) => {
+      const key = "read:" + rd.dataset.rd, n = rd.querySelectorAll("[data-rd-panel]").length;
+      const show = (k) => {
+        rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; });
+        rd.querySelectorAll(".rd-nav [data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
+      };
+      const mark = (k) => {
+        const read = FG.store.get(key, {}); read[k] = 1; FG.store.set(key, read);
+        const b = rd.querySelector(`.rd-nav [data-rd-go="${k}"]`); b.classList.add("read"); b.querySelector("em").textContent = "✓";
+        const done = Object.keys(read).length; rd.querySelector("[data-rd-count]").textContent = done; rd.querySelector("[data-rd-bar]").style.width = `${Math.round((done / n) * 100)}%`;
+      };
+      rd.addEventListener("click", (e) => {
+        const go = e.target.closest("[data-rd-go]"), next = e.target.closest("[data-rd-next]");
+        if (go) show(+go.dataset.rdGo);
+        if (next) { const k = +next.dataset.rdNext; mark(k); if (k < n - 1) show(k + 1); }
+      });
+      rd.addEventListener("keydown", (e) => {
+        if (!e.target.closest(".rd-nav") || !/Arrow(Up|Down)/.test(e.key)) return;
+        e.preventDefault(); const cur = +rd.querySelector('.rd-nav [aria-selected="true"]').dataset.rdGo, k = Math.max(0, Math.min(n - 1, cur + (e.key === "ArrowDown" ? 1 : -1)));
+        show(k); rd.querySelector(`.rd-nav [data-rd-go="${k}"]`).focus();
+      });
+    });
+  }
+
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
   function lifecycle(cfg) {
     const stages = cfg.stages;
@@ -162,7 +203,7 @@
             ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "";
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
-        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}<div class="accordion">${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}</div>
+        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections.map(([t, body]) => { const more = cfg.note && cfg.note(t); return [t, more && more !== body ? `${body} ${more}` : body]; }))}
           <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
@@ -191,6 +232,7 @@
             if (on.offsetLeft < sc.scrollLeft || on.offsetLeft + on.offsetWidth > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2;
             sc.addEventListener("scroll", () => { FG.trackScroll = sc.scrollLeft; }, { passive: true });
           }
+          mountReader(root);
           if (widgetMount) widgetMount(root);
         } };
       },
