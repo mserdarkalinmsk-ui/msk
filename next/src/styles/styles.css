@@ -600,3 +600,24 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .sl-notes{max-width:297mm;margin:-6px auto 10px;padding:10px 14px;border-left:3px solid var(--c1);background:var(--surface-2);border-radius:6px;font-size:13px}.sl-notes p{margin:4px 0 0}
 .deck-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .slide .sl-head .sl-k{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:2px}
+/* Print: the wide expenditure sheet keeps its own A3 landscape page without widening the A4 pages around it. */
+.pack{grid-template-columns:minmax(0,1fr)}
+@media print{
+  .pack .em{width:400mm;max-width:none;overflow:visible}
+  .pack .em .sd-scroll,.pack .em-h{overflow:visible;max-width:none}
+  .pack-s{min-width:0}
+  .em-tools,.sim-c{display:none !important}
+}
+@media print{.pack .sim,.pack .em .gauges,.pack .em>.no-print{display:none !important}.pack .pack-s:has(.em){break-inside:auto;page:em}.pack .pack-s:has(.em)>h3{display:none}}
+/* Print: the office report on A4 landscape, without the screen controls, every table in full. */
+@page wide{size:A4 landscape;margin:10mm}
+@media print{
+  .offices{page:wide}
+  .offices .of-boxes,.offices .btn,.offices .seg,.offices select,.offices .of-nb{display:none !important}
+  .offices .table-scroll{max-height:none !important;overflow:visible !important}
+  .offices .grid>*{grid-column:span 12 !important}
+  .offices table.mini{font-size:9.5px}
+  .offices .card{box-shadow:none;break-inside:auto}
+  .offices .card-h{break-after:avoid}
+}
+@media print{.offices .of-doc-t{break-before:page}}

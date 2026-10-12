@@ -25,7 +25,7 @@ function guessProject(text: string, P: Project[]): { p?: Project; why: string } 
   const t = text.replace(/[_\-.]/g, ' ');
   const tries: [RegExp, (p: Project, v: string) => boolean, string][] = [
     [/\bBH\s?(\d{4})\b/i, (p, v) => p.bh === v, 'BH'],
-    [/\bJP\s?(\d{4})\b/i, (p, v) => p.jp === v || p.code === `JP${v}`, 'JP'],
+    [/\bJP\s?(\d{4})\b/i, (p, v) => p.jp === v || p.code === `JP${v}` || p.pmm === v, 'JP'],
     [/\b(?:PMM|VC)\s?(\d{4})\b/i, (p, v) => p.pmm === v, 'PMM'],
     [/\b(7\d{8})\b/, (p, v) => p.contractNo === v, 'contract'],
   ];
@@ -74,7 +74,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
         if (!r) {
           try {
             const d = await readDocument(f), F = analyse(d), k = F.contract;
-            const byFacts = P.filter((p) => (k.bh && p.bh === k.bh) || (k.jp && p.jp === k.jp) || (k.number && p.contractNo === k.number));
+            const byFacts = P.filter((p) => (k.bh && p.bh === k.bh) || (k.jp && (p.jp === k.jp || p.pmm === k.jp)) || (k.number && p.contractNo === k.number));
             const g = byFacts.length === 1 ? { p: byFacts[0], why: k.bh ? `BH ${k.bh}` : k.jp ? `JP ${k.jp}` : `contract ${k.number}` } : guessProject(`${f.name} ${d.paragraphs.slice(0, 40).join(' ')}`, P);
             r = { file: f, kind: kindOf(F), F, docKind: d.kind, pid: g.p?.id ?? '', why: g.why, note: F.summary.join(' · ') };
           } catch (e) { r = { file: f, kind: 'error', pid: '', why: '', note: (e as Error).message }; }
