@@ -12,7 +12,7 @@
     { title: "3 · Pay", items: [{ title: "Payment file", path: "payment-file", icon: "€" }, { title: "Petty cash", path: "petty-cash", icon: "¢" }] },
     { title: "4 · Report & forecast", items: [{ title: "Financial reporting", path: "foma/reports", icon: "▥", section: "foma-reports" }, { title: "Forecast & revision", path: "foma/forecast", icon: "↗", section: "foma-forecast" }] },
     { title: "5 · Close & file", items: [{ title: "Year-end closing", path: "year-end", icon: "◷" }, { title: "Filing & audit", path: "filing", icon: "▦" }] },
-    { title: "Learn & reference", items: [{ title: "Scenario practice", path: "scenarios", icon: "◆" }, { title: "Roles & documents", path: "roles", icon: "◎" }, { title: "Links & guidelines", path: "links", icon: "↗" }] },
+    { title: "Learn & reference", items: [{ title: "Rules at a glance", path: "rules", icon: "§" }, { title: "Glossary", path: "glossary", icon: "Aa" }, { title: "Scenario practice", path: "scenarios", icon: "◆" }, { title: "Roles & documents", path: "roles", icon: "◎" }, { title: "Links & guidelines", path: "links", icon: "↗" }] },
   ];
 
   /* ---------- home ---------- */
@@ -61,7 +61,7 @@
                 <tr><td>International public call</td><td class="n">≥ ${euro(E.LIMITS.international)}</td></tr>
                 <tr><td>Grant competitive call</td><td class="n">≥ ${euro(E.LIMITS.grant)}</td></tr>
                 <tr><td>JP Budget Heading variation → Addendum</td><td class="n">&gt; 25%</td></tr>
-              </tbody></table></section>
+              </tbody></table><a class="btn sm mt" href="#/rules">All rules at a glance →</a></section>
             <section class="card card-pad"><div class="row"><div><div class="eyebrow">My Case</div><b>${caseItems.length ? `${caseItems.length} saved decision${caseItems.length > 1 ? "s" : ""}` : "No saved decisions"}</b></div><span class="spacer"></span><button class="btn sm" data-open-case>Open</button></div>
               ${caseItems[0] ? `<p class="small muted mt">Latest: ${esc(caseItems[0].route)} — ${esc(caseItems[0].kicker.toLowerCase())}</p>` : `<p class="small muted mt">Save engine results to keep your case context across modules.</p>`}</section>
             <section class="card card-pad"><div class="eyebrow">Practice</div><b>${answered ? `${correct} / ${answered} answered correctly` : "48 scenarios to practise"}</b>${ui.bar((answered / C.scenarios.length) * 100, "good")}<a class="btn sm mt" href="#/scenarios">Continue practising</a></section>
@@ -103,13 +103,13 @@
               </div></section>
               ${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}
               ${best ? ui.callout("good", "Best practice", best) : ""}
+              ${cfg.practice ? FG.ui.quiz(cfg.practice) : ""}
               <div class="stage-nav">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>
             </div>
             <aside class="stack sticky">
               ${checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : ""}
               ${roles.length ? `<section class="card"><div class="card-head"><h3>Who is involved</h3></div><div class="card-body stack">${roles.map((r) => `<div><b>${esc(r.name)}</b> ${ui.tag(r.tag, "accent")}<p class="small muted">${esc(r.summary)}</p></div>`).join("")}</div></section>` : ""}
               ${related.length ? `<section class="card"><div class="card-head"><h3>Related</h3></div><div class="card-body row">${related.map(([t, p]) => `<a class="btn sm" href="#/${p}">${esc(t)}</a>`).join("")}</div></section>` : ""}
-              ${cfg.practice ? `<a class="btn" href="#/scenarios?cat=${cfg.practice}">Practise this topic →</a>` : ""}
             </aside>
           </div>`;
         return { html, mount: widget && cfg.mount && cfg.mount[s.name] };

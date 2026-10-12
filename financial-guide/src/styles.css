@@ -476,3 +476,22 @@ table.t tfoot td { font-weight: 700; background: var(--panel-2); border-top: 1px
 @media (max-width: 560px) { .journey { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .next-step { flex-direction: column; align-items: stretch; } .next-step a { text-align: left; } }
 .hero-main .journey { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .hero-main .journey li:nth-child(4n)::after { display: none; }
+
+/* Reference layer */
+abbr[title] { text-decoration: underline dotted color-mix(in srgb, var(--accent) 70%, transparent); text-underline-offset: 3px; cursor: help; }
+mark.amt { background: color-mix(in srgb, var(--accent) 12%, transparent); color: inherit; padding: 0 3px; border-radius: 4px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.glossary { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.glossary .term { font-size: 17px; color: var(--accent); }
+.dtree { display: grid; gap: 18px; justify-items: center; }
+.tn { padding: 10px 14px; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--panel); text-align: center; min-width: 180px; opacity: .55; transition: .25s; }
+.tn b { display: block; } .tn small { color: var(--muted); font-size: 12px; }
+.tn.on { opacity: 1; border-color: var(--accent); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 25%, transparent); transform: translateY(-2px); }
+.tn.root { background: var(--accent-soft); }
+.tn.good.on { border-color: var(--good); } .tn.warn.on { border-color: var(--warn); } .tn.risk.on { border-color: var(--risk); }
+.tbranches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; width: 100%; position: relative; }
+.tb { display: grid; gap: 8px; justify-items: center; align-content: start; padding-top: 22px; position: relative; }
+.tb::before { content: ""; position: absolute; top: -18px; left: 50%; width: 2px; height: 36px; background: var(--line-2); }
+.tb.on::before { background: var(--accent); width: 3px; }
+.tb > span { font-size: 12px; font-weight: 700; color: var(--muted); background: var(--sunken); padding: 2px 8px; border-radius: 10px; }
+.tb.on > span { background: var(--accent); color: #fff; }
+@media (max-width: 860px) { .tbranches { grid-template-columns: minmax(0, 1fr); } .tn { min-width: 0; width: 100%; } }
