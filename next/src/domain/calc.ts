@@ -1,4 +1,5 @@
 import type { BudgetLine, Ledger, Project, ReportingPeriod } from './types';
+import { EXTRACTION, extractionLines } from './extraction';
 
 const DAY = 86_400_000;
 export const n = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
@@ -32,6 +33,8 @@ export function lines(p: Project): BudgetLine[] {
 function readLines(p: Project): BudgetLine[] {
   const r = latestReport(p);
   if (!r) return p.approvedBudget?.lines ?? [];
+  // A system extraction is laid on the current approved budget each time (the budget may arrive later).
+  if (r.snapshot!.format === EXTRACTION && r.snapshot!.workbook) return extractionLines(r.snapshot!.workbook, p);
   const L = r.snapshot!.lines, T = r.snapshot!.workbook?.totals;
   // Reports read before admin rows were recognised by wording (row 8 in templates without contingency) lack line 10:
   // rebuild it from the stored totals, or as eligible − direct − contingency.
