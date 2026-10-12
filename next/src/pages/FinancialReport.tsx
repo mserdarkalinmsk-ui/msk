@@ -1,3 +1,4 @@
+import { enrichExtraction } from '../domain/extraction';
 import { useState } from 'preact/hooks';
 import { set } from '../data/store';
 import { byPeriodThenImport, elapsed, lines } from '../domain/calc';
@@ -25,7 +26,7 @@ export function FinancialReport({ p }: { p: Project }) {
       <p>Import the Council of Europe report workbook (REPORT / Forecast / Purchase Orders / Situation Budgétaire…) and everything in it is analysed here.</p>
       <button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import workbook</button></div></div>
   );
-  const wb = rep.snapshot!.workbook!, m = wb.meta, E = wb.totals.eligible;
+  const wb0 = rep.snapshot!.workbook!, wb = wb0.meta.extraction ? enrichExtraction(wb0, p) : wb0, m = wb.meta, E = wb.totals.eligible;
   const leaf = wb.lines.filter((l) => l.leaf);
   const heads = Object.keys(HEADINGS).map((h) => {
     const L = leaf.filter((l) => l.code.split('.')[0] === h);
