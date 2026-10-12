@@ -522,3 +522,8 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .map-bar{height:8px;border-radius:4px;background:var(--surface-2)}.map-bar i{display:block;height:100%;border-radius:4px;background:color-mix(in srgb,var(--c1) 30%,var(--surface))}.map-bar b{display:block;height:100%;border-radius:4px;background:var(--c1)}
 .map-off{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 4px;font-size:12.5px}.map-off .chip{height:26px;font-size:12px}
 .mname{font-weight:600;paint-order:stroke;stroke:var(--map-member)}
+:root{--map-slab:#b9c6d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--map-slab:#06090d}}
+:root[data-theme="dark"]{--map-slab:#06090d}
+.mapbox{box-shadow:inset 0 0 80px rgb(20 50 90 / .12)}
+.ext .ctry.on{cursor:pointer;transition:filter .15s}.ext:hover .ctry.on{filter:brightness(1.08)}
