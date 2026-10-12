@@ -1,3 +1,4 @@
+import { OfficeSummary } from './OfficeSummary';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
 import { burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
 import { SECTORS, validUrl, type Project } from '../domain/types';
@@ -126,6 +127,8 @@ export function Overview() {
         </section>
 
         <OverviewMap />
+
+        <OfficeSummary variant="card" />
 
         <section class="card span-7">
           <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Pacing by project</h2><p>{pm === 'gap' ? 'Spend share minus time share — left of zero is behind schedule' : 'Share of budget used; the tick marks time elapsed'} · click a bar for details</p></div>
