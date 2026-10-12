@@ -7,6 +7,7 @@ const DEMO = new URLSearchParams(location.search).has('demo');
 const seed = DEMO ? demo : real;
 import type { Country, Ledger, Project, ReportingPeriod, Risk } from '../domain/types';
 import { validateLedger } from '../domain/calc';
+import { officeCountry } from '../domain/office';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -198,10 +199,12 @@ export function updateProject(id: string, patch: Partial<Project>) {
   upsertProject({ ...clone(p), ...patch });
 }
 /** Adds an office report (same office and date replaces), creating the office from the file on first import. */
-export function upsertOfficeReport(r: import('../domain/office').OfficeReport, country = 'tr') {
+export function upsertOfficeReport(r: import('../domain/office').OfficeReport, country?: string) {
   const L = clone(state.ledger), O = (L.offices ??= []);
+  // Country from the CCM label or office name (Bureau ANKARA → Türkiye), else the country filter in use.
+  const c = country ?? officeCountry(`${r.ccmName ?? ''} ${r.office}`)?.id ?? (state.filters.country || L.countries[0]?.id || '');
   let o = O.find((x) => (r.ccm && x.ccm === r.ccm) || x.name === r.office);
-  if (!o) { o = { id: `office-${r.ccm ?? O.length + 1}`, name: r.office, country, ccm: r.ccm, bh: r.bh, reports: [] }; O.push(o); }
+  if (!o) { o = { id: `office-${r.ccm ?? O.length + 1}`, name: r.office, country: c, ccm: r.ccm, bh: r.bh, reports: [] }; O.push(o); }
   const i = o.reports.findIndex((x) => x.date === r.date);
   if (i >= 0) o.reports[i] = r; else o.reports.push(r);
   if (r.hasPlan) o.name = r.office; // the office's own report names it properly (the system export only has the CCM label)
@@ -217,6 +220,15 @@ export function upsertOfficeReport(r: import('../domain/office').OfficeReport, c
     x.office = ref.office;
   }
   commit(L, `Office budget ${o.name} · ${r.date}`);
+}
+export function setOfficeNote(officeId: string, key: string, note: import('../domain/office').OfficeNote | null) {
+  const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  const N = { ...(o.notes ?? {}) }; if (note) N[key] = note; else delete N[key]; o.notes = N;
+  commit(L, note ? `${o.name} line ${key.split(':')[1]}: ${note.resolved ? 'corrected' : 'note'}` : 'Note removed');
+}
+export function setOfficeCountry(officeId: string, country: string) {
+  const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  o.country = country; commit(L, `${o.name} → ${country.toUpperCase()}`);
 }
 export function deleteOfficeReport(officeId: string, reportId: string) {
   const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;

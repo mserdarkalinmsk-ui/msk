@@ -20,7 +20,8 @@ describe('office budget', () => {
     expect(r.lines.map((l) => [l.code, l.heading, l.ob.budget, l.ob.sc, l.ob.planned, l.ls.budget, l.ls.sc])).toEqual([
       ['1.1', '1 Rent and related charges', 100, 0, 50, 1000, 400], ['1.2', '1 Rent and related charges', 400, 500, 0, 0, 0], ['2.1', '2 Consumables', 500, 100, 600, 0, 0]]);
     const V = officeView(r);
-    expect(V.lines.map((l) => l.flag)).toEqual([undefined, 'over budget', 'plan exceeds budget']);
+    expect(V.lines.map((l) => l.c.ob.flag)).toEqual([undefined, 'over budget', 'plan exceeds budget']);
+    expect(V.T.ls).toMatchObject({ budget: 1000, sc: 400, planned: 500, left: 100 });
     expect(V.T.ob).toMatchObject({ budget: 1000, sc: 600, planned: 650, left: -250 });
   });
 });
