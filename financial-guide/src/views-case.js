@@ -66,16 +66,18 @@
     render() {
       const k = knownCount(), c = FG.store.get("pcase", null), r = c && Number(c.value) ? E.procurementCase(c) : null;
       const stages = FG.C.procurementStages, last = FG.store.get("procurement:last", 0), visited = Object.keys(FG.store.get("procurement:visited", {})).length;
+      const [qa, qn, qs] = quizProgress("procurement");
       const paths = [
-        ["1", "Learn the essentials", "Twelve rules every buyer must know before starting — with the numbers to remember.", "procurement/essentials", `${k} of ${ESSENTIALS.length} learnt`, k / ESSENTIALS.length, 1, k ? "Continue" : "Start here"],
-        ["2", "Plan my case", r ? `${esc(c.what || "Your purchase")} · ${euro(r.value)} → ${r.route}` : "Answer five questions: get your route, approvals, timeline, documents and risks.", "procurement/my-case", r ? `Start by ${fmt(r.start)}` : "Not started", r ? 1 : 0, 2, r ? "Open my case" : "Plan a case"],
-        ["3", "Follow the guide", `${stages.length} stages in three phases, from preparing the need to filing.`, `procurement/${slug(stages[last].name)}`, `${visited} of ${stages.length} stages opened`, visited / stages.length, 3, visited ? `Continue at ${stages[last].name}` : "Open stage 1"],
+        ["1", "Follow the guide", `${stages.length} stages in three phases, from preparing the need to filing.`, `procurement/${slug(stages[last].name)}`, `${visited} of ${stages.length} stages opened`, visited / stages.length, 1, visited ? `Continue at ${stages[last].name}` : "Open stage 1"],
+        ["2", "Plan my case", r ? `${esc(c.what || "Your purchase")} · ${euro(r.value)} → ${r.route}` : "Answer a few questions: get your route, approvals, timeline, documents and risks.", "procurement/my-case", r ? `Start by ${fmt(r.start)}` : "Not started", r ? 1 : 0, 2, r ? "Open my case" : "Plan a case"],
+        ["3", "Test yourself", "20 questions from easy to expert, with real cases and explanations.", "procurement/test", qa ? `${qs} of ${qn} correct · ${qa} answered` : `${qn} questions · 5 levels`, qn ? qa / qn : 0, 3, qa ? "Continue the test" : "Start the test"],
       ];
+
       return { html: `${ui.head("Projects · Procurement", "Procurement", "")}
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})">
           <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
-        <a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to instructions</small></div><u>Open →</u></a>
+        <div class="hub-sec"><a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to</small></div><u>Open →</u></a><a class="hub-ref" href="#/procurement/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
     },
   });
@@ -173,15 +175,17 @@
     render() {
       const k = Object.keys(gKnown()).length, c = FG.store.get("gcase", null), r = c && Number(c.budget) ? E.grantCase(c) : null;
       const stages = FG.C.grantStages, last = FG.store.get("grants:last", 0), visited = Object.keys(FG.store.get("grants:visited", {})).length;
+      const [qa, qn, qs] = quizProgress("grants");
       const paths = [
-        ["1", "Learn the essentials", "Twelve rules of Rule 1374 to know before designing any grant.", "grants/essentials", `${k} of ${G_ESSENTIALS.length} learnt`, k / G_ESSENTIALS.length, 1, k ? "Continue" : "Start here"],
-        ["2", "Plan my grant", r ? `${esc(c.what || "Your grant")} · ${euro(r.budget)} → ${r.route}` : "Five questions: route, roles, timeline, G-templates and risks.", "grants/my-grant", r ? `Start by ${fmt(r.start)}` : "Not started", r ? 1 : 0, 2, r ? "Open my grant" : "Plan a grant"],
-        ["3", "Follow the guide", `${stages.length} stages from the purpose of the grant to filing.`, `grants/${slug(stages[last].name)}`, `${visited} of ${stages.length} stages opened`, visited / stages.length, 3, visited ? `Continue at ${stages[last].name}` : "Open stage 1"],
+        ["1", "Follow the guide", `${stages.length} stages from the purpose of the grant to filing.`, `grants/${slug(stages[last].name)}`, `${visited} of ${stages.length} stages opened`, visited / stages.length, 1, visited ? `Continue at ${stages[last].name}` : "Open stage 1"],
+        ["2", "Plan my grant", r ? `${esc(c.what || "Your grant")} · ${euro(r.budget)} → ${r.route}` : "A few questions: route, roles, timeline, G-templates and risks.", "grants/my-grant", r ? `Start by ${fmt(r.start)}` : "Not started", r ? 1 : 0, 2, r ? "Open my grant" : "Plan a grant"],
+        ["3", "Test yourself", "20 questions from easy to expert, with real cases and explanations.", "grants/test", qa ? `${qs} of ${qn} correct · ${qa} answered` : `${qn} questions · 5 levels`, qn ? qa / qn : 0, 3, qa ? "Continue the test" : "Start the test"],
       ];
+
       return { html: `${ui.head("Projects · Grants", "Grants", "")}
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})"><span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
-        <a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to instructions with templates</small></div><u>Open →</u></a>
+        <div class="hub-sec"><a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to with templates</small></div><u>Open →</u></a><a class="hub-ref" href="#/grants/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The €15,000 threshold — total budget of the procedure</b></div>${FG.ui.ruler({ max: 60000, marks: [[L.grant, "Call for proposals"]], zones: [[0, L.grant, "Direct award (G9.2A)", "--c2"], [L.grant, 60000, "Call for proposals", "--c1"]] })}</section>` };
     },
   });
@@ -254,4 +258,59 @@
     section: "grants", crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Quick reference", "grants/reference"]],
     render: () => ({ html: `${ui.head("Grants · quick reference", "Quick reference", "")}${referencePage(FG.C.grantReference, "grants")}` }),
   });
+
+  /* ---------- self-test: 20 questions, easy → hard, one at a time ---------- */
+  const LEVELS = ["", "Foundations", "Core rules", "Applying the rules", "Real cases", "Expert"];
+  const qKey = (base) => "quiz:" + base;
+  const qState = (base) => ({ i: 0, ans: {}, hints: {}, ...FG.store.get(qKey(base), {}) });
+  const isRight = (q, a) => (Array.isArray(q.answer) ? Array.isArray(a) && a.join() === q.answer.join() : a === q.answer);
+  function quizPage(base) {
+    const Q = (FG.C.quizzes || {})[base] || [], st = qState(base), stages = base === "procurement" ? FG.C.procurementStages : FG.C.grantStages;
+    if (!Q.length) return `<p class="muted">Questions are being prepared.</p>`;
+    const answered = Object.keys(st.ans).length, score = Q.filter((q, i) => i in st.ans && isRight(q, st.ans[i])).length;
+    const bar = `<div class="qz-bar">${Q.map((q, i) => `<button type="button" data-qz-go="${i}" data-base="${base}" class="l${q.level}${i === st.i && !st.done ? " on" : ""}${i in st.ans ? (isRight(q, st.ans[i]) ? " ok" : " ko") : ""}" title="Question ${i + 1} · level ${q.level}"></button>`).join("")}</div>
+      <div class="qz-meta"><span>${answered} / ${Q.length} answered</span><span><b>${score}</b> correct</span></div>`;
+    if (st.done || answered === Q.length && st.i >= Q.length) {
+      const pct = Math.round((score / Q.length) * 100), missed = Q.map((q, i) => [q, i]).filter(([q, i]) => !isRight(q, st.ans[i]));
+      return `${bar}<section class="qz-end"><div class="qz-ring" style="--p:${pct}"><span><b>${pct}%</b>${score} / ${Q.length}</span></div>
+        <div><h2>${pct >= 85 ? "Excellent — you master this module" : pct >= 60 ? "Good — a few rules to revisit" : "Keep going — revisit the stages below"}</h2>
+        <div class="qz-lv">${[1, 2, 3, 4, 5].map((l) => { const qs = Q.map((q, i) => [q, i]).filter(([q]) => q.level === l), ok = qs.filter(([q, i]) => isRight(q, st.ans[i])).length; return `<div><small>Level ${l} · ${LEVELS[l]}</small><i><u style="width:${(ok / qs.length) * 100}%"></u></i><b>${ok}/${qs.length}</b></div>`; }).join("")}</div>
+        <div class="row mt">${missed.length ? `<button type="button" class="btn primary" data-qz-retry="${base}">Retry the ${missed.length} missed</button>` : ""}<button type="button" class="btn" data-qz-reset="${base}">Start again</button></div></div></section>
+        ${missed.length ? `<section class="card"><div class="card-head"><h3>Review what you missed</h3></div><div class="qz-miss">${missed.map(([q]) => `<div><b>${esc(q.q)}</b><p>${esc(q.explain)}</p><a href="#/${base}/${slug(q.stage)}">${esc(q.stage)} →</a></div>`).join("")}</div></section>` : ""}`;
+    }
+    const i = Math.min(st.i, Q.length - 1), q = Q[i], a = st.ans[i], done = i in st.ans, seq = FG.qzSeq && FG.qzSeq.i === i ? FG.qzSeq.s : [];
+    const opts = q.type === "order"
+      ? `<div class="qz-order"><div class="qz-seq">${(done ? a : seq).map((k, n) => `<span><em>${n + 1}</em>${esc(q.options[k])}</span>`).join("") || `<p class="muted">Click the steps in the right order.</p>`}</div>
+          <div class="qz-opts">${q.options.map((o, k) => `<button type="button" data-qz-pick="${k}" data-base="${base}" ${done || seq.includes(k) ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
+          ${done ? "" : `<div class="row">${seq.length ? `<button type="button" class="btn sm ghost" data-qz-undo="${base}">Undo</button>` : ""}<button type="button" class="btn sm primary" data-qz-check="${base}" ${seq.length === q.options.length ? "" : "disabled"}>Check order</button></div>`}
+          ${done && !isRight(q, a) ? `<p class="small mt"><b>Correct order:</b> ${q.answer.map((k) => esc(q.options[k])).join(" → ")}</p>` : ""}</div>`
+      : `<div class="qz-opts ${q.type === "tf" ? "tf" : ""}">${q.options.map((o, k) => `<button type="button" data-qz-ans="${k}" data-base="${base}" ${done ? "disabled" : ""} class="${done ? (k === q.answer ? "right" : k === a ? "wrong" : "") : ""}"><em>${q.type === "tf" ? "" : String.fromCharCode(65 + k)}</em>${esc(o)}</button>`).join("")}</div>`;
+    return `${bar}<article class="qz-card l${q.level}">
+      <header><span class="qz-lvl">Level ${q.level} · ${LEVELS[q.level]}</span><span class="qz-num">Question ${i + 1} of ${Q.length}</span></header>
+      ${q.scenario ? `<div class="qz-scn"><small>Case</small><p>${esc(q.scenario)}</p></div>` : ""}
+      <h2>${esc(q.q)}</h2>${opts}
+      ${!done && q.hint ? (st.hints[i] ? `<p class="qz-hint">Hint: ${esc(q.hint)}</p>` : `<button type="button" class="qz-hintbtn" data-qz-hint="${base}">Need a hint?</button>`) : ""}
+      ${done ? `<div class="qz-fb ${isRight(q, a) ? "good" : "bad"}"><b>${isRight(q, a) ? "Correct" : "Not quite"}</b><p>${esc(q.explain)}</p><a href="#/${base}/${slug(q.stage)}">Read more in “${esc(q.stage)}” →</a></div>` : ""}
+      <footer>${i ? `<button type="button" class="btn sm ghost" data-qz-go="${i - 1}" data-base="${base}">← Previous</button>` : "<span></span>"}
+        ${done ? (i < Q.length - 1 ? `<button type="button" class="btn sm primary" data-qz-go="${i + 1}" data-base="${base}">Next question →</button>` : `<button type="button" class="btn sm primary" data-qz-finish="${base}">See my results →</button>`) : ""}</footer></article>`;
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-qz-go],[data-qz-ans],[data-qz-pick],[data-qz-undo],[data-qz-check],[data-qz-hint],[data-qz-finish],[data-qz-retry],[data-qz-reset]"); if (!t) return;
+    const base = t.dataset.base || t.dataset.qzUndo || t.dataset.qzCheck || t.dataset.qzHint || t.dataset.qzFinish || t.dataset.qzRetry || t.dataset.qzReset, st = qState(base), Q = FG.C.quizzes[base];
+    if ("qzGo" in t.dataset) { st.i = +t.dataset.qzGo; st.done = false; FG.qzSeq = null; }
+    if ("qzAns" in t.dataset) st.ans[st.i] = +t.dataset.qzAns;
+    if ("qzPick" in t.dataset) { const sq = FG.qzSeq && FG.qzSeq.i === st.i ? FG.qzSeq : { i: st.i, s: [] }; sq.s.push(+t.dataset.qzPick); FG.qzSeq = sq; }
+    if ("qzUndo" in t.dataset && FG.qzSeq) FG.qzSeq.s.pop();
+    if ("qzCheck" in t.dataset && FG.qzSeq) { st.ans[st.i] = FG.qzSeq.s.slice(); FG.qzSeq = null; }
+    if ("qzHint" in t.dataset) st.hints[st.i] = 1;
+    if ("qzFinish" in t.dataset) { st.done = true; st.i = Q.length; }
+    if ("qzRetry" in t.dataset) { Q.forEach((q, i) => { if (!isRight(q, st.ans[i])) delete st.ans[i]; }); st.done = false; st.i = Q.findIndex((q, i) => !(i in st.ans)); st.hints = {}; }
+    if ("qzReset" in t.dataset) { st.ans = {}; st.hints = {}; st.i = 0; st.done = false; }
+    FG.store.set(qKey(base), st); FG.refresh();
+  });
+  route("procurement/test", { section: "procurement", crumbs: () => [["Projects", "projects"], ["Procurement", "procurement"], ["Test yourself", "procurement/test"]],
+    render: () => ({ html: `${ui.head("Procurement · step 3", "Test yourself", "")}${quizPage("procurement")}` }) });
+  route("grants/test", { section: "grants", crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Test yourself", "grants/test"]],
+    render: () => ({ html: `${ui.head("Grants · step 3", "Test yourself", "")}${quizPage("grants")}` }) });
+  const quizProgress = (base) => { const Q = (FG.C.quizzes || {})[base] || [], st = qState(base); const n = Object.keys(st.ans).length; return [n, Q.length, Q.filter((q, i) => i in st.ans && isRight(q, st.ans[i])).length]; };
 })();
