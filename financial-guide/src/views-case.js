@@ -77,7 +77,7 @@
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})">
           <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
-        <div class="hub-sec"><a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to</small></div><u>Open →</u></a><a class="hub-ref" href="#/procurement/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
+        <div class="hub-sec">${FG.reviewChip()}<a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to</small></div><u>Open →</u></a><a class="hub-ref" href="#/procurement/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
     },
   });
@@ -185,7 +185,7 @@
       return { html: `${ui.head("Projects · Grants", "Grants", "")}
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})"><span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
-        <div class="hub-sec"><a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to with templates</small></div><u>Open →</u></a><a class="hub-ref" href="#/grants/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
+        <div class="hub-sec">${FG.reviewChip()}<a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to with templates</small></div><u>Open →</u></a><a class="hub-ref" href="#/grants/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
         <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The €15,000 threshold — total budget of the procedure</b></div>${FG.ui.ruler({ max: 60000, marks: [[L.grant, "Call for proposals"]], zones: [[0, L.grant, "Direct award (G9.2A)", "--c2"], [L.grant, 60000, "Call for proposals", "--c1"]] })}</section>` };
     },
   });

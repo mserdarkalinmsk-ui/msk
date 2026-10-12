@@ -227,7 +227,7 @@
     const steps = [["Understand", s.understand, "Why this stage exists"], ["Do", s.do, "What you actually do"], ["Control", s.check, "How you know it is done"]];
     const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
     return `<div class="sb">
-      <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<span class="sh-src">${s.sections.length} topics · ${musts.length} key rules</span></div>
+      <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<span class="sh-src">${s.sections.length} topics · ${musts.length} key rules</span><button type="button" class="sh-print" data-print>⎙ One-page summary</button></div>
         <h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
       <div class="sb-grid">
         <div class="sb-main">
@@ -235,14 +235,25 @@
           <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
-          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${f.text ? `<p>${esc(f.text)}</p>` : ""}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+          return `<details class="sb-fact"><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${f.text ? `<p>${esc(f.text)}</p>` : ""}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
       </div>
-      ${musts.length || s.warning ? `<div class="sb-bottom">
-        ${musts.length ? `<div class="sb-must"><h4><span>!</span> Must not miss <small>${musts.length} binding rules from this stage</small></h4><ul>${musts.slice(0, 4).map(mustLi).join("")}</ul>${musts.length > 4 ? `<details class="sb-all"><summary>Show the other ${musts.length - 4}</summary><ul>${musts.slice(4).map(mustLi).join("")}</ul></details>` : ""}</div>` : ""}
-        ${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}
-      </div>` : ""}
     </div>`;
   }
+  function keyRulesHtml(s, best) {
+    const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
+    const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
+    return `<div class="sb-bottom">
+        ${musts.length ? `<div class="sb-must"><h4><span>!</span> Must not miss <small>${musts.length} binding rules from this stage</small></h4><ul>${musts.map(mustLi).join("")}</ul></div>` : ""}
+        <div class="sb-side">${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}${best ? `<div class="sb-good"><h4>Best practice</h4><p>${esc(best)}</p></div>` : ""}</div>
+      </div>`;
+  }
+  FG.reviewChip = () => { const n = FG.store.get("recall:review", []).length; return n ? `<button type="button" class="hub-ref" data-review><span>↻</span><div><b>Cards to review</b><small>${n} point${n > 1 ? "s" : ""} you marked "review later"</small></div><u>Open →</u></button>` : ""; };
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-review-clear]")) { FG.store.set("recall:review", []); FG.closeOverlays(); FG.refresh(true); return; }
+    if (!e.target.closest("[data-review]")) return;
+    const list = FG.store.get("recall:review", []);
+    FG.openSheet("Recall", "Cards to review", `<ul class="rv">${list.map(([t, d, h]) => `<li><details><summary>${esc(t)}</summary><p>${esc(d)}</p><a href="${esc(h)}">Open in the guide →</a></details></li>`).join("")}</ul><button type="button" class="btn sm mt" data-review-clear>Clear the list</button>`);
+  });
   /* ---------- fact details: everything the guide says about a key figure ---------- */
   const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
   function factSheet(btn) {
@@ -269,7 +280,21 @@
   document.addEventListener("click", (e) => {
     const r = e.target.closest("[data-recall]");
     if (r) { const box = r.closest(".rd-items"), on = box.classList.toggle("recall"); box.querySelectorAll("li").forEach((li) => li.classList.remove("shown")); r.textContent = on ? "Show all" : "Test my recall"; return; }
-    const li = e.target.closest(".rd-items.recall li"); if (li) li.classList.add("shown");
+    const rate = e.target.closest("[data-rate]");
+    if (rate) { const li = rate.closest("li"), term = li.querySelector("b").textContent, list = FG.store.get("recall:review", []).filter((x) => x[0] !== term);
+      if (rate.dataset.rate === "later") list.push([term, li.querySelector("p").textContent, location.hash]);
+      FG.store.set("recall:review", list); li.classList.add("rated"); li.dataset.rated = rate.dataset.rate; return; }
+    const li = e.target.closest(".rd-items.recall li");
+    if (li && !li.classList.contains("shown")) { li.classList.add("shown"); if (!li.querySelector(".rd-rate")) li.querySelector("div").insertAdjacentHTML("beforeend", `<div class="rd-rate"><button type="button" data-rate="knew">✓ Knew it</button><button type="button" data-rate="later">↻ Review later</button></div>`); }
+    if (e.target.closest("[data-print]")) {
+      const box = document.createElement("div"); box.id = "printSum";
+      const sb = document.querySelector(".sb").cloneNode(true), rules = document.querySelector('[data-panel="rules"]');
+      sb.querySelectorAll("details").forEach((d) => d.setAttribute("open", "")); sb.querySelectorAll("button").forEach((x) => x.remove());
+      box.append(sb); if (rules) { const r = rules.cloneNode(true); r.hidden = false; r.querySelectorAll("button").forEach((x) => x.remove()); box.append(r); }
+      document.body.append(box); document.documentElement.classList.add("print-sum");
+      const done = () => { box.remove(); document.documentElement.classList.remove("print-sum"); window.removeEventListener("afterprint", done); };
+      window.addEventListener("afterprint", done); window.print(); setTimeout(done, 1500);
+    }
     const j = e.target.closest("[data-rd-jump]");
     if (j) { const tab = document.querySelector('[data-tab="guide"],[role="tab"][data-id="guide"]'); if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
       const go = document.querySelector(`.rd-nav [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
@@ -314,23 +339,22 @@
             ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = (j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "") + (caseR && caseR.skip.includes(stages[j].name) ? " skip" : caseR && caseR.keyStages.includes(stages[j].name) ? " key" : "");
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
-        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections)}
-          <div class="grid g2 mt">${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
+        const guidance = `${reader(`${cfg.base}:${s.name}`, s.sections)}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}`;
+        const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
-          ${ui.head(cfg.eyebrow, cfg.title, "", `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc)}
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
+            ["rules", "Key rules", keyRulesHtml(s, best), nMust || null],
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
             ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
           ])}</div>
-          ${related.length ? `<div class="row mt"><span class="small muted">Related:</span>${related.map(([t, p]) => `<a class="tag" href="#/${p}">${esc(t)}</a>`).join("")}</div>` : ""}
           <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>`;
         const widgetMount = widget && cfg.mount && cfg.mount[s.name];
         return { html, mount(root) {
