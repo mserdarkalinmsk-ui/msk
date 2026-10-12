@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { setBrand, useStore } from '../data/store';
 
 /** Visual direction, accent, density and number style — stored per browser, applied as html data-attributes. */
 export const PREFS = {
@@ -27,6 +28,7 @@ export function AppearancePanel({ close }: { close: () => void }) {
     <>
       <div class="drawer-h"><h2>Appearance</h2><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
       <div class="drawer-b">
+        <BrandSection />
         <section style={{ display: 'grid', gap: '10px' }}>
           <h3 style={{ margin: 0, fontSize: '14px' }}>Design direction</h3>
           <div class="style-grid">
@@ -57,5 +59,39 @@ export function AppearancePanel({ close }: { close: () => void }) {
       </div>
       <div class="drawer-f"><button class="btn ghost" onClick={() => { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { try { localStorage.removeItem('pl-' + k); } catch { /* */ } delete document.documentElement.dataset[k]; } dispatchEvent(new Event('pl-prefs')); force((x) => x + 1); }}>Reset to default</button><span style={{ flex: 1 }} /><button class="btn primary" onClick={close}>Done</button></div>
     </>
+  );
+}
+
+/** Reads an image and returns it as a PNG data URL no wider than 480 px (keeps the saved data small). */
+async function shrink(f: File): Promise<string> {
+  const url = URL.createObjectURL(f);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const k = Math.min(1, 480 / img.naturalWidth), c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/png');
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function BrandSection() {
+  const brand = useStore((s) => s.ledger.brand);
+  const [err, setErr] = useState('');
+  const pickFile = async (f?: File) => { if (!f) return; if (!/^image\//.test(f.type)) return setErr('Choose an image (PNG, JPG or SVG)'); setErr(''); setBrand({ ...(brand ?? {}), logo: await shrink(f) }); };
+  return (
+    <section style={{ display: 'grid', gap: '10px' }}>
+      <h3 style={{ margin: 0, fontSize: '14px' }}>Name and logo</h3>
+      <p class="muted" style={{ margin: 0, fontSize: '12.5px' }}>Shown at the top of the menu, in the browser tab and on the presentation cover. It is saved with your data (backups and shared copies include it).</p>
+      <div class="brand-pick">
+        <div class="brand-prev">{brand?.logo ? <img src={brand.logo} alt="Logo" /> : <span class="muted">No logo</span>}</div>
+        <div style={{ display: 'grid', gap: '6px' }}>
+          <label class="btn">Choose image…<input type="file" accept="image/*" hidden onChange={(e) => pickFile((e.target as HTMLInputElement).files?.[0])} /></label>
+          {brand?.logo && <button class="btn ghost" onClick={() => setBrand({ ...brand, logo: undefined })}>Remove logo</button>}
+        </div>
+      </div>
+      <div class="field"><label for="brand-t">Application name</label><input id="brand-t" value={brand?.title ?? ''} placeholder="Portfolio Ledger" onChange={(e) => { const v = (e.target as HTMLInputElement).value.trim(); setBrand({ ...(brand ?? {}), title: v || undefined }); }} /></div>
+      <div class="field"><label for="brand-n">Organisation name (optional)</label><input id="brand-n" value={brand?.name ?? ''} placeholder="e.g. Programme Office in Ankara" onChange={(e) => { const v = (e.target as HTMLInputElement).value.trim(); setBrand({ ...(brand ?? {}), name: v || undefined }); }} /></div>
+      {err && <p class="badge warning" style={{ margin: 0 }}>{err}</p>}
+    </section>
   );
 }

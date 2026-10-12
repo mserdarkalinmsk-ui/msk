@@ -2,7 +2,7 @@ import { BackupBanner } from './Backup';
 import { SharedBanner } from './Share';
 import { READONLY } from '../data/store';
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { get, go, set, setTheme, useStore } from '../data/store';
 import { attention } from '../domain/calc';
 import { TODAY } from '../today';
@@ -27,6 +27,11 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
   const theme = useStore((s) => s.theme);
   const ledger = useStore((s) => s.ledger);
   const [open, setOpen] = useState(false);
+  const appTitle = ledger.brand?.title || 'Portfolio Ledger';
+  useEffect(() => { document.title = appTitle; }, [appTitle]);
+  // The browser tab shows the organisation's logo when one is set.
+  const logo = ledger.brand?.logo;
+  useEffect(() => { let l = document.querySelector<HTMLLinkElement>('link[rel="icon"]'); if (!logo) { l?.remove(); return; } if (!l) { l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); } l.href = logo; }, [logo]);
   // Wide screens: the button hides / shows the sidebar (room for wide tables); narrow screens: it opens the menu.
   const [hidden, setHidden] = useState(() => { try { return localStorage.getItem('pl-side') === 'hidden'; } catch { return false; } });
   const menu = () => {
@@ -38,7 +43,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
   return (
     <div class={`shell${hidden ? ' side-hidden' : ''}`}>
       <aside class={`side ${open ? 'open' : ''}`} aria-label="Main navigation">
-        <div class="brand"><i>PL</i>Portfolio Ledger</div>
+        <div class="brand">{ledger.brand?.logo ? <img class="brand-logo" src={ledger.brand.logo} alt={ledger.brand.name ?? "Logo"} /> : <i>PL</i>}<span>{ledger.brand?.title || 'Portfolio Ledger'}{ledger.brand?.name && <small class="brand-org">{ledger.brand.name}</small>}</span></div>
         <nav class="nav">
           {ROUTES.map((r) => (
             <a href={`#/${r.id}`} aria-current={route === r.id || (r.id === 'projects' && route.startsWith('project/')) ? 'page' : undefined} class={r.ready ? '' : 'soon'} onClick={() => setOpen(false)}>

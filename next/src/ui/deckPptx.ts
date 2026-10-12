@@ -8,7 +8,7 @@ import { date, month, pct, short } from './format';
 
 /** Everything the deck shows, computed once on the Presentation screen. */
 export interface DeckModel {
-  aud: 'management' | 'donor'; scope: string; cname: (id: string) => string; lab: (p: Project) => string;
+  aud: 'management' | 'donor'; scope: string; logo?: string; cname: (id: string) => string; lab: (p: Project) => string;
   P: Project[]; T: { budget: number; spent: number; committed: number; exposure: number; remaining: number; elapsed: number; burn: number };
   perf: number; band: string; bandWord: (b: string) => string; PL: number; final: number | null;
   series: { t: number; actual: number | null; plan: number; mid: number | null }[];
@@ -77,6 +77,8 @@ export async function exportPptx(m: DeckModel) {
   // 1 Cover
   { const s = ppt.addSlide(); n += 1; slides.push({ s, n });
     s.background = { color: '0E1A2B' };
+    if (m.logo) { const im = new Image(); im.src = m.logo; await im.decode().catch(() => {}); const h = 0.9, w = im.naturalHeight ? Math.min(3.5, (h * im.naturalWidth) / im.naturalHeight) : h;
+      s.addShape('roundRect', { x: 0.65, y: 0.45, w: w + 0.3, h: h + 0.2, fill: { color: 'FFFFFF' }, line: { color: 'FFFFFF' }, rectRadius: 0.08 }); s.addImage({ data: m.logo, x: 0.8, y: 0.55, w, h }); }
     s.addText(`${mg ? 'Management review' : 'Progress report to the donor'} · ${date(today)}`.toUpperCase(), { x: 0.8, y: 1.6, w: 11, h: 0.4, fontFace: F, fontSize: 13, color: '9FB0C8', bold: true, charSpacing: 1 });
     s.addText(m.scope === 'Portfolio' ? 'Joint programme portfolio' : m.scope, { x: 0.8, y: 2.1, w: 11.5, h: 1.2, fontFace: F, fontSize: 40, bold: true, color: 'FFFFFF' });
     s.addText(`Financial and operational status of ${m.P.length} projects in ${new Set(m.P.map((p) => p.country)).size} countries`, { x: 0.8, y: 3.3, w: 11, h: 0.5, fontFace: F, fontSize: 16, color: 'C9D4E3' });

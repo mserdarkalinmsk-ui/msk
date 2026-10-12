@@ -665,3 +665,7 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .ck-t{flex:1;display:grid;gap:2px}.ck-t b{font-weight:550;font-size:13.5px}.ck-t small{font-size:12px}
 @media print{.ck-g{break-inside:auto}.ck-l li{break-inside:avoid;padding:5px 8px}.ck-ring{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .ck-go{border:0 !important;background:none !important;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}.ck-go:hover{text-decoration:underline}
+.brand-logo{height:28px;max-width:72px;object-fit:contain;border-radius:4px;background:#fff;padding:2px}
+.brand span{display:grid;line-height:1.15}.brand-org{font-size:11px;font-weight:500;color:var(--ink-3)}
+.brand-pick{display:flex;gap:12px;align-items:center}.brand-prev{width:140px;height:64px;border:1px dashed var(--line-strong);border-radius:10px;display:grid;place-items:center;background:#fff;overflow:hidden}.brand-prev img{max-width:128px;max-height:56px;object-fit:contain}
+.sl-logo{display:block;max-height:64px;max-width:220px;object-fit:contain;background:#fff;padding:8px 12px;border-radius:10px;margin-bottom:18px}
