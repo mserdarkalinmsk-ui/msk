@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fb;color:#0f172a;padding:28px;display:grid;gap:22px}
+.sp{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:26px 30px;display:grid;grid-template-columns:230px 1fr;gap:30px}
+.meta b{display:block;font:700 22px Inter;color:#1e3a6e}.meta p{font:13px/1.5 Inter;color:#64748b;margin:6px 0 0}
+.over{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#2f6fd6}
+h1{margin:4px 0 6px;color:#1e3a6e}h2{margin:18px 0 8px;color:#0f172a}.lead{color:#475569;margin:0;max-width:640px}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}.card{border:1px solid #e2e8f0;border-left:3px solid #2f6fd6;border-radius:10px;padding:12px 14px}
+.card b{display:block}.card small{display:block;color:#64748b;margin-top:3px}.num{color:#1e3a6e}.lbl{color:#64748b}
+/* A Inter */
+.a{font-family:Inter}.a h1{font-size:32px;font-weight:700;letter-spacing:-.025em}.a h2{font-size:18px;font-weight:600;letter-spacing:-.01em}.a .lead{font-size:15px;line-height:1.6}.a .card b{font-size:14.5px;font-weight:600}.a .card small{font-size:13px;line-height:1.5}.a .num{font:700 22px Inter;font-variant-numeric:tabular-nums}.a .lbl{font-size:12px}
+/* B Plex */
+.b{font-family:"IBM Plex Sans"}.b h1{font-size:32px;font-weight:600;letter-spacing:-.015em}.b h2{font-size:18px;font-weight:600}.b .lead{font-size:15px;line-height:1.6}.b .card b{font-size:14.5px;font-weight:600}.b .card small{font-size:13px;line-height:1.5}.b .num{font:600 22px "IBM Plex Mono"}.b .lbl{font-size:12px}.b .over{font-family:"IBM Plex Sans"}
+/* C Space + Inter */
+.c{font-family:Inter}.c h1,.c h2,.c .card b{font-family:"Space Grotesk"}.c h1{font-size:34px;font-weight:700;letter-spacing:-.03em}.c h2{font-size:19px;font-weight:600}.c .lead{font-size:15px;line-height:1.6}.c .card b{font-size:15px;font-weight:600}.c .card small{font-size:13px;line-height:1.5}.c .num{font:700 22px "Space Grotesk"}.c .lbl{font-size:12px}
+/* D serif headings */
+.d{font-family:Inter}.d h1,.d h2{font-family:"Source Serif 4"}.d h1{font-size:34px;font-weight:700;letter-spacing:-.01em}.d h2{font-size:20px;font-weight:600}.d .lead{font-size:15px;line-height:1.6}.d .card b{font-size:14.5px;font-weight:600}.d .card small{font-size:13px;line-height:1.5}.d .num{font:700 22px "Source Serif 4"}.d .lbl{font-size:12px}
+</style></head><body>
+<script>
+const S=[["a","A · Inter","Tek font. Modern, nötr, çok okunaklı. Avrupa kurumlarında (ve AB sitelerinde) yaygın."],["b","B · IBM Plex","Kurumsal ve teknik. Rakamlar için eşleşen mono font; finans tablolarında net."],["c","C · Space Grotesk + Inter","Mevcut karakteri korur: başlıklar özgün, metin Inter ile sakin."],["d","D · Serif başlık + Inter","Resmi, rapor/rehber havası. Başlıklar serif, metin sans."]];
+document.body.innerHTML=S.map(([k,t,d])=>`<section class="sp ${k}"><div class="meta"><b>${t}</b><p>${d}</p></div><div>
+<div class="over">Project finance · Project team</div><h1>Procurement</h1><p class="lead">Thirteen stages from the definition of the need to filing, with thresholds, contract types and the approvals each step requires.</p>
+<h2>Stage 3 · Select the procedure</h2>
+<div class="row"><div class="card"><span class="lbl">Direct award up to</span><br><span class="num">€2,000</span></div><div class="card"><b>Competitive bidding</b><small>Above the direct-award limit and below €184,000. CCM approval.</small></div><div class="card"><b>International call</b><small>From €184,000. Tenders Board and e-procurement.</small></div></div></div></section>`).join("");
+</script></body></html>
