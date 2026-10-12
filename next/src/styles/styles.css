@@ -510,3 +510,8 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .cm-sup{list-style:none;margin:0;padding:0;display:grid;gap:8px}.cm-sup li{display:grid;grid-template-columns:minmax(0,1.2fr) 1fr 70px;gap:10px;align-items:center;font-size:13px}.cm-sup li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cm-sup b{text-align:right}
 .cm-t td{vertical-align:top}.cm-d{max-width:340px}
 @media screen and (max-width:640px){.cm-b{grid-template-columns:90px 1fr 64px}.cm-b small{display:none}}
+.sp-k{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}.sp-k div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}.sp-k span{display:block;font-size:12px;color:var(--ink-2)}.sp-k b{font-size:20px}.sp-k small{display:block;font-size:11px;color:var(--ink-3)}
+.sp-k .good{background:color-mix(in srgb,var(--good) 12%,var(--surface))}.sp-k .bad{background:color-mix(in srgb,var(--critical) 12%,var(--surface))}.sp-k .bad b{color:var(--critical)}
+.sp-t tfoot td{font-weight:700;border-top:2px solid var(--line-strong)}
+@media screen and (max-width:820px){.sp-k{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mc-t tfoot td{font-weight:700;border-top:2px solid var(--line-strong)}.mc-t td{vertical-align:middle}.mc-d>td{background:var(--surface-2);padding:8px 12px}
