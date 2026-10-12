@@ -44,10 +44,11 @@ function planLines(rows: string[][]): { lines: OfficeLine[]; date: string; offic
   const lines: OfficeLine[] = [];
   let heading = '';
   for (const r of rows.slice(hi + 1)) {
-    const a = (r[0] ?? '').trim();
-    if (/^total/i.test(a) || /^available/i.test(a)) break;
-    const hm = a.match(/^(\d)\s*-\s*(.+)$/);
-    if (hm && !/^\d+\.\d+/.test(a)) { heading = `${hm[1]} ${hm[2].trim()}`; continue; }
+    const a = (r[0] ?? '').trim(), first = (r.find((c) => (c ?? '').trim()) ?? '').trim();
+    if (/^total/i.test(first) || /^available/i.test(first)) break;
+    // Heading rows ("1 - Rent and related charges") sit in the description column, sub-totals repeat them with figures.
+    const hm = first.match(/^(\d)\s*-\s*(.+)$/);
+    if (hm && !/^\d+\.\d+$/.test(a) && !r.some((c, i) => i > 1 && num(c))) { heading = `${hm[1]} ${hm[2].trim()}`; continue; }
     if (!/^\d+\.\d+$/.test(a)) continue;
     const g = (c: number) => (c >= 0 ? num(r[c]) : 0);
     const l: OfficeLine = { code: a, heading, description: (r[1] ?? '').trim(), ob: { budget: g(cOB), sc: g(cSC), planned: g(cPl) }, ls: { budget: g(cLS), sc: g(cSC2), planned: g(cPl2) } };
@@ -101,6 +102,8 @@ export function readOffice(wb: Workbook, file: string, prev?: OfficeReport): Off
 }
 
 export type Fund = 'ob' | 'ls';
+/** Main headings of the office running-cost template, for reports read before headings were recognised. */
+export const OFFICE_HEADINGS: Record<string, string> = { '1': '1 Rent and related charges', '2': '2 Investments and maintenance', '3': '3 Consumables', '4': '4 Other running costs' };
 export interface FundCalc { left: number; leftAfterPlan: number; use: number; flag?: string }
 export interface OfficeView {
   r: OfficeReport; lines: (OfficeLine & { c: Record<Fund, FundCalc> })[];
@@ -115,7 +118,7 @@ export function officeView(r: OfficeReport): OfficeView {
     const flag = a.sc > 0.5 && !a.budget ? 'spent without a budget' : left < -0.5 ? 'over budget' : r.hasPlan && leftAfterPlan < -0.5 ? 'plan exceeds budget' : a.budget > 500 && use > yearShare + 0.35 ? 'ahead of the year' : undefined;
     return { left, leftAfterPlan, use, flag };
   };
-  const lines = r.lines.map((l) => ({ ...l, c: { ob: calc(l.ob), ls: calc(l.ls) } }));
+  const lines = r.lines.map((l) => ({ ...l, heading: l.heading || OFFICE_HEADINGS[l.code.split('.')[0]] || '', c: { ob: calc(l.ob), ls: calc(l.ls) } }));
   const sum = (k: Fund) => { const o = { budget: 0, sc: 0, planned: 0 }; for (const l of r.lines) { o.budget += l[k].budget; o.sc += l[k].sc; o.planned += l[k].planned; } return { ...o, left: o.budget - o.sc - o.planned }; };
   return { r, lines, T: { ob: sum('ob'), ls: sum('ls') }, yearShare };
 }

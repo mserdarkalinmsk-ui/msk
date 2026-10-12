@@ -89,6 +89,7 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
           {T.ob.left < -0.5 && <small style={{ color: RED }}>Ordinary Budget short by {full(-T.ob.left)} after the forecast</small>}</div>
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
+        <HeadingCard r={r} prev={prev} F={F} skip={done} />
         <section class="card span-12"><div class="card-h"><div><h2>Budget lines</h2><p>As in the office report: budget · spent + committed · foreseen to year end · leftover, per fund{F.length === 1 ? ' · bar = used, light = foreseen, tick = share of the year' : ''} · click a line for its entries</p></div></div>
           <div class="card-b table-scroll"><table class="mini of-t"><thead>
             {F.length > 1 && <tr class="of-fh"><th colSpan={2} />{F.map((f) => <th colSpan={4} style={{ background: FUND[f].color }}>{FUND[f].label}</th>)}{pv && <th />}<th /></tr>}
@@ -185,5 +186,33 @@ function TransferCard({ o, r, skip }: { o: Office; r: Office['reports'][number];
         <div><h3>Shortages</h3><table class="mini"><thead><tr><th>Line</th><th class="r">Short by</th><th class="r">Covered</th><th class="r">To request</th></tr></thead><tbody>{T.needs.map((n) => <tr><td><span class="num">{n.code}</span> {n.description}</td><td class="r num">{full(n.need)}</td><td class="r num">{full(n.covered)}</td><td class="r num" style={neg(-(n.need - n.covered))}><b>{n.need - n.covered > 0.5 ? full(n.need - n.covered) : '—'}</b></td></tr>)}</tbody>
           <tfoot><tr><td><b>Additional budget to request</b></td><td class="r num">{full(short)}</td><td class="r num">{full(short - T.request)}</td><td class="r num" style={neg(-T.request)}><b>{full(T.request)}</b></td></tr></tfoot></table></div></div>
       <p class="muted" style={{ fontSize: '12px' }}>Room on a line = budget − the larger of (spent + committed + foreseen) and the estimate at the current pace. {T.spare > 0.5 ? `${full(T.spare)} would still remain on other lines.` : ''} Check the transfer rules of the Ordinary Budget before submitting.</p>
+    </div></section>;
+}
+
+/** Sub-totals per main heading (1 Rent … 4 Other running costs): both funds, change since the previous report, and the heading-level effect of the transfer proposal. */
+function HeadingCard({ r, prev, F, skip }: { r: Office['reports'][number]; prev?: Office['reports'][number]; F: Fund[]; skip: (c: string) => boolean }) {
+  const key = (c: string) => c.split('.')[0];
+  const name = new Map(officeView(r).lines.filter((l) => l.heading).map((l) => [key(l.code), l.heading.replace(/^\d+\s*/, '')]));
+  const H = [...new Set(r.lines.map((l) => key(l.code)))].sort((a, b) => +a - +b);
+  const sum = (rep: typeof r | undefined, h: string, f: Fund) => { const o = { b: 0, sc: 0, p: 0 }; for (const l of rep?.lines ?? []) if (key(l.code) === h) { o.b += l[f].budget; o.sc += l[f].sc; o.p += l[f].planned; } return o; };
+  const TP = transferPlan(r, skip), net = new Map<string, number>();
+  for (const t of TP.transfers) { net.set(key(t.from), (net.get(key(t.from)) ?? 0) - t.amount); net.set(key(t.to), (net.get(key(t.to)) ?? 0) + t.amount); }
+  const DF = F.filter((f) => f === 'ob' || (prev?.hasPlan && r.hasPlan));
+  const tot = (f: Fund) => H.reduce((a, h) => { const x = sum(r, h, f); return { b: a.b + x.b, sc: a.sc + x.sc, p: a.p + x.p }; }, { b: 0, sc: 0, p: 0 });
+  const maxB = Math.max(1, ...H.map((h) => F.reduce((a, f) => a + sum(r, h, f).b, 0)));
+  return <section class="card span-12"><div class="card-h"><div><h2>By main heading</h2><p>Sub-totals as in the office report{prev ? ` · change in spent + committed since ${date(prev.date)}${DF.length < F.length ? ' (OB only — the system export has no LS figures)' : ''}` : ''} · transfers = net effect of the proposal on each heading (OB)</p></div></div>
+    <div class="card-b table-scroll"><table class="mini of-t of-ht"><thead>
+      {F.length > 1 && <tr class="of-fh"><th />{F.map((f) => <th colSpan={4} style={{ background: FUND[f].color }}>{FUND[f].label}</th>)}<th colSpan={4} /></tr>}
+      <tr><th>Heading</th>{F.map(() => <><th class="r">Budget</th><th class="r">Spent + committed</th><th class="r">Foreseen</th><th class="r">Leftover</th></>)}<th style={{ width: '140px' }}>Share of budget</th>{prev && <th class="r">Δ S&C</th>}<th class="r">Transfers</th><th class="r">Leftover after transfers</th></tr></thead>
+      <tbody>{H.map((h) => { const d = prev ? DF.reduce((a, f) => a + sum(r, h, f).sc - sum(prev, h, f).sc, 0) : 0, n = net.get(h) ?? 0, ob = sum(r, h, 'ob'), left = ob.b - ob.sc - ob.p, all = F.reduce((a, f) => a + sum(r, h, f).b, 0);
+        return <tr class="of-h"><td><b>{h} — {name.get(h)}</b></td>
+          {F.map((f) => { const x = sum(r, h, f), lo = x.b - x.sc - x.p; return <><td class="r num">{full(x.b)}</td><td class="r num">{full(x.sc)}</td><td class="r num">{full(x.p)}</td><td class="r num" style={neg(lo)}><b>{full(lo)}</b></td></>; })}
+          <td><span class="of-u" style={{ width: '90px' }}><i style={{ width: `${all / maxB * 100}%`, background: FUND[F[0]].color }} /></span><small class="num">{pc(all / Math.max(1, F.reduce((a, f) => a + tot(f).b, 0)))}</small></td>
+          {prev && <td class="r num" style={{ whiteSpace: 'nowrap' }}>{Math.abs(d) > 0.5 ? `${d > 0 ? '+' : '−'}${full(Math.abs(d))}` : '—'}</td>}
+          <td class="r num" style={{ whiteSpace: 'nowrap', color: n > 0.5 ? GRN : n < -0.5 ? AMB : undefined }}>{Math.abs(n) > 0.5 ? `${n > 0 ? '+' : '−'}${full(Math.abs(n))}` : '—'}</td>
+          <td class="r num" style={neg(left + n)}><b>{full(left + n)}</b></td></tr>; })}</tbody>
+      <tfoot><tr><td><b>TOTAL BUDGET</b></td>{F.map((f) => { const x = tot(f); return <><td class="r num"><b>{full(x.b)}</b></td><td class="r num"><b>{full(x.sc)}</b></td><td class="r num"><b>{full(x.p)}</b></td><td class="r num" style={neg(x.b - x.sc - x.p)}><b>{full(x.b - x.sc - x.p)}</b></td></>; })}<td />
+        {prev && <td class="r num">{full(DF.reduce((a, f) => a + tot(f).sc - prev.lines.reduce((s, l) => s + l[f].sc, 0), 0))}</td>}<td class="r num">0</td>{(() => { const o = tot('ob'), v = o.b - o.sc - o.p; return <td class="r num" style={neg(v)}><b>{full(v)}</b></td>; })()}</tr></tfoot></table>
+      {TP.transfers.length > 0 && <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Between headings: {[...new Set(TP.transfers.filter((t) => key(t.from) !== key(t.to)).map((t) => `${key(t.from)} → ${key(t.to)}`))].map((k) => { const a = TP.transfers.filter((t) => `${key(t.from)} → ${key(t.to)}` === k).reduce((s, t) => s + t.amount, 0); return `${k}: ${full(a)}`; }).join(' · ') || 'all transfers stay within their heading'}.</p>}
     </div></section>;
 }
