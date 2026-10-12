@@ -24,10 +24,10 @@
     { title: "Decision Engines", items: [{ title: "All engines", path: "engines", icon: "◇" }, { title: "Financial analysis", path: "analysis", icon: "⌁" }] },
   ];
   const HUBS = [
-    ["01 / Project finance", "Projects", "Project Team", "Procurement, grants, PO and payment files, year-end, petty cash and filing.", "projects", 1, "▤"],
+    ["01 / Project finance", "PROJECTS", "Project Team", "Procurement, grants, PO and payment files, year-end, petty cash and filing.", "projects", 1, "▤"],
     ["02 / Field operations", "FOMA", "Field offices", "PO and payment requests, missions, expense claims, reports and forecast.", "foma", 2, "▦"],
-    ["03 / Practical resources", "Tools", "Templates & checklists", "Documents, checklists, calculators, rules, glossary and practice.", "tools", 3, "▣"],
-    ["04 / Smart guidance", "Decision Engines", "Your case → route", "Answer a few questions and get the route, controls and file pack.", "engines", 4, "◇"],
+    ["03 / Practical resources", "TOOLS", "Templates & checklists", "Documents, checklists, calculators, rules, glossary and practice.", "tools", 3, "▣"],
+    ["04 / Smart guidance", "DECISION ENGINES", "Your case → route", "Answer a few questions and get the route, controls and file pack.", "engines", 4, "◇"],
   ];
   const PROJECT_ITEMS = [
     ["⚖", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract execution.", "procurement"],
@@ -86,37 +86,25 @@
   route("home", {
     section: "home",
     render() {
-      const caseItems = FG.case.items(), practice = FG.store.get("scenarioAnswers", {}), answered = Object.keys(practice).length;
-      const correct = Object.values(practice).filter((x) => x.ok).length;
+      const caseItems = FG.case.items(), modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
+      const meters = [90, 70, 80, 100], counts = ["09 modules", "06 workflows", "20+ tools", `${String(engines).padStart(2, "0")} engines`];
       return { html: `
-        <div class="hubs">${HUBS.map(([k, t, sub, d, p, c, ic]) => `<a class="hub" style="--tone:var(--c${c})" href="#/${p}"><small>${esc(k)}</small><i aria-hidden="true">${ic}</i><b>${esc(t)}</b><em>${esc(sub)}</em><span>${esc(d)}</span><u aria-hidden="true">→</u></a>`).join("")}</div>
-        <div class="hero mt">
-          <section class="card hero-main">
-            <div class="eyebrow">Financial & Procurement Guide</div>
-            <h1>What do you need to do?</h1>
-            <p>Start from the task. Each path leads to the applicable rule, the decision engine for your case and the documents to keep.</p>
-            <div class="tasks">${TASKS.map(([i, t, s, p], k) => `<a class="task" style="--tone:var(--c${(k % 6) + 1})" href="#/${p}"><i aria-hidden="true">${i}</i><b>${esc(t)}</b><small>${esc(s)}</small></a>`).join("")}</div>
-        <div class="section-title" style="margin-top:24px"><h2>The project finance journey</h2><span class="sub">The order a real case moves in</span></div>
-        <ol class="journey">${FG.JOURNEY.map((j, k) => `<li style="--tone:var(--c${(k % 6) + 1})"><a href="#/${j.path}"><em>${k + 1}</em><b>${esc(j.title)}</b><small>${esc(j.sub)}</small></a></li>`).join("")}</ol>
-          </section>
-          <aside class="stack">
-            <section class="card card-pad"><div class="eyebrow">Key thresholds</div>
-              <table class="t" style="margin-top:6px"><tbody>
-                <tr><td>Direct award · goods / services / works</td><td class="n">≤ ${euro(E.LIMITS.lowGoods)}</td></tr>
-                <tr><td>Direct award · intellectual services</td><td class="n">≤ ${euro(E.LIMITS.lowIntellectual)}</td></tr>
-                <tr><td>Legal Compliance Review · XB / mixed</td><td class="n">≥ ${euro(E.LIMITS.legalReview)}</td></tr>
-                <tr><td>International public call</td><td class="n">≥ ${euro(E.LIMITS.international)}</td></tr>
-                <tr><td>Grant competitive call</td><td class="n">≥ ${euro(E.LIMITS.grant)}</td></tr>
-                <tr><td>JP Budget Heading variation → Addendum</td><td class="n">&gt; 25%</td></tr>
-              </tbody></table><a class="btn sm mt" href="#/rules">All rules at a glance →</a></section>
-            <section class="card card-pad"><div class="row"><div><div class="eyebrow">My Case</div><b>${caseItems.length ? `${caseItems.length} saved decision${caseItems.length > 1 ? "s" : ""}` : "No saved decisions"}</b></div><span class="spacer"></span><button class="btn sm" data-open-case>Open</button></div>
-              ${caseItems[0] ? `<p class="small muted mt">Latest: ${esc(caseItems[0].route)} — ${esc(caseItems[0].kicker.toLowerCase())}</p>` : `<p class="small muted mt">Save engine results to keep your case context across modules.</p>`}</section>
-            <section class="card card-pad"><div class="eyebrow">Practice</div><b>${answered ? `${correct} / ${answered} answered correctly` : "48 scenarios to practise"}</b>${ui.bar((answered / C.scenarios.length) * 100, "good")}<a class="btn sm mt" href="#/scenarios">Continue practising</a></section>
-          </aside>
-        </div>
-        <div class="section-title"><h2>Modules</h2><span class="sub">Press Ctrl K anywhere to search</span></div>
-        <div class="modules">${MODULES.map(([ic, t, s, p, tag], k) => `<a class="module" style="--tone:var(--c${(k % 6) + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${ic}</span><span><b>${esc(t)}</b><small>${esc(s)}</small>${ui.tag(tag)}</span></a>`).join("")}</div>`,
-        mount(root) { root.querySelector("[data-open-case]").onclick = () => FG.openCase(); } };
+        <section class="fx-hero">
+          <span class="fx-status"><b aria-hidden="true"></b>Guide online · ${modules} pages · ${engines} engines${caseItems.length ? ` · My Case ${String(caseItems.length).padStart(2, "0")}` : ""}</span>
+          <h1>Guidance. Decisions.<br><span>Templates. One place.</span></h1>
+          <p>Choose your space. Every path ends with the applicable rule, the route for your case and the documents to keep.</p>
+        </section>
+        <section class="fx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="fx-hub" style="--c:var(--c${c});animation-delay:${i * 0.08}s" href="#/${p}">
+          <span class="fx-num">${esc(k)}</span><span class="fx-ico" aria-hidden="true">${ic}</span><h2>${esc(t)}</h2><em>// ${esc(sub.toLowerCase())}</em><p>${esc(d)}</p>
+          <div class="fx-meter"><i style="--w:${meters[i]}%"></i></div><div class="fx-bar"><span>${counts[i].toUpperCase()}</span><u aria-hidden="true">→</u></div></a>`).join("")}</section>`,
+        mount(root) {
+          // Cards tilt toward the pointer; skipped when the user prefers reduced motion.
+          if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          root.querySelectorAll(".fx-hub").forEach((h) => {
+            h.addEventListener("mousemove", (e) => { const r = h.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5; h.style.transform = `translateY(-8px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`; });
+            h.addEventListener("mouseleave", () => { h.style.transform = ""; });
+          });
+        } };
     },
   });
 

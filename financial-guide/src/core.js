@@ -98,7 +98,7 @@
   /* ---------- decision result rendering (shared by all engines) ---------- */
   FG.renderDecision = function (r, opts = {}) {
     const ui = FG.ui;
-    const scale = r.scale ? `<div class="block"><h3>Threshold position</h3><div class="scale" aria-hidden="true"><div class="track"></div><div class="pin" style="left:${Math.min(99, Math.max(1, (r.scale.value / r.scale.max) * 100))}%"></div><div class="labels">${r.scale.marks.map(([v, l]) => `<span style="left:${(v / r.scale.max) * 100}%">${esc(l)}</span>`).join("")}</div></div></div>` : "";
+    const scale = r.scale ? `<div class="block"><h3>Threshold position</h3><div class="scale" aria-hidden="true"><div class="track"></div><div class="pin" style="left:${Math.min(99, Math.max(1, (r.scale.value / r.scale.max) * 100))}%"></div><div class="labels">${r.scale.marks.map(([v, l]) => `<span style="left:${(v / r.scale.max) * 100}%;${v / r.scale.max < 0.12 ? "transform:none" : ""}">${esc(l)}</span>`).join("")}</div></div></div>` : "";
     const fit = r.fit ? `<div class="block"><h3>Model fit</h3><div class="fit">${r.fit.map(([n, s]) => `<div><span>${esc(n)}</span>${ui.bar((s / 12) * 100, n === r.route ? "good" : "")}<em>${s} pts</em></div>`).join("")}</div></div>` : "";
     const flags = r.flags ? `<div class="block"><h3>Control flags</h3><div class="row">${r.flags.map(([t, tone]) => ui.tag(t, tone === "neutral" ? "" : tone)).join("")}</div></div>` : "";
     const confidence = r.confidence && r.score != null ? `<div class="block"><h3>Decision confidence</h3><div class="score ${r.score >= 85 ? "good" : r.score >= 70 ? "warn" : "risk"}"><div class="ring" style="--p:${r.score}"><b>${r.score}%</b></div><div><h4>${esc(r.confidence[0])}</h4><p>${esc(r.confidence[1])}</p></div></div></div>` : "";
@@ -240,7 +240,7 @@
     document.body.innerHTML = `<a class="skip" href="#content">Skip to content</a>
 <div class="app">
   <aside class="side" id="side" aria-label="Main navigation">
-    <a class="brand" href="#/home"><span class="brand-mark" aria-hidden="true">FG</span><span><b>Financial Guide</b><small>Procurement · Finance · Grants</small></span></a>
+    <a class="brand" href="#/home"><span class="brand-mark" aria-hidden="true">FG</span><span><b>Financial Guide</b><small>Council of Europe</small></span></a>
     <nav class="nav">${groups.map((g) => `<div class="nav-group"><span>${esc(g.title)}</span>${g.items.map((it) => `<a href="#/${it.path}" data-section="${it.section || it.path.split("/")[0]}"><i aria-hidden="true">${esc(it.icon)}</i>${esc(it.title)}</a>`).join("")}</div>`).join("")}</nav>
     <div class="side-foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation.</div>
   </aside>

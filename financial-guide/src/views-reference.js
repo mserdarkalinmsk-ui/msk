@@ -34,7 +34,7 @@
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.fx-hero,.fx-hubs,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();
