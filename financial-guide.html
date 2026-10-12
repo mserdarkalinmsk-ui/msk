@@ -1105,6 +1105,27 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .ht[open] { box-shadow: var(--shadow); border-color: var(--accent-line); }
 @media (max-width: 760px) { .lim-row { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
 
+/* ---------- detail side sheet ---------- */
+.sheet { position: fixed; z-index: 80; top: 0; right: 0; bottom: 0; width: min(460px, 94vw); background: var(--panel); box-shadow: -24px 0 60px -20px rgba(15, 23, 42, .35); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .2s ease; }
+.sheet.open { transform: none; }
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 14px; border-bottom: 1px solid var(--line); }
+.sheet-head small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.sheet-head h2 { margin: 2px 0 0; font-size: 19px; color: var(--navy); }
+.sheet-body { flex: 1; overflow-y: auto; padding: 18px 22px 28px; display: grid; gap: 18px; align-content: start; }
+.sheet-body h3 { margin: 0 0 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sh-fig { padding: 18px; border-radius: 16px; color: #fff; background: linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 60%, var(--c1))); }
+.sh-fig b { display: block; font-size: 30px; letter-spacing: -.02em; } .sh-fig span { opacity: .85; font-size: 14px; }
+.sh-rule { padding: 12px 14px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 8px; }
+.sh-rule b { color: var(--navy); } .sh-rule p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; } .sh-rule small { display: block; margin-top: 6px; color: var(--accent); font-weight: 600; font-size: 12.5px; }
+.sh-quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sh-quotes li { padding-left: 12px; border-left: 3px solid var(--accent-line); }
+.sh-quotes p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); } .sh-quotes small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.sh-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; } .sh-links a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--accent-line); }
+button.mem-fact { position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+button.mem-fact:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-2px); }
+button.mem-fact i { display: block; margin-top: 8px; font-style: normal; font-size: 12px; font-weight: 600; color: var(--accent); }
+@media print { .sheet { display: none !important; } }
+
 </style>
 </head>
 <body>
@@ -8286,8 +8307,16 @@ window.FG_CONTENT = {
   };
   function closeOverlays() {
     ["#palette", "#overlay"].forEach((s) => $(s).classList.remove("open"));
+    const sh = $("#sheet"); if (sh && !sh.hidden) { sh.classList.remove("open"); setTimeout(() => { sh.hidden = true; }, 200); if (FG.sheetFrom) FG.sheetFrom.focus({ preventScroll: true }); }
   }
   FG.closeOverlays = closeOverlays;
+  // Side sheet for details: opens over the page without leaving it.
+  FG.openSheet = function (kicker, title, html) {
+    FG.sheetFrom = document.activeElement;
+    $("#sheetKicker").textContent = kicker; $("#sheetTitle").textContent = title; $("#sheetBody").innerHTML = html;
+    if (FG.enrich) FG.enrich($("#sheetBody"));
+    const sh = $("#sheet"); sh.hidden = false; requestAnimationFrame(() => sh.classList.add("open")); $("#overlay").classList.add("open"); $("#sheetClose").focus();
+  };
 
   const svg = (d) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {
@@ -8323,7 +8352,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:49</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:55</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -8332,11 +8361,13 @@ window.FG_CONTENT = {
   <ul id="paletteList" role="listbox"></ul>
   <div class="hint"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span></div>
 </div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden><div class="sheet-head"><div><small id="sheetKicker"></small><h2 id="sheetTitle"></h2></div><button class="icon-btn" id="sheetClose" aria-label="Close details">${ICON.close}</button></div><div class="sheet-body" id="sheetBody"></div></aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 
     applyTheme(FG.store.get("theme", "system"));
     $("#themeBtn").onclick = () => { const order = ["system", "light", "dark"], next = order[(order.indexOf(FG.store.get("theme", "system")) + 1) % 3]; FG.store.set("theme", next); applyTheme(next); FG.toast(`Theme: ${next}`); };
     $("#searchBtn").onclick = FG.openPalette;
+    $("#sheetClose").onclick = closeOverlays;
     $("#overlay").onclick = closeOverlays;
     $("#paletteInput").addEventListener("input", (e) => { results = search(e.target.value); sel = 0; renderResults(); });
     $("#paletteInput").addEventListener("keydown", (e) => {
@@ -8806,6 +8837,31 @@ window.FG_CONTENT = {
     });
   }
 
+  /* ---------- fact details: everything the guide says about a key figure ---------- */
+  const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
+  function factSheet(btn) {
+    const base = btn.dataset.base, v = btn.dataset.fact, label = btn.dataset.factLabel, stages = base === "procurement" ? C.procurementStages : C.grantStages;
+    const R = base === "procurement" ? C.procurementReference : C.grantReference;
+    const toks = factTokens(v), main = toks[0] || v, hits = [];
+    const has = (t) => toks.some((k) => t.includes(k)) || t.includes(v);
+    stages.forEach((st) => st.sections.forEach(([h, b]) => {
+      const pieces = typeof b === "string" ? splitSentences(b) : [b.lead, ...(b.items || []).map(([a, d]) => `${a}: ${d}`), ...(b.must || []), b.tip].filter(Boolean);
+      pieces.forEach((x) => { if (has(x)) hits.push([st.name, h, x]); });
+    }));
+    const limAll = ((R && R.limits) || []).filter((l) => has(`${l.value} ${l.rule}`)), limOwn = limAll.filter((l) => has(l.value));
+    const lim = limOwn.length ? limOwn : limAll;
+    const here = hits.filter((x) => x[0] === btn.dataset.stage), else_ = hits.filter((x) => x[0] !== btn.dataset.stage);
+    const stagesWith = [...new Set(else_.map((x) => x[0]))];
+    const list = (arr) => arr.slice(0, 6).map(([st, h, x]) => `<li><p>${esc(x)}</p><small>${esc(st)} · ${esc(h)}</small></li>`).join("");
+    const html = `<div class="sh-fig"><b>${esc(v)}</b><span>${esc(label)}</span></div>
+      ${lim.length ? `<section><h3>The rule</h3>${lim.map((l) => `<div class="sh-rule"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p>${l.who ? `<small>Who: ${esc(l.who)}</small>` : ""}</div>`).join("")}</section>` : ""}
+      ${here.length ? `<section><h3>What the guide says here</h3><ul class="sh-quotes">${list(here)}</ul></section>` : ""}
+      ${else_.length ? `<section><h3>Also applies in</h3><ul class="sh-quotes">${list(else_)}</ul>${stagesWith.length ? `<div class="sh-links">${stagesWith.map((n) => `<a href="#/${base}/${slug(n)}">${esc(n)} →</a>`).join("")}</div>` : ""}</section>` : ""}
+      ${!lim.length && !hits.length ? `<p class="muted">No further detail in the guide for this figure.</p>` : ""}`;
+    FG.openSheet(`Key figure · ${btn.dataset.stage}`, label.charAt(0).toUpperCase() + label.slice(1), html);
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
+
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
   function lifecycle(cfg) {
     const stages = cfg.stages;
@@ -8852,7 +8908,7 @@ window.FG_CONTENT = {
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
-            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<div class="mem-fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : ""}
+            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<button type="button" class="mem-fact" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}"><b>${esc(v)}</b><span>${esc(l)}</span><i aria-hidden="true">Details ›</i></button>`).join("")}</div>` : ""}
             <ol class="ucf">${[["Understand", s.understand, "◎"], ["Do", s.do, "▶"], ["Control", s.check, "✓"]].map(([t, x, ic], k) => `<li style="--c:var(--c${[1, 2, 3][k]})"><span class="ucf-ico" aria-hidden="true">${ic}</span><small>${k + 1} · ${t}</small><p>${esc(x)}</p></li>`).join("")}</ol>
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
@@ -9603,7 +9659,7 @@ window.FG_CONTENT = {
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.lf-left,.lf-q,.lf-dots,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.sh-fig,.lf-left,.lf-q,.lf-dots,.ess-fig,.ess-ring,.case-hero,.case-kpis,.g-lab,.hub-path,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();

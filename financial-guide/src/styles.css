@@ -1092,3 +1092,24 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .ht ol { margin: 0; padding: 4px 18px 14px 40px; display: grid; gap: 8px; font-size: 14px; line-height: 1.55; } .ht > p { padding: 0 18px 14px; margin: 0; }
 .ht[open] { box-shadow: var(--shadow); border-color: var(--accent-line); }
 @media (max-width: 760px) { .lim-row { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+
+/* ---------- detail side sheet ---------- */
+.sheet { position: fixed; z-index: 80; top: 0; right: 0; bottom: 0; width: min(460px, 94vw); background: var(--panel); box-shadow: -24px 0 60px -20px rgba(15, 23, 42, .35); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .2s ease; }
+.sheet.open { transform: none; }
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 14px; border-bottom: 1px solid var(--line); }
+.sheet-head small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.sheet-head h2 { margin: 2px 0 0; font-size: 19px; color: var(--navy); }
+.sheet-body { flex: 1; overflow-y: auto; padding: 18px 22px 28px; display: grid; gap: 18px; align-content: start; }
+.sheet-body h3 { margin: 0 0 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sh-fig { padding: 18px; border-radius: 16px; color: #fff; background: linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 60%, var(--c1))); }
+.sh-fig b { display: block; font-size: 30px; letter-spacing: -.02em; } .sh-fig span { opacity: .85; font-size: 14px; }
+.sh-rule { padding: 12px 14px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 8px; }
+.sh-rule b { color: var(--navy); } .sh-rule p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; } .sh-rule small { display: block; margin-top: 6px; color: var(--accent); font-weight: 600; font-size: 12.5px; }
+.sh-quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sh-quotes li { padding-left: 12px; border-left: 3px solid var(--accent-line); }
+.sh-quotes p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); } .sh-quotes small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.sh-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; } .sh-links a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--accent-line); }
+button.mem-fact { position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+button.mem-fact:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-2px); }
+button.mem-fact i { display: block; margin-top: 8px; font-style: normal; font-size: 12px; font-weight: 600; color: var(--accent); }
+@media print { .sheet { display: none !important; } }

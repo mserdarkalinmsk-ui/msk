@@ -186,6 +186,31 @@
     });
   }
 
+  /* ---------- fact details: everything the guide says about a key figure ---------- */
+  const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
+  function factSheet(btn) {
+    const base = btn.dataset.base, v = btn.dataset.fact, label = btn.dataset.factLabel, stages = base === "procurement" ? C.procurementStages : C.grantStages;
+    const R = base === "procurement" ? C.procurementReference : C.grantReference;
+    const toks = factTokens(v), main = toks[0] || v, hits = [];
+    const has = (t) => toks.some((k) => t.includes(k)) || t.includes(v);
+    stages.forEach((st) => st.sections.forEach(([h, b]) => {
+      const pieces = typeof b === "string" ? splitSentences(b) : [b.lead, ...(b.items || []).map(([a, d]) => `${a}: ${d}`), ...(b.must || []), b.tip].filter(Boolean);
+      pieces.forEach((x) => { if (has(x)) hits.push([st.name, h, x]); });
+    }));
+    const limAll = ((R && R.limits) || []).filter((l) => has(`${l.value} ${l.rule}`)), limOwn = limAll.filter((l) => has(l.value));
+    const lim = limOwn.length ? limOwn : limAll;
+    const here = hits.filter((x) => x[0] === btn.dataset.stage), else_ = hits.filter((x) => x[0] !== btn.dataset.stage);
+    const stagesWith = [...new Set(else_.map((x) => x[0]))];
+    const list = (arr) => arr.slice(0, 6).map(([st, h, x]) => `<li><p>${esc(x)}</p><small>${esc(st)} · ${esc(h)}</small></li>`).join("");
+    const html = `<div class="sh-fig"><b>${esc(v)}</b><span>${esc(label)}</span></div>
+      ${lim.length ? `<section><h3>The rule</h3>${lim.map((l) => `<div class="sh-rule"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p>${l.who ? `<small>Who: ${esc(l.who)}</small>` : ""}</div>`).join("")}</section>` : ""}
+      ${here.length ? `<section><h3>What the guide says here</h3><ul class="sh-quotes">${list(here)}</ul></section>` : ""}
+      ${else_.length ? `<section><h3>Also applies in</h3><ul class="sh-quotes">${list(else_)}</ul>${stagesWith.length ? `<div class="sh-links">${stagesWith.map((n) => `<a href="#/${base}/${slug(n)}">${esc(n)} →</a>`).join("")}</div>` : ""}</section>` : ""}
+      ${!lim.length && !hits.length ? `<p class="muted">No further detail in the guide for this figure.</p>` : ""}`;
+    FG.openSheet(`Key figure · ${btn.dataset.stage}`, label.charAt(0).toUpperCase() + label.slice(1), html);
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
+
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
   function lifecycle(cfg) {
     const stages = cfg.stages;
@@ -232,7 +257,7 @@
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
-            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<div class="mem-fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : ""}
+            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<button type="button" class="mem-fact" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}"><b>${esc(v)}</b><span>${esc(l)}</span><i aria-hidden="true">Details ›</i></button>`).join("")}</div>` : ""}
             <ol class="ucf">${[["Understand", s.understand, "◎"], ["Do", s.do, "▶"], ["Control", s.check, "✓"]].map(([t, x, ic], k) => `<li style="--c:var(--c${[1, 2, 3][k]})"><span class="ucf-ico" aria-hidden="true">${ic}</span><small>${k + 1} · ${t}</small><p>${esc(x)}</p></li>`).join("")}</ol>
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [

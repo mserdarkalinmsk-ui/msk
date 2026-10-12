@@ -259,8 +259,16 @@
   };
   function closeOverlays() {
     ["#palette", "#overlay"].forEach((s) => $(s).classList.remove("open"));
+    const sh = $("#sheet"); if (sh && !sh.hidden) { sh.classList.remove("open"); setTimeout(() => { sh.hidden = true; }, 200); if (FG.sheetFrom) FG.sheetFrom.focus({ preventScroll: true }); }
   }
   FG.closeOverlays = closeOverlays;
+  // Side sheet for details: opens over the page without leaving it.
+  FG.openSheet = function (kicker, title, html) {
+    FG.sheetFrom = document.activeElement;
+    $("#sheetKicker").textContent = kicker; $("#sheetTitle").textContent = title; $("#sheetBody").innerHTML = html;
+    if (FG.enrich) FG.enrich($("#sheetBody"));
+    const sh = $("#sheet"); sh.hidden = false; requestAnimationFrame(() => sh.classList.add("open")); $("#overlay").classList.add("open"); $("#sheetClose").focus();
+  };
 
   const svg = (d) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {
@@ -305,11 +313,13 @@
   <ul id="paletteList" role="listbox"></ul>
   <div class="hint"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span></div>
 </div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden><div class="sheet-head"><div><small id="sheetKicker"></small><h2 id="sheetTitle"></h2></div><button class="icon-btn" id="sheetClose" aria-label="Close details">${ICON.close}</button></div><div class="sheet-body" id="sheetBody"></div></aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 
     applyTheme(FG.store.get("theme", "system"));
     $("#themeBtn").onclick = () => { const order = ["system", "light", "dark"], next = order[(order.indexOf(FG.store.get("theme", "system")) + 1) % 3]; FG.store.set("theme", next); applyTheme(next); FG.toast(`Theme: ${next}`); };
     $("#searchBtn").onclick = FG.openPalette;
+    $("#sheetClose").onclick = closeOverlays;
     $("#overlay").onclick = closeOverlays;
     $("#paletteInput").addEventListener("input", (e) => { results = search(e.target.value); sel = 0; renderResults(); });
     $("#paletteInput").addEventListener("keydown", (e) => {
