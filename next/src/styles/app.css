@@ -348,3 +348,20 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .lg.over { background: var(--critical); } .lg.warn { background: var(--warn); }
 @media print { .stmt-scroll { max-height: none; overflow: visible; } .stmt thead th, .stmt tfoot td, .stmt .pin { position: static; } .dt-bar, .tabs, .wb-strip .btn, .ph-actions { display: none !important; } }
 .stmt tfoot td.tl { left: 0; z-index: 4; box-shadow: 1px 0 0 var(--line); }
+
+/* ---------- print: one rule set for every screen ---------- */
+.print-scope { display: none; }
+@media print {
+  .print-scope { display: block; margin: 0 0 8px; font-size: 11px; color: #555; }
+  /* screen controls never print; text links inside tables stay */
+  .page .btn, .page .seg, .page .tools, .page .subtabs, .page .tabs, .page select, .page input, .page textarea,
+  .filters-bar, .page .chip, .page .map-zoom, .page .no-print, .page .of-nb { display: none !important; }
+  /* scrolling boxes print in full */
+  .page .dt-scroll, .page .att, .page .table-scroll, .page .sd-scroll, .page .stmt-scroll { max-height: none !important; overflow: visible !important; }
+  .page table { break-inside: auto; } .page thead { display: table-header-group; } .page tr { break-inside: avoid; }
+  .page .card { box-shadow: none; break-inside: avoid-page; }
+  .page .card:has(table) { break-inside: auto; }
+  .page h2, .page h3, .page .card-h { break-after: avoid; }
+}
+@media print { .page .tw { display: none !important; } .page:has(> .em) { page: em; } }
+@media print { .em > .gauges, .em > .sim { display: none !important; } }

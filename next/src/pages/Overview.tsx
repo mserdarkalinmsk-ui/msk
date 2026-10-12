@@ -20,8 +20,11 @@ export function Filters() {
   const { countries } = useStore((s) => s.ledger);
   const f = useStore((s) => s.filters);
   const setF = (patch: Partial<typeof f>) => set((s) => ({ filters: { ...s.filters, ...patch } }));
+  const scope = [f.country ? countries.find((c) => c.id === f.country)?.name ?? f.country : 'All countries', f.sector || 'all sectors'].join(' · ');
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }} role="toolbar" aria-label="Filters">
+    <>
+    <p class="print-scope">Scope: {scope} · printed {new Date().toISOString().slice(0, 10)}</p>
+    <div class="filters-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }} role="toolbar" aria-label="Filters">
       <button class="chip" aria-pressed={!f.country} onClick={() => setF({ country: '' })}>All countries</button>
       {countries.map((c) => (
         <button class="chip" aria-pressed={f.country === c.id} onClick={() => setF({ country: f.country === c.id ? '' : c.id })}>{c.name}</button>
@@ -33,6 +36,7 @@ export function Filters() {
       <button class="btn ghost" style={{ height: '28px' }} onClick={() => set({ drawer: { kind: 'countries' } })}>Manage countries</button>
       {(f.country || f.sector) && <button class="btn ghost" style={{ height: '28px' }} onClick={() => setF({ country: '', sector: '' })}>Clear filters</button>}
     </div>
+    </>
   );
 }
 
