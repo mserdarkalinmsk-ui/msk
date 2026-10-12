@@ -347,7 +347,8 @@ function ResultsDocs({ p }: { p: Project }) {
       <section class="card span-8">
         <div class="card-h"><div><h2>Project documents</h2><p>DoA, contract, budget annexes and logframe — what was read from each</p></div>
           <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div></div>
-        <ul class="att" style={{ marginTop: '8px' }}>{D.map((d) => <li style={{ cursor: 'default' }}><span class="badge neutral">{d.kind}</span><div><div class="t">{d.name}</div><div class="d">{d.summary.join(' · ') || '—'} · {date(d.importedAt.slice(0, 10))}</div></div><span /></li>)}
+        <ul class="att" style={{ marginTop: '8px' }}>{D.map((d) => <li style={{ cursor: 'default' }}><span class="badge neutral">{d.kind}</span><div><div class="t">{d.name}</div><div class="d">{d.summary.join(' · ') || '—'} · {date(d.importedAt.slice(0, 10))}</div></div>
+            <button class="btn ghost sm" title="Remove from the list (what was read stays on the project)" onClick={() => { if (confirm(`Remove “${d.name}”?`)) updateProject(p.id, { documents: D.filter((x) => x !== d) }); }}>Delete</button></li>)}
           {!D.length && <li style={{ cursor: 'default' }}><span /><div class="d">None yet</div><span /></li>}</ul>
       </section>
       <section class="card span-4">
