@@ -12,9 +12,12 @@ import { Gauge } from '../ui/Gauge';
 import { catchUp, perfTrend, staffProjection, warningScore } from '../domain/monitor';
 import { HEADINGS } from '../domain/calc';
 import { download, type Cell, type SheetSpec } from '../ui/xlsxwrite';
+import { downloadDocx } from '../ui/docxwrite';
+import { variances } from '../domain/variance';
+import { updateProject } from '../data/store';
 
 const SECTIONS = [
-  ['summary', 'Summary and key figures'], ['headings', 'Budget by heading'], ['period', 'Spending in the period'], ['lines', 'Budget lines'],
+  ['summary', 'Summary and key figures'], ['headings', 'Budget by heading'], ['period', 'Spending in the period'], ['lines', 'Budget lines'], ['variance', 'Variance explanations'],
   ['indicators', 'Indicators'], ['activities', 'Activities'], ['risks', 'Risks'], ['staff', 'Staff'],
 ] as const;
 type Sec = (typeof SECTIONS)[number][0];
@@ -34,6 +37,7 @@ export function Studio() {
   const end = R.find((r) => r.id === to) ?? R.at(-1), start = R.find((r) => r.id === from) ?? R[R.indexOf(end!) - 1];
   const toggle = (k: Sec) => { const n = { ...on, [k]: !on[k] }; setOn(n); try { localStorage.setItem('pl-studio-s', JSON.stringify(n)); } catch { /* */ } };
   const D = build(p, end, start);
+  const docx = () => { const el = document.querySelector('.studio-doc') as HTMLElement | null; if (el) void downloadDocx(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.docx`, el, `${p.code} progress report`); };
   const xlsx = () => download(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.xlsx`, D.sheets.filter((x) => on[x.sec]).map(({ sec: _, ...x }) => x));
   return (
     <div class="studio">
@@ -47,7 +51,8 @@ export function Studio() {
         </> : <p class="muted">No financial reports yet — figures use the budget only.</p>}
         <h3>Sections</h3>
         {SECTIONS.map(([k, l]) => <label class="studio-ck"><input type="checkbox" checked={on[k] !== false} onChange={() => toggle(k)} />{l}</label>)}
-        <div class="studio-b"><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+        <div class="studio-b"><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={docx}>⤓ Word</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+        <p class="muted" style={{ fontSize: '12px', margin: '6px 0 0' }}>Word gives an editable donor report draft: complete the variance explanations here or in Word.</p>
       </aside>
       <article class="studio-doc">
         <header class="sd-h">
@@ -90,11 +95,14 @@ function build(p: Project, end?: R_, start?: R_) {
   const kRows: Cell[][] = K.map((r) => [tx(r.title), r.category ?? '', `${r.likelihood ?? '–'}×${r.impact ?? '–'}`, tx(r.mitigation), r.status ?? 'Open']);
   const sRows: Cell[][] = S.map((a) => [a.display, a.position, a.status, a.end ? date(a.end) : '']);
   const story = `By ${end ? date(end.date) : 'today'} the project had spent ${full(tEnd.actual)} (${pct(m.budget ? tEnd.actual / m.budget : 0)} of the budget) with ${pct(el)} of the implementation period elapsed${start ? `; ${full(periodSpend)} was spent since ${date(start.date)}` : ''}. Open commitments stand at ${full(tEnd.committed)}. ${o.basis === 'no data' ? '' : o.overrun ? `At the current rate the budget would be exceeded by ${full(o.overrun)}.` : `At the current rate ${pct(o.utilisation)} of the budget will be used by the end date; ${full(o.needRate)} a month would use it in full.`}`;
+  const V = variances(LA.map((x) => ({ code: x.code, d: x.d, aA: x.aA, act: x.act, use: x.use, dRp: x.dRp, dU: x.dU, unit: x.unit })), el, m.budget, p.budgetNotes);
+  const vn = (p as { varianceNotes?: Record<string, string> }).varianceNotes ?? {};
   const blocks: { sec: Sec; title: string; body: preact.JSX.Element }[] = [
     { sec: 'summary', title: '1. Summary', body: <><p>{story}</p><div class="sd-kpi"><div><span>Budget</span><b class="num">{full(m.budget)}</b></div><div><span>Spent</span><b class="num">{full(tEnd.actual)}</b></div><div><span>Committed</span><b class="num">{full(tEnd.committed)}</b></div><div><span>Forecast at end</span><b class="num">{full(o.projected)}</b></div></div></> },
     { sec: 'headings', title: '2. Budget by heading', body: tbl(['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], hRows, [1, 2, 3, 4]) },
     { sec: 'period', title: `3. Spending in the period${start ? ` (${date(start.date)} – ${end ? date(end.date) : ''})` : ''}`, body: start ? <><p>{full(periodSpend)} spent in the period. Largest movements:</p>{tbl(['Line', 'Description', 'Spent in period'], pRows, [2])}</> : <p class="muted">Choose a “from” report to show movements in the period.</p> },
     { sec: 'lines', title: '4. Budget lines — units, unit costs and variances', body: LA.length ? <LineTable rows={LA} el={el} /> : <p class="muted">No report lines.</p> },
+    { sec: 'variance', title: '4a. Explanation of variances', body: <VarianceBlock p={p} V={V} k={end?.id ?? 'now'} /> },
     { sec: 'indicators', title: '5. Indicators', body: I.length ? tbl(['Indicator', 'Baseline', 'Target', 'Current', 'Progress'], iRows, [4]) : <p class="muted">No indicators on file.</p> },
     { sec: 'activities', title: `6. Activities${pl ? ` · ${pl.done}/${pl.total} done, ${pl.late} late` : ''}`, body: aRows.length ? tbl(['Code', 'Activity', 'Status', 'Planned end'], aRows) : <p class="muted">No activity plan on file.</p> },
     { sec: 'risks', title: '7. Risks', body: kRows.length ? tbl(['Risk', 'Category', 'L × I', 'Mitigation', 'Status'], kRows) : <p class="muted">No risks recorded.</p> },
@@ -105,6 +113,7 @@ function build(p: Project, end?: R_, start?: R_) {
     { sec: 'headings', name: 'Headings', rows: [['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], ...hRows], money: [1, 2, 3] },
     { sec: 'period', name: 'Period', rows: [['Line', 'Description', 'Spent in period'], ...deltas.map((d) => [d.code, d.description, (d.actual[1] - d.actual[0])])], money: [2] },
     { sec: 'lines', name: 'Lines', rows: [['Line', 'Description', 'Unit', 'Approved units', 'Approved unit cost', 'Approved amount', 'Actual units', 'Actual unit cost', 'Actual amount', 'Unit variance (+/−)', 'Unit cost variance %', 'Remaining', 'Use'], ...lRows], money: [4, 5, 7, 8, 11] },
+    { sec: 'variance', name: 'Variances', rows: [['Line', 'Description', 'Type', 'Facts', 'Explanation'], ...V.map((v) => [v.code, v.d, v.kind, v.facts, vn[`${end?.id ?? 'now'}:${v.code}`] ?? v.draft])] },
     { sec: 'indicators', name: 'Indicators', rows: [['Indicator', 'Baseline', 'Target', 'Current', 'Progress'], ...iRows] },
     { sec: 'activities', name: 'Activities', rows: [['Code', 'Activity', 'Status', 'Planned end'], ...aRows] },
     { sec: 'risks', name: 'Risks', rows: [['Risk', 'Category', 'L x I', 'Mitigation', 'Status'], ...kRows] },
@@ -370,4 +379,15 @@ export function Simulator({ rows, riskPct }: { rows: SimRow[]; riskPct: number }
       <p class="em-note">Needed to use the full budget by the end dates: <b>{n0(needed)}</b> per month ({cur ? `${(needed / cur).toFixed(1)}×` : '—'} the current pace). The current pace is each project's recent monthly spending; the scenario shares the chosen amount between the selected projects in proportion to what each still needs per month.</p>
     </section>
   );
+}
+
+/** Lines the donor will ask about, each with the facts and an explanation kept per report (draft until edited). */
+function VarianceBlock({ p, V, k }: { p: Project; V: ReturnType<typeof variances>; k: string }) {
+  const notes = (p as { varianceNotes?: Record<string, string> }).varianceNotes ?? {};
+  if (!V.length) return <p>No budget line shows a significant variance: spending is within the approved amounts and in line with the time elapsed.</p>;
+  const save = (code: string, v: string) => updateProject(p.id, { varianceNotes: { ...notes, [`${k}:${code}`]: v } } as Partial<Project>);
+  return <div class="sd-var">{V.map((v) => { const key = `${k}:${v.code}`, txt = notes[key] ?? v.draft, draft = notes[key] == null;
+    return <div class="sd-v"><h3>{v.code} {v.d} <small class={`badge ${v.kind === 'overspent' ? 'danger' : 'warning'} no-print`}>{v.kind}</small></h3><p><b>{v.facts}</b></p>
+      <textarea class="no-print-border" rows={3} value={txt} onChange={(e) => save(v.code, (e.target as HTMLTextAreaElement).value)} />
+      <p class="print-only">{txt}</p>{draft && <small class="muted no-print">Draft — text in [brackets] to complete; saved with the report when edited.</small>}</div>; })}</div>;
 }
