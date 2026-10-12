@@ -1,12 +1,10 @@
 import { useEffect, useRef } from 'preact/hooks';
-import * as echarts from 'echarts/core';
-import { BarChart, CustomChart, LineChart, ScatterChart } from 'echarts/charts';
-import { DataZoomComponent, GridComponent, LegendComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent } from 'echarts/components';
-import { SVGRenderer } from 'echarts/renderers';
-import type { EChartsCoreOption } from 'echarts/core';
+import type { ECharts, EChartsCoreOption } from 'echarts/core';
 import { useStore } from '../data/store';
 
-echarts.use([BarChart, LineChart, ScatterChart, CustomChart, GridComponent, LegendComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkAreaComponent, SVGRenderer]);
+/** The chart library is loaded once, after the first screen is drawn; charts appear as soon as it is ready. */
+let lib: Promise<typeof import('./echartsSetup')> | null = null;
+export const loadCharts = () => (lib ??= import('./echartsSetup'));
 
 /** Resolved design tokens, read at render time so charts follow the theme. */
 export function tokens() {
@@ -38,14 +36,19 @@ interface Props { option: (t: Tokens) => EChartsCoreOption; height: number; onCl
 
 export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
   const el = useRef<HTMLDivElement>(null);
-  const inst = useRef<echarts.ECharts | null>(null);
+  const inst = useRef<ECharts | null>(null);
+  const optRef = useRef(option); optRef.current = option;
   const theme = useStore((s) => s.theme);
   const clickRef = useRef(onClick); clickRef.current = onClick;
   const axisRef = useRef(onAxisClick); axisRef.current = onAxisClick;
 
   useEffect(() => {
-    const c = echarts.init(el.current!, undefined, { renderer: 'svg' });
+    let off = () => {}, dead = false;
+    loadCharts().then(({ echarts }) => {
+    if (dead || !el.current) return;
+    const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c;
+    c.setOption(optRef.current(tokens()), true);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
     c.getZr().on('click', (ev: any) => {
@@ -57,9 +60,11 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     const ro = new ResizeObserver(() => c.resize());
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const re = () => c.setOption(option(tokens()), true);
+    const re = () => c.setOption(optRef.current(tokens()), true);
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
-    return () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
+    off = () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
+    });
+    return () => { dead = true; off(); };
   }, []);
   useEffect(() => { inst.current?.setOption(option(tokens()), true); });
   void theme;
