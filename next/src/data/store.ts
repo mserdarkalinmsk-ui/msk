@@ -8,7 +8,7 @@ const seed = DEMO ? demo : real;
 import type { Country, Ledger, Project, ReportingPeriod, Risk } from '../domain/types';
 import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
-import { EXTRACTION, extractionLines } from '../domain/extraction';
+import { EXTRACTION, extractionLines, isExtraction } from '../domain/extraction';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -192,8 +192,8 @@ export function undo() {
 }
 /** System extractions keep their lines laid on the project's current approved budget (it may arrive later). */
 function relayExtractions(p: Project): Project {
-  if (!p.reportingPeriods?.some((r) => r.snapshot?.format === EXTRACTION && r.snapshot.workbook)) return p;
-  return { ...p, reportingPeriods: p.reportingPeriods.map((r) => (r.snapshot?.format === EXTRACTION && r.snapshot.workbook ? { ...r, snapshot: { ...r.snapshot, lines: extractionLines(r.snapshot.workbook, p) } } : r)) };
+  if (!p.reportingPeriods?.some((r) => isExtraction(r.snapshot))) return p;
+  return { ...p, reportingPeriods: p.reportingPeriods.map((r) => (isExtraction(r.snapshot) ? { ...r, snapshot: { ...r.snapshot!, format: EXTRACTION, lines: extractionLines(r.snapshot!.workbook!, p) } } : r)) };
 }
 export function upsertProject(p0: Project) {
   const p = relayExtractions(p0);

@@ -3,12 +3,17 @@ import type { WbLine, Workbook } from './workbook';
 
 export const EXTRACTION = 'CoE system extraction';
 
+/** One rule for every import path: a report is a system extraction when it was read as one, whatever screen saved it. */
+export function isExtraction(s: { format?: string; workbook?: { meta?: { extraction?: boolean } } } | undefined): boolean {
+  return !!s?.workbook && (s.format === EXTRACTION || !!s.workbook.meta?.extraction);
+}
+
 /**
  * Lines of a raw system extraction in the standard report shape: every line of the approved budget (or of the
  * latest full report) with its amount and description, spent and spent + committed summed from the entries.
  */
 export function extractionLines(wb: Pick<Workbook, 'lines' | 'totals'>, p: Project): BudgetLine[] {
-  const full = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length && r.snapshot.format !== 'CoE system extraction').sort((a, b) => a.date.localeCompare(b.date)).at(-1)?.snapshot!.lines;
+  const full = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length && !isExtraction(r.snapshot)).sort((a, b) => a.date.localeCompare(b.date)).at(-1)?.snapshot!.lines;
   const base = p.approvedBudget?.lines?.length ? p.approvedBudget.lines : full ?? [];
   const leafs = base.filter((l) => !base.some((x) => x !== l && x.code.startsWith(l.code + '.')));
   const got = new Map(wb.lines.map((l) => [l.code, l]));

@@ -9,6 +9,7 @@ import { extractStaff } from '../domain/staff';
 import { BulkReports } from './BulkReports';
 import { parseWorkbook, summarize, toBudgetLines, type Workbook as CoeWorkbook } from '../domain/workbook';
 import { updateProject } from '../data/store';
+import { EXTRACTION, extractionLines } from '../domain/extraction';
 
 /** A file chosen elsewhere (e.g. the global import) that the report drawer should open with. */
 let pending: File | null = null;
@@ -90,7 +91,8 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const useCoe = !!coe && !manual;
   const body = file && !useCoe ? file.rows.slice(head + 1) : [];
   const rowErr: string[] = [];
-  const lines: BudgetLine[] = useCoe ? toBudgetLines(coe!) : [];
+  const ext = useCoe && !!coe!.meta.extraction;
+  const lines: BudgetLine[] = useCoe ? (ext ? extractionLines(coe!, p) : toBudgetLines(coe!)) : [];
   body.forEach((r, i) => {
     const g = (k: LK) => (map[k] != null ? (r[map[k]!] ?? '').trim() : '');
     const code = g('code');
@@ -103,7 +105,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   // Staff contracts are read from every sheet of the workbook (Purchase Orders + GL).
   const staff = useCoe ? { records: coe!.staff, groups: coe!.staffGroups } : file?.wb ? extractStaff(file.wb.sheets.map((n) => ({ name: n, R: file.wb!.read(n) }))) : null;
   const report: ReportingPeriod = { id: 'r' + Date.now().toString(36), name: meta.name.trim() || 'Report', type: meta.type, date: reportDate ?? meta.date, fileName: file?.name, registeredAt: new Date().toISOString(),
-    snapshot: { format: useCoe ? 'CoE workbook' : 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}), ...(useCoe ? { workbook: summarize(coe!, file?.name) } : {}) } };
+    snapshot: { format: ext ? EXTRACTION : useCoe ? 'CoE workbook' : 'Imported', lines, ...(staff?.records.length ? { staffRecords: staff.records, staffGroups: staff.groups } : {}), ...(useCoe ? { workbook: summarize(coe!, file?.name) } : {}) } };
   const idWarn: string[] = [], idErr: string[] = [];
   if (useCoe) {
     if (p.bh && coe!.meta.bh && p.bh !== coe!.meta.bh) idErr.push(`This file is for budget head ${coe!.meta.bh}, but ${p.code} has budget head ${p.bh}`);
