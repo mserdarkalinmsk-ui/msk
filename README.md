@@ -1,5 +1,8 @@
 # Portfolio Ledger
 
+**New — Financial Guide v15:** a complete rewrite of the uploaded Financial Guide v14 command center.
+Open [financial-guide.html](financial-guide.html); see [financial-guide/README.md](financial-guide/README.md).
+
 **Uploaded Ledger 40, with its original structure preserved:** use
 [portfolio-ledger-professional.html](portfolio-ledger-professional.html) or the
 [dedicated ZIP](downloads/portfolio-ledger-professional.zip). This separate variant
