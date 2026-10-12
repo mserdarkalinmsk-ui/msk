@@ -65,9 +65,9 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
         if (!r && /\.xls[xm]$/i.test(f.name)) {
           const wb = await readCoe(f).catch(() => null);
           const rd = wb ? reportDate(wb) : '';
-          if (wb && rd && !isNaN(Date.parse(rd)) && (wb.totals.direct || wb.lines.length > 5)) {
+          if (wb && rd && !isNaN(Date.parse(rd)) && (wb.totals.direct || wb.lines.length > 5 || wb.meta.extraction)) {
             const p = matchProject(wb, P), g = p ? { p, why: wb.meta.bh ? `BH ${wb.meta.bh}` : 'identifiers' } : guessProject(`${f.name} ${wb.meta.title ?? ''}`, P);
-            r = { file: f, kind: 'report', wb, date: rd, pid: g.p?.id ?? '', why: g.why, note: `${wb.meta.periodFrom && !isNaN(Date.parse(wb.meta.periodFrom)) ? date(wb.meta.periodFrom) + ' → ' : ''}${date(rd)} · spent ${full(wb.totals.eligible?.actual ?? wb.totals.direct?.actual ?? 0)}` };
+            r = { file: f, kind: 'report', wb, date: rd, pid: g.p?.id ?? '', why: g.why, note: `${wb.meta.periodFrom && !isNaN(Date.parse(wb.meta.periodFrom)) ? date(wb.meta.periodFrom) + ' → ' : ''}${date(rd)} · ${wb.meta.extraction ? `system extraction · ${wb.lines.length} lines · spent ${full(wb.lines.reduce((a, l) => a + (l.actual.cost ?? 0), 0))} · spent + committed ${full(wb.lines.reduce((a, l) => a + (l.sc ?? 0), 0))}` : `spent ${full(wb.totals.eligible?.actual ?? wb.totals.direct?.actual ?? 0)}`}` };
           }
         }
         if (!r) {
