@@ -9,7 +9,7 @@ import { readCoe } from './ReportImport';
 interface Row { file: File; wb?: Workbook; date: string; p?: Project; note: string }
 
 /** Workbooks are matched on BH / contract / JP; only a positive match counts (no guessing on missing identifiers). */
-function matchProject(wb: Workbook, P: Project[]) {
+export function matchProject(wb: Workbook, P: Project[]) {
   const m = wb.meta;
   const hits = P.filter((p) => ((m.bh && p.bh === m.bh) || (m.contract && p.contractNo === m.contract) || (m.jp && p.jp === m.jp)) && !idConflicts(wb, p).length);
   return hits.length === 1 ? hits[0] : undefined;
