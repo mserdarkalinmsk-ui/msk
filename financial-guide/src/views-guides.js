@@ -196,10 +196,11 @@
         const phaseOf = (j) => (order.find(([k]) => k === j) || [0, 0])[1], pc = (pi) => `var(--c${(pi % 4) + 1})`;
         const pos = order.findIndex(([j]) => j === i), fill = order.length > 1 ? (pos / (order.length - 1)) * 100 : 0;
         const ph = phaseOf(i);
-        const caseR = cfg.base === "procurement" && FG.procurementCase ? FG.procurementCase() : null, pcase = caseR && FG.store.get("pcase", {});
-        const caseBar = cfg.base !== "procurement" ? "" : caseR
-          ? `<a class="case-bar" href="#/procurement/my-case"><span class="case-dot"></span><span><small>My case</small><b>${esc(pcase.what || "Your purchase")} · ${euro(caseR.value)} → ${esc(caseR.route)}</b></span><span class="case-bar-note">${caseR.skip.includes(s.name) ? "This stage is not needed for your route" : caseR.keyStages.includes(s.name) ? "Key stage for your route" : "Applies to your route"}</span><u>Open →</u></a>`
-          : `<a class="case-bar empty" href="#/procurement/my-case"><span class="case-dot"></span><span><small>Personalise</small><b>Plan my case: see only the stages, approvals and documents that apply to your purchase</b></span><u>Start →</u></a>`;
+        const isP = cfg.base === "procurement", caseR = isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
+        const pcase = caseR && FG.store.get(isP ? "pcase" : "gcase", {}), caseUrl = isP ? "#/procurement/my-case" : "#/grants/my-grant";
+        const caseBar = caseR
+          ? `<a class="case-bar" href="${caseUrl}"><span class="case-dot"></span><span><small>${isP ? "My case" : "My grant"}</small><b>${esc(pcase.what || (isP ? "Your purchase" : "Your grant"))} · ${euro(isP ? caseR.value : caseR.budget)} → ${esc(caseR.route)}</b></span><span class="case-bar-note">${caseR.skip.includes(s.name) ? "This stage is not needed for your route" : caseR.keyStages.includes(s.name) ? "Key stage for your route" : "Applies to your route"}</span><u>Open →</u></a>`
+          : `<a class="case-bar empty" href="${caseUrl}"><span class="case-dot"></span><span><small>Personalise</small><b>${isP ? "Plan my case: see only the stages, approvals and documents that apply to your purchase" : "Plan my grant: see only the stages, roles and templates that apply to your grant"}</b></span><u>Start →</u></a>`;
         const map = caseBar + `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
           <div class="rt-head"><div><span class="eyebrow">Your route</span><b>Stage ${i + 1} of ${stages.length} · ${esc(cfg.phases[ph][0])}</b></div>
             <div class="rt-tools"><div class="pmap-ring" style="--p:${overall}" title="Checklist progress across all stages"><span>${overall}%</span></div>

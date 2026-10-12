@@ -1024,6 +1024,7 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .next-act em { flex: none; font-style: normal; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .next-act em.on { background: var(--c1); border-color: var(--c1); color: #fff; }
 @media (max-width: 700px) { .next-act { flex-wrap: wrap; } }
+.card.case-form { position: sticky; } @media (max-width: 980px) { .card.case-form { position: static; } }
 
 </style>
 </head>
@@ -7352,7 +7353,47 @@ window.FG_CONTENT = {
     return { key, route, contract, value, eproc, nextAction, approvals, timeline, total, start, deadline, late, docs, risks, skip: skipFor, keyStages: keyFor, lcr, intl };
   }
 
-  return { LIMITS, euro, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
+  /* ---------- grant case planner (Rule 1374) ---------- */
+  function grantCase(input, today = new Date()) {
+    const budget = num(input.budget), n = Math.max(1, Math.round(num(input.grantees) || 1)), eu = input.funding === "eu";
+    const kind = input.kind || "project", exc = input.ground && input.ground !== "none", months = num(input.months);
+    const A = eu ? "B" : "A", fund = eu ? "EU funds" : "Ordinary Budget / Voluntary Contributions";
+    let key, route;
+    if (budget < LIMITS.grant) { key = "direct"; route = "Direct award (below €15,000)"; }
+    else if (exc) { key = "direct-exc"; route = "Exceptional direct award (Article 2.1.3)"; }
+    else { key = "call"; route = "Call for proposals"; }
+    const roles = key === "call"
+      ? [["Commitments Officer", "Approves the call, appoints the Co-ordinator (G3.1) and the Evaluation Committee (G13.1), decides on the award (G14.6) and signs the agreement.", "src"], ["Co-ordinator", "Runs the procedure: publication, questions, opening (G11.1), draft eligibility report and the follow-up table (G3.1TAB).", "src"], ["Evaluation Committee", "Adopts the exclusion and eligibility report (G14.1), scores the proposals 0–5 (G14.3) and signs the consensus report (G14.4). At least one staff member; conflict-of-interest declarations (G13.4).", "src"], ["DLAPIL (recommended)", "Legal opinion on the draft call before publication — strongly recommended where financial guarantees are stipulated.", "src"]]
+      : [["Commitments Officer", key === "direct" ? "Adopts the direct-award decision with Template G9.2A, which also appoints the Co-ordinator, then signs the agreement." : "Takes a duly justified decision with reference to Article 2.1.3 using Template G9.2B, attached to the request for commitment of funds.", "src"]];
+    const steps = key === "call"
+      ? [["Objectives & appoint Co-ordinator (G3.1)", 5, "assumed"], [`Draft call & application form (G8.1${A}, G8.2${A})`, 10, "assumed"], ["DLAPIL legal opinion & approval", 5, "assumed"], ["Publication & questions", 20, "assumed"], ["Opening & eligibility report (G11.1, G14.1)", 5, "assumed"], ["Scoring & consensus report (G14.3, G14.4)", 10, "assumed"], ["Commitments Officer decision (G14.6)", 5, "assumed"], ["Inform applicants (G14.8, G14.9)", 10, "src"], [`Sign grant agreement (G17.2${A})`, 5, "assumed"]]
+      : [[key === "direct" ? "Decision on direct award (G9.2A)" : "Justified decision (G9.2B)", 5, "assumed"], [`Prepare & sign grant agreement (G17.2${A})`, 5, "assumed"]];
+    const total = steps.reduce((a, x) => a + x[1], 0), deadline = input.deadline ? new Date(input.deadline) : null;
+    let cursor = deadline ? addWorkdays(deadline, -total) : new Date(today); const start = new Date(cursor);
+    const timeline = steps.map(([label, days, basis]) => { const from = new Date(cursor); cursor = addWorkdays(cursor, days); return { label, days, basis, from, to: new Date(cursor) }; });
+    const late = deadline && start < today;
+    const docs = key === "call"
+      ? [["G3.1", "Decision appointing the Co-ordinator"], [`G8.1${A}`, `Call for proposals (${fund})`], [`G8.2${A}`, "Application form"], ["G8.3", "Call quality control checklist"], ["G13.1", "Decision appointing the Evaluation Committee"], ["G13.4", "Declarations of absence of conflict of interests"], ["G11.1", "Report on opening of proposals"], ["G14.1", "Exclusion and eligibility report"], ["G14.3 / G14.4", "Individual assessments and consensus report"], ["G14.6", "Commitments Officer award decision"], ["G14.8 / G14.9", "Letters to successful and unsuccessful applicants"], [`G17.2${A} + G17.2D`, "Grant agreement with the estimated budget annex"]]
+      : [[key === "direct" ? "G9.2A" : "G9.2B", key === "direct" ? "Decision on direct award below €15,000" : "Justified decision on direct award from €15,000"], [`G17.2${A}`, "Grant agreement"], ["G17.2D", "Annex II, estimated budget"], ["G3.1TAB", "Co-ordinator follow-up table"]];
+    const risks = [];
+    if (key === "direct" && budget >= 0.8 * LIMITS.grant) risks.push(["warn", "Close to €15,000", "The threshold is the total budget of the procedure, not each grant. If several grants or a larger amount are foreseeable, a call for proposals is required."]);
+    if (n > 1 && budget / n < LIMITS.grant && budget >= LIMITS.grant) risks.push(["info", "Count the whole procedure", `${n} grants of about ${euro(budget / n)} each make ${euro(budget)} in total: a call for proposals applies.`]);
+    if (key === "direct-exc") risks.push(["risk", "Exceptions are strict", "Only an unforeseeable emergency, grantee characteristics making a call impossible, or an action leaving no scope for a call. Reference Article 2.1.3 precisely."]);
+    if (kind === "operational" && months > 12) risks.push(["warn", "Operational grant longer than 12 months", "Operational grants should not normally give rise to agreements of more than twelve consecutive months."]);
+    risks.push(["info", "Co-financing", "The Council must not finance the entire cost: the grantee contributes own or third-party resources (human resources, in kind or income generated)."]);
+    risks.push(["info", "No retroactivity", "Costs cannot be incurred before the closing date for proposals; implementation should start after signature."]);
+    risks.push(["info", "Indirect costs", "Indirect eligible costs are capped at 7% where foreseen."]);
+    if (eu) risks.push(["info", "EU-funded templates", "Use the B variants (G8.1B, G8.2B, G17.2B) and the EU exclusion declarations (G4.1.2B, D or E)."]);
+    if (late) risks.push(["risk", "Behind schedule", `To sign by the date entered, the procedure should have started by ${start.toISOString().slice(0, 10)}.`]);
+    const skip = key === "call" ? [] : ["Criteria", "Call", "Submission", "Eligibility Check", "Evaluation", "Complaints"];
+    const keyStages = key === "call" ? ["Call", "Eligibility Check", "Evaluation"] : ["Procedure", "Agreement"];
+    const first = key === "call" ? ["Define the objectives and appoint the Co-ordinator", `Objectives are the first stage of any procedure. Then draft the call with G8.1${A}: co-financing level, criteria with weights, number of grantees and total value.`]
+      : key === "direct" ? ["Adopt the direct-award decision (G9.2A)", "The Commitments Officer signs G9.2A, which also appoints the Co-ordinator; then prepare the grant agreement with its budget annex."]
+      : ["Write the justification under Article 2.1.3 (G9.2B)", "Explain which exceptional circumstance applies and why a call is impossible; attach the decision to the request for commitment of funds."];
+    return { key, route, budget, n, eu, roles, timeline, total, start, deadline, late, docs, risks, skip, keyStages, nextAction: { title: first[0], text: first[1], by: timeline[0].to } };
+  }
+
+  return { LIMITS, euro, grantCase, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
 });
 
 </script>
@@ -7656,7 +7697,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:36</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 19:40</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -7752,14 +7793,29 @@ window.FG_CONTENT = {
         <section class="ess-grid">${ESSENTIALS.map(([cat, title, fig, text, stage], i) => `<article class="ess${kn[i] ? " known" : ""}" style="--c:var(--c${(i % 4) + 1})">
           <header><span class="ess-cat">${String(i + 1).padStart(2, "0")} · ${esc(cat)}</span><span class="ess-fig">${esc(fig)}</span></header>
           <h3>${esc(title)}</h3><p>${esc(text)}</p>
-          <footer><a href="${stageLink(stage)}">${esc(stage)} →</a><button type="button" class="ess-btn" data-known="${i}" aria-pressed="${!!kn[i]}">${kn[i] ? "✓ Learnt" : "Mark as learnt"}</button></footer></article>`).join("")}</section>` };
+          <footer><a href="${stageLink(stage)}">${esc(stage)} →</a><button type="button" class="ess-btn" data-known="${i}" data-set="pr:known" aria-pressed="${!!kn[i]}">${kn[i] ? "✓ Learnt" : "Mark as learnt"}</button></footer></article>`).join("")}</section>` };
     },
   });
   FG.QUIZ_AT["procurement/essentials"] = "procurement";
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-known]"); if (!b) return;
-    const kn = known(), i = b.dataset.known; if (kn[i]) delete kn[i]; else kn[i] = 1; FG.store.set("pr:known", kn); FG.refresh();
+    const set = b.dataset.set, kn = FG.store.get(set, {}), i = b.dataset.known; if (kn[i]) delete kn[i]; else kn[i] = 1; FG.store.set(set, kn); FG.refresh();
   });
+
+  /* ---------- shared case widgets ---------- */
+  const nextHtml = (r, badge) => `<section class="next-act"><span aria-hidden="true">→</span><div><small>Your first action${r.deadline ? ` · finish by ${fmt(r.nextAction.by)}` : ""}</small><b>${esc(r.nextAction.title)}</b><p>${esc(r.nextAction.text)}</p></div>${badge || ""}</section>`;
+  const chainHtml = (title, sub, list) => `<section class="card"><div class="card-head"><div><h3>${title}</h3><small>${sub}</small></div></div>
+    <ol class="chain">${list.map(([who, what], i) => `<li><span>${i + 1}</span><div><b>${esc(who)}</b><p>${esc(what)}</p></div></li>`).join("")}</ol></section>`;
+  function ganttHtml(r, source) {
+    const tl = r.timeline, t0 = tl[0].from.getTime(), span = Math.max(1, tl[tl.length - 1].to.getTime() - t0);
+    return `<section class="card"><div class="card-head"><div><h3>Timeline</h3><small>${r.deadline ? `Reverse-scheduled from ${fmt(r.deadline)}.` : "Forward from today — add a date to plan backwards."} <span class="lg src">Guide</span> durations come from ${source}; <span class="lg assumed">Planning</span> durations are assumptions to adjust with your unit.</small></div></div>
+      <div class="gantt">${tl.map((x) => `<div class="g-row"><span class="g-lab">${esc(x.label)}<small>${x.days} wd · ${fmt(x.from)} → ${fmt(x.to)}</small></span><span class="g-track"><i class="${x.basis}" style="left:${((x.from - t0) / span) * 100}%;width:${Math.max(1.5, ((x.to - x.from) / span) * 100)}%"></i></span></div>`).join("")}</div></section>`;
+  }
+  const radarHtml = (r) => `<section class="card"><div class="card-head"><div><h3>Risk radar</h3><small>Specific to this case.</small></div></div>
+    <div class="radar">${r.risks.length ? r.risks.map(([lvl, t, d]) => `<div class="rk ${lvl}"><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join("") : `<p class="muted">No specific risk detected for these facts.</p>`}</div></section>`;
+  const stagesHtml = (r, stages, base) => `<section class="card"><div class="card-head"><div><h3>Your stages</h3><small>The guide, filtered for this route.</small></div></div>
+    <div class="case-stages">${stages.map((x, i) => { const st = r.skip.includes(x.name) ? "skip" : r.keyStages.includes(x.name) ? "key" : ""; return `<a class="cs ${st}" href="#/${base}/${slug(x.name)}"><em>${i + 1}</em><span>${esc(x.name)}</span>${st === "skip" ? "<small>Not needed</small>" : st === "key" ? "<small>Key for you</small>" : ""}</a>`; }).join("")}</div></section>`;
+  const heroHtml = (tone, route, line, kpis) => `<section class="case-hero" style="--c:var(--c${tone})"><div><small>Your route</small><h2>${esc(route)}</h2><p>${line}</p></div><div class="case-kpis">${kpis.map(([b, t, bad]) => `<div class="${bad ? "bad" : ""}"><b>${b}</b><span>${t}</span></div>`).join("")}</div></section>`;
 
   /* ---------- my case ---------- */
   const DEFAULT = { what: "", type: "general", value: "", funding: "ordinary", need: "oneoff", ground: "none", deadline: "" };
@@ -7778,21 +7834,15 @@ window.FG_CONTENT = {
   }
   function caseResult(c) {
     if (!Number(c.value)) return `<div class="case-empty card card-pad"><b>Enter the total foreseeable value</b><p class="muted">Your route, approvals, timeline, document pack and risk radar appear here as you type.</p></div>`;
-    const r = E.procurementCase(c), tl = r.timeline, t0 = tl[0].from.getTime(), t1 = tl[tl.length - 1].to.getTime(), span = Math.max(1, t1 - t0);
-    const tone = { "direct-low": 2, "direct-exc": 4, competitive: 1, international: 3 }[r.key];
-    return `<section class="case-hero" style="--c:var(--c${tone})"><div><small>Your route</small><h2>${esc(r.route)}</h2><p>${esc(c.what || "Your purchase")} · ${euro(r.value)} excl. VAT · ${esc(r.contract)}</p></div>
-        <div class="case-kpis"><div><b>${r.approvals.length}</b><span>approval${r.approvals.length > 1 ? "s" : ""}</span></div><div><b>${r.total}</b><span>working days</span></div><div class="${r.late ? "bad" : ""}"><b>${fmt(r.start)}</b><span>${r.late ? "should have started" : r.deadline ? "start at the latest" : "earliest signature " + fmt(tl[tl.length - 1].to)}</span></div></div></section>
-      <section class="next-act"><span aria-hidden="true">→</span><div><small>Your first action${r.deadline ? ` · finish by ${fmt(r.nextAction.by)}` : ""}</small><b>${esc(r.nextAction.title)}</b><p>${esc(r.nextAction.text)}</p></div><em class="${r.eproc.mandatory ? "on" : ""}">${r.eproc.mandatory ? "e-procurement: mandatory" : "e-procurement: not required"}</em></section>
-      <section class="card"><div class="card-head"><div><h3>Approval map</h3><small>Who validates, in this order.</small></div></div>
-        <ol class="chain">${r.approvals.map(([who, what], i) => `<li><span>${i + 1}</span><div><b>${esc(who)}</b><p>${esc(what)}</p></div></li>`).join("")}</ol></section>
-      <section class="card"><div class="card-head"><div><h3>Timeline</h3><small>${r.deadline ? `Reverse-scheduled from ${fmt(r.deadline)}.` : "Forward from today — add a date to plan backwards."} <span class="lg src">Guide</span> durations come from the Procurement Guide; <span class="lg assumed">Planning</span> durations are assumptions to adjust with your unit.</small></div></div>
-        <div class="gantt">${tl.map((s) => `<div class="g-row"><span class="g-lab">${esc(s.label)}<small>${s.days} wd · ${fmt(s.from)} → ${fmt(s.to)}</small></span><span class="g-track"><i class="${s.basis}" style="left:${((s.from - t0) / span) * 100}%;width:${Math.max(1.5, ((s.to - s.from) / span) * 100)}%"></i></span></div>`).join("")}</div></section>
-      <section class="card"><div class="card-head"><div><h3>Risk radar</h3><small>Specific to this case.</small></div></div>
-        <div class="radar">${r.risks.length ? r.risks.map(([lvl, t, d]) => `<div class="rk ${lvl}"><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join("") : `<p class="muted">No specific risk detected for these facts.</p>`}</div></section>
+    const r = E.procurementCase(c), tl = r.timeline, tone = { "direct-low": 2, "direct-exc": 4, competitive: 1, international: 3 }[r.key];
+    return `${heroHtml(tone, r.route, `${esc(c.what || "Your purchase")} · ${euro(r.value)} excl. VAT · ${esc(r.contract)}`, [[r.approvals.length, `approval${r.approvals.length > 1 ? "s" : ""}`], [r.total, "working days"], [fmt(r.start), r.late ? "should have started" : r.deadline ? "start at the latest" : "earliest signature " + fmt(tl[tl.length - 1].to), r.late]])}
+      ${nextHtml(r, `<em class="${r.eproc.mandatory ? "on" : ""}">${r.eproc.mandatory ? "e-procurement: mandatory" : "e-procurement: not required"}</em>`)}
+      ${chainHtml("Approval map", "Who validates, in this order.", r.approvals)}
+      ${ganttHtml(r, "the Procurement Guide")}
+      ${radarHtml(r)}
       ${ui.checklist(`pcase:${r.key}`, r.docs, "Document pack")}
-      <section class="card"><div class="card-head"><div><h3>Your stages</h3><small>The guide, filtered for this route.</small></div></div>
-        <div class="case-stages">${FG.C.procurementStages.map((s, i) => { const st = r.skip.includes(s.name) ? "skip" : r.keyStages.includes(s.name) ? "key" : ""; return `<a class="cs ${st}" href="${stageLink(s.name)}"><em>${i + 1}</em><span>${esc(s.name)}</span>${st === "skip" ? "<small>Not needed</small>" : st === "key" ? "<small>Key for you</small>" : ""}</a>`; }).join("")}</div></section>
-      <div class="row no-print"><button type="button" class="btn" data-case-print>Print case summary</button><a class="btn primary" href="${stageLink((FG.C.procurementStages.find((s) => r.keyStages.includes(s.name)) || FG.C.procurementStages[0]).name)}">Go to my first key stage →</a></div>`;
+      ${stagesHtml(r, FG.C.procurementStages, "procurement")}
+      <div class="row no-print"><button type="button" class="btn" data-case-print>Print case summary</button><a class="btn primary" href="${stageLink((FG.C.procurementStages.find((x) => r.keyStages.includes(x.name)) || FG.C.procurementStages[0]).name)}">Go to my first key stage →</a></div>`;
   }
   FG.procurementCase = () => { const c = FG.store.get("pcase", null); return c && Number(c.value) ? E.procurementCase(c) : null; };
   route("procurement/my-case", {
@@ -7806,6 +7856,97 @@ window.FG_CONTENT = {
           // Results update in place while typing; the form itself is never re-rendered.
           form.addEventListener("input", () => { const v = Object.fromEntries(new FormData(form)); FG.store.set("pcase", v); out.innerHTML = caseResult(v); if (FG.enrich) FG.enrich(out); });
           root.querySelector("[data-case-clear]").onclick = () => { FG.store.set("pcase", null); FG.refresh(); };
+          root.addEventListener("click", (e) => { if (e.target.closest("[data-case-print]")) window.print(); });
+        } };
+    },
+  });
+
+  /* =================== GRANTS (Rule 1374) =================== */
+  const G_ESSENTIALS = [
+    ["Purpose", "Two purposes, both required", "2", "A grant must both help the grantee reach its own objectives and advance the Organisation's values or policies. Both conditions are cumulative.", "Foundations"],
+    ["Value", "€15,000 decides the procedure", "€15,000", "Below €15,000 the Commitments Officer may award directly (G9.2A). From €15,000 a published call for proposals is the rule.", "Procedure"],
+    ["Value", "Count the whole procedure", "5 × €10,000", "The threshold is the total budget of the procedure, not each grant: five grants of €10,000 make €50,000, so a call is required.", "Principles"],
+    ["Value", "Exceptions are strict", "Art. 2.1.3", "From €15,000 a direct award needs an exceptional circumstance — an unforeseeable emergency, grantee characteristics making a call impossible, or an action leaving no scope for a call — justified in G9.2B.", "Procedure"],
+    ["Money", "The Council never pays everything", "Co-financing", "The grantee contributes own or third-party resources: staff, contributions in kind or income generated by the action.", "Principles"],
+    ["Money", "No retroactivity, no profit, one grant", "1", "Costs cannot be incurred before the closing date for proposals, total funding cannot exceed the budgeted expenses, and one action receives only one grant.", "Principles"],
+    ["Money", "Eligible costs pass seven tests", "7% indirect", "Necessary, value for money, incurred in the period, recorded and verifiable, tax-compliant, supported by documents and in the budget. Indirect costs are capped at 7%.", "Costs"],
+    ["Roles", "Decide, run, evaluate", "CO · Co-ordinator · Committee", "The Commitments Officer decides and signs, the Co-ordinator (G3.1) runs the procedure, the Evaluation Committee (G13.1) evaluates — with conflict-of-interest declarations (G13.4).", "Roles"],
+    ["Fairness", "Criteria are published and fixed", "Weighted", "Exclusion, eligibility and weighted award criteria are set in the call and cannot be changed afterwards. Clarifications must never improve a proposal.", "Criteria"],
+    ["Selection", "Score 0–5, decide with reasons", "0–5", "Each member scores every criterion 0–5 (G14.3); the consensus report (G14.4) averages them; the Commitments Officer decides with reasons (G14.6).", "Evaluation"],
+    ["Selection", "Inform within 15 days", "15 days", "Unsuccessful applicants are informed within 15 calendar days and may enquire; a complaint can follow within 30 days of the reply.", "Complaints"],
+    ["Agreement", "Always in writing, never more money", "G17.2", "The grant agreement is always written (G17.2A or G17.2B). Amendments may change management details but never increase the total grant.", "Agreement"],
+  ];
+  const gKnown = () => FG.store.get("gr:known", {});
+  route("grants", {
+    section: "grants",
+    crumbs: () => [["Projects", "projects"], ["Grants", "grants"]],
+    render() {
+      const k = Object.keys(gKnown()).length, c = FG.store.get("gcase", null), r = c && Number(c.budget) ? E.grantCase(c) : null;
+      const stages = FG.C.grantStages, last = FG.store.get("grants:last", 0), visited = Object.keys(FG.store.get("grants:visited", {})).length;
+      const paths = [
+        ["1", "Learn the essentials", "Twelve rules of Rule 1374 to know before designing any grant.", "grants/essentials", `${k} of ${G_ESSENTIALS.length} learnt`, k / G_ESSENTIALS.length, 1, k ? "Continue" : "Start here"],
+        ["2", "Plan my grant", r ? `${esc(c.what || "Your grant")} · ${euro(r.budget)} → ${r.route}` : "Five questions: route, roles, timeline, G-templates and risks.", "grants/my-grant", r ? `Start by ${fmt(r.start)}` : "Not started", r ? 1 : 0, 2, r ? "Open my grant" : "Plan a grant"],
+        ["3", "Follow the guide", `${stages.length} stages from the purpose of the grant to filing.`, `grants/${slug(stages[last].name)}`, `${visited} of ${stages.length} stages opened`, visited / stages.length, 3, visited ? `Continue at ${stages[last].name}` : "Open stage 1"],
+      ];
+      return { html: `${ui.head("Projects · Grants", "Grants", "")}
+        <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})"><span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
+          <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
+        <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The €15,000 threshold — total budget of the procedure</b></div>${FG.ui.ruler({ max: 60000, marks: [[L.grant, "Call for proposals"]], zones: [[0, L.grant, "Direct award (G9.2A)", "--c2"], [L.grant, 60000, "Call for proposals", "--c1"]] })}</section>` };
+    },
+  });
+  route("grants/essentials", {
+    section: "grants",
+    crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Essentials", "grants/essentials"]],
+    render() {
+      const kn = gKnown(), k = Object.keys(kn).length;
+      return { html: `${ui.head("Grants · step 1", "The essentials", "")}
+        <div class="ess-top card"><div class="ess-ring" style="--p:${Math.round((k / G_ESSENTIALS.length) * 100)}"><span><b>${k}</b>/${G_ESSENTIALS.length}</span></div>
+          <div><b>Read each rule, then mark it as learnt.</b><p class="muted small">Each rule links to the stage of the guide where it applies. Test yourself at the end of the page.</p></div>
+          <a class="btn primary" href="#/grants/my-grant">Next: plan my grant →</a></div>
+        <section class="ess-grid">${G_ESSENTIALS.map(([cat, title, fig, text, stage], i) => `<article class="ess${kn[i] ? " known" : ""}" style="--c:var(--c${(i % 4) + 1})">
+          <header><span class="ess-cat">${String(i + 1).padStart(2, "0")} · ${esc(cat)}</span><span class="ess-fig">${esc(fig)}</span></header><h3>${esc(title)}</h3><p>${esc(text)}</p>
+          <footer><a href="#/grants/${slug(stage)}">${esc(stage)} →</a><button type="button" class="ess-btn" data-known="${i}" data-set="gr:known" aria-pressed="${!!kn[i]}">${kn[i] ? "✓ Learnt" : "Mark as learnt"}</button></footer></article>`).join("")}</section>` };
+    },
+  });
+  FG.QUIZ_AT["grants/essentials"] = "grant";
+  const G_DEFAULT = { what: "", budget: "", grantees: "1", funding: "bo", kind: "project", months: "", ground: "none", deadline: "" };
+  function grantForm(c) {
+    return `<form class="card case-form" data-case>
+      <div class="card-head"><div><h3>Your grant</h3><small>Saved in this browser only.</small></div><button type="button" class="btn sm ghost" data-case-clear>Clear</button></div>
+      <div class="card-body stack">
+        <label class="field"><span>What will the grant support?</span><input class="input" name="what" value="${esc(c.what)}" placeholder="e.g. Local NGO projects on media literacy"></label>
+        ${ui.number("budget", c.budget, "Total budget of the procedure (€)", "All grants under this procedure together.")}
+        ${ui.number("grantees", c.grantees, "Number of grants foreseen")}
+        ${ui.select("funding", [["bo", "Ordinary Budget / Voluntary Contributions"], ["eu", "EU funds"]], c.funding, "Funding")}
+        ${ui.select("kind", [["project", "Project-related grant"], ["operational", "Operational grant"]], c.kind, "Type of grant")}
+        ${ui.number("months", c.months, "Implementation period (months)")}
+        ${ui.select("ground", [["none", "No — normal procedure"], ["emergency", "Unforeseeable emergency"], ["grantee", "Grantee characteristics make a call impossible"], ["action", "Action leaves no scope for a call"]], c.ground, "Exceptional circumstance (from €15,000)?")}
+        <label class="field"><span>Agreement signed by</span><input class="input" type="date" name="deadline" value="${esc(c.deadline)}"></label>
+      </div></form>`;
+  }
+  function grantResult(c) {
+    if (!Number(c.budget)) return `<div class="case-empty card card-pad"><b>Enter the total budget of the procedure</b><p class="muted">Your route, roles, timeline, template pack and risk radar appear here as you type.</p></div>`;
+    const r = E.grantCase(c), tl = r.timeline, tone = { direct: 2, "direct-exc": 4, call: 1 }[r.key];
+    return `${heroHtml(tone, r.route, `${esc(c.what || "Your grant")} · ${euro(r.budget)} · ${r.n} grant${r.n > 1 ? "s" : ""} · ${r.eu ? "EU funds" : "Ordinary Budget / VC"}`, [[r.roles.length, `role${r.roles.length > 1 ? "s" : ""}`], [r.total, "working days"], [fmt(r.start), r.late ? "should have started" : r.deadline ? "start at the latest" : "earliest signature " + fmt(tl[tl.length - 1].to), r.late]])}
+      ${nextHtml(r, `<em class="on">${r.eu ? "Templates: B variants" : "Templates: A variants"}</em>`)}
+      ${chainHtml("Who does what", "Decision, coordination and evaluation.", r.roles)}
+      ${ganttHtml(r, "the grants guide")}
+      ${radarHtml(r)}
+      ${ui.checklist(`gcase:${r.key}:${r.eu ? "eu" : "bo"}`, r.docs, "Template pack")}
+      ${stagesHtml(r, FG.C.grantStages, "grants")}
+      <div class="row no-print"><button type="button" class="btn" data-case-print>Print grant summary</button><a class="btn primary" href="#/grants/${slug((FG.C.grantStages.find((x) => r.keyStages.includes(x.name)) || FG.C.grantStages[0]).name)}">Go to my first key stage →</a></div>`;
+  }
+  FG.grantCase = () => { const c = FG.store.get("gcase", null); return c && Number(c.budget) ? E.grantCase(c) : null; };
+  route("grants/my-grant", {
+    section: "grants",
+    crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["My grant", "grants/my-grant"]],
+    render() {
+      const c = { ...G_DEFAULT, ...FG.store.get("gcase", {}) };
+      return { html: `${ui.head("Grants · step 2", "Plan my grant", "")}<div class="case-layout">${grantForm(c)}<div class="case-out stack" id="caseOut">${grantResult(c)}</div></div>`,
+        mount(root) {
+          const form = root.querySelector("[data-case]"), out = root.querySelector("#caseOut");
+          form.addEventListener("input", () => { const v = Object.fromEntries(new FormData(form)); FG.store.set("gcase", v); out.innerHTML = grantResult(v); if (FG.enrich) FG.enrich(out); });
+          root.querySelector("[data-case-clear]").onclick = () => { FG.store.set("gcase", null); FG.refresh(); };
           root.addEventListener("click", (e) => { if (e.target.closest("[data-case-print]")) window.print(); });
         } };
     },
@@ -8013,10 +8154,11 @@ window.FG_CONTENT = {
         const phaseOf = (j) => (order.find(([k]) => k === j) || [0, 0])[1], pc = (pi) => `var(--c${(pi % 4) + 1})`;
         const pos = order.findIndex(([j]) => j === i), fill = order.length > 1 ? (pos / (order.length - 1)) * 100 : 0;
         const ph = phaseOf(i);
-        const caseR = cfg.base === "procurement" && FG.procurementCase ? FG.procurementCase() : null, pcase = caseR && FG.store.get("pcase", {});
-        const caseBar = cfg.base !== "procurement" ? "" : caseR
-          ? `<a class="case-bar" href="#/procurement/my-case"><span class="case-dot"></span><span><small>My case</small><b>${esc(pcase.what || "Your purchase")} · ${euro(caseR.value)} → ${esc(caseR.route)}</b></span><span class="case-bar-note">${caseR.skip.includes(s.name) ? "This stage is not needed for your route" : caseR.keyStages.includes(s.name) ? "Key stage for your route" : "Applies to your route"}</span><u>Open →</u></a>`
-          : `<a class="case-bar empty" href="#/procurement/my-case"><span class="case-dot"></span><span><small>Personalise</small><b>Plan my case: see only the stages, approvals and documents that apply to your purchase</b></span><u>Start →</u></a>`;
+        const isP = cfg.base === "procurement", caseR = isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
+        const pcase = caseR && FG.store.get(isP ? "pcase" : "gcase", {}), caseUrl = isP ? "#/procurement/my-case" : "#/grants/my-grant";
+        const caseBar = caseR
+          ? `<a class="case-bar" href="${caseUrl}"><span class="case-dot"></span><span><small>${isP ? "My case" : "My grant"}</small><b>${esc(pcase.what || (isP ? "Your purchase" : "Your grant"))} · ${euro(isP ? caseR.value : caseR.budget)} → ${esc(caseR.route)}</b></span><span class="case-bar-note">${caseR.skip.includes(s.name) ? "This stage is not needed for your route" : caseR.keyStages.includes(s.name) ? "Key stage for your route" : "Applies to your route"}</span><u>Open →</u></a>`
+          : `<a class="case-bar empty" href="${caseUrl}"><span class="case-dot"></span><span><small>Personalise</small><b>${isP ? "Plan my case: see only the stages, approvals and documents that apply to your purchase" : "Plan my grant: see only the stages, roles and templates that apply to your grant"}</b></span><u>Start →</u></a>`;
         const map = caseBar + `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
           <div class="rt-head"><div><span class="eyebrow">Your route</span><b>Stage ${i + 1} of ${stages.length} · ${esc(cfg.phases[ph][0])}</b></div>
             <div class="rt-tools"><div class="pmap-ring" style="--p:${overall}" title="Checklist progress across all stages"><span>${overall}%</span></div>

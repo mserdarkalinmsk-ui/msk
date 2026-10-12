@@ -319,5 +319,45 @@
     return { key, route, contract, value, eproc, nextAction, approvals, timeline, total, start, deadline, late, docs, risks, skip: skipFor, keyStages: keyFor, lcr, intl };
   }
 
-  return { LIMITS, euro, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
+  /* ---------- grant case planner (Rule 1374) ---------- */
+  function grantCase(input, today = new Date()) {
+    const budget = num(input.budget), n = Math.max(1, Math.round(num(input.grantees) || 1)), eu = input.funding === "eu";
+    const kind = input.kind || "project", exc = input.ground && input.ground !== "none", months = num(input.months);
+    const A = eu ? "B" : "A", fund = eu ? "EU funds" : "Ordinary Budget / Voluntary Contributions";
+    let key, route;
+    if (budget < LIMITS.grant) { key = "direct"; route = "Direct award (below €15,000)"; }
+    else if (exc) { key = "direct-exc"; route = "Exceptional direct award (Article 2.1.3)"; }
+    else { key = "call"; route = "Call for proposals"; }
+    const roles = key === "call"
+      ? [["Commitments Officer", "Approves the call, appoints the Co-ordinator (G3.1) and the Evaluation Committee (G13.1), decides on the award (G14.6) and signs the agreement.", "src"], ["Co-ordinator", "Runs the procedure: publication, questions, opening (G11.1), draft eligibility report and the follow-up table (G3.1TAB).", "src"], ["Evaluation Committee", "Adopts the exclusion and eligibility report (G14.1), scores the proposals 0–5 (G14.3) and signs the consensus report (G14.4). At least one staff member; conflict-of-interest declarations (G13.4).", "src"], ["DLAPIL (recommended)", "Legal opinion on the draft call before publication — strongly recommended where financial guarantees are stipulated.", "src"]]
+      : [["Commitments Officer", key === "direct" ? "Adopts the direct-award decision with Template G9.2A, which also appoints the Co-ordinator, then signs the agreement." : "Takes a duly justified decision with reference to Article 2.1.3 using Template G9.2B, attached to the request for commitment of funds.", "src"]];
+    const steps = key === "call"
+      ? [["Objectives & appoint Co-ordinator (G3.1)", 5, "assumed"], [`Draft call & application form (G8.1${A}, G8.2${A})`, 10, "assumed"], ["DLAPIL legal opinion & approval", 5, "assumed"], ["Publication & questions", 20, "assumed"], ["Opening & eligibility report (G11.1, G14.1)", 5, "assumed"], ["Scoring & consensus report (G14.3, G14.4)", 10, "assumed"], ["Commitments Officer decision (G14.6)", 5, "assumed"], ["Inform applicants (G14.8, G14.9)", 10, "src"], [`Sign grant agreement (G17.2${A})`, 5, "assumed"]]
+      : [[key === "direct" ? "Decision on direct award (G9.2A)" : "Justified decision (G9.2B)", 5, "assumed"], [`Prepare & sign grant agreement (G17.2${A})`, 5, "assumed"]];
+    const total = steps.reduce((a, x) => a + x[1], 0), deadline = input.deadline ? new Date(input.deadline) : null;
+    let cursor = deadline ? addWorkdays(deadline, -total) : new Date(today); const start = new Date(cursor);
+    const timeline = steps.map(([label, days, basis]) => { const from = new Date(cursor); cursor = addWorkdays(cursor, days); return { label, days, basis, from, to: new Date(cursor) }; });
+    const late = deadline && start < today;
+    const docs = key === "call"
+      ? [["G3.1", "Decision appointing the Co-ordinator"], [`G8.1${A}`, `Call for proposals (${fund})`], [`G8.2${A}`, "Application form"], ["G8.3", "Call quality control checklist"], ["G13.1", "Decision appointing the Evaluation Committee"], ["G13.4", "Declarations of absence of conflict of interests"], ["G11.1", "Report on opening of proposals"], ["G14.1", "Exclusion and eligibility report"], ["G14.3 / G14.4", "Individual assessments and consensus report"], ["G14.6", "Commitments Officer award decision"], ["G14.8 / G14.9", "Letters to successful and unsuccessful applicants"], [`G17.2${A} + G17.2D`, "Grant agreement with the estimated budget annex"]]
+      : [[key === "direct" ? "G9.2A" : "G9.2B", key === "direct" ? "Decision on direct award below €15,000" : "Justified decision on direct award from €15,000"], [`G17.2${A}`, "Grant agreement"], ["G17.2D", "Annex II, estimated budget"], ["G3.1TAB", "Co-ordinator follow-up table"]];
+    const risks = [];
+    if (key === "direct" && budget >= 0.8 * LIMITS.grant) risks.push(["warn", "Close to €15,000", "The threshold is the total budget of the procedure, not each grant. If several grants or a larger amount are foreseeable, a call for proposals is required."]);
+    if (n > 1 && budget / n < LIMITS.grant && budget >= LIMITS.grant) risks.push(["info", "Count the whole procedure", `${n} grants of about ${euro(budget / n)} each make ${euro(budget)} in total: a call for proposals applies.`]);
+    if (key === "direct-exc") risks.push(["risk", "Exceptions are strict", "Only an unforeseeable emergency, grantee characteristics making a call impossible, or an action leaving no scope for a call. Reference Article 2.1.3 precisely."]);
+    if (kind === "operational" && months > 12) risks.push(["warn", "Operational grant longer than 12 months", "Operational grants should not normally give rise to agreements of more than twelve consecutive months."]);
+    risks.push(["info", "Co-financing", "The Council must not finance the entire cost: the grantee contributes own or third-party resources (human resources, in kind or income generated)."]);
+    risks.push(["info", "No retroactivity", "Costs cannot be incurred before the closing date for proposals; implementation should start after signature."]);
+    risks.push(["info", "Indirect costs", "Indirect eligible costs are capped at 7% where foreseen."]);
+    if (eu) risks.push(["info", "EU-funded templates", "Use the B variants (G8.1B, G8.2B, G17.2B) and the EU exclusion declarations (G4.1.2B, D or E)."]);
+    if (late) risks.push(["risk", "Behind schedule", `To sign by the date entered, the procedure should have started by ${start.toISOString().slice(0, 10)}.`]);
+    const skip = key === "call" ? [] : ["Criteria", "Call", "Submission", "Eligibility Check", "Evaluation", "Complaints"];
+    const keyStages = key === "call" ? ["Call", "Eligibility Check", "Evaluation"] : ["Procedure", "Agreement"];
+    const first = key === "call" ? ["Define the objectives and appoint the Co-ordinator", `Objectives are the first stage of any procedure. Then draft the call with G8.1${A}: co-financing level, criteria with weights, number of grantees and total value.`]
+      : key === "direct" ? ["Adopt the direct-award decision (G9.2A)", "The Commitments Officer signs G9.2A, which also appoints the Co-ordinator; then prepare the grant agreement with its budget annex."]
+      : ["Write the justification under Article 2.1.3 (G9.2B)", "Explain which exceptional circumstance applies and why a call is impossible; attach the decision to the request for commitment of funds."];
+    return { key, route, budget, n, eu, roles, timeline, total, start, deadline, late, docs, risks, skip, keyStages, nextAction: { title: first[0], text: first[1], by: timeline[0].to } };
+  }
+
+  return { LIMITS, euro, grantCase, procurementCase, addWorkdays, procurement, budgetRevision, contractStrategy, grantProcedure, yearEnd, readiness, whatIf, pettyCash, grantCost, yearAllocation };
 });

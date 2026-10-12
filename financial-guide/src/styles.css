@@ -1012,3 +1012,4 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .next-act em { flex: none; font-style: normal; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .next-act em.on { background: var(--c1); border-color: var(--c1); color: #fff; }
 @media (max-width: 700px) { .next-act { flex-wrap: wrap; } }
+.card.case-form { position: sticky; } @media (max-width: 980px) { .card.case-form { position: static; } }

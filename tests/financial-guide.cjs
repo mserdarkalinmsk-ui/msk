@@ -57,6 +57,18 @@ assert.equal(E.readiness("x", [["a", "A"], ["b", "B"]], { a: true }).route, "Not
   const d = pc({ value: 90000, deadline: "2027-02-01" }); assert.equal(d.timeline[d.timeline.length - 1].to.toISOString().slice(0, 10), "2027-02-01");
 }
 
+/* ---- grant case planner ---- */
+{
+  const T = new Date("2026-10-12"), gc = (x) => E.grantCase(x, T);
+  assert.equal(gc({ budget: 14999 }).key, "direct");
+  assert.equal(gc({ budget: 15000 }).key, "call");
+  assert.equal(gc({ budget: 50000, grantees: 5 }).key, "call");
+  assert.equal(gc({ budget: 30000, ground: "emergency" }).key, "direct-exc");
+  assert.ok(gc({ budget: 50000, funding: "eu" }).docs.some((d) => d[0] === "G8.1B"));
+  assert.ok(gc({ budget: 10000, kind: "operational", months: 18 }).risks.some((r) => /12 months/.test(r[1])));
+  assert.ok(gc({ budget: 40000, deadline: "2026-11-01" }).late);
+}
+
 /* ---- browser ---- */
 (async () => {
   const { chromium } = require("playwright");
