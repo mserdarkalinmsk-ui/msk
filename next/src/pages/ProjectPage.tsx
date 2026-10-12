@@ -65,7 +65,7 @@ export function ProjectPage({ id }: { id: string }) {
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>
       </div>
-      <section class="hero ph-tiles" aria-label="Project figures">
+      <section class={`hero ph-tiles${tab === "Summary" ? "" : " ph-tiles-tab"}`} aria-label="Project figures">
         <div class="kpi"><span class="label">Total budget</span><span class="value">{short(m.budget)}</span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span></div>
         <div class="kpi lead">
           <span class="label">Spent to date</span><span class="value">{short(m.spent)}</span>
