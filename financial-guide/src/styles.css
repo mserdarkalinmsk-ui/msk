@@ -1055,3 +1055,13 @@ html.quiet *, html.quiet *::before, html.quiet *::after { animation: none !impor
 .lf-done { padding: 14px 18px; border-radius: 14px; background: var(--good-soft); color: var(--good); font-size: 14.5px; }
 @media (max-width: 760px) { .lf-card { grid-template-columns: minmax(0, 1fr); } .lf-left { flex-direction: row; align-items: center; } .lf-fig { font-size: 22px; } .lf-main { padding: 20px; } }
 .case-bar.empty { text-align: left; }
+.rd-items small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.rd-items ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.rd-items.ordered ol { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.rd-items li { display: flex; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); }
+.rd-items.ordered li { position: relative; background: none; border: 0; border-radius: 0; padding: 8px 0 14px; }
+.rd-items.ordered li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 38px; bottom: 0; width: 2px; background: var(--line); }
+.rd-items li > span { flex: none; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px; text-transform: lowercase; }
+.rd-items.ordered li > span { border-radius: 50%; background: var(--accent); color: #fff; }
+.rd-items b { display: block; font-size: 14.5px; color: var(--navy); }
+.rd-items li p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }

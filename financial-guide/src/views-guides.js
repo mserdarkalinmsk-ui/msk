@@ -135,6 +135,20 @@
   // Sentence split that respects abbreviations (e.g., i.e., Art., No., Ch., etc.) and numbered references (4.9.2).
   const ABBR = /\b(e\.g|i\.e|etc|No|Nos|Art|Arts|Ch|Chap|para|paras|p|pp|vs|cf|incl|excl|approx|min|max|Mr|Ms|Dr|St|Co|Ltd|[A-Z])\.$/;
   const splitSentences = (t) => String(t).replace(/([.!?])\s+(?=[A-Z€“"(])/g, "$1\u0001").split("\u0001").filter(Boolean).reduce((out, x) => { if (out.length && ABBR.test(out[out.length - 1])) out[out.length - 1] += " " + x; else out.push(x); return out; }, []);
+  // Plain text of a section (structured or legacy prose) for search.
+  const sectionText = (b) => (typeof b === "string" ? b : [b.lead, ...(b.items || []).map((x) => x.join(" ")), ...(b.must || []), b.tip].filter(Boolean).join(" "));
+  // A section reads as: one lead idea → named items (numbered when ordered) → obligations → good practice.
+  function sectionHtml(b) {
+    if (typeof b === "string") {
+      const parts = splitSentences(b), lead = parts.shift() || "", rules = parts.filter((x) => sentenceKind(x) === "rule"), rest = parts.filter((x) => sentenceKind(x) !== "rule");
+      b = { lead, items: [], must: rules, body: rest.join(" ") };
+    }
+    const items = b.items || [];
+    return `<p class="rd-lead">${esc(b.lead)}</p>${b.body ? `<p>${esc(b.body)}</p>` : ""}
+      ${items.length ? `<div class="rd-items ${b.ordered ? "ordered" : ""}" style="--n:${items.length}"><small>${items.length} ${b.ordered ? "steps" : "points"}</small><ol>${items.map(([t, d], k) => `<li><span>${b.ordered ? k + 1 : esc(String(t).match(/^[a-z]\)/i) ? String(t).slice(0, 1) : k + 1)}</span><div><b>${esc(String(t).replace(/^[a-z]\)\s*/i, ""))}</b><p>${esc(d)}</p></div></li>`).join("")}</ol></div>` : ""}
+      ${(b.must || []).length ? `<div class="rd-rules"><small>Rules to follow</small><ul>${b.must.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      ${b.tip ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(b.tip)}</p></div>` : ""}`;
+  }
   function reader(key, sections) {
     const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
@@ -143,11 +157,7 @@
         <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
       <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
         <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
-        <div class="rd-text">${(() => { const parts = splitSentences(body), lead = parts.shift() || "";
-          const rules = parts.filter((x) => sentenceKind(x) === "rule"), tips = parts.filter((x) => sentenceKind(x) === "tip"), rest = parts.filter((x) => !sentenceKind(x));
-          return `<p class="rd-lead">${esc(lead)}</p>${rest.length ? `<p>${esc(rest.join(" "))}</p>` : ""}
-            ${rules.length ? `<div class="rd-rules"><small>Rules to follow</small><ul>${rules.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
-            ${tips.length ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(tips.join(" "))}</p></div>` : ""}`; })()}</div>
+        <div class="rd-text">${sectionHtml(body)}</div>
         <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
   }
   // Switches panels in place (no re-render), so the page never jumps.
@@ -214,7 +224,7 @@
             ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = (j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "") + (caseR && caseR.skip.includes(stages[j].name) ? " skip" : caseR && caseR.keyStages.includes(stages[j].name) ? " key" : "");
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
-        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections.map(([t, body]) => { const more = cfg.note && cfg.note(t); return [t, more && more !== body ? `${body} ${more}` : body]; }))}
+        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections)}
           <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
@@ -249,7 +259,7 @@
       },
     });
     if (cfg.practice) FG.QUIZ_AT[`${cfg.base}/${slug(stages[stages.length - 1].name)}`] = cfg.practice;
-    stages.forEach((s) => FG.addIndex(s.title, `${cfg.title} · stage: ${s.name}`, `${cfg.base}/${slug(s.name)}`, cfg.title, `${s.lead} ${s.understand} ${s.do} ${s.check} ${s.sections.map((x) => x.join(" ")).join(" ")}`));
+    stages.forEach((s) => FG.addIndex(s.title, `${cfg.title} · stage: ${s.name}`, `${cfg.base}/${slug(s.name)}`, cfg.title, `${s.lead} ${s.understand} ${s.do} ${s.check} ${s.sections.map(([h, b]) => `${h} ${sectionText(b)}`).join(" ")}`));
   }
 
   /* ---------- procurement widgets ---------- */
