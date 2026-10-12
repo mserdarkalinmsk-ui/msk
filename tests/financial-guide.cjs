@@ -1,10 +1,9 @@
-/* Financial Guide v15: unit checks of the rule engines and analysis, then a browser pass over every route. */
+/* Financial Guide v15: unit checks of the rule engines, then a browser pass over every route. */
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const fs = require("node:fs");
 const root = path.resolve(__dirname, "..");
 const E = require(path.join(root, "financial-guide/src/engines.js"));
-const A = require(path.join(root, "financial-guide/src/analysis.js"));
 global.window = {};
 require(path.join(root, "financial-guide/src/content.generated.js"));
 const C = global.window.FG_CONTENT;
@@ -38,25 +37,6 @@ assert.equal(E.pettyCash({ amount: 99, approved: false }).title, "Do not spend y
 assert.equal(E.yearAllocation({ delivery: "next", budget: "special" }).title, "Not 2026 expenditure");
 assert.equal(E.readiness("x", [["a", "A"], ["b", "B"]], { a: true }).route, "Not ready");
 
-/* ---- analysis ---- */
-assert.equal(A.toNumber("1.234,56"), 1234.56);
-assert.equal(A.toNumber("1,234.56"), 1234.56);
-assert.equal(A.toNumber("(500)"), -500);
-assert.equal(A.toNumber("€ 12 000"), 12000);
-const budget = A.parseSheet(A.parseCSV('Title row\n\nBudget Line;Description;Nb of Units;Approved Budget\n1.1;Staff;10;"10.000,00"\n2.1;Travel;;5000\nSubtotal 1;;;15000\n'), C.columnAliases, "budget");
-assert.equal(budget.lines.length, 2, "subtotal rows are excluded");
-assert.equal(budget.headerRow, 2, "header found below a title row (blank rows are dropped)");
-const report = A.parseSheet(A.parseCSV("Budget Line,Actual Expenditure,Open Commitments,Reported Units\n1.1,9000,2000,12\n9.1,50,0,\n"), C.columnAliases, "extract");
-const cmp = A.compare(budget, report);
-assert.equal(cmp.totals.exposure, 11050);
-assert.equal(cmp.lines.find((l) => l.key === "1.1").status, "over");
-assert.equal(cmp.unmatched, 1);
-assert.equal(cmp.unitsExceeded, 1);
-assert.throws(() => A.parseSheet([["a", "b"], ["1", "2"]], C.columnAliases, "budget"), /Approved budget/);
-const sig = A.projectSignals({ start: "2025-01-01", end: "2026-12-31", leadMonths: 12 }, cmp.totals, new Date("2026-10-12"));
-assert.equal(sig.risk, "High");
-console.log("Unit checks passed.");
-
 /* ---- browser ---- */
 (async () => {
   const { chromium } = require("playwright");
@@ -74,7 +54,7 @@ console.log("Unit checks passed.");
     const all = await page.evaluate(() => {
       const s = (x) => x.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       return FG.routes.flatMap((r) => r.pattern === "procurement/:stage" ? FG.C.procurementStages.map((x) => "procurement/" + s(x.name))
-        : r.pattern === "grants/:stage" ? FG.C.grantStages.map((x) => "grants/" + s(x.name)) : r.pattern === "analysis/:id" ? [] : [r.pattern]);
+        : r.pattern === "grants/:stage" ? FG.C.grantStages.map((x) => "grants/" + s(x.name)) : [r.pattern]);
     });
     for (const p of all) {
       await page.evaluate((x) => { location.hash = "#/" + x; }, p);
@@ -83,18 +63,13 @@ console.log("Unit checks passed.");
       if (info.len < 150) problems.push(`${vp.width} ${p}: almost empty (${info.len} chars)`);
       if (info.wide > 1) problems.push(`${vp.width} ${p}: horizontal overflow ${info.wide}px`);
     }
-    // Interactions: engine recompute, sample analysis, search palette, scenarios.
+    // Interactions: engine recompute, search palette, scenarios.
     await page.evaluate(() => { location.hash = "#/engines/procurement"; });
     await page.fill("[name=amount]", "190000");
     assert.match(await page.textContent("#result h2"), /International Public Call/);
     await page.evaluate(() => { location.hash = "#/engines/budget-revision"; });
     await page.selectOption("[name=project]", "vc");
     await page.waitForSelector("[name=donor]");
-    await page.evaluate(() => { location.hash = "#/analysis"; });
-    await page.click("[data-sample]");
-    await page.waitForSelector(".hbar");
-    assert.ok((await page.textContent("#content")).includes("over budget") || (await page.textContent("#content")).includes("Over"));
-    await page.screenshot({ path: path.join(shots, `analysis-${vp.width}.png`), fullPage: false });
     // VAT and Events logic.
     const L = await page.evaluate(() => ({
       big: FG.logic.paymentMethod(6000, 0).title, month: FG.logic.paymentMethod(4000, 27000).title, card: FG.logic.paymentMethod(4000, 1000).title,
@@ -104,15 +79,6 @@ console.log("Unit checks passed.");
     assert.equal(L.big, "Bank transfer"); assert.equal(L.month, "Bank transfer"); assert.equal(L.card, "Card possible as an exception");
     assert.equal(L.due, "2026-05-09");
     assert.equal(L.ev.diff, 20); assert.equal(L.ev.changed.length, 1);
-    // Real upload path with CSV files (Excel uses the same parser after SheetJS reads the sheet).
-    await page.evaluate(() => { location.hash = "#/analysis"; });
-    await page.click("[data-add]");
-    await page.waitForSelector("[data-file=budget]");
-    await page.setInputFiles("[data-file=budget]", { name: "budget.csv", mimeType: "text/csv", buffer: Buffer.from("Budget Line;Description;Approved Budget\n1.1;Staff;1000\n2.1;Travel;500\n") });
-    await page.waitForSelector(".drop.ok");
-    await page.setInputFiles("[data-file=report]", { name: "q2.csv", mimeType: "text/csv", buffer: Buffer.from("Budget Line;Actual Expenditure;Open Commitments\n1.1;900;200\n2.1;100;0\n") });
-    await page.waitForSelector(".hbar");
-    assert.match(await page.textContent("#content"), /€1,500/);
     await page.keyboard.press("Control+k");
     await page.fill("#paletteInput", "petty");
     assert.match(await page.textContent("#paletteList"), /Petty cash/);

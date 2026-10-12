@@ -63,8 +63,7 @@
   route("engines", {
     crumbs: () => [["Decision engines", "engines"]],
     render: () => ({ html: `${ui.head("Decide", "Decision engines", "Answer a few case questions and get the applicable route, control points, file pack and next actions. Save results to My Case to keep the context.")}
-      <div class="modules">${ENGINES.map((e) => `<a class="module" href="#/engines/${e.id}"><span class="ico" aria-hidden="true">${e.icon}</span><span><small>${e.n} · ${esc(e.group)}</small><b>${esc(e.title)}</b><small>${esc(e.lead)}</small></span></a>`).join("")}
-        <a class="module" href="#/analysis"><span class="ico" aria-hidden="true">⌁</span><span><small>06 · Financial health</small><b>Financial analysis</b><small>Budget execution, variance and continuity from your Excel reports.</small></span></a></div>
+      <div class="modules">${ENGINES.map((e) => `<a class="module" href="#/engines/${e.id}"><span class="ico" aria-hidden="true">${e.icon}</span><span><small>${e.n} · ${esc(e.group)}</small><b>${esc(e.title)}</b><small>${esc(e.lead)}</small></span></a>`).join("")}</div>
       <div class="section-title"><h2>Case readiness & simulation</h2></div>
       <div class="modules">${READINESS.map((e) => `<a class="module" href="#/engines/${e.id}"><span class="ico" aria-hidden="true">${e.icon}</span><span><b>${esc(e.title)}</b><small>${esc(e.lead)}</small></span></a>`).join("")}
         <a class="module" href="#/engines/what-if"><span class="ico" aria-hidden="true">↔</span><span><b>What-if simulator</b><small>Change a JP Budget Heading and watch the formal route switch.</small></span></a></div>

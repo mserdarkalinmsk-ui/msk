@@ -254,7 +254,7 @@
     section: "foma-reports", crumbs: () => [["FOMA", "foma"], ["Financial reporting", "foma/reports"]],
     render() {
       const fr = C.fomaFlows["Financial Reports"];
-      return { html: `${ui.head("FOMA · financial reporting", fr.title, fr.desc, `<a class="btn primary" href="#/analysis">Analyse a report in Excel</a>`)}
+      return { html: `${ui.head("FOMA · financial reporting", fr.title, fr.desc)}
         <div class="grid g3">${C.reportIntro.map((x) => `<div class="card card-pad"><div class="eyebrow">${esc(x.k)}</div><b>${esc(x.title)}</b><p class="small muted mt">${esc(x.text)}</p></div>`).join("")}</div>
         <div class="split mt"><div class="stack">
           <section class="card"><div class="card-head"><h3>Reporting workflow</h3></div><div class="card-body">${timeline("report:steps", fr.stages, (s) => ({ title: s[1], sub: s[0], text: s[3], list: [`Objective: ${s[4]}`, `Control: ${s[5]}`, `Output: ${s[6]}`] }))}</div></section>

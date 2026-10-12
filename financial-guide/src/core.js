@@ -20,12 +20,12 @@
     { title: "Decide the route", sub: "Engines for your case", path: "engines", sections: ["engines"] },
     { title: "Commit", sub: "PO file & signatures", path: "po-file", sections: ["po-file", "foma"] },
     { title: "Pay", sub: "Delivery, invoice, payment", path: "payment-file", sections: ["payment-file", "petty-cash"] },
-    { title: "Report & forecast", sub: "Position, variance, revision", path: "foma/reports", sections: ["foma-reports", "foma-forecast", "analysis"] },
+    { title: "Report & forecast", sub: "Position, variance, revision", path: "foma/reports", sections: ["foma-reports", "foma-forecast"] },
     { title: "Close the year", sub: "Cut-off and PO finalisation", path: "year-end", sections: ["year-end"] },
     { title: "File & audit", sub: "Evidence trail", path: "filing", sections: ["filing"] },
   ];
   // Each area has its own colour; views read it through --accent.
-  FG.TONES = { home: 1, engines: 4, analysis: 6, procurement: 1, grants: 4, "po-file": 5, foma: 5, "payment-file": 2, "petty-cash": 3, "foma-reports": 5, "foma-forecast": 3, "year-end": 3, filing: 2, scenarios: 4, roles: 1, links: 1, rules: 4, glossary: 5, projects: 1, tools: 3, vat: 6, events: 4, "foma-po": 2, "foma-pay": 2, "foma-mission": 5, "foma-claim": 5 };
+  FG.TONES = { home: 1, engines: 4, procurement: 1, grants: 4, "po-file": 5, foma: 5, "payment-file": 2, "petty-cash": 3, "foma-reports": 5, "foma-forecast": 3, "year-end": 3, filing: 2, scenarios: 4, roles: 1, links: 1, rules: 4, glossary: 5, projects: 1, tools: 3, vat: 6, events: 4, "foma-po": 2, "foma-pay": 2, "foma-mission": 5, "foma-claim": 5 };
 
   /* ---------- store: localStorage when available, memory otherwise ---------- */
   const KEY = "fg.v15";
