@@ -5,7 +5,7 @@ import demo from './demo.json';
 /** `?demo` loads the fictional demo portfolio (used by the end-to-end tests) in its own storage slot. */
 const DEMO = new URLSearchParams(location.search).has('demo');
 const seed = DEMO ? demo : real;
-import type { Country, Ledger, Project, ReportingPeriod, Risk } from '../domain/types';
+import type { Country, Ledger, Project, ReportingPeriod, Risk, TrashItem } from '../domain/types';
 import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
 import { EXTRACTION, extractionLines, isExtraction } from '../domain/extraction';
@@ -246,9 +246,38 @@ export function isAdmin(): boolean {
   else if (typeof alert === 'function') alert('Only the admin can delete.');
   return ok;
 }
+/** Every deletion is kept in the trash (last 100) so it can be put back from Data check. */
+function toTrash(L: Ledger, t: Omit<TrashItem, 'id' | 'at'>) {
+  L.trash = [{ ...clone(t), id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), at: new Date().toISOString() } as TrashItem, ...(L.trash ?? [])].slice(0, 100);
+}
+export function restoreTrash(id: string) {
+  const L = clone(state.ledger), t = L.trash?.find((x) => x.id === id); if (!t) return;
+  const P = (pid?: string) => L.projects.find((p) => p.id === pid);
+  if (t.kind === 'project') { if (!L.projects.some((p) => p.id === (t.data as Project).id)) L.projects.push(t.data as Project); }
+  else if (t.kind === 'country') { if (!L.countries.some((c) => c.id === (t.data as Country).id)) L.countries.push(t.data as Country); for (const p of t.projects ?? []) if (!L.projects.some((x) => x.id === p.id)) L.projects.push(p); }
+  else if (t.kind === 'report') { const p = P(t.pid); if (!p) return toast('The project is gone — restore it first'); (p.reportingPeriods ??= []).push(t.data as ReportingPeriod); p.reportingPeriods.sort((a, b) => a.date.localeCompare(b.date)); }
+  else if (t.kind === 'document') { const p = P(t.pid); if (!p) return toast('The project is gone — restore it first'); (p.documents ??= []).push(t.data as NonNullable<Project['documents']>[number]); }
+  else if (t.kind === 'risk') { const p = P(t.pid); if (!p) return toast('The project is gone — restore it first'); (p.riskRegister ??= []).push(t.data as Risk); }
+  else if (t.kind === 'office-report') { const d = t.data as { office: import('../domain/office').Office; report: import('../domain/office').OfficeReport }; const o = (L.offices ??= []).find((x) => x.id === t.officeId); if (o) o.reports.push(d.report); else L.offices.push({ ...d.office, reports: [d.report] }); }
+  L.trash = L.trash!.filter((x) => x.id !== id);
+  commit(L, `Restored ${t.label}`, t.pid);
+}
+/** A one-click fix from Data check; anything it removes goes to the trash. */
+export function fixProject(pid: string, fix: import('../domain/health').AutoFix, f: typeof import('../domain/health').applyFix) {
+  const L = clone(state.ledger), i = L.projects.findIndex((p) => p.id === pid); if (i < 0) return;
+  const { p, removed } = f(L.projects[i], fix);
+  for (const r of removed) toTrash(L, { kind: r.kind, label: `${r.label} (${p.code})`, data: r.data, pid });
+  L.projects[i] = p; commit(L, fix === 'use-approved' ? `${p.code}: budget set from the approved budget` : `${p.code}: ${removed.length} duplicate${removed.length === 1 ? '' : 's'} moved to the trash`, p.code);
+}
+export function emptyTrash() { if (!isAdmin()) return; const L = clone(state.ledger); L.trash = []; commit(L, 'Trash emptied'); }
+export function deleteDocument(pid: string, name: string) {
+  if (!isAdmin()) return;
+  editProject(pid, (p) => { const d = p.documents?.find((x) => x.name === name); if (!d) return; p.documents = p.documents!.filter((x) => x !== d); toTrash(L0!, { kind: 'document', label: `${name} (${p.code})`, data: d, pid }); }, 'Document removed');
+}
 export function deleteOfficeReport(officeId: string, reportId: string) {
   if (!isAdmin()) return;
   const L = clone(state.ledger), o = L.offices?.find((x) => x.id === officeId); if (!o) return;
+  const rep = o.reports.find((r) => r.id === reportId); if (rep) toTrash(L, { kind: 'office-report', label: `${o.name} · ${rep.date}`, data: { office: { ...o, reports: [] }, report: rep }, officeId });
   o.reports = o.reports.filter((r) => r.id !== reportId);
   if (!o.reports.length) L.offices = L.offices!.filter((x) => x !== o);
   commit(L, `Removed office report`);
@@ -256,6 +285,7 @@ export function deleteOfficeReport(officeId: string, reportId: string) {
 export function deleteProjects(ids: string[]) {
   if (!isAdmin()) return;
   const L = clone(state.ledger);
+  for (const p of L.projects.filter((p) => ids.includes(p.id))) toTrash(L, { kind: 'project', label: `${p.code} ${p.name}`, data: p });
   L.projects = L.projects.filter((p) => !ids.includes(p.id));
   commit(L, `Deleted ${ids.length} project${ids.length > 1 ? 's' : ''}`);
 }
@@ -272,24 +302,26 @@ export function deleteCountry(id: string, withProjects = false): string | null {
   if (used && !withProjects) return `${used} project${used > 1 ? 's' : ''} still use this country. Move or delete them first.`;
   if (!isAdmin()) return 'Only the admin can delete.';
   const L = clone(state.ledger);
-  L.projects = L.projects.filter((p) => p.country !== id);
   const c = L.countries.find((x) => x.id === id);
+  if (c) toTrash(L, { kind: 'country', label: c.name, data: c, projects: L.projects.filter((p) => p.country === id) });
+  L.projects = L.projects.filter((p) => p.country !== id);
   L.countries = L.countries.filter((x) => x.id !== id);
   if (state.filters.country === id) set({ filters: { ...state.filters, country: '' } });
   commit(L, `Removed ${c?.name ?? 'country'}`);
   return null;
 }
+let L0: Ledger | null = null;
 function editProject(id: string, f: (p: Project) => void, message: string) {
   const L = clone(state.ledger);
   const p = L.projects.find((x) => x.id === id); if (!p) return;
-  f(p); commit(L, message, p.code);
+  L0 = L; f(p); L0 = null; commit(L, message, p.code);
 }
 export const upsertReport = (pid: string, r: ReportingPeriod) => editProject(pid, (p) => {
   const R = p.reportingPeriods ?? (p.reportingPeriods = []);
   const i = R.findIndex((x) => x.id === r.id); if (i >= 0) R[i] = r; else R.push(r);
   R.sort((a, b) => a.date.localeCompare(b.date));
 }, `Saved ${r.name}`);
-export const deleteReport = (pid: string, rid: string) => isAdmin() && editProject(pid, (p) => { p.reportingPeriods = (p.reportingPeriods ?? []).filter((r) => r.id !== rid); }, 'Report removed');
+export const deleteReport = (pid: string, rid: string) => isAdmin() && editProject(pid, (p) => { const r = p.reportingPeriods?.find((x) => x.id === rid); if (r) toTrash(L0!, { kind: 'report', label: `${r.name} (${p.code})`, data: r, pid }); p.reportingPeriods = (p.reportingPeriods ?? []).filter((r) => r.id !== rid); }, 'Report removed');
 export function updateLine(pid: string, rid: string, code: string, patch: Record<string, number | string | null>) {
   editProject(pid, (p) => {
     const l = p.reportingPeriods?.find((r) => r.id === rid)?.snapshot?.lines.find((x) => x.code === code);
@@ -302,7 +334,7 @@ export const upsertRisk = (pid: string, r: Risk) => editProject(pid, (p) => {
   const R = p.riskRegister ?? (p.riskRegister = []);
   const i = R.findIndex((x) => x.id === r.id); if (i >= 0) R[i] = r; else R.push(r);
 }, `Saved risk “${r.title}”`);
-export const deleteRisk = (pid: string, id: string) => isAdmin() && editProject(pid, (p) => { p.riskRegister = (p.riskRegister ?? []).filter((r) => r.id !== id); }, 'Risk removed');
+export const deleteRisk = (pid: string, id: string) => isAdmin() && editProject(pid, (p) => { const k = p.riskRegister?.find((r) => r.id === id); if (k) toTrash(L0!, { kind: 'risk', label: `${k.title} (${p.code})`, data: k, pid }); p.riskRegister = (p.riskRegister ?? []).filter((r) => r.id !== id); }, 'Risk removed');
 export const setStaffOverride = (pid: string, key: string, o: import('../domain/staff').StaffOverride | null) => editProject(pid, (p) => {
   const O = p.staffOverrides ?? (p.staffOverrides = {});
   if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];

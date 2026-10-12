@@ -40,7 +40,8 @@ export interface Project {
 }
 
 export interface AuditEntry { at: string; message: string; project?: string }
-export interface Ledger { countries: Country[]; projects: Project[]; /** programme offices' own running-cost budgets */ offices?: import('./office').Office[]; /** newest first */ audit?: AuditEntry[] }
+export interface Ledger { countries: Country[]; projects: Project[]; /** programme offices' own running-cost budgets */ offices?: import('./office').Office[]; /** newest first */ audit?: AuditEntry[]; /** deleted items, newest first, restorable */ trash?: TrashItem[] }
+export interface TrashItem { id: string; at: string; kind: 'project' | 'country' | 'report' | 'document' | 'risk' | 'office-report'; label: string; data: unknown; pid?: string; officeId?: string; projects?: Project[] }
 
 export const SECTORS = ['Human Rights', 'Democracy', 'Rule of Law'] as const;
 export type Sector = (typeof SECTORS)[number];
