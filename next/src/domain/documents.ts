@@ -180,7 +180,7 @@ export function analyse(doc: Doc): DocFindings {
 }
 
 /* ---------- approved budget (CoE "Budget for all years" template, DoA annex) ---------- */
-export interface ApprovedBudget { lines: import('./types').BudgetLine[]; direct: number; admin: number; contingency: number; total: number; source: string; linesSum: number; importedAt?: string }
+export interface ApprovedBudget { lines: import('./types').BudgetLine[]; /** names of every coded row, heading rows included (1.1 Local, 1.1.1 Local team) */ names?: Record<string, string>; direct: number; admin: number; contingency: number; total: number; source: string; linesSum: number; importedAt?: string }
 
 const NUM = /^-?[\d][\d.,' ]*$/;
 /**
@@ -191,7 +191,7 @@ const NUM = /^-?[\d][\d.,' ]*$/;
 export function approvedBudget(doc: Doc): ApprovedBudget | null {
   const lines: import('./types').BudgetLine[] = [];
   let admin = 0, contingency = 0, direct = 0, total = 0;
-  const subs = new Map<string, number>();
+  const subs = new Map<string, number>(), names: Record<string, string> = {};
   for (const T of doc.tables) for (const raw of T) {
     const r = raw.map((c) => clean(c ?? '')).filter(Boolean);
     if (!r.length) continue;
@@ -202,6 +202,7 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
     if (st) { const v = rest.filter((c) => NUM.test(c) || c === '-').map((c) => (c === '-' ? 0 : amount(c) ?? 0)); if (!subs.has(st[1])) subs.set(st[1], v[0] ?? 0); continue; }
     const m = head.match(/^(\d{1,2}(?:\.\d{1,2}){0,4})\.?\s+(.{2,})$/); if (!m) continue;
     const code = m[1], desc = m[2];
+    if (!names[code] && !/^sub-?total|^total/i.test(desc)) names[code] = desc.split(/\n/)[0].trim();
     const nums = rest.filter((c) => NUM.test(c) || c === '-').map((c) => (c === '-' ? 0 : amount(c) ?? 0));
     const unit = rest.find((c) => /^per\b/i.test(c));
     if (/^sub-?total|^total/i.test(desc)) {
@@ -232,7 +233,7 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   const out = [...leaves];
   if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
   if (admin) out.push({ code: '10', description: 'Administrative costs', unit: '7%', approved: admin });
-  return { lines: out, direct, admin, contingency, total: direct + contingency + admin, source: doc.name, linesSum: sum };
+  return { lines: out, names, direct, admin, contingency, total: direct + contingency + admin, source: doc.name, linesSum: sum };
 }
 
 /* ---------- budget clarification & justification annex ---------- */

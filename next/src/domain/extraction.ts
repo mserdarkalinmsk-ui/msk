@@ -33,11 +33,16 @@ export function enrichExtraction<W extends Pick<Workbook, 'lines' | 'totals'>>(w
   const base = p.approvedBudget?.lines ?? [];
   if (!base.length) return wb;
   const got = new Map(wb.lines.map((l) => [l.code, l]));
-  const codes = [...new Set([...base.map((l) => l.code), ...wb.lines.map((l) => l.code)])].filter((c) => c !== '10');
+  // Entries posted on a code the budget breaks down (5.7 vs 5.7.1–5.7.3) become a "posted on the heading" child.
+  const baseCodes = base.map((l) => l.code);
+  for (const [c, e] of [...got]) if (baseCodes.some((o) => o.startsWith(c + '.'))) { got.delete(c); got.set(`${c}.0`, { ...e, code: `${c}.0`, description: `Posted on line ${c} (not broken down)` }); }
+  // Heading rows (1.1, 1.1.1 …) of the budget come along so the statement shows their names.
+  const leafCodes = [...new Set([...baseCodes, ...got.keys()])].filter((c) => c !== '10');
+  const codes = [...new Set([...leafCodes, ...leafCodes.flatMap((c) => c.split('.').slice(0, -1).map((_, i, a) => a.slice(0, i + 1).join('.')))])];
   const isLeaf = (c: string) => !codes.some((o) => o !== c && o.startsWith(c + '.'));
   const lines: WbLine[] = codes.map((code) => {
     const b = base.find((l) => l.code === code), e = got.get(code);
-    return { code, description: b?.description ?? e?.description ?? '', unit: b?.unit ?? '', level: code.split('.').length, leaf: isLeaf(code),
+    return { code, description: b?.description || e?.description || p.approvedBudget?.names?.[code] || '', unit: b?.unit ?? '', level: code.split('.').length, leaf: isLeaf(code),
       budget: { units: b?.approvedUnits ?? null, rate: b?.unitRate ?? null, cost: b?.approved ?? null }, actual: e?.actual ?? { units: null, rate: null, cost: 0 }, sc: e?.sc ?? 0 };
   }).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
   const leafs = lines.filter((l) => l.leaf), sum = (f: (l: WbLine) => number) => leafs.reduce((a, l) => a + f(l), 0);
