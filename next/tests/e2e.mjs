@@ -195,14 +195,15 @@ async function page(opts) {
   check(await p.locator('.map-side h2').textContent() === 'Türkiye', 'country drill-down opens');
   await p.click('.seg button:has-text("Pace")'); await p.waitForTimeout(300);
   await p.screenshot({ path: `${shots}/map.png`, fullPage: true });
-  await p.goto(url + '#/reports'); await p.waitForSelector('.brief'); await p.waitForTimeout(500);
-  check((await p.locator('.brief p').first().textContent()).includes('has spent'), 'executive brief writes the financial summary');
+  await p.goto(url + '#/reports'); await p.waitForSelector('.pack'); await p.waitForTimeout(500);
+  check((await p.locator('.pack-pts li').first().textContent()).includes('have spent'), 'monthly pack writes the financial summary');
   await p.screenshot({ path: `${shots}/brief.png`, fullPage: true });
   await p.emulateMedia({ media: 'print' });
-  check(!(await p.locator('.side').isVisible()) && await p.locator('.brief').isVisible(), 'print view shows only the brief');
+  check(!(await p.locator('.side').isVisible()) && await p.locator('.pack').isVisible(), 'print view shows only the pack');
   await p.emulateMedia({ media: 'screen' });
-  await p.click('.tabs button:has-text("Calendar")'); await p.waitForTimeout(300);
-  check(await p.locator('.cal-i').count() >= 6, 'reporting calendar lists open deadlines');
+  await p.click('.tabs button:has-text("Follow-up")'); await p.waitForTimeout(200);
+  await p.click('.subtabs button:has-text("Calendar")'); await p.waitForTimeout(300);
+  check(await p.locator('.ag-e').count() >= 6, 'calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
   // CoE workbook dropped on the global import: recognised and offered to its project via Smart import
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');
@@ -281,8 +282,9 @@ async function page(opts) {
   check(await p.locator('.alerts li').count() < nAll, 'alert centre filters by severity');
   check(await p.locator('.seg button:has-text("Staff")').count() + await p.locator('.seg button:has-text("Reporting")').count() >= 1, 'alerts grouped by area');
   await p.screenshot({ path: `${shots}/alerts.png`, fullPage: true });
-  await p.click('.tabs button:has-text("What changed")'); await p.waitForTimeout(200);
-  check(await p.locator('.chg-t tbody tr').count() >= 1, 'what changed lists projects');
+  await p.click('.tabs button:has-text("Finance")'); await p.waitForTimeout(200);
+  await p.click('.subtabs button:has-text("Month comparison")'); await p.waitForTimeout(200);
+  check(await p.locator('.mc-t tbody tr').count() >= 1, 'month comparison lists projects');
   await p.screenshot({ path: `${shots}/changes.png`, fullPage: true });
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.tabs button:has-text("Excel")')]);
   const path = await dl.path(); const { readFileSync, statSync } = await import('node:fs');

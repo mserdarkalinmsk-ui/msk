@@ -1,5 +1,7 @@
 import { filtered, go, useStore } from '../data/store';
-import { deadlines, elapsed, money, parseDate } from '../domain/calc';
+import { deadlines, elapsed, money, parseDate, portfolioSeries, totals } from '../domain/calc';
+import { Chart } from '../ui/Chart';
+import { spendOption } from './Overview';
 import { alerts } from '../domain/insights';
 import { perfTrend, warningScore } from '../domain/monitor';
 import { renewals, roster } from '../domain/staff';
@@ -73,6 +75,7 @@ export function MonthlyPack() {
   const scope = s.filters.country ? cname(s.filters.country) : 'All countries';
   const M = moves(P).sort((a, b) => (a.prev == null ? 1 : 0) - (b.prev == null ? 1 : 0) || (a.perf - (a.prev ?? a.perf)) - (b.perf - (b.prev ?? b.perf)));
   const N = narrative(P, cname);
+  const S = portfolioSeries(P, TODAY);
   const A = alerts(P, TODAY).filter((a) => a.severity === 'critical' || a.severity === 'serious').slice(0, 8);
   const maxAdd = Math.max(1, ...M.map((x) => Math.abs(x.added)));
   return (
@@ -86,6 +89,8 @@ export function MonthlyPack() {
         <ul class="pack-pts">{N.map((t) => <li class={`t-${t.tone}`}><span>{t.label}</span><p>{t.text}</p></li>)}</ul>
         <button class="btn ghost no-print" onClick={() => navigator.clipboard?.writeText(N.map((t) => `${t.label}: ${t.text}`).join('\n'))}>Copy summary</button>
       </section>
+      {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '12.5px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
+        <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
       <section class="pack-s">
         <h3>What changed since the previous report</h3>
         <table class="mini pack-t">
