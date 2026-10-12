@@ -186,6 +186,40 @@
     });
   }
 
+
+  /* ---------- stage brief: rule, steps, key figures and every must-not-miss rule ---------- */
+  function factInfo(base, stage, v) {
+    const stages = base === "procurement" ? C.procurementStages : C.grantStages, R = base === "procurement" ? C.procurementReference : C.grantReference;
+    const toks = factTokens(v), has = (t) => toks.some((k) => t.includes(k)) || t.includes(v);
+    const st = stages.find((x) => x.name === stage), hits = [];
+    (st ? st.sections : []).forEach(([h, b]) => {
+      const pieces = typeof b === "string" ? splitSentences(b) : [b.lead, ...(b.items || []).map(([a, d]) => `${a}: ${d}`), ...(b.must || []), b.tip].filter(Boolean);
+      pieces.forEach((x) => { if (has(x)) hits.push(x); });
+    });
+    const lim = ((R && R.limits) || []).filter((l) => has(String(l.value)));
+    return { text: hits.sort((a, b) => a.length - b.length).find((x) => x.length > 40) || hits[0] || "", lim: lim.length > 0 };
+  }
+  function briefHtml(cfg, s, ph, pc) {
+    const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
+    const steps = [["Understand", s.understand, "Why this stage exists"], ["Do", s.do, "What you actually do"], ["Control", s.check, "How you know it is done"]];
+    const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
+    return `<div class="sb">
+      <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<span class="sh-src">${s.sections.length} topics · ${musts.length} key rules</span></div>
+        <h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
+      <div class="sb-grid">
+        <div class="sb-main">
+          ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
+          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
+        </div>
+        ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
+          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${f.text ? `<p>${esc(f.text)}</p>` : ""}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+      </div>
+      ${musts.length || s.warning ? `<div class="sb-bottom">
+        ${musts.length ? `<div class="sb-must"><h4><span>!</span> Must not miss <small>${musts.length} binding rules from this stage</small></h4><ul>${musts.slice(0, 4).map(mustLi).join("")}</ul>${musts.length > 4 ? `<details class="sb-all"><summary>Show the other ${musts.length - 4}</summary><ul>${musts.slice(4).map(mustLi).join("")}</ul></details>` : ""}</div>` : ""}
+        ${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}
+      </div>` : ""}
+    </div>`;
+  }
   /* ---------- fact details: everything the guide says about a key figure ---------- */
   const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
   function factSheet(btn) {
@@ -209,6 +243,11 @@
       ${!lim.length && !hits.length ? `<p class="muted">No further detail in the guide for this figure.</p>` : ""}`;
     FG.openSheet(`Key figure · ${btn.dataset.stage}`, label.charAt(0).toUpperCase() + label.slice(1), html);
   }
+  document.addEventListener("click", (e) => {
+    const j = e.target.closest("[data-rd-jump]");
+    if (j) { const tab = document.querySelector('[data-tab="guide"],[role="tab"][data-id="guide"]'); if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
+      const go = document.querySelector(`.rd-nav [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  });
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
 
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
@@ -250,15 +289,13 @@
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
         const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections)}
-          <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
+          <div class="grid g2 mt">${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
           ${ui.head(cfg.eyebrow, cfg.title, "", `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
           ${map}
           <section class="card stage-card mt"><div class="card-body">
-            <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
-            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<button type="button" class="mem-fact" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}"><b>${esc(v)}</b><span>${esc(l)}</span><i aria-hidden="true">Details ›</i></button>`).join("")}</div>` : ""}
-            <ol class="ucf">${[["Understand", s.understand, "◎"], ["Do", s.do, "▶"], ["Control", s.check, "✓"]].map(([t, x, ic], k) => `<li style="--c:var(--c${[1, 2, 3][k]})"><span class="ucf-ico" aria-hidden="true">${ic}</span><small>${k + 1} · ${t}</small><p>${esc(x)}</p></li>`).join("")}</ol>
+            ${briefHtml(cfg, s, ph, pc)}
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],

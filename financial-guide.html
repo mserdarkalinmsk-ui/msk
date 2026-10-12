@@ -1217,6 +1217,47 @@ button.mem-fact i { display: block; margin-top: 8px; font-style: normal; font-si
 @media (max-width: 760px) { .hub-sec { grid-template-columns: minmax(0, 1fr); } .qz-end { flex-direction: column; } .qz-lv div { grid-template-columns: minmax(0, 1fr) 80px 36px; } .qz-card { padding: 20px; } .qz-opts.tf { grid-template-columns: 1fr 1fr; } }
 .qz-mscn { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; font-style: italic; }
 
+/* ---------- stage brief ---------- */
+.sb-top h2 { margin: 2px 0 6px; font-size: 26px; letter-spacing: -.02em; }
+.sb-top p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 820px; line-height: 1.55; }
+.sb-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; }
+.sb-rule { padding: 18px 20px; border-radius: 14px; color: #fff; background: linear-gradient(135deg, #1b3a7a, #24529e); box-shadow: 0 14px 30px -18px #1b3a7a; }
+.sb-rule small { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; font-weight: 700; }
+.sb-rule b { display: block; margin-top: 6px; font-size: 18px; line-height: 1.4; }
+.sb-flow { list-style: none; margin: 14px 0 0; padding: 0; position: relative; }
+.sb-flow::before { content: ""; position: absolute; left: 15px; top: 16px; bottom: 16px; width: 2px; background: var(--line); }
+.sb-flow li { position: relative; display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding: 10px 0; }
+.sb-flow em { font-style: normal; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--c); font-weight: 700; font-size: 13px; position: relative; box-shadow: 0 0 0 4px var(--panel); }
+.sb-flow small { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.sb-flow small i { font-style: normal; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.sb-flow p { margin: 3px 0 0; font-size: 15px; line-height: 1.55; color: var(--ink); }
+.sb-facts { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: color-mix(in srgb, var(--accent, #2d6bd8) 3%, var(--panel)); align-self: start; }
+.sb-facts h4, .sb-must h4, .sb-warn h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.sb-fact { border-top: 1px solid var(--line); }
+.sb-fact:first-of-type { border-top: 0; }
+.sb-fact summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 10px; padding: 10px 2px; }
+.sb-fact summary::-webkit-details-marker { display: none; }
+.sb-fact summary::after { content: "+"; color: var(--muted); font-weight: 600; }
+.sb-fact[open] summary::after { content: "–"; }
+.sb-fact summary b { font-size: 18px; color: #1b3a7a; white-space: nowrap; }
+.sb-fact summary span { font-size: 13.5px; color: var(--ink-2); }
+.sb-fact p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.55; color: var(--ink); padding: 10px 12px; border-radius: 10px; background: var(--panel); border-left: 3px solid #2d6bd8; }
+.sb-more { border: 0; background: none; padding: 0 0 10px; color: #2d6bd8; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.sb-bottom { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+.sb-must { border: 1px solid color-mix(in srgb, #c0392b 25%, var(--line)); border-radius: 14px; padding: 14px 16px; }
+.sb-must h4 { display: flex; align-items: center; gap: 8px; color: #b03a2e; }
+.sb-must h4 span { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: #c0392b; color: #fff; font-size: 12px; }
+.sb-must h4 small { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
+.sb-must ul { list-style: none; margin: 0; padding: 0; }
+.sb-must li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 9px 0; border-top: 1px dashed var(--line); }
+.sb-must li p { margin: 0; font-size: 14px; line-height: 1.5; }
+.sb-src { border: 0; background: color-mix(in srgb, #2d6bd8 8%, var(--panel)); color: #2d6bd8; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 11.5px; cursor: pointer; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.sb-all summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #2d6bd8; padding-top: 8px; }
+.sb-warn { border-radius: 14px; padding: 14px 16px; background: color-mix(in srgb, #d98a1a 9%, var(--panel)); border: 1px solid color-mix(in srgb, #d98a1a 30%, var(--line)); align-self: start; }
+.sb-warn h4 { color: #a5630c; }
+.sb-warn p { margin: 0; font-size: 14px; line-height: 1.55; }
+@media (max-width: 900px) { .sb-grid, .sb-bottom { grid-template-columns: 1fr; } .sb-must li { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -8695,7 +8736,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 20:08</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 20:15</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -9239,6 +9280,40 @@ window.FG_CONTENT = {
     });
   }
 
+
+  /* ---------- stage brief: rule, steps, key figures and every must-not-miss rule ---------- */
+  function factInfo(base, stage, v) {
+    const stages = base === "procurement" ? C.procurementStages : C.grantStages, R = base === "procurement" ? C.procurementReference : C.grantReference;
+    const toks = factTokens(v), has = (t) => toks.some((k) => t.includes(k)) || t.includes(v);
+    const st = stages.find((x) => x.name === stage), hits = [];
+    (st ? st.sections : []).forEach(([h, b]) => {
+      const pieces = typeof b === "string" ? splitSentences(b) : [b.lead, ...(b.items || []).map(([a, d]) => `${a}: ${d}`), ...(b.must || []), b.tip].filter(Boolean);
+      pieces.forEach((x) => { if (has(x)) hits.push(x); });
+    });
+    const lim = ((R && R.limits) || []).filter((l) => has(String(l.value)));
+    return { text: hits.sort((a, b) => a.length - b.length).find((x) => x.length > 40) || hits[0] || "", lim: lim.length > 0 };
+  }
+  function briefHtml(cfg, s, ph, pc) {
+    const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
+    const steps = [["Understand", s.understand, "Why this stage exists"], ["Do", s.do, "What you actually do"], ["Control", s.check, "How you know it is done"]];
+    const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
+    return `<div class="sb">
+      <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<span class="sh-src">${s.sections.length} topics · ${musts.length} key rules</span></div>
+        <h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
+      <div class="sb-grid">
+        <div class="sb-main">
+          ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
+          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
+        </div>
+        ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
+          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${f.text ? `<p>${esc(f.text)}</p>` : ""}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+      </div>
+      ${musts.length || s.warning ? `<div class="sb-bottom">
+        ${musts.length ? `<div class="sb-must"><h4><span>!</span> Must not miss <small>${musts.length} binding rules from this stage</small></h4><ul>${musts.slice(0, 4).map(mustLi).join("")}</ul>${musts.length > 4 ? `<details class="sb-all"><summary>Show the other ${musts.length - 4}</summary><ul>${musts.slice(4).map(mustLi).join("")}</ul></details>` : ""}</div>` : ""}
+        ${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}
+      </div>` : ""}
+    </div>`;
+  }
   /* ---------- fact details: everything the guide says about a key figure ---------- */
   const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
   function factSheet(btn) {
@@ -9262,6 +9337,11 @@ window.FG_CONTENT = {
       ${!lim.length && !hits.length ? `<p class="muted">No further detail in the guide for this figure.</p>` : ""}`;
     FG.openSheet(`Key figure · ${btn.dataset.stage}`, label.charAt(0).toUpperCase() + label.slice(1), html);
   }
+  document.addEventListener("click", (e) => {
+    const j = e.target.closest("[data-rd-jump]");
+    if (j) { const tab = document.querySelector('[data-tab="guide"],[role="tab"][data-id="guide"]'); if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
+      const go = document.querySelector(`.rd-nav [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  });
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
 
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
@@ -9303,15 +9383,13 @@ window.FG_CONTENT = {
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
         const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}${reader(`${cfg.base}:${s.name}`, s.sections)}
-          <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
+          <div class="grid g2 mt">${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
           ${ui.head(cfg.eyebrow, cfg.title, "", `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
           ${map}
           <section class="card stage-card mt"><div class="card-body">
-            <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
-            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<button type="button" class="mem-fact" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}"><b>${esc(v)}</b><span>${esc(l)}</span><i aria-hidden="true">Details ›</i></button>`).join("")}</div>` : ""}
-            <ol class="ucf">${[["Understand", s.understand, "◎"], ["Do", s.do, "▶"], ["Control", s.check, "✓"]].map(([t, x, ic], k) => `<li style="--c:var(--c${[1, 2, 3][k]})"><span class="ucf-ico" aria-hidden="true">${ic}</span><small>${k + 1} · ${t}</small><p>${esc(x)}</p></li>`).join("")}</ol>
+            ${briefHtml(cfg, s, ph, pc)}
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
