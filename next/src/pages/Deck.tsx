@@ -23,11 +23,13 @@ const BAND_C: Record<string, string> = { blue: '#3b82c4', green: '#30a46c', ambe
 const BAND_W: Record<string, string> = { blue: 'Ahead', green: 'On track', amber: 'Behind', red: 'Well behind' };
 const KIND_C: Record<string, string> = { report: '#e5484d', contract: '#8e4ec6', activity: '#f5a524', project: '#3b82c4' };
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+/** Percent for headlines: small shares keep one decimal so 0.4% never reads as 0%. */
+const pq = (x: number) => (x > 0 && x < 0.095 ? `${(x * 100).toFixed(1)}%` : pct(x));
 const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 export type Audience = 'management' | 'donor';
 /** Running slide number: slides are counted in the order they render, so hidden slides never leave gaps. */
-const deckCtx = { n: 1, of: 1, notes: false };
+const deckCtx = { n: 1, of: 1, notes: false, aud: 'management' as Audience };
 /** One slide: the topic as a small kicker, the key message as the title, speaker notes below when asked. */
 function Slide({ title, msg, sub, scope, notes, children, cls = '' }: { n?: number; of?: number; title: string; msg?: string; sub?: string; scope: string; notes?: string; children: ComponentChildren; cls?: string }) {
   const n = ++deckCtx.n;
@@ -36,7 +38,7 @@ function Slide({ title, msg, sub, scope, notes, children, cls = '' }: { n?: numb
       <section class={`slide ${cls}`}>
         <header class="sl-head"><div>{msg && <div class="sl-k">{title}</div>}<h2>{msg ?? title}</h2>{sub && <p class="sl-sub">{sub}</p>}</div><span class="sl-tag">{scope}</span></header>
         <div class="sl-body">{children}</div>
-        <div class="sl-f"><span>{scope} · Progress update · {month(TODAY.getTime())}</span><span>{n} / {deckCtx.of}</span></div>
+        <div class="sl-f"><span>{scope} · {deckCtx.aud === 'donor' ? 'Progress report' : 'Management review'} · {month(TODAY.getTime())}</span><span>{n} / {deckCtx.of}</span></div>
       </section>
       {deckCtx.notes && notes && <aside class="sl-notes no-print"><b>Speaker notes · slide {n}</b><p>{notes}</p></aside>}
     </>
@@ -75,16 +77,16 @@ export function Deck() {
   // Slides: cover, summary, finance, spending, headings, countries, status, results (donor), risks, staff, offices (management),
   // milestones, next steps, one page per project (optional), annex.
   const of = 12 + (mg ? 0 : 1) + (hasOffice ? 1 : 0) + PP.length;
-  deckCtx.n = 1; deckCtx.of = of; deckCtx.notes = notes;
+  deckCtx.n = 1; deckCtx.of = of; deckCtx.notes = notes; deckCtx.aud = aud;
   const gapPp = Math.round((perf - 1) * 100), behind = M.filter((x) => x.now === 'red' || x.now === 'amber');
   const topH = [...H].sort((a, b) => b.approved - a.approved)[0];
   // Key messages and speaker notes, shared by the slides on screen and the PowerPoint export.
   const MS = {
-    executive: `${BAND_W[band]}: ${pct(perf)} of planned spending reached, ${short(T.remaining)} still uncommitted`,
-    financial: `${pct(T.burn)} of the ${short(T.budget)} budget spent at ${pct(T.elapsed)} of time; ${pct(T.budget ? T.exposure / T.budget : 0)} used with commitments`,
-    spending: final != null ? `At the recent pace the portfolio ends at ${short(final)}, ${pct(T.budget ? final / T.budget : 0)} of budget` : `${short(T.spent)} spent against ${short(PL)} planned by now`,
-    budget: topH ? `${topH.key} is the largest heading: ${short(topH.approved)}, ${pct(topH.approved ? topH.exposure / topH.approved : 0)} used` : "Budget by heading",
-    where: C[0] ? `${cname(C[0].key)} carries ${pct(T.budget ? C[0].budget / T.budget : 0)} of the budget across ${C[0].count} project${C[0].count > 1 ? "s" : ""}` : "Budget by country",
+    executive: `${BAND_W[band]}: ${pq(perf)} of planned spending reached, ${short(T.remaining)} still uncommitted`,
+    financial: `${pq(T.burn)} of the ${short(T.budget)} budget spent at ${pq(T.elapsed)} of time; ${pq(T.budget ? T.exposure / T.budget : 0)} used with commitments`,
+    spending: final != null ? `At the recent pace the portfolio ends at ${short(final)}, ${pq(T.budget ? final / T.budget : 0)} of budget` : `${short(T.spent)} spent against ${short(PL)} planned by now`,
+    budget: topH ? `${topH.key} is the largest heading: ${short(topH.approved)}, ${pq(topH.approved ? topH.exposure / topH.approved : 0)} used` : "Budget by heading",
+    where: C[0] ? `${cname(C[0].key)} carries ${pq(T.budget ? C[0].budget / T.budget : 0)} of the budget across ${C[0].count} project${C[0].count > 1 ? "s" : ""}` : "Budget by country",
     project: behind.length ? `${behind.length} of ${M.length} projects are behind plan — ${behind.slice(0, 3).map((x) => lab(x.p)).join(", ")} first` : `All ${M.length} projects are on or ahead of plan`,
     risks: R.length ? `${R.length} open risks; the highest is “${cut(R[0].r.title, 60)}” (${lab(R[0].p)})` : "No open risks recorded",
     upcoming: E.length ? `${E.length} milestones in the next 90 days, the first on ${date(E[0].day)}` : "No milestones in the next 90 days",
@@ -198,7 +200,7 @@ export function Deck() {
         </div>
       </Slide>
 
-      <Slide n={9} of={of} scope={scope} title="Staff" sub="Staff paid from the projects">
+      <Slide n={9} of={of} scope={scope} title="Staff" msg={mg ? `${active.length} active staff; ${ren.length} contract${ren.length === 1 ? "" : "s"} end within 90 days` : `${active.length} staff paid from ${new Set(active.map((a) => a.project.id)).size} projects`} sub="Staff paid from the projects" notes={mg ? "Contracts ending within 90 days are in orange; decide renewals before they lapse." : undefined}>
         <div class="sl-kpis">
           <div><span>Active staff</span><b>{active.length}</b></div>
           <div><span>Contracts ending ≤ 90 days</span><b style={{ color: ren.length ? '#c27c0e' : undefined }}>{ren.length}</b></div>
@@ -215,7 +217,7 @@ export function Deck() {
         {ren.length > 0 && <p class="sl-empty" style={{ marginTop: '8px' }}><b style={{ color: '#c27c0e' }}>Orange</b> = contract ends within 90 days.</p>}
       </Slide>
 
-      {hasOffice && <Slide n={10} of={of} scope={scope} title="Office running costs" sub="Programme offices' own budgets — Ordinary Budget and LS & Pagoda, latest situation and year-end outlook">
+      {hasOffice && <Slide n={10} of={of} scope={scope} title="Office running costs" msg={(() => { const R = officeRows(get().ledger.offices ?? []); const sh = R.reduce((a, r) => a + Math.max(0, -r.short), 0); return sh > 0 ? `Offices are ${short(sh)} short on the Ordinary Budget at year end; ${short(R.reduce((a, r) => a + r.request, 0))} to request after transfers` : "Office budgets cover the year-end outlook"; })()} notes="Ordinary Budget and LS & Pagoda of the programme offices; the year-end outlook combines the office forecast and the pace of payments so far." sub="Programme offices' own budgets — Ordinary Budget and LS & Pagoda, latest situation and year-end outlook">
         <OfficeSummary variant="slide" />
       </Slide>}
 
