@@ -123,30 +123,34 @@
         const checks = cfg.checklist(s), best = cfg.bestPractice(s), roles = cfg.roles ? cfg.roles(s) : [];
         const widget = cfg.widgets[s.name] ? cfg.widgets[s.name]() : null;
         const related = (s.links || []).map((l) => cfg.link(l)).filter(Boolean);
+        // Process map: phases as columns, stages as nodes coloured by checklist progress.
+        const progress = (st) => { const items = cfg.checklist(st), t = FG.ticks(`${cfg.base}:${st.name}`); return items.length ? items.filter((_, k) => t[k]).length / items.length : 0; };
+        const overall = Math.round((stages.reduce((a, st) => a + progress(st), 0) / stages.length) * 100);
+        const map = `<section class="pmap card" aria-label="${esc(cfg.title)} process map">
+          <div class="pmap-head"><div><span class="eyebrow">Process map</span><b>${stages.length} stages · ${cfg.phases.length} phases</b></div>
+            <div class="pmap-ring" style="--p:${overall}"><span>${overall}%</span></div></div>
+          <div class="pmap-phases" style="--n:${cfg.phases.length}">${cfg.phases.map(([ph, names], pi) => `<div class="pmap-phase" style="--c:var(--c${(pi % 4) + 1})"><small>${String(pi + 1).padStart(2, "0")} · ${esc(ph)}</small>
+            ${names.map((nm) => { const j = stages.findIndex((x) => x.name === nm); if (j < 0) return ""; const pr = progress(stages[j]);
+              return `<a href="#/${cfg.base}/${slug(nm)}" class="pnode ${j === i ? "on" : ""} ${pr === 1 ? "done" : pr > 0 ? "part" : ""}" style="--pr:${Math.round(pr * 100)}%" title="${esc(stages[j].title)}"><em>${j + 1}</em><span>${esc(nm)}</span></a>`; }).join("")}</div>`).join("")}</div></section>`;
+        const guidance = `<div class="accordion">${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}</div>
+          <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
+        const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
-          ${ui.head(cfg.eyebrow, cfg.title, cfg.lead, `<a class="btn" href="#/roles">Roles & documents</a>${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
-          <nav class="stepper" aria-label="${esc(cfg.title)} stages">${stages.map((x, j) => `<a class="step ${visited[j] && j !== i ? "done" : ""}" href="#/${cfg.base}/${slug(x.name)}" ${j === i ? 'aria-current="step"' : ""}><em>${j + 1}</em>${esc(x.name)}</a>`).join("")}</nav>
-          <div class="split mt">
-            <div class="stack">
-              <section class="card"><div class="card-body stack">
-                <div><div class="eyebrow">Stage ${i + 1} of ${stages.length}${s.source ? ` · ${esc(s.source)}` : ""}</div><h2 style="font-size:20px">${esc(s.title)}</h2><p class="muted mt">${esc(s.lead)}</p></div>
-                <div class="uci"><div><small>UNDERSTAND</small>${esc(s.understand)}</div><div><small>DO</small>${esc(s.do)}</div><div><small>CONTROL</small>${esc(s.check)}</div></div>
-              </div></section>
-              ${widget || ""}
-              <section class="card"><div class="card-head"><h3>Detailed guidance</h3><small>${s.sections.length} topics</small></div><div class="card-body accordion">
-                ${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}
-              </div></section>
-              ${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}
-              ${best ? ui.callout("good", "Best practice", best) : ""}
-              ${cfg.practice ? FG.ui.quiz(cfg.practice) : ""}
-              <div class="stage-nav">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>
-            </div>
-            <aside class="stack sticky">
-              ${checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : ""}
-              ${roles.length ? `<section class="card"><div class="card-head"><h3>Who is involved</h3></div><div class="card-body stack">${roles.map((r) => `<div><b>${esc(r.name)}</b> ${ui.tag(r.tag, "accent")}<p class="small muted">${esc(r.summary)}</p></div>`).join("")}</div></section>` : ""}
-              ${related.length ? `<section class="card"><div class="card-head"><h3>Related</h3></div><div class="card-body row">${related.map(([t, p]) => `<a class="btn sm" href="#/${p}">${esc(t)}</a>`).join("")}</div></section>` : ""}
-            </aside>
-          </div>`;
+          ${ui.head(cfg.eyebrow, cfg.title, cfg.lead, `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
+          ${map}
+          <section class="card stage-card mt"><div class="card-body stack">
+            <div class="stage-title"><span class="stage-no">${String(i + 1).padStart(2, "0")}</span><div><div class="eyebrow">Stage ${i + 1} of ${stages.length}${s.source ? ` · ${esc(s.source)}` : ""}</div><h2>${esc(s.title)}</h2><p class="muted">${esc(s.lead)}</p></div></div>
+            <div class="uci"><div><small>◎ UNDERSTAND</small>${esc(s.understand)}</div><div><small>▶ DO</small>${esc(s.do)}</div><div><small>✓ CONTROL</small>${esc(s.check)}</div></div>
+          </div></section>
+          <div class="mt">${ui.tabs(cfg.base + ":stage", [
+            ["guide", "Guidance", guidance, s.sections.length],
+            ["tool", "Interactive tool", widget || "", null],
+            ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
+            ["who", "Who is involved", people, roles.length || null],
+            ["quiz", "Quick check", cfg.practice ? FG.ui.quiz(cfg.practice) : "", null],
+          ])}</div>
+          ${related.length ? `<div class="row mt"><span class="small muted">Related:</span>${related.map(([t, p]) => `<a class="tag" href="#/${p}">${esc(t)}</a>`).join("")}</div>` : ""}
+          <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>`;
         return { html, mount: widget && cfg.mount && cfg.mount[s.name] };
       },
     });
@@ -217,6 +221,7 @@
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
     stages: C.procurementStages, engine: ["Procurement Route engine", "engines/procurement"], practice: "procurement",
+    phases: [["Define the need", ["Foundations", "Need & Planning"]], ["Choose structure", ["Contract Types"]], ["Determine procedure", ["Thresholds & Procedure"]], ["Design & compete", ["Tender Design", "Launch & Publication", "Evaluation", "Clarification & Negotiation"]], ["Award & contract", ["Award", "Contract Signing"]], ["Execute · pay · file", ["Contract Management", "Contract Execution & Payment", "Filing & Audit Trail"]]],
     checklist: (s) => C.procurementChecklists[s.name] || [],
     bestPractice: (s) => C.procurementBestPractice[s.name],
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
@@ -246,6 +251,7 @@
     base: "grants", title: "Grants", eyebrow: "Grants · lifecycle & decision support",
     lead: "Confirm the grant route, choose the procedure, prepare the call and evaluation, formalise the agreement and keep implementation audit-ready (Rule 1374).",
     stages: C.grantStages, engine: ["Grant Procedure engine", "engines/grant-procedure"], practice: "grant",
+    phases: [["Frame the grant", ["Foundations", "Principles", "Procedure", "Roles"]], ["Design the call", ["Criteria", "Costs", "Call"]], ["Select", ["Submission", "Evaluation"]], ["Agree & manage", ["Agreement", "Amendments", "Filing"]]],
     checklist: (s) => C.grantChecklists[s.name] || [],
     bestPractice: (s) => C.grantBestPractice[Object.keys(C.grantBestPractice).find((k) => k === s.name || k.startsWith(s.name + " "))],
     note: (t) => C.grantNotes[t] || C.grantNotes[Object.keys(C.grantNotes).find((k) => k.toLowerCase().startsWith(t.toLowerCase()))],

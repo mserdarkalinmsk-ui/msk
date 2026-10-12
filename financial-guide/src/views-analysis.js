@@ -106,6 +106,24 @@
     },
   });
 
+  // Line chart: ideal linear burn (time) against actual use today and the run-rate projection to the end date.
+  function paceChart(sig, t) {
+    if (sig.timePct == null) return `<div class="empty"><b>Add start and end dates</b>The chart compares budget use with elapsed time.</div>`;
+    const W = 560, H = 230, P = 34, x = (v) => P + (v / 100) * (W - 2 * P), y = (v) => H - P - (Math.min(v, 130) / 130) * (H - 2 * P);
+    const proj = t.budget ? Math.min(130, (sig.forecast / t.budget) * 100) : 0, now = Math.min(130, t.util), tx = sig.timePct;
+    const over = proj > 100;
+    return `<svg class="pace" viewBox="0 0 ${W} ${H}" role="img" aria-label="Used ${now.toFixed(0)}% after ${tx.toFixed(0)}% of time; projected ${proj.toFixed(0)}% at end">
+      ${[0, 50, 100].map((g) => `<line x1="${P}" x2="${W - P}" y1="${y(g)}" y2="${y(g)}" class="grid"/><text x="${P - 6}" y="${y(g) + 4}" text-anchor="end">${g}%</text>`).join("")}
+      <line x1="${x(0)}" y1="${y(0)}" x2="${x(100)}" y2="${y(100)}" class="ideal"/>
+      <line x1="${x(tx)}" y1="${y(now)}" x2="${x(100)}" y2="${y(proj)}" class="proj ${over ? "bad" : ""}"/>
+      <polyline points="${x(0)},${y(0)} ${x(tx)},${y(now)}" class="actual"/>
+      <line x1="${x(tx)}" x2="${x(tx)}" y1="${y(0)}" y2="${y(130)}" class="today"/><text x="${x(tx)}" y="${P - 8}" text-anchor="middle" class="lbl">today</text>
+      <circle cx="${x(tx)}" cy="${y(now)}" r="5" class="dot"/><circle cx="${x(100)}" cy="${y(proj)}" r="4" class="dot2 ${over ? "bad" : ""}"/>
+      <text x="${x(100)}" y="${y(proj) - 9}" text-anchor="end" class="lbl">${proj.toFixed(0)}% at end</text>
+      <text x="${P}" y="${H - 6}" class="axis">start</text><text x="${W - P}" y="${H - 6}" text-anchor="end" class="axis">end</text></svg>
+      <div class="legend"><span><i style="background:var(--muted)"></i>Even pace</span><span><i style="background:var(--c1)"></i>Actual</span><span><i style="background:${over ? "var(--risk)" : "var(--c2)"}"></i>Projection</span></div>`;
+  }
+
   /* ---------- project view ---------- */
   route("analysis/:id", {
     section: "analysis",
@@ -146,6 +164,8 @@
 
       return { html: `${ui.head(`Project · ${country(s).name}`, p.name || "Untitled project", `${p.donor || "Funding not set"} · ${p.start ? `${fmtDate(p.start)} – ${fmtDate(p.end)}` : "dates not set"} · analysed ${fmtDate(r.at)}${p.sample ? " · sample data" : ""}`, `<a class="btn" href="#/analysis">← Portfolio</a><button class="btn" data-export>Export CSV</button><button class="btn" data-print>Print</button>`)}
         ${ui.kpis([["Approved budget", euro(t.budget), `${r.lines.length} budget lines`], ["Spent", euro(t.spent), `${pct(t.spentRate)} of budget`], ["Committed", euro(t.committed), `Used ${pct(t.util)} in total`], ["Available", euro(t.remaining), t.remaining < 0 ? "Over-committed" : "Budget − spent − committed"]])}
+        <div class="viz-row mt"><section class="card card-pad"><div class="eyebrow">Budget use</div>${FG.ui.donut([["Spent", t.spent, "var(--c1)"], ["Committed", t.committed, "var(--c4)"], ["Available", Math.max(0, t.remaining), "var(--c2)"]], pct(t.util), "used")}${t.remaining < 0 ? ui.callout("risk", "Over-committed", `${euro(-t.remaining)} above the approved budget.`) : ""}</section>
+        <section class="card card-pad"><div class="eyebrow">Execution vs time</div>${paceChart(sig, t)}</section></div>
         <div class="grid g4 mt">
           <div class="card card-pad"><small class="muted">Time elapsed</small><b class="num" style="display:block;font-size:18px">${pct(sig.timePct)}</b>${ui.bar(sig.timePct)}<small class="muted">${sig.monthsRemaining ?? "—"} months remaining</small></div>
           <div class="card card-pad"><small class="muted">Execution vs time</small><b class="num" style="display:block;font-size:18px">${sig.paceGap == null ? "—" : `${sig.paceGap >= 0 ? "+" : ""}${sig.paceGap.toFixed(0)} pts`}</b><small class="muted">Used % minus elapsed %</small></div>

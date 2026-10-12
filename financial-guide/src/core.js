@@ -74,6 +74,22 @@
     },
   };
 
+  // Tabs: panels are all rendered, only the remembered one is shown; switching never re-renders the page.
+  FG.ui.tabs = function (id, tabs) {
+    tabs = tabs.filter((t) => t && t[2]);
+    const keys = tabs.map((t) => t[0]), cur = keys.includes(FG.store.get("tab:" + id)) ? FG.store.get("tab:" + id) : keys[0];
+    return `<div class="tabs" data-tabs="${esc(id)}"><div class="tablist" role="tablist">${tabs.map(([k, label, , count]) => `<button type="button" role="tab" data-tab="${esc(k)}" aria-selected="${k === cur}">${esc(label)}${count != null ? `<em>${esc(count)}</em>` : ""}</button>`).join("")}<i class="tab-ink" aria-hidden="true"></i></div>
+      ${tabs.map(([k, , html]) => `<div class="tabpanel" role="tabpanel" data-panel="${esc(k)}" ${k === cur ? "" : "hidden"}>${html}</div>`).join("")}</div>`;
+  };
+  FG.placeInk = (root) => root.querySelectorAll(".tablist").forEach((l) => { const a = l.querySelector('[aria-selected="true"]'), ink = l.querySelector(".tab-ink"); if (a && ink) { ink.style.left = a.offsetLeft + "px"; ink.style.width = a.offsetWidth + "px"; } });
+  // Donut chart: segments [[label, value, colour]]; centre shows the first segment's share.
+  FG.ui.donut = function (segments, centre, sub) {
+    const total = segments.reduce((a, x) => a + Math.max(0, x[1]), 0) || 1, R = 52, C = 2 * Math.PI * R; let off = 0;
+    const arcs = segments.map(([l, v, c]) => { const len = (Math.max(0, v) / total) * C, a = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${c}" stroke-width="16" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" class="arc"><title>${esc(l)}: ${esc(euro(v))}</title></circle>`; off += len; return a; }).join("");
+    return `<div class="donut"><svg viewBox="0 0 140 140" role="img" aria-label="${esc(segments.map((x) => `${x[0]} ${euro(x[1])}`).join(", "))}"><g transform="rotate(-90 70 70)"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--sunken)" stroke-width="16"/>${arcs}</g><text x="70" y="68" text-anchor="middle" class="d-main">${esc(centre)}</text><text x="70" y="86" text-anchor="middle" class="d-sub">${esc(sub)}</text></svg>
+      <ul>${segments.map(([l, v, c]) => `<li><i style="background:${c}"></i><span>${esc(l)}</span><b>${esc(euro(v))}</b></li>`).join("")}</ul></div>`;
+  };
+
   // Delegated behaviour for persisted checklists and segmented controls inside a view root.
   FG.bindCommon = function (root, onChange) {
     root.addEventListener("change", (e) => {
@@ -84,6 +100,13 @@
       FG.refresh();
     });
     root.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-tab]");
+      if (tab) {
+        const box = tab.closest("[data-tabs]"); FG.store.set("tab:" + box.dataset.tabs, tab.dataset.tab);
+        box.querySelectorAll(":scope > .tablist [data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b === tab)));
+        box.querySelectorAll(":scope > .tabpanel").forEach((p) => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
+        FG.placeInk(box); return;
+      }
       const reset = e.target.closest("[data-reset-checklist]");
       if (reset) { FG.store.set("ticks:" + reset.closest("[data-checklist]").dataset.checklist, {}); FG.refresh(); return; }
       const seg = e.target.closest("[data-seg] button");
@@ -106,11 +129,12 @@
       <div class="decision-hero ${r.tone}"><div class="eyebrow">${esc(r.kicker)}</div><h2>${esc(r.route)}</h2><p>${esc(r.summary)}</p>
         <div class="row">${r.meta.map(([k, v]) => ui.tag(`${k}: ${v}`)).join("")}<span class="spacer"></span>${opts.save !== false ? `<button class="btn sm no-print" data-save-case>Save to My Case</button>` : ""}</div></div>
       <div class="decision-body">${ui.kpis(r.kpis)}${scale}${fit}
-        <div class="block"><h3>${esc(opts.reasonsTitle || "Why this result")}</h3><div class="reasons">${r.reasons.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div></div>
-        ${flags}
-        ${r.docs ? `<div class="block"><h3>Required file pack</h3><div class="docs">${r.docs.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div></div>` : ""}
-        ${confidence}
-        <div class="block"><h3>Next actions</h3><div class="actions-list">${r.actions.map(([a, b]) => `<div><div><b>${esc(a)}</b><span>${esc(b)}</span></div></div>`).join("")}</div></div>
+        ${FG.ui.tabs("decision", [
+          ["why", "Why this result", `<div class="reasons">${r.reasons.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>`, r.reasons.length],
+          ["controls", "Controls & confidence", (flags + confidence) || "", null],
+          ["files", "File pack", r.docs ? `<div class="docs">${r.docs.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>` : "", r.docs ? r.docs.length : null],
+          ["next", "Next actions", `<div class="actions-list">${r.actions.map(([a, b]) => `<div><div><b>${esc(a)}</b><span>${esc(b)}</span></div></div>`).join("")}</div>`, r.actions.length],
+        ])}
         ${opts.footer || ""}
       </div></section>`;
   };
@@ -170,6 +194,7 @@
     FG.bindCommon(root, view.onSeg);
     if (view.mount) view.mount(root);
     if (FG.enrich) FG.enrich(root);
+    requestAnimationFrame(() => FG.placeInk(root));
     document.documentElement.dataset.tone = FG.TONES[section] || 1;
     const step = FG.JOURNEY.findIndex((j) => j.sections.includes(section));
     if (step >= 0 && FG.JOURNEY[step + 1]) {

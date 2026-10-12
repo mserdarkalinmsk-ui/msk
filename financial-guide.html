@@ -631,6 +631,66 @@ body::after { left: -50%; right: -50%; bottom: -35%; height: 70%; background-ima
 .scale { margin-bottom: 40px; }
 .scale .labels span:nth-child(even) { top: 18px; }
 
+/* ---------- Visual tools: tabs, process map, charts ---------- */
+.tablist { position: relative; display: flex; gap: 4px; overflow-x: auto; padding: 4px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); scrollbar-width: none; }
+.tablist button { position: relative; z-index: 1; flex: none; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-weight: 600; cursor: pointer; transition: color .2s; }
+.tablist button[aria-selected="true"] { color: #fff; }
+.tablist button em { font-style: normal; font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 9px; background: var(--sunken); color: var(--muted); }
+.tablist button[aria-selected="true"] em { background: rgba(255, 255, 255, .22); color: #fff; }
+.tab-ink { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: 0; border-radius: 10px; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--c2))); box-shadow: 0 8px 18px -8px var(--accent); transition: left .35s cubic-bezier(.2, .8, .2, 1), width .35s cubic-bezier(.2, .8, .2, 1); }
+.tabpanel { padding-top: 16px; animation: fxIn .35s cubic-bezier(.2, .8, .2, 1) both; }
+.decision-body .tabpanel { padding-top: 12px; }
+
+.pmap { padding: 18px 20px; }
+.pmap-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.pmap-head b { display: block; font-size: 15px; }
+.pmap-ring { --p: 0; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--sunken) 0); }
+.pmap-ring span { width: 42px; height: 42px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font: 600 12px var(--mono); }
+.pmap-phases { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 10px; }
+.pmap-phase { position: relative; display: grid; align-content: start; gap: 6px; padding: 10px; border-radius: 14px; background: color-mix(in srgb, var(--c) 6%, transparent); border-top: 3px solid var(--c); }
+.pmap-phase:not(:last-child)::after { content: "›"; position: absolute; right: -9px; top: 6px; color: var(--faint); font-size: 18px; }
+.pmap-phase small { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--c); margin-bottom: 2px; }
+.pnode { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 10px; text-decoration: none; color: var(--ink-2); font-size: 12.5px; font-weight: 500; background: var(--panel); border: 1px solid var(--line); overflow: hidden; transition: transform .2s, box-shadow .2s, border-color .2s; }
+.pnode::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: var(--pr); background: var(--good); }
+.pnode em { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 10.5px var(--mono); font-style: normal; background: var(--sunken); color: var(--muted); }
+.pnode span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pnode:hover { transform: translateY(-2px); border-color: var(--c); }
+.pnode.done em { background: var(--good); color: #fff; }
+.pnode.part em { background: color-mix(in srgb, var(--good) 25%, var(--panel)); color: var(--good); }
+.pnode.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--panel)); color: var(--ink); box-shadow: 0 10px 22px -12px var(--c); }
+.pnode.on em { background: var(--c); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 25%, transparent); animation: fxPulse 2s infinite; }
+.stage-title { display: flex; gap: 16px; align-items: flex-start; }
+.stage-no { flex: none; font: 700 44px/1 var(--font); letter-spacing: -.05em; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stage-title h2 { font-size: 22px; letter-spacing: -.02em; margin: 2px 0 4px; }
+.uci > div { transition: transform .2s; } .uci > div:hover { transform: translateY(-2px); }
+@media (max-width: 1100px) { .pmap-phases { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pmap-phase::after { display: none; } }
+@media (max-width: 560px) { .pmap-phases { grid-template-columns: minmax(0, 1fr); } }
+
+.viz-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.donut { display: flex; align-items: center; gap: 20px; margin-top: 8px; }
+.donut svg { width: 160px; flex: none; }
+.donut .arc { transition: stroke-dasharray .8s cubic-bezier(.2, .8, .2, 1); animation: fxArc 1.2s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes fxArc { from { stroke-dasharray: 0 400; } }
+.donut .d-main { font: 700 22px var(--font); fill: var(--ink); }
+.donut .d-sub { font: 500 10px var(--mono); fill: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.donut ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; flex: 1; }
+.donut li { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; font-size: 13.5px; }
+.donut li i { width: 12px; height: 12px; border-radius: 4px; }
+.donut li b { font-variant-numeric: tabular-nums; }
+.pace { width: 100%; height: auto; margin-top: 6px; overflow: visible; }
+.pace .grid { stroke: var(--line); stroke-dasharray: 3 4; }
+.pace text { font: 500 10px var(--mono); fill: var(--muted); }
+.pace .ideal { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.pace .actual { fill: none; stroke: var(--c1); stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 600; animation: fxDraw 1.4s ease both; }
+.pace .proj { stroke: var(--c2); stroke-width: 2.5; stroke-dasharray: 6 5; }
+.pace .proj.bad, .pace .dot2.bad { stroke: var(--risk); fill: var(--risk); }
+.pace .today { stroke: var(--line-2); }
+.pace .dot { fill: var(--c1); stroke: var(--panel); stroke-width: 3; }
+.pace .dot2 { fill: var(--c2); }
+.pace .lbl { fill: var(--ink-2); font-weight: 600; }
+@keyframes fxDraw { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
+@media (max-width: 860px) { .viz-row { grid-template-columns: minmax(0, 1fr); } .donut { flex-direction: column; align-items: stretch; } .donut svg { margin: auto; } }
+
 </style>
 </head>
 <body>
@@ -6034,6 +6094,22 @@ window.FG_CONTENT = {
     },
   };
 
+  // Tabs: panels are all rendered, only the remembered one is shown; switching never re-renders the page.
+  FG.ui.tabs = function (id, tabs) {
+    tabs = tabs.filter((t) => t && t[2]);
+    const keys = tabs.map((t) => t[0]), cur = keys.includes(FG.store.get("tab:" + id)) ? FG.store.get("tab:" + id) : keys[0];
+    return `<div class="tabs" data-tabs="${esc(id)}"><div class="tablist" role="tablist">${tabs.map(([k, label, , count]) => `<button type="button" role="tab" data-tab="${esc(k)}" aria-selected="${k === cur}">${esc(label)}${count != null ? `<em>${esc(count)}</em>` : ""}</button>`).join("")}<i class="tab-ink" aria-hidden="true"></i></div>
+      ${tabs.map(([k, , html]) => `<div class="tabpanel" role="tabpanel" data-panel="${esc(k)}" ${k === cur ? "" : "hidden"}>${html}</div>`).join("")}</div>`;
+  };
+  FG.placeInk = (root) => root.querySelectorAll(".tablist").forEach((l) => { const a = l.querySelector('[aria-selected="true"]'), ink = l.querySelector(".tab-ink"); if (a && ink) { ink.style.left = a.offsetLeft + "px"; ink.style.width = a.offsetWidth + "px"; } });
+  // Donut chart: segments [[label, value, colour]]; centre shows the first segment's share.
+  FG.ui.donut = function (segments, centre, sub) {
+    const total = segments.reduce((a, x) => a + Math.max(0, x[1]), 0) || 1, R = 52, C = 2 * Math.PI * R; let off = 0;
+    const arcs = segments.map(([l, v, c]) => { const len = (Math.max(0, v) / total) * C, a = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${c}" stroke-width="16" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" class="arc"><title>${esc(l)}: ${esc(euro(v))}</title></circle>`; off += len; return a; }).join("");
+    return `<div class="donut"><svg viewBox="0 0 140 140" role="img" aria-label="${esc(segments.map((x) => `${x[0]} ${euro(x[1])}`).join(", "))}"><g transform="rotate(-90 70 70)"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--sunken)" stroke-width="16"/>${arcs}</g><text x="70" y="68" text-anchor="middle" class="d-main">${esc(centre)}</text><text x="70" y="86" text-anchor="middle" class="d-sub">${esc(sub)}</text></svg>
+      <ul>${segments.map(([l, v, c]) => `<li><i style="background:${c}"></i><span>${esc(l)}</span><b>${esc(euro(v))}</b></li>`).join("")}</ul></div>`;
+  };
+
   // Delegated behaviour for persisted checklists and segmented controls inside a view root.
   FG.bindCommon = function (root, onChange) {
     root.addEventListener("change", (e) => {
@@ -6044,6 +6120,13 @@ window.FG_CONTENT = {
       FG.refresh();
     });
     root.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-tab]");
+      if (tab) {
+        const box = tab.closest("[data-tabs]"); FG.store.set("tab:" + box.dataset.tabs, tab.dataset.tab);
+        box.querySelectorAll(":scope > .tablist [data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b === tab)));
+        box.querySelectorAll(":scope > .tabpanel").forEach((p) => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
+        FG.placeInk(box); return;
+      }
       const reset = e.target.closest("[data-reset-checklist]");
       if (reset) { FG.store.set("ticks:" + reset.closest("[data-checklist]").dataset.checklist, {}); FG.refresh(); return; }
       const seg = e.target.closest("[data-seg] button");
@@ -6066,11 +6149,12 @@ window.FG_CONTENT = {
       <div class="decision-hero ${r.tone}"><div class="eyebrow">${esc(r.kicker)}</div><h2>${esc(r.route)}</h2><p>${esc(r.summary)}</p>
         <div class="row">${r.meta.map(([k, v]) => ui.tag(`${k}: ${v}`)).join("")}<span class="spacer"></span>${opts.save !== false ? `<button class="btn sm no-print" data-save-case>Save to My Case</button>` : ""}</div></div>
       <div class="decision-body">${ui.kpis(r.kpis)}${scale}${fit}
-        <div class="block"><h3>${esc(opts.reasonsTitle || "Why this result")}</h3><div class="reasons">${r.reasons.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div></div>
-        ${flags}
-        ${r.docs ? `<div class="block"><h3>Required file pack</h3><div class="docs">${r.docs.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div></div>` : ""}
-        ${confidence}
-        <div class="block"><h3>Next actions</h3><div class="actions-list">${r.actions.map(([a, b]) => `<div><div><b>${esc(a)}</b><span>${esc(b)}</span></div></div>`).join("")}</div></div>
+        ${FG.ui.tabs("decision", [
+          ["why", "Why this result", `<div class="reasons">${r.reasons.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>`, r.reasons.length],
+          ["controls", "Controls & confidence", (flags + confidence) || "", null],
+          ["files", "File pack", r.docs ? `<div class="docs">${r.docs.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>` : "", r.docs ? r.docs.length : null],
+          ["next", "Next actions", `<div class="actions-list">${r.actions.map(([a, b]) => `<div><div><b>${esc(a)}</b><span>${esc(b)}</span></div></div>`).join("")}</div>`, r.actions.length],
+        ])}
         ${opts.footer || ""}
       </div></section>`;
   };
@@ -6130,6 +6214,7 @@ window.FG_CONTENT = {
     FG.bindCommon(root, view.onSeg);
     if (view.mount) view.mount(root);
     if (FG.enrich) FG.enrich(root);
+    requestAnimationFrame(() => FG.placeInk(root));
     document.documentElement.dataset.tone = FG.TONES[section] || 1;
     const step = FG.JOURNEY.findIndex((j) => j.sections.includes(section));
     if (step >= 0 && FG.JOURNEY[step + 1]) {
@@ -6401,30 +6486,34 @@ window.FG_CONTENT = {
         const checks = cfg.checklist(s), best = cfg.bestPractice(s), roles = cfg.roles ? cfg.roles(s) : [];
         const widget = cfg.widgets[s.name] ? cfg.widgets[s.name]() : null;
         const related = (s.links || []).map((l) => cfg.link(l)).filter(Boolean);
+        // Process map: phases as columns, stages as nodes coloured by checklist progress.
+        const progress = (st) => { const items = cfg.checklist(st), t = FG.ticks(`${cfg.base}:${st.name}`); return items.length ? items.filter((_, k) => t[k]).length / items.length : 0; };
+        const overall = Math.round((stages.reduce((a, st) => a + progress(st), 0) / stages.length) * 100);
+        const map = `<section class="pmap card" aria-label="${esc(cfg.title)} process map">
+          <div class="pmap-head"><div><span class="eyebrow">Process map</span><b>${stages.length} stages · ${cfg.phases.length} phases</b></div>
+            <div class="pmap-ring" style="--p:${overall}"><span>${overall}%</span></div></div>
+          <div class="pmap-phases" style="--n:${cfg.phases.length}">${cfg.phases.map(([ph, names], pi) => `<div class="pmap-phase" style="--c:var(--c${(pi % 4) + 1})"><small>${String(pi + 1).padStart(2, "0")} · ${esc(ph)}</small>
+            ${names.map((nm) => { const j = stages.findIndex((x) => x.name === nm); if (j < 0) return ""; const pr = progress(stages[j]);
+              return `<a href="#/${cfg.base}/${slug(nm)}" class="pnode ${j === i ? "on" : ""} ${pr === 1 ? "done" : pr > 0 ? "part" : ""}" style="--pr:${Math.round(pr * 100)}%" title="${esc(stages[j].title)}"><em>${j + 1}</em><span>${esc(nm)}</span></a>`; }).join("")}</div>`).join("")}</div></section>`;
+        const guidance = `<div class="accordion">${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}</div>
+          <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
+        const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
-          ${ui.head(cfg.eyebrow, cfg.title, cfg.lead, `<a class="btn" href="#/roles">Roles & documents</a>${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
-          <nav class="stepper" aria-label="${esc(cfg.title)} stages">${stages.map((x, j) => `<a class="step ${visited[j] && j !== i ? "done" : ""}" href="#/${cfg.base}/${slug(x.name)}" ${j === i ? 'aria-current="step"' : ""}><em>${j + 1}</em>${esc(x.name)}</a>`).join("")}</nav>
-          <div class="split mt">
-            <div class="stack">
-              <section class="card"><div class="card-body stack">
-                <div><div class="eyebrow">Stage ${i + 1} of ${stages.length}${s.source ? ` · ${esc(s.source)}` : ""}</div><h2 style="font-size:20px">${esc(s.title)}</h2><p class="muted mt">${esc(s.lead)}</p></div>
-                <div class="uci"><div><small>UNDERSTAND</small>${esc(s.understand)}</div><div><small>DO</small>${esc(s.do)}</div><div><small>CONTROL</small>${esc(s.check)}</div></div>
-              </div></section>
-              ${widget || ""}
-              <section class="card"><div class="card-head"><h3>Detailed guidance</h3><small>${s.sections.length} topics</small></div><div class="card-body accordion">
-                ${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}
-              </div></section>
-              ${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}
-              ${best ? ui.callout("good", "Best practice", best) : ""}
-              ${cfg.practice ? FG.ui.quiz(cfg.practice) : ""}
-              <div class="stage-nav">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>
-            </div>
-            <aside class="stack sticky">
-              ${checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : ""}
-              ${roles.length ? `<section class="card"><div class="card-head"><h3>Who is involved</h3></div><div class="card-body stack">${roles.map((r) => `<div><b>${esc(r.name)}</b> ${ui.tag(r.tag, "accent")}<p class="small muted">${esc(r.summary)}</p></div>`).join("")}</div></section>` : ""}
-              ${related.length ? `<section class="card"><div class="card-head"><h3>Related</h3></div><div class="card-body row">${related.map(([t, p]) => `<a class="btn sm" href="#/${p}">${esc(t)}</a>`).join("")}</div></section>` : ""}
-            </aside>
-          </div>`;
+          ${ui.head(cfg.eyebrow, cfg.title, cfg.lead, `${cfg.engine ? `<a class="btn primary" href="#/${cfg.engine[1]}">${esc(cfg.engine[0])}</a>` : ""}`)}
+          ${map}
+          <section class="card stage-card mt"><div class="card-body stack">
+            <div class="stage-title"><span class="stage-no">${String(i + 1).padStart(2, "0")}</span><div><div class="eyebrow">Stage ${i + 1} of ${stages.length}${s.source ? ` · ${esc(s.source)}` : ""}</div><h2>${esc(s.title)}</h2><p class="muted">${esc(s.lead)}</p></div></div>
+            <div class="uci"><div><small>◎ UNDERSTAND</small>${esc(s.understand)}</div><div><small>▶ DO</small>${esc(s.do)}</div><div><small>✓ CONTROL</small>${esc(s.check)}</div></div>
+          </div></section>
+          <div class="mt">${ui.tabs(cfg.base + ":stage", [
+            ["guide", "Guidance", guidance, s.sections.length],
+            ["tool", "Interactive tool", widget || "", null],
+            ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
+            ["who", "Who is involved", people, roles.length || null],
+            ["quiz", "Quick check", cfg.practice ? FG.ui.quiz(cfg.practice) : "", null],
+          ])}</div>
+          ${related.length ? `<div class="row mt"><span class="small muted">Related:</span>${related.map(([t, p]) => `<a class="tag" href="#/${p}">${esc(t)}</a>`).join("")}</div>` : ""}
+          <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>`;
         return { html, mount: widget && cfg.mount && cfg.mount[s.name] };
       },
     });
@@ -6495,6 +6584,7 @@ window.FG_CONTENT = {
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
     stages: C.procurementStages, engine: ["Procurement Route engine", "engines/procurement"], practice: "procurement",
+    phases: [["Define the need", ["Foundations", "Need & Planning"]], ["Choose structure", ["Contract Types"]], ["Determine procedure", ["Thresholds & Procedure"]], ["Design & compete", ["Tender Design", "Launch & Publication", "Evaluation", "Clarification & Negotiation"]], ["Award & contract", ["Award", "Contract Signing"]], ["Execute · pay · file", ["Contract Management", "Contract Execution & Payment", "Filing & Audit Trail"]]],
     checklist: (s) => C.procurementChecklists[s.name] || [],
     bestPractice: (s) => C.procurementBestPractice[s.name],
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
@@ -6524,6 +6614,7 @@ window.FG_CONTENT = {
     base: "grants", title: "Grants", eyebrow: "Grants · lifecycle & decision support",
     lead: "Confirm the grant route, choose the procedure, prepare the call and evaluation, formalise the agreement and keep implementation audit-ready (Rule 1374).",
     stages: C.grantStages, engine: ["Grant Procedure engine", "engines/grant-procedure"], practice: "grant",
+    phases: [["Frame the grant", ["Foundations", "Principles", "Procedure", "Roles"]], ["Design the call", ["Criteria", "Costs", "Call"]], ["Select", ["Submission", "Evaluation"]], ["Agree & manage", ["Agreement", "Amendments", "Filing"]]],
     checklist: (s) => C.grantChecklists[s.name] || [],
     bestPractice: (s) => C.grantBestPractice[Object.keys(C.grantBestPractice).find((k) => k === s.name || k.startsWith(s.name + " "))],
     note: (t) => C.grantNotes[t] || C.grantNotes[Object.keys(C.grantNotes).find((k) => k.toLowerCase().startsWith(t.toLowerCase()))],
@@ -6985,7 +7076,7 @@ window.FG_CONTENT = {
         <div class="split-l"><form class="card sticky" data-engine novalidate><div class="card-head"><h3>Case details</h3></div><div class="card-body form">${formHtml}</div></form><div id="result"></div></div>`,
       mount(root) {
         const form = root.querySelector("[data-engine]"), out = root.querySelector("#result");
-        const run = () => { const r = compute(form); FG.lastDecision = { ...r, engine: e.id }; out.innerHTML = FG.renderDecision(r, { footer: e.more ? `<a class="btn" href="#/${e.more[1]}">${esc(e.more[0])} →</a>` : "" }); };
+        const run = () => { const r = compute(form); FG.lastDecision = { ...r, engine: e.id }; out.innerHTML = FG.renderDecision(r, { footer: e.more ? `<a class="btn" href="#/${e.more[1]}">${esc(e.more[0])} →</a>` : "" }); FG.placeInk(out); };
         form.addEventListener("input", run); // "input" already recomputes; "change" (fired on blur) only rebuilds the form when a field shows or hides others,
         // so clicking a result button right after typing never hits a replaced element.
         form.addEventListener("change", (ev) => { if (ev.target.dataset.rerender !== undefined) FG.refresh(); });
@@ -7164,6 +7255,24 @@ window.FG_CONTENT = {
     },
   });
 
+  // Line chart: ideal linear burn (time) against actual use today and the run-rate projection to the end date.
+  function paceChart(sig, t) {
+    if (sig.timePct == null) return `<div class="empty"><b>Add start and end dates</b>The chart compares budget use with elapsed time.</div>`;
+    const W = 560, H = 230, P = 34, x = (v) => P + (v / 100) * (W - 2 * P), y = (v) => H - P - (Math.min(v, 130) / 130) * (H - 2 * P);
+    const proj = t.budget ? Math.min(130, (sig.forecast / t.budget) * 100) : 0, now = Math.min(130, t.util), tx = sig.timePct;
+    const over = proj > 100;
+    return `<svg class="pace" viewBox="0 0 ${W} ${H}" role="img" aria-label="Used ${now.toFixed(0)}% after ${tx.toFixed(0)}% of time; projected ${proj.toFixed(0)}% at end">
+      ${[0, 50, 100].map((g) => `<line x1="${P}" x2="${W - P}" y1="${y(g)}" y2="${y(g)}" class="grid"/><text x="${P - 6}" y="${y(g) + 4}" text-anchor="end">${g}%</text>`).join("")}
+      <line x1="${x(0)}" y1="${y(0)}" x2="${x(100)}" y2="${y(100)}" class="ideal"/>
+      <line x1="${x(tx)}" y1="${y(now)}" x2="${x(100)}" y2="${y(proj)}" class="proj ${over ? "bad" : ""}"/>
+      <polyline points="${x(0)},${y(0)} ${x(tx)},${y(now)}" class="actual"/>
+      <line x1="${x(tx)}" x2="${x(tx)}" y1="${y(0)}" y2="${y(130)}" class="today"/><text x="${x(tx)}" y="${P - 8}" text-anchor="middle" class="lbl">today</text>
+      <circle cx="${x(tx)}" cy="${y(now)}" r="5" class="dot"/><circle cx="${x(100)}" cy="${y(proj)}" r="4" class="dot2 ${over ? "bad" : ""}"/>
+      <text x="${x(100)}" y="${y(proj) - 9}" text-anchor="end" class="lbl">${proj.toFixed(0)}% at end</text>
+      <text x="${P}" y="${H - 6}" class="axis">start</text><text x="${W - P}" y="${H - 6}" text-anchor="end" class="axis">end</text></svg>
+      <div class="legend"><span><i style="background:var(--muted)"></i>Even pace</span><span><i style="background:var(--c1)"></i>Actual</span><span><i style="background:${over ? "var(--risk)" : "var(--c2)"}"></i>Projection</span></div>`;
+  }
+
   /* ---------- project view ---------- */
   route("analysis/:id", {
     section: "analysis",
@@ -7204,6 +7313,8 @@ window.FG_CONTENT = {
 
       return { html: `${ui.head(`Project · ${country(s).name}`, p.name || "Untitled project", `${p.donor || "Funding not set"} · ${p.start ? `${fmtDate(p.start)} – ${fmtDate(p.end)}` : "dates not set"} · analysed ${fmtDate(r.at)}${p.sample ? " · sample data" : ""}`, `<a class="btn" href="#/analysis">← Portfolio</a><button class="btn" data-export>Export CSV</button><button class="btn" data-print>Print</button>`)}
         ${ui.kpis([["Approved budget", euro(t.budget), `${r.lines.length} budget lines`], ["Spent", euro(t.spent), `${pct(t.spentRate)} of budget`], ["Committed", euro(t.committed), `Used ${pct(t.util)} in total`], ["Available", euro(t.remaining), t.remaining < 0 ? "Over-committed" : "Budget − spent − committed"]])}
+        <div class="viz-row mt"><section class="card card-pad"><div class="eyebrow">Budget use</div>${FG.ui.donut([["Spent", t.spent, "var(--c1)"], ["Committed", t.committed, "var(--c4)"], ["Available", Math.max(0, t.remaining), "var(--c2)"]], pct(t.util), "used")}${t.remaining < 0 ? ui.callout("risk", "Over-committed", `${euro(-t.remaining)} above the approved budget.`) : ""}</section>
+        <section class="card card-pad"><div class="eyebrow">Execution vs time</div>${paceChart(sig, t)}</section></div>
         <div class="grid g4 mt">
           <div class="card card-pad"><small class="muted">Time elapsed</small><b class="num" style="display:block;font-size:18px">${pct(sig.timePct)}</b>${ui.bar(sig.timePct)}<small class="muted">${sig.monthsRemaining ?? "—"} months remaining</small></div>
           <div class="card card-pad"><small class="muted">Execution vs time</small><b class="num" style="display:block;font-size:18px">${sig.paceGap == null ? "—" : `${sig.paceGap >= 0 ? "+" : ""}${sig.paceGap.toFixed(0)} pts`}</b><small class="muted">Used % minus elapsed %</small></div>
@@ -7344,7 +7455,7 @@ window.FG_CONTENT = {
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.fx-hero,.fx-hubs,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();

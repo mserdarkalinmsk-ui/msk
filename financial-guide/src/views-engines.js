@@ -88,7 +88,7 @@
         <div class="split-l"><form class="card sticky" data-engine novalidate><div class="card-head"><h3>Case details</h3></div><div class="card-body form">${formHtml}</div></form><div id="result"></div></div>`,
       mount(root) {
         const form = root.querySelector("[data-engine]"), out = root.querySelector("#result");
-        const run = () => { const r = compute(form); FG.lastDecision = { ...r, engine: e.id }; out.innerHTML = FG.renderDecision(r, { footer: e.more ? `<a class="btn" href="#/${e.more[1]}">${esc(e.more[0])} →</a>` : "" }); };
+        const run = () => { const r = compute(form); FG.lastDecision = { ...r, engine: e.id }; out.innerHTML = FG.renderDecision(r, { footer: e.more ? `<a class="btn" href="#/${e.more[1]}">${esc(e.more[0])} →</a>` : "" }); FG.placeInk(out); };
         form.addEventListener("input", run); // "input" already recomputes; "change" (fired on blur) only rebuilds the form when a field shows or hides others,
         // so clicking a result button right after typing never hits a replaced element.
         form.addEventListener("change", (ev) => { if (ev.target.dataset.rerender !== undefined) FG.refresh(); });
