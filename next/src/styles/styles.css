@@ -590,3 +590,7 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .of-rec li.ok b{color:var(--muted);text-decoration:line-through}
 .of-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:grid;place-items:center;z-index:60;padding:16px}.of-mbox{width:min(520px,100%);padding:20px;display:grid;gap:12px}
 .of-mbox textarea{width:100%;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink)}
+.of-pace{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:24px;align-items:end}@media(max-width:800px){.of-pace{grid-template-columns:1fr}}
+.of-months{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;height:120px;align-items:end}.of-months span{display:grid;grid-template-rows:1fr auto;height:100%;align-items:end;text-align:center}.of-months i{display:block;background:#1d5fa8;border-radius:4px 4px 0 0;min-height:2px}.of-months small{font-size:10.5px;color:var(--muted)}
+.of-tr{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:900px){.of-tr{grid-template-columns:1fr}}.of-tr h3{font-size:13px;margin:0 0 6px}
+.of-doc-t{display:none}@media print{.of-doc-t{display:block}}

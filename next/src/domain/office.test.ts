@@ -25,3 +25,20 @@ describe('office budget', () => {
     expect(V.T.ob).toMatchObject({ budget: 1000, sc: 600, planned: 650, left: -250 });
   });
 });
+
+describe('office pace and transfers', () => {
+  it('covers shortages from lines with room, the rest is a request', async () => {
+    const { transferPlan } = await import('./office');
+    const r = { year: 2026, date: '2026-06-30', hasPlan: true, entries: ['01', '02', '03', '04'].map((m) => ({ line: '1.2', spent: 25, committed: 0, fund: 'ob', date: `2026-${m}-15` })), lines: [
+      { code: '1.1', heading: '', description: 'A', ob: { budget: 1000, sc: 900, planned: 400 }, ls: { budget: 0, sc: 0, planned: 0 } },
+      { code: '1.2', heading: '', description: 'B', ob: { budget: 1000, sc: 100, planned: 100 }, ls: { budget: 0, sc: 0, planned: 0 } },
+      { code: '1.3', heading: '', description: 'C', ob: { budget: 100, sc: 600, planned: 0 }, ls: { budget: 0, sc: 0, planned: 0 } },
+    ] } as unknown as import('./office').OfficeReport;
+    const T = transferPlan(r);
+    expect(T.needs.map((n) => [n.code, n.need])).toEqual([['1.3', 500], ['1.1', 300]]);
+    // 1.2 pace: 100 paid by 30 June (49 % of the year) → 203 a year; room 1000 − 203 = 797
+    expect(T.transfers).toEqual([{ from: '1.2', fromDesc: 'B', to: '1.3', toDesc: 'C', amount: 500 }, { from: '1.2', fromDesc: 'B', to: '1.1', toDesc: 'A', amount: 297 }]);
+    expect(T.request).toBe(3);
+    expect(transferPlan(r, (c) => c === '1.3').transfers).toHaveLength(1);
+  });
+});

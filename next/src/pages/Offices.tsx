@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
-import { type Fund, type Office, type OfficeNote, officeCountry, officeView } from '../domain/office';
+import { type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
+import { downloadDocx } from '../ui/docxwrite';
 import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 
@@ -105,6 +106,8 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
                     <td>{N[nk(l.code)] ? <NoteBadge n={N[nk(l.code)]} /> : fl.map((x) => <span class={`badge ${/over|without|exceeds/.test(x.t) ? 'serious' : 'warning'}`} style={{ marginRight: '4px' }}>{F.length > 1 ? `${FUND[x.f].short}: ` : ''}{x.t}</span>)}
                       {fl.length > 0 && !N[nk(l.code)] && <button class="btn ghost of-nb" onClick={(e) => { e.stopPropagation(); setEdit(l.code); }}>+ note</button>}</td></tr>; })}</>; })}</tbody>
             <tfoot><tr><td colSpan={2}><b>TOTAL BUDGET</b></td>{F.map((f) => <><td class="r num"><b>{full(T[f].budget)}</b></td><td class="r num"><b>{full(T[f].sc)}</b></td><td class="r num"><b>{full(T[f].planned)}</b></td><td class="r num" style={neg(T[f].left)}><b>{full(T[f].left)}</b></td></>)}{F.length === 1 && <td />}{pv && <td class="r num">{full(DF.reduce((a, f) => a + T[f].sc - prev!.lines.reduce((s, l) => s + l[f].sc, 0), 0))}</td>}<td /></tr></tfoot></table></div></section>
+        <PaceCard r={r} />
+        <TransferCard o={o} r={r} skip={done} />
         <section class="card span-5"><div class="card-h"><div><h2>Reconciliation with the system</h2><p>Situation Budgétaire (Ordinary Budget, BH {o.bh ?? '0127'}) vs the office report</p></div></div>
           <div class="card-b">{sit ? <>
             <dl class="of-dl"><dt>Budget in the system</dt><dd class="num">{full(sit.budget)}</dd><dt>Purchase orders (open)</dt><dd class="num">{full(sit.po)}</dd><dt>Invoices not yet paid</dt><dd class="num">{full(sit.invoice)}</dd><dt>Actual expenditure</dt><dd class="num">{full(sit.actual)}</dd>
@@ -145,4 +148,42 @@ function NoteEditor({ code, desc, codes, n, close, save }: { code: string; desc:
     <label style={{ fontSize: '13px' }}><input type="checkbox" checked={resolved} onChange={() => setResolved(!resolved)} /> Corrected — no longer counted as a problem</label>
     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>{n && <button class="btn ghost" onClick={() => save(null)}>Remove note</button>}<button class="btn" onClick={close}>Cancel</button><button class="btn primary" onClick={() => save({ text: text.trim(), moveTo: moveTo || undefined, resolved, at: new Date().toISOString() })}>Save</button></div>
   </div></div>;
+}
+
+/** Office forecast vs the actual pace: is the year-end estimate realistic? Plus spending by month. */
+function PaceCard({ r }: { r: Office['reports'][number] }) {
+  const P = officePace(r), low = P.lines.filter((l) => l.low).sort((a, b) => b.gap - a.gap), gap = P.paceEnd - P.officeEnd, T = officeView(r).T.ob;
+  const [all, setAll] = useState(false);
+  const months = new Map<string, number>();
+  for (const e of r.entries.filter((e) => e.fund === 'ob' && e.date.startsWith(String(r.year)))) months.set(e.date.slice(0, 7), (months.get(e.date.slice(0, 7)) ?? 0) + e.spent + e.committed);
+  const M = Array.from({ length: 12 }, (_, i) => { const k = `${r.year}-${String(i + 1).padStart(2, '0')}`; return { k, v: months.get(k) ?? 0 }; }), mx = Math.max(...M.map((m) => m.v), 1);
+  const rows = all ? P.lines : low;
+  return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Year-end estimate — Ordinary Budget</h2><p>The office forecast (spent + committed + foreseen) against the pace of payments so far ({Math.round(P.yearShare * 100)}% of the year gone){r.hasPlan ? '' : ' · this is a system export without a forecast'}</p></div></div>
+    <div class="card-b of-pace">
+      <dl class="of-dl"><dt>Budget</dt><dd class="num">{full(T.budget)}</dd><dt>Office forecast at year end</dt><dd class="num"><b>{full(P.officeEnd)}</b></dd><dt>Estimate at the current pace</dt><dd class="num"><b>{full(P.paceEnd)}</b></dd>
+        <dt>Pace minus forecast</dt><dd class="num" style={{ color: gap > 250 ? AMB : GRN }}><b>{gap > 0 ? '+' : ''}{full(gap)}</b></dd>
+        <dt>Shortfall at the current pace</dt><dd class="num" style={neg(T.budget - Math.max(P.paceEnd, P.officeEnd))}><b>{full(T.budget - Math.max(P.paceEnd, P.officeEnd))}</b></dd></dl>
+      <div><div class="of-months" aria-label="Spent and committed by month (by posting date)">{M.map((m) => <span title={`${m.k}: ${full(m.v)}`}><i style={{ height: `${m.v / mx * 100}%` }} /><small>{'JFMAMJJASOND'[+m.k.slice(5) - 1]}</small></span>)}</div><small class="muted">Spent + committed by month of posting · a yearly PO shows in the month it was raised</small></div>
+    </div>
+    <div class="card-b" style={{ paddingTop: 0 }}><div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><b style={{ fontSize: '13px' }}>{low.length ? `${low.length} line${low.length > 1 ? 's' : ''} where the forecast looks low` : 'The office forecast is in line with the pace on every line ✓'}</b><button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setAll(!all)}>{all ? 'Only lines to check' : 'All lines'}</button></div>
+      {rows.length > 0 && <div class="table-scroll"><table class="mini"><thead><tr><th>Line</th><th>Description</th><th class="r">Budget</th><th class="r">Paid a month</th><th class="r">Office forecast</th><th class="r">At current pace</th><th class="r">Difference</th></tr></thead>
+        <tbody>{rows.map((l) => <tr><td class="num">{l.code}</td><td>{l.description}</td><td class="r num">{full(l.budget)}</td><td class="r num">{full(l.monthly)}</td><td class="r num">{full(l.officeEnd)}</td><td class="r num"><b>{full(l.paceEnd)}</b></td><td class="r num" style={{ color: l.low ? AMB : undefined }}>{l.gap > 0.5 ? '+' : ''}{full(l.gap)}</td></tr>)}</tbody></table></div>}</div></section>;
+}
+
+/** Suggested transfers between lines to cover shortages, and the additional budget still needed; exportable as a Word draft. */
+function TransferCard({ o, r, skip }: { o: Office; r: Office['reports'][number]; skip: (code: string) => boolean }) {
+  const T = transferPlan(r, skip), short = T.needs.reduce((s, n) => s + n.need, 0);
+  let el: HTMLElement | null = null;
+  if (!T.needs.length) return <section class="card span-12"><div class="card-b"><b>No line is short after the forecast</b> — no transfer needed.</div></section>;
+  const word = () => { if (el) void downloadDocx(`${o.name.replace(/\s+/g, '-')}-budget-transfer-${r.date}.docx`, el, `${o.name} budget transfer request`); };
+  return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Transfer proposal</h2><p>Room left on other lines after their own forecast and pace covers the shortages; the rest is the additional budget to request · lines marked corrected are left out</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={word}>⤓ Word draft</button></div>
+    <div class="card-b" ref={(x) => { el = x; }}>
+      <h3 class="of-doc-t">{o.name} — Ordinary Budget {r.year}: budget transfer request</h3>
+      <p>Based on the budget situation of {date(r.date)}, {T.needs.length} budget line{T.needs.length > 1 ? 's' : ''} of the {o.name} Ordinary Budget {r.year} will be short by <b>{full(short)}</b> after the foreseen expenditure to year end. {T.transfers.length ? <>We propose to cover <b>{full(short - T.request)}</b> by transfers from lines with remaining room{T.request > 0.5 ? <>, and request an additional <b>{full(T.request)}</b></> : ''}.</> : <>No line has room left: an additional <b>{full(T.request)}</b> is requested.</>}</p>
+      <div class="of-tr"><div><h3>Transfers</h3>{T.transfers.length ? <table class="mini"><thead><tr><th>From line</th><th>To line</th><th class="r">Amount</th></tr></thead><tbody>{T.transfers.map((t) => <tr><td><span class="num">{t.from}</span> {t.fromDesc}</td><td><span class="num">{t.to}</span> {t.toDesc}</td><td class="r num"><b>{full(t.amount)}</b></td></tr>)}</tbody>
+        <tfoot><tr><td colSpan={2}><b>Total transferred</b></td><td class="r num"><b>{full(short - T.request)}</b></td></tr></tfoot></table> : <p class="muted">No line has room left after its forecast.</p>}</div>
+        <div><h3>Shortages</h3><table class="mini"><thead><tr><th>Line</th><th class="r">Short by</th><th class="r">Covered</th><th class="r">To request</th></tr></thead><tbody>{T.needs.map((n) => <tr><td><span class="num">{n.code}</span> {n.description}</td><td class="r num">{full(n.need)}</td><td class="r num">{full(n.covered)}</td><td class="r num" style={neg(-(n.need - n.covered))}><b>{n.need - n.covered > 0.5 ? full(n.need - n.covered) : '—'}</b></td></tr>)}</tbody>
+          <tfoot><tr><td><b>Additional budget to request</b></td><td class="r num">{full(short)}</td><td class="r num">{full(short - T.request)}</td><td class="r num" style={neg(-T.request)}><b>{full(T.request)}</b></td></tr></tfoot></table></div></div>
+      <p class="muted" style={{ fontSize: '12px' }}>Room on a line = budget − the larger of (spent + committed + foreseen) and the estimate at the current pace. {T.spare > 0.5 ? `${full(T.spare)} would still remain on other lines.` : ''} Check the transfer rules of the Ordinary Budget before submitting.</p>
+    </div></section>;
 }
