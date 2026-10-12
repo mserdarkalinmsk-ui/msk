@@ -745,3 +745,39 @@ body::before, body::after { animation: none !important; will-change: auto; }
 .module:hover::before, .tile:hover::before, .task:hover::before, .fx-hub:hover::before { animation-play-state: running; }
 .top { background: color-mix(in srgb, var(--bg) 94%, transparent); }
 .card, .module, .tile, .kpis, .task, .journey a, .tablist, .search-btn, .icon-btn { background: var(--panel); }
+
+/* ---------- typography system: Inter only, one scale, one heading colour ---------- */
+:root, :root[data-theme] { --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; --mono: var(--font); }
+body { font-family: var(--font); font-size: 14px; line-height: 1.55; letter-spacing: 0; }
+table.t td, .pj-kpis b, .pj-rules b, .kpi b, .stage-no, .tablist em { font-variant-numeric: tabular-nums; }
+h1, h2, h3, h4 { font-family: var(--font); color: var(--navy); letter-spacing: -.015em; }
+.page-head h1, .pj-head h1 { font-size: 32px; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--navy); animation: none; }
+h2, .stage-title h2 { font-size: 20px; font-weight: 650; }
+h3, .card-head h3 { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: -.005em; }
+.page-head p, .lead { font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+small, .small { font-size: 12.5px; }
+/* Labels: sentence-like small caps in Inter instead of spaced monospace. */
+.eyebrow, .brand small, .kpi small, .block h3, table.t th, .fx-num, .fx-bar, .fx-status, .pmap-phase small, .pj-kpis small, .pj-chev small, .pj-box h3, .pj-flow, .donut .d-sub, .uci small { font-family: var(--font); font-weight: 600; font-size: 11.5px; letter-spacing: .06em; }
+.tag, .pj-badge, .pj-mod em, .tablist button em, .fx-hub em, .pnode em, kbd { font-family: var(--font); letter-spacing: .02em; }
+.brand b { font-size: 13.5px; letter-spacing: .02em; text-transform: none; }
+.brand small { letter-spacing: .04em; text-transform: none; font-weight: 500; color: var(--muted); }
+.fx-hero h1 { font-family: var(--font); letter-spacing: -.035em; color: var(--navy); }
+.fx-hero h1 span { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--c1); }
+.fx-hub h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; text-transform: none; }
+.stage-no { font-family: var(--font); }
+.pj-kpis b, .pj-rules b, .kpi b { font-weight: 700; letter-spacing: -.01em; }
+/* End-of-module self-check: one compact collapsible row. */
+.mq { margin-top: 28px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.mq summary { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; list-style: none; }
+.mq summary::-webkit-details-marker { display: none; }
+.mq summary > span:nth-child(2) { flex: 1; }
+.mq summary b { display: block; font-size: 14px; }
+.mq summary small { color: var(--muted); }
+.mq-ico { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.mq-body { padding: 4px 16px 16px; display: grid; gap: 14px; border-top: 1px solid var(--line); }
+.mq-q { padding-top: 12px; }
+.mq-q b { font-size: 13.5px; font-weight: 600; }
+.mq-q .opts { margin-top: 8px; }
+.mq-q p { margin: 2px 0 0; }
+.mq-q .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.mq-q .opts button { width: auto; flex: 0 1 auto; padding: 6px 12px; font-size: 13px; border-radius: 999px; }

@@ -168,13 +168,13 @@
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
-            ["quiz", "Quick check", cfg.practice ? FG.ui.quiz(cfg.practice) : "", null],
           ])}</div>
           ${related.length ? `<div class="row mt"><span class="small muted">Related:</span>${related.map(([t, p]) => `<a class="tag" href="#/${p}">${esc(t)}</a>`).join("")}</div>` : ""}
           <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>`;
         return { html, mount: widget && cfg.mount && cfg.mount[s.name] };
       },
     });
+    if (cfg.practice) FG.QUIZ_AT[`${cfg.base}/${slug(stages[stages.length - 1].name)}`] = cfg.practice;
     stages.forEach((s) => FG.addIndex(s.title, `${cfg.title} · stage: ${s.name}`, `${cfg.base}/${slug(s.name)}`, cfg.title, `${s.lead} ${s.understand} ${s.do} ${s.check} ${s.sections.map((x) => x.join(" ")).join(" ")}`));
   }
 

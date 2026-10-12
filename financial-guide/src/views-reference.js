@@ -60,14 +60,16 @@
     const list = C.scenarios.map((x, i) => ({ ...x, i })).filter((x) => x.cat === cat).sort((a, b) => (a.level === b.level ? 0 : a.level === "basic" ? -1 : 1)).slice(0, n);
     if (!list.length) return "";
     const ok = list.filter((x) => answers[x.i] && answers[x.i].ok).length;
-    return `<section class="card no-enrich"><div class="card-head"><div><h3>Quick check</h3><small>Scenarios from this module</small></div>${ui.tag(`${ok}/${list.length} correct`, ok === list.length ? "good" : "")}</div><div class="card-body stack">${list.map((x) => { const a = answers[x.i];
-      return `<div><b>${esc(x.title)}</b><p class="small muted">${esc(x.q)}</p><div class="opts">${x.opts.map((o, k) => `<button type="button" data-qz="${x.i}" data-opt="${k}" ${a ? "disabled" : ""} class="${a ? (k === x.correct ? "right" : k === a.choice ? "wrong" : "") : ""}">${esc(o)}</button>`).join("")}</div>${a ? `<p class="small mt ${a.ok ? "" : ""}">${a.ok ? "✓" : "✕"} ${esc(x.feedback)}</p>` : ""}</div>`; }).join("")}
-      <a class="btn sm" href="#/scenarios?cat=${cat}">More scenarios →</a></div></section>`;
+    const open = FG.quizOpen === cat ? " open" : "";
+    return `<details class="mq no-enrich no-print"${open}><summary><span class="mq-ico" aria-hidden="true">?</span><span><b>Check yourself</b><small>${list.length} short questions on this module</small></span>${ui.tag(`${ok}/${list.length} correct`, ok === list.length ? "good" : "")}</summary>
+      <div class="mq-body">${list.map((x, n) => { const a = answers[x.i];
+      return `<div class="mq-q"><b>${n + 1}. ${esc(x.title)}</b><p class="small muted">${esc(x.q)}</p><div class="opts">${x.opts.map((o, k) => `<button type="button" data-qz="${x.i}" data-cat="${cat}" data-opt="${k}" ${a ? "disabled" : ""} class="${a ? (k === x.correct ? "right" : k === a.choice ? "wrong" : "") : ""}">${esc(o)}</button>`).join("")}</div>${a ? `<p class="small muted">${a.ok ? "✓" : "✕"} ${esc(x.feedback)}</p>` : ""}</div>`; }).join("")}
+      <a class="small" href="#/scenarios">More practice scenarios →</a></div></details>`;
   };
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-qz]"); if (!b) return;
     const i = +b.dataset.qz, k = +b.dataset.opt, all = FG.store.get("scenarioAnswers", {});
-    all[i] = { choice: k, ok: k === C.scenarios[i].correct }; FG.store.set("scenarioAnswers", all); FG.refresh();
+    all[i] = { choice: k, ok: k === C.scenarios[i].correct }; FG.store.set("scenarioAnswers", all); FG.quizOpen = b.dataset.cat; FG.refresh();
   });
 
   /* ---------- glossary ---------- */

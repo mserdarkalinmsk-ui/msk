@@ -10,7 +10,7 @@ SCRIPTS = ['content.generated.js', 'engines.js', 'core.js',
 template = (SRC / 'index.html').read_text()
 import base64
 # Fonts are embedded (latin subsets, SIL OFL) so the page renders instantly and fully offline.
-FONTS = [('Space Grotesk', 'space-grotesk-latin.woff2', '400 700'), ('JetBrains Mono', 'jetbrains-mono-500-latin.woff2', '500')]
+FONTS = [('Inter', 'inter-latin.woff2', '400 700')]
 faces = ''.join(f"@font-face{{font-family:'{f}';font-style:normal;font-weight:{w};font-display:swap;src:url(data:font/woff2;base64,{base64.b64encode((SRC / 'fonts' / n).read_bytes()).decode()}) format('woff2')}}\n" for f, n, w in FONTS)
 css = faces + (SRC / 'styles.css').read_text()
 assert '</style' not in css.lower()

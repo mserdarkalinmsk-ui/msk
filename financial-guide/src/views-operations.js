@@ -47,6 +47,7 @@
     const t = FG.ticks(id);
     return `<div data-checklist="${esc(id)}"><h3 class="small" style="text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">${esc(title)}</h3><div class="checklist">${items.map(([a, b], i) => `<label class="check ${t[i] ? "done" : ""}"><input type="checkbox" data-i="${i}" ${t[i] ? "checked" : ""}><div><b>${esc(a)}</b><small>${esc(b)}</small></div></label>`).join("")}</div></div>`;
   }
+  Object.assign(FG.QUIZ_AT, { "payment-file": "payment", "year-end": "yearend", filing: "filing", "foma/reports": "reporting", "foma/forecast": "forecast", "foma/mission-order": "mission" });
   route("po-file", {
     crumbs: () => [["Projects", "projects"], ["PO file", "po-file"]],
     render() {

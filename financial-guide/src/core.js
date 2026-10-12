@@ -139,6 +139,8 @@
       </div></section>`;
   };
 
+  // Path → scenario category: a compact self-check appears only at the end of each module.
+  FG.QUIZ_AT = {};
   /* ---------- router ---------- */
   FG.route = function (pattern, def) {
     const keys = [];
@@ -173,6 +175,8 @@
     if (FG.enrich) FG.enrich(root);
     requestAnimationFrame(() => FG.placeInk(root));
     document.documentElement.dataset.tone = FG.TONES[section] || 1;
+    const quizCat = FG.QUIZ_AT[path];
+    if (quizCat && FG.ui.quiz) root.insertAdjacentHTML("beforeend", FG.ui.quiz(quizCat));
     const step = FG.JOURNEY.findIndex((j) => j.sections.includes(section));
     if (step >= 0 && FG.JOURNEY[step + 1]) {
       const n = FG.JOURNEY[step + 1], bar = document.createElement("nav");
