@@ -20,6 +20,8 @@ for name in SCRIPTS:
     assert '</script' not in code.lower(), name
     blocks.append(f'<script>\n/* {name} */\n{code}\n</script>')
 html = template.replace('<!--STYLE-->', f'<style>\n{css}\n</style>').replace('<!--SCRIPTS-->', '\n'.join(blocks))
+import datetime
+html = html.replace('__BUILD__', datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
 out = ROOT.parent / 'financial-guide.html'
 out.write_text(html)
 print(f'Built {out.name} ({out.stat().st_size:,} bytes)')

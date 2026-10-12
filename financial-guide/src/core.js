@@ -202,7 +202,7 @@
       bar.innerHTML = `<span>Step ${step + 1} of ${FG.JOURNEY.length} · ${esc(FG.JOURNEY[step].title)}</span><a href="#/${n.path}"><small>Next step</small><b>${esc(n.title)} →</b></a>`;
       root.appendChild(bar);
     }
-    if (keepScroll) window.scrollTo(0, y);
+    if (keepScroll) { window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); }
   };
   window.addEventListener("hashchange", () => {
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
@@ -271,7 +271,7 @@
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation.</footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version __BUILD__</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>

@@ -881,6 +881,8 @@ small, .small { font-size: 12.5px; }
 .stage-card .card-body { animation: stageIn .25s ease; }
 @keyframes stageIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .stage-card .card-body { animation: none; } }
+.build { float: right; opacity: .7; }
+@media (min-width: 900px) { .rt-scroll { overflow-x: hidden; } .rt-grid { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); min-width: 0; } }
 
 </style>
 </head>
@@ -7336,7 +7338,7 @@ window.FG_CONTENT = {
       bar.innerHTML = `<span>Step ${step + 1} of ${FG.JOURNEY.length} · ${esc(FG.JOURNEY[step].title)}</span><a href="#/${n.path}"><small>Next step</small><b>${esc(n.title)} →</b></a>`;
       root.appendChild(bar);
     }
-    if (keepScroll) window.scrollTo(0, y);
+    if (keepScroll) { window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); }
   };
   window.addEventListener("hashchange", () => {
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
@@ -7405,7 +7407,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation.</footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-12 18:57</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>

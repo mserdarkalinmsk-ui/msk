@@ -869,3 +869,5 @@ small, .small { font-size: 12.5px; }
 .stage-card .card-body { animation: stageIn .25s ease; }
 @keyframes stageIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .stage-card .card-body { animation: none; } }
+.build { float: right; opacity: .7; }
+@media (min-width: 900px) { .rt-scroll { overflow-x: hidden; } .rt-grid { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); min-width: 0; } }
