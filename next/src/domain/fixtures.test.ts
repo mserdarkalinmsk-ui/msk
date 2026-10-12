@@ -63,3 +63,21 @@ describe('budget source', () => {
     expect(applyFindings({ ...p, approvedBudget: doa }, { ...F, budget: xl }, all, []).approvedBudget?.total).toBe(2);
   });
 });
+
+describe('data check', () => {
+  it('checks a system extraction entry by entry and offers one-click fixes', async () => {
+    const { health, applyFix } = await import('./health');
+    const ab = approvedBudget({ name: 'JP 4555 Budget.xlsx', kind: 'xlsx', paragraphs: [], tables: Object.values(B as Record<string, string[][]>) })!;
+    const wb = parseWorkbook(sheets(X as Record<string, string[][]>));
+    const base = { id: 'p', code: 'BH5260', name: 'Roma', country: 'tr', start: '2026-07-01', end: '2029-07-01', budget: 3118001, bh: '5260', approvedBudget: ab } as unknown as Project;
+    const rep = (id: string, at: string) => ({ id, name: id, type: 'x', date: '2026-09-21', registeredAt: at, snapshot: snapshotOf(wb, base) });
+    const p = { ...base, reportingPeriods: [rep('old', '2026-10-01'), rep('new', '2026-10-02')], documents: [{ name: 'B.xlsx', kind: 'xlsx', importedAt: '1', summary: [] }, { name: 'B (1).xlsx', kind: 'xlsx', importedAt: '2', summary: [] }] } as Project;
+    const F = health(p, new Date('2026-10-12')).findings;
+    expect(F.some((f) => f.level === 'ok' && /System extraction: Spent/.test(f.text))).toBe(true);
+    expect(F.some((f) => /Direct-cost total row/.test(f.text))).toBe(false);
+    expect(applyFix(p, 'use-approved').p.budget).toBe(2223000);
+    const r = applyFix(p, 'dedupe-reports');
+    expect(r.p.reportingPeriods!.map((x) => x.id)).toEqual(['new']);
+    expect(applyFix(p, 'dedupe-docs').p.documents!.map((d) => d.name)).toEqual(['B (1).xlsx']);
+  });
+});

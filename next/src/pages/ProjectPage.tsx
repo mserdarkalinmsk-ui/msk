@@ -1,7 +1,7 @@
 import { ScenarioCompare } from './ScenarioCompare';
 import { Closure, Revision } from './Closure';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { isAdmin, deleteProjects, deleteReport, deleteRisk, go, set, updateLine, updateProject, upsertRisk, useStore } from '../data/store';
+import { deleteDocument, deleteProjects, deleteReport, deleteRisk, go, set, updateLine, updateProject, upsertRisk, useStore } from '../data/store';
 import { category, burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, riskScore, spendPoints } from '../domain/calc';
 import { validUrl, type Project, type ReportingPeriod, type Risk } from '../domain/types';
 import { TODAY } from '../today';
@@ -349,7 +349,7 @@ function ResultsDocs({ p }: { p: Project }) {
         <div class="card-h"><div><h2>Project documents</h2><p>DoA, contract, budget annexes and logframe — what was read from each</p></div>
           <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div></div>
         <ul class="att" style={{ marginTop: '8px' }}>{D.map((d) => <li style={{ cursor: 'default' }}><span class="badge neutral">{d.kind}</span><div><div class="t">{d.name}</div><div class="d">{d.summary.join(' · ') || '—'} · {date(d.importedAt.slice(0, 10))}</div></div>
-            <button class="btn ghost sm" title="Remove from the list (what was read stays on the project)" onClick={() => { if (confirm(`Remove “${d.name}”?`) && isAdmin()) updateProject(p.id, { documents: D.filter((x) => x !== d) }); }}>Delete</button></li>)}
+            <button class="btn ghost sm" title="Remove from the list (what was read stays on the project)" onClick={() => { if (confirm(`Remove “${d.name}”?`)) deleteDocument(p.id, d.name); }}>Delete</button></li>)}
           {!D.length && <li style={{ cursor: 'default' }}><span /><div class="d">None yet</div><span /></li>}</ul>
       </section>
       <section class="card span-4">
