@@ -75,6 +75,7 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
 
   const active = data.filter((d) => d.projects > 0);
   const max = { budget: Math.max(1, ...active.map((d) => d.budget)), staff: Math.max(1, ...active.map((d) => d.staff)) };
+  const rise = (d: MapDatum) => (compact ? 4 : 7) + (compact ? 8 : 16) * Math.sqrt(d.budget / max.budget);
   const fill = (d: MapDatum | undefined, member: boolean) => {
     if (!d || !d.projects) return member ? 'var(--map-member)' : 'var(--map-other)';
     if (mode === 'budget') return ramp(0.2 + 0.8 * Math.sqrt(d.budget / max.budget));
@@ -129,6 +130,8 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
         <defs>
           <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--map-line)" stroke-width="1" /></pattern>
           <filter id="lift" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy={2 * scale} stdDeviation={3 * scale} flood-opacity=".25" /></filter>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={6 * scale} /></filter>
+          <linearGradient id="sheen" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22" /><stop offset=".55" stop-color="#fff" stop-opacity="0" /><stop offset="1" stop-color="#000" stop-opacity=".12" /></linearGradient>
           <radialGradient id="sea" cx="55%" cy="45%" r="75%"><stop offset="0" stop-color="var(--map-sea)" /><stop offset="1" stop-color="var(--map-sea-deep)" /></radialGradient>
           <filter id="coast" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="dilate" radius={2.2 * scale} in="SourceAlpha" result="d" /><feGaussianBlur in="d" stdDeviation={2.5 * scale} result="b" /><feFlood flood-color="var(--map-coast)" /><feComposite in2="b" operator="in" /><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
@@ -137,10 +140,12 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
           {Array.from({ length: 25 }, (_, i) => <line x1={i * 50} y1={0} x2={i * 50} y2={620} />)}
           {Array.from({ length: 13 }, (_, i) => <line x1={0} y1={i * 50} x2={1200} y2={i * 50} />)}
         </g>
+        {/* 3D: land slab — every outline repeated a few units lower in a darker tone gives the map thickness */}
+        <g pointer-events="none" transform={`translate(0 ${3.5 * scale})`} fill="var(--map-slab)" stroke="none">{SHAPES.map((x) => <path d={x.d} />)}</g>
         <g filter="url(#coast)">{SHAPES.map((s) => {
           const d = byShape.get(s.n), on = !!d?.projects, sel = !!(selected && d && d.id === selected);
           return (
-            <path d={s.d} class={`ctry ${on ? 'on' : ''} ${sel ? 'sel' : ''}`} fill={fill(d, !!s.m)} stroke="var(--map-border)" stroke-width={(sel ? 2.5 : on ? 1.2 : 0.8) * scale}
+            <path d={s.d} class={`ctry ${on ? 'on' : ''} ${sel ? 'sel' : ''}`} fill={on ? 'var(--map-member)' : fill(d, !!s.m)} stroke="var(--map-border)" stroke-width={(sel ? 2.5 : on ? 1.2 : 0.8) * scale}
               filter={sel || hover?.n === s.n && on ? 'url(#lift)' : undefined}
               onPointerMove={(e) => { if (drag.current?.moved) return; const r = svg.current!.getBoundingClientRect(); setHover({ n: s.n, x: e.clientX - r.left, y: e.clientY - r.top }); }}
               onClick={() => { if (drag.current?.moved) return; on ? onSelect?.(sel ? null : d!.id) : onSelect?.(null); }}>
@@ -149,10 +154,25 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
           );
         })}</g>
         {SHAPES.filter((s) => s.m === 0 && !byShape.get(s.n)?.projects).map((s) => <path d={s.d} fill="url(#hatch)" pointer-events="none" opacity=".28" />)}
+        {/* 3D: countries with projects rise as blocks; height follows budget, sides are a darker shade of the top */}
+        {[...byShape].filter(([, d]) => d.projects).map(([n, d]) => ({ s: SHAPES.find((x) => x.n === n)!, d })).sort((a, b) => (a.s.b[1] + a.s.b[3]) - (b.s.b[1] + b.s.b[3])).map(({ s: sh, d }) => {
+          const H = rise(d) * scale, top = fill(d, true), side = mix(top.startsWith('#') ? top : '#3987e5', '#0b1f3a', 0.45), sel = selected === d.id;
+          const steps = Math.max(2, Math.round(H / (1.2 * scale)));
+          return (
+            <g class={`ext ${sel ? 'sel' : ''}`}>
+              <path d={sh.d} fill="#0b1f3a" opacity=".18" transform={`translate(${H * 0.35} ${H * 0.25})`} filter="url(#soft)" pointer-events="none" />
+              {Array.from({ length: steps }, (_, i) => <path d={sh.d} fill={side} transform={`translate(0 ${-(i * H) / steps})`} pointer-events="none" />)}
+              <path d={sh.d} class={`ctry on ${sel ? 'sel' : ''}`} fill={top} transform={`translate(0 ${-H})`} stroke={sel ? 'var(--ink)' : 'rgb(255 255 255 / .7)'} stroke-width={(sel ? 2.2 : 1) * scale}
+                onPointerMove={(e) => { if (drag.current?.moved) return; const r = svg.current!.getBoundingClientRect(); setHover({ n: sh.n, x: e.clientX - r.left, y: e.clientY - r.top }); }}
+                onClick={() => { if (drag.current?.moved) return; onSelect?.(sel ? null : d.id); }}><title>{sh.n}</title></path>
+              <path d={sh.d} fill="url(#sheen)" transform={`translate(0 ${-H})`} pointer-events="none" />
+            </g>
+          );
+        })}
         {!compact && SHAPES.filter((x) => !byShape.get(x.n)?.projects && (x.n.length * 7.2 + 10) * scale < x.b[2] && x.b[3] / scale > 30 && x.b[0] + x.b[2] > vb.x && x.b[0] < vb.x + vb.w && x.b[1] + x.b[3] > vb.y && x.b[1] < vb.y + vb.h).map((x) => (
           <text class="mname" x={x.b[0] + x.b[2] / 2} y={x.b[1] + x.b[3] / 2} text-anchor="middle" font-size={10.5 * scale} fill={x.m ? 'var(--ink-3)' : 'var(--ink-3)'} opacity={x.m ? 0.9 : 0.55} pointer-events="none" stroke-width={2.5 * scale} letter-spacing={0.6 * scale}>{(x.n === 'Turkey' ? 'Türkiye' : x.n).toUpperCase()}</text>))}
         {[...byShape].filter(([, d]) => d.projects).sort((x, y) => y[1].budget - x[1].budget).map(([n, d]) => {
-          const s = SHAPES.find((x) => x.n === n)!, cx = s.b[0] + s.b[2] / 2, cy = s.b[1] + s.b[3] / 2;
+          const s = SHAPES.find((x) => x.n === n)!, cx = s.b[0] + s.b[2] / 2, cy = s.b[1] + s.b[3] / 2 - rise(d) * scale;
           const r = (13 + 15 * Math.sqrt(d.budget / max.budget)) * scale, used = Math.min(1, d.budget ? d.spent / d.budget : 0);
           const C = 2 * Math.PI * (r - 2.5 * scale), sel = selected === d.id;
           return (
