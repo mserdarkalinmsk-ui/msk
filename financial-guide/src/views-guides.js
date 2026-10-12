@@ -261,7 +261,7 @@
     return (root) => root.addEventListener("click", (e) => { const b = e.target.closest("[data-flow]"); if (b) { FG.store.set(key, +b.dataset.flow); FG.refresh(); } });
   }
 
-  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/launch-and-publication", "VAT Procedures": "vat", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
+  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/open-and-evaluate", "VAT Procedures": "vat", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
   lifecycle({
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
@@ -276,17 +276,17 @@
   });
 
   /* ---------- grant widgets ---------- */
-  const procGates = () => FG.ui.funnel("Evaluation gates", [
+  function procGates() { return FG.ui.funnel("Evaluation gates", [
     ["Admissibility", "Offer received on time, complete and in the required form.", "inadmissible: not evaluated further", "formal"],
     ["Exclusion criteria", "Signed declaration; no exclusion ground applies (plus restrictive-measures check for EU funds).", "tenderer excluded", "pass / fail"],
     ["Eligibility criteria", "Minimum legal, financial and technical capacity requirements are met.", "offer is ineligible", "pass / fail"],
     ["Award criteria", "Published weighted criteria, with a written justification for every score.", null, "scored"],
-    ["Award decision", "CCM, or the Tenders Board from €184,000, approves the proposed award.", null, "decision"]]);
-  const grantGates = () => FG.ui.funnel("Selection gates", [
+    ["Award decision", "CCM, or the Tenders Board from €184,000, approves the proposed award.", null, "decision"]]); }
+  function grantGates() { return FG.ui.funnel("Selection gates", [
     ["Receipt & opening", "Proposal received by the deadline in the required form, then opened and numbered.", "late proposals are rejected", "formal"],
     ["Exclusion & eligibility", "Co-ordinator prepares the draft report; the Evaluation Committee adopts it.", "applicant eliminated", "pass / fail"],
     ["Award criteria", "Committee members assess against the published weighted criteria and agree a consensus report.", null, "scored"],
-    ["Decision", "The Commitments Officer decides on the award and applicants are informed.", null, "decision"]]);
+    ["Decision", "The Commitments Officer decides on the award and applicants are informed.", null, "decision"]]); }
   function grantProcedureWidget() {
     const amount = FG.store.get("grantQuick", 18000), r = E.grantProcedure({ amount });
     return `<section class="card"><div class="card-head"><div><h3>Procedure route</h3><small>The €15,000 threshold applies to the total grant-award procedure budget, not to each grantee.</small></div><a class="btn sm" href="#/engines/grant-procedure">Full engine</a></div><div class="card-body grid g2">

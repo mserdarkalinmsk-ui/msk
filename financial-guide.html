@@ -839,6 +839,44 @@ small, .small { font-size: 12.5px; }
 .rt-phase { display: flex; flex-direction: column; justify-content: flex-start; }
 .rt-phase b { white-space: normal; font-size: 12.5px; line-height: 1.25; overflow: visible; }
 
+/* ---------- memory aids: rule of thumb, key facts, worked example ---------- */
+.mem { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.mem-rule { flex: 2 1 320px; padding: 14px 18px; border-radius: 14px; color: #fff; background: linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 70%, var(--c1))); box-shadow: 0 10px 24px -14px var(--navy); }
+.mem-rule small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.mem-rule b { display: block; font-size: 17px; line-height: 1.35; margin-top: 2px; }
+.mem-fact { flex: 1 1 150px; padding: 12px 14px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
+.mem-fact b { display: block; font-size: 20px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.mem-fact span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.example { display: flex; gap: 12px; padding: 14px 16px; margin-bottom: 14px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--c2) 45%, var(--line)); background: color-mix(in srgb, var(--c2) 6%, var(--panel)); }
+.example > span { color: var(--c2); font-size: 14px; margin-top: 2px; }
+.example small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c2); }
+.example p { margin: 3px 0 0; font-size: 14px; line-height: 1.55; }
+
+/* ---------- threshold ruler ---------- */
+.ruler { padding: 34px 6px 4px; }
+.ruler-track { position: relative; height: 34px; border-radius: 10px; background: var(--sunken); }
+.ruler-zone { position: absolute; top: 0; bottom: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 16%, var(--panel)); border-right: 2px solid var(--panel); overflow: hidden; transition: background .25s; }
+.ruler-zone:first-child { border-radius: 10px 0 0 10px; } .ruler-zone:last-of-type { border-radius: 0 10px 10px 0; border-right: 0; }
+.ruler-zone em { font-style: normal; font-size: 11.5px; font-weight: 600; color: var(--c); white-space: nowrap; padding: 0 6px; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ruler-zone.on { background: var(--c); } .ruler-zone.on em { color: #fff; }
+.ruler-pin { position: absolute; top: -30px; bottom: -6px; width: 2px; background: var(--navy); transform: translateX(-1px); transition: left .3s ease; }
+.ruler-pin b { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 12px; white-space: nowrap; padding: 2px 8px; border-radius: 6px; background: var(--navy); color: #fff; }
+.ruler-marks { position: relative; height: 40px; margin-top: 6px; }
+.ruler-marks span { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; }
+.ruler-marks span::before { content: ""; display: block; width: 1px; height: 6px; margin: 0 auto 2px; background: var(--line-2); }
+.ruler-marks b { display: block; font-size: 12px; color: var(--navy); font-variant-numeric: tabular-nums; }
+.ruler-marks small { display: block; font-size: 11px; color: var(--muted); }
+/* ---------- gate funnel ---------- */
+.funnel-list { list-style: none; margin: 0; padding: 16px 20px 20px; display: grid; gap: 10px; }
+.funnel-list li { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: center; }
+.funnel-bar { width: var(--w); min-width: 190px; display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px; color: #fff; background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 75%, #fff)); box-shadow: 0 8px 18px -12px var(--c); }
+.funnel-bar span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.25); font-size: 12px; font-weight: 700; flex: none; }
+.funnel-bar b { font-size: 14px; flex: 1; }
+.funnel-bar em { font-style: normal; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .85; }
+.funnel-list p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+.funnel-list small { display: block; color: var(--risk); font-size: 12px; margin-top: 2px; }
+@media (max-width: 760px) { .funnel-list li { grid-template-columns: minmax(0, 1fr); gap: 6px; } .funnel-bar { width: 100%; min-width: 0; } .ruler-zone em { font-size: 10px; } .ruler-marks small { display: none; } }
+
 </style>
 </head>
 <body>
@@ -5715,6 +5753,1135 @@ window.FG_CONTENT = {
 
 </script>
 <script>
+/* content.procurement.js */
+/* Procurement lifecycle content, rewritten from the Council of Europe Procurement Guide (international threshold updated to €184,000). */
+(function () {
+  "use strict";
+  const C = window.FG_CONTENT;
+
+  C.procurementPhases = [
+    ["Prepare", ["Foundations", "Roles & Funding", "Market & Suppliers", "Define the Need", "Contract Types", "Thresholds & Procedure"]],
+    ["Run the procedure", ["Tender Design", "Terms & Specifications", "Authorise & Launch", "Open & Evaluate", "Negotiate & Award", "Contract Signing"]],
+    ["Manage the contract", ["Contract Management", "Contract Execution & Payment", "Performance & Filing"]]
+  ];
+
+  C.procurementStages = [
+    {
+      name: "Foundations",
+      remember: "Buying for our own needs means procurement: compete, disclose, refuse gifts.",
+      keyFacts: [["Rule No. 1395","procedure rules (20 June 2019)"],["31 January","annual declaration of interests due"],["0","value of gifts you may accept"]],
+      example: "A project team wants to pay an NGO to run its own awareness campaign that also promotes Council of Europe values. Because the NGO pursues its own objectives and only costs are covered, this is a grant, not procurement. The correct action is to use a grant agreement under Rule No. 1374, not a tender.",
+      title: "Principles, Legal Bases & Ethics",
+      lead: "Understand the rules that govern every Council of Europe purchase and the ethical standards expected of everyone involved. Confirm that procurement, not a grant, is the right instrument.",
+      source: "Ch. 1.1–1.3",
+      understand: "Every purchase of works, goods or services to meet the Organisation's own needs is procurement and must follow one of the procedures in Rule No. 1395.",
+      do: "Check that the activity is a purchase rather than financial assistance, and apply the six procurement principles throughout the procedure.",
+      check: "Your annual declaration of interests is filed and no conflict of interest, gift or privileged contact with potential bidders exists.",
+      sections: [
+        ["Legal bases", "Articles 40 to 43 of the Financial Regulations set out the three types of contract, the three main procedures and the role of the Tenders Board. Rule No. 1395 of 20 June 2019 details each procedure, from preparing the tender file to signing the contract; an annotated version is on the Tenders Board's web page. Instructions No. 59 (consultants) and No. 60 (outsourcing) remain relevant, but the DLAPIL templates should be used instead of their model contracts, and the model invoice should not be used."],
+        ["The six principles", "Periodic competition requires competitive procedures at regular intervals. Objectivity requires neutral tender documents and impartial scoring. Transparency means criteria and rules are available to all tenderers and results are published, with reasons for the award given on request. Non-exclusivity, equal treatment and non-discrimination complete the set: competition is the norm and direct award the exception."],
+        ["Grants v. procurement", "A procurement contract is required whenever the Organisation buys works, goods or services to meet its own needs, whatever the status of the contractor. A grant agreement (Article 43 bis of the Financial Regulations and Rule No. 1374) is used when the Organisation gives financial assistance to a grantee for the grantee's own project. Procurement includes a profit margin for the provider and has no reporting requirements; a grant covers part of the grantee's costs and requires extensive reporting."],
+        ["Values and ethics", "Secretariat members must follow the Code of Conduct and the Purchasing Code of Ethics (25 October 2005). They must avoid conflicts of interest, respect the confidentiality of tenders, apply objective criteria and refuse all benefits. The Council of Europe has a no-gift policy in procurement, whatever the value. Persons involved must submit a declaration of interests every year by the end of January, or within one month of a change (Rule No. 1282)."],
+        ["Fraud and reporting", "Suspected fraud, corruption or other wrongdoing must be reported immediately to the DIO under the Speak Up Policy. Before the call is public, bidders must not be given privileged technical or financial information, and specifications must not be written restrictively to discourage competition."],
+        ["Audits and risks", "Procurement is audited by the DIO, the external auditor, the European Union and donor-mandated auditors. They examine transparency, competition, compliance with thresholds, reasons for direct awards, validation workflows, declarations of interest and archiving. Non-compliance creates institutional and financial risks, including donors reclaiming ineligible expenditure, which must then be paid from the Ordinary Budget. It also creates ethical, reputational and operational risks."]
+      ],
+      warning: "When non-compliant procedures are funded by extrabudgetary resources, the donor can declare the expenditure ineligible and demand a refund, which is then charged to the Ordinary Budget.",
+      best: "Use the procurement principles as a guiding thread at every stage. When in doubt on an ethics question, consult the Ethics Officer before contacting a supplier.",
+      checklist: [
+        "Confirm the activity is a purchase, not a grant",
+        "Identify the applicable rules: Financial Regulations Art. 40–43 and Rule No. 1395",
+        "Submit or update your declaration of interests",
+        "Refuse any gift or hospitality from suppliers",
+        "Report any suspicion of fraud to the DIO",
+        "Keep pre-launch information confidential from potential bidders"
+      ],
+      links: ["Roles & Funding", "Thresholds & Procedure"]
+    },
+    {
+      name: "Roles & Funding",
+      remember: "Operations prepare, the CCM validates, the Tenders Board controls above €184,000.",
+      keyFacts: [["€184,000","Tenders Board competence"],["€55,000–€184,000","DLAPIL review (extrabudgetary)"],["48 h","Procurement Unit first response"]],
+      example: "A field office plans a €40,000 IT equipment purchase for a ministry under an EU-funded project. IT purchases need DIT approval. The correct action is to request permission via MSA 1002, check the budget line, and appoint authorised staff members in writing before launch.",
+      title: "Actors, Funding & Types of Purchases",
+      lead: "Know who prepares, validates, controls and supports each step, and how the funding source and type of purchase affect the procedure.",
+      source: "Ch. 2.1–2.5",
+      understand: "Procurement is decentralised: each MAE buys for its own needs, keeping operational functions separate from validation and financial management functions.",
+      do: "Identify your CCM, appoint authorised staff members in writing and contact DLAPIL, the Procurement Unit or specialist directorates early.",
+      check: "Authorised staff members are designated in writing by the CO or CCM before they open or assess offers.",
+      sections: [
+        ["Segregation of duties", "Each MAE is responsible for its own procurement. Staff performing operational functions (defining needs, drafting tender documents, assessing deliverables) must be separate from those performing validation and financial management functions (budgetary verification, PO validation, transfers). Roles follow the Financial Management Framework, the general delegation framework CM/Res(2023)1 and each MAE's delegations."],
+        ["Buyer entity and authorised staff", "The buyer entity runs the whole process, from forecasting the need to executing the contract. Opening offers, assessing offers and negotiating must be done by authorised staff members designated by the CO or CCM (Rule No. 1395, Article 3.2.d). The guide recommends delegating this authority in writing, at the latest when the CCM approves the tender documents, using the standard e-mail paragraph."],
+        ["Control and validation bodies", "COs authorise expenditure and usually delegate to CCMs. CCMs validate the choice of procedure, tender files, awards and contracts, assisted by an ACCM and a FOMA. The Tenders Board ensures compliance for all contracts above €184,000 excluding VAT, decides on the scope and publication of international calls, and scrutinises bid analyses. The DIO audits and investigates."],
+        ["Support services", "DLAPIL handles all legal questions, provides templates and training and, since 1 February 2025, performs the Legal Compliance Review for extrabudgetary-funded procedures between €55,000 and €184,000. The DGA Procurement Unit gives non-legal support (market analysis, sourcing, e-procurement, analysis tables) and answers within a 48-hour SLA at procurement@coe.int. The Tenders Board Secretariat checks files before they go to the Board. TPA registers suppliers in FIMS and pays invoices."],
+        ["Funding sources", "Budgetary resources come from the four-year Programme and Budget with a biennial cycle, and procurement is planned on forecasts per budget line approved by the CO. Extrabudgetary resources include EU funds under joint programmes and voluntary contributions, either earmarked or non-earmarked, including the Human Rights Trust Fund. In co-operation projects, procurement must match the approved description of the action and budget, which can be difficult to amend."],
+        ["Types of purchases", "Intellectual services are knowledge-based, non-recurrent creations of the mind and always raise intellectual property issues. Avoid disguised employment, for example by not giving consultants full-time or part-time workloads, CoE e-mail addresses or equipment. Communication purchases need DC approval, IT purchases need DIT approval (MSA 1002), cloud deliverables require the Cloud Checklist, and works on buildings go through DGS. Travel and accommodation booked directly for participants are outside Rule No. 1395 (Article 7), but buying them through an agency is not."],
+        ["AI and co-operation projects", "Use of AI must be declared by suppliers in the DLAPIL AI questionnaire, which is saved with the file. In co-operation projects, the DPC co-ordinates programming and extrabudgetary resources, and external offices prepare forecasts that the CCM validates. The difference between national and international consultants may only be based on expertise or language skills, never on nationality or residence."]
+      ],
+      warning: "Authority for authorised staff members must be delegated in writing by the CO or CCM before any opening, assessment or negotiation task is performed.",
+      best: "Check with the DPC or the Procurement Unit whether a framework contract or framework agreement already covers events, translation, interpretation, transport or printing in the country concerned.",
+      checklist: [
+        "Identify the CO/CCM responsible for the purchase",
+        "Designate authorised staff members in writing",
+        "Confirm the funding source: Ordinary Budget or extrabudgetary",
+        "Check the purchase matches the approved project budget lines",
+        "Obtain DIT, DC or DGS approval where the category requires it",
+        "Plan the AI questionnaire for intellectual deliverables"
+      ],
+      links: ["Foundations", "Define the Need", "Authorise & Launch"]
+    },
+    {
+      name: "Market & Suppliers",
+      remember: "Source widely, share nothing in advance.",
+      keyFacts: [["3","suppliers minimum in competitive bidding"],["50,000+","suppliers already in FIMS"],["Art. 5","CEI is not a procurement procedure"]],
+      example: "A team always invites the same three consultants for gender-equality training. Auditors would see this as a breach of periodic competition. The correct action is to publish a call for expressions of interest and use the shortlist it produces for the next call for tenders.",
+      title: "Market Analysis & Supplier Sourcing",
+      lead: "Study the market and identify capable suppliers before drafting the tender, so that the call attracts enough good-quality offers.",
+      source: "Ch. 4.2–4.3",
+      understand: "Market analysis and sourcing increase competition, reveal innovative solutions and risks, and support periodic competition and non-discrimination.",
+      do: "Use internal and external sources, existing contracts, the suppliers database and, where useful, a call for expressions of interest.",
+      check: "No potential bidder has received information that would give them an advantage in the future procedure.",
+      sections: [
+        ["Why analyse the market", "A market analysis identifies new suppliers, helps tender documents fit the market, reveals alternative or innovative proposals and highlights risks and opportunities. It is essential when the goods, services or works have not been bought before. It is also recommended before a direct award, to check that better suppliers or solutions are not available."],
+        ["Sources", "For works, goods and technical services, use trade journals, chambers of commerce, embassies, catalogues and end users. For intellectual consultancy, use academic platforms such as researchgate.net, academia.edu and scholar.google.com, specialised journals, professional associations and LinkedIn. Internal sources include the existing contracts lists, previous lists of invitees and market studies supported by the Procurement Unit."],
+        ["Procurement strategy", "A good strategy produces diverse offers, a workload proportionate to the purchase and the best value for money. Consider dividing the contract into lots, using framework contracts, and sharing existing contracts with other entities. Make sure SMEs, not-for-profit, minority-owned, women-owned and disability-inclusive suppliers are not excluded."],
+        ["Identifying new suppliers", "FIMS holds over 50,000 suppliers, but few new ones are added, so the same suppliers often bid. Sourcing should be targeted and meaningful, not a passive internet search. In a competitive bidding procedure, the minimum of three invited suppliers (Rule No. 1395, Article 21.2) should be chosen to obtain three good-quality bids, not just to meet the rule."],
+        ["Call for expressions of interest", "A CEI (Rule No. 1395, Article 5) is not a procurement procedure. It is a tool to list potential suppliers for future procedures, for example through the CoE website, e-procurement, the OJEU or social networks. There is no obligation to invite every listed supplier, to justify not inviting someone, or to launch a call afterwards. External auditors strongly recommend CEIs for consultancy."],
+        ["Suppliers database", "The Procurement Unit's intranet holds a shared suppliers database by category, approved by the Data Protection Officer. Adding names to it is optional. Registering a contracted supplier in FIMS still requires an MSA 4002 processed by TPA. The Council of Europe does not use blocklists, but an optional exclusion criterion covers suppliers who failed contractual obligations with the Council in the previous three years."]
+      ],
+      warning: "When meeting potential suppliers, never share information about a future call for tenders that could give them an advantage. Consult DLAPIL or the Procurement Unit if in doubt.",
+      best: "Carry out the market study first and then the CEI, and include the CEI's results in the market study. The Procurement Unit can also consult the NPIO network of 40+ international organisations.",
+      checklist: [
+        "Check the framework contracts and agreements database for an existing contract",
+        "Consult internal and external market sources",
+        "Consider lots or a framework contract in your strategy",
+        "Launch a call for expressions of interest where useful",
+        "Search the suppliers database by category",
+        "Record why invited suppliers are relevant to the need"
+      ],
+      links: ["Define the Need", "Tender Design"]
+    },
+    {
+      name: "Define the Need",
+      remember: "Plan backwards from the deadline; one procedure per type of need.",
+      keyFacts: [["2 years","Ordinary Budget period of reference"],["Whole project","incl. extensions for project-based needs"],["3 weeks","minimum publication for international calls"]],
+      example: "A project expects 12 expert reports over its three-year life. Buying them one at a time would artificially split the need. The correct action is to estimate all 12 reports over the full project duration, including possible extensions, and run a single procedure.",
+      title: "Define & Group Procurement Needs",
+      lead: "Anticipate and describe the need precisely over the whole period of reference, grouping similar needs into as few procedures as possible.",
+      source: "Ch. 4.4",
+      understand: "A clearly defined need over the correct period of reference determines the type of contract, the threshold and the procedure.",
+      do: "Plan backwards from the delivery date, group similar needs for the whole project or budget cycle, and consult the relevant in-house experts.",
+      check: "All foreseeable similar needs for the period of reference are covered, ideally by one procedure per type of need.",
+      sections: [
+        ["Plan early", "Identify needs as early as possible in the project or activity. A procedure may even be launched before the project formally starts if the tender documents state that the contract will only be awarded once it begins. Build a reverse schedule from the required completion date. Allow time for Tenders Board approval, at least three weeks' publication for international calls, and VAT exemption procedures."],
+        ["Key questions", "Define the expected deliverable, how often it is needed, the estimated overall budget and the applicable threshold. Check whether an existing transversal contract already covers it. Identify specific requirements such as payment terms, delivery time, penalties and language. Consider the total cost of ownership, not only the purchase price."],
+        ["Consult in-house expertise", "Before tendering, consult DGS for works and buildings, DIT for IT goods or services, DC for communication and ITEM for multimedia. These directorates confirm the need is not already covered in-house and help validate the approach."],
+        ["Co-operation projects", "A project-based approach covers the needs of one project for its full duration, including possible extensions. A sector-based approach covers common needs of several projects or a sector. It requires a framework contract or agreement and an international public call for tenders. Each order or call-off is still issued within one project, and the relevant CCMs must be consulted during drafting and informed of the results before any order is placed."],
+        ["Ordinary Budget", "For Ordinary Budget purchases, consider the whole two-year budget cycle and cover similar needs with a minimum number of procedures. Ad hoc procedures for unforeseeable needs remain possible, but one-off purchases must not be repeated to meet a structural need."]
+      ],
+      warning: "Last-minute purchases can only be justified in exceptional circumstances where the urgency is not attributable to the buyer entity.",
+      best: "Use a reverse schedule, working back from the completion date, to set milestones and a realistic start date for the procedure.",
+      checklist: [
+        "Describe the expected deliverables and frequency",
+        "Set the period of reference (project or budget cycle)",
+        "Choose project-based or sector-based approach",
+        "Estimate the total budget for all similar needs",
+        "Consult DGS, DIT, DC or ITEM where relevant",
+        "Build a reverse schedule including approvals and VAT steps"
+      ],
+      links: ["Market & Suppliers", "Contract Types", "Thresholds & Procedure"]
+    },
+    {
+      name: "Contract Types",
+      remember: "Fixed need: one-off. Repeating units: framework contract. Variable: framework agreement.",
+      keyFacts: [["4 years","maximum duration (5 exceptionally)"],["3","minimum suppliers per framework agreement lot"],["2–3 months","maximum run-on after end date"]],
+      example: "A project needs a cybercrime trainer repeatedly, in one-hour, half-day and full-day formats, in Strasbourg or online. The volume is unknown but the units can be defined. The correct action is a framework contract with a price list per format and a pooling system for consultants.",
+      title: "One-off, Framework Contract or Framework Agreement",
+      lead: "Choose the contract type that matches how well defined and how repetitive the need is. The contract type does not determine the procedure.",
+      source: "Ch. 3",
+      understand: "Use a one-off contract for defined, non-recurring needs, a framework contract for recurring unit-based needs, and a framework agreement for variable or complex needs.",
+      do: "Match the need to the contract type and decide the ordering system (ranking or pooling) or the call-off rules before launch.",
+      check: "The contract type fits the need, its duration does not exceed four years (five exceptionally), and it does not overlap existing contracts.",
+      sections: [
+        ["Choosing the type", "A contract is not a procedure: the procedure depends on value, while the type depends on the need. A one-off contract suits quantifiable, definable needs that are very unlikely to recur. A framework contract suits needs that can be defined as units and recur often but cannot be fully quantified. A framework agreement suits needs that are regular but variable, uncertain or complex."],
+        ["One-off contracts", "A one-off contract is made with a single supplier, which may be a consortium, although it may be split into lots. Price, specifications and quantities must be defined. It lasts until both parties have completed their obligations, must state a delivery deadline for each deliverable and cannot be renewed. Using repeated one-off contracts for the same need is artificial splitting and is prohibited."],
+        ["Framework contracts", "A framework contract fixes unit prices for defined items or time-based units, and the Council is not obliged to buy. It can be simple (one supplier) or multiple. For multiple contracts, the tender must choose between ranking (recommended for goods and general services) and pooling (better for intellectual services, with the choice for each order justified in a note approved by the CCM). Only listed items can be ordered, and orders cannot be created after the end date."],
+        ["Framework agreements", "A framework agreement establishes a pool of at least three suppliers per lot, selected on competence without price competition. Each need is then put out to a call-off among them, approved by the CCM before publication. Call-offs with a single value above €184,000 must go to the Tenders Board. Because each need requires a mini-competition, framework agreements are rarely recommended for estimated expenditure below €184,000."],
+        ["Duration and sharing", "Framework contracts and agreements have no minimum duration but should not exceed four years, or five exceptionally, to respect non-exclusivity. Orders or call-offs created before the end date may continue for usually no more than two to three months afterwards, and in projects delivery must fall within the implementation period. Framework contracts and agreements concluded through an international call are available to all Council of Europe entities; one-off contracts are not."]
+      ],
+      warning: "Once the tender is published, the ordering method (ranking, pooling, rota or quotas) cannot be changed, so define it carefully in the tender documents.",
+      best: "Keep the number of suppliers in a multiple framework contract reasonable. Dividing the estimated budget by the number of consultants shows whether each supplier's expected turnover is credible.",
+      checklist: [
+        "Decide whether the need is one-off, recurring or variable",
+        "Choose simple or multiple framework contract",
+        "Choose ranking or pooling and state it in the tender",
+        "Set the maximum number of suppliers to select",
+        "For framework agreements, plan at least three suppliers per lot",
+        "Keep duration within four years (five exceptionally)",
+        "Check for overlap with existing framework contracts"
+      ],
+      links: ["Define the Need", "Thresholds & Procedure", "Contract Management"]
+    },
+    {
+      name: "Thresholds & Procedure",
+      remember: "Total foreseeable value decides the procedure — never split.",
+      keyFacts: [["€2,000 / €6,000","direct award ceiling (goods / intellectual)"],["€184,000","international public call and Tenders Board"],["€10,000","public prices purchase ceiling"]],
+      example: "A team estimates €170,000 for translations over four years, but the project may be extended. The value is close to €184,000 and could exceed it. The correct action is to launch an international public call for tenders from the start, because the Tenders Board cannot approve a launch retroactively.",
+      title: "Calculate the Threshold & Choose the Procedure",
+      lead: "Estimate the total value of the need to determine whether a direct award, a competitive bidding procedure or an international public call for tenders applies.",
+      source: "Ch. 4.5–4.7",
+      understand: "The threshold is the estimated total value of the need, excluding VAT, over the full contract life, including renewals, lots and all orders or call-offs.",
+      do: "Calculate per need, not per supplier or year, and choose the procedure matching the value and funding source.",
+      check: "No need has been split artificially, and if the value may approach €184,000, an international public call for tenders is chosen.",
+      sections: [
+        ["Calculating the threshold", "Add the total estimated value before VAT for the full intended duration, including all renewals, tranches and options (works), lots, and all possible orders or call-offs. For multiple contracts, calculate the value regardless of the number of suppliers. Thresholds apply to the total value over the life of the programme, not per year. For a percentage-based service fee, use the total value of the service contract."],
+        ["Direct award", "A direct award is possible up to €2,000 (goods, general services, works) or €6,000 (intellectual services), based on a memorandum to the CCM justified by the supplier's expertise (Rule No. 1395, Article 22.4). Above these amounts, it is only allowed exceptionally for unforeseen urgency not attributable to the buyer, technical requirements, or considerations of fact or law (Financial Regulations Article 40.3.c, Rule Article 22.1.a). The CCM decides below €184,000 and the Tenders Board from €184,000. Extrabudgetary-funded cases from €55,000 to €184,000 first need a DLAPIL Legal Compliance Review."],
+        ["Competitive bidding procedure", "This applies between €2,000 (or €6,000) and €184,000, under the sole responsibility of the CCM. Invite at least three suppliers; for a multiple framework contract with a pool of three, invite nine. Extrabudgetary-funded procedures from €55,000 to €184,000 need a Legal Compliance Review. If all offers exceed €184,000, cancel the procedure and launch an international call."],
+        ["International public call for tenders", "This applies when the total value is estimated to exceed €184,000, or if there is even a slight risk of reaching it. The Tenders Board must authorise the launch, on request from the CCM with a summary memo to the Tenders Board Secretary. The minimum submission period is three weeks. The Tenders Board cannot approve a launch retroactively."],
+        ["Other procedures", "A competitive dialogue suits needs where the technical solution is hard to define. It uses a descriptive document, a published notice and rounds of discussion, which may eliminate bidders, and the results are validated by the Tenders Board; it also suits a proof of concept. Under Article 21.2 of Rule No. 1395, a competitive bidding purchase below €10,000 excluding VAT may compare the public prices of three or more suppliers instead of inviting tenders. Screenshots must be archived."],
+        ["Purchases for third parties", "Goods or services for project beneficiaries can only be bought through one-off contracts, using a competitive bidding procedure or an international call depending on value. They use DLAPIL tailor-made templates available on request: a tender file, a tripartite contract, a tripartite act of acceptance and a declaration of agreement. Ownership transfers to the beneficiary when the tripartite act of acceptance is signed. Consult DIT on IT requirements."],
+        ["Specific risks", "Artificial splitting, meaning dividing purchases without objective reason to stay below thresholds, is prohibited and a red flag for fraud. Underestimating expenditure is also a risk: if a later procedure covers needs that could have been included in an earlier one, the threshold is calculated on the combined amount. Contract amendments may also push the total above the original threshold."]
+      ],
+      warning: "Never split requirements or shorten contract terms to stay below a threshold. Artificial splitting is prohibited and treated as a red flag for fraud.",
+      best: "If the estimate is close to €184,000 or may grow through extensions, amendments or other directorates using the contract, launch an international public call for tenders from the outset.",
+      checklist: [
+        "Add up all lots, renewals, orders and call-offs before VAT",
+        "Calculate per need over the whole period of reference",
+        "Apply €2,000 / €6,000 for direct award",
+        "Use competitive bidding from €2,000 / €6,000 up to €184,000",
+        "Use an international public call above €184,000",
+        "Plan the Legal Compliance Review for extrabudgetary funds from €55,000 to €184,000",
+        "Use the procedure selection tool on the Procurement page"
+      ],
+      links: ["Contract Types", "Authorise & Launch", "Tender Design"]
+    },
+    {
+      name: "Tender Design",
+      remember: "Publish the criteria once; never change them afterwards.",
+      keyFacts: [["20 points","minimum weight for price, in principle"],["Out of 10","score per technical criterion"],["15–35%","bid as a share of turnover"]],
+      example: "A tender for a 1,000-person conference asks for prior experience organising events. That criterion is too vague to assess. The correct action is to require proven experience of events of comparable size, with a list of references as the supporting document.",
+      title: "Tender File, Lots & Assessment Criteria",
+      lead: "Build the tender package and set the exclusion, eligibility and award criteria that will decide the outcome.",
+      source: "Ch. 4.8.1–4.8.3",
+      understand: "The tender file and act of engagement are mandatory for competitive procedures, and the criteria cannot be changed once the call is published.",
+      do: "Download fresh DLAPIL templates and set clear, proportionate eligibility criteria and weighted award criteria.",
+      check: "Criteria are objective, measurable and non-discriminatory, eligibility and award criteria do not overlap, and all weightings are published.",
+      sections: [
+        ["Tender package and templates", "The package includes at least the tender file (terms of reference and tender rules) and the act of engagement, which is a ready-to-sign contract containing bidders' statutory declarations. Always download a new DLAPIL template, chosen by procedure, contract type, lots and language. DGA and EDQM have their own templates. If documents are published in two languages, state which version prevails; machine translations need the standard disclaimer."],
+        ["Division into lots", "Lots split a tender into separate competitions in the same call and are only possible if each lot can be awarded to a different supplier. They increase competition and allow specialised suppliers to bid. The procedure is determined by the total of all lots. Avoid overlapping lots, and do not use lots when a single supplier is needed."],
+        ["Exclusion criteria", "The exclusion criteria in Appendix I to Rule No. 1395 apply to every purchase and cannot be deleted or changed, although they can be supplemented. They cover convictions (including for child labour and trafficking), bankruptcy, unpaid taxes or social contributions, shell companies, conflicts of interest, current staff and retired staff, and UN or EU restrictive measures. The signed declaration of agreement in DLAPIL acts of engagement serves as the declaration; e-procurement users confirm it online."],
+        ["Eligibility criteria", "Eligibility criteria set the minimum financial, economic, technical or professional capacity needed to perform the contract. They must be clear, objective, verifiable, proportionate and answerable with yes or no, each with a defined supporting document. Do not use vague terms such as sufficient or relevant, experience limited to Council of Europe projects, overly prescriptive requirements or nationality. As a guide, the bid should represent between 15% and 35% of the bidder's turnover."],
+        ["Award criteria", "Award criteria score quality and price to find the best value for money, and must not repeat eligibility criteria. Technical criteria assess methodology, understanding of the need, work schedule and the team. The more standard the service, the higher the weight of price, which should in principle be at least 20 points. Weightings, including sub-criteria, must be published and cannot be changed."],
+        ["Minimum scores", "A minimum score can be set to limit who is invited to negotiations or included in a framework contract pool, but it must be stated in the tender file. Without a minimum score, all eligible suppliers up to the announced maximum number must be admitted to the pool."]
+      ],
+      warning: "Assessment criteria and their weightings cannot be modified or subdivided once the call for tenders is published.",
+      best: "Keep eligibility requirements proportionate. Lower experience or turnover requirements attract new and innovative suppliers, and you can cap financial dependence instead of demanding a high turnover.",
+      checklist: [
+        "Download new tender file and act of engagement templates from DLAPIL",
+        "Decide on lots and avoid overlaps",
+        "Keep all exclusion criteria from Appendix I",
+        "Add the restrictive measures criterion",
+        "Define yes/no eligibility criteria with supporting documents",
+        "Weight award criteria, with price at least 20 points",
+        "State any minimum score in the tender file"
+      ],
+      links: ["Terms & Specifications", "Open & Evaluate"]
+    },
+    {
+      name: "Terms & Specifications",
+      remember: "Describe the objective, not the means; keep the three non-negotiable clauses.",
+      keyFacts: [["180 days","offer validity"],["3 weeks","minimum international submission period"],["3 months","usual notice period for tacit renewal (minimum 1 month)"]],
+      example: "A hotel will only sign its own contract terms, which give jurisdiction to national courts. The correct action is to accept the hotel's terms only if they are balanced and include the Council's clauses on disclosure, use of the name and logo, and disputes. If the hotel refuses, the CCM decides and records the decision.",
+      title: "Tender Rules, Prices & Contract Terms",
+      lead: "Set the rules for submission, the financial offer format, duration, renewal and legal conditions, and write specifications based on objectives.",
+      source: "Ch. 4.8.4–4.8.12",
+      understand: "Tender rules, prices, duration, renewal and conditions fixed in the tender define the future contract and limit later changes.",
+      do: "Complete each part of the act of engagement and tender file deliberately, consulting DLAPIL for non-standard legal conditions.",
+      check: "Deadlines, offer validity, the price format, renewal clause, specific conditions and the three non-negotiable clauses are all in place.",
+      sections: [
+        ["Tenderers and submission", "Decide whether natural persons may bid or only legal persons and consortia. Consortium members are jointly and severally liable, and subcontracting always requires Council approval. Late offers are inadmissible. International calls need a minimum of three weeks, with offers sent to cdm@coe.int unless e-procurement is used, in which case offers received outside the platform are excluded. Offers remain valid for 180 calendar days from the deadline."],
+        ["Act of engagement and financial offer", "The act of engagement contains the supplier and bank details, the financial offer, the declaration of agreement, signature boxes and legal conditions. Failure to complete or sign it normally means automatic exclusion, and a missing financial offer cannot be completed after opening. For framework contracts, use deliverable-based units for goods and general services and time-based units for intellectual services. Add the clause allowing an hourly fee to be calculated as the daily fee divided by 8."],
+        ["Prices and revision", "Give quantities or estimated volumes and a detailed price table so that offers can be compared. Any price update or revision must be provided for in the tender, ideally linked to a relevant official index with a margin. A revision under such a clause is recorded in a document signed by both parties and is not an amendment. Avoid exclusion levels (maximum prices) unless there are strong objective reasons, such as a donor cap."],
+        ["Duration and renewal", "One-off contracts need a delivery deadline. Multi-year contracts should last no more than four years, or five in specific circumstances. Decide before publication whether the contract is not renewable, renewable by written agreement, or renewable tacitly. Tacit renewal is best for framework contracts and agreements; the notice period to object is usually three months and never less than one month."],
+        ["General Conditions and non-negotiable clauses", "The General Conditions, called legal conditions in DLAPIL templates, cover VAT, confidentiality, data protection, payment and disputes. Three clauses are non-negotiable: disclosure of contract terms, use of the Council's name and logo, and disputes (arbitration). If a supplier such as a hotel refuses the Council's terms, its terms may be accepted only if they are balanced and include these clauses. Internet purchase terms can be accepted exceptionally under the CCM's documented responsibility."],
+        ["Specific conditions", "For technical or large-scale purchases, use supplementary general conditions for intellectual services, supplies and services, works or IT, completed by specific contractual conditions such as indices, warranty, penalties or building access. Contact the Procurement Unit for these. Penalties should be high enough to be useful but not so high that they discourage bids."],
+        ["Technical specifications", "Specify the objective to be achieved, not the means. Avoid brand names or add or equivalent. Do not mix administrative and technical content, and give enough information so that previous suppliers have no advantage. Consider allowing variants, avoid over-quality, and take account of total cost of ownership, warranty and maintenance. Define measurable outputs to support performance monitoring and penalties."]
+      ],
+      warning: "Never accept contract terms without the three non-negotiable clauses (disclosure, name and logo, disputes) unless the CCM takes the documented decision described in the guide.",
+      best: "For framework contracts and agreements, choose tacit renewal. It is far easier to manage than renewal by written agreement, especially with many suppliers.",
+      checklist: [
+        "Define eligible tenderer types and subcontracting rules",
+        "Set the submission deadline (at least three weeks for international calls)",
+        "Confirm 180-day offer validity or consult DLAPIL",
+        "Provide a detailed price or fee table with volumes",
+        "Decide on any price revision clause and index",
+        "Choose duration and renewal option",
+        "Check the three non-negotiable clauses are included",
+        "Write objective-based technical specifications"
+      ],
+      links: ["Tender Design", "Authorise & Launch"]
+    },
+    {
+      name: "Authorise & Launch",
+      remember: "No approval, no launch; same answers to everyone.",
+      keyFacts: [["5 working days","DLAPIL Legal Compliance Review"],["48 h","Tenders Board consultation period"],["48 h","before deadline: last Q&A answer"]],
+      example: "An EU-funded €90,000 competitive bidding procedure is ready to launch. Because it is extrabudgetary and between €55,000 and €184,000, a Legal Compliance Review is required first. The correct action is to send a Request for LCR to DLAPIL and submit the documents to the CCM only after DLAPIL's visa.",
+      title: "Authorise, Publish & Manage Questions",
+      lead: "Obtain the required approval, invite or publish the call, and handle questions and deadline extensions fairly.",
+      source: "Ch. 4.9.1–4.9.4",
+      understand: "The approval route depends on the procedure, the value and the funding source: the CCM, the CCM after a DLAPIL Legal Compliance Review, or the Tenders Board.",
+      do: "Submit tender documents for approval through the correct route, then invite at least three suppliers or publish, preferably via e-procurement.",
+      check: "Written approval is on file before launch, and all bidders receive the same answers at the same time.",
+      sections: [
+        ["Approval routes", "Direct awards up to €2,000 or €6,000 need a memorandum validated by the CCM. Above that, a memorandum stating the specification, cost, justification and supplier goes to the CCM below €184,000 or to the Tenders Board from €184,000. Competitive bidding documents are approved in writing by the CCM. International calls need the CCM to send the documents and an explanatory note to the Tenders Board."],
+        ["Legal Compliance Review", "Since 1 February 2025, competitive bidding procedures and exceptional direct awards funded partly or wholly by extrabudgetary funds between €55,000 and €184,000 need a DLAPIL Legal Compliance Review before CCM approval. Submit it through the request form titled Request for LCR, with the documents, procedure, estimated expenditure, funding source and entities already consulted. Complete requests are processed within 5 working days. Call-offs under framework agreements are exempt."],
+        ["Tenders Board", "The Tenders Board authorises the launch of international calls and validates their results. It is also consulted on negotiations, amendments and direct awards. Requests go by e-mail to its Secretariat, which allows members at least 48 hours (two working days), and the workflow uses the Tenders Board SharePoint. Any requested changes are made by the buyer entity and validated by the Secretariat."],
+        ["Invite or publish", "In competitive bidding, e-mail the tender documents to at least three suppliers and record the reasons if this is impossible; publication may be added. For international calls, the Tenders Board Secretariat publishes on the CoE website, and the Board may add the OJEU, e-procurement, media or permanent representations. E-procurement is mandatory for international calls from 1 January 2026, for tenders above €55,000 from 1 April 2026, and for all tenders above €2,000 or €6,000 from 1 January 2027."],
+        ["Questions and answers", "State in the tender the e-mail address and deadline for questions. Use a non-nominative address, separate from the one receiving offers. Compile anonymised questions and answers in one document and distribute it through every channel used to publish or invite. No answers may be given later than 48 hours before the submission deadline. Questions received by other channels are not answered, and there is no other contact with bidders during the tender."],
+        ["Extending the deadline", "The submission deadline may be extended only in exceptional circumstances, before it expires and with CCM approval. Consult DLAPIL or the Procurement Unit beforehand."]
+      ],
+      warning: "Do not answer bidders' questions outside the published Q&A procedure. Every bidder must have access to the same information at the same time.",
+      best: "Publish at the right time: avoid launching during the summer break or setting a Monday-morning deadline, and use the e-procurement link to spread the call on relevant networks.",
+      checklist: [
+        "Identify the approval route by value and funding",
+        "Request the Legal Compliance Review if it is required",
+        "Obtain written approval from the CCM or Tenders Board",
+        "Invite at least three suppliers or publish",
+        "Set the questions e-mail address and deadline",
+        "Publish anonymised Q&A to all bidders",
+        "Extend the deadline only before expiry, with CCM approval"
+      ],
+      links: ["Thresholds & Procedure", "Open & Evaluate"]
+    },
+    {
+      name: "Open & Evaluate",
+      remember: "Admissible, not excluded, eligible — only then score.",
+      keyFacts: [["2","authorised assessors at least"],["10","maximum score per technical criterion"],["Art. 17.2","clarify, never change, offers"]],
+      example: "One bidder sent a missing CV late and also left the financial offer blank. The missing CV is minor information and can be clarified. The correct action is to exclude the bid anyway, because a missing financial offer cannot be completed after opening.",
+      title: "Open, Analyse & Evaluate Bids",
+      lead: "Open offers securely after the deadline and assess them in sequence: admissibility, exclusion, eligibility and award criteria.",
+      source: "Ch. 4.9.5–4.9.8",
+      understand: "Bids are assessed by at least two authorised staff members, strictly against the criteria published in the tender file.",
+      do: "Record the opening, check admissibility, apply exclusion and eligibility as pass or fail, then score award criteria with written justification.",
+      check: "Every score has an objective written justification, and any red flags or clarification requests are documented.",
+      sections: [
+        ["Opening offers", "Offers are opened only after the deadline. With e-procurement, they open automatically and one authorised staff member may open them. Otherwise, competitive bidding offers are opened by at least two authorised staff members, and international call offers sent to cdm@coe.int are opened by the Tenders Board Secretariat with an authorised member of the buyer entity. Receipt and prices are recorded and confirmed by those opening."],
+        ["Admissibility", "Late bids are inadmissible unless the delay was caused by the Council, for example a system failure. Incomplete bids are inadmissible, although missing minor information may be requested. Bids above a published exclusion level are excluded. For lots, analyse each lot separately."],
+        ["Exclusion and eligibility", "Exclude any bid that fails an exclusion criterion or whose act of engagement is not signed. Where risk requires, ask the selected supplier for criminal record and tax certificates before signing. With EU funds, check the EU sanctions list using the WebFOCUS report. Eligibility criteria are not scored: if one is not met, the bid is ineligible, and exceeding another criterion does not compensate unless the tender file says so."],
+        ["Award criteria", "Only eligible bids are scored. Score each technical criterion out of 10 with a clear written assessment, then apply the weightings. Financial scores are calculated against the cheapest offer, and if price is the only criterion, the cheapest offer wins. For Ordinary Budget purchases where all offers exceed the budget, scoring against the budget is good practice. Use the DLAPIL and Procurement Unit assessment templates or e-procurement."],
+        ["Clarifications", "Under Article 17.2 of Rule No. 1395, offers may be clarified or supplemented with non-essential information only, without changing their main features or distorting competition. Make requests in writing, keep them on record and report them to the CCM or Tenders Board with the results. A clarification that would significantly change a bid requires a negotiation round."],
+        ["Problematic cases", "Bids from current staff, or from people employed on the launch date, are excluded. Former staff are assessed case by case, while retired staff and those who left under an early departure measure cannot receive new contracts. Civil servants need their employer's approval and leave and must have no conflict. Abnormally low or high offers are red flags and may be excluded with an explanatory memo. Multiple bids from the same bidder are not allowed. Offers in other currencies or with fee ranges may be clarified rather than automatically excluded."],
+        ["Fraud indicators", "Assessors must look for signs of fraud, corruption, collusion or bid rigging. Report any indication immediately to your manager, copying the Director of the DIO. If the DIO opens an investigation, ask DLAPIL whether to reject the bids without waiting for the outcome."]
+      ],
+      warning: "A missing or incomplete financial offer, or an unsigned act of engagement, cannot be corrected after opening, and the bid must normally be excluded.",
+      best: "Write a detailed justification for every technical score. Clear analysis makes approval easier and lets you answer later enquiries without disclosing other bidders' information.",
+      checklist: [
+        "Open offers only after the deadline and record receipt",
+        "Use at least two authorised assessors",
+        "Check admissibility and that the act of engagement is signed",
+        "Apply exclusion and eligibility criteria as pass or fail",
+        "Score award criteria out of 10 with written justification",
+        "Check EU sanctions list when EU funds are used",
+        "Document all clarification requests in writing"
+      ],
+      links: ["Tender Design", "Negotiate & Award"]
+    },
+    {
+      name: "Negotiate & Award",
+      remember: "Sign with the winner first, then notify the others within 15 days.",
+      keyFacts: [["15 days","to notify unsuccessful bidders"],["7 days","for bidders to enquire"],["30 days","to complain to the Tenders Board"]],
+      example: "An international call produced offers that are all well above budget. The correct action is a memo to the Tenders Board asking either to negotiate with the eligible bidders, to relaunch, or to cancel. The memo must explain why the call failed and justify the chosen option.",
+      title: "Negotiate, Award & Notify",
+      lead: "Negotiate where it adds value, obtain the award decision, inform bidders and deal with unsuccessful procedures and complaints.",
+      source: "Ch. 4.9.9–4.9.14",
+      understand: "The CCM decides awards for competitive bidding procedures and the Tenders Board decides for international calls, based on the buyer entity's reasoned recommendation.",
+      do: "Seek authorisation before negotiating, submit the analysis and recommendation, then notify successful and unsuccessful bidders in writing.",
+      check: "Unsuccessful bidders are notified within 15 days of the successful notification, with the enquiry procedure explained.",
+      sections: [
+        ["Negotiations", "Negotiation is possible in all tendering procedures (Rule No. 1395, Articles 20 and 21.8) to improve the offer, agree legal changes or settle final details. It must not significantly change the specifications. Send a memo to the CCM (competitive bidding) or the Tenders Board (international call) explaining why, with whom and on what. Invite all eligible bidders unless exclusion is justified, document everything, and get changes confirmed in writing; involve DLAPIL for legal clauses and DIT or DGS for technical items."],
+        ["Awarding the contract", "For competitive bidding, submit a reasoned recommendation to the CCM, who decides. For international calls, the CCM validates the memo, assessment tables and recommendation and sends them to the Tenders Board Secretary; the Board then scrutinises the analysis and decides. Never select more suppliers than the announced maximum. Auditors expect the CCM to justify repeated use of the same suppliers over a year, supported by a WebFOCUS report."],
+        ["Informing bidders", "Inform successful bidders in writing and sign the contract before notifying unsuccessful bidders. Notify unsuccessful bidders in writing within 15 days, giving the reason and the Article 24 enquiry procedure. Disclose only the winner's amount, name and country. Results of international calls are published, and e-procurement sends notification letters automatically."],
+        ["Unsuccessful calls", "A call is unfruitful if no or too few bids are received, none meet the criteria, or prices greatly exceed the budget. The options are to cancel the purchase, launch a new tender, or ask to negotiate directly with a supplier (Articles 18.3 and 21.10). The CCM decides for competitive bidding and the Tenders Board for international calls, based on a justifying memo, and bidders are informed in writing."],
+        ["Discontinuing", "A procedure may be discontinued at any time before the award, without giving reasons or paying compensation (Article 18.2). The CCM decides for competitive bidding and the Tenders Board for international calls. Inform tenderers in writing."],
+        ["Enquiries and complaints", "Unsuccessful bidders may enquire within 7 days of notification, and the buyer entity must reply without undue delay. They may then complain to the Tenders Board within 30 days, and the Board replies within 30 days; for competitive bidding this decision is final. For international calls, an appeal to an ad hoc review board is possible within 30 days, with a reply within 60 days. None of these steps suspends the award or the start of the contract."]
+      ],
+      warning: "Sign the contract with the selected supplier before notifying unsuccessful bidders, and never disclose details of other bids beyond the winner's amount, name and country.",
+      best: "When only one offer is received, you may still negotiate, but do not tell the bidder that no other bids were received.",
+      checklist: [
+        "Request CCM or Tenders Board authorisation before negotiating",
+        "Record negotiations and obtain written bid confirmations",
+        "Submit the reasoned award recommendation",
+        "Respect the maximum number of suppliers announced",
+        "Sign the contract, then notify unsuccessful bidders within 15 days",
+        "Reply to enquiries using only the assessment records"
+      ],
+      links: ["Open & Evaluate", "Contract Signing"]
+    },
+    {
+      name: "Contract Signing",
+      remember: "PO first, signature second, work third.",
+      keyFacts: [["MSA 4002","create a new supplier in FIMS"],["CCM","signs one-off contracts"],["PO","mandatory before any signature"]],
+      example: "A consultant offers to start work on Monday, but the contract has not yet been countersigned. The correct action is to raise the PO in FIMS, have the CCM countersign, and send the signed PDF before any work starts.",
+      title: "Contract Review & Signature",
+      lead: "Complete the final checks and administrative steps so the contract is properly committed in FIMS and countersigned before any work starts.",
+      source: "Ch. 4.10",
+      understand: "A budgetary commitment (PO) is mandatory before the Organisation signs any contract, and no goods or services may be provided before signature.",
+      do: "Check the documents, register new suppliers via MSA 4002, raise the PO, countersign and send the signed copy to the supplier.",
+      check: "The act of engagement is complete, signed by the supplier, unaltered, matches any negotiations, and the PO exists before countersignature.",
+      sections: [
+        ["Final review", "Check that all contract documents are correct, reflect any negotiated outcome and have not been modified by the supplier. Check that the act of engagement is complete and signed by the supplier. Check that the supplier's name and bank account holder are the same."],
+        ["FIMS steps", "For a new supplier, create the supplier record in FIMS using MSA 4002, which TPA processes. Raise the purchase order in FIMS: the commitment is mandatory before the internal signature process."],
+        ["Who signs", "A one-off contract is a legal and financial commitment and is signed by the CCM, unless signature is expressly delegated. A framework contract or agreement is only a legal commitment unless it includes a minimum purchase, so a duly authorised person may sign it, although signature by the CCM is advisable. Each selected supplier must sign. Enter the applicable VAT requirements in the invoicing table, as instructed by Protocol."],
+        ["Countersign and send", "The contract may be countersigned with a wet-ink or electronic signature; a scanned act of engagement signed by the supplier can be countersigned electronically by the CCM. Send a signed PDF copy by e-mail to the contact named in the contract, or post a paper copy if requested, and archive the documents."],
+        ["Contractual documents", "The contract usually includes the act of engagement or contract, the terms of reference, any other Council document such as technical specifications, and the selected supplier's tender. If supplier documents contain internet links, download those pages on the date of signature and add them to the file."],
+        ["Share the contract", "Once signed, consider adding a framework contract or agreement to the Organisation's database so that colleagues with similar needs can use it. The Procurement Unit can help."]
+      ],
+      warning: "Never let a supplier start work, or sign any contract, before a PO has been raised in FIMS and the Organisation has signed.",
+      best: "Save copies of any web pages referred to in the contract on the date of signature, in case the supplier later changes its conditions.",
+      checklist: [
+        "Verify documents are unaltered and reflect negotiations",
+        "Confirm the act of engagement is complete and signed",
+        "Create the new supplier via MSA 4002",
+        "Raise the PO in FIMS before signature",
+        "Fill in VAT requirements in the invoicing table",
+        "Countersign and send a PDF copy to the supplier",
+        "Add framework contracts to the shared database"
+      ],
+      links: ["Negotiate & Award", "Contract Management", "Performance & Filing"]
+    },
+    {
+      name: "Contract Management",
+      remember: "Amend before expiry; never change scope; watch the ceiling.",
+      keyFacts: [["€184,000","ceiling for competitive bidding framework contracts"],["10%","call-off increase the CCM may authorise"],["3","unjustified call-off refusals before removal"]],
+      example: "A framework contract awarded through competitive bidding has reached €150,000 in orders, with more training sessions planned. The correct action is to contact DLAPIL immediately and prepare an international public call for tenders, approved by the Tenders Board, before spending exceeds €184,000.",
+      title: "Deadlines, Amendments, Orders & Renewal",
+      lead: "Manage the contract actively: track deadlines, amend correctly, accept deliverables, order within thresholds and renew or end the contract on time.",
+      source: "Ch. 5.1–5.6",
+      understand: "The buyer entity monitors execution, and amendments may change how the contract is managed but never its main purpose, scope, volume or nature.",
+      do: "Track deadlines, sign orders and call-offs through the CCM, monitor cumulative spending and document every change in writing.",
+      check: "Cumulative spending stays below the threshold of the original procedure, and every extension or amendment is agreed before expiry.",
+      sections: [
+        ["Deadline management", "The delivery deadline is different from the contract end date, which also covers acceptance, payment and warranty. Set realistic deadlines, use reminders and contact the provider before the deadline. An extension must be legitimate, must not jeopardise the project, must be agreed before the original deadline expires, and is an amendment. Missed deadlines are a breach, and the CCM decides whether to apply penalties, reduce payment, terminate or set a new deadline."],
+        ["Amendments", "A contract can only be amended while it is in force, with both parties' agreement, and without distorting the original competition. Amendments may change deadlines, contact details, supplier name or bank details. Agree them by e-mail using the standard wording, with the CCM's prior agreement and in copy, or by a signed document. Call-off amendments up to 10% of the original value need CCM authorisation; above 10%, consult DLAPIL."],
+        ["Accepting deliverables", "Accept deliverables in writing after checking them against the contract specifications. If you refuse them, inform the supplier with reasons; a second refusal may be treated as a breach. For events, keep photographs and signed attendance sheets. Attach the acceptance certificate to the payment order validated by the CCM."],
+        ["Orders under framework contracts", "Identify the supplier using the ranking or pooling rules in the contract, then issue an order form with concrete deliverables, a deadline and a lump-sum price; do not state the number of days. The CCM signs last, after the PO has been raised. Spending under a competitive bidding framework contract must not exceed €184,000. If it might, contact DLAPIL immediately; the remedy is an international call approved by the Tenders Board."],
+        ["Call-offs under framework agreements", "Send each call-off to the preselected suppliers with terms of reference and a deadline, without revealing the other suppliers' identities, and evaluate it on the published award criteria. Call-offs above €184,000 go to the Tenders Board, and the CCM signs each call-off. A supplier that fails to justify non-participation more than three times may be removed. After three call-offs with all tenders more than 20% above market price, the Council may tender outside the agreement."],
+        ["Termination and renewal", "A contract may be terminated by mutual written consent. Unilateral termination is only possible for breach where no negotiated solution can be found, after consulting DLAPIL, with all exchanges in writing; it is a last resort. Renewal by written agreement must be completed before the contract expires, separately with each supplier, and with the CCM's agreement."]
+      ],
+      warning: "Exceeding €184,000 under a framework contract awarded through competitive bidding is a severe breach of the rules. If there is any risk of this, launch an international public call.",
+      best: "Use the Procurement Unit's Excel tracking tables to follow every order or call-off against the contract ceiling, and tell the Tenders Board Secretary early if an announced budget will be significantly exceeded.",
+      checklist: [
+        "Set reminders for every delivery deadline",
+        "Agree extensions and amendments in writing before expiry",
+        "Accept deliverables in writing against specifications",
+        "Issue orders with deliverables, a deadline and a lump-sum price",
+        "Have the CCM sign orders and call-offs after the PO",
+        "Track cumulative spend against the procedure threshold",
+        "Renew or retender before the contract expires"
+      ],
+      links: ["Contract Types", "Contract Execution & Payment", "Performance & Filing"]
+    },
+    {
+      name: "Contract Execution & Payment",
+      remember: "Right invoice, right account, VAT settled before signing.",
+      keyFacts: [["60 days","default payment term"],["€5,000","maximum per card purchase"],["DAP","recommended Incoterm for goods"]],
+      example: "A French supplier asks to be paid in 90 days in exchange for a lower price. French law prohibits payment terms longer than 60 days net. The correct action is to refuse 90 days and, if different terms are needed, agree them with TPA and write them into the contract.",
+      title: "Invoices, Payments & VAT",
+      lead: "Make sure invoices are correct, paid on time to the right account, and that VAT and delivery terms are settled before signature.",
+      source: "Ch. 5.7 & 5.10",
+      understand: "Each directorate receives and validates invoices, TPA pays them by bank transfer in euros, and VAT must be clarified before signing.",
+      do: "Check each invoice against the contract and acceptance certificate, apply the agreed payment terms and follow Protocol's VAT exemption procedures.",
+      check: "The invoice meets all formal requirements, the payee account belongs to the supplier, and the VAT regime is correct.",
+      sections: [
+        ["Invoicing requirements", "The invoice must be dated, on the supplier's letterhead and addressed to the Council of Europe, with the department on the second line. It must show the supplier's name and address, invoice number, VAT number if any, deliverables, contract fees, sub-totals and total in the contract currency, and any payment modalities. For intra-EU VAT numbers, it must include the exemption wording referring to Articles 143 and 151 of Council Directive 2006/112/EC."],
+        ["Payment requirements", "Payment is made within the contract deadline to the bank account named in the contract, which must be held by the supplier. Unless agreed otherwise, the payment term is 60 days from receipt of the invoice or execution of the contract, whichever is later. For French suppliers, French law prohibits terms longer than 60 days net or 45 days end of month."],
+        ["Payment schedules", "Where staged payments are needed, set them out in the tender file and contract, for example 10% at order, 80% during execution and 10% on completion for works. Shorter terms in exchange for a discount must be approved by TPA and written into the contract. Immediate payment is only for exceptional, justified cases; TPA's minimum lead time is about 10 days."],
+        ["Bank cards and internet purchases", "Payments are normally by bank transfer in euros, with cards, cheques or cash only as exceptions. For a card payment, raise a PO and ask TPA for the card number. The maximum is €5,000 per purchase and €30,000 per month for the whole Organisation. For internet purchases, the public prices procedure below €10,000 may be considered, and the supplier's terms may be accepted under the CCM's documented responsibility."],
+        ["Incoterms", "For goods, Incoterms define who organises and insures transport and from what point. The recommended term is DAP (Delivered at Place) to a Council of Europe address, so the supplier is responsible until delivery. Contact Protocol for details."],
+        ["VAT", "Goods and services for the Council's official use may be exempt from VAT, using separate exemption procedures for goods and for services. With a new supplier, establish its VAT status and the exact nature of the purchase to determine the place of taxation. Protocol is the point of contact for all VAT questions."]
+      ],
+      warning: "Always clarify VAT before signing and sending the contract or order form, and never pay into an account not held by the supplier named in the contract.",
+      best: "When suppliers need cash flow, such as in works or IT, set out a payment schedule in the tender file. It encourages more candidates to bid.",
+      checklist: [
+        "Check invoice addressee, letterhead and mandatory details",
+        "Match invoice lines to contract fees and accepted deliverables",
+        "Confirm the bank account holder is the supplier",
+        "Apply 60-day terms unless others are agreed",
+        "Stay within €5,000 per card purchase",
+        "Settle the VAT regime with Protocol before signature",
+        "Use DAP Incoterms for goods deliveries"
+      ],
+      links: ["Contract Management", "Contract Signing"]
+    },
+    {
+      name: "Performance & Filing",
+      remember: "Evaluate, learn, archive — ten years.",
+      keyFacts: [["10 years","retention of contractual documents"],["1–10","typical performance score scale"],["3 years","optional exclusion for past failures"]],
+      example: "At the end of a printing contract, deliveries were repeatedly late. Poor performance alone does not stop the supplier from bidding again. The correct action is to record the evaluation and add clear delivery targets linked to penalties in the next tender.",
+      title: "Supplier Performance, Follow-up & Archiving",
+      lead: "Assess how suppliers perform, use the lessons for the next tender, and keep a complete, audit-ready file.",
+      source: "Ch. 5.8–5.9, 4.11 & Ch. 6",
+      understand: "Performance follow-up improves future tenders, and complete archives support audits; poor past performance alone does not exclude a supplier.",
+      do: "Assess suppliers during and at the end of the contract, and archive all procurement documents for 10 years.",
+      check: "The file holds the tender documents, all bids, assessments, negotiations, memos, contract and amendments.",
+      sections: [
+        ["Supplier performance", "Evaluate the supplier against the agreed deadlines, quality and service, both during the contract and at the end. Use a questionnaire scored, for example, from 1 (very poor) to 10 (very good). Indicators include quality, responsiveness, ethics and CSR, on-time delivery, cost control and innovation. The Procurement Unit has templates and can help set this up before the tender."],
+        ["Using the results", "Poor past performance does not in itself prevent a supplier from bidding again. However, the optional exclusion criterion applies where the supplier failed contractual obligations in the past three years, leading to refused payment or termination. Build the lessons, such as clear targets linked to penalties, into the next tender."],
+        ["Procurement follow-up", "The DGA Procurement Unit monitors performance through KPIs and maps the Organisation's purchases using data from e-procurement and FIMS. Staff can extract data for their CCM or directorate through WebFOCUS reports. The procurement categories help define strategies for intellectual services, works and IT."],
+        ["Archiving", "Keep all contract documents for 10 years, together with the tender documents, all bids, exchanges with suppliers, negotiation records, assessments, contract and amendments, and memos. Each directorate keeps its files, usually in DMS. Execution documents such as acceptance are kept separately by the buyer entity, and TPA keeps invoices and payment requests."],
+        ["E-procurement and resources", "The e-procurement platform, developed by DIT and supported by the Procurement Unit, centralises publication, Q&A, opening, assessment and notification, and keeps a full audit trail. Training on Procurement optimisation and e-procurement gives Super-User status. Useful pages include the intranet Procurement page, the DLAPIL and Tenders Board pages, and the internet suppliers portal, where suppliers register free of charge."],
+        ["Social networks", "Social networks can be used to promote calls and source suppliers. While a call is in progress, staff involved should not be openly connected with likely bidders or share or like their posts."]
+      ],
+      warning: "Missing documents in the file, such as justifications for direct awards, assessments or proof of notification, are a recurring audit finding. Archive everything for 10 years.",
+      best: "Carry out an end-of-contract assessment before retendering, and draft the new tender documents to fix the weaknesses it identifies.",
+      checklist: [
+        "Assess supplier performance during the contract",
+        "Complete an end-of-contract evaluation",
+        "Record lessons learned for the next tender",
+        "Archive tender documents, bids and assessments",
+        "File negotiation records, memos, contract and amendments",
+        "Keep execution and acceptance documents separately",
+        "Retain the procurement file for 10 years"
+      ],
+      links: ["Contract Management", "Market & Suppliers", "Foundations"]
+    }
+  ];
+
+  C.procurementRoles = {
+    buyer: {
+      name: "Buyer entity / project team",
+      tag: "OPERATIONS · OWNER",
+      summary: "The Council of Europe entity for which the purchase is made. It runs the process from forecasting the need to executing the contract.",
+      when: "Throughout the procurement lifecycle.",
+      does: [
+        "Defines needs and estimates the threshold",
+        "Prepares tender documents and technical specifications",
+        "Invites or publishes and answers questions",
+        "Submits files to the CCM or Tenders Board",
+        "Receives and accepts deliverables and verifies invoices",
+        "Monitors contract execution and supplier performance"
+      ],
+      stages: ["Market & Suppliers", "Define the Need", "Contract Types", "Thresholds & Procedure", "Tender Design", "Terms & Specifications", "Authorise & Launch", "Contract Management", "Contract Execution & Payment", "Performance & Filing"]
+    },
+    authorised: {
+      name: "Authorised staff members",
+      tag: "ASSESSMENT · RULE 1395",
+      summary: "Members of the buyer entity authorised in writing by the CO or CCM (Rule No. 1395, Article 3.2.d) to perform key procedure tasks.",
+      when: "From approval of the tender documents until the award.",
+      does: [
+        "Open offers or represent the buyer entity at opening",
+        "Assess offers, with at least two assessors",
+        "Conduct negotiations with tenderers when authorised",
+        "Report indications of fraud or collusion"
+      ],
+      stages: ["Roles & Funding", "Open & Evaluate", "Negotiate & Award"]
+    },
+    ccm: {
+      name: "Commitments Officer / Cost Centre Manager",
+      tag: "VALIDATION · EXPENDITURE",
+      summary: "COs authorise expenditure and delegate to CCMs. The CCM is responsible for the cost centre's purchases and decides on competitive bidding procedures and direct awards below €184,000.",
+      when: "At every validation and signature point.",
+      does: [
+        "Validates the choice of procedure and the tender documents",
+        "Authorises launch, deadline extensions and negotiations",
+        "Decides awards for competitive bidding procedures",
+        "Approves direct awards below €184,000",
+        "Signs contracts, orders and call-offs",
+        "Decides consequences of missed deadlines and approves amendments"
+      ],
+      stages: ["Roles & Funding", "Thresholds & Procedure", "Authorise & Launch", "Negotiate & Award", "Contract Signing", "Contract Management"]
+    },
+    tb: {
+      name: "Tenders Board",
+      tag: "CONTROL · ABOVE €184,000",
+      summary: "Ensures compliance with the rules for all contracts above €184,000 excluding VAT. It is chaired by the Director General of Administration, with the DLAPIL Director, the Treasurer and an MAE member.",
+      when: "For international public calls, direct awards from €184,000, call-offs above €184,000 and complaints.",
+      does: [
+        "Authorises the launch and publication of international calls",
+        "Scrutinises bid analyses and decides on awards",
+        "Authorises negotiations, amendments and direct awards",
+        "Decides on unfruitful or discontinued international calls",
+        "Rules on complaints within 30 days"
+      ],
+      stages: ["Thresholds & Procedure", "Authorise & Launch", "Negotiate & Award", "Contract Management"]
+    },
+    tbsec: {
+      name: "Secretariat of the Tenders Board",
+      tag: "TB · SECRETARIAT",
+      summary: "Part of the DGA's Legal Support Division. It runs the Tenders Board's calendar, templates, SharePoint and consultations, and checks files before submission.",
+      when: "Before and during Tenders Board procedures.",
+      does: [
+        "Reviews files before they go to the Board",
+        "Runs electronic consultations with at least 48 hours for members",
+        "Publishes international calls after approval",
+        "Opens bids at cdm@coe.int when e-procurement is not used",
+        "Archives Tenders Board decisions"
+      ],
+      stages: ["Authorise & Launch", "Open & Evaluate"]
+    },
+    dlapil: {
+      name: "DLAPIL",
+      tag: "LEGAL · COMPLIANCE",
+      summary: "The Directorate of Legal Advice and Public International Law handles all legal procurement questions and templates. It performs the Legal Compliance Review for extrabudgetary-funded procedures from €55,000 to €184,000.",
+      when: "For any legal question, and mandatorily for Legal Compliance Reviews.",
+      does: [
+        "Provides tender file, act of engagement and order form templates",
+        "Carries out the Legal Compliance Review within 5 working days",
+        "Advises on legal conditions, amendments and breaches",
+        "Provides third-party purchase templates on request",
+        "Trains staff on procurement procedures"
+      ],
+      stages: ["Foundations", "Thresholds & Procedure", "Tender Design", "Terms & Specifications", "Authorise & Launch", "Contract Management"]
+    },
+    pu: {
+      name: "Procurement Unit (DGA)",
+      tag: "SUPPORT · PERFORMANCE",
+      summary: "Manages all DGA purchases and advises every buyer entity on non-legal procurement issues and tools, including e-procurement. It responds within a 48-hour SLA.",
+      when: "From market analysis to contract execution.",
+      does: [
+        "Supports market analysis, sourcing and calls for expressions of interest",
+        "Maintains the suppliers and contracts databases",
+        "Supports e-procurement and OJEU publication",
+        "Provides analysis tables and expenditure tracking tools",
+        "Monitors procurement KPIs and purchase mapping"
+      ],
+      stages: ["Market & Suppliers", "Authorise & Launch", "Open & Evaluate", "Contract Management", "Performance & Filing"]
+    },
+    tpa: {
+      name: "Treasury, Payments and Accounting (TPA)",
+      tag: "TREASURY · PAYMENT",
+      summary: "Registers suppliers and bank details in FIMS, checks payment claims and pays suppliers.",
+      when: "At supplier registration and at payment.",
+      does: [
+        "Processes MSA 4002 supplier creation in FIMS",
+        "Checks payment claims and settles invoices",
+        "Approves specific payment conditions",
+        "Provides card numbers for exceptional card payments",
+        "Keeps invoices and payment requests"
+      ],
+      stages: ["Contract Signing", "Contract Execution & Payment"]
+    },
+    dpc: {
+      name: "Directorate of Programme Co-ordination (DPC)",
+      tag: "CO-OPERATION · PROJECTS",
+      summary: "Co-ordinates programming and resource mobilisation for extrabudgetary co-operation projects and ensures they comply with the project management methodology.",
+      when: "When procuring under co-operation projects.",
+      does: [
+        "Advises on existing framework contracts in external offices",
+        "Addresses donor visibility and communication requirements",
+        "Gives guidance on hiring civil servants from Horizontal Facility beneficiaries",
+        "Ensures activities match the approved project budget"
+      ],
+      stages: ["Roles & Funding", "Define the Need"]
+    },
+    dio: {
+      name: "Directorate of Internal Oversight (DIO)",
+      tag: "AUDIT · INVESTIGATION",
+      summary: "Provides independent audit, evaluation and investigation, including compliance and performance audits of procurement.",
+      when: "When audits take place or wrongdoing is suspected.",
+      does: [
+        "Audits procurement compliance and performance",
+        "Receives reports of fraud, corruption and wrongdoing",
+        "Investigates suspected proscribed practices",
+        "Reports on risks detected in declarations of interests"
+      ],
+      stages: ["Foundations", "Open & Evaluate", "Performance & Filing"]
+    }
+  };
+})();
+
+</script>
+<script>
+/* content.grants.js */
+/* Grants lifecycle content, rewritten from the Council of Europe grants guide (Rule 1374). */
+(function () {
+  "use strict";
+  const C = window.FG_CONTENT;
+
+  C.grantPhases = [
+    ["Frame the grant", ["Foundations", "Principles", "Procedure", "Roles"]],
+    ["Design the call", ["Criteria", "Costs", "Call"]],
+    ["Select", ["Submission", "Eligibility Check", "Evaluation", "Complaints"]],
+    ["Agree & close", ["Agreement", "Filing"]]
+  ];
+
+  C.grantStages = [
+    {
+      name: "Foundations",
+      title: "What a grant is and when Rule 1374 applies",
+      lead: "A grant finances a project, a specified action or a grantee's operations to advance the Organisation's values. Rule 1374 implements Article 43 bis of the Financial Regulations for every grant procedure.",
+      source: "Financial Regulations Art. 43 bis · Rule 1374",
+      remember: "Two purposes, both required: help the grantee, advance the Organisation.",
+      keyFacts: [["2","cumulative purposes of every grant"],["Art. 43 bis","Financial Regulations basis, implemented by Rule 1374"],["12 months","normal maximum for an operational grant agreement"]],
+      example: "A programme wants to fund a human rights NGO's annual running costs. The NGO's goals and the Council's values are both served, so a grant fits, but as an operational grant. Correct action: plan an operational grant agreement of no more than twelve consecutive months.",
+      understand: "A grant must both help the grantee attain its own objectives and advance the Organisation's values or policies; the two conditions are cumulative.",
+      do: "Confirm that both purposes are met and decide whether you are financing a project-related grant or an operational grant.",
+      check: "Every staff member involved in the award process has completed the staff member declaration of interest.",
+      sections: [
+        ["Purpose of a grant", "A grant must assist the grantee in attaining its goals or objectives and also fulfil a more general objective of advancing the Organisation's values or policies. Both conditions are cumulative; if either is missing, a grant is not the right instrument."],
+        ["Legal basis and scope", "Grants are foreseen by Article 43 bis of the Financial Regulations and implemented by Rule 1374. The Rule applies to all grant procedures irrespective of the source of funding, including the Ordinary Budget, Voluntary Contributions and Grant Agreements with external donors."],
+        ["Project-related and operational grants", "A project-related grant finances a project or a specified action; an operational grant finances a given grantee's operational expenditure. The definition applies whatever the grantee's status, public or private, legal or natural person. Operational grants should not normally give rise to grant agreements of more than twelve consecutive months."],
+        ["Grant or procurement", "Co-financing is a characteristic feature distinguishing a grant from a service contract: no service contract may give rise to co-financing by the service supplier. If the Council would pay the full cost of a service it needs, the procurement rules are the relevant route instead."],
+        ["Declaration of interest", "All staff members involved in a procurement or grant award process must complete the staff member declaration of interest in the context of procurement. Do this before taking part in any step of the procedure."],
+        ["How the guide is organised", "The guide follows the numbering of Rule 1374, and the templates carry the same numbers. Template G14.1, for example, implements Article 14.1."]
+      ],
+      warning: "Both purposes of a grant are mandatory and cumulative; a financing that only serves the grantee, or only the Organisation, is not a grant.",
+      best: "Record at the outset why the action meets both purposes; this justification will also anchor the objectives of the call.",
+      checklist: [
+        "Confirm the grantee's goals and the Organisation's objective are both served",
+        "Identify the funding source (Ordinary Budget, VC or donor agreement)",
+        "Classify the grant as project-related or operational",
+        "Keep operational grants to twelve consecutive months or less",
+        "Check that co-financing makes this a grant, not a service contract",
+        "Complete the staff member declaration of interest"
+      ],
+      links: ["Principles", "Procedure"],
+      templates: []
+    },
+    {
+      name: "Principles",
+      title: "The six general principles of Rule 1374",
+      lead: "Article 2 sets six principles that apply to every grant: transparency, non-retroactivity, co-financing, non-cumulative awards, no profit and non-discrimination.",
+      source: "Rule 1374 · Art. 2",
+      remember: "Count the whole procedure budget; never let the Council pay everything.",
+      keyFacts: [["€15,000","total procedure budget triggering a call"],["5 × €10,000","= €50,000, so a call is required"],["3","strict exceptions to publication"]],
+      example: "A department plans five grants of €10,000 to local youth NGOs and suggests five direct awards. The reference figure is the €50,000 total, which passes the threshold. Correct action: launch a call for proposals and require each grantee to co-finance.",
+      understand: "The principles govern every decision in the procedure, and breaching one can invalidate an award or make costs ineligible.",
+      do: "Test the planned grant against each of the six principles before designing the call.",
+      check: "The €15,000 threshold has been measured against the total estimated budget of the procedure, not the amount per grantee.",
+      sections: [
+        ["Transparency and the €15,000 threshold", "All grant award procedures of €15,000 or more require, in principle, a published call for proposals. The threshold refers to the total estimated budget of the procedure: five grants of €10,000 make €50,000, so a call is required. Above the threshold, exceptions to publication are interpreted strictly."],
+        ["Exceptions to publication", "Only three situations may justify non-publication: an unforeseeable emergency beyond the awarding entity's control that makes a call impossible; grantee characteristics that make a call impossible, such as an international organisation acting alone in a field; or an action described in terms leaving no scope for a call, for instance partners approved by a donor and contractually predetermined."],
+        ["Non-retroactivity", "The action financed must not already be completed when the agreement is signed. Implementation may exceptionally have begun, but eligible costs cannot be incurred before the closing date for submission of proposals, and the agreement must state the implementation period precisely. Implementation starting after signature is the best practice."],
+        ["Co-financing", "The Council must not finance the entire cost of the action, the project or the grantee's operations. The grantee contributes from its own or third-party resources, which may take the form of human resources, contributions in kind (moveable or immoveable, tangible or intangible assets) or income generated by the action."],
+        ["Non-cumulative awards and no profit", "The Council awards only one grant to a given project, action or operational grantee, and a grant may not finance part of an action already financed by other means. Several complementary funding sources are allowed, but total funding cannot exceed the agreed budgeted expenses, as overfunding would breach the linked principle of no profit."],
+        ["Non-discrimination", "Applicants must not be discriminated against on grounds such as gender, disability, age, language, religion, opinions, national or ethnic origin, citizenship or sexual orientation. A difference in treatment is discriminatory unless it has an objective and reasonable justification. Restricting a call to applicants in one town can be justified when the call aims to build civil society capacity in that town."]
+      ],
+      warning: "The €15,000 threshold applies to the total estimated budget of the procedure; splitting it into smaller grants does not avoid a call for proposals.",
+      best: "Plan the agreement so that implementation begins after signature; it is the cleanest way to respect non-retroactivity.",
+      checklist: [
+        "Calculate the total estimated budget of the whole procedure",
+        "Publish a call if the total is €15,000 or more",
+        "Document any strict exception to publication",
+        "Ensure no eligible costs precede the submission deadline",
+        "Require the grantee to co-finance the action",
+        "Check the action receives no other Council grant",
+        "Justify objectively any restriction on who may apply"
+      ],
+      links: ["Procedure", "Costs", "Call"],
+      templates: []
+    },
+    {
+      name: "Procedure",
+      title: "Choosing the route: direct award or call for proposals",
+      lead: "The total estimated budget decides the route: below €15,000 a grant may be awarded directly; from €15,000 a competitive call for proposals is the rule.",
+      source: "Rule 1374 · Art. 2.1.2, 2.1.3, 9",
+      remember: "Below €15,000 you may award directly; from €15,000, call.",
+      keyFacts: [["< €15,000","direct award, Template G9.2A (Art. 2.1.2)"],["≥ €15,000","competitive call for proposals"],["G9.2B","exceptional direct award, duly justified (Art. 2.1.3)"]],
+      example: "A project needs a single €12,000 grant to a regional ombudsman network. The total procedure budget is below €15,000. Correct action: the Commitments Officer adopts a G9.2A decision, which also appoints the Co-ordinator, and signs the agreement.",
+      understand: "Direct award below €15,000 (Art. 2.1.2) needs only Template G9.2A; €15,000 or more requires a competitive call unless exceptional circumstances apply (Art. 2.1.3).",
+      do: "Calculate the total procedure budget, select the route and open the matching decision template.",
+      check: "Any direct award of €15,000 or more carries a duly justified Commitments Officer decision attached to the commitment request.",
+      sections: [
+        ["Direct award below €15,000", "Under Article 2.1.2, when the budget of a grant award procedure is less than €15,000, the grant may be awarded without a call for proposals. The Commitments Officer adopts the direct award decision using Template G9.2A, which also integrates the appointment of the Co-ordinator. The grant agreement is then signed."],
+        ["Competitive procedure from €15,000", "From €15,000 the principle is a competitive procedure. The steps are: appoint the Co-ordinator (G3.1); draft, approve and publish the call (G8.1A, G8.1B, G8.2); answer questions; appoint the Evaluation Committee (G13.1) with declarations of absence of conflicts of interest (G13.4); open proposals (G11.1); assess (G14.1, G14.3, G14.4); take the Commitments Officer's decision (G14.6); send notification letters (G14.8, G14.9A, G14.9B)."],
+        ["Exceptional direct award from €15,000", "Under Article 2.1.3 a grant of €15,000 or more cannot be awarded without a call unless exceptional circumstances occur. The Commitments Officer must justify the decision with reference to Article 2.1.3 using Template G9.2B, which integrates the Co-ordinator's appointment. The duly justified decision is attached to the request for commitment of funds (engagement de dépenses)."],
+        ["Who decides", "Only the competent Commitments Officer, or a representative by written delegation, can decide on a direct award. The procedural guarantees for direct award are set out in Article 9 of the Rule."]
+      ],
+      warning: "A direct award of €15,000 or more is an exception that must be strictly justified under Article 2.1.3; an unreasoned G9.2B decision does not meet the Rule.",
+      best: "Use the G3.1TAB follow-up table from the start of a competitive procedure to track each step and template.",
+      checklist: [
+        "Establish the total estimated budget of the procedure",
+        "Below €15,000: complete Template G9.2A and sign the agreement",
+        "From €15,000: launch the competitive procedure",
+        "For exceptional direct award, justify under Article 2.1.3 with G9.2B",
+        "Attach the justified decision to the commitment request",
+        "Track the steps in the Co-ordinator's follow-up table"
+      ],
+      links: ["Principles", "Roles", "Call"],
+      templates: [
+        ["G9.2A", "Decision on direct award below €15,000"],
+        ["G9.2B", "Decision on direct award equal to or exceeding €15,000"],
+        ["G3.1", "Decision appointing the Co-ordinator"],
+        ["G3.1TAB", "Follow-up table of the Co-ordinator"]
+      ]
+    },
+    {
+      name: "Roles",
+      title: "Who is responsible: Commitments Officer, Co-ordinator, Evaluation Committee",
+      lead: "The Commitments Officer is responsible for the whole grant award procedure, appoints a Co-ordinator and an Evaluation Committee, and may delegate in writing.",
+      source: "Rule 1374 · Art. 3",
+      remember: "The Commitments Officer decides; the Co-ordinator runs; the Committee evaluates.",
+      keyFacts: [["a–k","Commitments Officer responsibilities in Art. 3.1"],["G3.1","appoints the Co-ordinator"],["G13.1","appoints the Evaluation Committee"],["Art. 31 FR","conditions for written delegation"]],
+      example: "A Head of Department wants a cost centre manager to run a grant procedure on his behalf. Delegation is possible within his administrative entity. Correct action: delegate in writing under Article 31 of the Financial Regulations, then appoint the Co-ordinator with G3.1.",
+      understand: "Article 3.1 assigns eleven responsibilities (a to k) to the Commitments Officer, from deciding on direct award to recovering funds.",
+      do: "Have the Commitments Officer formally appoint the Co-ordinator with Template G3.1 and the Evaluation Committee with Template G13.1.",
+      check: "Any delegation is in writing, to a cost centre manager in the same administrative entity, under Article 31 of the Financial Regulations.",
+      sections: [
+        ["Deciding and approving", "The Commitments Officer decides whether direct award conditions under Article 2.1 are met (a) and approves the call for proposals, its publication means and submission arrangements (b). The call is prepared by the department concerned; the Commitments Officer is recommended to check it against the quality control checklist, Template G8.3."],
+        ["Appointing the actors", "The Commitments Officer formally appoints a Co-ordinator responsible for the smooth running of the procedure, including planning the receipt and evaluation of applications (c, Template G3.1). He or she also appoints the Evaluation Committee whose membership and prerogatives are set out in Article 13 (d, Template G13.1)."],
+        ["Awarding and informing", "The Commitments Officer decides on the award under Articles 9.2, 14.5 and 14.7 (e), informs applicants of the decision under Articles 14.8 and 14.9 (f) and signs the grant agreement (g). The model agreement prepared by DLAPIL may need adapting to donor conditions or national law, so DLAPIL should be consulted."],
+        ["Confidentiality and implementation", "Where a grantee's vital interests are potentially threatened, the Commitments Officer may decide not to publish certain results (h, Art. 2.1.4). He or she may suspend the agreement for unavoidable circumstances, political context or management reasons (i), terminate it after consulting DLAPIL (j), and reduce or recover grant amounts, for instance where expenses are ineligible (k)."],
+        ["Delegation", "The responsibilities in Article 3.1 may be delegated in writing to a cost centre manager in the Commitments Officer's administrative entity. Delegation follows the conditions of Article 31 of the Financial Regulations."]
+      ],
+      warning: "Only the competent Commitments Officer, or a written delegate, may decide on direct award, the award decision, suspension, termination or recovery.",
+      best: "Use the G8.3 checklist as a communication tool between the Commitments Officer and the drafters of the call.",
+      checklist: [
+        "Identify the competent Commitments Officer",
+        "Put any delegation in writing under Article 31",
+        "Appoint the Co-ordinator with Template G3.1",
+        "Appoint the Evaluation Committee with Template G13.1",
+        "Check the call against the G8.3 checklist before approval",
+        "Consult DLAPIL before terminating an agreement"
+      ],
+      links: ["Procedure", "Eligibility Check", "Evaluation"],
+      templates: [
+        ["G3.1", "Decision appointing the Co-ordinator"],
+        ["G3.1TAB", "Follow-up table of the Co-ordinator"],
+        ["G13.1", "Decision appointing the Evaluation Committee"],
+        ["G8.3", "Call for proposals quality control checklist"]
+      ]
+    },
+    {
+      name: "Criteria",
+      title: "Exclusion, eligibility and award criteria",
+      lead: "Each category of criteria has its own purpose: exclusion checks legal prerequisites, eligibility checks the applicant's capacity, award criteria evaluate the proposal itself.",
+      source: "Rule 1374 · Art. 4–5",
+      remember: "Exclude, then check capacity, then score the proposal; never change criteria.",
+      keyFacts: [["3","criteria categories applied in sequence"],["Weighted","every award criterion, shown in the call"],["Art. 5.4","published criteria and weights are unalterable"]],
+      example: "After publishing a call, the team realises one award criterion is weighted too heavily. Changing it would breach the unalterable character of criteria. Correct action: evaluate with the published weighting, or let the procedure end and launch a new call.",
+      understand: "Criteria are applied in sequence: excluded applicants are not assessed further, and only eligible applicants are scored against weighted award criteria.",
+      do: "Define clear exclusion grounds, threshold-based eligibility criteria and weighted award criteria, each with its supporting documents, in the call.",
+      check: "Every criterion is reasonable, proportionate, relevant and verifiable, and every award criterion carries a published weighting.",
+      sections: [
+        ["Exclusion grounds", "Exclusion criteria ensure legal prerequisites, notably that applicants have never been criminally sentenced for reasons linked with their activity. They must be defined in the call and covered by a clause in the agreement obliging grantees to report any change of situation. Compliance is established by a declaration signed by each applicant at submission (Templates G4.1.2A to G4.1.2E)."],
+        ["Eligibility criteria", "Eligibility criteria examine the applicant's capacity to implement the project in financial and human terms or in terms of experience, not the proposal itself. They must set a precise threshold; applicants who do not reach it are not examined against the award criteria."],
+        ["Award criteria", "Award criteria evaluate the proposal as such and apply only to applicants that passed exclusion and eligibility. Each criterion must be relevant, verifiable and weighted, with the weighting clearly shown in the call. Ideally each criterion has sub-criteria, each with its own weighting."],
+        ["Objectivity", "Criteria must be reasonable and proportionate, must not unduly restrict access, and must be neither too specific nor too vague. They must be relevant, with a cause and effect link to the project's goals, and verifiable, with the call listing the documents used to check each one, such as certified financial reports."],
+        ["Unalterable criteria", "Published criteria and their weighting cannot be altered under any circumstances for the entire duration of the procedure. This is a fundamental principle of Article 5.4."]
+      ],
+      warning: "Once the call is published, no criterion or weighting may be changed for any reason; draft them carefully before approval.",
+      best: "Define the project's goals first, then derive each eligibility criterion from them so the link is explicit.",
+      checklist: [
+        "Include the exclusion grounds and declaration template in the call",
+        "Set a measurable threshold for each eligibility criterion",
+        "Weight every award criterion and sub-criterion",
+        "List the supporting documents for every criterion",
+        "Test each criterion for relevance and proportionality",
+        "Add the change-of-situation clause to the agreement"
+      ],
+      links: ["Call", "Eligibility Check", "Evaluation"],
+      templates: [
+        ["G4.1.2A", "Declaration on exclusion criteria, BO or VC, natural person"],
+        ["G4.1.2B", "Declaration on exclusion criteria, EU funds, natural person"],
+        ["G4.1.2C", "Declaration on exclusion criteria, BO or VC, legal person"],
+        ["G4.1.2D", "Declaration on exclusion criteria, EU funds, legal person"],
+        ["G4.1.2E", "Declaration on exclusion criteria, EU funds, legal person, owners and executive officers"]
+      ]
+    },
+    {
+      name: "Costs",
+      title: "Eligible and ineligible costs",
+      lead: "The grant ceiling is set on the basis of estimated eligible costs, which must meet seven conditions; certain costs are always ineligible.",
+      source: "Rule 1374 · Art. 6–7",
+      remember: "Necessary, in budget, in period, on record; indirect costs max 7%.",
+      keyFacts: [["7%","maximum indirect eligible costs"],["a–g","conditions for direct eligible costs"],["a–h","costs that are always ineligible"]],
+      example: "An applicant's budget includes buying an office building, interest on a loan and 10% overheads. Land and buildings and interest are ineligible, and indirect costs cannot exceed 7%. Correct action: remove both items and cap indirect costs at no more than 7%.",
+      understand: "Only costs meeting all Article 6.2 conditions are eligible; indirect costs are capped at 7% and Article 7.1 lists costs that are never eligible.",
+      do: "Build the estimated budget from eligible costs only and state the grant ceiling and any indirect cost rate in the agreement.",
+      check: "Every budgeted cost appears in the estimated overall budget and falls within the implementation period defined to the day.",
+      sections: [
+        ["Grant ceiling", "The maximum amount of the grant must be stated in the grant agreement. It is established on the basis of the estimated eligible costs, which must meet the requirements of Article 6.2."],
+        ["Direct eligible costs", "Direct costs must be: (a) necessary for implementing the action, or for the grantee's operations in an operational grant; (b) consistent with sound financial management, best value for money and cost-effectiveness; (c) actually incurred during the implementation period defined in the agreement; (d) identifiable, verifiable and recorded in the grantee's accounts; (e) compliant with tax and social security law; (f) backed by originals or certified copies, certified generally by the grantee's treasurer; and (g) indicated in the estimated overall budget."],
+        ["Indirect eligible costs", "If indirect costs are foreseen, their percentage must be stated precisely in the call and made contractual in the agreement. In no circumstances may it exceed 7% of the total, the ceiling set by Article 6.3."],
+        ["Ineligible costs", "The following are never eligible: (a) expenditure financed by other sources; (b) debts and provisions for losses or debts incurred before the award; (c) costs outside the implementation period; (d) expenditure unrelated to the project; (e) interest owed; (f) purchase of land and buildings; (g) currency exchange losses, which the grantee must guard against; and (h) loans to third parties."],
+        ["Renovation work", "Renovation costs are excluded unless directly related to the project or action. If so, the extent of the work must be precisely specified in the description of the action."],
+        ["Other ineligible costs", "The Article 7.1 list is not exhaustive. It may be supplemented to meet a donor's needs for extra-budgetary resources or other requirements specific to the procedure."]
+      ],
+      warning: "Indirect costs may never exceed 7% of the total, and a cost not shown in the estimated budget cannot be eligible.",
+      best: "Define the implementation period to the exact day in the agreement, since cost eligibility depends on it.",
+      checklist: [
+        "State the maximum grant amount in the agreement",
+        "Test each cost against conditions (a) to (g)",
+        "Cap indirect costs at 7% and publish the rate",
+        "Remove land purchases, interest, loans and exchange losses",
+        "Specify any project-related renovation in the action description",
+        "Add donor-specific ineligible costs where needed"
+      ],
+      links: ["Principles", "Agreement", "Submission"],
+      templates: [
+        ["G17.2D", "Annex II, estimated budget"],
+        ["G17.2G", "Guidelines for using grant agreement budget templates"]
+      ]
+    },
+    {
+      name: "Call",
+      title: "Drafting and publishing the call for proposals",
+      lead: "A public call for proposals must reach the target public and contain everything applicants need to submit a complete application.",
+      source: "Rule 1374 · Art. 8",
+      remember: "Objectives first; website always; answers for everyone.",
+      keyFacts: [["a–j","mandatory elements of a call (Art. 8.3)"],["G8.1A / G8.1B","call template for BO-VC / EU funds"],["G8.3","quality control checklist"]],
+      example: "A call targets NGOs in one member state and is only on the Council website. The website is mandatory but not enough to reach that public. Correct action: add a local newspaper notice referring to the full call online and inform the Permanent Delegation.",
+      understand: "Article 8.3 lists ten mandatory elements (a to j) of a call, and publication on the Organisation's website is an absolute prerequisite.",
+      do: "Draft the call with G8.1A or G8.1B and the G8.2 application form, check it with G8.3, then publish it widely.",
+      check: "All replies to questions are published to all potential applicants by the same means as the call.",
+      sections: [
+        ["Templates", "Use Template G8.1A for calls financed by the Ordinary Budget or Voluntary Contributions and G8.1B for EU funds. The application form (G8.2A or G8.2B) should be used for all competitive procedures; it may be adapted, but the substance of Sections 1 to 3 and the declaration and signature in Sections 12 and 13 must remain unchanged."],
+        ["Mandatory content (a to f)", "The call must state: (a) the objectives of the action, which is the first stage of any procedure; (b) the required level of co-financing, preferably as a percentage of the budget; (c) the submission arrangements, supporting documents, deadline and consequences of non-compliance; (d) a departmental e-mail address and the conditions for asking questions; (e) indicative dates for informing applicants and signing agreements; and (f) the indicative implementation timetable."],
+        ["Mandatory content (g to j)", "The call must also include: (g) exclusion and eligibility criteria with their supporting documents; (h) award criteria with their weighting and supporting documents; (i) the number of potential grantees and the total value of the grants; and (j) the terms of the grant agreement based on the model, including payment arrangements, any financial guarantees and any specific clauses agreed beforehand with DLAPIL."],
+        ["Legal opinion", "DLAPIL systematically verifies the submission arrangements when a legal opinion on the draft call is requested. A legal opinion before publication is highly recommended, and strongly recommended where financial guarantees are stipulated."],
+        ["Means of publication", "Publication on the Organisation's website is mandatory but not sufficient on its own. Choose additional means that reach the target public, such as a notice in a local newspaper, social networks in suitable wording, or informing Permanent Delegations for calls limited to certain member states. Published documents must comply with data protection rules."],
+        ["Questions and answers", "In line with non-discrimination, replies must reach all potential applicants, including those who did not ask. Best practice is a single document of all questions and answers, merging identical questions and omitting irrelevant ones or those answered in the call, published by the same means as the call."]
+      ],
+      warning: "Any specific clause to be added to the model agreement must be agreed with DLAPIL and published in the draft agreement with the call.",
+      best: "Create a dedicated e-mail address for the procedure rather than using a staff member's personal address.",
+      checklist: [
+        "Formulate the objectives of the action first",
+        "Use G8.1A or G8.1B and the G8.2 application form",
+        "Cover all elements (a) to (j) of Article 8.3",
+        "Run the G8.3 quality control checklist",
+        "Request a DLAPIL legal opinion before publication",
+        "Publish on the website and through targeted channels",
+        "Publish one consolidated questions and answers document"
+      ],
+      links: ["Criteria", "Costs", "Submission"],
+      templates: [
+        ["G8.1A", "Call for proposals for BO or VC"],
+        ["G8.1B", "Call for proposals for EU funds"],
+        ["G8.2A", "Application form for BO or VC"],
+        ["G8.2B", "Application form for EU funds"],
+        ["G8.3", "Call for proposals quality control checklist"]
+      ]
+    },
+    {
+      name: "Submission",
+      title: "Submission, receipt and opening of proposals",
+      lead: "Submission conditions are strict and applied uniformly; proposals are opened only after the deadline, by the Co-ordinator with an Evaluation Committee member.",
+      source: "Rule 1374 · Art. 10–11",
+      remember: "Never open early, never open alone, never alter a proposal.",
+      keyFacts: [["2 people","Co-ordinator plus an Evaluation Committee member at opening"],["G11.1","report on opening of proposals"],["Force majeure","must be proved by the late applicant"]],
+      example: "Ten proposals arrive and the Co-ordinator is keen to start before the deadline. Opening early would require cancelling the whole procedure. Correct action: wait for the deadline, open with a Committee member, number each proposal and record it in G11.1.",
+      understand: "Opening proposals before the deadline, or altering their content after receipt, breaches transparency and non-discrimination.",
+      do: "Open proposals after the deadline with an Evaluation Committee member present, number each one and record it in Template G11.1.",
+      check: "Each proposal includes an estimated budget and information on other sources of financing.",
+      sections: [
+        ["Conditions and late proposals", "Dispatch arrangements, closing date and supporting documents are strict requirements applied uniformly, and the consequences of non-fulfilment stated in the call are applied stringently. For late proposals, the decision depends on how the dispatch date or time is certified; an applicant claiming force majeure must prove it. The Co-ordinator gives reasons in the draft report and the Evaluation Committee states its view in the consensus report."],
+        ["Estimated budget and other financing", "Each proposal must include an estimated budget, used to assess feasibility, calculate co-financing and determine eligible expenditure. Information on other sources of financing is crucial for applying the co-financing and non-cumulative award principles."],
+        ["Two-stage evaluation", "For highly technical files, a first stage based on a concept note can test the fundamentals before shortlisted applicants submit a detailed proposal. It is not recommended for files with little technical content, as it is more time-consuming, and is decided case by case. Unsuccessful applicants at either stage are informed only after the final award decision."],
+        ["Personal data", "Data protection rules apply throughout the procedure, including implementation of the agreement. The model grant agreement contains a clause on the conditions of publication of data concerning the agreement."],
+        ["Opening and numbering", "Proposals must not be opened before the deadline expires; disregarding this should lead to cancellation of the whole procedure. The Co-ordinator opens the proposals, never alone but always with a member of the Evaluation Committee. Each proposal receives an identification number recorded in the report on opening of proposals (Template G11.1)."]
+      ],
+      warning: "Never open proposals before the deadline or alone; either breach can require cancellation of the procedure.",
+      best: "State in the call how the dispatch date and time are established, so late proposals can be decided objectively.",
+      checklist: [
+        "Apply submission conditions identically to every applicant",
+        "Keep proposals unopened until the deadline expires",
+        "Open proposals with an Evaluation Committee member present",
+        "Number each proposal and record it in G11.1",
+        "Check each proposal has a budget and funding information",
+        "Note late proposals and reasons for the draft report"
+      ],
+      links: ["Call", "Eligibility Check"],
+      templates: [
+        ["G11.1", "Report on opening of proposals"]
+      ]
+    },
+    {
+      name: "Eligibility Check",
+      title: "Checking exclusion and eligibility; the Evaluation Committee",
+      lead: "The Co-ordinator prepares a draft report on exclusion and eligibility for an Evaluation Committee whose members must be free of conflicts of interest.",
+      source: "Rule 1374 · Art. 12–13",
+      remember: "Clarify, never improve: requests must not change a proposal's substance.",
+      keyFacts: [["≥ 1","staff member on every Evaluation Committee"],["G13.4","conflict of interest declaration, all members"],["G13.5","confidentiality declaration, external members only"]],
+      example: "An applicant's financial statement page was badly scanned. This is a technical error, not a substantive change. Correct action: ask for that page only by a fixed date, and evaluate on available elements if it does not arrive.",
+      understand: "The Co-ordinator checks signed exclusion declarations and eligibility thresholds; requests for information may clarify a proposal but never change its substance.",
+      do: "Prepare the draft G14.1 report and send it with copies of all proposals to the Evaluation Committee members.",
+      check: "Every Committee member has signed G13.4, and external members have also signed the G13.5 confidentiality declaration.",
+      sections: [
+        ["Co-ordinator's draft report", "For exclusion, the Co-ordinator checks that each applicant has duly signed the solemn declaration on exclusion criteria. For eligibility, he or she verifies that each threshold has been met. Conclusions are entered in a draft report (Template G14.1), sent to the Evaluation Committee with a copy of all proposals received."],
+        ["Requests for further information", "Requests may only clarify a proposal, for example to complete administrative details or correct a technical error such as a badly scanned page. The applicant may supply only the expected information by a specified date, failing which the evaluation proceeds on the elements available. Any non-administrative addition is excluded, and any attempt to alter the proposal substantively may give rise to a fraud investigation."],
+        ["Committee composition", "The Rule requires at least one staff member on each Evaluation Committee. It is recommended to appoint a majority of staff members, ideally only staff, though this is not binding. The Committee is appointed by the Commitments Officer using Template G13.1."],
+        ["External members", "Members from outside the Secretariat allow co-operation with donors or beneficiary state authorities and bring technical expertise. They must undertake in writing that they have no conflict of interest and will abide by the rules, and must sign a declaration of confidentiality (G13.5); staff are already bound by Article 26 of the Staff Regulations."],
+        ["Responsibilities and conflicts of interest", "Each member undertakes on appointment to act in line with Article 13.3; the Vademecum (G13.2) explains the role. Article 13.4 lists cases where a conflict of interest is irrebuttably presumed, requiring the person to withdraw or be excluded. The list is not exhaustive."]
+      ],
+      warning: "A presumed conflict of interest under Article 13.4 cannot be rebutted; the member must withdraw or be excluded from the Committee.",
+      best: "Appoint a Committee made up mainly or entirely of staff members to avoid disputes over interpreting the Rule.",
+      checklist: [
+        "Check every exclusion declaration is signed",
+        "Verify each eligibility threshold against the evidence",
+        "Limit information requests to clarifications with a fixed date",
+        "Collect G13.4 declarations from all Committee members",
+        "Collect G13.5 from members outside the Secretariat",
+        "Send the draft G14.1 report and all proposals to members"
+      ],
+      links: ["Submission", "Evaluation", "Roles"],
+      templates: [
+        ["G14.1", "Evaluation report on exclusion and eligibility criteria"],
+        ["G13.1", "Decision appointing the Evaluation Committee"],
+        ["G13.2", "Vademecum for Evaluation Committee members"],
+        ["G13.4", "Declaration of absence of conflict of interests"],
+        ["G13.5", "Declaration of confidentiality (external members)"]
+      ]
+    },
+    {
+      name: "Evaluation",
+      title: "Evaluating proposals and deciding the award",
+      lead: "The Committee adopts the eligibility report, members score proposals individually, the Co-ordinator compiles a consensus report and the Commitments Officer decides.",
+      source: "Rule 1374 · Art. 14",
+      remember: "Score 0–5, average equally, all sign, Commitments Officer reasons.",
+      keyFacts: [["0–5","score scale per award criterion"],["15 days","max calendar days to inform unsuccessful applicants"],["7 days","minimum enquiry period in the letter"],["G14.6","Commitments Officer award decision"]],
+      example: "The consensus report for a media freedom call is signed by all members, but one recommended budget looks unreasonable. The Commitments Officer must verify cost, aims and available funds. Correct action: ask the Committee to amplify its report before adopting a reasoned G14.6 decision.",
+      understand: "Members score each award criterion from 0 to 5 with comments; the consensus report averages scores equally and is adopted when all members sign.",
+      do: "Run individual scoring with G14.3, compile the G14.4 consensus report and submit it for the Commitments Officer's reasoned G14.6 decision.",
+      check: "Unsuccessful applicants are informed in writing no later than 15 calendar days after the successful ones.",
+      sections: [
+        ["Adopting the eligibility report", "The Evaluation Committee starts by adopting the report on exclusion and eligibility criteria (G14.1) based on the Co-ordinator's draft. Adoption may be by electronic consultation, in which case the Co-ordinator keeps a copy of the exchanges. Only applicants declared eligible proceed to the award criteria."],
+        ["Individual scoring", "The Co-ordinator sends each member Model G14.3, completed by each member for each proposal. Each criterion or sub-criterion is scored from 0 (fails or cannot be assessed) to 5 (excellent), with coherent explanatory comments."],
+        ["Consensus report", "The Co-ordinator establishes an average score for each proposal, giving equal weight to each evaluator, in the consensus report (G14.4). If scores diverge too widely, he or she may talk to evaluators or convene the Committee. The report is adopted once signed by all members and states the total funds, the successful and the unsuccessful applicants."],
+        ["Commitments Officer decision", "The Commitments Officer must give reasons, for example by endorsing the attached consensus report without reservation (G14.6). He or she verifies that the selected project pursues the call's aims, that its cost and content are reasonable and that funds are available. If the report is insufficiently reasoned or conflicts with the Rule, he or she asks the Committee to amend or amplify it."],
+        ["Unsuccessful call", "If no proposal is received, the Commitments Officer may decide, without prior action by the Committee, to award no grant or launch a new call. If no proposal meets the criteria, the decision follows the Committee's analysis. Template G14.7A records the decision."],
+        ["Informing applicants", "The Commitments Officer informs successful applicants in writing promptly (G14.8). Unsuccessful applicants are informed in writing within 15 calendar days of the successful ones (G14.9A for exclusion or ineligibility, G14.9B for those not selected), with the enquiry procedure and a cut-off date of at least 7 calendar days. Best practice is to inform all applicants at the same time."]
+      ],
+      warning: "The 15 calendar day deadline for informing unsuccessful applicants is imperative, and the letter must state a cut-off date for enquiries of at least 7 calendar days.",
+      best: "Send all successful and unsuccessful letters on the same day and direct questions to the Co-ordinator.",
+      checklist: [
+        "Adopt the G14.1 report and keep a record of exchanges",
+        "Collect a completed G14.3 sheet per member per proposal",
+        "Average scores equally in the G14.4 consensus report",
+        "Have every Committee member sign the consensus report",
+        "Obtain the Commitments Officer's reasoned G14.6 decision",
+        "Send G14.8 and G14.9A or G14.9B letters on time"
+      ],
+      links: ["Eligibility Check", "Complaints", "Agreement"],
+      templates: [
+        ["G14.1", "Evaluation report on exclusion and eligibility criteria"],
+        ["G14.3", "Individual assessment report"],
+        ["G14.4", "Consensus report"],
+        ["G14.6", "Decision on the award (competitive procedure)"],
+        ["G14.7A", "Decision following an unsuccessful call"],
+        ["G14.8", "Letter informing successful participants"],
+        ["G14.9A", "Letter to unsuccessful applicants (exclusion or ineligibility)"],
+        ["G14.9B", "Letter to unsuccessful participants (not selected)"]
+      ]
+    },
+    {
+      name: "Complaints",
+      title: "Enquiries, complaints and allegations",
+      lead: "Unsuccessful applicants must first enquire, may then complain within 30 calendar days, and complaints go to the Co-ordinator and, failing a manifest error, to the Review Board.",
+      source: "Rule 1374 · Art. 15–16",
+      remember: "Enquire first, complain within 30 days, about the evaluation only.",
+      keyFacts: [["30 days","calendar days to lodge a complaint after the enquiry reply"],["30 days","for the Review Board to meet after receipt"],["3","Review Board members: Auditor, DLAPIL, Treasurer"]],
+      example: "An unsuccessful NGO complains that its complete proposal was rejected as incomplete. That is a manifest error. Correct action: the Co-ordinator alerts the Evaluation Committee, which reassesses and recommends measures to the Commitments Officer.",
+      understand: "A complaint is admissible only if it contests how the proposal was examined; it cannot challenge the wording of the criteria unless they breach Article 2.",
+      do: "Reply to enquiries in writing with G15.2, screen complaints for manifest error and transmit the rest to the Review Board without delay.",
+      check: "Time limits are counted in calendar days from midnight after the triggering act, extended to the next working day if needed.",
+      sections: [
+        ["Enquiries and replies", "The enquiry deadline, at least 7 days, is stated in the letter to unsuccessful applicants, and the Co-ordinator checks that requests arrive in time. Reasons for non-selection are given in writing, not by telephone, promptly. The reply (G15.2) explains the complaint procedure, which complaints are inadmissible and where to send a complaint."],
+        ["Lodging a complaint", "An enquiry must precede any complaint. The complaint must be submitted within 30 calendar days of notification of the reply to the enquiry, cite the call reference and the proposal's identification number, and contain the grievances and all necessary documents. Inadmissible complaints receive G15.3A; missing documents are requested with G15.3B within a reasonable time stated in writing."],
+        ["Calculating time limits", "Time runs from midnight on the day after the triggering act: a reply notified at 11 am on the 2nd starts the clock at midnight on the 3rd. Saturdays, Sundays and public holidays count, but a deadline falling on one is extended to the next working day."],
+        ["Manifest error check", "The Co-ordinator immediately examines the complaint for a manifest error, a gross or clear error in interpreting the facts or in the procedure, such as rejecting a proposal as incomplete when all documents were submitted. If found, the Evaluation Committee reassesses the proposal and recommends measures to the Commitments Officer, who decides."],
+        ["Review Board", "Otherwise the Co-ordinator transmits the complaint and all evaluation documents to the Review Board without delay; it meets within 30 calendar days of receipt. It comprises representatives of the internal Auditor, the Director of Legal Advice and Public International Law and the Treasurer, none involved in the evaluation. It cannot re-evaluate the proposal but checks that criteria were applied coherently and without discrimination, and may recommend a fresh evaluation by reasoned opinion (G15.7A); the Commitments Officer decides on measures (G15.7B)."],
+        ["Fraud, corruption and misconduct", "The complaints procedure only reviews errors in evaluation and is not an inquiry into misconduct. Allegations of fraud, corruption or misconduct should be addressed to the internal Auditor or the Directorate General of Administration, which act under the applicable framework, in particular Rule 1327."]
+      ],
+      warning: "Complaints contesting anything other than the examination of the proposal are inadmissible, and the Review Board may not substitute its own evaluation.",
+      best: "Keep every evaluation document on file so the complete record can be sent to the Review Board at once.",
+      checklist: [
+        "Check enquiries were received within the stated deadline",
+        "Reply to enquiries in writing using G15.2",
+        "Confirm an enquiry preceded the complaint",
+        "Check admissibility and completeness of the complaint",
+        "Screen the complaint for manifest error immediately",
+        "Transmit the full file to the Review Board without delay",
+        "Refer fraud allegations to the internal Auditor or DGA"
+      ],
+      links: ["Evaluation", "Filing"],
+      templates: [
+        ["G15.2", "Reply to enquiries"],
+        ["G15.3A", "Reply letter, inadmissible complaint"],
+        ["G15.3B", "Reply letter, missing documents"],
+        ["G15.7A", "Opinion of the Review Board"],
+        ["G15.7B", "Commitments Officer decision following a complaint"]
+      ]
+    },
+    {
+      name: "Agreement",
+      title: "Drafting, signing and amending the grant agreement",
+      lead: "A written grant agreement is imperative; it is based on the DLAPIL model but must be adapted to the context, the proposal and the donor's requirements.",
+      source: "Rule 1374 · Art. 17",
+      remember: "Always in writing; amend management details, never the total amount.",
+      keyFacts: [["Written","grant agreement is imperative"],["G17.2A / G17.2B","model agreement for BO-VC / EU funds"],["G17.3","amendment template"]],
+      example: "A grantee asks to change its bank details and add €5,000 to the grant. Bank details are a management matter, but the total amount must not increase. Correct action: amend the bank details in writing with G17.3 or e-mail and refuse the increase.",
+      understand: "The agreement must contain a description of the action, an estimated budget, the implementation period, reporting obligations and a limit on third-party liability.",
+      do: "Adapt Template G17.2A or G17.2B with its annexes, consulting DLAPIL where needed, and have the Commitments Officer sign it.",
+      check: "The estimated budget total equals the grant amount and the implementation period does not pre-date the proposal deadline.",
+      sections: [
+        ["Written agreement", "The signature of a written grant agreement between the parties is imperative. A verbal agreement not put into writing is contrary to the Rule."],
+        ["Model agreement", "Use Template G17.2A for the Ordinary Budget or Voluntary Contributions and G17.2B for EU funds, with the guidance in G17.2C. The model is only a basis and must be adapted to the context, the proposal and any donor requirements, notably visibility and eligibility of costs. DLAPIL may be consulted for a legal opinion."],
+        ["Content", "The agreement must include a description of the action, preferably in an annex, and an itemised estimated budget annex (G17.2D) whose total matches the grant amount, even for operational grants. It defines the grantee's obligations, especially narrative and financial reporting (G17.2E or G17.2F), and any purchases or sub-grants. The implementation period should not be retroactive and may never pre-date the deadline for proposals."],
+        ["Amendments", "Where the agreement requires written agreement of both parties, an amendment may be made by e-mail or by a document signed by both (G17.3), clearly referencing the agreement and the provisions supplemented or cancelled and replaced. For e-mail, the authorised staff member's written agreement is obtained first and he or she is copied. Amendments may cover management matters such as deadlines, contact or bank details, but must never increase the total grant amount or distort the initial conditions of the procedure."],
+        ["Third-party liability", "The Organisation's third-party liability must be contractually limited. The model agreement G17.2A is drafted accordingly."],
+        ["Grants in Ukraine", "For grants implemented in Ukraine, add Annex V on security and safety (G17.2H) or the corresponding addendum (G17.4)."]
+      ],
+      warning: "An amendment must never increase the total grant amount or alter conditions in a way that creates unequal treatment between applicants.",
+      best: "Use the estimated budget annex structure as the framework for the grantee's financial reporting.",
+      checklist: [
+        "Choose G17.2A or G17.2B according to the funding source",
+        "Attach the action description and G17.2D budget annex",
+        "Match the budget total to the grant amount",
+        "Define the implementation period without retroactivity",
+        "Set narrative and financial reporting obligations",
+        "Keep the third-party liability limitation clause",
+        "Record amendments in writing with G17.3 or e-mail"
+      ],
+      links: ["Costs", "Evaluation", "Filing"],
+      templates: [
+        ["G17.2A", "Grant agreement for BO or VC"],
+        ["G17.2B", "Grant agreement for EU funds"],
+        ["G17.2C", "How to prepare a grant agreement"],
+        ["G17.2D", "Annex II, estimated budget"],
+        ["G17.2E", "Annex III, financial report (one currency)"],
+        ["G17.2F", "Annex III, financial report (two currencies)"],
+        ["G17.2G", "Guidelines for using budget templates"],
+        ["G17.2H", "Annex V, security and safety for grants in Ukraine"],
+        ["G17.3", "Amendment"],
+        ["G17.4", "Addendum on security and safety in Ukraine"]
+      ]
+    },
+    {
+      name: "Filing",
+      title: "Record-keeping, interpretation and templates",
+      lead: "The initiating department keeps the complete file, the Rule is interpreted in good faith, and the templates must be completed and cleaned before use.",
+      source: "Rule 1374 · Art. 18–20",
+      remember: "Keep everything, from Co-ordinator appointment to final supporting documents.",
+      keyFacts: [["Initiating department","keeps the full grant file"],["Art. 19","good-faith interpretation of the Rule"],["[XX]","options and comments to delete before sending"]],
+      example: "At closure, a project team holds evaluation sheets but the grantee's validated receipts sit with another unit. The whole file belongs with the initiating department. Correct action: gather all documents up to validation of the supporting documents and file them per the document management table.",
+      understand: "All documents from the Co-ordinator's appointment to validation of the supporting documents must be kept by the department that initiated the procedure.",
+      do: "File every procedure document in line with your entity's document management table and finalise templates before sending them.",
+      check: "Comments, blue highlighting and bracketed [XX] options have been removed from every template sent to third parties.",
+      sections: [
+        ["Storage of documents", "All documents relating to the grant procedure, from the appointment of the Co-ordinator to the validation of the supporting documents certifying proper use of the grant, are kept by the department that initiated the procedure. Entities' document management tables must reflect this requirement."],
+        ["Interpretation", "The Rule is interpreted in good faith under Article 19, keeping in mind its spirit and the general principles in its Preamble. The guide and its appendices are recommended for all award procedures; changing the forms may create a discrepancy with the Rule, so consult DLAPIL on any ad hoc situation. Misuse of the guide may be the subject of an administrative inquiry."],
+        ["Using the templates", "Templates contain parts to complete and multiple-choice options, with comments to help drafting. All elements must be completed before sending to third parties, and comments, parts highlighted in blue and bracketed [XX] options must be deleted. Parts for the applicant or grantee are marked in red."]
+      ],
+      warning: "Altering the standard forms risks departing from the Rule; consult DLAPIL before any ad hoc change.",
+      best: "Open the G3.1TAB follow-up table at the start and file each document as the step is completed.",
+      checklist: [
+        "Keep the full file in the initiating department",
+        "Include supporting documents validating use of the grant",
+        "Align filing with the document management table",
+        "Complete every template field before sending",
+        "Delete comments, blue text and [XX] options",
+        "Consult DLAPIL before altering any form"
+      ],
+      links: ["Agreement", "Complaints", "Roles"],
+      templates: [
+        ["G3.1TAB", "Follow-up table of the Co-ordinator"]
+      ]
+    }
+  ];
+})();
+
+</script>
+<script>
 /* engines.js */
 /* Decision engines: pure functions from case facts to a structured decision.
    Rules are carried over from v14 unchanged; only the presentation is new. */
@@ -6103,6 +7270,24 @@ window.FG_CONTENT = {
 
   // Path → scenario category: a compact self-check appears only at the end of each module.
   FG.QUIZ_AT = {};
+  /* ---------- advanced visuals ---------- */
+  // Threshold ruler: piecewise-log scale so small and large thresholds are both readable.
+  // zones: [[from, to, label, colourVar]], marks: [[value, label]], value: the case amount (optional).
+  FG.ui.ruler = function ({ zones, marks, value, max }) {
+    const stops = [0, ...marks.map(([v]) => v), max];
+    const pos = (v) => { v = Math.max(0, Math.min(max, v)); for (let k = 1; k < stops.length; k++) if (v <= stops[k]) return ((k - 1) + (v - stops[k - 1]) / (stops[k] - stops[k - 1])) / (stops.length - 1) * 100; return 100; };
+    const hit = value > 0 ? zones.find(([a, b]) => value > a && value <= b) || zones[zones.length - 1] : null;
+    return `<div class="ruler no-enrich" role="img" aria-label="Threshold ruler${hit ? `: ${esc(euro(value))} falls in ${esc(hit[2])}` : ""}">
+      <div class="ruler-track">${zones.map(([a, b, l, c]) => `<span class="ruler-zone${hit && hit[2] === l ? " on" : ""}" style="left:${pos(a)}%;width:${pos(b) - pos(a)}%;--c:var(${c})"><em>${esc(l)}</em></span>`).join("")}
+        ${value > 0 ? `<i class="ruler-pin" style="left:${pos(value)}%"><b>${esc(euro(value))}</b></i>` : ""}</div>
+      <div class="ruler-marks">${marks.map(([v, l]) => `<span style="left:${pos(v)}%"><b>${esc(euro(v))}</b>${l ? `<small>${esc(l)}</small>` : ""}</span>`).join("")}</div></div>`;
+  };
+  // Gate funnel: each gate narrows the field; shows what is tested and what happens on failure.
+  FG.ui.funnel = function (title, gates) {
+    return `<section class="card funnel no-enrich"><div class="card-head"><div><h3>${esc(title)}</h3><small>Each gate must be passed before the next one is applied.</small></div></div>
+      <ol class="funnel-list">${gates.map(([t, test, fail, kind], k) => `<li style="--w:${100 - k * (55 / Math.max(1, gates.length - 1))}%;--c:var(--c${(k % 4) + 1})"><div class="funnel-bar"><span>${k + 1}</span><b>${esc(t)}</b><em>${esc(kind || "")}</em></div><p>${esc(test)}${fail ? `<small>If not: ${esc(fail)}</small>` : ""}</p></li>`).join("")}</ol></section>`;
+  };
+
   /* ---------- router ---------- */
   FG.route = function (pattern, def) {
     const keys = [];
@@ -6412,7 +7597,7 @@ window.FG_CONTENT = {
             ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "";
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
-        const guidance = `<div class="accordion">${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}</div>
+        const guidance = `${s.example ? `<div class="example"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}<div class="accordion">${s.sections.map(([t, body], k) => { const more = cfg.note && cfg.note(t); return `<details ${k === 0 ? "open" : ""}><summary>${esc(t)}</summary><div><p>${esc(body)}</p>${more && more !== body ? `<p class="mt muted">${esc(more)}</p>` : ""}</div></details>`; }).join("")}</div>
           <div class="grid g2 mt">${s.warning ? ui.callout("warn", "Watch out", s.warning) : ""}${best ? ui.callout("good", "Best practice", best) : ""}</div>`;
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
@@ -6420,6 +7605,7 @@ window.FG_CONTENT = {
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             <div class="sh"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">${esc(s.source)}</span>` : ""}</div><h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
+            ${s.remember || (s.keyFacts || []).length ? `<div class="mem">${s.remember ? `<div class="mem-rule"><small>Remember</small><b>${esc(s.remember)}</b></div>` : ""}${(s.keyFacts || []).map(([v, l]) => `<div class="mem-fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : ""}
             <ol class="ucf">${[["Understand", s.understand, "◎"], ["Do", s.do, "▶"], ["Control", s.check, "✓"]].map(([t, x, ic], k) => `<li style="--c:var(--c${[1, 2, 3][k]})"><span class="ucf-ico" aria-hidden="true">${ic}</span><small>${k + 1} · ${t}</small><p>${esc(x)}</p></li>`).join("")}</ol>
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
@@ -6427,6 +7613,7 @@ window.FG_CONTENT = {
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
+            ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
           ])}</div>
           ${related.length ? `<div class="row mt"><span class="small muted">Related:</span>${related.map(([t, p]) => `<a class="tag" href="#/${p}">${esc(t)}</a>`).join("")}</div>` : ""}
           <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>`;
@@ -6477,15 +7664,22 @@ window.FG_CONTENT = {
         <p class="mt"><b>Documents</b></p><ul>${r.docs.map((d) => `<li>${esc(d[0])}: <span class="muted">${esc(d[1])}</span></li>`).join("")}</ul></div></details>`).join("")}</div>
       </div></section>`;
   }
+  function procRuler(value, type, funding) {
+    const L = E.LIMITS, low = type === "intellectual" ? L.lowIntellectual : L.lowGoods, xb = funding === "xb";
+    return FG.ui.ruler({ value, max: 400000,
+      marks: [[low, "Direct-award limit"], [L.legalReview, xb ? "Legal review (XB)" : "E-procurement"], [L.international, "Tenders Board"]],
+      zones: [[0, low, "Direct award", "--c2"], [low, L.legalReview, "Competitive bidding", "--c1"], [L.legalReview, L.international, xb ? "Competitive + legal review" : "Competitive · e-procurement", "--c4"], [L.international, 400000, "International public call", "--c3"]] });
+  }
   function mountSelector(root) {
     const form = root.querySelector("[data-selector]");
     const run = () => {
       const v = Object.fromEntries(new FormData(form));
       FG.store.set("selector", v);
       const out = root.querySelector("#selectorOut");
-      if (!Number(v.amount)) { out.innerHTML = `<p class="small muted">Enter the estimated value to see the route.</p>`; return; }
+      out.innerHTML = procRuler(Number(v.amount) || 0, v.type, v.funding);
+      if (!Number(v.amount)) { out.insertAdjacentHTML("beforeend", `<p class="small muted mt">Enter the estimated value to see the route.</p>`); return; }
       const r = E.procurement({ amount: v.amount, type: v.type, funding: v.funding });
-      out.innerHTML = ui.callout(r.tone === "good" ? "good" : "warn", r.route, `${r.kpis[2][1]}. ${r.flags[r.flags.length - 1][0]}. `) + `<a class="btn sm mt" href="#/engines/procurement">Open the full Procurement Route engine →</a>`;
+      out.insertAdjacentHTML("beforeend", ui.callout(r.tone === "good" ? "good" : "warn", r.route, `${r.kpis[2][1]}. ${r.flags[r.flags.length - 1][0]}. `) + `<a class="btn sm mt" href="#/engines/procurement">Open the full Procurement Route engine →</a>`);
     };
     form.addEventListener("input", run); form.addEventListener("submit", (e) => e.preventDefault()); run();
   }
@@ -6502,26 +7696,37 @@ window.FG_CONTENT = {
     return (root) => root.addEventListener("click", (e) => { const b = e.target.closest("[data-flow]"); if (b) { FG.store.set(key, +b.dataset.flow); FG.refresh(); } });
   }
 
-  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/launch-and-publication", "VAT Procedures": "vat", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
+  const stageLinkMap = { "Threshold Matrix": "procurement/thresholds-and-procedure", "Risk & Controls": "roles", "Special Cases": "procurement/open-and-evaluate", "VAT Procedures": "vat", "How to Prepare a Payment File": "payment-file", "Filing Management": "filing", "Useful Links & Guidelines": "links" };
   lifecycle({
     base: "procurement", title: "Procurement", eyebrow: "Procurement · lifecycle guide",
     lead: "From defining the need through tendering, award, contract execution, payment and close-out, following the Council of Europe Procurement Guide.",
     stages: C.procurementStages, engine: ["Procurement Route engine", "engines/procurement"], practice: "procurement",
-    phases: [["Define the need", ["Foundations", "Need & Planning"]], ["Choose structure", ["Contract Types"]], ["Determine procedure", ["Thresholds & Procedure"]], ["Design & compete", ["Tender Design", "Launch & Publication", "Evaluation", "Clarification & Negotiation"]], ["Award & contract", ["Award", "Contract Signing"]], ["Execute · pay · file", ["Contract Management", "Contract Execution & Payment", "Filing & Audit Trail"]]],
-    checklist: (s) => C.procurementChecklists[s.name] || [],
-    bestPractice: (s) => C.procurementBestPractice[s.name],
+    phases: C.procurementPhases,
+    checklist: (s) => s.checklist || [],
+    bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign },
+    widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
   /* ---------- grant widgets ---------- */
+  function procGates() { return FG.ui.funnel("Evaluation gates", [
+    ["Admissibility", "Offer received on time, complete and in the required form.", "inadmissible: not evaluated further", "formal"],
+    ["Exclusion criteria", "Signed declaration; no exclusion ground applies (plus restrictive-measures check for EU funds).", "tenderer excluded", "pass / fail"],
+    ["Eligibility criteria", "Minimum legal, financial and technical capacity requirements are met.", "offer is ineligible", "pass / fail"],
+    ["Award criteria", "Published weighted criteria, with a written justification for every score.", null, "scored"],
+    ["Award decision", "CCM, or the Tenders Board from €184,000, approves the proposed award.", null, "decision"]]); }
+  function grantGates() { return FG.ui.funnel("Selection gates", [
+    ["Receipt & opening", "Proposal received by the deadline in the required form, then opened and numbered.", "late proposals are rejected", "formal"],
+    ["Exclusion & eligibility", "Co-ordinator prepares the draft report; the Evaluation Committee adopts it.", "applicant eliminated", "pass / fail"],
+    ["Award criteria", "Committee members assess against the published weighted criteria and agree a consensus report.", null, "scored"],
+    ["Decision", "The Commitments Officer decides on the award and applicants are informed.", null, "decision"]]); }
   function grantProcedureWidget() {
     const amount = FG.store.get("grantQuick", 18000), r = E.grantProcedure({ amount });
     return `<section class="card"><div class="card-head"><div><h3>Procedure route</h3><small>The €15,000 threshold applies to the total grant-award procedure budget, not to each grantee.</small></div><a class="btn sm" href="#/engines/grant-procedure">Full engine</a></div><div class="card-body grid g2">
       ${ui.number("grantQuick", amount, "Total procedure budget (€)")}
-      <div>${ui.callout(r.tone === "good" ? "good" : "warn", r.route, `Template: ${r.kpis[2][1]}. ${amount >= 15000 ? "Direct award at or above €15,000 is possible only under strictly interpreted exceptions (G9.2B)." : "Below the threshold: direct award (G9.2A)."}`)}</div></div></section>`;
+      <div>${FG.ui.ruler({ value: amount, max: 60000, marks: [[15000, "Call for proposals"]], zones: [[0, 15000, "Direct award (G9.2A)", "--c2"], [15000, 60000, "Call for proposals", "--c1"]] })}${ui.callout(r.tone === "good" ? "good" : "warn", r.route, `Template: ${r.kpis[2][1]}. ${amount >= 15000 ? "Direct award at or above €15,000 is possible only under strictly interpreted exceptions (G9.2B)." : "Below the threshold: direct award (G9.2A)."}`)}</div></div></section>`;
   }
   function grantCostsWidget() {
     const st = FG.store.get("grantCost", { necessary: 1, period: 1, budgeted: 1, verifiable: 1 }), r = E.grantCost(st);
@@ -6537,12 +7742,11 @@ window.FG_CONTENT = {
     base: "grants", title: "Grants", eyebrow: "Grants · lifecycle & decision support",
     lead: "Confirm the grant route, choose the procedure, prepare the call and evaluation, formalise the agreement and keep implementation audit-ready (Rule 1374).",
     stages: C.grantStages, engine: ["Grant Procedure engine", "engines/grant-procedure"], practice: "grant",
-    phases: [["Frame the grant", ["Foundations", "Principles", "Procedure", "Roles"]], ["Design the call", ["Criteria", "Costs", "Call"]], ["Select", ["Submission", "Evaluation"]], ["Agree & manage", ["Agreement", "Amendments", "Filing"]]],
-    checklist: (s) => C.grantChecklists[s.name] || [],
-    bestPractice: (s) => C.grantBestPractice[Object.keys(C.grantBestPractice).find((k) => k === s.name || k.startsWith(s.name + " "))],
-    note: (t) => C.grantNotes[t] || C.grantNotes[Object.keys(C.grantNotes).find((k) => k.toLowerCase().startsWith(t.toLowerCase()))],
-    link: () => null,
-    widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget },
+    phases: C.grantPhases,
+    checklist: (s) => s.checklist || [],
+    bestPractice: (s) => s.best,
+    link: (l) => (C.grantStages.some((x) => x.name === l) ? [l, `grants/${slug(l)}`] : null),
+    widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget, Evaluation: grantGates },
     mount: {
       Procedure: (root) => root.querySelector("[name=grantQuick]").addEventListener("change", (e) => { FG.store.set("grantQuick", Number(e.target.value) || 0); FG.refresh(); }),
       Costs: (root) => {
@@ -7147,7 +8351,7 @@ window.FG_CONTENT = {
   // Mark acronyms (tooltip + link to glossary) and amounts in rendered guidance text.
   FG.enrich = function (root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+      acceptNode: (n) => (!n.parentElement.closest("input,select,textarea,button,a,abbr,mark,script,style,.kpi,table.t thead,h1,.nav,.no-enrich,.opts,.scale,.donut,.pace,.fx-hero,.fx-hubs,.mem,.ucf,.ruler,.pj-kpis,.pj-flow,.pj-chev,.progress-head,.tag,.tn,.tb") && termRe.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
     });
     const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
     const seen = new Set();
