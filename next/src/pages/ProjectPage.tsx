@@ -1,3 +1,4 @@
+import { ScenarioCompare } from './ScenarioCompare';
 import { Closure, Revision } from './Closure';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { deleteProjects, deleteReport, deleteRisk, go, set, updateLine, updateProject, upsertRisk, useStore } from '../data/store';
@@ -90,7 +91,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Indicators' && <Indicators p={p} />}
       {tab === 'Justification' && <Justification p={p} />}
       {tab === 'Annual plan' && <AnnualPlanCard p={p} />}
-      {tab === 'Scenario' && <><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
+      {tab === 'Scenario' && <><ScenarioCompare p={p} /><div style={{ marginTop: '16px' }} /><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
       {tab === 'Revision' && <div class="grid g-12"><Revision p={p} /></div>}
       {tab === 'Closure' && <Closure p={p} />}
       {tab === 'History' && <History project={p.code} />}

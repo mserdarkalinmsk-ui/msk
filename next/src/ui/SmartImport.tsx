@@ -36,6 +36,11 @@ function guessProject(text: string, P: Project[]): { p?: Project; why: string } 
     const hits = P.filter((p) => p.bh === m[1] || p.pmm === m[1]);
     if (hits.length === 1) return { p: hits[0], why: `number ${m[1]}` };
   }
+  // No number: the project title written in the document (DoA cover pages rarely carry the BH number).
+  const words = (s: string) => new Set(s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').match(/[a-z]{4,}/g) ?? []);
+  const W = words(t);
+  const sc = P.map((p) => { const N = [...words(p.name)]; return { p, s: N.length >= 3 ? N.filter((w) => W.has(w)).length / N.length : 0 }; }).sort((a, b) => b.s - a.s);
+  if (sc[0]?.s >= 0.75 && sc[0].s - (sc[1]?.s ?? 0) >= 0.2) return { p: sc[0].p, why: 'project title' };
   return { why: '' };
 }
 
