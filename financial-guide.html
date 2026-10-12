@@ -876,6 +876,11 @@ small, .small { font-size: 12.5px; }
 .funnel-list p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
 .funnel-list small { display: block; color: var(--risk); font-size: 12px; margin-top: 2px; }
 @media (max-width: 760px) { .funnel-list li { grid-template-columns: minmax(0, 1fr); gap: 6px; } .funnel-bar { width: 100%; min-width: 0; } .ruler-zone em { font-size: 10px; } .ruler-marks small { display: none; } }
+.rt-grid { grid-template-columns: repeat(var(--n), minmax(72px, 1fr)); min-width: calc(var(--n) * 72px); }
+.rt-node span { font-size: 11.5px; }
+.stage-card .card-body { animation: stageIn .25s ease; }
+@keyframes stageIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .stage-card .card-body { animation: none; } }
 
 </style>
 </head>
@@ -7335,7 +7340,8 @@ window.FG_CONTENT = {
   };
   window.addEventListener("hashchange", () => {
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
-    FG.refresh(false);
+    // Moving between stages of the same module keeps the reader where they are.
+    FG.refresh(!changedPage);
     if (changedPage) { window.scrollTo(0, 0); $("#content").focus({ preventScroll: true }); }
   });
 
@@ -7621,7 +7627,11 @@ window.FG_CONTENT = {
         return { html, mount(root) {
           // Keep the current stage visible when the track scrolls (narrow screens).
           const sc = root.querySelector(".rt-scroll"), on = root.querySelector(".rt-node.on");
-          if (sc && on && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2;
+          if (sc && on && sc.scrollWidth > sc.clientWidth) {
+            sc.scrollLeft = FG.trackScroll || 0;
+            if (on.offsetLeft < sc.scrollLeft || on.offsetLeft + on.offsetWidth > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2;
+            sc.addEventListener("scroll", () => { FG.trackScroll = sc.scrollLeft; }, { passive: true });
+          }
           if (widgetMount) widgetMount(root);
         } };
       },

@@ -186,7 +186,11 @@
         return { html, mount(root) {
           // Keep the current stage visible when the track scrolls (narrow screens).
           const sc = root.querySelector(".rt-scroll"), on = root.querySelector(".rt-node.on");
-          if (sc && on && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2;
+          if (sc && on && sc.scrollWidth > sc.clientWidth) {
+            sc.scrollLeft = FG.trackScroll || 0;
+            if (on.offsetLeft < sc.scrollLeft || on.offsetLeft + on.offsetWidth > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2;
+            sc.addEventListener("scroll", () => { FG.trackScroll = sc.scrollLeft; }, { passive: true });
+          }
           if (widgetMount) widgetMount(root);
         } };
       },

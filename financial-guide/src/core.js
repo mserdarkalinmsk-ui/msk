@@ -206,7 +206,8 @@
   };
   window.addEventListener("hashchange", () => {
     const changedPage = !current || FG.path().split("/")[0] !== current.path.split("/")[0];
-    FG.refresh(false);
+    // Moving between stages of the same module keeps the reader where they are.
+    FG.refresh(!changedPage);
     if (changedPage) { window.scrollTo(0, 0); $("#content").focus({ preventScroll: true }); }
   });
 
