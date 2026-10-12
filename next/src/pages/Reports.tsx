@@ -4,6 +4,7 @@ import { Agenda } from './Agenda';
 import { Deck } from './Deck';
 import { HealthPage } from './Health';
 import { Commitments } from './Commitments';
+import { MonthCompare } from './MonthCompare';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { attention, burnGap, deadlines, elapsed, groupBy, money, portfolioSeries, totals, type Deadline } from '../domain/calc';
@@ -44,7 +45,7 @@ export function Reports() {
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
         </span>
       </div>
-      {tab === 'commit' ? <Commitments /> : tab === 'health' ? <HealthPage /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <Changes projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
+      {tab === 'commit' ? <Commitments /> : tab === 'health' ? <HealthPage /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'brief' ? <Brief /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <><Changes projects={P} /><MonthCompare projects={P} /></> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }
