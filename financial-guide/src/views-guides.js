@@ -496,7 +496,7 @@
     bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
+    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": () => FG.vis.tree() + thresholdMatrix(), "Tender Design": tenderDesign, "Open & Evaluate": procGates },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
@@ -522,7 +522,7 @@
     const st = FG.store.get("grantCost", { necessary: 1, period: 1, budgeted: 1, verifiable: 1 }), r = E.grantCost(st);
     const cat = FG.store.get("grantCat", "staff"), c = C.grantCostCategories[cat];
     const labels = { staff: "Staff", travel: "Travel", equipment: "Equipment", indirect: "Indirect costs", renovation: "Renovation", land: "Land / buildings", fx: "Exchange losses", other: "Other" };
-    return `<section class="card"><div class="card-head"><div><h3>Cost eligibility test</h3><small>Run before commitment and again before payment. Agreement and donor conditions still apply.</small></div></div><div class="card-body grid g2">
+    return `${FG.vis.budget()}<section class="card"><div class="card-head"><div><h3>Cost eligibility test</h3><small>Run before commitment and again before payment. Agreement and donor conditions still apply.</small></div></div><div class="card-body grid g2">
       <div class="checklist" data-costs>${r.tests.map(([k, t, d]) => `<label class="check ${st[k] ? "done" : ""}"><input type="checkbox" data-k="${k}" ${st[k] ? "checked" : ""}><div><b>${esc(t)}</b><small>${esc(d)}</small></div></label>`).join("")}${ui.callout(r.ok ? "good" : "risk", r.title, r.text)}</div>
       <div class="stack"><div class="chips" data-cats>${Object.keys(labels).map((k) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${k === cat}">${labels[k]}</button>`).join("")}</div>
         <div class="card card-pad" style="box-shadow:none">${ui.tag(c[0], /^Ineligible/.test(c[0]) ? "risk" : /Conditional|only/.test(c[0]) ? "warn" : "good")}<p class="mt">${esc(c[1])}</p></div></div>

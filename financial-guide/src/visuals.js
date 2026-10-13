@@ -92,6 +92,72 @@
       <ol class="va-chain">${steps.map(([n, d, on], k) => `<li class="${on ? "on" : "off"}" style="--c:var(--c${k + 1})"><em>${on ? k + 1 : "–"}</em><b>${n}</b><p>${on ? esc(d) : "Not required at this value"}</p></li>`).join("")}</ol>`;
   }
 
+
+  /* ---------- procedure decision tree ---------- */
+  const TREE = {
+    own: { q: "Is the Council buying for its own needs?", hint: "Works, goods or services the Organisation itself uses.", a: [["Yes, a purchase", "exc"], ["No, we fund a partner's own action", "=grant"]] },
+    exc: { q: "Is there a ground for an exceptional direct award?", hint: "For example unforeseeable urgency not caused by the buyer entity, or only one possible supplier.", a: [["No, normal case", "type"], ["Yes, and it is documented", "=exc"]] },
+    type: { q: "What are you buying?", hint: "The direct-award ceiling depends on the type.", a: [["Goods, general services or works", "val:g"], ["Intellectual services", "val:i"]] },
+  };
+  const RES = {
+    grant: ["Grant, not procurement", "Use the grant procedure under Rule No. 1374 instead of a tender.", "#/grants", "Open the grants guide", "c4"],
+    exc: ["Exceptional direct award", "Justify it in writing. CCM authorises; a Legal Compliance Review applies from €55,000 when extrabudgetary, and the Tenders Board decides from €184,000.", "#/procurement/thresholds-and-procedure", "Read the exceptions", "c3"],
+    da: ["Direct award", "One supplier, on a justified memorandum validated by the CCM.", "#/procurement/my-case", "Plan this case", "c2"],
+    cbp: ["Competitive bidding (public prices)", "Below €10,000 you may compare the public prices of three or more suppliers and archive screenshots.", "#/procurement/my-case", "Plan this case", "c1"],
+    cb: ["Competitive bidding", "Invite at least three suppliers. Extrabudgetary from €55,000: Legal Compliance Review by DLAPIL. E-procurement above €55,000.", "#/procurement/my-case", "Plan this case", "c1"],
+    ic: ["International public call for tenders", "Tenders Board competence, publication of at least three weeks, e-procurement.", "#/procurement/my-case", "Plan this case", "c3"],
+  };
+  FG.vis.tree = () => `<section class="vt card" data-tree><div class="vc-head"><div><span class="eyebrow">Decision tree</span><b>Find your procedure in four questions</b></div><button type="button" class="btn sm" data-tr-reset>Start again</button></div><div data-tr-out></div></section>`;
+  function drawTree(box) {
+    const path = JSON.parse(box.dataset.path || "[]"), out = box.querySelector("[data-tr-out]");
+    let node = "own", result = null, kind = "g";
+    const crumbs = path.map(([n, label]) => `<li><small>${esc(TREE[n] ? TREE[n].q : "Estimated value")}</small><b>${esc(label)}</b></li>`).join("");
+    path.forEach(([n, , go]) => { if (go.startsWith("=")) result = go.slice(1); else if (go.startsWith("val:")) { kind = go.slice(4); node = "val"; } else node = go; });
+    if (path.length && path[path.length - 1][0] === "val") { node = null; result = path[path.length - 1][2]; }
+    let cur = "";
+    if (!result && node === "val") {
+      const low = kind === "i" ? 6000 : 2000, opts = [[`Up to €${low.toLocaleString("en-GB")}`, "da"], ...(low < 10000 ? [[`€${(low + 1).toLocaleString("en-GB")} – €9,999`, "cbp"]] : []), ["€10,000 – €183,999", "cb"], ["€184,000 or more", "ic"]];
+      cur = `<div class="vt-q"><b>What is the total estimated value, excluding VAT?</b><p>Over the whole period, including possible extensions.</p><div class="vt-opts">${opts.map(([l, r]) => `<button type="button" data-tr="val|${esc(l)}|${r}">${esc(l)}</button>`).join("")}</div></div>`;
+    } else if (!result) {
+      const t = TREE[node];
+      cur = `<div class="vt-q"><b>${esc(t.q)}</b><p>${esc(t.hint)}</p><div class="vt-opts">${t.a.map(([l, g]) => `<button type="button" data-tr="${node}|${esc(l)}|${g}">${esc(l)}</button>`).join("")}</div></div>`;
+    }
+    const r = result && RES[result];
+    out.innerHTML = `<ol class="vt-path">${crumbs}</ol>${cur}${r ? `<div class="vt-res" style="--c:var(--${r[4]})"><small>Your procedure</small><h4>${esc(r[0])}</h4><p>${esc(r[1])}</p><a class="btn sm primary" href="${r[2]}">${esc(r[3])} →</a></div>` : ""}`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tr]"), rs = e.target.closest("[data-tr-reset]"); if (!b && !rs) return;
+    const box = (b || rs).closest("[data-tree]");
+    if (rs) box.dataset.path = "[]"; else { const [n, l, g] = b.dataset.tr.split("|"); const p = JSON.parse(box.dataset.path || "[]"); p.push([n, l, g]); box.dataset.path = JSON.stringify(p); }
+    drawTree(box);
+  });
+
+  /* ---------- grant budget builder ---------- */
+  const BL = [["staff", "Staff", "--c1"], ["travel", "Travel", "--c2"], ["equip", "Equipment", "--c3"], ["other", "Other direct", "--c4"]];
+  FG.vis.budget = function () {
+    const st = FG.store.get("gbudget", { staff: 20000, travel: 6000, equip: 4000, other: 5000, ind: 7, co: 20 });
+    return `<section class="vb card" data-budget><div class="vc-head"><div><span class="eyebrow">Budget builder</span><b>Build an eligible grant budget</b></div></div>
+      <div class="vb-in">${BL.map(([k, l]) => `<label><span>${l}</span><div class="rc-val"><b>€</b><input type="number" min="0" step="500" data-b="${k}" value="${st[k]}"></div></label>`).join("")}
+        <label class="vb-sl"><span>Indirect costs <b data-b-o="ind"></b></span><input type="range" min="0" max="12" step="0.5" data-b="ind" value="${st.ind}"></label>
+        <label class="vb-sl"><span>Grantee co-financing <b data-b-o="co"></b></span><input type="range" min="0" max="60" step="1" data-b="co" value="${st.co}"></label></div>
+      <div data-b-out></div></section>`;
+  };
+  function drawBudget(box) {
+    const st = {}; box.querySelectorAll("[data-b]").forEach((i) => { st[i.dataset.b] = Math.max(0, +i.value || 0); });
+    FG.store.set("gbudget", st);
+    box.querySelector('[data-b-o="ind"]').textContent = st.ind + "% of total"; box.querySelector('[data-b-o="co"]').textContent = st.co + "%";
+    const direct = BL.reduce((a, [k]) => a + st[k], 0), total = st.ind >= 100 ? direct : direct / (1 - st.ind / 100), ind = total - direct;
+    const grantee = total * st.co / 100, council = total - grantee, f = (n) => "€" + Math.round(n).toLocaleString("en-GB"), pc = (n) => total ? (n / total) * 100 : 0;
+    const issues = [st.ind > 7 && ["risk", `Indirect costs are ${st.ind}% of the total. They may never exceed 7%, and the exact rate must be stated in the call and the agreement.`],
+      st.co === 0 && ["warn", "No co-financing. The grantee should finance part of the action; in financial difficulty it may take the form of staff, in-kind contributions or project income."],
+      ["info", council >= 15000 ? `A Council grant of ${f(council)}: if the total budget of the procedure is €15,000 or more, a call for proposals is required.` : `A Council grant of ${f(council)}: below €15,000 for the whole procedure, a direct award (G9.2A) is possible.`]].filter(Boolean);
+    box.querySelector("[data-b-out]").innerHTML = `
+      <div class="vb-bar" aria-label="Cost structure">${BL.map(([k, l, c]) => st[k] ? `<i style="width:${pc(st[k])}%;background:var(${c})" title="${l}: ${f(st[k])}"><span>${l}</span></i>` : "").join("")}${ind ? `<i class="ind${st.ind > 7 ? " over" : ""}" style="width:${pc(ind)}%" title="Indirect: ${f(ind)}"><span>Indirect</span></i>` : ""}<u style="left:${100 - 7}%" title="7% ceiling"></u></div>
+      <div class="vb-legend"><span>Direct ${f(direct)}</span><span>Indirect ${f(ind)}</span><b>Total ${f(total)}</b></div>
+      <div class="vb-split"><div style="width:${100 - st.co}%"><small>Council grant</small><b>${f(council)}</b></div><div style="width:${st.co}%"><small>Grantee</small><b>${f(grantee)}</b></div></div>
+      <ul class="vb-issues">${issues.map(([k, t]) => `<li class="${k}">${esc(t)}</li>`).join("")}</ul>`;
+  }
+  document.addEventListener("input", (e) => { const b = e.target.closest("[data-budget]"); if (b) drawBudget(b); });
   document.addEventListener("input", (e) => {
     const c = e.target.closest("[data-clock]"); if (c) drawClock(c);
     const a = e.target.closest("[data-chain]"); if (a) drawChain(a, e.target.dataset.ch === "r");
@@ -104,6 +170,8 @@
   });
   new MutationObserver(() => {
     document.querySelectorAll("[data-clock]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawClock(b); });
+    document.querySelectorAll("[data-budget]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawBudget(b); });
+    document.querySelectorAll("[data-tree]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawTree(b); });
     document.querySelectorAll("[data-chain]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawChain(b, false); });
   }).observe(document.documentElement, { childList: true, subtree: true });
 })();
