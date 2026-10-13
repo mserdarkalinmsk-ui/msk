@@ -1365,3 +1365,32 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .case-chip { white-space: nowrap; max-width: 100%; }
 .sb-num { left: auto; right: 24px; top: -34px; color: color-mix(in srgb, var(--c) 7%, transparent); }
 .sb-meters { z-index: 1; }
+
+/* ---------- wave 2: mobile + accessibility ---------- */
+:where(a, button, summary, [tabindex]):focus-visible { outline: 2px solid #2d6bd8; outline-offset: 2px; border-radius: 8px; }
+.sb-meter span, .rt-phase b, .sh-src, .sh-phase, .sb-ref { font-size: max(11.5px, 1em * .8); }
+.muted, .sb-flow small i, .sb-meter span { color: color-mix(in srgb, var(--ink) 62%, var(--panel)); }
+.tablist { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+.tablist::-webkit-scrollbar { display: none; }
+.tablist button { flex: none; }
+@media (max-width: 700px) {
+  .rt { padding: 12px; }
+  .rt-grid { grid-template-columns: repeat(var(--n), 40px); min-width: calc(var(--n) * 40px); }
+  .rt-phase { margin: 0 2px 10px; padding: 4px 6px; }
+  .rt-phase:not(.on) b { font-size: 0; }
+  .rt-phase:not(.on) b small { font-size: 10px; }
+  .rt-phase.on b { white-space: nowrap; overflow: visible; }
+  .rt-node span { display: none; }
+  .rt-node.on em { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 22%, transparent); }
+  .rt-head { flex-wrap: wrap; }
+  .sb-hero { margin: -16px -16px 0; padding: 18px 16px 16px; }
+  .sb-top h2 { font-size: 22px; }
+  .sb-meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .sb-meter { min-width: 0; padding: 8px 4px; }
+  .sb-meter b { font-size: 18px; }
+  .sb-meter span { font-size: 10px; letter-spacing: .02em; }
+  .sb-rule b { font-size: 16px; }
+  .sb-flow p { font-size: 14.5px; }
+  .rd-done { flex-direction: column; align-items: stretch; text-align: left; }
+  .sb-mini { top: 58px; }
+}
