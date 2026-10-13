@@ -1555,3 +1555,25 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .vb-issues li.warn { border-color: #d98a1a; background: color-mix(in srgb, #d98a1a 9%, var(--panel)); }
 @media (max-width: 900px) { .vb-in { grid-template-columns: 1fr 1fr; } }
 .vb-bar i { font-style: normal; }
+/* award scoring */
+.vs { padding: 20px; margin-top: 16px; }
+.vs-w { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0; align-items: flex-end; }
+.vs-w label > span { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.vs-w label i { font-style: normal; opacity: .7; }
+.vs-w input, .vs-t input { font: inherit; font-size: 14px; font-weight: 600; width: 84px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink); text-align: center; }
+.vs-t input[data-sp] { width: 110px; }
+.vs-t th small { display: block; font-weight: 500; color: var(--muted); font-size: 11px; }
+.vs-sum { margin-left: auto; text-align: right; }
+.vs-sum b { font-size: 24px; } .vs-sum b.ok { color: #1f9d6b; } .vs-sum b.bad { color: #c0392b; }
+.vs-sum small { display: block; font-size: 11.5px; color: var(--muted); }
+.vs-rank { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.vs-rank li { display: grid; grid-template-columns: 30px 110px 1fr 56px; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); }
+.vs-rank li.win { border-color: #1f9d6b; background: color-mix(in srgb, #1f9d6b 7%, var(--panel)); }
+.vs-pos { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--sunken); }
+.vs-rank li.win .vs-pos { background: #1f9d6b; color: #fff; }
+.vs-bar { display: flex; height: 18px; border-radius: 6px; overflow: hidden; background: var(--sunken); }
+.vs-bar i { height: 100%; transition: width .25s; }
+.vs-rank em { font-style: normal; font-weight: 700; font-size: 16px; text-align: right; }
+.vs-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.vs-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+@media (max-width: 700px) { .vs-rank li { grid-template-columns: 26px 1fr 50px; } .vs-bar { grid-column: 1 / -1; } }

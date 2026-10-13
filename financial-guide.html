@@ -1567,6 +1567,28 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .vb-issues li.warn { border-color: #d98a1a; background: color-mix(in srgb, #d98a1a 9%, var(--panel)); }
 @media (max-width: 900px) { .vb-in { grid-template-columns: 1fr 1fr; } }
 .vb-bar i { font-style: normal; }
+/* award scoring */
+.vs { padding: 20px; margin-top: 16px; }
+.vs-w { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0; align-items: flex-end; }
+.vs-w label > span { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.vs-w label i { font-style: normal; opacity: .7; }
+.vs-w input, .vs-t input { font: inherit; font-size: 14px; font-weight: 600; width: 84px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink); text-align: center; }
+.vs-t input[data-sp] { width: 110px; }
+.vs-t th small { display: block; font-weight: 500; color: var(--muted); font-size: 11px; }
+.vs-sum { margin-left: auto; text-align: right; }
+.vs-sum b { font-size: 24px; } .vs-sum b.ok { color: #1f9d6b; } .vs-sum b.bad { color: #c0392b; }
+.vs-sum small { display: block; font-size: 11.5px; color: var(--muted); }
+.vs-rank { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.vs-rank li { display: grid; grid-template-columns: 30px 110px 1fr 56px; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); }
+.vs-rank li.win { border-color: #1f9d6b; background: color-mix(in srgb, #1f9d6b 7%, var(--panel)); }
+.vs-pos { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--sunken); }
+.vs-rank li.win .vs-pos { background: #1f9d6b; color: #fff; }
+.vs-bar { display: flex; height: 18px; border-radius: 6px; overflow: hidden; background: var(--sunken); }
+.vs-bar i { height: 100%; transition: width .25s; }
+.vs-rank em { font-style: normal; font-weight: 700; font-size: 16px; text-align: right; }
+.vs-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.vs-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+@media (max-width: 700px) { .vs-rank li { grid-template-columns: 26px 1fr 50px; } .vs-bar { grid-column: 1 / -1; } }
 
 </style>
 </head>
@@ -9346,7 +9368,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:49</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 06:04</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -9541,6 +9563,38 @@ window.FG_CONTENT = {
       <div class="vb-split"><div style="width:${100 - st.co}%"><small>Council grant</small><b>${f(council)}</b></div><div style="width:${st.co}%"><small>Grantee</small><b>${f(grantee)}</b></div></div>
       <ul class="vb-issues">${issues.map(([k, t]) => `<li class="${k}">${esc(t)}</li>`).join("")}</ul>`;
   }
+
+  /* ---------- weighted award scoring ---------- */
+  const SC0 = { w: [40, 30, 30], names: ["Quality of proposal", "Expertise"], b: [["Bidder A", [8, 7], 52000], ["Bidder B", [6, 9], 47000], ["Bidder C", [9, 8], 61000]] };
+  FG.vis.scoring = function () {
+    const st = FG.store.get("scoring", SC0);
+    return `<section class="vs card" data-score><div class="vc-head"><div><span class="eyebrow">Award scoring</span><b>Weighted scores and final ranking</b></div><button type="button" class="btn sm" data-sc-reset>Reset example</button></div>
+      <div class="vs-w">${st.names.map((n, k) => `<label><span>${esc(n)} <i>weight</i></span><input type="number" min="0" max="100" data-sw="${k}" value="${st.w[k]}"></label>`).join("")}<label><span>Financial offer <i>weight</i></span><input type="number" min="0" max="100" data-sw="2" value="${st.w[2]}"></label><div class="vs-sum" data-sc-sum></div></div>
+      <div class="table-wrap"><table class="t vs-t"><thead><tr><th>Bidder</th>${st.names.map((n) => `<th class="c">${esc(n)}<small>score /10</small></th>`).join("")}<th class="c">Price (€)</th></tr></thead><tbody>
+        ${st.b.map(([n, sc, pr], i) => `<tr><td><b>${esc(n)}</b></td>${sc.map((v, k) => `<td class="c"><input type="number" min="0" max="10" step="0.5" data-sb="${i}:${k}" value="${v}"></td>`).join("")}<td class="c"><input type="number" min="1" step="100" data-sp="${i}" value="${pr}"></td></tr>`).join("")}
+      </tbody></table></div><div data-sc-out></div>
+      <p class="vc-note">Each quality criterion is scored out of 10 with a written justification. Financial points here are proportional to the cheapest offer (cheapest ÷ price × weight); use the method stated in your tender file.</p></section>`;
+  };
+  function drawScore(box) {
+    const st = FG.store.get("scoring", SC0);
+    box.querySelectorAll("[data-sw]").forEach((i) => { st.w[+i.dataset.sw] = Math.max(0, +i.value || 0); });
+    box.querySelectorAll("[data-sb]").forEach((i) => { const [b, k] = i.dataset.sb.split(":").map(Number); st.b[b][1][k] = Math.min(10, Math.max(0, +i.value || 0)); });
+    box.querySelectorAll("[data-sp]").forEach((i) => { st.b[+i.dataset.sp][2] = Math.max(1, +i.value || 1); });
+    FG.store.set("scoring", st);
+    const sum = st.w.reduce((a, b) => a + b, 0), fw = st.w[2], low = Math.min(...st.b.map((b) => b[2]));
+    box.querySelector("[data-sc-sum]").innerHTML = `<b class="${sum === 100 ? "ok" : "bad"}">${sum}</b><small>/ 100 points</small>`;
+    const rows = st.b.map(([n, sc, pr]) => { const q = sc.map((v, k) => (v / 10) * st.w[k]), f = (low / pr) * fw; return { n, q, f, t: q.reduce((a, b) => a + b, 0) + f, pr }; }).sort((a, b) => b.t - a.t);
+    const max = Math.max(sum, 1), cols = ["--c1", "--c2"];
+    const warn = [sum !== 100 && `Weights add up to ${sum}, not 100.`, fw < 20 && "The financial offer weight should not in principle be lower than 20 points (unless a minimum score or exclusion level is set)."].filter(Boolean);
+    box.querySelector("[data-sc-out]").innerHTML = `${warn.map((w) => `<div class="vc-warn">${esc(w)}</div>`).join("")}
+      <ol class="vs-rank">${rows.map((r, i) => `<li class="${i ? "" : "win"}"><span class="vs-pos">${i + 1}</span><b>${esc(r.n)}</b>
+        <div class="vs-bar">${r.q.map((v, k) => `<i style="width:${(v / max) * 100}%;background:var(${cols[k]})" title="${esc(st.names[k])}: ${v.toFixed(1)}"></i>`).join("")}<i style="width:${(r.f / max) * 100}%;background:var(--c3)" title="Financial: ${r.f.toFixed(1)}"></i></div>
+        <em>${r.t.toFixed(1)}</em></li>`).join("")}</ol>
+      <div class="vs-legend">${st.names.map((n, k) => `<span><i style="background:var(${cols[k]})"></i>${esc(n)}</span>`).join("")}<span><i style="background:var(--c3)"></i>Financial offer</span></div>
+      <p class="va-route"><b>${esc(rows[0].n)}</b> ranks first with ${rows[0].t.toFixed(1)} points${rows[0].pr !== low ? ", although it is not the cheapest offer" : ""}.</p>`;
+  }
+  document.addEventListener("input", (e) => { const b = e.target.closest("[data-score]"); if (b) drawScore(b); });
+  document.addEventListener("click", (e) => { const r = e.target.closest("[data-sc-reset]"); if (!r) return; FG.store.set("scoring", JSON.parse(JSON.stringify(SC0))); const box = r.closest("[data-score]"), tmp = document.createElement("div"); tmp.innerHTML = FG.vis.scoring(); box.replaceWith(tmp.firstElementChild); });
   document.addEventListener("input", (e) => { const b = e.target.closest("[data-budget]"); if (b) drawBudget(b); });
   document.addEventListener("input", (e) => {
     const c = e.target.closest("[data-clock]"); if (c) drawClock(c);
@@ -9554,6 +9608,7 @@ window.FG_CONTENT = {
   });
   new MutationObserver(() => {
     document.querySelectorAll("[data-clock]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawClock(b); });
+    document.querySelectorAll("[data-score]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawScore(b); });
     document.querySelectorAll("[data-budget]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawBudget(b); });
     document.querySelectorAll("[data-ptree]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawTree(b); });
     document.querySelectorAll("[data-chain]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawChain(b, false); });
@@ -10421,7 +10476,7 @@ window.FG_CONTENT = {
     bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": () => FG.vis.tree() + thresholdMatrix(), "Tender Design": tenderDesign, "Open & Evaluate": procGates },
+    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": () => FG.vis.tree() + thresholdMatrix(), "Tender Design": tenderDesign, "Open & Evaluate": () => procGates() + FG.vis.scoring() },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
