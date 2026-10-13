@@ -28,7 +28,8 @@ const RULES: [Kind | 'person', RegExp][] = [
 ];
 const INTL = /international|foreign|uluslararası|yabancı|abroad/i;
 const PETTY = /petty cash|caisse|avance de fonds|cash advance/i; // advances to the office, not a provider
-const STAFF = /^1\.[12]\.1(\.|$)/; // salaries of the project team are not service providers
+// Salaries of the project team (1.1.1, 1.2.1), per diems (1.3.1, 1.3.2) and grants (6.1, 6.2) are not service providers.
+const STAFF = /^(1\.[12]\.1|1\.3\.[12]|6\.[12])(\.|$)/;
 /** Staff salaries and per diems: never a service provider, not even listed among the other POs. */
 export const EXCLUDED = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission|\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|ücret bordro/i;
 

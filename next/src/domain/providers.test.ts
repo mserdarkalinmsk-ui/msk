@@ -20,6 +20,10 @@ describe('service provider kinds', () => {
     expect(kindOf('DSA for participants of the conference', '5.7.1')).toBeNull();
     expect(kindOf('Per diem national consultant', '1.1.3')).toBeNull();
     expect(kindOf('PAIE TEMPORAIRE Plan 01 General', '1.1.1.4')).toBeNull();
+    expect(kindOf('Grant to CSO for awareness campaign', '6.1')).toBeNull();
+    expect(kindOf('Sub-grant research', '6.2.1')).toBeNull();
+    expect(kindOf('Consultant travel', '1.3.1')).toBeNull();
+    expect(kindOf('Meeting', '1.3.2')).toBeNull();
     expect(kindOf('Office rent', '4.1')).toBeNull();
     expect(kindOf('Salary of the project officer', '1.1.1')).toBeNull();
   });
