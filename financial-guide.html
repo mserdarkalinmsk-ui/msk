@@ -1719,27 +1719,60 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 @media (max-width: 900px) { .hx-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .ak-list { grid-template-columns: 1fr; } .ak-form { flex-direction: column; } }
 /* Horizontal process stepper */
-.hs-row { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+.hs { --hs-a: #2d6bd8; --hs-ok: #1f9d6b; }
+.hs-head { display: flex; align-items: center; gap: 14px; }
+.hs-head > div:nth-child(2) { flex: 1; display: grid; gap: 2px; }
+.hs-head small { color: var(--muted); }
+.hs-ring { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--hs-ok) calc(var(--p) * 1%), var(--line) 0); position: relative; flex: none; }
+.hs-ring::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--panel); }
+.hs-ring b { position: relative; z-index: 1; font-size: .8rem; }
+.hs-phases { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 6px; margin: 18px 0 4px; }
+.hs-phases span { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; font-size: .78rem; font-weight: 700; letter-spacing: .02em; color: var(--ink);
+  background: color-mix(in srgb, var(--c) 9%, transparent); border: 1px solid color-mix(in srgb, var(--c) 25%, transparent); }
+.hs-phases i { font-style: normal; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: var(--c); color: #fff; font-size: .7rem; }
+.hs-phases em { margin-left: auto; font-style: normal; font-weight: 600; color: var(--muted); }
+.hs-phases span.on { box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); }
+.hs-phases span.ok { background: color-mix(in srgb, var(--hs-ok) 12%, transparent); border-color: color-mix(in srgb, var(--hs-ok) 35%, transparent); }
+.hs-row { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
 .hs-row li { position: relative; }
-.hs-row li::before { content: ""; position: absolute; top: 17px; left: -50%; width: 100%; height: 2px; background: var(--line); z-index: 0; }
+.hs-row li::before { content: ""; position: absolute; top: 23px; left: -50%; width: 100%; height: 3px; border-radius: 3px; background: var(--line); }
 .hs-row li:first-child::before { display: none; }
-.hs-row li.ok::before { background: #1f9d6b; }
-.hs-row button { position: relative; z-index: 1; width: 100%; display: grid; justify-items: center; gap: 6px; padding: 0 4px 8px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .74rem; line-height: 1.25; text-align: center; cursor: pointer; hyphens: auto; overflow-wrap: anywhere; }
-.hs-row span { max-width: 100%; }
-.hs-row em { font-style: normal; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: var(--panel); font-weight: 700; font-size: .85rem; color: var(--ink); transition: all .15s; }
-.hs-row li.ok em { background: #1f9d6b; border-color: #1f9d6b; color: #fff; }
-.hs-row li.on em { border-color: #2d6bd8; box-shadow: 0 0 0 4px rgba(45, 107, 216, .18); }
-.hs-row li.on button { color: var(--ink); font-weight: 600; }
-.hs-row button:hover em { border-color: #2d6bd8; }
-.hs-panel { margin-top: 8px; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); border-top: 3px solid #2d6bd8; background: var(--panel); animation: hsIn .18s ease; }
-.hs-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.hs-top h4 { margin: 0; flex: 1; font-size: 1.05rem; }
-.hs-n { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); width: 100%; }
-.hs-panel p { margin: 10px 0 6px; line-height: 1.55; }
-.hs-panel ul { margin: 0; padding-left: 20px; line-height: 1.6; }
-.hs-nav { display: flex; justify-content: space-between; margin-top: 12px; }
-@keyframes hsIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-@media (max-width: 760px) { .hs-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .hs-row li { flex: 0 0 92px; scroll-snap-align: start; } }
+.hs-row li.ok::before { background: linear-gradient(90deg, var(--hs-ok), #36c48f); }
+.hs-row button { position: relative; z-index: 1; width: 100%; display: grid; justify-items: center; gap: 8px; padding: 0 3px 6px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .72rem; line-height: 1.25; text-align: center; cursor: pointer; overflow-wrap: normal; word-break: normal; }
+.hs-row em { position: relative; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--panel); color: var(--hs-a);
+  box-shadow: 0 1px 2px rgba(15, 30, 60, .06), 0 4px 12px -6px rgba(15, 30, 60, .18); transition: transform .18s, box-shadow .18s, border-color .18s; }
+.hs-row em svg { width: 22px; height: 22px; }
+.hs-row sup { position: absolute; top: -7px; right: -7px; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 10px; display: grid; place-items: center; background: var(--ink); color: var(--panel); font-size: .64rem; font-weight: 700; }
+.hs-row button:hover em { transform: translateY(-2px); border-color: var(--hs-a); }
+.hs-row li.ok em { background: linear-gradient(135deg, var(--hs-ok), #36c48f); border-color: transparent; color: #fff; }
+.hs-row li.ok sup { background: var(--hs-ok); color: #fff; }
+.hs-row li.on em { background: linear-gradient(135deg, #2d6bd8, #5b8def); border-color: transparent; color: #fff; transform: translateY(-3px) scale(1.06); box-shadow: 0 10px 22px -8px rgba(45, 107, 216, .65); }
+.hs-row li.on sup { background: #f2a516; color: #1b1b1b; }
+.hs-row li.on button { color: var(--ink); font-weight: 700; }
+.hs-panel { position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr; gap: 18px; margin-top: 14px; padding: 22px 24px; border-radius: 18px; border: 1px solid var(--line);
+  background: radial-gradient(120% 140% at 0% 0%, rgba(45, 107, 216, .08), transparent 55%), var(--panel); box-shadow: 0 14px 34px -22px rgba(15, 30, 60, .35); animation: hsIn .22s ease; }
+.hs-panel::before { content: ""; position: absolute; top: -9px; left: var(--x); width: 16px; height: 16px; transform: translateX(-50%) rotate(45deg); background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
+.hs-ico { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #2d6bd8, #5b8def); box-shadow: 0 10px 20px -10px rgba(45, 107, 216, .7); }
+.hs-ico svg { width: 26px; height: 26px; }
+.hs-main { position: relative; z-index: 1; min-width: 0; }
+.hs-n { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--hs-a); }
+.hs-main h4 { margin: 4px 0 2px; font-size: 1.2rem; }
+.hs-sub { margin: 0 0 6px; color: var(--muted); font-size: .9rem; }
+.hs-main > p { margin: 10px 0 8px; line-height: 1.6; }
+.hs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hs-list li { position: relative; padding: 9px 12px 9px 38px; border-radius: 10px; background: color-mix(in srgb, var(--hs-a) 5%, transparent); border: 1px solid color-mix(in srgb, var(--hs-a) 12%, transparent); line-height: 1.5; }
+.hs-list li::before { content: ""; position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; border-radius: 5px; background: var(--hs-a) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/11px no-repeat; }
+.hs-nav { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.hs-nav > :last-child { justify-self: end; }
+.hs-nav > :first-child { justify-self: start; }
+.hs-wm { position: absolute; right: 18px; bottom: -22px; font-size: 7.5rem; font-weight: 800; line-height: 1; letter-spacing: -.04em; color: var(--hs-a); opacity: .06; pointer-events: none; }
+@keyframes hsIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 760px) {
+  .hs-phases { display: flex; overflow-x: auto; } .hs-phases span { flex: none; }
+  .hs-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-top: 8px; } .hs-row li { flex: 0 0 88px; scroll-snap-align: start; }
+  .hs-panel { grid-template-columns: 1fr; padding: 18px; } .hs-panel::before { display: none; }
+  .hs-nav { grid-template-columns: 1fr 1fr; } .hs-nav > .btn.sm[data-tl] { grid-column: 1 / -1; order: -1; justify-self: stretch; }
+}
 
 </style>
 </head>
@@ -9609,7 +9642,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 07:56</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 08:14</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10906,15 +10939,40 @@ window.FG_CONTENT = {
       <div class="timeline mt" data-timeline="${esc(id)}">${steps.map((s, i) => { const m = map(s, i); return `<div class="tl"><div class="tl-dot"><button type="button" class="${t[i] ? "ok" : ""}" data-tl="${i}" aria-pressed="${!!t[i]}" aria-label="Mark step ${i + 1} ${t[i] ? "not done" : "done"}">${t[i] ? "✓" : i + 1}</button></div>
         <details class="tl-body" ${i === 0 ? "open" : ""}><summary>${esc(m.title)}${m.sub ? `<small>${esc(m.sub)}</small>` : ""}</summary><p>${esc(m.text)}</p>${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</details></div>`; }).join("")}</div>`;
   }
-  // Horizontal stepper: click a step to open its details underneath; ticks share the timeline store.
+  // Horizontal stepper: phases on top, icon nodes on a progress rail, details open under the chosen step.
+  const SI = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const STEP_ICONS = [
+    [/workflow|review the|confirm completion/i, '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'],
+    [/budget/i, '<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/>'],
+    [/supplier route|no suitable/i, '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'],
+    [/registration/i, '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/>'],
+    [/contract doc|match po|payment request/i, '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'],
+    [/signature|visa/i, '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'],
+    [/submit|dispatch/i, '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>'],
+    [/approval/i, '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>'],
+    [/po issued|invoice/i, '<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 1V2l-1 1-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 8h8M8 12h8"/>'],
+    [/start|archive/i, '<path d="M5 3l14 9-14 9z"/>'],
+    [/evidence/i, '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
+  ];
+  const stepIcon = (t) => SI((STEP_ICONS.find(([r]) => r.test(t)) || [0, '<circle cx="12" cy="12" r="9"/>'])[1]);
+  const PHASES = { "po:steps": [["Prepare", 5], ["Sign & approve", 4], ["Launch", 3]], "pay:steps": [["Verify", 5], ["Request", 2], ["Pay & close", 2]] };
   function stepper(id, steps, map) {
-    const t = FG.ticks(id), done = steps.filter((_, i) => t[i]).length, sel = Math.min(FG.store.get(id + ":sel", 0), steps.length - 1), m = map(steps[sel], sel);
-    return `<div class="progress-head"><span>${done} / ${steps.length} steps complete</span>${done ? `<button class="btn ghost sm" data-tl-reset="${esc(id)}">Reset</button>` : ""}</div>
-      <div class="hs" data-timeline="${esc(id)}"><ol class="hs-row" style="--n:${steps.length}">${steps.map((s, i) => `<li class="${t[i] ? "ok" : ""} ${i === sel ? "on" : ""}"><button type="button" data-hs="${i}" aria-expanded="${i === sel}"><em>${t[i] ? "✓" : i + 1}</em><span>${esc(map(s, i).title)}</span></button></li>`).join("")}</ol>
-      <div class="hs-panel"><div class="hs-top"><span class="hs-n">Step ${sel + 1} of ${steps.length}</span><h4>${esc(m.title)}${m.sub ? ` <small>${esc(m.sub)}</small>` : ""}</h4>
-        <button type="button" class="btn sm ${t[sel] ? "" : "primary"}" data-tl="${sel}" aria-pressed="${!!t[sel]}">${t[sel] ? "✓ Done · undo" : "Mark as done"}</button></div>
-        ${m.text ? `<p>${esc(m.text)}</p>` : ""}${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-        <div class="hs-nav">${sel > 0 ? `<button type="button" class="btn ghost sm" data-hs="${sel - 1}">← Previous</button>` : "<span></span>"}${sel < steps.length - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">Next step →</button>` : ""}</div></div></div>`;
+    const t = FG.ticks(id), done = steps.filter((_, i) => t[i]).length, n = steps.length;
+    const sel = Math.min(FG.store.get(id + ":sel", 0), n - 1), m = map(steps[sel], sel), pct = Math.round((done / n) * 100);
+    const phases = PHASES[id] || [["Process", n]]; let at = 0;
+    const phaseOf = (i) => { let c = 0; for (const [name, k] of phases) { if (i < c + k) return name; c += k; } return ""; };
+    return `<div class="hs" data-timeline="${esc(id)}">
+      <div class="hs-head"><div class="hs-ring" style="--p:${pct}"><b>${pct}%</b></div><div><b>${done} of ${n} steps complete</b><small>${done === n ? "Process complete." : `Next: ${esc(map(steps[steps.findIndex((_, i) => !t[i])], 0).title)}`}</small></div>${done ? `<button class="btn ghost sm" data-tl-reset="${esc(id)}">Reset</button>` : ""}</div>
+      <div class="hs-phases" style="--n:${n}">${phases.map(([name, k], j) => { const from = at; at += k; const pd = steps.slice(from, at).filter((_, i) => t[from + i]).length; return `<span class="${pd === k ? "ok" : sel >= from && sel < at ? "on" : ""}" style="grid-column:span ${k};--c:var(--c${j + 1})"><i>${j + 1}</i>${esc(name)}<em>${pd}/${k}</em></span>`; }).join("")}</div>
+      <ol class="hs-row" style="--n:${n}">${steps.map((s, i) => `<li class="${t[i] ? "ok" : ""} ${i === sel ? "on" : ""}"><button type="button" data-hs="${i}" aria-expanded="${i === sel}" aria-label="Step ${i + 1}: ${esc(map(s, i).title)}"><em>${t[i] ? SI('<path d="M20 6 9 17l-5-5"/>') : stepIcon(map(s, i).title)}<sup>${i + 1}</sup></em><span>${esc(map(s, i).title)}</span></button></li>`).join("")}</ol>
+      <div class="hs-panel" style="--x:${((sel + 0.5) / n) * 100}%">
+        <div class="hs-ico">${stepIcon(m.title)}</div>
+        <div class="hs-main"><span class="hs-n">${esc(phaseOf(sel))} · step ${sel + 1} of ${n}</span><h4>${esc(m.title)}</h4>${m.sub ? `<p class="hs-sub">${esc(m.sub)}</p>` : ""}
+          ${m.text ? `<p>${esc(m.text)}</p>` : ""}${m.list ? `<ul class="hs-list">${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+          <div class="hs-nav">${sel > 0 ? `<button type="button" class="btn ghost sm" data-hs="${sel - 1}">← ${esc(map(steps[sel - 1], 0).title)}</button>` : "<span></span>"}
+            <button type="button" class="btn sm ${t[sel] ? "" : "primary"}" data-tl="${sel}" aria-pressed="${!!t[sel]}">${t[sel] ? "✓ Done · undo" : "Mark as done"}</button>
+            ${sel < n - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">${esc(map(steps[sel + 1], 0).title)} →</button>` : "<span></span>"}</div></div>
+        <span class="hs-wm" aria-hidden="true">${String(sel + 1).padStart(2, "0")}</span></div></div>`;
   }
   function mountTimeline(root) {
     root.addEventListener("click", (e) => {

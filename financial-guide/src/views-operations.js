@@ -14,15 +14,40 @@
       <div class="timeline mt" data-timeline="${esc(id)}">${steps.map((s, i) => { const m = map(s, i); return `<div class="tl"><div class="tl-dot"><button type="button" class="${t[i] ? "ok" : ""}" data-tl="${i}" aria-pressed="${!!t[i]}" aria-label="Mark step ${i + 1} ${t[i] ? "not done" : "done"}">${t[i] ? "✓" : i + 1}</button></div>
         <details class="tl-body" ${i === 0 ? "open" : ""}><summary>${esc(m.title)}${m.sub ? `<small>${esc(m.sub)}</small>` : ""}</summary><p>${esc(m.text)}</p>${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</details></div>`; }).join("")}</div>`;
   }
-  // Horizontal stepper: click a step to open its details underneath; ticks share the timeline store.
+  // Horizontal stepper: phases on top, icon nodes on a progress rail, details open under the chosen step.
+  const SI = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const STEP_ICONS = [
+    [/workflow|review the|confirm completion/i, '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'],
+    [/budget/i, '<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/>'],
+    [/supplier route|no suitable/i, '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'],
+    [/registration/i, '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/>'],
+    [/contract doc|match po|payment request/i, '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'],
+    [/signature|visa/i, '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'],
+    [/submit|dispatch/i, '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>'],
+    [/approval/i, '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>'],
+    [/po issued|invoice/i, '<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 1V2l-1 1-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 8h8M8 12h8"/>'],
+    [/start|archive/i, '<path d="M5 3l14 9-14 9z"/>'],
+    [/evidence/i, '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
+  ];
+  const stepIcon = (t) => SI((STEP_ICONS.find(([r]) => r.test(t)) || [0, '<circle cx="12" cy="12" r="9"/>'])[1]);
+  const PHASES = { "po:steps": [["Prepare", 5], ["Sign & approve", 4], ["Launch", 3]], "pay:steps": [["Verify", 5], ["Request", 2], ["Pay & close", 2]] };
   function stepper(id, steps, map) {
-    const t = FG.ticks(id), done = steps.filter((_, i) => t[i]).length, sel = Math.min(FG.store.get(id + ":sel", 0), steps.length - 1), m = map(steps[sel], sel);
-    return `<div class="progress-head"><span>${done} / ${steps.length} steps complete</span>${done ? `<button class="btn ghost sm" data-tl-reset="${esc(id)}">Reset</button>` : ""}</div>
-      <div class="hs" data-timeline="${esc(id)}"><ol class="hs-row" style="--n:${steps.length}">${steps.map((s, i) => `<li class="${t[i] ? "ok" : ""} ${i === sel ? "on" : ""}"><button type="button" data-hs="${i}" aria-expanded="${i === sel}"><em>${t[i] ? "✓" : i + 1}</em><span>${esc(map(s, i).title)}</span></button></li>`).join("")}</ol>
-      <div class="hs-panel"><div class="hs-top"><span class="hs-n">Step ${sel + 1} of ${steps.length}</span><h4>${esc(m.title)}${m.sub ? ` <small>${esc(m.sub)}</small>` : ""}</h4>
-        <button type="button" class="btn sm ${t[sel] ? "" : "primary"}" data-tl="${sel}" aria-pressed="${!!t[sel]}">${t[sel] ? "✓ Done · undo" : "Mark as done"}</button></div>
-        ${m.text ? `<p>${esc(m.text)}</p>` : ""}${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-        <div class="hs-nav">${sel > 0 ? `<button type="button" class="btn ghost sm" data-hs="${sel - 1}">← Previous</button>` : "<span></span>"}${sel < steps.length - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">Next step →</button>` : ""}</div></div></div>`;
+    const t = FG.ticks(id), done = steps.filter((_, i) => t[i]).length, n = steps.length;
+    const sel = Math.min(FG.store.get(id + ":sel", 0), n - 1), m = map(steps[sel], sel), pct = Math.round((done / n) * 100);
+    const phases = PHASES[id] || [["Process", n]]; let at = 0;
+    const phaseOf = (i) => { let c = 0; for (const [name, k] of phases) { if (i < c + k) return name; c += k; } return ""; };
+    return `<div class="hs" data-timeline="${esc(id)}">
+      <div class="hs-head"><div class="hs-ring" style="--p:${pct}"><b>${pct}%</b></div><div><b>${done} of ${n} steps complete</b><small>${done === n ? "Process complete." : `Next: ${esc(map(steps[steps.findIndex((_, i) => !t[i])], 0).title)}`}</small></div>${done ? `<button class="btn ghost sm" data-tl-reset="${esc(id)}">Reset</button>` : ""}</div>
+      <div class="hs-phases" style="--n:${n}">${phases.map(([name, k], j) => { const from = at; at += k; const pd = steps.slice(from, at).filter((_, i) => t[from + i]).length; return `<span class="${pd === k ? "ok" : sel >= from && sel < at ? "on" : ""}" style="grid-column:span ${k};--c:var(--c${j + 1})"><i>${j + 1}</i>${esc(name)}<em>${pd}/${k}</em></span>`; }).join("")}</div>
+      <ol class="hs-row" style="--n:${n}">${steps.map((s, i) => `<li class="${t[i] ? "ok" : ""} ${i === sel ? "on" : ""}"><button type="button" data-hs="${i}" aria-expanded="${i === sel}" aria-label="Step ${i + 1}: ${esc(map(s, i).title)}"><em>${t[i] ? SI('<path d="M20 6 9 17l-5-5"/>') : stepIcon(map(s, i).title)}<sup>${i + 1}</sup></em><span>${esc(map(s, i).title)}</span></button></li>`).join("")}</ol>
+      <div class="hs-panel" style="--x:${((sel + 0.5) / n) * 100}%">
+        <div class="hs-ico">${stepIcon(m.title)}</div>
+        <div class="hs-main"><span class="hs-n">${esc(phaseOf(sel))} · step ${sel + 1} of ${n}</span><h4>${esc(m.title)}</h4>${m.sub ? `<p class="hs-sub">${esc(m.sub)}</p>` : ""}
+          ${m.text ? `<p>${esc(m.text)}</p>` : ""}${m.list ? `<ul class="hs-list">${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+          <div class="hs-nav">${sel > 0 ? `<button type="button" class="btn ghost sm" data-hs="${sel - 1}">← ${esc(map(steps[sel - 1], 0).title)}</button>` : "<span></span>"}
+            <button type="button" class="btn sm ${t[sel] ? "" : "primary"}" data-tl="${sel}" aria-pressed="${!!t[sel]}">${t[sel] ? "✓ Done · undo" : "Mark as done"}</button>
+            ${sel < n - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">${esc(map(steps[sel + 1], 0).title)} →</button>` : "<span></span>"}</div></div>
+        <span class="hs-wm" aria-hidden="true">${String(sel + 1).padStart(2, "0")}</span></div></div>`;
   }
   function mountTimeline(root) {
     root.addEventListener("click", (e) => {
