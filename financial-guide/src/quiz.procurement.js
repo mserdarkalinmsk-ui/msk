@@ -8,7 +8,7 @@
     { level: 1, type: "tf",
       q: "A staff member involved in a procedure may accept a small gift from a bidder, provided its value is modest.",
       options: ["True", "False"], answer: 1,
-      explain: "The value of gifts you may accept is zero. Ethical rules under Rule No. 1395 require refusing all gifts and disclosing conflicts of interest.",
+      explain: "The value of gifts you may accept is zero: under the Council of Europe's no-gift policy, staff involved in procedures cannot receive any gifts or hospitality, regardless of value.",
       hint: "Think about the exact gift value the guide allows.",
       stage: "Foundations" },
     { level: 1, type: "mc",

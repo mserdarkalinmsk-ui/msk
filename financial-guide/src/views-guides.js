@@ -496,7 +496,7 @@
     bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
+    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
@@ -536,7 +536,7 @@
     checklist: (s) => s.checklist || [],
     bestPractice: (s) => s.best,
     link: (l) => (C.grantStages.some((x) => x.name === l) ? [l, `grants/${slug(l)}`] : null),
-    widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget, Evaluation: grantGates },
+    widgets: { Complaints: () => FG.vis.clock("grants"), Procedure: grantProcedureWidget, Costs: grantCostsWidget, Evaluation: grantGates },
     mount: {
       Procedure: (root) => root.querySelector("[name=grantQuick]").addEventListener("change", (e) => { FG.store.set("grantQuick", Number(e.target.value) || 0); FG.refresh(); }),
       Costs: (root) => {

@@ -1481,6 +1481,48 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .sb-fact summary b { color: var(--navy); }
 .chips .chip[aria-pressed="true"], .rc-seg button[aria-pressed="true"] { background: var(--accent, #2d6bd8); border-color: var(--accent, #2d6bd8); }
 
+/* ---------- procedure clock + approval chain ---------- */
+.vc, .va { padding: 20px; margin-bottom: 16px; }
+.vc-head { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: flex-end; }
+.vc-head b { display: block; font-size: 18px; margin-top: 2px; }
+.vc-in { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.vc-in label > span { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.vc-in input[type=date] { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); }
+.vc-warn { margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, #c0392b 10%, var(--panel)); color: #b03a2e; font-size: 14px; font-weight: 600; }
+.vc-track { position: relative; height: 46px; margin: 26px 10px 8px; }
+.vc-line { position: absolute; left: 0; right: 0; top: 21px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--c2), var(--c1) 45%, var(--c3)); opacity: .5; }
+.vc-dot { position: absolute; top: 14px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; border: 3px solid var(--panel); background: var(--c1); cursor: pointer; box-shadow: 0 0 0 1px var(--line); transition: transform .15s; padding: 0; }
+.vc-dot:hover { transform: scale(1.3); }
+.vc-dot.key { background: #1b3a7a; width: 22px; height: 22px; margin-left: -11px; top: 12px; }
+.vc-dot.prep { background: var(--c2); } .vc-dot.after { background: var(--c3); } .vc-dot.limit { background: #c0392b; } .vc-dot.soft { background: var(--panel); box-shadow: 0 0 0 2px var(--c3); }
+.vc-today { position: absolute; top: -6px; bottom: -4px; width: 2px; background: #1f9d6b; }
+.vc-today span { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10.5px; font-weight: 700; color: #1f9d6b; white-space: nowrap; }
+.vc-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.vc-list li { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding: 10px 12px; border-radius: 12px; border-left: 4px solid var(--c1); background: color-mix(in srgb, var(--c1) 5%, var(--panel)); transition: background .3s; }
+.vc-list li.prep { border-left-color: var(--c2); } .vc-list li.after { border-left-color: var(--c3); } .vc-list li.limit { border-left-color: #c0392b; } .vc-list li.key { border-left-color: #1b3a7a; } .vc-list li.soft { border-left-style: dashed; border-left-color: var(--c3); }
+.vc-list li.flash { background: color-mix(in srgb, #f5c542 25%, var(--panel)); }
+.vc-list time b { display: block; font-size: 14px; }
+.vc-list time small { color: var(--muted); font-size: 12px; }
+.vc-list li > div b { font-size: 14px; }
+.vc-list li > div p { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); }
+.vc-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.va-range { width: 100%; margin: 20px 0 2px; accent-color: #2d6bd8; }
+.va-scale { position: relative; height: 16px; font-size: 11px; color: var(--muted); }
+.va-scale span { position: absolute; transform: translateX(-50%); }
+.va-scale span:nth-child(1) { left: 0; transform: none; } .va-scale span:nth-child(2) { left: 18%; } .va-scale span:nth-child(3) { left: 36%; } .va-scale span:nth-child(4) { left: 56%; } .va-scale span:nth-child(5) { left: 78%; } .va-scale span:nth-child(6) { right: 0; left: auto; transform: none; }
+.va-route { margin: 16px 0 10px; font-size: 15px; }
+.va-tag { margin-left: 6px; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, #2d6bd8 12%, var(--panel)); color: #2d6bd8; }
+.va-chain { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.va-chain li { position: relative; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); transition: opacity .2s, border-color .2s, transform .2s; }
+.va-chain li:not(:last-child)::after { content: "→"; position: absolute; right: -13px; top: 22px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); z-index: 1; }
+.va-chain li.on { border-color: var(--c); box-shadow: 0 14px 28px -22px var(--c); transform: translateY(-2px); }
+.va-chain li.off { opacity: .45; }
+.va-chain em { font-style: normal; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; background: var(--c); }
+.va-chain li.off em { background: var(--line-2); }
+.va-chain b { display: block; margin-top: 8px; }
+.va-chain p { margin: 4px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+@media (max-width: 800px) { .va-chain { grid-template-columns: 1fr 1fr; } .va-chain li::after { display: none; } .vc-list li { grid-template-columns: 1fr; gap: 4px; } }
+
 </style>
 </head>
 <body>
@@ -8344,7 +8386,7 @@ window.FG_CONTENT = {
     { level: 1, type: "tf",
       q: "A staff member involved in a procedure may accept a small gift from a bidder, provided its value is modest.",
       options: ["True", "False"], answer: 1,
-      explain: "The value of gifts you may accept is zero. Ethical rules under Rule No. 1395 require refusing all gifts and disclosing conflicts of interest.",
+      explain: "The value of gifts you may accept is zero: under the Council of Europe's no-gift policy, staff involved in procedures cannot receive any gifts or hospitality, regardless of value.",
       hint: "Think about the exact gift value the guide allows.",
       stage: "Foundations" },
     { level: 1, type: "mc",
@@ -9259,7 +9301,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:34</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:37</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -9290,6 +9332,119 @@ window.FG_CONTENT = {
     FG.refresh(false);
   };
 
+})();
+
+</script>
+<script>
+/* visuals.js */
+/* Dynamic visuals: procedure clock (dates from your deadline) and approval chain (who signs at your value). */
+(function () {
+  "use strict";
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const DAY = 864e5;
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const add = (d, n) => new Date(d.getTime() + n * DAY);
+  const fmt = (d) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const today = () => { const t = new Date(); return new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate())); };
+  const parse = (v, fb) => { const d = v ? new Date(v + "T00:00:00Z") : null; return d && !isNaN(d) ? d : fb; };
+  FG.vis = {};
+
+  /* ---------- procedure clock ---------- */
+  function procEvents(D, S, intl) {
+    const N = add(S, 15);
+    return [
+      intl && [add(D, -21), "Publish the call (latest)", "At least 3 weeks before the deadline (international call).", "prep"],
+      [add(D, -2), "Last answer to questions", "No answers later than 48 hours before the deadline.", "prep"],
+      [D, "Submission deadline", "Offers received after it are not admissible.", "key"],
+      [S, "Contract signed", "Sign before notifying the unsuccessful bidders.", "key"],
+      [N, "Unsuccessful bidders notified", "In writing, at the latest 15 days after the successful bidder is notified.", "after"],
+      [add(N, 7), "Enquiry window closes", "Bidders may enquire within 7 days of notification.", "after"],
+      [add(N, 37), "Complaint window (indicative)", "A complaint to the Tenders Board is due within 30 days of the reply to the enquiry; shown here from the end of the enquiry window.", "soft"],
+      [add(D, 180), "Offers expire", "Offers stay valid for 180 calendar days from the deadline.", "limit"],
+    ].filter(Boolean);
+  }
+  function grantEvents(D, S) {
+    const N = add(S, 15);
+    return [
+      [D, "Submission deadline", "Proposals received after it are rejected.", "key"],
+      [S, "Successful applicants notified", "Agreements follow the award decision.", "key"],
+      [N, "Unsuccessful applicants informed", "At the latest 15 calendar days after the successful ones.", "after"],
+      [add(N, 7), "Enquiry period ends (minimum)", "The letter states an enquiry period of at least 7 calendar days.", "after"],
+      [add(N, 37), "Complaint deadline (indicative)", "30 calendar days from notification of the reply to the enquiry; shown from the end of the enquiry period.", "soft"],
+      [add(N, 67), "Review Board meets (latest)", "Within 30 calendar days of receiving the complaint.", "soft"],
+    ];
+  }
+  FG.vis.clock = function (base) {
+    const isP = base !== "grants", st = FG.store.get("clock:" + base, {});
+    const D = parse(st.d, add(today(), 30)), S = parse(st.s, add(D, 30));
+    return `<section class="vc card" data-clock="${base}"><div class="vc-head"><div><span class="eyebrow">Procedure clock</span><b>Every deadline, calculated from your dates</b></div>
+      <div class="vc-in"><label><span>Submission deadline</span><input type="date" data-ck="d" value="${iso(D)}"></label>
+        <label><span>${isP ? "Contract signature" : "Award notification"}</span><input type="date" data-ck="s" value="${iso(S)}"></label>
+        ${isP ? `<label class="rc-chk"><input type="checkbox" data-ck="i" ${st.i === false ? "" : "checked"}> International call</label>` : ""}</div></div>
+      <div class="vc-body" data-ck-out></div>
+      <p class="vc-note">Calendar days. Indicative dates depend on when the enquiry is answered; always check the letter you sent.</p></section>`;
+  };
+  function drawClock(box) {
+    const base = box.dataset.clock, isP = base !== "grants", g = (k) => box.querySelector(`[data-ck="${k}"]`);
+    const D = parse(g("d").value, today()), S = parse(g("s").value, add(D, 30)), intl = isP ? g("i").checked : false;
+    FG.store.set("clock:" + base, { d: iso(D), s: iso(S), i: intl });
+    const ev = (isP ? procEvents(D, S, intl) : grantEvents(D, S)).sort((a, b) => a[0] - b[0]);
+    const t0 = ev[0][0].getTime(), t1 = ev[ev.length - 1][0].getTime(), span = Math.max(t1 - t0, DAY), now = today().getTime();
+    const pos = (d) => ((d.getTime() - t0) / span) * 100;
+    const warn = isP && S > add(D, 180) ? `<div class="vc-warn">Signature falls after the offers expire (${fmt(add(D, 180))}). Ask bidders to extend validity or sign earlier.</div>` : S < D ? `<div class="vc-warn">${isP ? "Signature" : "Notification"} is before the submission deadline. Check the dates.</div>` : "";
+    box.querySelector("[data-ck-out]").innerHTML = `${warn}
+      <div class="vc-track"><i class="vc-line"></i>${now >= t0 && now <= t1 ? `<i class="vc-today" style="left:${pos(today())}%"><span>Today</span></i>` : ""}
+        ${ev.map(([d, t], k) => `<button type="button" class="vc-dot ${ev[k][3]}" style="left:${pos(d)}%" data-ck-k="${k}" title="${esc(t)}: ${fmt(d)}"></button>`).join("")}</div>
+      <ol class="vc-list">${ev.map(([d, t, x, kind], k) => { const days = Math.round((d.getTime() - now) / DAY);
+        return `<li class="${kind}" data-ck-row="${k}"><time><b>${fmt(d)}</b><small>${days === 0 ? "today" : days > 0 ? `in ${days} days` : `${-days} days ago`}</small></time><div><b>${esc(t)}</b><p>${esc(x)}</p></div></li>`; }).join("")}</ol>`;
+  }
+
+  /* ---------- approval chain ---------- */
+  FG.vis.approvals = function () {
+    const st = FG.store.get("chain", { v: 90000, x: true, e: false });
+    return `<section class="va card" data-chain><div class="vc-head"><div><span class="eyebrow">Approval chain</span><b>Who has to approve at your value?</b></div>
+      <div class="vc-in"><label><span>Estimated value (excl. VAT)</span><div class="rc-val"><b>€</b><input type="number" min="0" step="1000" data-ch="v" value="${st.v}"></div></label>
+        <label class="rc-chk"><input type="checkbox" data-ch="x" ${st.x ? "checked" : ""}> Extrabudgetary</label>
+        <label class="rc-chk"><input type="checkbox" data-ch="e" ${st.e ? "checked" : ""}> Exceptional direct award</label></div></div>
+      <input type="range" class="va-range" min="0" max="100" step="0.5" data-ch="r" aria-label="Value scale">
+      <div class="va-scale"><span>€0</span><span>€2k</span><span>€10k</span><span>€55k</span><span>€184k</span><span>€1m</span></div>
+      <div data-ch-out></div></section>`;
+  };
+  // Piecewise scale so the thresholds sit at readable positions.
+  const STOPS = [[0, 0], [2000, 18], [10000, 36], [55000, 56], [184000, 78], [1000000, 100]];
+  const toPct = (v) => { for (let i = 1; i < STOPS.length; i++) { const [a, pa] = STOPS[i - 1], [b, pb] = STOPS[i]; if (v <= b) return pa + ((v - a) / (b - a)) * (pb - pa); } return 100; };
+  const toVal = (p) => { for (let i = 1; i < STOPS.length; i++) { const [a, pa] = STOPS[i - 1], [b, pb] = STOPS[i]; if (p <= pb) return Math.round((a + ((p - pa) / (pb - pa)) * (b - a)) / 500) * 500; } return 1000000; };
+  function drawChain(box, fromRange) {
+    const g = (k) => box.querySelector(`[data-ch="${k}"]`);
+    if (fromRange) g("v").value = toVal(+g("r").value); else g("r").value = toPct(+g("v").value || 0);
+    const v = +g("v").value || 0, x = g("x").checked, e = g("e").checked;
+    FG.store.set("chain", { v, x, e });
+    const intl = v >= 184000, lcr = x && v >= 55000 && v < 184000, eproc = v > 55000;
+    const route = e ? (intl ? "Exceptional direct award, Tenders Board" : "Exceptional direct award") : v <= 2000 ? "Direct award possible (€6,000 for intellectual services)" : intl ? "International public call for tenders" : "Competitive bidding";
+    const steps = [
+      ["Buyer entity", "Prepares the need, the tender file and the evaluation.", true],
+      ["DLAPIL", "Legal Compliance Review, about 5 working days for a complete request.", lcr],
+      ["CCM", e && !intl ? "Authorises the exceptional direct award on a justified memorandum." : "Authorises the launch and approves the award.", !intl],
+      ["Tenders Board", "Competent from €184,000: approves the launch and the award.", intl],
+    ];
+    box.querySelector("[data-ch-out]").innerHTML = `<p class="va-route"><b>€${v.toLocaleString("en-GB")}</b> → ${esc(route)}${eproc ? ' <span class="va-tag">E-procurement</span>' : ""}</p>
+      <ol class="va-chain">${steps.map(([n, d, on], k) => `<li class="${on ? "on" : "off"}" style="--c:var(--c${k + 1})"><em>${on ? k + 1 : "–"}</em><b>${n}</b><p>${on ? esc(d) : "Not required at this value"}</p></li>`).join("")}</ol>`;
+  }
+
+  document.addEventListener("input", (e) => {
+    const c = e.target.closest("[data-clock]"); if (c) drawClock(c);
+    const a = e.target.closest("[data-chain]"); if (a) drawChain(a, e.target.dataset.ch === "r");
+  });
+  document.addEventListener("change", (e) => { const c = e.target.closest("[data-clock]"); if (c && e.target.type === "checkbox") drawClock(c); });
+  document.addEventListener("click", (e) => {
+    const d = e.target.closest("[data-ck-k]"); if (!d) return;
+    const row = d.closest("[data-clock]").querySelector(`[data-ck-row="${d.dataset.ckK}"]`);
+    row.scrollIntoView({ block: "nearest", behavior: "smooth" }); row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+  });
+  new MutationObserver(() => {
+    document.querySelectorAll("[data-clock]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawClock(b); });
+    document.querySelectorAll("[data-chain]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawChain(b, false); });
+  }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 </script>
@@ -9581,7 +9736,7 @@ window.FG_CONTENT = {
     const tabs = [];
     if ((R.contractTypes || []).length) tabs.push(["types", "Contract types", `<div class="ct-grid">${R.contractTypes.map((c, i) => `<article class="ct" style="--c:var(--c${i + 1})"><h3>${esc(c.name)}</h3>
       ${[["Use when", c.useWhen], ["Suppliers", c.suppliers], ["Orders", c.ordering], ["Duration", c.duration], ["Key control", c.control]].filter((x) => x[1]).map(([k, v]) => `<div><small>${k}</small><p>${esc(v)}</p></div>`).join("")}</article>`).join("")}</div>`, R.contractTypes.length]);
-    if ((R.limits || []).length) tabs.push(["limits", "Limits & deadlines", `<div class="lim">${R.limits.map((l) => `<div class="lim-row"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p><span>${esc(l.who || "")}</span></div>`).join("")}</div>`, R.limits.length]);
+    if ((R.limits || []).length) tabs.push(["limits", "Limits & deadlines", `${base === "procurement" ? FG.vis.approvals() : ""}${FG.vis.clock(base)}<div class="lim">${R.limits.map((l) => `<div class="lim-row"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p><span>${esc(l.who || "")}</span></div>`).join("")}</div>`, R.limits.length]);
     if ((R.roles || []).length) tabs.push(["roles", "Roles", `<div class="role-grid">${R.roles.map((r) => `<article class="role"><h3>${esc(r.name)}</h3><p>${esc(r.does)}</p>${r.when ? `<small>${esc(r.when)}</small>` : ""}</article>`).join("")}</div>`, R.roles.length]);
     if ((R.howTo || []).length) tabs.push(["howto", "How to", `<div class="howto">${R.howTo.map((h) => `<details class="ht"><summary><b>${esc(h.title)}</b><span>${esc(h.who || "")}${h.source ? ` · ${esc(h.source)}` : ""}</span></summary>
       <ol>${h.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>${(h.templates || []).length ? `<p class="small muted">Templates: ${h.templates.map(esc).join(", ")}</p>` : ""}</details>`).join("")}</div>`, R.howTo.length]);
@@ -10153,7 +10308,7 @@ window.FG_CONTENT = {
     bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
+    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": thresholdMatrix, "Tender Design": tenderDesign, "Open & Evaluate": procGates },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
@@ -10193,7 +10348,7 @@ window.FG_CONTENT = {
     checklist: (s) => s.checklist || [],
     bestPractice: (s) => s.best,
     link: (l) => (C.grantStages.some((x) => x.name === l) ? [l, `grants/${slug(l)}`] : null),
-    widgets: { Procedure: grantProcedureWidget, Costs: grantCostsWidget, Evaluation: grantGates },
+    widgets: { Complaints: () => FG.vis.clock("grants"), Procedure: grantProcedureWidget, Costs: grantCostsWidget, Evaluation: grantGates },
     mount: {
       Procedure: (root) => root.querySelector("[name=grantQuick]").addEventListener("change", (e) => { FG.store.set("grantQuick", Number(e.target.value) || 0); FG.refresh(); }),
       Costs: (root) => {
