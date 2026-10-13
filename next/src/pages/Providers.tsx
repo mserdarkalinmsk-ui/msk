@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { filtered, go, setPoKind, useStore } from '../data/store';
-import { KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
+import { supKey, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
@@ -75,7 +75,8 @@ export function Providers() {
                   <td class="muted">{o ? '▾' : '▸'}</td><td><b>{g.name}</b></td><td>{g.kinds.length ? <Kinds L={g.kinds} /> : <span class="muted">unsorted</span>}</td>
                   <td>{g.projects.map(([id, v]) => <span class="sp-p" title={full(v)} style={{ color: limit && v > limit ? '#e5484d' : undefined }}>{lab(P.find((q) => q.id === id)!)}</span>)}</td>
                   <td class="r num">{g.L.length}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{g.last ? date(g.last) : '—'}</td><td class="r num">{full(g.spent)}</td><td class="r num"><b>{full(g.sc)}</b></td></tr>
-                {o && <tr class="sp-sub"><td /><td colSpan={7}><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Date</th><th>Kind</th><th class="r">Spent + committed</th></tr></thead>
+                {o && <tr class="sp-sub"><td /><td colSpan={7}><div class="sp-all"><span class="muted">Kind for all POs of this provider</span><select value={set[`sup|${supKey(g.name)}`] ?? ''} onChange={(e) => setPoKind(`sup|${supKey(g.name)}`, (e.target as HTMLSelectElement).value)}>
+                  <option value="">Automatic (per PO)</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select><small class="muted">a choice made on a single PO below still wins</small></div><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Date</th><th>Kind</th><th class="r">Spent + committed</th></tr></thead>
                   <tbody>{g.L.map((x) => <tr><td class="click" onClick={() => go(`project/${x.p.id}`)}><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}</td>
                     <td><select value={set[x.key] ?? ''} onChange={(e) => setPoKind(x.key, (e.target as HTMLSelectElement).value)} style={{ fontWeight: set[x.key] ? 700 : 400 }}>
                       <option value="">{x.auto ? `Auto: ${kl(x.auto).label}` : 'Auto: not sorted'}</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td>
