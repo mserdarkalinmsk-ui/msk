@@ -33,6 +33,9 @@ describe('service provider kinds', () => {
     expect(kindOf('Travel of the expert to Ankara', '1.3.2')).toBe('perdiem');
     expect(kindOf('Organisation of the launching conference in Ankara', '1.3.2')).toBe('events');
     expect(kindOf('Travel of participants', '1.3.1', '', 'SERENAS INTERNATIONAL TOURISM CONGRESS ORGANIZATION INC.')).toBe('events');
+    expect(kindOf('Travel PO for 3 international consultants_Izmir_25-29 Aug 2025', '2.1', '', 'EXPERTS Plan 01 General')).toBe('perdiem');
+    expect(kindOf('Organization of the launching conference in Ankara on 4 December 2024', '2.1', '', 'SERENAS INTERNATIONAL TOURISM CONGRESS ORGANIZATION INC.- ANKARA')).toBe('events');
+    expect(kindOf('Flight tickets for the expert', '5.7.1')).toBe('perdiem');
     expect(kindOf('Office rent', '4.1')).toBeNull();
     expect(kindOf('Salary of the project officer', '1.1.1')).toBe('staff');
   });

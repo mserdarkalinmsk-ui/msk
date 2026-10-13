@@ -18,7 +18,7 @@ export const KINDS: { k: Kind; label: string; color: string; optional?: boolean;
   { k: 'publication', label: 'Publication', color: '#c27c0e' },
   // Groups that can be added to the totals on request.
   { k: 'grants', label: 'Grants (6.1, 6.2)', color: '#30a46c' },
-  { k: 'perdiem', label: 'Per diem (1.3.1, 1.3.2, DSA)', color: '#a16207', optional: true },
+  { k: 'perdiem', label: 'Per diem & travel (1.3, 2.x, OM)', color: '#a16207', optional: true },
   { k: 'staff', label: 'Staff salaries', color: '#94a3b8', optional: true },
   { k: 'petty', label: 'Petty cash', color: '#78716c', optional: true },
 ];
@@ -37,6 +37,7 @@ const INTL = /international|foreign|uluslararası|yabancı|abroad/i;
 const PETTY = /petty cash|caisse|avance de fonds|cash advance/i; // advances to the office, not a provider
 const STAFF = /^1\.[12]\.1(\.|$)/, PERDIEM = /^1\.3\.[12](\.|$)/, GRANTS = /^6\.[12](\.|$)/;
 const PERDIEM_T = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission/i;
+const TRAVEL = /^2(\.|$)/, TRAVEL_T = /travel|ticket|flight|airfare|bilet|seyahat|uçak|yolculuk/i;
 const MISSION = /\bOM\b|ordre de mission|mission order|görev emri|\bmission\b/i;
 const EVENT_CO = /congress|organi[sz]ation|organizasyon|event|tourism|turizm|travel|seyahat|hotel|otel|kongre/i;
 const STAFF_T = /\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|bordro/i;
@@ -51,7 +52,8 @@ export function kindOf(text: string, code = '', lineText = '', supplier = ''): K
   };
   // Travel and per diem lines (1.3.1, 1.3.2): mission orders (OM) and costs of experts are not counted; an event
   // management company paid from these lines (venue, travel of participants) counts as event management.
-  if (PERDIEM.test(code)) {
+  // Travel (heading 2) is treated like the per diem lines: people's trips stay out, event companies count.
+  if (PERDIEM.test(code) || TRAVEL.test(code) || (TRAVEL_T.test(text) && /consult|expert|staff|participant|uzman|danışman|katılımcı/i.test(text))) {
     if (MISSION.test(text) || PERDIEM_T.test(text) || /consult|expert|danışman|uzman/i.test(text)) return 'perdiem';
     const k = byText(text);
     if (k === 'visibility' || k === 'research' || k === 'publication') return k;
