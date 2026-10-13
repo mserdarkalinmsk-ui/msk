@@ -202,7 +202,7 @@
     // The four spaces, ordered by the learning loop. The level decides which one is highlighted.
     const pick = lv === "pro" ? 3 : lv === "some" ? 2 : 0;
     const SPACES = [
-      ["01 / Start here", "Learn", `${LESSONS.length} short lessons in 8 paths, plus a 10-minute first-day tour.`, "#/learn", "--m1", "learn", resume ? `Resume: ${resume.name}` : "Start the tour"],
+      ["01 / Start here", "Learn", `${LESSONS.length} short lessons in 8 routes, plus a 10-minute first-day tour.`, "#/learn", "--m1", "learn", "Choose a route"],
       ["02 / Practise", "Practise", `${QUESTIONS.length} questions and real cases with instant feedback.`, "#/practice", "--m2", "practice", "Start a round"],
       ["03 / Find my gaps", "Diagnose", "Five minutes, sixteen questions: your knowledge map and a personal plan.", "#/check", "--m4", "map", "Take the check"],
       ["04 / Apply", "Tools", "Route simulator, thresholds, glossary and the I'm-stuck helper.", "#/tools", "--m3", "tool", "Open tools"],
@@ -219,7 +219,8 @@
         <div class="hx-level" role="group" aria-label="Your experience">${levels.map(([k, t, d]) => `<button type="button" data-level="${k}" aria-pressed="${lv === k}"><b>${t}</b><span>${d}</span></button>`).join("")}</div>
       </section>
 
-      <section class="spaces">${SPACES.map(([e, t, d, h, c, i, cta], k) => `<a class="space${k === pick && lv ? " pick" : ""}" href="${k === 0 && !resume ? "#/tour" : k === 0 ? resume.href : h}" style="--c:var(${c})"><small>${e}</small><span class="sico">${ic(i)}</span><h2>${t}</h2><p>${d}</p><span class="go"><em>${cta}</em><i>${ic("arrow")}</i></span>${k === pick && lv ? `<span class="rec">Recommended for you</span>` : ""}</a>`).join("")}</section>
+      ${resume ? (() => { const sib = lessonsOf(resume.module), n = sib.indexOf(resume) + 1; return `<a class="resume" href="${resume.href}" style="--c:var(${MOD[resume.module].c})"><span class="rs-ico">${ic(MOD[resume.module].icon)}</span><span class="rs-t"><small>Continue where you left off</small><b>${esc(resume.title)}</b><em>${esc(MOD[resume.module].title)} route · station ${n} of ${sib.length}</em></span><span class="rs-bar">${bar((n / sib.length) * 100, MOD[resume.module].c)}</span><span class="rs-go">Continue ${ic("arrow")}</span></a>`; })() : ""}
+      <section class="spaces">${SPACES.map(([e, t, d, h, c, i, cta], k) => `<a class="space${k === pick && lv ? " pick" : ""}" href="${h}" style="--c:var(${c})"><small>${e}</small><span class="sico">${ic(i)}</span><h2>${t}</h2><p>${d}</p><span class="go"><em>${cta}</em><i>${ic("arrow")}</i></span>${k === pick && lv ? `<span class="rec">Recommended for you</span>` : ""}</a>`).join("")}</section>
 
       ${rv.length ? `<div class="review"><span class="badge">${rv.length}</span><div><b>To review: ${rv.slice(0, 3).map((k) => esc(LESSON[k].name)).join(" · ")}${rv.length > 3 ? ` · +${rv.length - 3}` : ""}</b><p>Your last answer on these topics was wrong. One short lesson fixes each.</p></div><a class="btn primary sm" href="${LESSON[rv[0]].href}">Review now →</a></div>` : ""}
 
@@ -272,6 +273,7 @@
   route("learn", () => ({
     title: "Learn",
     html: `${head("Learn", "Learning paths", "Short lessons in the order you need them. Each one ends with a quick check, so the knowledge map knows what you have mastered.")}
+      ${S.last && LESSON[S.last] ? (() => { const r = LESSON[S.last], sib = lessonsOf(r.module), n = sib.indexOf(r) + 1; return `<a class="resume" href="${r.href}" style="--c:var(${MOD[r.module].c});margin-bottom:16px"><span class="rs-ico">${ic(MOD[r.module].icon)}</span><span class="rs-t"><small>Continue where you left off</small><b>${esc(r.title)}</b><em>${esc(MOD[r.module].title)} route · station ${n} of ${sib.length}</em></span><span class="rs-bar">${bar((n / sib.length) * 100, MOD[r.module].c)}</span><span class="rs-go">Continue ${ic("arrow")}</span></a>`; })() : ""}
       <a class="card night pad" href="#/tour" style="display:flex;align-items:center;justify-content:space-between;gap:16px;text-decoration:none"><div><span class="eyebrow">Start here if you are new</span><h2 style="margin-top:8px;font-size:24px">First-day tour: how money moves through a project</h2><p style="margin-top:6px">Seven stops · 10 minutes</p></div><span class="btn brass">Start ${ic("arrow")}</span></a>
       <div class="grid g2" style="margin-top:16px">${MODULES.map((m) => { const x = mastery(m.id), nl = nextLesson(m.id); return `<a class="card path lift" href="#/learn/${m.id}" style="--c:var(${m.c})"><div class="row" style="justify-content:space-between"><span class="ico">${ic(m.icon)}</span>${ring(x.v, `var(${m.c})`)}</div><div><h3>${esc(m.title)}</h3><p>${esc(m.sub)}</p></div><div><div class="meta"><span>${x.done}/${x.total} lessons · ${stateLabel[x.state]}</span><span>Next: ${esc(nl.name)}</span></div>${bar(x.total ? (x.done / x.total) * 100 : 0, m.c)}</div></a>`; }).join("")}</div>${foot}`,
   }), "learn");
