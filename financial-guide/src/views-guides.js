@@ -176,7 +176,7 @@
     const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
     return `<div class="rd" data-rd="${esc(key)}">
-      <div class="rd-side"><div class="rd-prog"><span><b data-rd-count>${done}</b> of ${n} read</span><i><u data-rd-bar style="width:${Math.round((done / n) * 100)}%"></u></i></div>
+      <div class="rd-side">
         <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
       <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
         <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
@@ -194,7 +194,9 @@
       const mark = (k) => {
         const read = FG.store.get(key, {}); read[k] = 1; FG.store.set(key, read);
         const b = rd.querySelector(`.rd-nav [data-rd-go="${k}"]`); b.classList.add("read"); b.querySelector("em").textContent = "✓";
-        const done = Object.keys(read).length; rd.querySelector("[data-rd-count]").textContent = done; rd.querySelector("[data-rd-bar]").style.width = `${Math.round((done / n) * 100)}%`;
+        const done = Object.keys(read).length, mt = document.querySelector('.sb-meter[data-go-tab="guide"]');
+        if (mt) { mt.style.setProperty("--p", Math.round((done / n) * 100)); mt.querySelector("b").firstChild.textContent = done; }
+        if (done === n) { const fin = rd.parentElement.querySelector(".rd-done"); if (fin) fin.hidden = false; }
       };
       rd.addEventListener("click", (e) => {
         const go = e.target.closest("[data-rd-go]"), next = e.target.closest("[data-rd-next]");
@@ -228,11 +230,11 @@
     const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
     return `<div class="sb">
       <div class="sb-hero" style="--c:${pc(ph)}"><span class="sb-num" aria-hidden="true">${String(idx + 1).padStart(2, "0")}</span>
-        <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}<button type="button" class="sh-print" data-print>⎙ One-page summary</button></div>
+        <div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:${pc(ph)}">Phase ${ph + 1} · ${esc(cfg.phases[ph][0])}</span>${s.source ? `<span class="sh-src">Guide ${esc(s.source)}</span>` : ""}</div>
           <h2>${esc(s.title)}</h2><p>${esc(s.lead)}</p></div>
         ${(() => { const rd = Object.keys(FG.store.get(`read:${cfg.base}:${s.name}`, {})).length, cl = cfg.checklist(s), t = FG.ticks(`${cfg.base}:${s.name}`), ck = cl.filter((_, k) => t[k]).length;
           const m = (lab, a, b, tab) => `<button type="button" class="sb-meter" data-go-tab="${tab}" style="--p:${b ? Math.round((a / b) * 100) : 0}"><i></i><b>${a}<small>/${b}</small></b><span>${lab}</span></button>`;
-          return `<div class="sb-meters">${m("topics read", rd, s.sections.length, "guide")}${m("checks done", ck, cl.length, "check")}<button type="button" class="sb-meter rules" data-go-tab="rules"><b>${musts.length}</b><span>key rules</span></button></div>`; })()}
+          return `<div class="sb-meters">${m("topics read", rd, s.sections.length, "guide")}${m("checks done", ck, cl.length, "check")}<button type="button" class="sb-meter rules" data-go-tab="rules"><b>${musts.length}</b><span>key rules</span></button><button type="button" class="sb-meter print" data-print title="Print a one-page summary of this stage"><b>⎙</b><span>summary</span></button></div>`; })()}
       </div>
       <div class="sb-grid">
         <div class="sb-main">
@@ -334,24 +336,26 @@
         const isP = cfg.base === "procurement", caseR = isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
         const pcase = caseR && FG.store.get(isP ? "pcase" : "gcase", {}), caseUrl = isP ? "#/procurement/my-case" : "#/grants/my-grant";
         const caseBar = caseR
-          ? `<a class="case-bar" href="${caseUrl}"><span class="case-dot"></span><span><small>${isP ? "My case" : "My grant"}</small><b>${esc(pcase.what || (isP ? "Your purchase" : "Your grant"))} · ${euro(isP ? caseR.value : caseR.budget)} → ${esc(caseR.route)}</b></span><span class="case-bar-note">${caseR.skip.includes(s.name) ? "This stage is not needed for your route" : caseR.keyStages.includes(s.name) ? "Key stage for your route" : "Applies to your route"}</span><u>Open →</u></a>`
-          : `<a class="case-bar empty" href="${caseUrl}"><span class="case-dot"></span><span><small>Personalise</small><b>${isP ? "Plan my case: see only the stages, approvals and documents that apply to your purchase" : "Plan my grant: see only the stages, roles and templates that apply to your grant"}</b></span><u>Start →</u></a>`;
-        const map = caseBar + `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
-          <div class="rt-head"><div><span class="eyebrow">Your route</span><b>Stage ${i + 1} of ${stages.length} · ${esc(cfg.phases[ph][0])}</b></div>
-            <div class="rt-tools"><div class="pmap-ring" style="--p:${overall}" title="Checklist progress across all stages"><span>${overall}%</span></div>
+          ? `<a class="case-chip" href="${caseUrl}" title="${esc(pcase.what || "")}"><i></i><span>${isP ? "My case" : "My grant"}: <b>${euro(isP ? caseR.value : caseR.budget)} → ${esc(caseR.route)}</b> · ${caseR.skip.includes(s.name) ? "not needed for your route" : caseR.keyStages.includes(s.name) ? "key stage" : "applies"}</span></a>`
+          : `<a class="case-chip empty" href="${caseUrl}"><i></i><span>${isP ? "Plan my case" : "Plan my grant"} <b>→</b></span></a>`;
+        const map = `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
+          <div class="rt-head"><div class="rt-title"><b>Stage ${i + 1}<small> of ${stages.length}</small></b>${caseBar}</div>
+            <div class="rt-tools">
             ${i > 0 ? `<a class="rt-arrow" href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage">←</a>` : `<span class="rt-arrow off">←</span>`}${i < stages.length - 1 ? `<a class="rt-arrow" href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage">→</a>` : `<span class="rt-arrow off">→</span>`}</div></div>
           <div class="rt-scroll"><div class="rt-grid">
-            ${cfg.phases.map(([t, names], pi) => `<div class="rt-phase${pi === ph ? " on" : ""}" style="--c:${pc(pi)};grid-column:span ${names.length}"><small>Phase ${pi + 1}</small><b>${esc(t)}</b></div>`).join("")}
+            ${cfg.phases.map(([t, names], pi) => `<div class="rt-phase${pi === ph ? " on" : ""}" style="--c:${pc(pi)};grid-column:span ${names.length}"><b><small>${pi + 1}</small>${esc(t)}</b></div>`).join("")}
             <div class="rt-line" style="grid-column:1 / -1"><i style="width:calc(${fill}% * (1 - 1 / var(--n)))"></i></div>
             ${order.map(([j, pi]) => { const pr = progress(stages[j]), st = (j === i ? "on" : pr === 1 ? "done" : j < i ? "past" : "") + (caseR && caseR.skip.includes(stages[j].name) ? " skip" : caseR && caseR.keyStages.includes(stages[j].name) ? " key" : "");
               return `<a class="rt-node ${st}" style="--c:${pc(pi)}" href="#/${cfg.base}/${slug(stages[j].name)}" title="${esc(stages[j].title)}"><em>${pr === 1 && j !== i ? "✓" : j + 1}</em><span>${esc(stages[j].name)}</span>${pr > 0 && pr < 1 ? `<u style="width:${Math.round(pr * 100)}%"></u>` : ""}</a>`; }).join("")}
           </div></div></section>`;
-        const guidance = `${reader(`${cfg.base}:${s.name}`, s.sections)}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}`;
+        const allRead = Object.keys(FG.store.get(`read:${cfg.base}:${s.name}`, {})).length >= s.sections.length, nxt = stages[i + 1];
+        const doneCard = `<div class="rd-done" ${allRead ? "" : "hidden"}><span aria-hidden="true">✓</span><div><b>You have read every topic of this stage.</b><small>${checks.length ? `Tick the ${checks.length} checks, then move on.` : "Move on when you are ready."}</small></div>${checks.length ? `<button type="button" class="btn sm" data-go-tab="check">Open checklist</button>` : ""}${nxt ? `<a class="btn sm primary" href="#/${cfg.base}/${slug(nxt.name)}">Next: ${esc(nxt.name)} →</a>` : ""}</div>`;
+        const guidance = `${reader(`${cfg.base}:${s.name}`, s.sections)}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}`;
         const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = `
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
-            <nav>${[["guide", "Guidance"], ["rules", "Key rules"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
+            <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
             <span class="sb-mini-arrows">${i > 0 ? `<a href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage" tabindex="-1">←</a>` : ""}${i < stages.length - 1 ? `<a href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage" tabindex="-1">→</a>` : ""}</span></div>
           ${map}
           <section class="card stage-card mt"><div class="card-body">
@@ -359,7 +363,7 @@
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
-            ["rules", "Key rules", keyRulesHtml(s, best), nMust || null],
+            ["rules", "Summary", keyRulesHtml(s, best), nMust || null],
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
