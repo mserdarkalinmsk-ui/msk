@@ -41,7 +41,8 @@ assert.equal(E.yearEnd({ measurable: "no" }).score, 62);
 assert.equal(E.whatIf({ current: 100000, proposed: 124000 }).route, "Notification");
 assert.equal(E.whatIf({ current: 100000, proposed: 124000, change: "scope" }).route, "Addendum");
 assert.equal(E.pettyCash({ budget: "ob", amount: 51, approved: true }).title, "Petty cash not applicable");
-assert.equal(E.pettyCash({ amount: 99, approved: false }).title, "Do not spend yet");
+assert.equal(E.pettyCash({ amount: 49, approved: false }).title, "Do not spend yet");
+assert.equal(E.pettyCash({ amount: 51, approved: true }).title, "Petty cash not applicable");
 assert.equal(E.yearAllocation({ delivery: "next", budget: "special" }).title, "Not 2026 expenditure");
 assert.equal(E.readiness("x", [["a", "A"], ["b", "B"]], { a: true }).route, "Not ready");
 

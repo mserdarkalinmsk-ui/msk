@@ -8,10 +8,11 @@
       lead: "Build a complete, signature-ready and audit-ready purchase order file for the selected service type.",
       remember: "No activity starts before the PO is issued and documents are countersigned.",
       understand: "The PO is the commitment that allows work to start, so it must rest on confirmed budget, a valid supplier route and the correct signatures.",
-      do: "Confirm the budget and supplier route, prepare the contractual package, collect the required signatures and submit the complete file to Finance.",
-      check: "The PO has been issued, the countersigned documents have been returned to the supplier and the issued PO is kept in the file.",
+      do: "Confirm the budget, the PMM activity ID and the supplier in FIMS, prepare the contractual package, obtain prior CCM approval and submit the complete file so that the ACCM can create the PO.",
+      check: "The PO has been issued, the contract was signed and dated after the PO and before delivery, the countersigned documents have been returned to the supplier and the issued PO is kept in the file.",
       figures: [
         ["2 weeks", "Submission lead time", "Submit the PO request at least two weeks before the scheduled start date to leave enough time for approval."],
+        ["PMM ID", "PO prerequisite", "No PO can be raised without the PMM project and/or activity ID, and no PO can be raised before the supplier exists in FIMS."],
         ["€55k–€184k", "Legal review band", "Procurements in the €55,000 to €184,000 band should follow the applicable legal and procurement review route."]
       ]
     },
@@ -20,8 +21,8 @@
       lead: "Continue the control trail from the PO stage and build a finance-ready payment file.",
       remember: "Pay only for completed, accepted work that matches the approved contractual basis.",
       understand: "A payment closes the trail opened at PO stage, so it must match the same contract, supplier and approval route.",
-      do: "Confirm completion, match the invoice to the PO and contract, collect the supporting evidence and submit the signed Payment Request to Finance.",
-      check: "The payment file is complete, discrepancies are resolved and the payment evidence is archived until settlement.",
+      do: "Confirm completion with a signed Certificate of Acceptance of Work or Payment Request Memorandum, match the invoice to the PO and contract, complete the PMM synopsis and obtain CCM approval before the file goes to the Treasurer.",
+      check: "The payment file is complete, the ACCM has recorded the CCM approval, discrepancies are resolved and the payment evidence is archived until settlement.",
       figures: [
         ["60 days", "Default payment term", "The default payment term is 60 days from receipt of the invoice or execution, whichever is later, unless the contract sets other terms."]
       ]
@@ -40,13 +41,13 @@
     "petty-cash": {
       title: "Petty cash",
       lead: "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.",
-      remember: "Get CCM approval before spending, and stay within the limit.",
+      remember: "Get CCM approval before spending, and keep each invoice paid by petty cash at or below €50.",
       understand: "Petty cash is a small-value exception, so it must not replace the normal procurement or payment route.",
-      do: "Check the amount against the limit for your budget type, obtain CCM approval and keep a readable receipt or invoice.",
-      check: "The approval and supporting evidence are kept together, and the purpose and coding of the expense are clear.",
+      do: "Check each invoice against the €50 limit, obtain CCM approval, let the ACCM issue the PO and send the request to DPFL, which transfers the approved amount to a local bank account.",
+      check: "Every cash advance has a signed cash transfer form, cash is kept in a lockable box, and each invoice is supported by evidence of its link to the project, such as the activity, date and place, or for taxis the traveller, purpose and why public transport was not used.",
       figures: [
-        ["€100", "Projects limit", "Petty cash expenses on Projects are limited to €100; above that, use the normal purchasing and payment route."],
-        ["€50", "Ordinary Budget limit", "Petty cash expenses on the Ordinary Budget are limited to €50."]
+        ["€50", "Per invoice", "Invoices paid by petty cash must not exceed €50 each; above that, use the normal purchasing and payment route."],
+        ["Lockable box", "Cash custody", "Every staff member who receives a cash advance signs a cash transfer form and keeps the cash in a lockable box."]
       ]
     },
     "filing": {
@@ -54,9 +55,11 @@
       lead: "Keep project, procurement and financial records easy to find, easy to verify and ready for review.",
       remember: "Store every approval and document with the transaction it supports.",
       understand: "A complete and traceable file shows why each action was taken, who approved it and how it was executed.",
-      do: "File decision, approval and execution evidence in the DMS project folder, using clear names, dates and references.",
+      do: "File decision, approval and execution evidence in the DMS project folder, using clear names, dates and references, and keep project documentation electronically and physically.",
       check: "Final PDF evidence and its editable source are kept together and every file can be found and verified.",
-      figures: []
+      figures: [
+        ["10 years", "Retention period", "Project documentation, including deliverables and supporting documents, must remain easy to retrieve for audit for ten years after the end of the project."]
+      ]
     },
     "foma": {
       title: "FOMA workflows",
@@ -105,10 +108,11 @@
       title: "VAT procedures",
       lead: "Clarify VAT before signature, check it at PO and invoice stage, and keep the VAT trail.",
       remember: "Clarify VAT before signing the contract or order form.",
-      understand: "VAT is a procurement planning issue as well as a payment issue, and the guide requires it to be clarified before signature.",
-      do: "Establish the supplier's VAT status and place of taxation, check the invoice particulars and pay to the contractual bank account.",
+      understand: "VAT exemption is a privilege of the Council of Europe, and staff must follow the procedures carefully and meet the deadlines for requesting exemption certificates.",
+      do: "Establish the supplier's VAT status and place of taxation, request any exemption certificate through MSA form 9215 within the deadlines, check the invoice particulars and pay to the contractual bank account.",
       check: "The invoice matches the agreed VAT treatment and the VAT correspondence is filed in the DMS with the invoice and payment evidence.",
       figures: [
+        ["MSA 9215", "Exemption certificate form", "All requests for VAT exemption certificates go through MSA form 9215 and its SLA, which help departments submit correct files and limit the risk of rejection by the French authorities."],
         ["€5,000", "Single card purchase", "A single card purchase is limited to €5,000, and card payments remain exceptions."],
         ["€30,000", "Monthly card limit", "The Organisation-wide monthly card limit is €30,000; larger amounts should preferably be paid by transfer."],
         ["60 days", "Default payment term", "The default payment term is 60 days from receipt of the invoice or execution, whichever is later, unless the contract sets other terms."]

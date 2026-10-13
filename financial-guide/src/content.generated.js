@@ -1292,7 +1292,9 @@ window.FG_CONTENT = {
    "x": "Confirm that sufficient budget is available for the planned purchase before the PO request is submitted.",
    "l": [
     "Use the correct project / budget line.",
-    "Ensure the amount in the PO request matches the supporting financial proposal."
+    "Ensure the amount in the PO request matches the supporting financial proposal.",
+    "Confirm that the PMM project and/or activity ID exists, because no PO can be raised without it.",
+    "Make sure the activity is recorded in the activity work plan in the PMM IT tool; contact the PMM helpdesk if you need help."
    ]
   },
   {
@@ -1322,7 +1324,9 @@ window.FG_CONTENT = {
    "x": "Verify the supplier is properly registered and that current bank / supplier details are available before submission.",
    "l": [
     "Do not submit a PO for an unregistered supplier.",
-    "Avoid using outdated banking details."
+    "Avoid using outdated banking details.",
+    "No PO can be raised before the supplier has been created in FIMS.",
+    "Request the creation of a new supplier through the Multiservice Assistant before the file is submitted to the Financial Unit; suppliers are created by the Treasurer."
    ]
   },
   {
@@ -1342,7 +1346,11 @@ window.FG_CONTENT = {
    "x": "Follow the current signature / visa authorisation route and obtain all required signatures before the engagement proceeds.",
    "l": [
     "Check the latest signature authorisation table.",
-    "Do not allow work to start before the PO is issued."
+    "Do not allow work to start before the PO is issued.",
+    "On projects with decentralised financial management, the relevant CCM signs all contractual documents as a general rule.",
+    "An HQ-based content manager (Head of Division or Department) may sign only in exceptional cases, such as sensitive files, files initiated by the HQ team or invitation letters, and each exception must be clarified in writing to the CCM at the outset of the project.",
+    "On projects with non-decentralised financial management, contractual documents are signed along the chain of delegation of the respective MAE, subject to approval of the financial commitment by the DPC CCM.",
+    "In the visa route table, the first \"X\" shows the staff member responsible for initiating the file."
    ]
   },
   {
@@ -1361,7 +1369,9 @@ window.FG_CONTENT = {
    "c": "#14b8a6",
    "x": "The appropriate internal approval / CCM step is completed in accordance with the applicable route.",
    "l": [
-    "Selected proposal / Order Form may require CCM signature after the PO is opened, depending on the document type."
+    "Selected proposal / Order Form may require CCM signature after the PO is opened, depending on the document type.",
+    "Every commitment needs the prior approval of the CCM or the CCM's substitute, given physically or electronically.",
+    "The ACCM keeps a record of the CCM approval in the file."
    ]
   },
   {
@@ -1371,7 +1381,8 @@ window.FG_CONTENT = {
    "x": "Finance issues / opens the Purchase Order after the file has passed the required controls.",
    "l": [
     "Keep the issued PO / fiche in the file.",
-    "Use the PO reference consistently in downstream documentation."
+    "Use the PO reference consistently in downstream documentation.",
+    "Only ACCMs are authorised to create POs in FIMS."
    ]
   },
   {
@@ -1381,7 +1392,9 @@ window.FG_CONTENT = {
    "x": "Return the countersigned contractual documents to the supplier and ensure both parties hold the final version.",
    "l": [
     "Do not leave the supplier with an unsigned or incomplete agreement.",
-    "Keep the countersigned version in the file."
+    "Keep the countersigned version in the file.",
+    "Make sure the contract is signed and dated after the PO is created and before the service delivery starts.",
+    "Give the original signed contract to the Financial Unit and keep a copy in the project file."
    ]
   },
   {
@@ -1642,6 +1655,42 @@ window.FG_CONTENT = {
   [
    "Create separate Purchase Orders for unrelated activities.",
    "Combining multiple unrelated services under a single Purchase Order."
+  ],
+  [
+   "Check that the PMM project and/or activity ID exists before requesting a PO.",
+   "Requesting a PO for an activity that is not recorded in the PMM IT tool."
+  ],
+  [
+   "Request the creation of a new supplier in FIMS through the Multiservice Assistant before submitting the file.",
+   "Submitting a PO file for a supplier that does not yet exist in FIMS."
+  ],
+  [
+   "Sign and date the contract after the PO is created and before the service delivery starts.",
+   "Signing a contract before the PO exists or after the work has already started."
+  ],
+  [
+   "Allow a longer period between consulting companies and the date of the event for which services are ordered.",
+   "Consulting event organisers so late that competition and quality suffer."
+  ],
+  [
+   "Follow the legal advice when it recommends not splitting a call for tenders.",
+   "Splitting a need into several smaller procedures against legal advice."
+  ],
+  [
+   "Define the form of deliverables clearly in consultant contracts and require documents, or at least a summary, in English or French.",
+   "Leaving deliverables vague or accepting outputs that cannot be read in an official language."
+  ],
+  [
+   "Define reduced-fee sanctions for delays or poor quality in the contract and have both parties accept them.",
+   "Having no agreed basis to reduce a fee when work is late or of low quality."
+  ],
+  [
+   "For restricted consultations, have the eligibility criteria assessed by at least two authorised secretariat members.",
+   "Letting a single staff member assess eligibility alone."
+  ],
+  [
+   "Review and update contract templates, with special attention to clauses that protect the Council's finances and rights.",
+   "Reusing old templates without checking their protective clauses."
   ]
  ],
  "eoyPhases": [
@@ -1731,7 +1780,11 @@ window.FG_CONTENT = {
   "Evidence of service delivery (reports, signatures, photos)",
   "Financial approvals (CCM, Finance Unit)",
   "Valid / correct budget lines applied throughout documentation",
-  "Written justifications for exceptions or deviations"
+  "Written justifications for exceptions or deviations",
+  "Project documentation, including deliverables, reports, photos and visibility items, kept electronically and physically for ten years after the end of the project.",
+  "A sample of visibility items kept in the office archives, with photos of large items such as banners.",
+  "Signed participant lists for each event day, or other attendance evidence such as a group photo.",
+  "Approved mission reports kept as part of the project documentation."
  ],
  "fomaPoStages": [
   {
@@ -1877,7 +1930,9 @@ window.FG_CONTENT = {
    "list": [
     "Obtain evidence of completion or delivery.",
     "Confirm the relevant period/deliverable matches the contractual file.",
-    "Do not move to payment on an unaccepted output."
+    "Do not move to payment on an unaccepted output.",
+    "Certify the work with a Certificate of Acceptance of Work for consultants, or a Payment Request Memorandum for other types of expenditure.",
+    "The certificate is signed by the staff member who attended the event or received the goods or services."
    ]
   },
   {
@@ -1916,7 +1971,11 @@ window.FG_CONTENT = {
    "text": "Assemble the supporting evidence required for the selected service type.",
    "list": [
     "Examples include consultant deliverables, event supporting documents, translated documents, work plans or proof of completed works.",
-    "Use the exact package shown in the Payment File Builder."
+    "Use the exact package shown in the Payment File Builder.",
+    "For events, include a signed list of participants confirming attendance, with a separate list for each day of a multi-day event.",
+    "Where the event format has no registration, use another form of evidence, such as a group photo of the participants.",
+    "Where a volume is difficult to confirm, attach at least a signed memo to the invoice showing how the amount was calculated from actual data.",
+    "For oral presentations by consultants, keep a record or documentation of the deliverable as evidence."
    ]
   },
   {
@@ -1926,7 +1985,8 @@ window.FG_CONTENT = {
    "list": [
     "Use the current official template.",
     "Reference the correct PO/contract.",
-    "Check the supporting documents before signature/visa."
+    "Check the supporting documents before signature/visa.",
+    "Complete the activity report (synopsis) in the PMM IT tool."
    ]
   },
   {
@@ -1936,7 +1996,9 @@ window.FG_CONTENT = {
    "list": [
     "Do not create a new route simply because the transaction has moved to payment.",
     "Re-check only when the nature or financial conditions materially change.",
-    "The role path below is inherited from the PO module."
+    "The role path below is inherited from the PO module.",
+    "The CCM or the CCM's substitute approves the payment physically or electronically.",
+    "The ACCM records the CCM approval in the commitment file before the file is submitted to the Treasurer for payment."
    ]
   },
   {
@@ -2160,6 +2222,26 @@ window.FG_CONTENT = {
   [
    "Archive Finance clarifications and final payment evidence.",
    "Treating payment as closed once the file is submitted."
+  ],
+  [
+   "Use a Certificate of Acceptance of Work for consultants, or a Payment Request Memorandum for other expenditure, signed by the staff member who attended or received the delivery.",
+   "Submitting a payment file without a signed acceptance document."
+  ],
+  [
+   "Complete the activity report (synopsis) in the PMM IT tool when certifying the work.",
+   "Leaving the PMM activity report empty after the activity has taken place."
+  ],
+  [
+   "Obtain signed participant lists before settling event expenditure, with one list for each day of the event.",
+   "Paying for a multi-day event with a single unsigned or incomplete participant list."
+  ],
+  [
+   "Take delays and low-quality work into account when paying consultants and service providers.",
+   "Paying the full fee for late or poor work without applying the agreed sanctions."
+  ],
+  [
+   "Include the approved mission report in the file before settling mission expenditure.",
+   "Settling mission costs without a mission report that shows the link to the project."
   ]
  ],
  "usefulLinks": [
@@ -2319,7 +2401,7 @@ window.FG_CONTENT = {
      "👤",
      "Initiates the mission order request.",
      "Provide mission purpose, traveller, dates, destination, cost estimates and required supporting information.",
-     "The mission must be operationally justified and sufficiently documented before verification.",
+     "The mission must be operationally justified, sufficiently documented and authorised in advance by the Commitments Officer or the relevant CCM; the mission order is then created in the GDD travel management system.",
      "Submit the mission order request to ACCM."
     ],
     [
@@ -2337,7 +2419,7 @@ window.FG_CONTENT = {
      "✓",
      "Performs pre-validation of the mission order.",
      "Review and pre-validate the mission request in line with the applicable internal route.",
-     "Ensure the mission is properly authorised before creation.",
+     "Ensure the mission is properly authorised before creation; once created in GDD, the mission order is referred to the CCM for authorisation.",
      "Return the validated request to ACCM."
     ],
     [
@@ -2370,7 +2452,7 @@ window.FG_CONTENT = {
      "👤",
      "Prepares and submits the expense claim.",
      "Declare eligible mission expenses, attach receipts and supporting documents, and reference the approved mission order.",
-     "Claimed costs must be accurate, supported and linked to the authorised mission.",
+     "Claimed costs must be accurate, supported and linked to the authorised mission; the official-journey report is due within eight days of return and the reimbursement claim within fifteen days.",
      "Submit the expense claim to ACCM."
     ],
     [
@@ -4330,11 +4412,15 @@ window.FG_CONTENT = {
     ],
     [
      "ACCM",
-     "Checks financial/file completeness and creates the PO when ready."
+     "Checks that the commitment complies with the Financial Regulations, matches the budget, the available appropriations, the eligible period and the PMM records, and is the only role authorised to create and finalise POs in FIMS."
     ],
     [
      "CCM",
-     "Provides the applicable approval/visa."
+     "Gives prior approval to every commitment under the annual delegation letter from the DPC Commitment Officer and, on decentralised projects, signs the contractual documents."
+    ],
+    [
+     "Commitment Officer",
+     "Delegates financial authority to the CCMs and remains responsible for sound financial management, budget execution and compliance with the Financial Regulations."
     ]
    ],
    "docs": [
@@ -4361,15 +4447,15 @@ window.FG_CONTENT = {
     ],
     [
      "ACCM",
-     "Verifies the payment file and financial consistency."
+     "Verifies invoices and supporting documents before CCM approval, records the approval in the commitment file and reports any non-compliant transaction to the CCM."
     ],
     [
      "CCM",
-     "Completes the applicable approval/signature route."
+     "Verifies proper performance of the contract, checks that the payment request meets Article 46 of the Financial Regulations and approves the payment physically or electronically."
     ],
     [
      "TPA / Workflow",
-     "Processes the validated payment."
+     "The Treasurer creates suppliers and processes the validated payment."
     ]
    ],
    "docs": [
@@ -4431,7 +4517,7 @@ window.FG_CONTENT = {
     ],
     [
      "Reviewer / finance support",
-     "Checks completeness, traceability and retention."
+     "Checks completeness, traceability and retention; the ACCM archives the supporting documents of all financial transactions by Budget Head."
     ]
    ],
    "docs": [
@@ -4449,7 +4535,7 @@ window.FG_CONTENT = {
     ],
     [
      "Final record",
-     "Controlled DMS/project-file location and retention trail."
+     "Controlled DMS/project-file location and retention trail; project documentation is kept electronically and physically for ten years after the end of the project."
     ]
    ]
   },
@@ -4470,7 +4556,7 @@ window.FG_CONTENT = {
     ],
     [
      "CCM",
-     "Completes the applicable internal control/approval."
+     "Prepares quarterly financial reports for the Commitment Officer and informs the Commitment Officer of major budgetary issues and of any non-compliant transaction."
     ],
     [
      "DPC / donor route",

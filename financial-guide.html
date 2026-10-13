@@ -2946,7 +2946,9 @@ window.FG_CONTENT = {
    "x": "Confirm that sufficient budget is available for the planned purchase before the PO request is submitted.",
    "l": [
     "Use the correct project / budget line.",
-    "Ensure the amount in the PO request matches the supporting financial proposal."
+    "Ensure the amount in the PO request matches the supporting financial proposal.",
+    "Confirm that the PMM project and/or activity ID exists, because no PO can be raised without it.",
+    "Make sure the activity is recorded in the activity work plan in the PMM IT tool; contact the PMM helpdesk if you need help."
    ]
   },
   {
@@ -2976,7 +2978,9 @@ window.FG_CONTENT = {
    "x": "Verify the supplier is properly registered and that current bank / supplier details are available before submission.",
    "l": [
     "Do not submit a PO for an unregistered supplier.",
-    "Avoid using outdated banking details."
+    "Avoid using outdated banking details.",
+    "No PO can be raised before the supplier has been created in FIMS.",
+    "Request the creation of a new supplier through the Multiservice Assistant before the file is submitted to the Financial Unit; suppliers are created by the Treasurer."
    ]
   },
   {
@@ -2996,7 +3000,11 @@ window.FG_CONTENT = {
    "x": "Follow the current signature / visa authorisation route and obtain all required signatures before the engagement proceeds.",
    "l": [
     "Check the latest signature authorisation table.",
-    "Do not allow work to start before the PO is issued."
+    "Do not allow work to start before the PO is issued.",
+    "On projects with decentralised financial management, the relevant CCM signs all contractual documents as a general rule.",
+    "An HQ-based content manager (Head of Division or Department) may sign only in exceptional cases, such as sensitive files, files initiated by the HQ team or invitation letters, and each exception must be clarified in writing to the CCM at the outset of the project.",
+    "On projects with non-decentralised financial management, contractual documents are signed along the chain of delegation of the respective MAE, subject to approval of the financial commitment by the DPC CCM.",
+    "In the visa route table, the first \"X\" shows the staff member responsible for initiating the file."
    ]
   },
   {
@@ -3015,7 +3023,9 @@ window.FG_CONTENT = {
    "c": "#14b8a6",
    "x": "The appropriate internal approval / CCM step is completed in accordance with the applicable route.",
    "l": [
-    "Selected proposal / Order Form may require CCM signature after the PO is opened, depending on the document type."
+    "Selected proposal / Order Form may require CCM signature after the PO is opened, depending on the document type.",
+    "Every commitment needs the prior approval of the CCM or the CCM's substitute, given physically or electronically.",
+    "The ACCM keeps a record of the CCM approval in the file."
    ]
   },
   {
@@ -3025,7 +3035,8 @@ window.FG_CONTENT = {
    "x": "Finance issues / opens the Purchase Order after the file has passed the required controls.",
    "l": [
     "Keep the issued PO / fiche in the file.",
-    "Use the PO reference consistently in downstream documentation."
+    "Use the PO reference consistently in downstream documentation.",
+    "Only ACCMs are authorised to create POs in FIMS."
    ]
   },
   {
@@ -3035,7 +3046,9 @@ window.FG_CONTENT = {
    "x": "Return the countersigned contractual documents to the supplier and ensure both parties hold the final version.",
    "l": [
     "Do not leave the supplier with an unsigned or incomplete agreement.",
-    "Keep the countersigned version in the file."
+    "Keep the countersigned version in the file.",
+    "Make sure the contract is signed and dated after the PO is created and before the service delivery starts.",
+    "Give the original signed contract to the Financial Unit and keep a copy in the project file."
    ]
   },
   {
@@ -3296,6 +3309,42 @@ window.FG_CONTENT = {
   [
    "Create separate Purchase Orders for unrelated activities.",
    "Combining multiple unrelated services under a single Purchase Order."
+  ],
+  [
+   "Check that the PMM project and/or activity ID exists before requesting a PO.",
+   "Requesting a PO for an activity that is not recorded in the PMM IT tool."
+  ],
+  [
+   "Request the creation of a new supplier in FIMS through the Multiservice Assistant before submitting the file.",
+   "Submitting a PO file for a supplier that does not yet exist in FIMS."
+  ],
+  [
+   "Sign and date the contract after the PO is created and before the service delivery starts.",
+   "Signing a contract before the PO exists or after the work has already started."
+  ],
+  [
+   "Allow a longer period between consulting companies and the date of the event for which services are ordered.",
+   "Consulting event organisers so late that competition and quality suffer."
+  ],
+  [
+   "Follow the legal advice when it recommends not splitting a call for tenders.",
+   "Splitting a need into several smaller procedures against legal advice."
+  ],
+  [
+   "Define the form of deliverables clearly in consultant contracts and require documents, or at least a summary, in English or French.",
+   "Leaving deliverables vague or accepting outputs that cannot be read in an official language."
+  ],
+  [
+   "Define reduced-fee sanctions for delays or poor quality in the contract and have both parties accept them.",
+   "Having no agreed basis to reduce a fee when work is late or of low quality."
+  ],
+  [
+   "For restricted consultations, have the eligibility criteria assessed by at least two authorised secretariat members.",
+   "Letting a single staff member assess eligibility alone."
+  ],
+  [
+   "Review and update contract templates, with special attention to clauses that protect the Council's finances and rights.",
+   "Reusing old templates without checking their protective clauses."
   ]
  ],
  "eoyPhases": [
@@ -3385,7 +3434,11 @@ window.FG_CONTENT = {
   "Evidence of service delivery (reports, signatures, photos)",
   "Financial approvals (CCM, Finance Unit)",
   "Valid / correct budget lines applied throughout documentation",
-  "Written justifications for exceptions or deviations"
+  "Written justifications for exceptions or deviations",
+  "Project documentation, including deliverables, reports, photos and visibility items, kept electronically and physically for ten years after the end of the project.",
+  "A sample of visibility items kept in the office archives, with photos of large items such as banners.",
+  "Signed participant lists for each event day, or other attendance evidence such as a group photo.",
+  "Approved mission reports kept as part of the project documentation."
  ],
  "fomaPoStages": [
   {
@@ -3531,7 +3584,9 @@ window.FG_CONTENT = {
    "list": [
     "Obtain evidence of completion or delivery.",
     "Confirm the relevant period/deliverable matches the contractual file.",
-    "Do not move to payment on an unaccepted output."
+    "Do not move to payment on an unaccepted output.",
+    "Certify the work with a Certificate of Acceptance of Work for consultants, or a Payment Request Memorandum for other types of expenditure.",
+    "The certificate is signed by the staff member who attended the event or received the goods or services."
    ]
   },
   {
@@ -3570,7 +3625,11 @@ window.FG_CONTENT = {
    "text": "Assemble the supporting evidence required for the selected service type.",
    "list": [
     "Examples include consultant deliverables, event supporting documents, translated documents, work plans or proof of completed works.",
-    "Use the exact package shown in the Payment File Builder."
+    "Use the exact package shown in the Payment File Builder.",
+    "For events, include a signed list of participants confirming attendance, with a separate list for each day of a multi-day event.",
+    "Where the event format has no registration, use another form of evidence, such as a group photo of the participants.",
+    "Where a volume is difficult to confirm, attach at least a signed memo to the invoice showing how the amount was calculated from actual data.",
+    "For oral presentations by consultants, keep a record or documentation of the deliverable as evidence."
    ]
   },
   {
@@ -3580,7 +3639,8 @@ window.FG_CONTENT = {
    "list": [
     "Use the current official template.",
     "Reference the correct PO/contract.",
-    "Check the supporting documents before signature/visa."
+    "Check the supporting documents before signature/visa.",
+    "Complete the activity report (synopsis) in the PMM IT tool."
    ]
   },
   {
@@ -3590,7 +3650,9 @@ window.FG_CONTENT = {
    "list": [
     "Do not create a new route simply because the transaction has moved to payment.",
     "Re-check only when the nature or financial conditions materially change.",
-    "The role path below is inherited from the PO module."
+    "The role path below is inherited from the PO module.",
+    "The CCM or the CCM's substitute approves the payment physically or electronically.",
+    "The ACCM records the CCM approval in the commitment file before the file is submitted to the Treasurer for payment."
    ]
   },
   {
@@ -3814,6 +3876,26 @@ window.FG_CONTENT = {
   [
    "Archive Finance clarifications and final payment evidence.",
    "Treating payment as closed once the file is submitted."
+  ],
+  [
+   "Use a Certificate of Acceptance of Work for consultants, or a Payment Request Memorandum for other expenditure, signed by the staff member who attended or received the delivery.",
+   "Submitting a payment file without a signed acceptance document."
+  ],
+  [
+   "Complete the activity report (synopsis) in the PMM IT tool when certifying the work.",
+   "Leaving the PMM activity report empty after the activity has taken place."
+  ],
+  [
+   "Obtain signed participant lists before settling event expenditure, with one list for each day of the event.",
+   "Paying for a multi-day event with a single unsigned or incomplete participant list."
+  ],
+  [
+   "Take delays and low-quality work into account when paying consultants and service providers.",
+   "Paying the full fee for late or poor work without applying the agreed sanctions."
+  ],
+  [
+   "Include the approved mission report in the file before settling mission expenditure.",
+   "Settling mission costs without a mission report that shows the link to the project."
   ]
  ],
  "usefulLinks": [
@@ -3973,7 +4055,7 @@ window.FG_CONTENT = {
      "👤",
      "Initiates the mission order request.",
      "Provide mission purpose, traveller, dates, destination, cost estimates and required supporting information.",
-     "The mission must be operationally justified and sufficiently documented before verification.",
+     "The mission must be operationally justified, sufficiently documented and authorised in advance by the Commitments Officer or the relevant CCM; the mission order is then created in the GDD travel management system.",
      "Submit the mission order request to ACCM."
     ],
     [
@@ -3991,7 +4073,7 @@ window.FG_CONTENT = {
      "✓",
      "Performs pre-validation of the mission order.",
      "Review and pre-validate the mission request in line with the applicable internal route.",
-     "Ensure the mission is properly authorised before creation.",
+     "Ensure the mission is properly authorised before creation; once created in GDD, the mission order is referred to the CCM for authorisation.",
      "Return the validated request to ACCM."
     ],
     [
@@ -4024,7 +4106,7 @@ window.FG_CONTENT = {
      "👤",
      "Prepares and submits the expense claim.",
      "Declare eligible mission expenses, attach receipts and supporting documents, and reference the approved mission order.",
-     "Claimed costs must be accurate, supported and linked to the authorised mission.",
+     "Claimed costs must be accurate, supported and linked to the authorised mission; the official-journey report is due within eight days of return and the reimbursement claim within fifteen days.",
      "Submit the expense claim to ACCM."
     ],
     [
@@ -5984,11 +6066,15 @@ window.FG_CONTENT = {
     ],
     [
      "ACCM",
-     "Checks financial/file completeness and creates the PO when ready."
+     "Checks that the commitment complies with the Financial Regulations, matches the budget, the available appropriations, the eligible period and the PMM records, and is the only role authorised to create and finalise POs in FIMS."
     ],
     [
      "CCM",
-     "Provides the applicable approval/visa."
+     "Gives prior approval to every commitment under the annual delegation letter from the DPC Commitment Officer and, on decentralised projects, signs the contractual documents."
+    ],
+    [
+     "Commitment Officer",
+     "Delegates financial authority to the CCMs and remains responsible for sound financial management, budget execution and compliance with the Financial Regulations."
     ]
    ],
    "docs": [
@@ -6015,15 +6101,15 @@ window.FG_CONTENT = {
     ],
     [
      "ACCM",
-     "Verifies the payment file and financial consistency."
+     "Verifies invoices and supporting documents before CCM approval, records the approval in the commitment file and reports any non-compliant transaction to the CCM."
     ],
     [
      "CCM",
-     "Completes the applicable approval/signature route."
+     "Verifies proper performance of the contract, checks that the payment request meets Article 46 of the Financial Regulations and approves the payment physically or electronically."
     ],
     [
      "TPA / Workflow",
-     "Processes the validated payment."
+     "The Treasurer creates suppliers and processes the validated payment."
     ]
    ],
    "docs": [
@@ -6085,7 +6171,7 @@ window.FG_CONTENT = {
     ],
     [
      "Reviewer / finance support",
-     "Checks completeness, traceability and retention."
+     "Checks completeness, traceability and retention; the ACCM archives the supporting documents of all financial transactions by Budget Head."
     ]
    ],
    "docs": [
@@ -6103,7 +6189,7 @@ window.FG_CONTENT = {
     ],
     [
      "Final record",
-     "Controlled DMS/project-file location and retention trail."
+     "Controlled DMS/project-file location and retention trail; project documentation is kept electronically and physically for ten years after the end of the project."
     ]
    ]
   },
@@ -6124,7 +6210,7 @@ window.FG_CONTENT = {
     ],
     [
      "CCM",
-     "Completes the applicable internal control/approval."
+     "Prepares quarterly financial reports for the Commitment Officer and informs the Commitment Officer of major budgetary issues and of any non-compliant transaction."
     ],
     [
      "DPC / donor route",
@@ -8378,10 +8464,11 @@ window.FG_CONTENT = {
       lead: "Build a complete, signature-ready and audit-ready purchase order file for the selected service type.",
       remember: "No activity starts before the PO is issued and documents are countersigned.",
       understand: "The PO is the commitment that allows work to start, so it must rest on confirmed budget, a valid supplier route and the correct signatures.",
-      do: "Confirm the budget and supplier route, prepare the contractual package, collect the required signatures and submit the complete file to Finance.",
-      check: "The PO has been issued, the countersigned documents have been returned to the supplier and the issued PO is kept in the file.",
+      do: "Confirm the budget, the PMM activity ID and the supplier in FIMS, prepare the contractual package, obtain prior CCM approval and submit the complete file so that the ACCM can create the PO.",
+      check: "The PO has been issued, the contract was signed and dated after the PO and before delivery, the countersigned documents have been returned to the supplier and the issued PO is kept in the file.",
       figures: [
         ["2 weeks", "Submission lead time", "Submit the PO request at least two weeks before the scheduled start date to leave enough time for approval."],
+        ["PMM ID", "PO prerequisite", "No PO can be raised without the PMM project and/or activity ID, and no PO can be raised before the supplier exists in FIMS."],
         ["€55k–€184k", "Legal review band", "Procurements in the €55,000 to €184,000 band should follow the applicable legal and procurement review route."]
       ]
     },
@@ -8390,8 +8477,8 @@ window.FG_CONTENT = {
       lead: "Continue the control trail from the PO stage and build a finance-ready payment file.",
       remember: "Pay only for completed, accepted work that matches the approved contractual basis.",
       understand: "A payment closes the trail opened at PO stage, so it must match the same contract, supplier and approval route.",
-      do: "Confirm completion, match the invoice to the PO and contract, collect the supporting evidence and submit the signed Payment Request to Finance.",
-      check: "The payment file is complete, discrepancies are resolved and the payment evidence is archived until settlement.",
+      do: "Confirm completion with a signed Certificate of Acceptance of Work or Payment Request Memorandum, match the invoice to the PO and contract, complete the PMM synopsis and obtain CCM approval before the file goes to the Treasurer.",
+      check: "The payment file is complete, the ACCM has recorded the CCM approval, discrepancies are resolved and the payment evidence is archived until settlement.",
       figures: [
         ["60 days", "Default payment term", "The default payment term is 60 days from receipt of the invoice or execution, whichever is later, unless the contract sets other terms."]
       ]
@@ -8410,13 +8497,13 @@ window.FG_CONTENT = {
     "petty-cash": {
       title: "Petty cash",
       lead: "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.",
-      remember: "Get CCM approval before spending, and stay within the limit.",
+      remember: "Get CCM approval before spending, and keep each invoice paid by petty cash at or below €50.",
       understand: "Petty cash is a small-value exception, so it must not replace the normal procurement or payment route.",
-      do: "Check the amount against the limit for your budget type, obtain CCM approval and keep a readable receipt or invoice.",
-      check: "The approval and supporting evidence are kept together, and the purpose and coding of the expense are clear.",
+      do: "Check each invoice against the €50 limit, obtain CCM approval, let the ACCM issue the PO and send the request to DPFL, which transfers the approved amount to a local bank account.",
+      check: "Every cash advance has a signed cash transfer form, cash is kept in a lockable box, and each invoice is supported by evidence of its link to the project, such as the activity, date and place, or for taxis the traveller, purpose and why public transport was not used.",
       figures: [
-        ["€100", "Projects limit", "Petty cash expenses on Projects are limited to €100; above that, use the normal purchasing and payment route."],
-        ["€50", "Ordinary Budget limit", "Petty cash expenses on the Ordinary Budget are limited to €50."]
+        ["€50", "Per invoice", "Invoices paid by petty cash must not exceed €50 each; above that, use the normal purchasing and payment route."],
+        ["Lockable box", "Cash custody", "Every staff member who receives a cash advance signs a cash transfer form and keeps the cash in a lockable box."]
       ]
     },
     "filing": {
@@ -8424,9 +8511,11 @@ window.FG_CONTENT = {
       lead: "Keep project, procurement and financial records easy to find, easy to verify and ready for review.",
       remember: "Store every approval and document with the transaction it supports.",
       understand: "A complete and traceable file shows why each action was taken, who approved it and how it was executed.",
-      do: "File decision, approval and execution evidence in the DMS project folder, using clear names, dates and references.",
+      do: "File decision, approval and execution evidence in the DMS project folder, using clear names, dates and references, and keep project documentation electronically and physically.",
       check: "Final PDF evidence and its editable source are kept together and every file can be found and verified.",
-      figures: []
+      figures: [
+        ["10 years", "Retention period", "Project documentation, including deliverables and supporting documents, must remain easy to retrieve for audit for ten years after the end of the project."]
+      ]
     },
     "foma": {
       title: "FOMA workflows",
@@ -8475,10 +8564,11 @@ window.FG_CONTENT = {
       title: "VAT procedures",
       lead: "Clarify VAT before signature, check it at PO and invoice stage, and keep the VAT trail.",
       remember: "Clarify VAT before signing the contract or order form.",
-      understand: "VAT is a procurement planning issue as well as a payment issue, and the guide requires it to be clarified before signature.",
-      do: "Establish the supplier's VAT status and place of taxation, check the invoice particulars and pay to the contractual bank account.",
+      understand: "VAT exemption is a privilege of the Council of Europe, and staff must follow the procedures carefully and meet the deadlines for requesting exemption certificates.",
+      do: "Establish the supplier's VAT status and place of taxation, request any exemption certificate through MSA form 9215 within the deadlines, check the invoice particulars and pay to the contractual bank account.",
       check: "The invoice matches the agreed VAT treatment and the VAT correspondence is filed in the DMS with the invoice and payment evidence.",
       figures: [
+        ["MSA 9215", "Exemption certificate form", "All requests for VAT exemption certificates go through MSA form 9215 and its SLA, which help departments submit correct files and limit the risk of rejection by the French authorities."],
         ["€5,000", "Single card purchase", "A single card purchase is limited to €5,000, and card payments remain exceptions."],
         ["€30,000", "Monthly card limit", "The Organisation-wide monthly card limit is €30,000; larger amounts should preferably be paid by transfer."],
         ["60 days", "Default payment term", "The default payment term is 60 days from receipt of the invoice or execution, whichever is later, unless the contract sets other terms."]
@@ -8964,9 +9054,9 @@ window.FG_CONTENT = {
   }
 
   function pettyCash(input) {
-    const projects = input.budget !== "ob", limit = projects ? 100 : 50, amount = Number(input.amount) || 0;
+    const limit = 50, amount = Number(input.amount) || 0;
     if (amount <= 0) return { tone: "warn", title: "Enter the expected amount", text: "Add the planned expense amount to check the applicable limit." };
-    if (amount > limit) return { tone: "risk", title: "Petty cash not applicable", text: `€${amount.toFixed(2)} is above the €${limit} limit for ${projects ? "Projects" : "Ordinary Budget"}. Use the normal purchasing/payment route.` };
+    if (amount > limit) return { tone: "risk", title: "Petty cash not applicable", text: `€${amount.toFixed(2)} is above the €${limit} limit per invoice. Use the normal purchasing/payment route.` };
     if (!input.approved) return { tone: "warn", title: "Do not spend yet", text: "CCM approval must be obtained before the petty cash expense is made." };
     return { tone: "good", title: "Petty cash route available", text: `Amount is within the €${limit} limit and the pre-spend CCM approval is confirmed.` };
   }
@@ -9424,7 +9514,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 06:47</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 06:51</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10077,7 +10167,6 @@ window.FG_CONTENT = {
   const PROJECT_ITEMS = [
     ["⚖", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract execution.", "procurement"],
     ["✦", "Grant", "Grant procedures, calls, evaluation and agreement preparation.", "grants"],
-    ["◆", "DPC financial management", "Delegation, roles, commitments and payments, visa route, VAT, petty cash and audit lessons (DPC manual, 2024).", "dpc-manual"],
     ["↔", "PO & payment files", "Prepare the PO, continue through delivery and complete the payment package.", "po-file"],
     ["◷", "End of year procedure", "Year-end closure, commitments, reporting and clean-up.", "year-end"],
     ["€", "Petty cash", "Petty cash rules, reconciliation and supporting evidence.", "petty-cash"],
@@ -10088,7 +10177,7 @@ window.FG_CONTENT = {
   ];
   // Projects: the financial life cycle as three phases (commit → spend → close) with their modules.
   const PHASES = [
-    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["DPC financial management", "Who decides, visa route, payments and controls.", "dpc-manual", "MANUAL"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
+    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
     ["02", "Spend", "Order, receive and pay", 2, [["PO & payment files", "PO, delivery and payment package.", "po-file", "CORE"], ["Petty cash", "Limits, approval and reconciliation.", "petty-cash"], ["VAT procedures", "Exemptions and supporting documents.", "vat"], ["Events & GDD", "Event budget, logistics and GDD.", "events"]]],
     ["03", "Close", "Year-end and audit trail", 3, [["End of year", "Cut-off, allocation and closing checklist.", "year-end", "DEADLINE"], ["Filing management", "Evidence map, DMS and naming.", "filing"]]],
   ];
@@ -10703,444 +10792,6 @@ window.FG_CONTENT = {
 
 </script>
 <script>
-/* guides/dpc-manual.js */
-/* DPC financial management: written from the DPC Financial Management System Manual (DPC/Inf(2022)/01, updated 26/06/2024). */
-(function () {
-  "use strict";
-  FG.registerGuide({
-    base: "dpc-manual",
-    title: "DPC financial management",
-    lead: "This guide explains who decides, how money is committed and paid, and which controls apply to specific expenditure in the Directorate of Programme Co-ordination.",
-    parent: ["Projects", "projects"],
-    phases: [
-      ["Who decides", ["Delegation", "Roles", "Fraud & corruption"]],
-      ["Commit and pay", ["Internal control", "Commit & settle", "Contracts"]],
-      ["Specific expenditure & controls", ["Expenditure", "VAT & petty cash", "Project costs & reports", "Audit lessons"]],
-    ],
-    stages: [
-      // ---------- Phase 1 ----------
-      { name: "Delegation", title: "Delegation of authority", source: "Ch. 2.1",
-        lead: "Financial authority in DPC flows down a chain of delegation that starts with the Secretary General.",
-        remember: "Each manager answers to the person who delegated authority to them.",
-        understand: "Every financial decision rests on a delegation from the next most senior person in the chain.",
-        do: "Act only within the delegation you have received and keep the delegation letter on file.",
-        check: "Each Cost Centre Manager holds a current annual delegation letter and signs a year-end Letter of Representation.",
-        keyFacts: [],
-        sections: [
-          ["The chain of responsibility", { lead: "The decentralised system is a chain in which each manager derives authority from the next most senior person.",
-            items: [["Secretary General", "The Secretary General is answerable to the Committee of Ministers for the sound financial management of the whole Organisation."],
-                    ["Commitment Officer (CO) DPC", "The Secretary General delegates responsibility for financial management within DPC to the DPC Commitment Officer."],
-                    ["Head of Office (CCM)", "The DPC Commitment Officer delegates to each Head of Office the Ordinary Budget running costs of the Office and the decentralised extra-budgetary programmes implemented through it."]],
-            ordered: true }],
-          ["Letters of Representation", { lead: "Each level confirms at year-end that it has used its delegation properly.",
-            must: ["The CO DPC provides the Secretary General with a signed Letter of Representation at year-end.",
-                   "Each Cost Centre Manager provides the DPC Commitment Officer with a signed Letter of Representation at year-end."],
-            tip: "Keep evidence of compliance during the year so that the year-end letter can be signed with confidence." }],
-          ["Accountability stays with the delegator", { lead: "Delegating a task does not transfer accountability for it.",
-            must: ["The delegating authority remains solely accountable to his or her superior for the performance of the delegated duties.",
-                   "The CO must take measures so that the CCM can be replaced when absent."] }],
-          ["Reference document", { lead: "Document ADMIN/PROG(2013)1 summarises the roles of all staff involved in decentralised financial management." }],
-        ],
-        warning: "Acting on a budget for which you hold no delegation breaks the chain of accountability.",
-        best: "Check at the start of each year that delegation letters and substitutes are in place.",
-        checklist: ["The annual delegation letter from the DPC CO is on file.", "A substitute for the CCM has been designated.", "The year-end Letter of Representation is planned and supported by evidence.", "Staff know which budgets fall under the Office's delegation."],
-        links: ["Roles"] },
-
-      { name: "Roles", title: "Roles: CO, CCM and ACCM/FOMA", source: "Ch. 2.2",
-        lead: "Three roles share financial responsibility in DPC, and each has distinct duties.",
-        remember: "The CO oversees, the CCM approves, and the ACCM records and controls.",
-        understand: "Clear roles make segregation of duties possible and protect the Organisation's funds.",
-        do: "Identify who holds each role for your cost centre before you start a financial transaction.",
-        check: "Every commitment and payment shows the right person acting in the right role.",
-        keyFacts: [],
-        sections: [
-          ["Commitment Officer (CO)", { lead: "The CO is responsible for the sound financial management of the sectors he or she oversees.",
-            items: [["Organisation", "The CO sets up the financial organisation to ensure internal control and mitigate financial risks."],
-                    ["Budget execution", "The CO carries out budget execution and follow-up, including accurate expenditure forecasts."],
-                    ["Appropriations", "The CO keeps commitments within delegated appropriations and redeploys them only in line with the rules."],
-                    ["Payments", "The CO assesses the compliance of payment requests with Article 46 of the Financial Regulations."]] }],
-          ["Cost Centre Manager (CCM)", { lead: "The CCM manages the finances of the cost centre on the basis of the annual delegation letter.",
-            items: [["Compliance", "The CCM ensures that procurement complies with the Financial Regulations, the Purchasing Code of Ethics and the Purchasing Policy and Guidelines."],
-                    ["Self-assessment", "The CCM self-assesses internal controls, reports to the CO and proposes corrective measures."],
-                    ["Declarations of interests", "The CCM ensures that the CCM, the substitute, the ACCMs and all staff involved in procurement or grants complete declarations of interests."],
-                    ["Commitments", "The CCM ensures that commitments match the budget, stay within appropriations and fall within the eligible period."],
-                    ["Performance", "The CCM verifies the proper performance of contracts and the compliance of payment requests with Article 46."],
-                    ["Verification visits", "The CCM visits the provider's premises or the event venue when there is doubt about a provider or the services delivered."]] }],
-          ["ACCM / FOMA", { lead: "The ACCM or FOMA assists the CCM on financial management and budget issues.",
-            items: [["Transactions", "The ACCM prepares, records and processes transactions, including entering and finalising POs in FIMS."],
-                    ["Commitment control", "The ACCM checks requests for commitment against the rules before the CCM approves them."],
-                    ["Invoice control", "The ACCM checks invoices and supporting documents before the CCM approves settlement."],
-                    ["PMM check", "The ACCM checks that PMM records match the commitments for which authorisation is requested."],
-                    ["Reporting and archiving", "The ACCM reports non-compliant transactions to the CCM and archives supporting documents by Budget Head."]] }],
-          ["Project Manager (PM)", { lead: "In this manual, the Project Manager is any staff member representing the content manager who may initiate a PO and certify that work was completed." }],
-        ],
-        warning: "One person initiating, approving and recording the same transaction defeats segregation of duties.",
-        best: "Display the role holders and their substitutes in the Office so that everyone knows whom to ask.",
-        checklist: ["The CO, CCM, substitute and ACCM are identified.", "Declarations of interests are completed by everyone involved in procurement or grants.", "The CCM's internal control self-assessment has been reported to the CO.", "Supporting documents are archived by Budget Head."],
-        links: ["Delegation", "Internal control"] },
-
-      { name: "Fraud & corruption", title: "Fraud and corruption policy", source: "Ch. 4",
-        lead: "Every member of the Secretariat has a duty to report any reasonable suspicion of fraud or corruption.",
-        remember: "Report any reasonable suspicion of fraud or corruption.",
-        understand: "The Council of Europe is committed to the proper use of its funds and the protection of its reputation.",
-        do: "Report suspicions through the channels set by Rule No. 1327 and the Directorate of Internal Oversight.",
-        check: "You know what counts as fraud or corruption and how to report it.",
-        keyFacts: [],
-        sections: [
-          ["Definitions", { lead: "Rule No. 1327 of 10 January 2011 defines fraud and corruption.",
-            items: [["Fraud", "Fraud is any illegal act or omission characterised by deceit, concealment or violation of trust to obtain money, property, services or an advantage."],
-                    ["Corruption", "Corruption is requesting, offering, giving or accepting a bribe or other undue advantage that distorts the proper performance of a duty."]] }],
-          ["Duty to report", { lead: "The rights and obligations apply to all Secretariat members at every level.",
-            must: ["Every Secretariat member must report any reasonable suspicion of fraud or corruption."],
-            items: [["Others", "Specially appointed officials and people taking part in Council of Europe activities are encouraged to report directly to the Secretary General."]] }],
-          ["What happens next", { lead: "Under Rule No. 65 of 28 June 2016, the Director of Internal Oversight acts on reports.",
-            items: [["Record", "The Director records and, if possible, acknowledges the report."],
-                    ["Assess", "The Director makes a preliminary assessment and decides whether to open an investigation."],
-                    ["Inform", "The Director decides whether to inform the Secretary General of the results."]], ordered: true }],
-          ["Protection", { lead: "Rule No. 1327 protects people who report reasonable suspicion or co-operate with an investigation by DIO." }],
-        ],
-        warning: "Staying silent about a reasonable suspicion is itself a breach of the duty to report.",
-        best: "Consult the DIO website for the reporting procedures before you need them.",
-        checklist: ["You can define fraud and corruption.", "You know that reporting is a duty, not an option.", "You know DIO handles reports.", "You know reporters are protected."],
-        links: ["Audit lessons"] },
-
-      // ---------- Phase 2 ----------
-      { name: "Internal control", title: "Internal control: commitments, payments and FIMS", source: "Ch. 3",
-        lead: "Internal control relies on segregation of duties and on prior authorisation of every commitment and payment.",
-        remember: "No PO without a PMM ID and a supplier in FIMS.",
-        understand: "Separating initiation, approval, recording and payment reduces the risk of error and fraud.",
-        do: "Initiate the commitment, obtain CCM approval, have the ACCM record it, and let the Treasurer pay.",
-        check: "The file holds the CCM approval, the PO, the signed contract and the acceptance evidence.",
-        keyFacts: [],
-        sections: [
-          ["Segregation of duties", { lead: "Each step of a transaction is done by a different actor.",
-            items: [["Project Manager", "The PM initiates commitments."], ["CCM", "The CCM authorises commitments."], ["ACCM", "The ACCM records and reports on financial transactions."], ["Treasurer", "The Treasurer of the Organisation creates suppliers and makes payments."]] }],
-          ["Authorising commitments", { lead: "Every commitment needs prior CCM approval.",
-            must: ["All commitments must receive the prior approval of the CCM or the substitute, physically or electronically.",
-                   "The ACCM must keep a record of this approval in the file.",
-                   "No PO can be raised without the PMM project or activity ID.",
-                   "No PO can be raised before the supplier has been created in FIMS."],
-            tip: "Request supplier creation through the Multiservice Assistant before you submit the file to the Financial Unit." }],
-          ["Order of signature", { lead: "The contract must follow the PO and precede the work.",
-            items: [["PO", "The PO is created first."], ["Contract", "The contract is signed and dated after the PO is created."], ["Service", "Service delivery starts after the contract is signed."]], ordered: true,
-            must: ["The original signed contract goes to the Financial Unit, and the PM keeps a copy."] }],
-          ["Authorising payments", { lead: "Payment follows certification that the service was performed as agreed.",
-            items: [["Certify", "The PM certifies performance with a Certificate of Acceptance of Work for consultants or a Payment Request Memorandum for other expenditure."],
-                    ["Report", "The PM is invited to complete the activity report (synopsis) in PMM."],
-                    ["Approve", "The CCM or the substitute approves the payment, and the ACCM records the approval in the file."],
-                    ["Pay", "The file is submitted to the Treasurer for payment."]], ordered: true }],
-          ["FIMS access", { lead: "Instruction 47 regulates access to FIMS.",
-            must: ["FIMS logins are personal and must not be shared.", "Passwords are strictly confidential and must not be shared."],
-            tip: "Project teams can request read-only webfocus access to check PO payment status or supplier bank details through the field finance team." }],
-        ],
-        warning: "Signing a contract before the PO exists, or starting work before signature, breaks the control chain.",
-        best: "Prepare the PMM work plan and the supplier creation early so that the PO is not delayed.",
-        checklist: ["The activity has a PMM ID.", "The supplier exists in FIMS.", "The CCM approval is recorded in the file.", "The contract is dated after the PO and before the service starts.", "The acceptance certificate or Payment Request Memorandum is signed.", "The original contract is with the Financial Unit."],
-        templates: ["Certificate of Acceptance of Work", "Payment Request Memorandum"],
-        links: ["Commit & settle", "Roles"] },
-
-      { name: "Commit & settle", title: "Committing, settling and recording", source: "Ch. 7, Annex 1",
-        lead: "Requisitions, POs and invoices follow a fixed route between the requester, the ACCM and the CCM.",
-        remember: "Only the CCM approves requisitions, and only the ACCM creates POs.",
-        understand: "A fixed route ensures that every commitment and payment is approved by someone with delegated authority.",
-        do: "Send the requisition to the ACCM, who obtains CCM approval and creates the PO in FIMS.",
-        check: "The requisition, approval, PO and approved invoice are all in the file.",
-        keyFacts: [],
-        sections: [
-          ["Requisitions", { lead: "Requisitions reach the ACCM by email or note.",
-            must: ["Only the CCM, or a CCM by delegation, may approve requisitions."] }],
-          ["Purchase orders", { lead: "Commitments are entered in FIMS by creating a PO.",
-            must: ["Only ACCMs may create POs."] }],
-          ["Invoices and claims", { lead: "Invoices are approved before they go for settlement.",
-            must: ["Invoices or payment claims must be authorised by the CCM, or a CCM by delegation, before they are sent for settlement with all supporting documents."] }],
-          ["Visa route", { lead: "Annex 1 sets a standard visa route by type of expenditure for extra-budgetary projects.",
-            items: [["Initiation", "The first X in the visa route shows the staff member responsible for initiating the file."],
-                    ["Acceptance", "The certificate of acceptance is signed by the staff member who attended the event or accepted the delivery."],
-                    ["Decentralised projects", "As a rule, the relevant CCM signs all contractual documents."],
-                    ["Non-decentralised projects", "Relevant staff may sign under their MAE's delegation chain, subject to approval of the commitment by DPC's CCM."]] }],
-          ["Exceptions to CCM signature", { lead: "In some cases an HQ content manager may sign instead of the CCM.",
-            items: [["Sensitive cases", "Branding, the level of the addressee or membership issues can justify HQ signature."],
-                    ["HQ-initiated files", "Files initiated by the HQ team, such as an international consultant, can be signed at HQ."],
-                    ["Document type", "Some documents, such as invitation letters, can be signed at HQ."]],
-            must: ["Any exception must be confirmed in writing to the relevant CCM at the start of project implementation."] }],
-        ],
-        warning: "Agreeing signature exceptions orally leaves the file without the written evidence the External Auditor expects.",
-        best: "Agree the visa route and signature exceptions in writing when the project starts.",
-        checklist: ["The requisition reached the ACCM in writing.", "The CCM approved the requisition.", "The ACCM created the PO.", "The invoice was approved by the CCM before settlement.", "Any signature exception is confirmed in writing."],
-        links: ["Internal control"] },
-
-      { name: "Contracts", title: "Choosing the contractual instrument", source: "Ch. 5",
-        lead: "The type of contract depends on whether the Organisation buys something or supports someone else's action.",
-        remember: "Buy means procurement, support means grant.",
-        understand: "Using the wrong instrument applies the wrong rules and exposes the Organisation to risk.",
-        do: "Decide whether you buy or support, then follow Rule 1395 for procurement or Rule 1374 for grants.",
-        check: "The instrument matches the purpose and any donor-imposed supplier has gone through Article 11.",
-        keyFacts: [["3 months", "grant end before project end"], ["12 months", "usual operational grant ceiling"]],
-        sections: [
-          ["Which instrument", { lead: "The purpose of the payment decides the instrument, not the status of the contractor.",
-            items: [["Procurement contract", "A procurement contract is signed whenever the Organisation buys works, goods or services."],
-                    ["Grant agreement", "A grant agreement is signed whenever the Organisation supports a project or activity."],
-                    ["Cooperation agreement", "A cooperation agreement is used only when the action is neither procurement nor a grant."]] }],
-          ["Procurement", { lead: "All purchases are covered by Rule 1395 and must follow one of its procedures.",
-            must: ["Extra-budgetary projects follow the same Financial Regulations and procurement rules as the Ordinary Budget.",
-                   "A project agreement that departs from established models should be reviewed by DLAPIL before signing."],
-            tip: "Avoid committing to specialist procurement such as IT equipment, and involve DIT or DGS if the donor insists." }],
-          ["Supplier chosen by the donor", { lead: "When a donor requires a particular supplier, Article 11 of the Financial Regulations applies, not Article 40.3.",
-            items: [["Inform the Committee of Ministers", "The entity informs the Committee of Ministers in writing, via its Secretariat, of the agreement and the contract to be awarded."],
-                    ["Inform the Tenders Board", "The entity then presents an information note to the Tenders Board confirming that the Committee of Ministers was informed."]], ordered: true,
-            must: ["The Tenders Board cannot authorise such an award as a direct award."] }],
-          ["Consultants and outsourcing", { lead: "Specific instructions govern these service contracts.",
-            items: [["Consultants", "Instruction 59 governs consultant contracts, which are justified only when neither the Secretariat nor a committee member can do the work."],
-                    ["Outsourcing", "Instruction 60 governs outsourcing of general support tasks to a third party."]],
-            must: ["Procurement thresholds apply to consultant contracts."] }],
-          ["Framework contracts", { lead: "Framework contracts cover services such as interpretation, translation and some event organisation.",
-            items: [["Origin", "Framework contracts are usually concluded after an international public call for tenders."],
-                    ["Interpretation", "Interpretation framework contracts can be used only by extra-budgetary programmes and Office activities."],
-                    ["Exclusions", "They do not apply to statutory organs, conflict zones, or meetings in Strasbourg or at the Paris Office."]],
-            tip: "For excluded meetings and Ordinary Budget programmes, recruit interpreters through ITEM under the AIIC agreement." }],
-          ["Grants", { lead: "A grant must both help the grantee reach its own objectives and advance the Organisation's values.",
-            items: [["Project grant", "A project-related grant finances a project or specified action."],
-                    ["Operational grant", "An operational grant finances a grantee's operating costs and should not normally exceed twelve consecutive months."]],
-            must: ["The grant agreement must end at least three months before the end of the project."] }],
-        ],
-        warning: "Presenting a donor-imposed supplier to the Tenders Board as a direct award is the wrong route.",
-        best: "Have non-standard project agreements reviewed by DLAPIL before signature.",
-        checklist: ["You have decided whether you buy or support.", "The applicable rule (1395 or 1374) is identified.", "A donor-imposed supplier has been reported to the Committee of Ministers.", "The grant agreement ends at least three months before the project.", "Consultant recourse is justified."],
-        links: ["Internal control"] },
-
-      // ---------- Phase 3 ----------
-      { name: "Expenditure", title: "Expenditure categories", source: "Ch. 6",
-        lead: "Staff, internal services, journeys, experts and other expenditure each follow specific management rules.",
-        remember: "Authorise first, then commit, and report missions within eight days.",
-        understand: "Each category of expenditure has its own approval and recording logic.",
-        do: "Identify the category, obtain the right prior authorisation and record the commitment as required.",
-        check: "The authorisation, PO and any required report are in place for each expense.",
-        keyFacts: [["3.79%", "staff technical abatement"], ["8 days", "mission report deadline"], ["15 days", "reimbursement claim deadline"]],
-        sections: [
-          ["Staff (Ordinary Budget)", { lead: "The CO meets staff costs within the appropriations for permanent and temporary staff.",
-            must: ["The 3.79% technical abatement must be observed.", "No transfer is allowed between operational and staff expenditure.", "The CO must authorise the creation of a position."],
-            items: [["Temporary staff", "The CCM determines needs and funding, the CO approves, and individual POs are raised per staff member for the planned contract duration."]] }],
-          ["Internal recharged services", { lead: "HQ internal services follow a policy set by the CO and monitored by the CCMs.",
-            items: [["No PO", "Printing and postage are charged directly to operational expenditure in FIMS."],
-                    ["PO needed", "Interpretation and translation need a PO based on the estimated cost from the department."]] }],
-          ["Official journeys", { lead: "A journey requires prior authorisation by the CO or the relevant CCM.",
-            items: [["Authorise", "The CO or CCM authorises the journey."], ["Mission order", "The mission order is created in GDD and authorised by the CCM."], ["Report", "The traveller submits a mission report within eight days of return."], ["Claim", "The traveller claims reimbursement within fifteen days of return."]], ordered: true,
-            tip: "The mission report may be brief, about half a page, but it must justify the mission." }],
-          ["Experts and participants", { lead: "Experts paid travel and subsistence only follow the revised rules on reimbursement of travel and subsistence expenses." }],
-          ["Other expenditure", { lead: "Forecasts and work plans serve as the authorisation to commit.",
-            items: [["Ordinary Budget", "The CCM reviews an itemised forecast per budget line for CO approval at the start of the year, and unforeseen expenditure needs individual CO authorisation."],
-                    ["Extra-budgetary projects", "The CCM approves an Activities Work Plan in PMM that covers three months and is updated quarterly if longer."]] }],
-        ],
-        warning: "A journey undertaken without prior authorisation cannot be regularised by the mission order.",
-        best: "Keep the PMM work plan current so that every PO has a valid activity ID.",
-        checklist: ["The staff budget respects the 3.79% abatement.", "Interpretation and translation have a PO.", "Journeys were authorised before departure.", "Mission reports were submitted within eight days.", "The work plan is updated quarterly."],
-        links: ["Internal control"] },
-
-      { name: "VAT & petty cash", title: "VAT exemption and petty cash", source: "Ch. 9–10",
-        lead: "VAT exemption and petty cash each have strict procedures that protect the Organisation's privileges and funds.",
-        remember: "Petty cash invoices must not exceed €50 each.",
-        understand: "VAT exemption is a privilege that is lost if procedures and deadlines are not followed.",
-        do: "Request VAT exemption certificates through MSA form 9215, and pay only small invoices from petty cash.",
-        check: "VAT requests are on time and every cash book entry links the expense to the project.",
-        keyFacts: [["€50", "petty cash invoice ceiling"]],
-        sections: [
-          ["VAT exemption", { lead: "VAT exemption is a privilege of the Council of Europe.",
-            must: ["All requests for VAT exemption certificates must be submitted through MSA form 9215."],
-            items: [["Staff duty", "Staff must follow the procedures carefully and respect the deadlines for requesting certificates."],
-                    ["Guidance", "The Protocol intranet site explains the procedures, and Protocol runs short information sessions."]],
-            tip: "Use the SLA attached to form 9215 to limit the risk of rejection by the French authorities." }],
-          ["Petty cash route", { lead: "Petty cash is requested, approved and transferred to a local account.",
-            items: [["Approve", "The CCM approves the request."], ["Commit", "The ACCM issues the PO."], ["Process", "The request is sent to DPFL for processing."], ["Transfer", "The amount is transferred to a local bank account from which a designated staff member may withdraw."]], ordered: true,
-            must: ["Each invoice paid from petty cash must not exceed €50."] }],
-          ["Cash book evidence", { lead: "Following EU audits, invoices alone are not enough.",
-            must: ["Supporting documents must prove the direct link between each expense and the project, including the activity, date and place."],
-            items: [["Taxi", "Taxi invoices need the traveller's name, the purpose and the reason public transport was not used."]] }],
-          ["Cash safekeeping", { lead: "Cash advances are signed for and stored securely.",
-            must: ["Every staff member who receives a cash advance must sign a cash transfer form.", "Cash must be kept in a lockable box."] }],
-        ],
-        warning: "A taxi receipt without purpose and justification is not acceptable evidence for the cash book.",
-        best: "Record the activity, date and place for every cash expense when it occurs.",
-        checklist: ["Each petty cash invoice is €50 or less.", "The CCM approved and the ACCM issued the PO.", "Cash transfer forms are signed.", "Cash is kept in a lockable box.", "VAT certificate requests used MSA form 9215."],
-        templates: ["MSA form 9215", "Cash transfer form"],
-        links: ["Audit lessons"] },
-
-      { name: "Project costs & reports", title: "Global Direct Costs and financial reporting", source: "Ch. 8, 11–12",
-        lead: "Extra-budgetary projects carry Global Direct Costs and require regular financial reports.",
-        remember: "Charge GDC flat rates per local staff member to the Local Office heading.",
-        understand: "Costs once treated as indirect are now direct costs in the project's budget.",
-        do: "Charge the flat rates every six months and prepare quarterly reports for the CO.",
-        check: "GDC is reconciled at project end and quarterly reports reach the CO.",
-        keyFacts: [["€335", "rent per local staff per month (2021)"], ["€106", "equipment per local staff per month (2021)"]],
-        sections: [
-          ["Global Direct Costs", { lead: "Under CM decision CM/Del/DEC(2016)1268/11.6, three cost categories are direct project costs.",
-            items: [["Rent and related charges", "This covers electricity, heating, water, cleaning, insurance, security, fixed telephone lines and internet."],
-                    ["IT", "This covers IT equipment, infrastructure and support."],
-                    ["Security and medical", "This covers security and medical costs."]] }],
-          ["How GDC is charged", { lead: "GDC applies to extra-budgetary projects that recruit project staff in the field.",
-            must: ["GDC is charged as a flat rate per staff member working on and financed by the project.", "GDC is charged to the Local Office budget heading."],
-            items: [["Timing", "Flat rates are charged every six months, in June and December, and reconciled at project end."],
-                    ["2021 rates", "The rates are €335 per local staff member per month for rent and €106 for equipment, based on 2019 actual costs."]] }],
-          ["Regular reporting", { lead: "The CCM reports to the CO every quarter for both OB and EB.",
-            must: ["At least once a year the report must include actual and forecast expenditure for the coming year.", "The CCM must inform the CO of any non-compliant transaction."],
-            tip: "Raise issues with major budgetary implications with the CO immediately rather than waiting for the quarterly report." }],
-          ["Contractual reporting", { lead: "ACCMs draft financial reports, forecasts and addendums using the attached guidelines.",
-            tip: "Pay special attention to staff expenditure and local office costs when checking reports." }],
-        ],
-        warning: "Charging GDC to the wrong budget heading distorts the project's financial report.",
-        best: "Reconcile GDC charges at each six-month posting rather than only at project end.",
-        checklist: ["GDC is charged to the Local Office heading.", "Flat rates were posted in June and December.", "GDC was reconciled at project end.", "Quarterly reports reached the CO.", "Staff and local office costs were checked."],
-        links: ["Expenditure"] },
-
-      { name: "Audit lessons", title: "Recurrent audit recommendations", source: "Ch. 13",
-        lead: "Recent audits point to recurring weaknesses that every Office should prevent.",
-        remember: "Archive project evidence for ten years after the project ends.",
-        understand: "Following past audit recommendations avoids repeated findings and contested costs.",
-        do: "Apply the recommendations to every contract, event, mission and payment file.",
-        check: "Each file contains the evidence auditors have asked for.",
-        keyFacts: [["10 years", "archive period after project end"], ["2 members", "eligibility check in restricted consultation"]],
-        sections: [
-          ["Responsibilities and planning", { lead: "Accountability starts with clear duties and plans.",
-            items: [["Duties", "Heads of Office notify staff in writing of their duties and set objectives on time."],
-                    ["Work plans", "DPC ensures that all projects have work plans and updates."],
-                    ["Declarations", "All declarations of interests are completed each year, except for staff with no external interests."]] }],
-          ["Procurement lessons", { lead: "Auditors focus on competition and fair evaluation.",
-            must: ["DLAPIL's advice not to split a call for tenders must be followed.", "In restricted consultations, at least two authorised Secretariat members must assess eligibility."],
-            tip: "Allow a longer period between consulting companies and the date of the event." }],
-          ["Event evidence", { lead: "Attendance must be proven before settlement.",
-            must: ["A signed list of participants must be submitted before settlement.", "Multi-day events need a separate list for each day."],
-            items: [["No registration", "When no registration is foreseen, use other evidence such as a group photo."]] }],
-          ["Consultants and contracts", { lead: "Contracts should secure quality and usable deliverables.",
-            items: [["Sanctions", "Reduced-fee sanctions for delays or poor quality should be defined and accepted by both parties."],
-                    ["Language", "Consultants should deliver in an official language, or at least a summary in English or French."],
-                    ["Deliverables", "The form of deliverables should be defined, and oral presentations should be documented or recorded."],
-                    ["Templates", "Contract templates should be reviewed, especially clauses that secure the Council's finances and rights."]] }],
-          ["Missions and hard-to-confirm costs", { lead: "Mission and volume-based costs need a documented link to the project.",
-            must: ["A mission report approved by the hierarchy is required to settle mission expenditure.",
-                   "Expenses whose volume is hard to confirm need at least a signed memo with the calculation attached to the invoice."],
-            items: [["HoO missions", "Missions by staff not covered by the project budget need proof of added value, such as the project's mission report, the agenda and the speech."]] }],
-          ["Archiving", { lead: "Project documentation must remain retrievable.",
-            must: ["Project documentation must be archived electronically and physically for ten years after the project ends."],
-            tip: "Keep a sample of visibility items, and photos of large items such as banners." }],
-        ],
-        warning: "Paying an event without signed daily attendance lists is a recurrent audit finding.",
-        best: "Use the recommendations as a checklist before submitting any file for settlement.",
-        checklist: ["Signed participant lists exist for each event day.", "Mission reports are approved and filed.", "Two members assessed eligibility in restricted consultations.", "Declarations of interests are current.", "Project documentation is archived for ten years.", "Consultant deliverables are clearly defined."],
-        links: ["Fraud & corruption", "VAT & petty cash"] },
-    ],
-
-    facts: {
-      Contracts: {
-        "3 months": { what: "The end date of a grant agreement must be at least three months before the end of the project.", why: "A later end date leaves no time to close the grant within the project.", ref: "5.2" },
-        "12 months": { what: "Operational grants should not normally give rise to agreements of more than twelve consecutive months.", why: "Longer operational grants depart from the normal rule.", ref: "5.2" },
-      },
-      Expenditure: {
-        "3.79%": { what: "The CO must observe the 3.79% technical abatement when meeting staff expenditure.", why: "Ignoring the abatement overcommits the staff appropriations.", ref: "6.1" },
-        "8 days": { what: "An official-journey report must be submitted no later than eight days after return, under Rule 1389.", why: "The report justifies the mission.", ref: "6.3" },
-        "15 days": { what: "The reimbursement claim must be made within fifteen days of return.", why: "Late claims breach the journey rules.", ref: "6.3" },
-      },
-      "VAT & petty cash": {
-        "€50": { what: "Invoices paid by petty cash should not exceed EUR 50 each.", why: "Larger invoices must go through the normal payment route.", ref: "10" },
-      },
-      "Project costs & reports": {
-        "€335": { what: "The 2021 GDC rate for rent and related charges is EUR 335 per month per local staff member.", why: "It is charged to budget line 4.2 of extra-budgetary projects.", ref: "11" },
-        "€106": { what: "The 2021 GDC rate for equipment is EUR 106 per month per local staff member.", why: "It is generally charged to line 4.4 equipment.", ref: "11" },
-      },
-      "Audit lessons": {
-        "10 years": { what: "Project documentation should be archived for ten years after the end of the project.", why: "Auditors may request it during that period.", ref: "13" },
-        "2 members": { what: "In restricted consultations, at least two authorised Secretariat members assess eligibility criteria.", why: "A single assessor weakens control of the procedure.", ref: "13" },
-      },
-    },
-
-    reference: {
-      limits: [
-        { value: "€50", rule: "Each invoice paid by petty cash must not exceed €50.", who: "CCM / ACCM" },
-        { value: "3.79%", rule: "Staff expenditure must observe the 3.79% technical abatement.", who: "CO" },
-        { value: "8 days", rule: "Submit the official-journey report within eight days of return.", who: "Traveller" },
-        { value: "15 days", rule: "Claim reimbursement within fifteen days of return.", who: "Traveller" },
-        { value: "3 months", rule: "End the grant agreement at least three months before the project ends.", who: "CCM / PM" },
-        { value: "12 months", rule: "Operational grant agreements should not normally exceed twelve consecutive months.", who: "CCM" },
-        { value: "3 months", rule: "The Activities Work Plan covers three months and is updated quarterly if the period is longer.", who: "PM / CCM" },
-        { value: "€335 / €106", rule: "The 2021 GDC rates per local staff member per month are €335 for rent and €106 for equipment.", who: "ACCM" },
-        { value: "10 years", rule: "Archive project documentation for ten years after the project ends.", who: "Project team" },
-      ],
-      roles: [
-        { name: "Commitment Officer (CO)", does: "The CO holds the delegation for DPC, approves forecasts and staff positions, and signs a year-end Letter of Representation.", when: "The CO acts on budgets, positions, unforeseen expenditure and year-end." },
-        { name: "Cost Centre Manager (CCM)", does: "The CCM approves requisitions, commitments and payments, and signs contracts for decentralised projects.", when: "The CCM acts before every commitment and every settlement." },
-        { name: "ACCM / FOMA", does: "The ACCM controls requests, creates POs in FIMS, checks invoices and archives documents.", when: "The ACCM acts between the request and the CCM's approval, and after approval to record it." },
-        { name: "Project Manager (PM)", does: "The PM initiates commitments, maintains the PMM work plan and certifies acceptance of work.", when: "The PM acts at the start and at the delivery of each activity." },
-        { name: "Treasurer", does: "The Treasurer creates suppliers and makes payments.", when: "The Treasurer acts once the CCM has approved the payment file." },
-        { name: "Director of Internal Oversight", does: "The Director acts on reports of suspected fraud or corruption.", when: "The Director acts when a suspicion is reported." },
-      ],
-      howTo: [
-        { title: "Follow the visa route for an extra-budgetary project", who: "PM, ACCM, CCM", source: "Annex 1",
-          steps: ["The staff member marked by the first X in the visa route initiates the file.", "The ACCM checks the request and records the PO in FIMS.", "The CCM approves the commitment before the contract is signed.", "The CCM signs the contract for decentralised projects, unless a written exception names the HQ content manager.", "The staff member who attended the event or received the delivery signs the certificate of acceptance.", "The CCM approves the payment and the file goes to the Treasurer."] },
-        { title: "Raise a PO", who: "PM, ACCM, CCM", source: "Ch. 3.1, 7",
-          steps: ["Record the activity in the PMM work plan to obtain its ID.", "Request supplier creation in FIMS through the Multiservice Assistant.", "Send the requisition to the ACCM by email or note.", "Obtain CCM approval.", "The ACCM creates the PO in FIMS.", "Sign the contract after the PO and before the service starts."] },
-        { title: "Use petty cash", who: "CCM, ACCM, designated staff member", source: "Ch. 10",
-          steps: ["The CCM approves the request.", "The ACCM issues the PO.", "The request goes to DPFL for processing.", "The amount is transferred to a local bank account.", "The recipient signs a cash transfer form and keeps cash in a lockable box.", "Record each expense with evidence linking it to the project."] },
-        { title: "Handle a donor-imposed supplier", who: "Administrative entity", source: "Ch. 5.1.1",
-          steps: ["Confirm that the donor stipulated the supplier.", "Inform the Committee of Ministers in writing via its Secretariat.", "Present an information note to the Tenders Board confirming that the Committee was informed."] },
-      ],
-    },
-
-    essentials: [],
-
-    quiz: [
-      // Level 1
-      { level: 1, type: "tf", q: "Only ACCMs are authorised to create POs in FIMS.", options: ["True", "False"], answer: 0,
-        explain: "The manual states that commitments are entered in FIMS by creating a PO, and only the ACCMs may create POs.", hint: "Think about who records transactions.", stage: "Commit & settle" },
-      { level: 1, type: "mc", q: "What is the maximum amount of a single invoice paid from petty cash?", options: ["€20", "€50", "€100", "€500"], answer: 1,
-        explain: "Invoices paid by petty cash should not exceed €50 each.", hint: "It is a small round figure.", stage: "VAT & petty cash" },
-      { level: 1, type: "mc", q: "Which instrument is used when the Organisation buys services?", options: ["Grant agreement", "Cooperation agreement", "Procurement contract", "Letter of Representation"], answer: 2,
-        explain: "Whenever the Organisation buys works, goods or services, a procurement contract must be signed.", hint: "Buying is not supporting.", stage: "Contracts" },
-      { level: 1, type: "tf", q: "FIMS logins may be shared within a team if passwords stay confidential.", options: ["True", "False"], answer: 1,
-        explain: "FIMS logins are personal and cannot be shared, and there are no generic users.", hint: "Instruction 47 governs access.", stage: "Internal control" },
-      // Level 2
-      { level: 2, type: "mc", q: "Within how many days of return must an official-journey report be submitted?", options: ["5 days", "8 days", "15 days", "30 days"], answer: 1,
-        explain: "Rule 1389 requires the report no later than eight days after return, while the claim is due within fifteen days.", hint: "The report comes before the claim.", stage: "Expenditure" },
-      { level: 2, type: "mc", q: "Which form is used to request VAT exemption certificates?", options: ["MSA form 9215", "Payment Request Memorandum", "Cash transfer form", "Certificate of Acceptance of Work"], answer: 0,
-        explain: "All requests for VAT exemption certificates must be submitted through MSA form 9215.", hint: "It is an MSA form with a number.", stage: "VAT & petty cash" },
-      { level: 2, type: "tf", q: "A PO can be raised before the supplier exists in FIMS, as long as the CCM has approved.", options: ["True", "False"], answer: 1,
-        explain: "No PO can be raised without prior creation of the supplier in FIMS.", hint: "Supplier creation comes first.", stage: "Internal control" },
-      { level: 2, type: "mc", q: "To whom does each Cost Centre Manager send a signed Letter of Representation at year-end?", options: ["The Treasurer", "The DPC Commitment Officer", "The Committee of Ministers", "The External Auditor"], answer: 1,
-        explain: "Each CCM provides the DPC Commitment Officer with a signed Letter of Representation at year-end.", hint: "It goes to whoever delegated authority.", stage: "Delegation" },
-      // Level 3
-      { level: 3, type: "order", q: "Put these steps in the correct order.", options: ["Sign the contract", "Create the PO", "Start the service", "Record the activity in PMM"], answer: [3, 1, 0, 2],
-        explain: "The activity needs a PMM ID before the PO, the contract is signed after the PO, and service starts after signature.", hint: "No PO without a PMM ID.", stage: "Internal control" },
-      { level: 3, type: "mc", q: "At the latest, when must a grant agreement end?", options: ["On the project end date", "One month before project end", "At least three months before project end", "Twelve months after signature"], answer: 2,
-        explain: "The end date of a grant agreement must be at least three months before the end of the project.", hint: "Leave a margin to close the grant.", stage: "Contracts" },
-      { level: 3, type: "scenario", q: "Is this petty cash expense properly documented?", scenario: "A staff member pays a €30 taxi to a ministry meeting from petty cash and files only the taxi receipt.",
-        options: ["Yes, the receipt is enough below €50", "No, the purpose, traveller and reason for not using public transport are missing", "No, taxis can never be paid by petty cash", "Yes, if the CCM signs the receipt"], answer: 1,
-        explain: "Taxi invoices need the traveller's name, the purpose and the reason public transport was not used.", hint: "EU audits asked for more than invoices.", stage: "VAT & petty cash" },
-      { level: 3, type: "tf", q: "Interpretation and translation services from HQ are charged directly to FIMS without a PO.", options: ["True", "False"], answer: 1,
-        explain: "Printing and postage need no PO, but interpretation and translation need a PO based on the department's estimated cost.", hint: "Only some recharged services skip the PO.", stage: "Expenditure" },
-      // Level 4
-      { level: 4, type: "scenario", q: "Which route applies?", scenario: "A donor's Voluntary Contribution requires a named supplier, and the Office plans to ask the Tenders Board for a direct award.",
-        options: ["Request a direct award under Article 40.3", "Inform the Committee of Ministers under Article 11, then send an information note to the Tenders Board", "Run a competitive bidding anyway", "Sign a cooperation agreement"], answer: 1,
-        explain: "A donor-imposed supplier falls under Article 11, so the Committee of Ministers is informed first and the Tenders Board receives an information note.", hint: "The Tenders Board has no remit to authorise this award.", stage: "Contracts" },
-      { level: 4, type: "mc", q: "To which budget heading are Global Direct Costs charged?", options: ["Staff", "Local Office", "Activities", "Contingency"], answer: 1,
-        explain: "GDC flat rates are charged to the Local Office heading of the budgetary template.", hint: "Rent and equipment belong to the office.", stage: "Project costs & reports" },
-      { level: 4, type: "order", q: "Order the payment authorisation steps.", options: ["Treasurer pays", "PM certifies performance", "CCM approves the payment", "ACCM records the approval in the file"], answer: [1, 2, 3, 0],
-        explain: "The PM certifies, the CCM approves, the ACCM records the approval and the Treasurer pays.", hint: "Payment is always the last step.", stage: "Internal control" },
-      { level: 4, type: "tf", q: "In a restricted consultation, one authorised Secretariat member may assess eligibility if only one is assigned to the project.", options: ["True", "False"], answer: 1,
-        explain: "The CCM should ensure that at least two authorised Secretariat members assess eligibility, even if only one is assigned to the project.", hint: "Four eyes are expected.", stage: "Audit lessons" },
-      // Level 5
-      { level: 5, type: "scenario", q: "Who should sign the consultant contract?", scenario: "In a project with decentralised financial management, the HQ team initiated the file for an international consultant, and no exception was put in writing at the start.",
-        options: ["The HQ content manager, because the file was initiated at HQ", "The relevant CCM, because the exception was not confirmed in writing", "The Treasurer", "The consultant's own organisation"], answer: 1,
-        explain: "HQ-initiated files can be signed at HQ only if the exception was clarified in writing to the CCM at the start of implementation.", hint: "Exceptions must be written down at the outset.", stage: "Commit & settle" },
-      { level: 5, type: "scenario", q: "What evidence is needed to settle the mission costs?", scenario: "A Head of Office travels on project funds to open a project conference but writes no mission report.",
-        options: ["None, Heads of Office are exempt", "The project's mission report justifying the presence, the agenda and the speech if available", "Only the GDD mission order", "A signed memo from the ACCM"], answer: 1,
-        explain: "Without the Head of Office's own report, the file needs the project's mission report justifying the presence, the agenda and a copy of the speech if available.", hint: "Prove the added value to the project.", stage: "Audit lessons" },
-      { level: 5, type: "mc", q: "How must the 2021 GDC flat rates be applied to a project with two local staff?", options: ["€441 per month in total, charged yearly", "€335 rent and €106 equipment per staff member per month, charged in June and December and reconciled at end", "€335 per project per month", "Only at project end"], answer: 1,
-        explain: "Rates apply per local staff member per month, are charged every six months in June and December, and are reconciled at project end.", hint: "Rates are per staff member.", stage: "Project costs & reports" },
-      { level: 5, type: "tf", q: "A three-day training needs a single signed participant list covering all three days.", options: ["True", "False"], answer: 1,
-        explain: "When an event lasts more than one day, a separate signed list of participants is needed for each day.", hint: "Think day by day.", stage: "Audit lessons" },
-    ],
-  });
-})();
-
-</script>
-<script>
 /* views-operations.js */
 /* Operational modules: PO file, payment file, year-end, petty cash, filing, FOMA workflows. */
 (function () {
@@ -11306,16 +10957,16 @@ window.FG_CONTENT = {
   });
 
   /* ---------- petty cash ---------- */
-  const PETTY_CHECKS = [["CCM approval", "Approval obtained before the expense is made."], ["Limit check", "Expense is within the applicable Projects / OB limit."], ["Purpose & coding", "Reason for the expense and coding are clear."], ["Receipt / invoice", "Readable supporting evidence is available."], ["File complete", "Approval and supporting evidence are kept together."]];
+  const PETTY_CHECKS = [["CCM approval", "Approval obtained before the expense is made."], ["Limit check", "Each invoice paid by petty cash is €50 or less."], ["Purpose & coding", "Reason for the expense and coding are clear."], ["Receipt / invoice", "Readable supporting evidence is available."], ["File complete", "Approval and supporting evidence are kept together."]];
   route("petty-cash", {
     crumbs: () => [["Projects", "projects"], ["Petty cash", "petty-cash"]],
     render() {
       const f = FG.store.get("petty", { budget: "project", amount: "", approved: "" }), r = E.pettyCash({ budget: f.budget === "ob" ? "ob" : "project", amount: f.amount, approved: !!f.approved });
       return { html: `${FG.modHead("petty-cash", "Project finance · quick control", "Petty cash", "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.")}
-        ${ui.kpis([["Projects", euro(100), "Maximum per project-related expense"], ["Ordinary Budget (OB)", euro(50), "Maximum per OB-related expense"], ["Pre-spend approval", "CCM", "Required before any expense"], ["Exception route", "Small value", "Never split or repeat"]])}
+        ${ui.kpis([["Per invoice", euro(50), "Maximum for each invoice paid by petty cash"], ["Cash custody", "Lockable box", "Signed cash transfer form for each advance"], ["Pre-spend approval", "CCM", "Required before any expense"], ["Exception route", "Small value", "Never split or repeat"]])}
         <div class="split mt"><div class="stack">
           <section class="card"><div class="card-head"><h3>Can I use petty cash?</h3></div><div class="card-body stack"><form class="grid g3" data-petty>
-            ${ui.select("budget", [["project", "Projects — €100"], ["ob", "Ordinary Budget — €50"]], f.budget, "Budget type")}
+            ${ui.select("budget", [["project", "Project (extrabudgetary)"], ["ob", "Ordinary Budget"]], f.budget, "Budget type")}
             ${ui.number("amount", f.amount, "Expense amount (€)")}
             <label class="check" style="align-self:end"><input type="checkbox" name="approved" value="1" ${f.approved ? "checked" : ""}><div><b>CCM approval obtained</b><small>Tick only when received.</small></div></label>
           </form>${ui.callout(r.tone, r.title, r.text)}</div></section>
@@ -11441,7 +11092,7 @@ window.FG_CONTENT = {
   [["PO file", "Signed and supporting documents by service type, visa matrix.", "po-file", "purchase order consultants translation interpretation visa signature"],
     ["Payment file", "Delivery, invoice match and payment package.", "payment-file", "invoice payment delivery acceptance"],
     ["Year-end closing", "2026 closing rules, allocation table and checklist.", "year-end", "accrual cca prepaid fiche po fims december 2026 2027"],
-    ["Petty cash", "€100 projects / €50 OB limits and pre-spend CCM approval.", "petty-cash", "cash small expense receipt"],
+    ["Petty cash", "€50 per invoice and pre-spend CCM approval.", "petty-cash", "cash small expense receipt"],
     ["Filing & audit trail", "DMS structure, evidence map and audit documents.", "filing", "dms archive evidence audit"],
     ["Financial reporting", "Reporting workflow and controls.", "foma/reports", "report fims webfocus reconcile"],
     ["Forecast & budget revision", "Forecast workflow, change triggers and roles.", "foma/forecast", "forecast reallocation extension staff charging back"],
@@ -11674,7 +11325,7 @@ window.FG_CONTENT = {
     ["FC", "Framework contract", "Recurring need with definable units and fixed unit prices; orders are placed with order forms. Generally up to 4 years."],
     ["FIMS", "Financial system", "System where expenditure is recorded; check “Amount billed” / “Invoices” on the Fiche PO before finalising a PO."],
     ["JP", "Joint Programme", "Jointly funded programme. A Budget Heading variation above ±25%, or a change in total cost, duration or scope, requires an Addendum."],
-    ["OB", "Ordinary Budget", "Organisation's regular budget. Petty cash limit for OB-related expenses is €50."],
+    ["OB", "Ordinary Budget", "Organisation's regular budget. Petty cash invoices may not exceed €50 each."],
     ["PO", "Purchase order", "Financial commitment. No activity should start until the PO is opened, signatures are collected and the provider holds the countersigned documents."],
     ["ToR", "Terms of Reference", "Specification of the requirement: context, objective, deliverables, timing and technical requirements."],
     ["VC", "Voluntary Contribution", "Voluntary funding; budget revisions follow the VC route, with donor acceptance where funding is earmarked."],
@@ -11770,7 +11421,7 @@ window.FG_CONTENT = {
       ["Payment", "Only after delivery/acceptance is evidenced and the invoice matches the contractual basis", "Payment file"],
       ["2026 expenditure", "Only goods delivered / services rendered by 31 December 2026", "2026 closing"],
       ["PO finalisation", "Once all expenditure is recorded in FIMS — payment itself is not required first", "2026 closing"],
-      ["Petty cash", "€100 projects · €50 OB · CCM approval before spending · no splitting", "Petty cash"]]],
+      ["Petty cash", "€50 per invoice · CCM approval before spending · no splitting", "Petty cash"]]],
   ];
   // Decision tree drawn as connected nodes; the path for the entered case lights up.
   function tree(v) {

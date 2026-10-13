@@ -212,9 +212,9 @@
   }
 
   function pettyCash(input) {
-    const projects = input.budget !== "ob", limit = projects ? 100 : 50, amount = Number(input.amount) || 0;
+    const limit = 50, amount = Number(input.amount) || 0;
     if (amount <= 0) return { tone: "warn", title: "Enter the expected amount", text: "Add the planned expense amount to check the applicable limit." };
-    if (amount > limit) return { tone: "risk", title: "Petty cash not applicable", text: `€${amount.toFixed(2)} is above the €${limit} limit for ${projects ? "Projects" : "Ordinary Budget"}. Use the normal purchasing/payment route.` };
+    if (amount > limit) return { tone: "risk", title: "Petty cash not applicable", text: `€${amount.toFixed(2)} is above the €${limit} limit per invoice. Use the normal purchasing/payment route.` };
     if (!input.approved) return { tone: "warn", title: "Do not spend yet", text: "CCM approval must be obtained before the petty cash expense is made." };
     return { tone: "good", title: "Petty cash route available", text: `Amount is within the €${limit} limit and the pre-spend CCM approval is confirmed.` };
   }

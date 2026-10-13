@@ -17,7 +17,7 @@
     ["FC", "Framework contract", "Recurring need with definable units and fixed unit prices; orders are placed with order forms. Generally up to 4 years."],
     ["FIMS", "Financial system", "System where expenditure is recorded; check “Amount billed” / “Invoices” on the Fiche PO before finalising a PO."],
     ["JP", "Joint Programme", "Jointly funded programme. A Budget Heading variation above ±25%, or a change in total cost, duration or scope, requires an Addendum."],
-    ["OB", "Ordinary Budget", "Organisation's regular budget. Petty cash limit for OB-related expenses is €50."],
+    ["OB", "Ordinary Budget", "Organisation's regular budget. Petty cash invoices may not exceed €50 each."],
     ["PO", "Purchase order", "Financial commitment. No activity should start until the PO is opened, signatures are collected and the provider holds the countersigned documents."],
     ["ToR", "Terms of Reference", "Specification of the requirement: context, objective, deliverables, timing and technical requirements."],
     ["VC", "Voluntary Contribution", "Voluntary funding; budget revisions follow the VC route, with donor acceptance where funding is earmarked."],
@@ -113,7 +113,7 @@
       ["Payment", "Only after delivery/acceptance is evidenced and the invoice matches the contractual basis", "Payment file"],
       ["2026 expenditure", "Only goods delivered / services rendered by 31 December 2026", "2026 closing"],
       ["PO finalisation", "Once all expenditure is recorded in FIMS — payment itself is not required first", "2026 closing"],
-      ["Petty cash", "€100 projects · €50 OB · CCM approval before spending · no splitting", "Petty cash"]]],
+      ["Petty cash", "€50 per invoice · CCM approval before spending · no splitting", "Petty cash"]]],
   ];
   // Decision tree drawn as connected nodes; the path for the entered case lights up.
   function tree(v) {

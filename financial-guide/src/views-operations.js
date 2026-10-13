@@ -162,16 +162,16 @@
   });
 
   /* ---------- petty cash ---------- */
-  const PETTY_CHECKS = [["CCM approval", "Approval obtained before the expense is made."], ["Limit check", "Expense is within the applicable Projects / OB limit."], ["Purpose & coding", "Reason for the expense and coding are clear."], ["Receipt / invoice", "Readable supporting evidence is available."], ["File complete", "Approval and supporting evidence are kept together."]];
+  const PETTY_CHECKS = [["CCM approval", "Approval obtained before the expense is made."], ["Limit check", "Each invoice paid by petty cash is €50 or less."], ["Purpose & coding", "Reason for the expense and coding are clear."], ["Receipt / invoice", "Readable supporting evidence is available."], ["File complete", "Approval and supporting evidence are kept together."]];
   route("petty-cash", {
     crumbs: () => [["Projects", "projects"], ["Petty cash", "petty-cash"]],
     render() {
       const f = FG.store.get("petty", { budget: "project", amount: "", approved: "" }), r = E.pettyCash({ budget: f.budget === "ob" ? "ob" : "project", amount: f.amount, approved: !!f.approved });
       return { html: `${FG.modHead("petty-cash", "Project finance · quick control", "Petty cash", "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.")}
-        ${ui.kpis([["Projects", euro(100), "Maximum per project-related expense"], ["Ordinary Budget (OB)", euro(50), "Maximum per OB-related expense"], ["Pre-spend approval", "CCM", "Required before any expense"], ["Exception route", "Small value", "Never split or repeat"]])}
+        ${ui.kpis([["Per invoice", euro(50), "Maximum for each invoice paid by petty cash"], ["Cash custody", "Lockable box", "Signed cash transfer form for each advance"], ["Pre-spend approval", "CCM", "Required before any expense"], ["Exception route", "Small value", "Never split or repeat"]])}
         <div class="split mt"><div class="stack">
           <section class="card"><div class="card-head"><h3>Can I use petty cash?</h3></div><div class="card-body stack"><form class="grid g3" data-petty>
-            ${ui.select("budget", [["project", "Projects — €100"], ["ob", "Ordinary Budget — €50"]], f.budget, "Budget type")}
+            ${ui.select("budget", [["project", "Project (extrabudgetary)"], ["ob", "Ordinary Budget"]], f.budget, "Budget type")}
             ${ui.number("amount", f.amount, "Expense amount (€)")}
             <label class="check" style="align-self:end"><input type="checkbox" name="approved" value="1" ${f.approved ? "checked" : ""}><div><b>CCM approval obtained</b><small>Tick only when received.</small></div></label>
           </form>${ui.callout(r.tone, r.title, r.text)}</div></section>
@@ -297,7 +297,7 @@
   [["PO file", "Signed and supporting documents by service type, visa matrix.", "po-file", "purchase order consultants translation interpretation visa signature"],
     ["Payment file", "Delivery, invoice match and payment package.", "payment-file", "invoice payment delivery acceptance"],
     ["Year-end closing", "2026 closing rules, allocation table and checklist.", "year-end", "accrual cca prepaid fiche po fims december 2026 2027"],
-    ["Petty cash", "€100 projects / €50 OB limits and pre-spend CCM approval.", "petty-cash", "cash small expense receipt"],
+    ["Petty cash", "€50 per invoice and pre-spend CCM approval.", "petty-cash", "cash small expense receipt"],
     ["Filing & audit trail", "DMS structure, evidence map and audit documents.", "filing", "dms archive evidence audit"],
     ["Financial reporting", "Reporting workflow and controls.", "foma/reports", "report fims webfocus reconcile"],
     ["Forecast & budget revision", "Forecast workflow, change triggers and roles.", "foma/forecast", "forecast reallocation extension staff charging back"],
