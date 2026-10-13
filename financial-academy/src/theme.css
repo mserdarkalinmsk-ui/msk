@@ -455,3 +455,24 @@ input[type="range"]::-moz-range-thumb { border-color: var(--accent); }
 .metro { padding-top: 22px; }
 @media (max-width: 900px) { .line header { padding-bottom: 12px; } }
 .line header { white-space: nowrap; overflow: hidden; } .line header em { overflow: hidden; text-overflow: ellipsis; }
+
+/* metro always fits: stations share the width; below 1100px the line turns vertical */
+.metro { overflow: hidden; }
+.line { min-width: 0; flex: var(--n) 1 0; }
+.stn .nm { max-width: 100%; font-size: 11.5px; overflow-wrap: normal; }
+.stn .dot { width: 34px; height: 34px; }
+.line ol::before { top: 19px; }
+@media (max-width: 1240px) {
+  .legend .kb { display: none; }
+  .metro { display: block; padding: 18px 14px; }
+  .line + .line { margin: 14px 0 0; }
+  .line header { padding-bottom: 12px; }
+  .line ol { grid-template-columns: 1fr; }
+  .line ol::before, .line:first-child ol::before, .line:last-child ol::before { left: 23px; right: auto; top: 22px; bottom: 22px; width: 6px; height: auto; border-radius: 6px; }
+  .stn { grid-template-columns: auto 1fr auto; justify-items: start; align-items: center; gap: 14px; padding: 6px; }
+  .stn .dot { width: 38px; height: 38px; }
+  .stn .nm { text-align: left; font-size: 14px; }
+  .stn .q { position: static; }
+  .pin { position: static; transform: none; grid-column: 2; justify-self: start; margin-top: -6px; }
+  .stn.sel::after { display: none; }
+}
