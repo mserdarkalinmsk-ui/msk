@@ -1647,6 +1647,53 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 }
 .sgr .card-head { flex-wrap: wrap; gap: 12px; } .sgr-chain li { transform: none; }
 
+/* ---------- roles + my files ---------- */
+.rp { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 18px 0 4px; }
+.rp > span { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.rp button { font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.rp button[aria-pressed="true"] { background: var(--accent, #2d6bd8); border-color: var(--accent, #2d6bd8); color: #fff; }
+.rp.sm { margin: 12px 0 0; } .rp.sm button { padding: 4px 10px; font-size: 12px; }
+.ras { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); font-size: 13.5px; }
+.ras.on { border-style: solid; border-color: color-mix(in srgb, #2d6bd8 40%, var(--line)); background: color-mix(in srgb, #2d6bd8 6%, var(--panel)); }
+.ras b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #2d6bd8; }
+.ras ul { margin: 6px 0 0; padding-left: 18px; } .ras p { margin: 4px 0 0; color: var(--muted); }
+.fl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
+.fl-card { display: grid; gap: 4px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); text-decoration: none; color: var(--ink); transition: transform .15s, border-color .15s; }
+.fl-card:hover { transform: translateY(-2px); border-color: #2d6bd8; }
+.fl-card small { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #2d6bd8; }
+.fl-card b { font-size: 16px; } .fl-card span, .fl-card em { font-size: 12.5px; color: var(--muted); font-style: normal; }
+.fl-bar { height: 6px; border-radius: 6px; background: var(--sunken); overflow: hidden; margin-top: 6px; } .fl-bar i { display: block; height: 100%; background: linear-gradient(90deg, #2d6bd8, #1f9d6b); }
+.fl-new summary { cursor: pointer; padding: 16px; font-weight: 700; color: #2d6bd8; }
+.fl-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 16px; }
+.fl-form label > span { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.fl-form input, .fl-form select { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); }
+.fl-form .span2 { grid-column: 1 / -1; }
+.fl-mine ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fl-mine a { display: grid; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); text-decoration: none; color: var(--ink); } .fl-mine a span { font-size: 12.5px; color: var(--muted); }
+.fl-top { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.fl-top h2 { margin: 2px 0 4px; font-size: 24px; } .fl-top p { margin: 0; color: var(--ink-2); }
+.fl-ring { --p: 0; width: 84px; height: 84px; border-radius: 50%; display: grid; place-content: center; text-align: center; background: radial-gradient(closest-side, var(--panel) 78%, transparent 80%), conic-gradient(#1f9d6b calc(var(--p) * 1%), var(--sunken) 0); flex: none; }
+.fl-ring b { font-size: 18px; } .fl-ring small { font-size: 11px; color: var(--muted); }
+.fl-next { margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: color-mix(in srgb, #2d6bd8 7%, var(--panel)); border-left: 4px solid #2d6bd8; display: grid; gap: 2px; }
+.fl-next.mine { background: color-mix(in srgb, #d98a1a 10%, var(--panel)); border-color: #d98a1a; }
+.fl-next.done { border-color: #1f9d6b; background: color-mix(in srgb, #1f9d6b 8%, var(--panel)); }
+.fl-next small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); } .fl-next b { font-size: 16px; } .fl-next span { font-size: 13px; color: var(--ink-2); }
+.fl-phases { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.fl-phases li { display: grid; justify-items: center; gap: 4px; padding: 12px 6px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); text-align: center; }
+.fl-phases em { font-style: normal; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--sunken); }
+.fl-phases li.go em { background: #2d6bd8; color: #fff; } .fl-phases li.ok em { background: #1f9d6b; color: #fff; }
+.fl-phases b { font-size: 13px; } .fl-phases small { font-size: 11.5px; color: var(--muted); }
+.fl-checks { display: grid; gap: 8px; }
+.fl-checks .check { position: relative; padding-right: 56px; }
+.fl-checks .check.mine { border-color: #d98a1a; background: color-mix(in srgb, #d98a1a 6%, var(--panel)); }
+.fl-who { position: absolute; right: 10px; top: 10px; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--sunken); color: var(--ink-2); }
+.fl-tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; } .fl-tl li { display: grid; font-size: 13px; } .fl-tl span { color: var(--muted); font-size: 12px; }
+.fl-risk { padding: 10px 12px; border-radius: 10px; border-left: 4px solid #2d6bd8; background: color-mix(in srgb, #2d6bd8 5%, var(--panel)); }
+.fl-risk.risk { border-color: #c0392b; } .fl-risk.warn { border-color: #d98a1a; } .fl-risk b { font-size: 13.5px; } .fl-risk p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-2); }
+.fl-links { display: grid; gap: 6px; } .fl-links a { color: #2d6bd8; font-size: 13.5px; text-decoration: none; font-weight: 600; }
+.fl-edit summary { cursor: pointer; padding: 14px 16px; font-weight: 600; }
+@media (max-width: 760px) { .fl-phases { grid-template-columns: repeat(5, minmax(56px, 1fr)); overflow-x: auto; } .fl-phases b { font-size: 11px; } .fl-form { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -9515,7 +9562,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 07:09</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 07:13</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10245,13 +10292,15 @@ window.FG_CONTENT = {
     render() {
       const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
       const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
-      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["Plan my purchase", "Route, approvals, timeline", "procurement/my-case"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
+      const fs = FG.myFilesSummary ? FG.myFilesSummary() : { count: 0, mine: 0 };
+      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
       return { html: `
         <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
           <h1>Find the rule, plan your case, keep the right documents.</h1>
           <p>Procurement, grants, payment files, year-end and field operations, in one guided place.</p></div>
           ${last ? `<a class="hx-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hx-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
         </section>
+        ${FG.rolePicker ? FG.rolePicker() : ""}
         <section class="hx-quick">${quick.map(([t, d, h]) => `<a href="#/${h}"><b>${t}</b><span>${d}</span></a>`).join("")}</section>
         <h2 class="hx-h">All spaces</h2>
         <section class="hx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="hx-hub" style="--c:var(--c${c})" href="#/${p}"><span class="hx-ico" aria-hidden="true">${ic}</span><div><small>${esc(sub)}</small><h3>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</h3><p>${esc(d)}</p><em>${counts[i]} →</em></div></a>`).join("")}</section>` };
@@ -10368,7 +10417,7 @@ window.FG_CONTENT = {
       <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
-          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
+          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>${FG.roleAtStage ? FG.roleAtStage(cfg.base, s.name) : ""}
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
           return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
@@ -11108,6 +11157,146 @@ window.FG_CONTENT = {
   ].forEach(([t, s, p, k]) => FG.addIndex(t, s, p, "Module", k));
   FOMA.forEach(([p, t, s]) => FG.addIndex(t, `FOMA · ${s}`, `foma/${p}`, "Workflow"));
   C.poBestPractice.forEach(([d]) => FG.addIndex(d, "PO file · best practice", "po-file", "Practice"));
+})();
+
+</script>
+<script>
+/* views-files.js */
+/* My files: follow one purchase end to end (procedure → approvals → contract & PO → payment → filing),
+   and role views: the reader picks a role and every file, home and stage shows that role's actions first. */
+(function () {
+  "use strict";
+  const { esc, euro, slug, ui, route } = FG;
+  const E = window.FG_ENGINES;
+
+  /* ---------- roles ---------- */
+  const ROLES = {
+    po: { name: "Project Officer", short: "PO", guide: "buyer", desc: "Defines the need, prepares the file and follows delivery." },
+    accm: { name: "ACCM / FOMA", short: "ACCM", guide: "buyer", desc: "Checks budget and coding, creates the PO and records approvals." },
+    ccm: { name: "CCM", short: "CCM", guide: "ccm", desc: "Approves procedures, commitments and payments." },
+    fin: { name: "Finance / Treasury", short: "FIN", guide: "tpa", desc: "Creates suppliers, checks the payment file and pays." },
+  };
+  FG.ROLES = ROLES;
+  FG.role = () => { const r = FG.store.get("role", ""); return ROLES[r] ? r : ""; };
+  FG.rolePicker = (compact) => { const cur = FG.role();
+    return `<div class="rp${compact ? " sm" : ""}" role="group" aria-label="Your role"><span>${compact ? "Role" : "I am"}</span>${Object.entries(ROLES).map(([k, r]) => `<button type="button" data-role="${k}" aria-pressed="${k === cur}" title="${esc(r.desc)}">${esc(compact ? r.short : r.name)}</button>`).join("")}</div>`; };
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-role]"); if (!b) return; FG.store.set("role", FG.role() === b.dataset.role ? "" : b.dataset.role); FG.refresh(true); });
+  // Stage pages: what the selected role does at this stage (from the procurement roles content).
+  FG.roleAtStage = (base, stageName) => {
+    const k = FG.role(); if (!k || base !== "procurement") return "";
+    const R = ROLES[k], g = (FG.C.procurementRoles || {})[R.guide];
+    const here = g && (g.stages || []).includes(stageName);
+    return `<div class="ras${here ? " on" : ""}"><b>${esc(R.name)} at this stage</b>${here ? `<ul>${(g.does || []).slice(0, 4).map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : `<p>No direct action for your role here: read for context, the next action is with others.</p>`}</div>`;
+  };
+
+  /* ---------- file model ---------- */
+  const files = () => FG.store.get("files", []);
+  const save = (list) => FG.store.set("files", list);
+  const getFile = (id) => files().find((f) => f.id === id);
+  // Five macro phases; each check names the role that owns it.
+  function phases(f, r) {
+    return [
+      ["Procedure", "Prepare the file for the route", (r.docs || []).map(([t, d]) => [t, d, /CCM approval|Award approval|authorisation/i.test(t) ? "ccm" : "po"])],
+      ["Approvals", "Obtain every approval in order", (r.approvals || []).map(([t, d]) => [t, d, /CCM/.test(t) ? "ccm" : "po"])],
+      ["Contract & PO", "Commit the expenditure", [
+        ["PMM project / activity ID confirmed", "No PO can be raised without it.", "accm"],
+        ["Supplier exists in FIMS", "Created through the Multiservice Assistant before submission.", "fin"],
+        ["CCM approval recorded", "Prior approval by the CCM, recorded by the ACCM.", "ccm"],
+        ["PO created", "Only the ACCM creates POs.", "accm"],
+        ["Contract signed after the PO", "Signed and dated after the PO and before delivery.", "ccm"]]],
+      ["Delivery & payment", "Accept, check and pay", [
+        ["Acceptance document signed", "Certificate of Acceptance of Work (consultants) or Payment Request Memorandum.", "po"],
+        ["Invoice matches the contract", "Amounts, deliverables and particulars agree with the contract.", "accm"],
+        ["Payment approved", "CCM approval recorded by the ACCM before the file goes to the Treasurer.", "ccm"],
+        ["Paid to the contractual bank account", "Payment follows the agreed terms.", "fin"]]],
+      ["Filing", "Keep the audit trail", [
+        ["Signed contract filed", "PDF and editable versions in the project folder.", "accm"],
+        ["Procedure evidence filed", "Offers, evaluation, approvals and correspondence.", "po"],
+        ["Invoices and payment evidence filed", "Together with the acceptance document.", "accm"],
+        ["Retention set", "Kept for 10 years after the end of the project.", "accm"]]],
+    ];
+  }
+  function fileState(f) {
+    const r = E.procurementCase(f), P = phases(f, r), t = f.ticks || {};
+    let done = 0, total = 0; const mine = []; let next = null;
+    P.forEach(([ph, , items], pi) => items.forEach(([it, d, who], ii) => { total++; const k = `${pi}:${ii}`; if (t[k]) done++; else { if (!next) next = [ph, it, who]; if (who === FG.role()) mine.push([ph, it, k]); } }));
+    return { r, P, done, total, pct: total ? Math.round((done / total) * 100) : 0, mine, next };
+  }
+
+  /* ---------- pages ---------- */
+  const FORM = (f) => `<form class="fl-form" data-fl-form>
+    <label class="span2"><span>Name of the purchase</span><input name="what" required value="${esc(f.what || "")}" placeholder="e.g. Translation services 2027"></label>
+    <label><span>Estimated value (excl. VAT, whole period)</span><input name="value" type="number" min="0" step="500" value="${esc(f.value || "")}" required></label>
+    <label><span>Type</span><select name="type"><option value="general">Goods, services, works</option><option value="intellectual"${f.type === "intellectual" ? " selected" : ""}>Intellectual services</option></select></label>
+    <label><span>Funding</span><select name="funding"><option value="ordinary">Ordinary Budget</option><option value="xb"${f.funding === "xb" ? " selected" : ""}>Extrabudgetary</option></select></label>
+    <label><span>Need</span><select name="need"><option value="oneoff">One-off</option><option value="recurring"${f.need === "recurring" ? " selected" : ""}>Recurring, defined units</option><option value="variable"${f.need === "variable" ? " selected" : ""}>Variable / complex</option></select></label>
+    <label><span>Exceptional direct-award ground</span><select name="ground"><option value="none">None</option><option value="urgency"${f.ground === "urgency" ? " selected" : ""}>Unforeseeable urgency</option><option value="technical"${f.ground === "technical" ? " selected" : ""}>Only one possible supplier</option></select></label>
+    <label><span>Contract needed by</span><input name="deadline" type="date" value="${esc(f.deadline || "")}"></label>
+    <div class="span2 row"><button class="btn primary" type="submit">${f.id ? "Save changes" : "Create the file"}</button>${f.id ? `<button class="btn ghost" type="button" data-fl-del="${f.id}">Delete this file</button>` : ""}</div></form>`;
+
+  route("files", {
+    crumbs: () => [["My files", "files"]],
+    render() {
+      const list = files(), role = FG.role();
+      const allMine = list.flatMap((f) => fileState(f).mine.map((m) => [f, ...m]));
+      return { html: `${ui.head("Follow a purchase end to end", "My files", "One file per purchase: route, approvals, deadlines, documents and every check up to filing.")}
+        ${FG.rolePicker()}
+        ${role ? `<section class="card fl-mine"><div class="card-head"><h3>My open actions · ${esc(ROLES[role].name)}</h3>${ui.tag(String(allMine.length), allMine.length ? "warn" : "good")}</div><div class="card-body">${allMine.length ? `<ul>${allMine.slice(0, 8).map(([f, ph, it]) => `<li><a href="#/files/${f.id}"><b>${esc(it)}</b><span>${esc(f.what)} · ${esc(ph)}</span></a></li>`).join("")}</ul>` : `<p class="muted">Nothing waiting for you.</p>`}</div></section>` : ""}
+        <section class="fl-grid">${list.map((f) => { const s = fileState(f); return `<a class="fl-card" href="#/files/${f.id}"><small>${esc(s.r.route)}</small><b>${esc(f.what)}</b><span>${euro(s.r.value)} · ${esc(s.r.contract)}</span>
+          <div class="fl-bar"><i style="width:${s.pct}%"></i></div><em>${s.pct}% · ${s.next ? `Next: ${esc(s.next[1])}` : "Complete"}</em></a>`; }).join("")}
+          <details class="fl-new card"${list.length ? "" : " open"}><summary>+ New file</summary>${FORM({})}</details></section>` };
+    },
+  });
+
+  route("files/:id", {
+    crumbs: (p) => [["My files", "files"], [(getFile(p.id) || {}).what || "File", "files/" + p.id]],
+    render(p) {
+      const f = getFile(p.id);
+      if (!f) return { html: `${ui.head("My files", "File not found", "")}<a class="btn" href="#/files">← All files</a>` };
+      const s = fileState(f), r = s.r, role = FG.role(), t = f.ticks || {};
+      const fmt = (d) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      return { html: `
+        <section class="card fl-hero"><div class="card-body">
+          <div class="fl-top"><div><span class="eyebrow">My file</span><h2>${esc(f.what)}</h2><p>${euro(r.value)} · ${esc(r.route)} · ${esc(r.contract)}${r.eproc.mandatory ? " · e-procurement" : ""}</p></div>
+            <div class="fl-ring" style="--p:${s.pct}"><b>${s.pct}%</b><small>${s.done}/${s.total}</small></div></div>
+          ${FG.rolePicker(true)}
+          ${s.next ? `<div class="fl-next${s.next[2] === role ? " mine" : ""}"><small>Next action${s.next[2] === role ? " · yours" : ` · ${esc(ROLES[s.next[2]].name)}`}</small><b>${esc(s.next[1])}</b><span>${esc(s.next[0])}</span></div>` : `<div class="fl-next done"><b>Every check is done. The file is complete.</b></div>`}
+        </div></section>
+        <ol class="fl-phases">${s.P.map(([ph, sub, items], pi) => { const d = items.filter((_, ii) => t[`${pi}:${ii}`]).length;
+          return `<li class="${d === items.length && items.length ? "ok" : d ? "go" : ""}"><em>${d === items.length && items.length ? "✓" : pi + 1}</em><b>${esc(ph)}</b><small>${d}/${items.length}</small></li>`; }).join("")}</ol>
+        <div class="split mt"><div class="stack">
+          ${s.P.map(([ph, sub, items], pi) => `<section class="card"><div class="card-head"><div><h3>${pi + 1}. ${esc(ph)}</h3><small>${esc(sub)}</small></div></div><div class="card-body fl-checks">
+            ${items.map(([it, d, who], ii) => { const k = `${pi}:${ii}`; return `<label class="check ${t[k] ? "done" : ""}${who === role ? " mine" : ""}"><input type="checkbox" data-fl-tick="${k}" ${t[k] ? "checked" : ""}><div><b>${esc(it)}</b><small>${esc(d)}</small></div><span class="fl-who">${esc(ROLES[who].short)}</span></label>`; }).join("")}
+          </div></section>`).join("")}
+        </div>
+        <aside class="stack sticky">
+          ${r.deadline ? `<section class="card"><div class="card-head"><h3>Timeline</h3>${r.late ? ui.tag("Behind schedule", "risk") : ui.tag("On time", "good")}</div><div class="card-body"><ol class="fl-tl">${r.timeline.map((x) => `<li><b>${esc(x.label)}</b><span>${fmt(x.from)} → ${fmt(x.to)}</span></li>`).join("")}</ol></div></section>` : ""}
+          ${r.risks.length ? `<section class="card"><div class="card-head"><h3>Watch out</h3></div><div class="card-body stack">${r.risks.slice(0, 5).map(([k, ti, x]) => `<div class="fl-risk ${k}"><b>${esc(ti)}</b><p>${esc(x)}</p></div>`).join("")}</div></section>` : ""}
+          <section class="card"><div class="card-head"><h3>Guidance for this file</h3></div><div class="card-body fl-links">
+            ${r.keyStages.map((n) => `<a href="#/procurement/${slug(n)}">${esc(n)} →</a>`).join("")}<a href="#/po-file">PO file builder →</a><a href="#/payment-file">Payment file →</a><a href="#/filing">Filing →</a></div></section>
+          <details class="card fl-edit"><summary>Edit the file</summary>${FORM(f)}</details>
+        </aside></div>` };
+    },
+  });
+
+  /* ---------- events ---------- */
+  document.addEventListener("submit", (e) => {
+    const form = e.target.closest("[data-fl-form]"); if (!form) return; e.preventDefault();
+    const data = Object.fromEntries(new FormData(form)), list = files(), id = (location.hash.match(/#\/files\/(.+)$/) || [])[1];
+    if (id && getFile(id)) { Object.assign(list.find((x) => x.id === id), data); save(list); FG.refresh(true); }
+    else { const nf = { id: Date.now().toString(36), ticks: {}, created: new Date().toISOString().slice(0, 10), ...data }; list.push(nf); save(list); location.hash = "#/files/" + nf.id; }
+  });
+  document.addEventListener("change", (e) => {
+    const c = e.target.closest("[data-fl-tick]"); if (!c) return;
+    const id = (location.hash.match(/#\/files\/(.+)$/) || [])[1], list = files(), f = list.find((x) => x.id === id); if (!f) return;
+    f.ticks = f.ticks || {}; if (c.checked) f.ticks[c.dataset.flTick] = 1; else delete f.ticks[c.dataset.flTick]; save(list); FG.refresh(true);
+  });
+  document.addEventListener("click", (e) => {
+    const d = e.target.closest("[data-fl-del]"); if (!d || !confirm("Delete this file? This cannot be undone.")) return;
+    save(files().filter((x) => x.id !== d.dataset.flDel)); location.hash = "#/files";
+  });
+  FG.myFilesSummary = () => { const list = files(), role = FG.role(), mine = role ? list.reduce((a, f) => a + fileState(f).mine.length, 0) : 0;
+    return { count: list.length, mine }; };
 })();
 
 </script>

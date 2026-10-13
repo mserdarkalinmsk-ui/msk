@@ -109,13 +109,15 @@
     render() {
       const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
       const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
-      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["Plan my purchase", "Route, approvals, timeline", "procurement/my-case"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
+      const fs = FG.myFilesSummary ? FG.myFilesSummary() : { count: 0, mine: 0 };
+      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
       return { html: `
         <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
           <h1>Find the rule, plan your case, keep the right documents.</h1>
           <p>Procurement, grants, payment files, year-end and field operations, in one guided place.</p></div>
           ${last ? `<a class="hx-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hx-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
         </section>
+        ${FG.rolePicker ? FG.rolePicker() : ""}
         <section class="hx-quick">${quick.map(([t, d, h]) => `<a href="#/${h}"><b>${t}</b><span>${d}</span></a>`).join("")}</section>
         <h2 class="hx-h">All spaces</h2>
         <section class="hx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="hx-hub" style="--c:var(--c${c})" href="#/${p}"><span class="hx-ico" aria-hidden="true">${ic}</span><div><small>${esc(sub)}</small><h3>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</h3><p>${esc(d)}</p><em>${counts[i]} →</em></div></a>`).join("")}</section>` };
@@ -232,7 +234,7 @@
       <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
-          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
+          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>${FG.roleAtStage ? FG.roleAtStage(cfg.base, s.name) : ""}
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
           return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
