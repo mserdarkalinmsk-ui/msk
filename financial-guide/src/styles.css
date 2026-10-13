@@ -1633,3 +1633,4 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
   .cx-c:not(.on) { display: none; }
   .cx-c.on { border-radius: 0; } .cx-top.on { border-radius: 16px 16px 0 0; }
 }
+.sgr .card-head { flex-wrap: wrap; gap: 12px; } .sgr-chain li { transform: none; }

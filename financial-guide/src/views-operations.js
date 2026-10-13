@@ -61,6 +61,12 @@
             <section class="card"><div class="card-head"><div><h3>Document builder</h3><small>Documents to be signed are separated from supporting evidence.</small></div>${ui.tag(`${ticked}/${all} ready`, ticked === all ? "good" : "")}</div><div class="card-body stack">
               ${servicePicker("po", service)}<p class="small muted">${esc(d.sub || "")}</p>
               <div class="grid g2">${docList(signedId, "To be signed", d.signed)}${docList(supportId, "Supporting documents", d.support)}</div></div></section>
+            ${(() => { const proj = FG.store.get("po:proj", "dec"), row = VISA_ROWS.find((r) => (r[3] || []).includes(service)) || VISA_ROWS[4];
+              const who = VISA_ROLES.filter((_, j) => row[2][j]), dec = proj === "dec";
+              return `<section class="card sgr"><div class="card-head"><div><h3>Signature route for ${esc(service)}</h3><small>${esc(row[0])} · the first role starts the file.</small></div>
+                <div class="rc-seg" role="group" aria-label="Project type"><button type="button" data-proj="dec" aria-pressed="${dec}">Decentralised</button><button type="button" data-proj="non" aria-pressed="${!dec}">Non-decentralised</button></div></div>
+                <div class="card-body"><ol class="va-chain sgr-chain" style="grid-template-columns:repeat(${who.length},minmax(0,1fr))">${who.map((r, k) => `<li class="on" style="--c:var(--c${(k % 4) + 1})"><em>${k + 1}</em><b>${esc(r)}</b><p>${k === 0 ? "Initiates the file." : r === "CCM" ? (dec ? "Signs all contractual documents, in situ." : "DPC CCM approves; signature follows the MAE delegation chain at HQ.") : r === "Finance Officer" ? "Checks budget, coding and supporting documents." : "Validates the content before approval."}</p></li>`).join("")}</ol>
+                <p class="vc-note">${dec ? "Decentralised projects: an HQ signature is only an exception, and it must be clarified in writing to the CCM at the start of the project." : "Non-decentralised projects: the CCM DPC acts in HQ; the Financial Unit DPC may act in situ or in HQ."}</p></div></section>`; })()}
             <section class="card"><div class="card-head"><div><h3>Visa / signature matrix</h3><small>Commitment and settlement of expenditure. The row for the selected service is highlighted; click a required cell to mark it verified.</small></div>${ui.tag(`${verified}/${required} visas`, verified === required ? "good" : "")}</div><div class="card-body stack">
               <div class="table-wrap"><table class="t visa"><thead><tr><th>Phase / expenditure type</th>${VISA_ROLES.map((r) => `<th class="c">${esc(r)}</th>`).join("")}</tr></thead><tbody>
               ${VISA_ROWS.map((r, i) => `<tr class="${(r[3] || []).includes(service) ? "hl" : ""}"><td><b>${esc(r[0])}</b>${r[1] ? `<small>${esc(r[1])}</small>` : ""}</td>${r[2].map((req, j) => `<td class="c">${req ? `<button type="button" class="req ${visa[`${i}-${j}`] ? "ok" : ""}" data-visa="${i}-${j}" aria-label="${esc(VISA_ROLES[j])} visa for ${esc(r[0])}: ${visa[`${i}-${j}`] ? "verified" : "required"}">✓</button>` : `<span class="muted" aria-label="Not required">·</span>`}</td>`).join("")}</tr>`).join("")}
@@ -84,6 +90,7 @@
         mount(root) {
           mountTimeline(root);
           onClick(root, "data-s", (v) => { FG.store.set("service", v); FG.refresh(); });
+          onClick(root, "data-proj", (v) => { FG.store.set("po:proj", v); FG.refresh(true); });
           onClick(root, "data-visa", (k) => { FG.tick("visa", k, !FG.ticks("visa")[k]); FG.refresh(); });
         } };
     },
