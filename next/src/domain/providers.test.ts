@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kindOf } from './providers';
+import { kindOf, supKey } from './providers';
 
 describe('service provider kinds', () => {
   it('reads the PO wording first', () => {
@@ -42,5 +42,11 @@ describe('service provider kinds', () => {
     expect(kindOf('Mobile line', '4.3', '', 'TURKCELL ILETISIM HIZMETLERI A.S. (Fournisseur Direct Debit)')).toBe('petty');
     expect(kindOf('Office rent', '4.1')).toBeNull();
     expect(kindOf('Salary of the project officer', '1.1.1')).toBe('staff');
+  });
+  it('merges spellings of one company', () => {
+    expect(supKey('SERENAS INTERNATIONAL TOURISM CONGRESS ORGANIZATION INC.- ANKARA')).toBe(supKey('Serenas International Tourism Congress Organization Inc.'));
+    expect(supKey('MATBUU PRINT AND INTERNET SERVICES ORG.LTD.STI.')).toBe(supKey('Matbuu Print and Internet Services Org. Ltd. Şti'));
+    expect(supKey('TURKCELL ILETISIM HIZMETLERI A.S. (Fournisseur Direct Debit)')).toBe(supKey('Turkcell Iletisim Hizmetleri AS'));
+    expect(supKey('FLAP CONGRESS MEETING SERVICES')).not.toBe(supKey('SERENAS INTERNATIONAL TOURISM CONGRESS ORGANIZATION INC.'));
   });
 });
