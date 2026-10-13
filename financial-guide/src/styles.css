@@ -2162,3 +2162,21 @@ body.img-edit .h7-map > span { position: relative; }
 .pa-pages button { font: inherit; font-size: 13px; font-weight: 700; padding: 8px 0; border-radius: 8px; border: 1px solid #dbe6f6; background: #f5f9ff; color: #1d5bd8; cursor: pointer; }
 .pa-pages button:hover { background: #1d5bd8; color: #fff; border-color: #1d5bd8; }
 .pa-hero::after { content: ""; position: absolute; right: -40px; top: -40px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(37,99,235,.18), transparent 70%); pointer-events: none; }
+.pa-lessons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pa-lesson-card { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; padding: 16px 18px; border-radius: 14px; border: 1px solid #dfe8f5; background: #fff; color: var(--ink); transition: transform .15s, box-shadow .15s, border-color .15s; }
+.pa-lesson-card:hover { transform: translateY(-2px); border-color: #8fb4ee; box-shadow: 0 14px 28px -22px #1d4f9e; }
+.pa-ln { grid-row: span 2; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #eaf2ff; color: #1d5bd8; font-weight: 800; font-size: 13px; }
+.pa-lesson-card.done .pa-ln { background: #1f9d6b; color: #fff; }
+.pa-lesson-card small { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7f9e; }
+.pa-lesson-card b { display: block; margin: 2px 0 4px; font-size: 15px; color: var(--navy); }
+.pa-lesson-card p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: #46597a; }
+.pa-facts { display: flex; flex-wrap: wrap; gap: 6px; } .pa-facts em { font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #f2f6fc; color: #23406e; }
+.pa-lesson-card u { grid-column: 2; text-decoration: none; font-size: 13px; font-weight: 700; color: #1d5bd8; }
+.pa-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.pa-tools a { display: grid; gap: 4px; padding: 16px; border-radius: 14px; border: 1px solid #dfe8f5; background: #fff; color: var(--ink); transition: transform .15s, border-color .15s; }
+.pa-tools a:hover { transform: translateY(-2px); border-color: #8fb4ee; }
+.pa-tools i { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 6px; border-radius: 10px; color: #1d5bd8; background: #eaf2ff; }
+.pa-tools b { font-size: 14.5px; color: var(--navy); } .pa-tools small { font-size: 12.5px; color: #5b6f8e; line-height: 1.45; }
+.pa-root > .rc { margin-bottom: 16px; }
+@media (max-width: 1100px) { .pa-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 780px) { .pa-lessons, .pa-tools { grid-template-columns: 1fr; } }
