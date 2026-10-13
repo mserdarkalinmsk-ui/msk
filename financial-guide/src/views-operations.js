@@ -55,7 +55,7 @@
       const signedId = `po:${service}:signed`, supportId = `po:${service}:support`;
       const all = d.signed.length + d.support.length, ticked = Object.keys(FG.ticks(signedId)).length + Object.keys(FG.ticks(supportId)).length;
       const visa = FG.ticks("visa"), required = VISA_ROWS.reduce((a, r) => a + r[2].filter(Boolean).length, 0), verified = Object.keys(visa).length;
-      return { html: `${ui.head("Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
+      return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
         ${ui.callout("warn", "Before any activity starts", "No activity or service should begin until the PO is opened, required signatures are collected and the service provider has received the countersigned documents.")}
         <div class="split mt">
           <div class="stack">
@@ -96,7 +96,7 @@
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.payServices[service] || { signed: [], support: [] };
       const row = VISA_ROWS.find((r) => (r[3] || []).includes(service)) || VISA_ROWS[3];
-      return { html: `${ui.head("Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
+      return { html: `${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
         <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><div><h3>Payment file builder</h3><small>Use the same service type as the PO.</small></div></div><div class="card-body stack">
@@ -123,7 +123,7 @@
     render() {
       const phase = FG.store.get("eoy:phase", 0), p = C.eoyPhases[phase], meta = C.eoyPhaseMeta[phase] || {};
       const f = FG.store.get("eoy:fy", { delivery: "current", invoice: "yes", budget: "annual" }), r = E.yearAllocation(f);
-      return { html: `${ui.head("Project finance · 2026 closing", "Year-end closing", "Check delivery dates, complete payment files, follow up suppliers and finalise POs when the expenditure is fully recorded.", `<a class="btn primary" href="#/engines/year-end">Year-End Treatment engine</a>`)}
+      return { html: `${FG.modHead("year-end", "Project finance · 2026 closing", "Year-end closing", "Check delivery dates, complete payment files, follow up suppliers and finalise POs when the expenditure is fully recorded.", `<a class="btn primary" href="#/engines/year-end">Year-End Treatment engine</a>`)}
         <div class="grid g3">
           ${ui.callout("info", "Delivery by 31/12/2026", "Only goods delivered and services rendered by 31 December 2026 can be included in 2026 expenditure.", "📅")}
           ${ui.callout("info", "Both budget types", "The year-end accounting rules apply to annual budgets and special accounts.", "◫")}
@@ -168,7 +168,7 @@
     crumbs: () => [["Projects", "projects"], ["Petty cash", "petty-cash"]],
     render() {
       const f = FG.store.get("petty", { budget: "project", amount: "", approved: "" }), r = E.pettyCash({ budget: f.budget === "ob" ? "ob" : "project", amount: f.amount, approved: !!f.approved });
-      return { html: `${ui.head("Project finance · quick control", "Petty cash", "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.")}
+      return { html: `${FG.modHead("petty-cash", "Project finance · quick control", "Petty cash", "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.")}
         ${ui.kpis([["Projects", euro(100), "Maximum per project-related expense"], ["Ordinary Budget (OB)", euro(50), "Maximum per OB-related expense"], ["Pre-spend approval", "CCM", "Required before any expense"], ["Exception route", "Small value", "Never split or repeat"]])}
         <div class="split mt"><div class="stack">
           <section class="card"><div class="card-head"><h3>Can I use petty cash?</h3></div><div class="card-body stack"><form class="grid g3" data-petty>
@@ -199,7 +199,7 @@
     crumbs: () => [["Projects", "projects"], ["Filing & audit", "filing"]],
     render() {
       const proc = pick("filing:p", Object.keys(C.filingMap), "Procurement");
-      return { html: `${ui.head("Project documentation · DMS & audit readiness", "Filing & audit trail", "Keep project, procurement and financial records easy to find, easy to verify and ready for review.", `<a class="btn primary" href="#/engines/audit-readiness">Audit readiness check</a>`)}
+      return { html: `${FG.modHead("filing", "Project documentation · DMS & audit readiness", "Filing & audit trail", "Keep project, procurement and financial records easy to find, easy to verify and ready for review.", `<a class="btn primary" href="#/engines/audit-readiness">Audit readiness check</a>`)}
         <div class="grid g3">${ui.callout("info", "Editable + signed", "Keep final PDF evidence together with the relevant editable source where applicable.", "▤")}${ui.callout("info", "Traceable", "Store approvals, clarifications and correspondence with the related transaction.", "↔")}${ui.callout("info", "Consistent naming", "Use clear names, dates and references so files remain searchable.", "Aa")}</div>
         <div class="split mt"><div class="stack">
           <section class="card"><div class="card-head"><div><h3>Evidence map by process</h3><small>What each stage of the file must contain.</small></div></div><div class="card-body stack">
@@ -223,7 +223,7 @@
   ];
   route("foma", {
     crumbs: () => [["FOMA", "foma"]],
-    render: () => ({ html: `${ui.head("Field operations", "FOMA workflows", "Controlled handover workflows and financial guidance for day-to-day field-office operations.")}
+    render: () => ({ html: `${FG.modHead("foma", "Field operations", "FOMA workflows", "Controlled handover workflows and financial guidance for day-to-day field-office operations.")}
       <div class="modules">${FOMA.map(([p, t, s, i]) => `<a class="module" href="#/foma/${p}"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(s)}</small></span></a>`).join("")}</div>
       <div class="section-title"><h2>Financial management lifecycle</h2></div>
       <div class="grid g4">${C.financeLifecycle.map((x, i) => `<div class="card card-pad"><div class="eyebrow">${i + 1} · ${esc(x.question)}</div><b>${esc(x.title)}</b><p class="small muted mt">${esc(x.lead)}</p><p class="small mt"><b>Output:</b> ${esc(x.output)}</p></div>`).join("")}</div>` }),
@@ -255,7 +255,7 @@
     section: "foma-reports", crumbs: () => [["FOMA", "foma"], ["Financial reporting", "foma/reports"]],
     render() {
       const fr = C.fomaFlows["Financial Reports"];
-      return { html: `${ui.head("FOMA · financial reporting", fr.title, fr.desc)}
+      return { html: `${FG.modHead("foma/reports", "FOMA · financial reporting", fr.title, fr.desc)}
         <div class="grid g3">${C.reportIntro.map((x) => `<div class="card card-pad"><div class="eyebrow">${esc(x.k)}</div><b>${esc(x.title)}</b><p class="small muted mt">${esc(x.text)}</p></div>`).join("")}</div>
         <div class="split mt"><div class="stack">
           <section class="card"><div class="card-head"><h3>Reporting workflow</h3></div><div class="card-body">${timeline("report:steps", fr.stages, (s) => ({ title: s[1], sub: s[0], text: s[3], list: [`Objective: ${s[4]}`, `Control: ${s[5]}`, `Output: ${s[6]}`] }))}</div></section>
@@ -268,7 +268,7 @@
     section: "foma-forecast", crumbs: () => [["FOMA", "foma"], ["Forecast & budget revision", "foma/forecast"]],
     render() {
       const fc = C.fomaFlows.Forecast, trig = FG.store.get("fc:trig", 0), t = C.forecastTriggers[trig];
-      return { html: `${ui.head("FOMA · forecast", fc.title, fc.desc, `<a class="btn" href="#/engines/what-if">What-if simulator</a><a class="btn primary" href="#/engines/budget-revision">Budget Revision engine</a>`)}
+      return { html: `${FG.modHead("foma/forecast", "FOMA · forecast", fc.title, fc.desc, `<a class="btn" href="#/engines/what-if">What-if simulator</a><a class="btn primary" href="#/engines/budget-revision">Budget Revision engine</a>`)}
         <div class="grid g4">${C.financeConcepts.map((x) => `<div class="card card-pad"><div class="eyebrow">${esc(x.q)}</div><b>${esc(x.title)}</b><p class="small muted mt">${esc(x.definition)}</p><p class="small mt"><b>Output:</b> ${esc(x.output)}</p></div>`).join("")}</div>
         <section class="card mt"><div class="card-head"><div><h3>What is changing?</h3><small>Identify all changes together; each one points to its route.</small></div></div><div class="card-body stack">
           ${ui.flowHeader(C.forecastTriggers, trig, (x) => `<small>${esc(x.tag)}</small><b>${esc(x.short)}</b><span>${esc(x.sub)}</span>`)}
@@ -285,7 +285,7 @@
     section: "foma", crumbs: () => [["FOMA", "foma"], ["Addendum", "foma/addendum"]],
     render() {
       const reason = FG.store.get("add:reason", 0), r = C.addendumReasons[reason];
-      return { html: `${ui.head("FOMA · Joint Programme", "Addendum workflow", C.fomaFlows.Addendum.desc, `<a class="btn primary" href="#/engines/budget-revision">Check the route</a>`)}
+      return { html: `${FG.modHead("foma/addendum", "FOMA · Joint Programme", "Addendum workflow", C.fomaFlows.Addendum.desc, `<a class="btn primary" href="#/engines/budget-revision">Check the route</a>`)}
         <section class="card"><div class="card-head"><h3>Reason for the change</h3></div><div class="card-body stack">
           <div class="chips" data-reason>${C.addendumReasons.map((x, i) => `<button class="chip" data-r="${i}" aria-pressed="${i === reason}">${esc(x.title.split(" between")[0].split(" /")[0])}</button>`).join("")}</div>
           <div><h3 style="font-size:16px">${esc(r.title)}</h3><p class="muted">${esc(r.summary)}</p></div><ul>${r.checks.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>

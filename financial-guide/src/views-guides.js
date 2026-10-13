@@ -254,6 +254,21 @@
     const list = FG.store.get("recall:review", []);
     FG.openSheet("Recall", "Cards to review", `<ul class="rv">${list.map(([t, d, h]) => `<li><details><summary>${esc(t)}</summary><p>${esc(d)}</p><a href="${esc(h)}">Open in the guide →</a></details></li>`).join("")}</ul><button type="button" class="btn sm mt" data-review-clear>Clear the list</button>`);
   });
+
+  /* ---------- module brief: the stage-page header for operational modules ---------- */
+  FG.modHead = function (key, eyebrow, title, lead, actions) {
+    const b = (C.moduleBriefs || {})[key];
+    if (!b) return ui.head(eyebrow, title, lead, actions);
+    const steps = [["Understand", b.understand, "Why it matters"], ["Do", b.do, "What you actually do"], ["Control", b.check, "How you know it is done"]];
+    return `<section class="card stage-card mod-brief"><div class="card-body"><div class="sb">
+      <div class="sb-hero" style="--c:var(--c1)"><div class="sb-top"><div class="sh-chips"><span class="sh-phase" style="--c:var(--c1)">${esc(eyebrow)}</span></div><h2>${esc(b.title || title)}</h2><p>${esc(b.lead || lead)}</p></div>
+        ${actions ? `<div class="mod-actions">${actions}</div>` : ""}</div>
+      <div class="sb-grid${(b.figures || []).length ? "" : " solo"}"><div class="sb-main">
+        ${b.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(b.remember)}</b></div>` : ""}
+        <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol></div>
+        ${(b.figures || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${b.figures.map(([v, l, w], k) => `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary><div class="sb-note"><p>${esc(w)}</p></div></details>`).join("")}</aside>` : ""}
+      </div></div></div></section><div class="mt"></div>`;
+  };
   /* ---------- fact details: everything the guide says about a key figure ---------- */
   const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
   function factSheet(btn) {

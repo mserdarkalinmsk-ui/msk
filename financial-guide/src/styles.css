@@ -1451,3 +1451,17 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .hx-hub p { margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.5; }
 .hx-hub em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 13px; font-weight: 600; color: var(--c); }
 @media (max-width: 800px) { .hx-hero { grid-template-columns: 1fr; } .hx-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hx-hubs { grid-template-columns: 1fr; } }
+.mod-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; position: relative; z-index: 1; }
+.sb-grid.solo { grid-template-columns: 1fr; }
+.mod-brief { margin-bottom: 4px; }
+
+/* ---------- wave 4: legacy components aligned with the stage design ---------- */
+.callout { border-radius: 14px; padding: 14px 16px; font-size: 14px; line-height: 1.5; border-left: 4px solid var(--line-2); }
+.callout.warn { border-left-color: var(--warn); } .callout.good { border-left-color: var(--good); } .callout.risk { border-left-color: var(--risk); } .callout.info { border-left-color: var(--info, #2d6bd8); }
+.card { border-radius: 18px; }
+.card-head h3 { font-size: 16px; letter-spacing: -.01em; }
+.card-head small { font-size: 12.5px; }
+.tl-body summary { font-weight: 600; }
+.tl-body p, .tl-body li { font-size: 14px; line-height: 1.55; }
+.check { border-radius: 12px; }
+.chips .chip[aria-pressed="true"] { background: #1b3a7a; color: #fff; border-color: #1b3a7a; }

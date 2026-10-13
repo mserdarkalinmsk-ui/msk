@@ -50,7 +50,7 @@
       const inv = FG.store.get("vat:invoice", {}), invDone = INVOICE_FIELDS.filter(([k]) => inv[k]).length;
       const pay = FG.store.get("vat:pay", { amount: "", month: "", invoiceDate: "", executionDate: "" });
       const m = FG.logic.paymentMethod(pay.amount, pay.month), due = FG.logic.paymentDue(pay.invoiceDate, pay.executionDate);
-      return { html: `${ui.head("Projects · VAT", "VAT procedures", "VAT is a procurement planning issue as well as a payment issue: clarify it before signature, check it at PO and invoice, and keep the trail.", `<a class="btn" href="#/procurement/contract-execution-and-payment">Procurement stage 12</a><a class="btn primary" href="#/payment-file">Payment file</a>`)}
+      return { html: `${FG.modHead("vat", "Projects · VAT", "VAT procedures", "VAT is a procurement planning issue as well as a payment issue: clarify it before signature, check it at PO and invoice, and keep the trail.", `<a class="btn" href="#/procurement/contract-execution-and-payment">Procurement stage 12</a><a class="btn primary" href="#/payment-file">Payment file</a>`)}
         ${ui.callout("warn", "Key rule", stage.warning)}
         <section class="card mt"><div class="card-head"><div><h3>VAT across the file</h3><small>Step ${step + 1} of ${VAT_STEPS.length}</small></div></div><div class="card-body stack">
           ${ui.flowHeader(VAT_STEPS, step, (x, j) => `<small>${j + 1} · ${esc(x[0].toUpperCase())}</small><b>${esc(x[1])}</b>`)}
@@ -96,7 +96,7 @@
       const b = FG.logic.eventBudget(lines);
       const fx = FG.store.get("ev:fx", { amount: "", currency: "TRY", rate: "", source: "" }), fxEur = Number(fx.amount) && Number(fx.rate) ? Number(fx.amount) / Number(fx.rate) : null;
       const links = C.usefulLinks.filter((l) => /EventS|GDD/.test(l.title));
-      return { html: `${ui.head("Projects · Events", "Events & GDD", "Event-related finance from the call-off to the payment file: the Event Management PO and payment packages, budget reconciliation and exchange-rate evidence.", links.map((l) => `<a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.title)} ↗</a>`).join(""))}
+      return { html: `${FG.modHead("events", "Projects · Events", "Events & GDD", "Event-related finance from the call-off to the payment file: the Event Management PO and payment packages, budget reconciliation and exchange-rate evidence.", links.map((l) => `<a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.title)} ↗</a>`).join(""))}
         <section class="card"><div class="card-head"><div><h3>Event finance workflow</h3><small>Step ${step + 1} of ${EV_STEPS.length}</small></div></div><div class="card-body stack">
           ${ui.flowHeader(EV_STEPS, step, (x, j) => `<small>${j + 1} · ${esc(x[0].toUpperCase())}</small><b>${esc(x[1])}</b>`)}
           <p>${esc(s[2])}</p>${ui.checklist(`ev:step${step}`, s[3], "Documents for this step")}</div></section>
