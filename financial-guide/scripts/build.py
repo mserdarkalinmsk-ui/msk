@@ -22,8 +22,6 @@ for name in SCRIPTS:
     assert '</script' not in code.lower(), name
     blocks.append(f'<script>\n/* {name} */\n{code}\n</script>')
 # The original Procurement Guide PDF travels inside the page (opened from the Academy) — inserted before the Academy script.
-pdf = base64.b64encode((SRC / 'procurement-guide.pdf').read_bytes()).decode()
-blocks.insert(len(blocks) - 1, f'<script id="fg-proc-original-pdf" type="application/x-proc-pdf">{pdf}</script>')
 html = template.replace('<!--STYLE-->', f'<style>\n{css}\n</style>').replace('<!--SCRIPTS-->', '\n'.join(blocks))
 import datetime
 html = html.replace('__BUILD__', datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))
