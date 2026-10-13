@@ -39,6 +39,7 @@ describe('service provider kinds', () => {
     expect(kindOf('Event Management for the ACT A.2.2.1 Planning and conducting try-out studies for language proficiency tests', '5.8')).toBe('events');
     expect(kindOf('Complementary PO for PO882359-additional fee for interpretation', '5.5.2')).toBe('interp');
     expect(kindOf('Printing of banners', '5.1', '', 'SERVICE INTERNE PLAN 01 GENERAL')).toBe('petty');
+    expect(kindOf('Mobile line', '4.3', '', 'TURKCELL ILETISIM HIZMETLERI A.S. (Fournisseur Direct Debit)')).toBe('petty');
     expect(kindOf('Office rent', '4.1')).toBeNull();
     expect(kindOf('Salary of the project officer', '1.1.1')).toBe('staff');
   });
