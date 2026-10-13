@@ -248,19 +248,61 @@
   }), "learn");
 
   /* ---------- module page ---------- */
-  route("learn/:mod", (mod) => {
+  route("learn/:mod", (mod, qs) => {
     const m = MOD[mod]; if (!m) return { html: notFound() };
     const x = mastery(mod), p = PATHS[mod], ls = lessonsOf(mod), nl = nextLesson(mod);
-    const row = (l, k) => { const t = S.score[l.key]; return `<a class="card lrow lift${S.done[l.key] ? " done" : ""}" href="${l.href}"><span class="n">${S.done[l.key] ? "✓" : k + 1}</span><div><b>${esc(l.title)}</b><span>${esc(l.short)}</span></div><em>${l.minutes} min</em>${S.review[l.key] ? `<span class="chip warn">Review</span>` : t ? `<span class="chip good">${t.c}/${t.c + t.w}</span>` : `<span class="chip">${countQ(l.key)} Q</span>`}</a>`; };
-    const groups = p ? p.phases.map(([t, names], pi) => `<section class="phase"><h3><i>0${pi + 1}</i>${esc(t)}</h3><div class="lessons">${names.map((nm) => { const l = p.lessons.find((y) => y.name === nm); return l ? row(l, p.lessons.indexOf(l)) : ""; }).join("")}</div></section>`).join("") : `<div class="lessons">${ls.map(row).join("")}</div>`;
+    // Lines: path phases, or one line for brief modules. Each station keeps its lesson and line colour.
+    const LC = ["--m1", "--m2", "--m4", "--m3"];
+    const lines = p ? p.phases.map(([t, names], i) => ({ t, c: LC[i % 4], st: names.map((n) => p.lessons.find((l) => l.name === n)).filter(Boolean) })) : [{ t: m.title, c: m.c, st: ls }];
+    const stations = lines.flatMap((ln, li) => ln.st.map((l) => ({ l, li, c: ln.c })));
+    const start = Math.max(0, stations.findIndex((s) => s.l.key === (qs.get("s") || nl.key)));
+    const state = (l) => S.review[l.key] ? "review" : S.done[l.key] ? "done" : l === nl ? "here" : "todo";
+    const related = (l) => (l.data.links || []).map((n) => LESSONS.find((y) => y.module === l.module && (y.name === n || y.title === n))).filter(Boolean);
+    const panel = (i) => {
+      const { l, c } = stations[i], s = l.data, st = state(l), q = countQ(l.key), t = S.score[l.key];
+      const figs = (s.keyFacts || []).concat(s.figures || []).slice(0, 3);
+      const checks = (s.checks || []).length + (s.blocks || []).filter((b) => b.type === "checklist").reduce((a, b) => a + b.items.length, 0);
+      const rel = related(l), prev = stations[i - 1], next = stations[i + 1];
+      return `<article class="st-card" style="--c:var(${c})">
+        <div class="st-top"><span class="st-no">${String(i + 1).padStart(2, "0")}</span><div><small>${esc(lines[stations[i].li].t)} · Station ${i + 1} of ${stations.length}</small><h2>${esc(l.title)}</h2></div>
+          <span class="chip ${st === "done" ? "good" : st === "review" ? "warn" : st === "here" ? "accent" : ""}">${st === "done" ? "✓ Completed" : st === "review" ? "To review" : st === "here" ? "You are here" : "Not started"}</span></div>
+        ${s.remember ? `<p class="st-one">${esc(s.remember)}</p>` : ""}
+        <div class="st-g">
+          <div class="st-main">
+            ${[["Why", s.understand], ["Do", s.do], ["Done when", s.check]].filter(([, v]) => v).map(([k, v]) => `<div class="st-row"><small>${k}</small><p>${rich(v)}</p></div>`).join("")}
+          </div>
+          <aside class="st-side">
+            ${figs.length ? `<div class="st-figs">${figs.map(([v, lab]) => `<div><b>${esc(v)}</b><span>${esc(lab)}</span></div>`).join("")}</div>` : ""}
+            <ul class="st-meta"><li>${ic("clock")}<span>${l.minutes} min read</span></li><li>${ic("check")}<span>${checks ? `${checks} checklist items` : "No checklist"}</span></li><li>${ic("practice")}<span>${q ? `${q} check question${q > 1 ? "s" : ""}${t ? ` · ${t.c}/${t.c + t.w} right` : ""}` : "No questions yet"}</span></li>${s.example ? `<li>${ic("spark")}<span>Includes a worked example</span></li>` : ""}</ul>
+          </aside>
+        </div>
+        ${rel.length ? `<div class="st-rel"><small>Connected stations</small><div class="row">${rel.map((r) => { const j = stations.findIndex((y) => y.l === r); return j >= 0 ? `<button type="button" class="chip" data-go-st="${j}">${ic("arrow")}${esc(r.name)}</button>` : `<a class="chip" href="${r.href}">${esc(r.name)}</a>`; }).join("")}</div></div>` : ""}
+        <div class="st-act"><a class="btn primary" href="${l.href}">${S.done[l.key] ? "Revisit lesson" : "Open lesson"} ${ic("arrow")}</a>${q ? `<a class="btn" href="#/practice?m=${mod}">Practise</a>` : ""}<span class="st-nav">${prev ? `<button type="button" class="icon-btn" data-go-st="${i - 1}" aria-label="Previous station">←</button>` : ""}${next ? `<button type="button" class="icon-btn" data-go-st="${i + 1}" aria-label="Next station">→</button>` : ""}</span></div>
+      </article>`;
+    };
+    let k = 0;
+    const map = `<div class="metro" role="tablist" aria-label="${esc(m.title)} route">${lines.map((ln) => `<section class="line" style="--c:var(${ln.c});--n:${ln.st.length}"><header><i></i>${esc(ln.t)}<em>${ln.st.length} stops</em></header><ol>${ln.st.map((l) => { const i = k++, st = state(l), q = countQ(l.key);
+      return `<li><button type="button" role="tab" class="stn s-${st}${i === start ? " sel" : ""}" data-st="${i}" aria-selected="${i === start}" title="${esc(l.title)}"><span class="dot">${st === "done" ? ic("check") : st === "review" ? "!" : i + 1}</span><span class="nm">${esc(l.name)}</span>${q ? `<span class="q">${q}Q</span>` : ""}${st === "here" ? `<span class="pin">You are here</span>` : ""}</button></li>`; }).join("")}</ol></section>`).join("")}</div>`;
     return {
       title: m.title,
       html: `<div class="crumbs"><a href="#/learn">Learn</a><span>/</span><span>${esc(m.title)}</span></div>
-        <div class="card night pad" style="margin-top:14px;padding:30px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center">
-          <div><span class="eyebrow">Learning path · ${ls.length} lessons · ${ls.reduce((a, l) => a + l.minutes, 0)} min</span><h1 style="margin-top:10px;font-size:clamp(30px,3.4vw,40px)">${esc(m.title)}</h1><p style="margin-top:8px">${esc(m.sub)}. ${stateLabel[x.state]}: ${x.done} of ${x.total} lessons done${x.att ? `, ${x.att} answers given` : ""}.</p>
+        <div class="card night pad mhero" style="margin-top:14px">
+          <div><span class="eyebrow">Learning route · ${ls.length} stations · ${ls.reduce((a, l) => a + l.minutes, 0)} min</span><h1>${esc(m.title)}</h1><p>${esc(m.sub)}. ${x.done} of ${x.total} stations completed${x.att ? ` · ${x.att} answers given` : ""}.</p>
           <div class="row" style="margin-top:20px"><a class="btn brass" href="${nl.href}">${x.done ? "Continue" : "Start"}: ${esc(nl.name)} ${ic("arrow")}</a><a class="btn ghost-night" href="#/practice?m=${mod}">Practise ${countQM(mod)} questions</a></div></div>
-          <span class="ring" style="--p:${x.v};--c:var(--brass-2);width:96px;height:96px" data-v="${x.v}%"></span></div>
-        ${groups}${foot}`,
+          <div class="mh-ring"><span class="ring" style="--p:${x.v};--c:#fff" data-v="${x.v}%"></span><small>${stateLabel[x.state]}</small></div></div>
+        <div class="legend"><span><i class="lg lg-here"></i>You are here</span><span><i class="lg lg-done"></i>Completed</span><span><i class="lg lg-review"></i>To review</span><span><i class="lg"></i>Not started</span><span class="kb">Use ← → to move along the line</span></div>
+        ${map}
+        <div data-panel aria-live="polite">${panel(start)}</div>${foot}`,
+      mount(root) {
+        let cur = start;
+        const sel = (i) => { if (i < 0 || i >= stations.length) return; cur = i;
+          $$("[data-st]", root).forEach((b) => { const on = +b.dataset.st === i; b.classList.toggle("sel", on); b.setAttribute("aria-selected", on); if (on) b.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" }); });
+          $("[data-panel]", root).innerHTML = panel(i); history.replaceState(null, "", `#/learn/${mod}?s=${encodeURIComponent(stations[i].l.key)}`); };
+        const onClick = (e) => { const b = e.target.closest("[data-st],[data-go-st]"); if (b) sel(+(b.dataset.st ?? b.dataset.goSt)); };
+        const onKey = (e) => { if (e.target.closest("input,textarea") || $(".scrim")) return; if (e.key === "ArrowRight") { e.preventDefault(); sel(cur + 1); } if (e.key === "ArrowLeft") { e.preventDefault(); sel(cur - 1); } };
+        root.addEventListener("click", onClick); document.addEventListener("keydown", onKey);
+        return () => { root.removeEventListener("click", onClick); document.removeEventListener("keydown", onKey); };
+      },
     };
   }, "learn");
   const countQ = (k) => QUESTIONS.filter((q) => q.topic === k).length;

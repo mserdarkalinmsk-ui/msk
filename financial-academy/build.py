@@ -4,7 +4,7 @@ HERE = pathlib.Path(__file__).parent
 src = json.loads((HERE / "content/source.json").read_text(encoding="utf-8"))
 
 def stage(s):
-    keep = ("name", "title", "lead", "source", "remember", "keyFacts", "example", "understand", "do", "check", "sections", "warning", "best")
+    keep = ("name", "title", "lead", "source", "remember", "keyFacts", "example", "understand", "do", "check", "sections", "warning", "best", "links")
     return {k: s[k] for k in keep if s.get(k)}
 
 data = {
