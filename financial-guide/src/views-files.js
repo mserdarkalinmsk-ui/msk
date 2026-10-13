@@ -88,7 +88,7 @@
     crumbs: (p) => [["My files", "files"], [(getFile(p.id) || {}).what || "File", "files/" + p.id]],
     render(p) {
       const f = getFile(p.id);
-      if (!f) return { html: `${ui.head("My files", "File not found", "")}<a class="btn" href="#/files">← All files</a>` };
+      if (!f) return { html: `${ui.head("My files", "File not found", "This file does not exist on this device. Files are stored in this browser only.")}<p class="muted">Open your list of files to pick another one, or create a new file for your purchase.</p><a class="btn" href="#/files">← All files</a>` };
       const s = fileState(f), r = s.r, role = FG.role(), t = f.ticks || {};
       const fmt = (d) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
       return { html: `
