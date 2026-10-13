@@ -256,6 +256,9 @@
     const lines = p ? p.phases.map(([t, names], i) => ({ t, c: LC[i % 4], st: names.map((n) => p.lessons.find((l) => l.name === n)).filter(Boolean) })) : [{ t: m.title, c: m.c, st: ls }];
     const stations = lines.flatMap((ln, li) => ln.st.map((l) => ({ l, li, c: ln.c })));
     const start = Math.max(0, stations.findIndex((s) => s.l.key === (qs.get("s") || nl.key)));
+    // Station labels stay on one line: a few long names get a short form; the panel shows the full title.
+    const SHORT = { "Contract Execution & Payment": "Execution & Payment", "Terms & Specifications": "Terms & Specs", "Contract Management": "Contract Mgmt", "Field PO & payment handovers": "Field handovers", "Forecast and budget revision": "Forecast & revision", "Useful links & systems": "Links & systems" };
+    const short = (n) => SHORT[n] || n;
     const state = (l) => S.review[l.key] ? "review" : S.done[l.key] ? "done" : l === nl ? "here" : "todo";
     const related = (l) => (l.data.links || []).map((n) => LESSONS.find((y) => y.module === l.module && (y.name === n || y.title === n))).filter(Boolean);
     const panel = (i) => {
@@ -282,7 +285,7 @@
     };
     let k = 0;
     const map = `<div class="metro" role="tablist" aria-label="${esc(m.title)} route">${lines.map((ln) => `<section class="line" style="--c:var(${ln.c});--n:${ln.st.length}"><header><i></i>${esc(ln.t)}<em>${ln.st.length} stops</em></header><ol>${ln.st.map((l) => { const i = k++, st = state(l), q = countQ(l.key);
-      return `<li><button type="button" role="tab" class="stn s-${st}${i === start ? " sel" : ""}" data-st="${i}" aria-selected="${i === start}" title="${esc(l.title)}"><span class="dot">${st === "done" ? ic("check") : st === "review" ? "!" : i + 1}</span><span class="nm">${esc(l.name)}</span>${q ? `<span class="q">${q}Q</span>` : ""}${st === "here" ? `<span class="pin">You are here</span>` : ""}</button></li>`; }).join("")}</ol></section>`).join("")}</div>`;
+      return `<li><button type="button" role="tab" class="stn s-${st}${i === start ? " sel" : ""}" data-st="${i}" aria-selected="${i === start}" title="${esc(l.title)}"><span class="dot">${st === "done" ? ic("check") : st === "review" ? "!" : i + 1}</span><span class="nm" title="${esc(l.name)}">${esc(short(l.name))}</span>${q ? `<span class="q">${q}Q</span>` : ""}${st === "here" ? `<span class="pin">You are here</span>` : ""}</button></li>`; }).join("")}</ol></section>`).join("")}</div>`;
     return {
       title: m.title,
       html: `<div class="crumbs"><a href="#/learn">Learn</a><span>/</span><span>${esc(m.title)}</span></div>
