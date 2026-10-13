@@ -35,18 +35,29 @@ const INTL = /international|foreign|uluslararası|yabancı|abroad/i;
 const PETTY = /petty cash|caisse|avance de fonds|cash advance/i; // advances to the office, not a provider
 const STAFF = /^1\.[12]\.1(\.|$)/, PERDIEM = /^1\.3\.[12](\.|$)/, GRANTS = /^6\.[12](\.|$)/;
 const PERDIEM_T = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission/i;
+const MISSION = /\bOM\b|ordre de mission|mission order|görev emri|\bmission\b/i;
+const EVENT_CO = /congress|organi[sz]ation|organizasyon|event|tourism|turizm|travel|seyahat|hotel|otel|kongre/i;
 const STAFF_T = /\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|bordro/i;
 /** Kind of a PO from its wording, then from its budget line's code and wording; null when it buys none of these. */
-export function kindOf(text: string, code = '', lineText = ''): Kind | null {
+export function kindOf(text: string, code = '', lineText = '', supplier = ''): Kind | null {
   // Groups first: they never count as a service, whatever else the wording says.
   if (PETTY.test(text)) return 'petty';
   if (STAFF.test(code) || STAFF_T.test(text)) return 'staff';
-  if (PERDIEM.test(code) || PERDIEM_T.test(text)) return 'perdiem';
-  if (GRANTS.test(code) || /\bgrant|sub-?grant|hibe/i.test(text)) return 'grants';
   const byText = (t: string): Kind | null => {
     for (const [k, re] of RULES) if (re.test(t)) return k === 'person' ? (INTL.test(t) || /^1\.2(\.|$)/.test(code) ? 'intl' : 'consult') : k;
     return null;
   };
+  // Travel and per diem lines (1.3.1, 1.3.2): mission orders (OM) and costs of experts are not counted; an event
+  // management company paid from these lines (venue, travel of participants) counts as event management.
+  if (PERDIEM.test(code)) {
+    if (MISSION.test(text) || PERDIEM_T.test(text) || /consult|expert|danışman|uzman/i.test(text)) return 'perdiem';
+    const k = byText(text);
+    if (k === 'visibility' || k === 'research' || k === 'publication') return k;
+    // Only a real event service: an event company, or the PO organises the event (not a participant's trip to it).
+    return EVENT_CO.test(supplier) || /organi[sz]|organizasyon|conference|konferans|venue|catering|congress|kongre|accommodation|konaklama|hotel|otel/i.test(text) ? 'events' : 'perdiem';
+  }
+  if (PERDIEM_T.test(text)) return 'perdiem';
+  if (GRANTS.test(code) || /\bgrant|sub-?grant|hibe/i.test(text)) return 'grants';
   const own = byText(text); if (own) return own;
   if (/^1\.1\.[23](\.|$)/.test(code)) return 'consult';
   if (/^1\.2\.[23](\.|$)/.test(code)) return 'intl';
@@ -67,7 +78,7 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
     const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
     return wb.pos.flatMap((x) => {
       const value = x.sc || x.amount; if (!value) return [];
-      const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature} ${PETTY.test(x.supplier) ? x.supplier : ''}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`);
+      const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature} ${PETTY.test(x.supplier) ? x.supplier : ''}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`, x.supplier);
       const u = set[key], kind = u === 'none' ? null : isKind(u) ? u : auto;
       return kind || all ? [{ ...x, p, kind, auto, key, value }] : [];
     });
