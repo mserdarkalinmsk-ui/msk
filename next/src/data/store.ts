@@ -327,6 +327,12 @@ export function setBrand(brand: { logo?: string; name?: string; title?: string }
   const L = draft(state.ledger); if (brand) L.brand = brand; else delete L.brand;
   commit(L, brand ? 'Name and logo saved' : 'Name and logo removed');
 }
+/** Sets by hand the service-provider kind of a purchase order ('' = back to automatic, 'none' = leave it out). */
+export function setPoKind(key: string, kind: string) {
+  const L = draft(state.ledger), m = { ...(L.poKinds ?? {}) };
+  if (kind) m[key] = kind; else delete m[key];
+  L.poKinds = m; commit(L, kind ? 'PO kind set' : 'PO kind back to automatic');
+}
 /** Ticks or unticks a task of the monthly checklist. */
 export function setCheck(month: string, key: string, done: boolean) {
   const L = draft(state.ledger), C = { ...(L.checklist ?? {}) }, M = { ...(C[month] ?? {}) };

@@ -1,85 +1,100 @@
 import { useState } from 'preact/hooks';
-import { filtered, go, useStore } from '../data/store';
-import { ceilings, KINDS, providerPOs, suppliers, type Kind } from '../domain/providers';
+import { filtered, go, setPoKind, useStore } from '../data/store';
+import { ceilings, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { full, short } from '../ui/format';
+import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 const kl = (k: Kind) => KINDS.find((x) => x.k === k)!;
 const pct = (v: number) => (Number.isFinite(v) ? `${Math.round(v * 100)}%` : '—');
-const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0; };
+const sum = (L: ProviderPO[]) => L.reduce((a, x) => a + x.value, 0);
 function readLimit() { try { return Number(localStorage.getItem('pl-sp-limit')) || 0; } catch { return 0; } }
+const Dot = ({ k }: { k: Kind }) => <i style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: kl(k).color, marginRight: '6px' }} />;
 
-/** Service providers: budget ceilings (amount and unit rate) per project and overall, and spending per supplier. */
+/**
+ * Service providers: the purchase orders for event management, consultants (national / international), visibility,
+ * research and publication — by project, by supplier and in total. Kinds are read from what each PO buys; any PO
+ * can be put in another kind (or left out) by hand, and that choice is kept with the data.
+ */
 export function Providers() {
   const s = useStore((x) => x);
   const P = filtered(s);
+  const set = s.ledger.poKinds ?? {};
   const [kind, setKind] = useState<Kind | ''>('');
+  const [proj, setProj] = useState('');
+  const [review, setReview] = useState(false);
   const [limit, setLimitS] = useState(readLimit);
   const setLimit = (v: number) => { setLimitS(v); try { localStorage.setItem('pl-sp-limit', String(v || '')); } catch { /* ignore */ } };
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id.toUpperCase();
-  const C = ceilings(P).filter((r) => !kind || r.kind === kind);
-  const POs = providerPOs(P).filter((x) => !kind || x.kind === kind);
-  const S = suppliers(POs);
-  const byKind = KINDS.map((k) => {
-    const R = ceilings(P).filter((r) => r.kind === k.k);
-    const rates = R.filter((r) => r.rate).map((r) => r.rate!);
-    return { ...k, lines: R.length, projects: new Set(R.map((r) => r.p.id)).size, approved: R.reduce((a, r) => a + r.approved, 0), exposure: R.reduce((a, r) => a + r.exposure, 0), units: [...new Set(R.filter((r) => r.rate).map((r) => r.unit).filter(Boolean))], min: rates.length ? Math.min(...rates) : 0, max: rates.length ? Math.max(...rates) : 0, med: median(rates) };
-  });
-  const projects = [...new Set(C.map((r) => r.p.id))].map((id) => P.find((p) => p.id === id)!);
-  const over = S.filter((x) => limit && (x.max > limit));
+  const every = providerPOs(P, set, true);
+  const ALL = every.filter((x) => x.kind);
+  const projects = [...new Set(ALL.map((x) => x.p))].sort((a, b) => sum(ALL.filter((x) => x.p === b)) - sum(ALL.filter((x) => x.p === a)));
+  const cell = (p: Project | null, k: Kind | null) => sum(ALL.filter((x) => (!p || x.p === p) && (!k || x.kind === k)));
+  const total = sum(ALL);
+  const rows = (review ? every : ALL).filter((x) => (!kind || x.kind === kind) && (!proj || x.p.id === proj)).sort((a, b) => a.p.code.localeCompare(b.p.code) || (a.kind ?? '').localeCompare(b.kind ?? '') || b.value - a.value);
+  const S = suppliers(ALL.filter((x) => (!kind || x.kind === kind) && (!proj || x.p.id === proj)));
+  const over = S.filter((x) => limit && x.max > limit);
+  const C = ceilings(P);
+  const hand = every.filter((x) => set[x.key]).length, none = every.filter((x) => !x.kind).length;
   const xlsx = () => download(`service-providers-${TODAY.toISOString().slice(0, 10)}.xlsx`, [
-    { name: 'Overall', money: [3, 4, 5], rows: [['Kind', 'Projects', 'Lines', 'Budget ceiling', 'Spent + committed', 'Remaining', 'Used', 'Unit', 'Lowest rate', 'Median rate', 'Highest rate'], ...byKind.map((k) => [k.label, k.projects, k.lines, k.approved, k.exposure, k.approved - k.exposure, k.approved ? k.exposure / k.approved : '', k.units.join(' / '), k.min || '', k.med || '', k.max || ''])] },
-    { name: 'By project', money: [7, 8, 9], rows: [['Project', 'Country', 'Line', 'Description', 'Kind', 'Unit', 'Units', 'Unit rate ceiling', 'Budget ceiling', 'Spent + committed', 'Remaining', 'Used'], ...C.map((r) => [lab(r.p), cname(r.p.country), r.code, r.description, kl(r.kind).label, r.unit, r.units ?? '', r.rate ?? '', r.approved, r.exposure, r.remaining, Number.isFinite(r.used) ? r.used : ''])] },
-    { name: 'Suppliers', money: [3, 4, 5], rows: [['Supplier', 'Kind', 'POs', 'Amount', 'Spent', 'Spent + committed', 'Largest in one project', 'Projects', ...(limit ? ['Above limit'] : [])], ...S.map((x) => [x.supplier, kl(x.kind).label, x.pos, x.amount, x.spent, x.sc, x.max, [...x.projects.keys()].map((id) => lab(P.find((p) => p.id === id)!)).join(', '), ...(limit ? [x.max > limit ? 'yes' : ''] : [])])] },
-    { name: 'Purchase orders', money: [6, 7, 8], rows: [['Project', 'PO', 'Line', 'Kind', 'Description', 'Supplier', 'Amount', 'Spent', 'Spent + committed', 'Status', 'Date'], ...POs.map((x) => [lab(x.p), x.po, x.line, kl(x.kind).label, x.description || x.nature, x.supplier, x.amount, x.spent, x.sc, x.status, x.date])] },
+    { name: 'Summary', money: [1, 2, 3, 4, 5, 6, 7], rows: [['Project', ...KINDS.map((k) => k.label), 'Total'], ...projects.map((p) => [lab(p), ...KINDS.map((k) => cell(p, k.k)), cell(p, null)]), ['Total', ...KINDS.map((k) => cell(null, k.k)), total]] },
+    { name: 'Purchase orders', money: [8, 9], rows: [['Project', 'Country', 'Kind', 'PO', 'Line', 'Description', 'Service provider', 'Date', 'Spent', 'Spent + committed', 'Status', 'Kind set by hand'], ...ALL.map((x) => [lab(x.p), cname(x.p.country), kl(x.kind!).label, x.po, x.line, x.description || x.nature, x.supplier, x.date, x.spent, x.value, x.status, set[x.key] ? 'yes' : ''])] },
+    { name: 'Service providers', money: [3, 4, 5], rows: [['Service provider', 'Kind', 'POs', 'Spent', 'Spent + committed', 'Largest in one project', 'Projects'], ...suppliers(ALL).map((x) => [x.supplier, kl(x.kind).label, x.pos, x.spent, x.sc, x.max, [...x.projects.keys()].map((id) => lab(P.find((p) => p.id === id)!)).join(', ')])] },
   ]);
   return (
     <>
       <section class="hero" aria-label="Service providers">
-        {byKind.filter((k) => k.k !== 'events' || k.lines).slice(0, 4).map((k, i) => <div class={`kpi${i ? '' : ' lead'}`}>
-          <span class="label">{k.label}</span><span class="value">{short(k.approved)}</span>
-          <span class="ctx">ceiling in {k.projects} projects · used <b>{short(k.exposure)}</b> ({pct(k.approved ? k.exposure / k.approved : 0)}){k.med ? <> · median rate <b>{full(k.med)}</b>{k.units.length === 1 ? ` ${k.units[0].toLowerCase()}` : ''}</> : ''}</span></div>)}
+        <div class="kpi lead"><span class="label">Service providers — total</span><span class="value">{short(total)}</span><span class="ctx">spent + committed · {ALL.length} POs · {projects.length} projects · {suppliers(ALL).length} providers</span></div>
+        {KINDS.filter((k) => cell(null, k.k)).slice(0, 3).map((k) => <div class="kpi"><span class="label">{k.label}</span><span class="value">{short(cell(null, k.k))}</span><span class="ctx">{ALL.filter((x) => x.kind === k.k).length} POs · {total ? Math.round(cell(null, k.k) / total * 100) : 0}% of the total</span></div>)}
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
         <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Overall ceilings</h2><p>From the approved budget (or latest report) of each project · lines 1.1.2–1.1.3, 1.2.2–1.2.3, 5.5.1, 5.5.2 and 5.7 only</p></div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}><button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Kind</th><th class="r">Projects</th><th class="r">Budget ceiling</th><th class="r">Spent + committed</th><th class="r">Remaining</th><th class="r">Used</th><th>Unit</th><th class="r">Unit rate: lowest</th><th class="r">median</th><th class="r">highest</th></tr></thead>
-            <tbody>{byKind.map((k) => <tr class={`click${kind === k.k ? ' sel' : ''}`} onClick={() => setKind(kind === k.k ? '' : k.k)}>
-              <td><i style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: k.color, marginRight: '8px' }} /><b>{k.label}</b></td><td class="r num">{k.projects}</td>
-              <td class="r num"><b>{full(k.approved)}</b></td><td class="r num">{full(k.exposure)}</td><td class="r num" style={{ color: k.approved - k.exposure < 0 ? '#e5484d' : undefined }}>{full(k.approved - k.exposure)}</td><td class="r num">{pct(k.approved ? k.exposure / k.approved : 0)}</td>
-              <td>{k.units.join(' / ') || '—'}</td><td class="r num">{k.min ? full(k.min) : '—'}</td><td class="r num">{k.med ? full(k.med) : '—'}</td><td class="r num">{k.max ? full(k.max) : '—'}</td></tr>)}</tbody>
-            <tfoot><tr><td><b>Total</b></td><td /><td class="r num"><b>{full(byKind.reduce((a, k) => a + k.approved, 0))}</b></td><td class="r num">{full(byKind.reduce((a, k) => a + k.exposure, 0))}</td><td class="r num">{full(byKind.reduce((a, k) => a + k.approved - k.exposure, 0))}</td><td colSpan={5} /></tr></tfoot></table>
-            <p class="muted" style={{ marginTop: '6px' }}>Click a kind to show only it below{kind ? <> · <a href="javascript:void 0" onClick={() => setKind('')}>show all</a></> : ''}. Rates compare only within the same unit (per day, per 250 words…).</p></div>
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>By project and kind</h2><p>Spent + committed of the purchase orders in the latest report workbook of each project · click a figure to list its POs</p></div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>{(kind || proj) && <button class="btn ghost" onClick={() => { setKind(''); setProj(''); }}>Clear selection</button>}<button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th>{KINDS.map((k) => <th class={`r click${kind === k.k ? ' sel' : ''}`} onClick={() => { setKind(kind === k.k ? '' : k.k); setProj(''); }}><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
+            <tbody>{projects.map((p) => <tr class={proj === p.id ? 'sel' : ''}>
+              <td class="click" onClick={() => { setProj(proj === p.id ? '' : p.id); setKind(''); }}><b>{lab(p)}</b><small class="muted"> {cname(p.country)}</small></td>
+              {KINDS.map((k) => { const v = cell(p, k.k); return <td class={`r num${v ? ' click' : ''}`} style={{ outline: proj === p.id && kind === k.k ? '2px solid var(--accent, #3b82c4)' : undefined }} onClick={() => v && (setProj(p.id), setKind(k.k))}>{v ? full(v) : <span class="muted">—</span>}</td>; })}
+              <td class="r num"><b>{full(cell(p, null))}</b></td></tr>)}</tbody>
+            <tfoot><tr><td><b>Total</b></td>{KINDS.map((k) => <td class="r num"><b>{full(cell(null, k.k))}</b></td>)}<td class="r num"><b>{full(total)}</b></td></tr></tfoot></table>
+            {!every.length && <p class="muted">No purchase orders yet — load the report workbooks or system extractions (with the “Purchase Orders” sheet).</p>}</div>
         </section>
         <section class="card span-12">
-          <div class="card-h"><div><h2>Ceilings by project</h2><p>Each budget line with its unit rate and amount — the limit the project may spend</p></div></div>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Line</th><th>Kind</th><th>Unit</th><th class="r">Units</th><th class="r">Rate ceiling</th><th class="r">Budget ceiling</th><th class="r">Spent + committed</th><th class="r">Remaining</th><th class="r">Used</th></tr></thead>
-            <tbody>{projects.map((p) => { const R = C.filter((r) => r.p === p); return <>
-              {R.map((r, i) => <tr class="click" onClick={() => go(`project/${p.id}`)}>
-                <td>{i === 0 && <><b>{lab(p)}</b><small class="muted"> {cname(p.country)}</small></>}</td>
-                <td><span class="num">{r.code}</span> {r.description}</td><td><span class="badge neutral" style={{ borderLeft: `3px solid ${kl(r.kind).color}` }}>{kl(r.kind).label}</span></td>
-                <td>{r.unit || '—'}</td><td class="r num">{r.units ?? '—'}</td><td class="r num">{r.rate ? full(r.rate) : '—'}</td><td class="r num"><b>{full(r.approved)}</b></td><td class="r num">{full(r.exposure)}</td>
-                <td class="r num" style={{ color: r.remaining < 0 ? '#e5484d' : undefined }}>{full(r.remaining)}</td><td class="r num" style={{ color: r.used > 1 ? '#e5484d' : r.used > 0.9 ? '#c27c0e' : undefined }}>{pct(r.used)}</td></tr>)}
-              <tr class="sub"><td /><td colSpan={5} class="muted">Project total</td><td class="r num"><b>{full(R.reduce((a, r) => a + r.approved, 0))}</b></td><td class="r num">{full(R.reduce((a, r) => a + r.exposure, 0))}</td><td class="r num">{full(R.reduce((a, r) => a + r.remaining, 0))}</td><td /></tr></>; })}</tbody></table>
-            {!C.length && <p class="muted">No consultant, interpretation, translation or conference lines in the selected projects — import the approved budgets or the financial reports.</p>}</div>
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Purchase orders{kind ? ` — ${kl(kind).label}` : ''}{proj ? ` — ${lab(P.find((p) => p.id === proj)!)}` : ''}</h2>
+            <p>{rows.length} POs · {full(sum(rows.filter((x) => x.kind)))} · the kind is read from what the PO buys; change it in the list if it is wrong{hand ? ` · ${hand} set by hand` : ''}</p></div>
+            <label style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}><input type="checkbox" checked={review} onChange={(e) => setReview((e.target as HTMLInputElement).checked)} />Also show the other POs ({none}) to add them</label></div>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Service provider</th><th>Date</th><th>Kind</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
+            <tbody>{rows.slice(0, 500).map((x) => <tr style={{ opacity: x.kind ? 1 : 0.6, borderLeft: x.kind ? `4px solid ${kl(x.kind).color}` : undefined }}>
+              <td class="click" onClick={() => go(`project/${x.p.id}`)}><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td>
+              <td><div class="cm-d">{x.description || x.nature}</div>{x.description && x.nature && x.nature !== x.description && <small class="muted">{x.nature}</small>}</td><td><b>{x.supplier || '—'}</b></td>
+              <td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}</td>
+              <td><select value={set[x.key] ?? ''} onChange={(e) => setPoKind(x.key, (e.target as HTMLSelectElement).value)} style={{ fontWeight: set[x.key] ? 700 : 400 }} title={set[x.key] ? 'Set by hand' : 'Read automatically'}>
+                <option value="">{x.auto ? `Auto: ${kl(x.auto).label}` : 'Auto: not a service'}</option>
+                {KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td>
+              <td class="r num">{full(x.spent)}</td><td class="r num"><b>{full(x.value)}</b></td></tr>)}</tbody></table>
+            {rows.length > 500 && <p class="muted">First 500 shown — the Excel file has them all.</p>}</div>
         </section>
         <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Suppliers</h2><p>Spent + committed per supplier, from the purchase orders of the latest report workbook · {POs.length} POs</p></div>
-            <label style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>Limit per supplier in one project (€)
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Service providers</h2><p>Spent + committed per provider and kind, across projects</p></div>
+            <label style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>Limit per provider in one project (€)
               <input type="number" min="0" step="1000" value={limit || ''} placeholder="e.g. 60000" style={{ width: '120px' }} onChange={(e) => setLimit(Number((e.target as HTMLInputElement).value) || 0)} /></label></div>
           <div class="card-b table-scroll">
-            {limit > 0 && <p style={{ margin: '0 0 8px', color: over.length ? '#e5484d' : undefined }}>{over.length ? `${over.length} suppliers above ${full(limit)} in a single project.` : `No supplier above ${full(limit)} in a single project.`}</p>}
-            <table class="mini"><thead><tr><th>Supplier</th><th>Kind</th><th class="r">POs</th><th class="r">Spent</th><th class="r">Spent + committed</th><th class="r">Largest in one project</th><th>Projects</th></tr></thead>
+            {limit > 0 && <p style={{ margin: '0 0 8px', color: over.length ? '#e5484d' : undefined }}>{over.length ? `${over.length} providers above ${full(limit)} in a single project.` : `No provider above ${full(limit)} in a single project.`}</p>}
+            <table class="mini"><thead><tr><th>Service provider</th><th>Kind</th><th class="r">POs</th><th class="r">Spent</th><th class="r">Spent + committed</th><th class="r">Largest in one project</th><th>Projects</th></tr></thead>
               <tbody>{S.slice(0, 300).map((x) => <tr style={{ background: limit && x.max > limit ? 'color-mix(in srgb, #e5484d 10%, transparent)' : undefined }}>
-                <td><b>{x.supplier}</b></td><td><span class="badge neutral" style={{ borderLeft: `3px solid ${kl(x.kind).color}` }}>{kl(x.kind).label}</span></td><td class="r num">{x.pos}</td>
+                <td><b>{x.supplier}</b></td><td><Dot k={x.kind} />{kl(x.kind).label}</td><td class="r num">{x.pos}</td>
                 <td class="r num">{full(x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td><td class="r num" style={{ color: limit && x.max > limit ? '#e5484d' : undefined }}>{full(x.max)}</td>
-                <td>{[...x.projects].map(([id, v]) => { const p = P.find((q) => q.id === id)!; return <button class="chip" onClick={() => go(`project/${id}`)} title={full(v)}>{lab(p)}</button>; })}</td></tr>)}</tbody></table>
-            {!S.length && <p class="muted">No purchase orders for these services — supplier totals need report workbooks or system extractions with the “Purchase Orders” sheet.</p>}</div>
+                <td>{[...x.projects].map(([id, v]) => <button class="chip" onClick={() => go(`project/${id}`)} title={full(v)}>{lab(P.find((q) => q.id === id)!)}</button>)}</td></tr>)}</tbody>
+              {S.length > 0 && <tfoot><tr><td><b>Total</b></td><td /><td class="r num">{S.reduce((a, x) => a + x.pos, 0)}</td><td class="r num">{full(S.reduce((a, x) => a + x.spent, 0))}</td><td class="r num"><b>{full(S.reduce((a, x) => a + x.sc, 0))}</b></td><td colSpan={2} /></tr></tfoot>}</table></div>
         </section>
+        {C.length > 0 && <section class="card span-12">
+          <div class="card-h"><div><h2>Budget ceilings</h2><p>For comparison: consultant lines (1.1.2–1.1.3, 1.2.2–1.2.3) and conferences (5.7) of the approved budget, with unit rates</p></div></div>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Line</th><th>Unit</th><th class="r">Rate ceiling</th><th class="r">Budget ceiling</th><th class="r">Spent + committed</th><th class="r">Remaining</th><th class="r">Used</th></tr></thead>
+            <tbody>{C.map((r) => <tr><td><b>{lab(r.p)}</b></td><td><span class="num">{r.code}</span> {r.description}</td><td>{r.unit || '—'}</td><td class="r num">{r.rate ? full(r.rate) : '—'}</td><td class="r num"><b>{full(r.approved)}</b></td><td class="r num">{full(r.exposure)}</td>
+              <td class="r num" style={{ color: r.remaining < 0 ? '#e5484d' : undefined }}>{full(r.remaining)}</td><td class="r num" style={{ color: r.used > 1 ? '#e5484d' : r.used > 0.9 ? '#c27c0e' : undefined }}>{pct(r.used)}</td></tr>)}</tbody></table></div>
+        </section>}
       </div>
     </>
   );

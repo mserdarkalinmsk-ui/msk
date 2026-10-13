@@ -40,7 +40,7 @@ export interface Project {
 }
 
 export interface AuditEntry { at: string; message: string; project?: string }
-export interface Ledger { countries: Country[]; projects: Project[]; /** programme offices' own running-cost budgets */ offices?: import('./office').Office[]; /** newest first */ audit?: AuditEntry[]; /** deleted items, newest first, restorable */ trash?: TrashItem[]; /** monthly checklist ticks: month (YYYY-MM) → task key → when ticked */ checklist?: Record<string, Record<string, string>>; /** organisation logo (data URL) and name, added by the user */ brand?: { logo?: string; name?: string; title?: string } }
+export interface Ledger { countries: Country[]; projects: Project[]; /** programme offices' own running-cost budgets */ offices?: import('./office').Office[]; /** newest first */ audit?: AuditEntry[]; /** deleted items, newest first, restorable */ trash?: TrashItem[]; /** monthly checklist ticks: month (YYYY-MM) → task key → when ticked */ checklist?: Record<string, Record<string, string>>; /** organisation logo (data URL) and name, added by the user */ brand?: { logo?: string; name?: string; title?: string }; /** service-provider kind chosen by hand for a PO (key: project|po|line|description), or 'none' */ poKinds?: Record<string, string> }
 export interface TrashItem { id: string; at: string; kind: 'project' | 'country' | 'report' | 'document' | 'risk' | 'office-report'; label: string; data: unknown; pid?: string; officeId?: string; projects?: Project[] }
 
 export const SECTORS = ['Human Rights', 'Democracy', 'Rule of Law'] as const;
