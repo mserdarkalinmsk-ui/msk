@@ -111,19 +111,32 @@
       const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
       const fs = FG.myFilesSummary ? FG.myFilesSummary() : { count: 0, mine: 0 };
       const quick = [["Procurement guide", "15 stages, need to filing", "procurement", "route"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files", "files"], ["Grants guide", "13 stages, call to agreement", "grants", "grant"], ["Ask the guide", "Question in, rule out", "ask", "ask"], ["Test yourself", "20 questions per module", "procurement/test", "trophy"]];
+      const role = FG.role ? FG.role() : "";
+      const FOR = {
+        "": [["route", "Run a procurement", "15 stages from need to filing", "procurement"], ["files", "Follow a purchase", fs.count ? `${fs.count} open file${fs.count > 1 ? "s" : ""}` : "One file, end to end", "files"], ["doc", "Prepare a PO or payment", "Steps, documents, signatures", "po-file"], ["grant", "Manage a grant", "13 stages, call to agreement", "grants"]],
+        po: [["target", "Define the need", "Value, aggregation and specs", "procurement/define-the-need"], ["route", "Pick the procedure", "Thresholds and routes", "procurement/thresholds-and-procedure"], ["doc", "Build the PO file", "Documents by service type", "po-file"], ["files", "My open actions", `${fs.mine || 0} waiting for you`, "files"]],
+        accm: [["coins", "Check budget & coding", "PMM ID and budget line", "po-file"], ["doc", "Create the PO", "Only ACCM finalises POs in FIMS", "po-file"], ["pay", "Payment file", "Invoice match and package", "payment-file"], ["files", "My open actions", `${fs.mine || 0} waiting for you`, "files"]],
+        ccm: [["shield", "Approve a procedure", "Launch, award and exceptions", "procurement/authorise-and-launch"], ["check", "Validate commitments", "Signature route and visas", "po-file"], ["tree", "Thresholds & routes", "Who decides at each value", "rules"], ["files", "My open actions", `${fs.mine || 0} waiting for you`, "files"]],
+        fin: [["pay", "Payment readiness", "Pre-flight before Finance", "engines/payment-readiness"], ["calendar", "Year-end", "Cut-off and allocation", "year-end"], ["coins", "Petty cash", "Limits and reconciliation", "petty-cash"], ["files", "My open actions", `${fs.mine || 0} waiting for you`, "files"]],
+      }[role] || [];
+      const HUB_IC = ["folder", "people", "check", "tree"];
       return { html: `
-        <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
+        <section class="hz-hero"><div class="hz-main"><span class="hz-eye">Council of Europe · Financial Guide</span>
           <h1>Find the rule, plan your case, keep the right documents.</h1>
-          <p>Procurement, grants, payment files, year-end and field operations, in one guided place.</p></div>
-          ${last ? `<a class="hx-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hx-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
+          <form class="hz-ask" data-hz-ask><span aria-hidden="true">${FG.icon("ask", 20)}</span><input name="q" type="search" placeholder="Ask anything — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask</button></form>
+          <div class="hz-try">${["Tenders Board threshold", "Gift from a bidder", "Offer validity", "Indirect cost cap"].map((q) => `<button type="button" data-hz-q="${esc(q)}">${esc(q)}</button>`).join("")}</div></div>
+          ${last ? `<a class="hz-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hz-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
         </section>
-        ${FG.rolePicker ? FG.rolePicker() : ""}
-        <section class="hx-quick">${quick.map(([t, d, h, ic], i) => `<a href="#/${h}" style="--c:var(--c${(i % 4) + 1})"><i>${FG.icon(ic, 20)}</i><b>${t}</b><span>${d}</span></a>`).join("")}</section>
+        <section class="hz-for"><div class="hz-for-h"><h2>${role ? "Your work" : "Start here"}</h2>${FG.rolePicker ? FG.rolePicker() : ""}</div>
+          <div class="hz-tasks">${FOR.map(([ic, t, d, h], i) => `<a href="#/${h}" style="--c:var(--c${(i % 4) + 1})"><i>${FG.icon(ic, 22)}</i><b>${esc(t)}</b><span>${esc(d)}</span><em>→</em></a>`).join("")}</div></section>
+        <section class="hz-spaces">${HUBS.map(([k, t, sub, d, p, c], i) => `<a style="--c:var(--c${c})" href="#/${p}"><i>${FG.icon(HUB_IC[i], 20)}</i><div><b>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</b><small>${counts[i]}</small></div></a>`).join("")}</section>
         ${FG.routeFinder()}
-        <h2 class="hx-h">All spaces</h2>
-        <section class="hx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="hx-hub" style="--c:var(--c${c})" href="#/${p}"><span class="hx-ico" aria-hidden="true">${ic}</span><div><small>${esc(sub)}</small><h3>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</h3><p>${esc(d)}</p><em>${counts[i]} →</em></div></a>`).join("")}</section>` };
+        <section class="hz-more"><a href="#/ask">${FG.icon("ask", 18)} Ask the guide</a><a href="#/procurement/test">${FG.icon("trophy", 18)} Test yourself</a><a href="#/scenarios">${FG.icon("target", 18)} Scenario practice</a><a href="#/glossary">${FG.icon("abc", 18)} Glossary</a></section>` };
     },
   });
+  const askGo = (q) => { FG.store.set("ask:q", q); FG.go("ask"); };
+  document.addEventListener("submit", (e) => { if (e.target.matches("[data-hz-ask]")) { e.preventDefault(); askGo(e.target.q.value); } });
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-hz-q]"); if (b) askGo(b.dataset.hzQ); });
 
   /* ---------- guided reader: numbered steps, one focused panel, read tracking ---------- */
   // Sentences are typed so obligations stand out: "must / mandatory / never" → rule, "recommended / good practice" → tip.
