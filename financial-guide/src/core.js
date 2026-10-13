@@ -336,4 +336,12 @@
     FG.refresh(false);
   };
 
+  // One accessor for every guide (procurement, grants and any guide registered later through FG.registerGuide).
+  FG.guide = function (base) {
+    const C = FG.C, G = C.guides || {};
+    if (G[base]) return G[base];
+    if (base === "procurement") return { base, title: "Procurement", stages: C.procurementStages || [], phases: C.procurementPhases, reference: C.procurementReference };
+    if (base === "grants") return { base, title: "Grants", stages: C.grantStages || [], phases: C.grantPhases, reference: C.grantReference };
+    return { base, title: base, stages: [], phases: [], reference: null };
+  };
 })();

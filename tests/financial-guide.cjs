@@ -8,6 +8,14 @@ global.window = {};
 require(path.join(root, "financial-guide/src/content.generated.js"));
 const C = global.window.FG_CONTENT;
 
+/* ---- content validator: structure, complete sentences, quiz integrity, €184,000 ---- */
+{
+  const { errors, warnings } = require(path.join(root, "financial-guide/scripts/validate-content.cjs"))();
+  warnings.forEach((w) => console.log("content warning: " + w));
+  assert.deepEqual(errors, [], "content errors:\n" + errors.join("\n"));
+  global.window = { FG_CONTENT: C };
+}
+
 /* ---- rules carried over from v14 ---- */
 assert.equal(E.procurement({ amount: 2000 }).route, "Direct Award");
 assert.equal(E.procurement({ amount: 2001 }).route, "Competitive Bidding");

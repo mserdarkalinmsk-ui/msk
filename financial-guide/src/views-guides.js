@@ -207,7 +207,7 @@
 
   /* ---------- stage brief: rule, steps, key figures and every must-not-miss rule ---------- */
   function factInfo(base, stage, v) {
-    const stages = base === "procurement" ? C.procurementStages : C.grantStages, R = base === "procurement" ? C.procurementReference : C.grantReference;
+    const g = FG.guide(base), stages = g.stages, R = g.reference;
     const toks = factTokens(v), has = (t) => toks.some((k) => t.includes(k)) || t.includes(v);
     const st = stages.find((x) => x.name === stage), hits = [];
     (st ? st.sections : []).forEach(([h, b]) => {
@@ -272,8 +272,8 @@
   /* ---------- fact details: everything the guide says about a key figure ---------- */
   const factTokens = (v) => { const t = String(v).match(/€?\d[\d,.]*\s?(%|h|days?|weeks?|months?|years?|points?|working days)?|G\d+(\.\d+)?[A-Z]?|Art\.\s?[\d.]+|Rule No\. \d+|MSA \d+/gi) || []; return t.map((x) => x.trim()).filter((x) => x.length > 1 || /\d/.test(x)); };
   function factSheet(btn) {
-    const base = btn.dataset.base, v = btn.dataset.fact, label = btn.dataset.factLabel, stages = base === "procurement" ? C.procurementStages : C.grantStages;
-    const R = base === "procurement" ? C.procurementReference : C.grantReference;
+    const base = btn.dataset.base, v = btn.dataset.fact, label = btn.dataset.factLabel, stages = FG.guide(base).stages;
+    const R = FG.guide(base).reference;
     const toks = factTokens(v), main = toks[0] || v, hits = [];
     const has = (t) => toks.some((k) => t.includes(k)) || t.includes(v);
     stages.forEach((st) => st.sections.forEach(([h, b]) => {
@@ -319,6 +319,7 @@
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
 
   /* ---------- lifecycle guide (shared by procurement and grants) ---------- */
+  FG.lifecycle = (cfg) => lifecycle(cfg);
   function lifecycle(cfg) {
     const stages = cfg.stages;
     route(cfg.base, { section: cfg.base, crumbs: () => [["Projects", "projects"], [cfg.title, cfg.base]], render: () => ({ html: "", mount() { FG.go(`${cfg.base}/${slug(stages[FG.store.get(cfg.base + ":last", 0)].name)}`); } }) });
@@ -342,11 +343,11 @@
         const phaseOf = (j) => (order.find(([k]) => k === j) || [0, 0])[1], pc = (pi) => `var(--c${(pi % 4) + 1})`;
         const pos = order.findIndex(([j]) => j === i), fill = order.length > 1 ? (pos / (order.length - 1)) * 100 : 0;
         const ph = phaseOf(i);
-        const isP = cfg.base === "procurement", caseR = isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
+        const isP = cfg.base === "procurement", hasCase = isP || cfg.base === "grants", caseR = !hasCase ? null : isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
         const pcase = caseR && FG.store.get(isP ? "pcase" : "gcase", {}), caseUrl = isP ? "#/procurement/my-case" : "#/grants/my-grant";
         const caseBar = caseR
           ? `<a class="case-chip" href="${caseUrl}" title="${esc(pcase.what || "")}"><i></i><span>${isP ? "My case" : "My grant"}: <b>${euro(isP ? caseR.value : caseR.budget)} → ${esc(caseR.route)}</b> · ${caseR.skip.includes(s.name) ? "not needed for your route" : caseR.keyStages.includes(s.name) ? "key stage" : "applies"}</span></a>`
-          : `<a class="case-chip empty" href="${caseUrl}"><i></i><span>${isP ? "Plan my case" : "Plan my grant"} <b>→</b></span></a>`;
+          : !hasCase ? "" : `<a class="case-chip empty" href="${caseUrl}"><i></i><span>${isP ? "Plan my case" : "Plan my grant"} <b>→</b></span></a>`;
         const map = `<section class="rt card" aria-label="${esc(cfg.title)} route" style="--n:${order.length}">
           <div class="rt-head"><div class="rt-title"><b>Stage ${i + 1}<small> of ${stages.length}</small></b>${caseBar}</div>
             <div class="rt-tools">

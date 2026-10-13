@@ -279,12 +279,13 @@
   });
 
   /* ---------- quick reference: contract types, limits, roles, how-to ---------- */
+  FG.referencePage = referencePage; FG.quizPage = quizPage; FG.learnPage = learnPage;
   function referencePage(R, base) {
     if (!R) return `<p class="muted">Reference data not available.</p>`;
     const tabs = [];
     if ((R.contractTypes || []).length) tabs.push(["types", "Contract types", `<div class="ct-grid">${R.contractTypes.map((c, i) => `<article class="ct" style="--c:var(--c${i + 1})"><h3>${esc(c.name)}</h3>
       ${[["Use when", c.useWhen], ["Suppliers", c.suppliers], ["Orders", c.ordering], ["Duration", c.duration], ["Key control", c.control]].filter((x) => x[1]).map(([k, v]) => `<div><small>${k}</small><p>${esc(v)}</p></div>`).join("")}</article>`).join("")}</div>`, R.contractTypes.length]);
-    if ((R.limits || []).length) tabs.push(["limits", "Limits & deadlines", `${base === "procurement" ? FG.vis.approvals() : ""}${FG.vis.clock(base)}<div class="lim">${R.limits.map((l) => `<div class="lim-row"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p><span>${esc(l.who || "")}</span></div>`).join("")}</div>`, R.limits.length]);
+    if ((R.limits || []).length) tabs.push(["limits", "Limits & deadlines", `${base === "procurement" ? FG.vis.approvals() : ""}${base === "procurement" || base === "grants" ? FG.vis.clock(base) : ""}<div class="lim">${R.limits.map((l) => `<div class="lim-row"><b>${esc(l.value)}</b><p>${esc(l.rule)}</p><span>${esc(l.who || "")}</span></div>`).join("")}</div>`, R.limits.length]);
     if ((R.roles || []).length) tabs.push(["roles", "Roles", `<div class="role-grid">${R.roles.map((r) => `<article class="role"><h3>${esc(r.name)}</h3><p>${esc(r.does)}</p>${r.when ? `<small>${esc(r.when)}</small>` : ""}</article>`).join("")}</div>`, R.roles.length]);
     if ((R.howTo || []).length) tabs.push(["howto", "How to", `<div class="howto">${R.howTo.map((h) => `<details class="ht"><summary><b>${esc(h.title)}</b><span>${esc(h.who || "")}${h.source ? ` · ${esc(h.source)}` : ""}</span></summary>
       <ol>${h.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>${(h.templates || []).length ? `<p class="small muted">Templates: ${h.templates.map(esc).join(", ")}</p>` : ""}</details>`).join("")}</div>`, R.howTo.length]);
@@ -305,7 +306,7 @@
   const qState = (base) => ({ i: 0, ans: {}, hints: {}, ...FG.store.get(qKey(base), {}) });
   const isRight = (q, a) => (Array.isArray(q.answer) ? Array.isArray(a) && a.join() === q.answer.join() : a === q.answer);
   function quizPage(base) {
-    const Q = (FG.C.quizzes || {})[base] || [], st = qState(base), stages = base === "procurement" ? FG.C.procurementStages : FG.C.grantStages;
+    const Q = (FG.C.quizzes || {})[base] || [], st = qState(base), stages = FG.guide(base).stages;
     if (!Q.length) return `<p class="muted">Questions are being prepared.</p>`;
     const answered = Object.keys(st.ans).length, score = Q.filter((q, i) => i in st.ans && isRight(q, st.ans[i])).length;
     const bar = `<div class="qz-bar">${Q.map((q, i) => `<button type="button" data-qz-go="${i}" data-base="${base}" class="l${q.level}${i === st.i && !st.done ? " on" : ""}${i in st.ans ? (isRight(q, st.ans[i]) ? " ok" : " ko") : ""}" title="Question ${i + 1} · level ${q.level}"></button>`).join("")}</div>
@@ -352,5 +353,5 @@
     render: () => ({ html: `${ui.head("Procurement · step 3", "Test yourself", "")}${quizPage("procurement")}` }) });
   route("grants/test", { section: "grants", crumbs: () => [["Projects", "projects"], ["Grants", "grants"], ["Test yourself", "grants/test"]],
     render: () => ({ html: `${ui.head("Grants · step 3", "Test yourself", "")}${quizPage("grants")}` }) });
-  const quizProgress = (base) => { const Q = (FG.C.quizzes || {})[base] || [], st = qState(base); const n = Object.keys(st.ans).length; return [n, Q.length, Q.filter((q, i) => i in st.ans && isRight(q, st.ans[i])).length]; };
+  const quizProgress = FG.quizProgress = (base) => { const Q = (FG.C.quizzes || {})[base] || [], st = qState(base); const n = Object.keys(st.ans).length; return [n, Q.length, Q.filter((q, i) => i in st.ans && isRight(q, st.ans[i])).length]; };
 })();
