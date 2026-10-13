@@ -12,6 +12,11 @@ describe('service provider kinds', () => {
     expect(kindOf('Danışmanlık hizmeti', '5.7.1')).toBe('consult');
     expect(kindOf('Kitap basımı', '5.1')).toBe('publication');
   });
+  it('knows interpretation', () => {
+    expect(kindOf('interpretation service and technical equipment for the Launching Conf', '5.7')).toBe('interp');
+    expect(kindOf('Interpretation_Project kick-off meeting', '5.5.2')).toBe('interp');
+    expect(kindOf('Services', '5.5.2')).toBe('interp');
+  });
   it('falls back to the line', () => {
     expect(kindOf('PO 1234', '1.2.3')).toBe('intl');
     expect(kindOf('PO 1234', '5.7.3')).toBe('events');

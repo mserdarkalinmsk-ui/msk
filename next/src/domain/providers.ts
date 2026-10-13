@@ -7,9 +7,10 @@ import type { PO } from './workbook';
  * Visibility, Research and Publication by what they buy (the PO wording), not by the budget code they are posted on.
  * The budget code only decides when the wording says nothing. A user's choice for a PO always wins.
  */
-export type Kind = 'events' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
+export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
 export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
   { k: 'events', label: 'Event management', color: '#64748b' },
+  { k: 'interp', label: 'Interpretation', color: '#0891b2' },
   { k: 'consult', label: 'Consultant — national', color: '#3b82c4' },
   { k: 'intl', label: 'Consultant — international', color: '#8e4ec6' },
   { k: 'visibility', label: 'Visibility', color: '#e5484d' },
@@ -25,6 +26,7 @@ export const isKind = (v: unknown): v is Kind => KINDS.some((x) => x.k === v);
 
 // Order matters: a PO naming a consultant is a consultant even when it is "for the research study".
 const RULES: [Kind | 'person', RegExp][] = [
+  ['interp', /interpr|tercüm|sözlü çeviri|simultan|consecutive|ardıl|booth|kabin|headset|kulaklık/i],
   ['person', /consult|\bexpert|danışman|uzman|trainer|eğitmen|facilitator|moderat|rapporteur|\bfees?\b|honorari/i],
   ['research', /research|\bstudy\b|studies|survey|assessment|analys[ie]s|mapping|baseline|needs? analysis|evaluation|araştırma|anket|inceleme|değerlendirme|çalışması/i],
   ['publication', /publicat|printing|\bprint|layout|typesett|editing|\bbook|booklet|manual|handbook|guide(?:line)?s?\b|yayın|basım|baskı|matbaa|kitap|kılavuz|el kitabı|dizgi/i],
@@ -59,6 +61,7 @@ export function kindOf(text: string, code = '', lineText = '', supplier = ''): K
   if (PERDIEM_T.test(text)) return 'perdiem';
   if (GRANTS.test(code) || /\bgrant|sub-?grant|hibe/i.test(text)) return 'grants';
   const own = byText(text); if (own) return own;
+  if (/^5\.5\.2(\.|$)/.test(code)) return 'interp';
   if (/^1\.1\.[23](\.|$)/.test(code)) return 'consult';
   if (/^1\.2\.[23](\.|$)/.test(code)) return 'intl';
   if (/^5\.7(\.|$)/.test(code)) return 'events';
@@ -72,19 +75,28 @@ export interface ProviderPO extends PO { p: Project; kind: Kind | null; auto: Ki
  * corrections (a kind, or 'none' to leave a PO out); with `all`, POs of no kind come too (to correct them).
  */
 export function providerPOs(P: Project[], set: Record<string, string> = {}, all = false): ProviderPO[] {
-  return P.flatMap((p) => {
+  const out = P.flatMap((p) => {
     const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byPeriodThenImport).at(-1)?.snapshot?.workbook;
     if (!wb?.pos?.length) return [];
     const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
     return wb.pos.flatMap((x) => {
       const value = x.sc || x.amount; if (!value) return [];
       const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature} ${PETTY.test(x.supplier) ? x.supplier : ''}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`, x.supplier);
-      const u = set[key], kind = u === 'none' ? null : isKind(u) ? u : auto;
-      return kind || all ? [{ ...x, p, kind, auto, key, value }] : [];
+      return [{ ...x, p, kind: auto, auto, key, value } as ProviderPO];
     });
   });
+  // A provider known for interpretation (any of its POs reads as interpretation) is an interpretation firm: its
+  // other POs (technical equipment, booths under 5.7, a "conference" PO) count as interpretation too.
+  const interp = new Set(out.filter((x) => x.auto === 'interp').map((x) => supKey(x.supplier)));
+  for (const x of out) {
+    if (x.auto && interp.has(supKey(x.supplier)) && ['events', 'consult', 'intl'].includes(x.auto)) x.auto = 'interp';
+    // Choices: a PO's own choice, then the choice made for the whole provider, then the automatic kind.
+    const u = set[x.key] ?? set[`sup|${supKey(x.supplier)}`];
+    x.kind = u === 'none' ? null : isKind(u) ? u : x.auto;
+  }
+  return out.filter((x) => x.kind || all);
 }
-
+export const supKey = (s: string) => s.trim().toLowerCase();
 export interface SupplierRow { supplier: string; kind: Kind; pos: number; spent: number; sc: number; projects: Map<string, number>; max: number }
 /** Suppliers per kind, summed over the projects; `max` is the largest amount in a single project. */
 export function suppliers(L: ProviderPO[]): SupplierRow[] {
