@@ -149,3 +149,17 @@
     }
   };
 })();
+
+/* Separate notes where one stage shows the same value for two different rules. */
+(function () {
+  "use strict";
+  const N = window.FG_CONTENT.factNotes;
+  Object.assign(N.procurement["Authorise & Launch"], {
+    "48 h|Tenders Board consultation period": { what: "Tenders Board electronic consultations give members at least 48 hours (two working days) to approve a request.", why: "Board approval cannot be rushed: build these two working days into your launch schedule.", ref: "4.9.1" },
+    "48 h|before deadline: last Q&A answer": { what: "No answers to bidders' questions are given later than 48 hours before the submission deadline.", why: "Late questions stay unanswered, so publish early and answer promptly to keep all bidders equally informed.", ref: "4.9.3" },
+  });
+  Object.assign(N.grants["Complaints"], {
+    "30 days|calendar days to lodge a complaint after the enquiry reply": { what: "Applicants may lodge a complaint within 30 calendar days of notification of the reply to their enquiry.", why: "An enquiry must come first; a complaint lodged after 30 days is not admissible.", ref: "15.3" },
+    "30 days|for the Review Board to meet after receipt": { what: "The Review Board meets within 30 calendar days of receiving a complaint.", why: "Missing this deadline breaches the Rule, so convene the Board as soon as a complaint arrives.", ref: "15.5" },
+  });
+})();

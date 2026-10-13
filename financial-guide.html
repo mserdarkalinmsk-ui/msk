@@ -8186,6 +8186,20 @@ window.FG_CONTENT = {
   };
 })();
 
+/* Separate notes where one stage shows the same value for two different rules. */
+(function () {
+  "use strict";
+  const N = window.FG_CONTENT.factNotes;
+  Object.assign(N.procurement["Authorise & Launch"], {
+    "48 h|Tenders Board consultation period": { what: "Tenders Board electronic consultations give members at least 48 hours (two working days) to approve a request.", why: "Board approval cannot be rushed: build these two working days into your launch schedule.", ref: "4.9.1" },
+    "48 h|before deadline: last Q&A answer": { what: "No answers to bidders' questions are given later than 48 hours before the submission deadline.", why: "Late questions stay unanswered, so publish early and answer promptly to keep all bidders equally informed.", ref: "4.9.3" },
+  });
+  Object.assign(N.grants["Complaints"], {
+    "30 days|calendar days to lodge a complaint after the enquiry reply": { what: "Applicants may lodge a complaint within 30 calendar days of notification of the reply to their enquiry.", why: "An enquiry must come first; a complaint lodged after 30 days is not admissible.", ref: "15.3" },
+    "30 days|for the Review Board to meet after receipt": { what: "The Review Board meets within 30 calendar days of receiving a complaint.", why: "Missing this deadline breaches the Rule, so convene the Board as soon as a complaint arrives.", ref: "15.5" },
+  });
+})();
+
 </script>
 <script>
 /* content.modules.js */
@@ -8521,10 +8535,10 @@ window.FG_CONTENT = {
       options: ["G8.1A", "G8.1B", "G9.2B", "G17.2B"], answer: 1,
       explain: "G8.1A is for the Ordinary Budget or Voluntary Contributions; G8.1B is the call template for EU funds (Art. 8).",
       hint: "B variants usually concern EU funds.", stage: "Call" },
-    { level: 3, type: "tf", q: "Template G9.2B is used for a direct award of € 15,000 or more, and the Commitments Officer's decision must be duly motivated.",
-      options: ["True", "False"], answer: 0,
-      explain: "G9.2B covers the exceptional direct award under Art. 2.1.3; G9.2A covers direct awards below € 15,000.",
-      hint: "A = below threshold, B = exception above it.", stage: "Procedure" },
+    { level: 3, type: "mc", q: "A grant financed by the EU is awarded. Which agreement template do you use?",
+      options: ["G17.2A", "G17.2B", "G8.1B", "G9.2A"], answer: 1,
+      explain: "G17.2B is the grant agreement for EU funds; G17.2A is the grant agreement for the Ordinary Budget (BO) or Voluntary Contributions (VC). G8.1B is the call template and G9.2A the direct-award template.",
+      hint: "Agreement templates are numbered G17; B variants concern EU funds.", stage: "Agreement" },
     { level: 4, type: "scenario", q: "Which procedure applies?",
       scenario: "A department plans to award four grants of € 6,000 each to local NGOs for a youth campaign. The officer proposes four direct awards with Template G9.2A because each grant is under € 15,000.",
       options: ["Fine: each award is below € 15,000", "A call for proposals is required in principle: the € 24,000 total budget is what counts", "Use G9.2B for each grant", "Split into two procedures of € 12,000"], answer: 1,
@@ -9245,7 +9259,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:30</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:34</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -9878,7 +9892,7 @@ window.FG_CONTENT = {
           <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
-          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && n[v]; return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
       </div>
     </div>`;
   }
