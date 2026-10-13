@@ -110,7 +110,7 @@
       const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
       const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
       const fs = FG.myFilesSummary ? FG.myFilesSummary() : { count: 0, mine: 0 };
-      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
+      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Ask the guide", "Question in, rule out", "ask"], ["Test yourself", "20 questions per module", "procurement/test"]];
       return { html: `
         <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
           <h1>Find the rule, plan your case, keep the right documents.</h1>

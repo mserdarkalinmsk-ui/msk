@@ -7,7 +7,7 @@ SRC = ROOT / 'src'
 # Extra guides: every src/guides/*.js file registers itself through FG.registerGuide (see docs/ADDING_A_GUIDE.md).
 GUIDES = sorted('guides/' + p.name for p in (SRC / 'guides').glob('*.js')) if (SRC / 'guides').exists() else []
 SCRIPTS = ['content.generated.js', 'content.procurement.js', 'content.grants.js', 'content.facts.js', 'content.modules.js', 'quiz.procurement.js', 'quiz.grants.js', 'engines.js', 'core.js', 'visuals.js', 'views-case.js',
-           'views-guides.js', 'guide-kit.js', *GUIDES, 'views-operations.js', 'views-files.js', 'views-engines.js', 'views-analysis.js', 'views-reference.js', 'views-modules.js']
+           'views-guides.js', 'guide-kit.js', *GUIDES, 'views-operations.js', 'views-files.js', 'views-ask.js', 'views-engines.js', 'views-analysis.js', 'views-reference.js', 'views-modules.js']
 
 template = (SRC / 'index.html').read_text()
 import base64

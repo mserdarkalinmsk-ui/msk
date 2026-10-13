@@ -1448,7 +1448,7 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .hx-last b { font-size: 18px; }
 .hx-last span { font-size: 13px; opacity: .85; }
 .hx-last u { text-decoration: none; font-weight: 600; margin-top: 6px; }
-.hx-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+.hx-quick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
 .hx-quick a { display: grid; gap: 2px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); text-decoration: none; color: var(--ink); transition: border-color .15s, transform .15s; }
 .hx-quick a:hover { border-color: #2d6bd8; transform: translateY(-2px); }
 .hx-quick b { font-size: 14.5px; }
@@ -1693,6 +1693,31 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .fl-links { display: grid; gap: 6px; } .fl-links a { color: #2d6bd8; font-size: 13.5px; text-decoration: none; font-weight: 600; }
 .fl-edit summary { cursor: pointer; padding: 14px 16px; font-weight: 600; }
 @media (max-width: 760px) { .fl-phases { grid-template-columns: repeat(5, minmax(56px, 1fr)); overflow-x: auto; } .fl-phases b { font-size: 11px; } .fl-form { grid-template-columns: 1fr; } }
+/* Ask the guide */
+.ak { max-width: 860px; }
+.ak-form { display: flex; gap: 10px; margin: 20px 0 18px; align-items: center; }
+.ak-form .btn { margin: 0; padding: 14px 24px; }
+.ak-form input { flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.ak-form input:focus { outline: 2px solid #2d6bd8; outline-offset: 1px; }
+.ak-k { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ak-best { padding: 20px 22px; border-radius: 16px; border: 1px solid var(--line); border-left: 4px solid #2d6bd8; background: var(--panel); }
+.ak-best p { font-size: 1.08rem; line-height: 1.55; margin: 8px 0 12px; }
+.ak-best a { font-weight: 600; }
+.ak-h { margin: 22px 0 10px; font-size: 1rem; }
+.ak-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ak-card { display: grid; gap: 6px; align-content: start; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; transition: border-color .15s; }
+.ak-card:hover { border-color: #2d6bd8; }
+.ak-card p { margin: 0; line-height: 1.5; font-size: .93rem; }
+.ak-card small { color: var(--muted); }
+.ak mark { background: rgba(255, 196, 0, .35); color: inherit; border-radius: 3px; padding: 0 1px; }
+.ak-empty { padding: 18px; border-radius: 14px; border: 1px dashed var(--line); color: var(--muted); }
+.ak-empty b { display: block; color: var(--ink); margin-bottom: 8px; }
+.ak-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ak-chips button { font: inherit; font-size: .9rem; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.ak-chips button:hover { border-color: #2d6bd8; }
+.ak-note { color: var(--muted); font-size: .85rem; margin-top: 16px; }
+@media (max-width: 900px) { .hx-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ak-list { grid-template-columns: 1fr; } .ak-form { flex-direction: column; } }
 
 </style>
 </head>
@@ -9562,7 +9587,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 07:14</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 07:35</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10293,7 +10318,7 @@ window.FG_CONTENT = {
       const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
       const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
       const fs = FG.myFilesSummary ? FG.myFilesSummary() : { count: 0, mine: 0 };
-      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
+      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Ask the guide", "Question in, rule out", "ask"], ["Test yourself", "20 questions per module", "procurement/test"]];
       return { html: `
         <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
           <h1>Find the rule, plan your case, keep the right documents.</h1>
@@ -11297,6 +11322,97 @@ window.FG_CONTENT = {
   });
   FG.myFilesSummary = () => { const list = files(), role = FG.role(), mine = role ? list.reduce((a, f) => a + fileState(f).mine.length, 0) : 0;
     return { count: list.length, mine }; };
+})();
+
+</script>
+<script>
+/* views-ask.js */
+/* Ask: type a question in plain words and get answer cards drawn only from the guides —
+   stage rules, verified key-figure notes and test explanations — each with its source and a link. */
+(function () {
+  "use strict";
+  const { esc, slug, route } = FG;
+  const C = window.FG_CONTENT;
+  const STOP = new Set("a an the of to in on for and or is are be can do does i we you my our what when who which how why must should may it this that with from by at as if any there need needed".split(" "));
+  const SYN = { tender: "tenders", bid: "offer", bids: "offers", quote: "offer", quotes: "offers", gift: "gifts", supplier: "suppliers", sign: "signs", signature: "signs", pay: "payment", paid: "payment", days: "day", limit: "threshold", ceiling: "threshold", cap: "threshold" };
+  const norm = (w) => { w = SYN[w] || w; return w.length > 4 ? w.replace(/(ies|es|s)$/, "") : w; };
+  const words = (s) => String(s).toLowerCase().replace(/€\s?/g, "€").split(/[^a-z0-9€,.%-]+/).map((w) => w.replace(/[.,]+$/, "")).filter((w) => w && !STOP.has(w)).map(norm);
+
+  let corpus = null;
+  function build() {
+    const out = [];
+    const add = (text, kind, where, path, extra = "") => { if (text && String(text).length > 20) out.push({ text: String(text), kind, where, path, w: new Set(words(`${text} ${extra}`)) }); };
+    [["procurement", "Procurement", C.procurementStages], ["grants", "Grants", C.grantStages]].forEach(([base, label, stages]) => (stages || []).forEach((s) => {
+      const path = `${base}/${slug(s.name)}`, where = `${label} · ${s.name}`, ctx = `${s.name} ${s.title || ""}`;
+      add(s.remember, "Rule", where, path, ctx);
+      ["understand", "do", "check", "warning"].forEach((k) => add(s[k], k === "warning" ? "Warning" : "Guidance", where, path, ctx));
+      (s.sections || []).forEach(([h, sec]) => {
+        add(sec.lead, "Guidance", where, path, `${ctx} ${h}`);
+        (sec.items || []).forEach(([t, d]) => add(`${t}: ${d}`, "Guidance", where, path, `${ctx} ${h}`));
+        (sec.must || []).forEach((m) => add(m, "Rule", where, path, `${ctx} ${h}`));
+        if (sec.tip) add(sec.tip, "Tip", where, path, `${ctx} ${h}`);
+      });
+      [].concat(s.best || []).forEach((b) => add(Array.isArray(b) ? b.join(": ") : b, "Good practice", where, path, ctx));
+      const notes = ((C.factNotes || {})[base] || {})[s.name] || {};
+      Object.entries(notes).forEach(([k, n]) => add(`${n.what}${n.why ? ` ${n.why}` : ""}`, "Key figure", where, path, `${ctx} ${k}`));
+    }));
+    Object.entries(C.quizzes || {}).forEach(([base, qs]) => qs.forEach((q) => add(q.explain, "Explained", `${base === "grants" ? "Grants" : "Procurement"} · ${q.stage || "Test"}`, q.stage ? `${base}/${slug(q.stage)}` : `${base}/test`, q.q)));
+    const seen = new Set();
+    return out.filter((x) => !seen.has(x.text) && seen.add(x.text));
+  }
+
+  function ask(q) {
+    corpus = corpus || build();
+    const terms = [...new Set(words(q))];
+    if (!terms.length) return [];
+    const df = {}; corpus.forEach((d) => terms.forEach((t) => { if (d.w.has(t)) df[t] = (df[t] || 0) + 1; }));
+    const kindW = { Rule: 1.25, "Key figure": 1.2, Warning: 1.1, Explained: 1.05 };
+    return corpus.map((d) => {
+      let s = 0, hit = 0;
+      terms.forEach((t) => { if (d.w.has(t)) { hit++; s += Math.log(1 + corpus.length / df[t]); } });
+      if (!hit) return null;
+      s *= (hit / terms.length) * (kindW[d.kind] || 1) / Math.sqrt(1 + d.text.length / 400);
+      return { d, s, hit };
+    }).filter(Boolean).sort((a, b) => b.s - a.s).slice(0, 8).map((r) => ({ ...r.d, full: r.hit === terms.length }));
+  }
+
+  function mark(text, q) {
+    const ts = [...new Set(words(q))].filter((t) => t.length > 2).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    let h = esc(text);
+    if (ts.length) h = h.replace(new RegExp(`\\b(${ts.join("|")})[a-z]*`, "gi"), "<mark>$&</mark>");
+    return h;
+  }
+
+  const SAMPLES = ["Can I accept a gift from a bidder?", "When is the Tenders Board competent?", "How many suppliers must I invite?", "What is the indirect cost cap for grants?", "How long must offers remain valid?", "When must DLAPIL review a contract?"];
+
+  function results(q) {
+    if (!q.trim()) return `<div class="ak-empty"><b>Try one of these</b><div class="ak-chips">${SAMPLES.map((s) => `<button type="button" data-ak-q="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`;
+    const r = ask(q);
+    if (!r.length) return `<div class="ak-empty"><b>No answer in the guides</b>Use other words, for example a figure (“€184,000”), a body (“Tenders Board”) or a document (“addendum”). Answers come only from the guide content.</div>`;
+    const [top, ...rest] = r;
+    return `<article class="ak-best"><span class="ak-k">Best match · ${esc(top.kind)}</span><p>${mark(top.text, q)}</p><a href="#/${esc(top.path)}">${esc(top.where)} →</a></article>
+      ${rest.length ? `<h3 class="ak-h">Also relevant</h3><div class="ak-list">${rest.map((x) => `<a class="ak-card" href="#/${esc(x.path)}"><span class="ak-k">${esc(x.kind)}</span><p>${mark(x.text, q)}</p><small>${esc(x.where)}</small></a>`).join("")}</div>` : ""}
+      <p class="ak-note">Answers are passages quoted from the guides, ranked by the words in your question. Always open the stage to read the full rule.</p>`;
+  }
+
+  route("ask", {
+    crumbs: () => [["Ask the guide", "ask"]],
+    render: () => {
+      const q = FG.store.get("ask:q", "");
+      return { html: `<section class="ak">
+        <p class="eyebrow">Ask the guide</p><h1>Ask a question, get the rule</h1>
+        <p class="lead">Write your question in plain words. The answer is taken word for word from the Procurement and Grants guides, with a link to the stage it comes from.</p>
+        <form class="ak-form" data-ak-form><input name="q" type="search" value="${esc(q)}" placeholder="e.g. Who approves a contract above €184,000?" aria-label="Your question" autocomplete="off"><button class="btn primary" type="submit">Ask</button></form>
+        <div class="ak-out" aria-live="polite">${results(q)}</div></section>`,
+        mount(root) { const i = root.querySelector(".ak-form input"); if (i) i.focus(); } };
+    }
+  });
+
+  const run = (q) => { FG.store.set("ask:q", q); const o = document.querySelector(".ak-out"); if (o) o.innerHTML = results(q); const i = document.querySelector(".ak-form input"); if (i && i.value !== q) i.value = q; };
+  document.addEventListener("submit", (e) => { if (!e.target.matches("[data-ak-form]")) return; e.preventDefault(); run(e.target.q.value); });
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-ak-q]"); if (b) run(b.dataset.akQ); });
+  FG.ask = ask;
+  if (FG.addIndex) FG.addIndex("Ask the guide", "Question → answer from the guides", "ask", "Tool", "question answer ask faq");
 })();
 
 </script>
