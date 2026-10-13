@@ -476,16 +476,22 @@
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
+          ${(() => { const vis = cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget; return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span><h3>See it in one picture</h3></div>${vis}</div></section>` : ""; })()}
+          ${(() => { const dn = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m])).filter(([, , m]) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); });
+            const items = dn.slice(0, 3).map(([k, h, m]) => `<button type="button" class="pk-av" data-rd-jump="${k}"><i>✕</i><p>${esc(m)}</p><small>${esc(h)} →</small></button>`);
+            if (s.warning) items.push(`<div class="pk-av warn"><i>!</i><p>${esc(s.warning)}</p><small>Common pitfall</small></div>`);
+            return items.length ? `<section class="pk-avoid"><div class="pk-h"><span class="pk-tag red">${FG.icon("shield", 14)} Avoid these mistakes</span></div><div class="pk-avs">${items.join("")}</div></section>` : ""; })()}
           <section class="card pk-read"><div class="card-body"><div class="pk-h"><h3>Read the stage</h3><small>${s.sections.length} topics · click a stop on the route</small></div>${reader(`${cfg.base}:${s.name}`, s.sections, pc(ph))}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}</div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", isP ? "" : guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
-            ["tool", "Interactive tool", widget || "", null],
+            ["tool", "Interactive tool", isP ? "" : widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
             ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
           ])}</div>
           
+          ${(() => { const qs = ((C.quizzes || {}).procurement || []).filter((q) => q.stage === s.name).slice(0, 3); return qs.length ? `<section class="card pk-quiz"><div class="card-body"><div class="pk-h"><span class="pk-tag green">${FG.icon("trophy", 14)} Quick check</span><h3>${qs.length} question${qs.length > 1 ? "s" : ""} on this stage</h3></div>${qs.map((q, n) => `<div class="pk-q" data-ans="${q.answer}"><p><b>${n + 1}.</b> ${esc(q.q)}</p><div class="pk-opts">${q.options.map((o, k) => `<button type="button" data-opt="${k}">${esc(o)}</button>`).join("")}</div><div class="pk-exp" hidden>${esc(q.explain)}</div></div>`).join("")}</div></section>` : ""; })()}
           <div class="pk-end">${i > 0 ? `<a class="pk-prev" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="pk-next primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}"><small>Next stage · ${String(i + 2).padStart(2, "0")}</small><b>${esc(stages[i + 1].title)}</b><span>${esc(stages[i + 1].lead || "")}</span><u>Continue →</u></a>` : `<div class="pk-next done"><small>Route complete</small><b>You have reached the last stage</b><span>Go back to any stage from the route above.</span></div>`}</div></div></div>` : `
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
@@ -498,7 +504,7 @@
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
-            ["tool", "Interactive tool", widget || "", null],
+            ["tool", "Interactive tool", isP ? "" : widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
             ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],

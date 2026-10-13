@@ -80,3 +80,4 @@ document.addEventListener('click',e=>{const p=e.target.closest('[data-pa-page]')
 chapters.forEach(ch=>FG.addIndex(ch.title,`${ch.sub} · original Guide pp. ${ch.pages[0]}–${ch.pages[1]}`,`procurement/learn/${ch.id}`,'Procurement Visual Academy',ch.outcomes.join(' ')));
 FG.addIndex('Full Procurement Guide 69 pages','Original edition 16 September 2026, exact source page text and PDF','procurement/reference-library/all','Official Reference');
 })();
+document.addEventListener('click',e=>{const b=e.target.closest('.pk-q [data-opt]');if(!b)return;const q=b.closest('.pk-q');if(q.classList.contains('done'))return;q.classList.add('done');const ok=+b.dataset.opt===+q.dataset.ans;b.classList.add(ok?'ok':'no');q.querySelector(`[data-opt="${q.dataset.ans}"]`).classList.add('ok');const x=q.querySelector('.pk-exp');x.hidden=false;x.classList.add(ok?'ok':'no');});

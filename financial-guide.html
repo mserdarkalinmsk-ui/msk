@@ -2387,6 +2387,24 @@ body.pk-compact .pk .pa-fs-dot{width:42px;height:42px;font-size:14px}body.pk-com
 .pk-mini a{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 var(--font);color:var(--muted);border:1px solid var(--line-2);text-decoration:none;background:var(--panel)}
 .pk-mini a.seen{color:#b08a3e;border-color:#d9c08a}.pk-mini a.on{background:#14244a;color:#fff;border-color:#14244a}
 .pk-mini a::before,.pk-mini a::after{display:none!important}.pk-mini a{position:static;padding:0;min-width:0}
+.pk-tag{display:inline-flex;align-items:center;gap:6px;font:800 11px/1 var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--navy);background:color-mix(in srgb,var(--navy) 9%,transparent);padding:6px 10px;border-radius:999px;margin-bottom:8px}
+.pk-tag svg{width:14px;height:14px}.pk-tag.red{color:var(--red);background:color-mix(in srgb,var(--red) 10%,transparent)}.pk-tag.green{color:var(--green);background:color-mix(in srgb,var(--green) 10%,transparent)}
+.pk-vis,.pk-quiz{margin-top:16px}.pk-vis .card-body,.pk-quiz .card-body{padding:24px 40px}
+.pk-avoid{margin-top:16px}.pk-avs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.pk-av{all:unset;box-sizing:border-box;cursor:pointer;display:block;position:relative;padding:16px 16px 14px 54px;border-radius:14px;background:color-mix(in srgb,var(--red) 6%,var(--panel));border:1px solid color-mix(in srgb,var(--red) 22%,transparent)}
+.pk-av.warn{cursor:default;background:color-mix(in srgb,var(--amber) 8%,var(--panel));border-color:color-mix(in srgb,var(--amber) 30%,transparent)}
+.pk-av i{position:absolute;left:16px;top:16px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--red);color:#fff;font:800 13px/1 var(--font);font-style:normal}
+.pk-av.warn i{background:var(--amber)}
+.pk-av p{margin:0 0 8px;font-size:14px;line-height:1.5;font-weight:600;color:var(--ink)}.pk-av small{color:var(--red);font-weight:700;font-size:11.5px}.pk-av.warn small{color:var(--amber)}
+.pk-av:hover:not(.warn){border-color:var(--red)}
+.pk-q{padding:14px 0;border-top:1px solid var(--line)}.pk-q p{margin:0 0 10px;font-weight:600;color:var(--ink)}
+.pk-opts{display:flex;flex-wrap:wrap;gap:8px}
+.pk-opts button{border:1px solid var(--line-2);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px 14px;font:600 13.5px var(--font);cursor:pointer}
+.pk-opts button:hover{border-color:var(--navy)}
+.pk-opts button.ok{background:var(--green);border-color:var(--green);color:#fff}.pk-opts button.no{background:var(--red);border-color:var(--red);color:#fff}
+.pk-exp{margin-top:10px;padding:10px 14px;border-radius:10px;font-size:13.5px;line-height:1.5}.pk-exp.ok{background:color-mix(in srgb,var(--green) 10%,transparent)}.pk-exp.no{background:color-mix(in srgb,var(--red) 8%,transparent)}
+@media(max-width:900px){.pk-vis .card-body,.pk-quiz .card-body{padding:20px}}
+.pk .sm .sb-warn{display:none}
 
 </style>
 </head>
@@ -10266,7 +10284,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 22:09</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 22:18</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11507,16 +11525,22 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
+          ${(() => { const vis = cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget; return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span><h3>See it in one picture</h3></div>${vis}</div></section>` : ""; })()}
+          ${(() => { const dn = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m])).filter(([, , m]) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); });
+            const items = dn.slice(0, 3).map(([k, h, m]) => `<button type="button" class="pk-av" data-rd-jump="${k}"><i>✕</i><p>${esc(m)}</p><small>${esc(h)} →</small></button>`);
+            if (s.warning) items.push(`<div class="pk-av warn"><i>!</i><p>${esc(s.warning)}</p><small>Common pitfall</small></div>`);
+            return items.length ? `<section class="pk-avoid"><div class="pk-h"><span class="pk-tag red">${FG.icon("shield", 14)} Avoid these mistakes</span></div><div class="pk-avs">${items.join("")}</div></section>` : ""; })()}
           <section class="card pk-read"><div class="card-body"><div class="pk-h"><h3>Read the stage</h3><small>${s.sections.length} topics · click a stop on the route</small></div>${reader(`${cfg.base}:${s.name}`, s.sections, pc(ph))}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}</div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", isP ? "" : guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
-            ["tool", "Interactive tool", widget || "", null],
+            ["tool", "Interactive tool", isP ? "" : widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
             ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
           ])}</div>
           
+          ${(() => { const qs = ((C.quizzes || {}).procurement || []).filter((q) => q.stage === s.name).slice(0, 3); return qs.length ? `<section class="card pk-quiz"><div class="card-body"><div class="pk-h"><span class="pk-tag green">${FG.icon("trophy", 14)} Quick check</span><h3>${qs.length} question${qs.length > 1 ? "s" : ""} on this stage</h3></div>${qs.map((q, n) => `<div class="pk-q" data-ans="${q.answer}"><p><b>${n + 1}.</b> ${esc(q.q)}</p><div class="pk-opts">${q.options.map((o, k) => `<button type="button" data-opt="${k}">${esc(o)}</button>`).join("")}</div><div class="pk-exp" hidden>${esc(q.explain)}</div></div>`).join("")}</div></section>` : ""; })()}
           <div class="pk-end">${i > 0 ? `<a class="pk-prev" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="pk-next primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}"><small>Next stage · ${String(i + 2).padStart(2, "0")}</small><b>${esc(stages[i + 1].title)}</b><span>${esc(stages[i + 1].lead || "")}</span><u>Continue →</u></a>` : `<div class="pk-next done"><small>Route complete</small><b>You have reached the last stage</b><span>Go back to any stage from the route above.</span></div>`}</div></div></div>` : `
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
@@ -11529,7 +11553,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
-            ["tool", "Interactive tool", widget || "", null],
+            ["tool", "Interactive tool", isP ? "" : widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
             ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
@@ -12989,6 +13013,7 @@ document.addEventListener('click',e=>{const p=e.target.closest('[data-pa-page]')
 chapters.forEach(ch=>FG.addIndex(ch.title,`${ch.sub} · original Guide pp. ${ch.pages[0]}–${ch.pages[1]}`,`procurement/learn/${ch.id}`,'Procurement Visual Academy',ch.outcomes.join(' ')));
 FG.addIndex('Full Procurement Guide 69 pages','Original edition 16 September 2026, exact source page text and PDF','procurement/reference-library/all','Official Reference');
 })();
+document.addEventListener('click',e=>{const b=e.target.closest('.pk-q [data-opt]');if(!b)return;const q=b.closest('.pk-q');if(q.classList.contains('done'))return;q.classList.add('done');const ok=+b.dataset.opt===+q.dataset.ans;b.classList.add(ok?'ok':'no');q.querySelector(`[data-opt="${q.dataset.ans}"]`).classList.add('ok');const x=q.querySelector('.pk-exp');x.hidden=false;x.classList.add(ok?'ok':'no');});
 
 </script>
 <script>FG.start();</script>
