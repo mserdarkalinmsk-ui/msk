@@ -395,3 +395,6 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .sp-warn { margin-left: 10px; font-size: 12px; font-weight: 600; color: #b45309; background: color-mix(in srgb, #f5a524 16%, transparent); padding: 1px 8px; border-radius: 999px; }
 .sp-all label { display: inline-flex; gap: 4px; align-items: center; }
 .sp-all input { font-size: 12px; }
+.sp-sel { font-size: 12.5px; font-weight: 600; padding: 5px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-sm, 8px); background: var(--surface); color: var(--ink); }
+.sp-p.click:hover { text-decoration: underline; cursor: pointer; }
+.sp-split span:not(.muted) { padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
