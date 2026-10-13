@@ -8186,8 +8186,133 @@ window.FG_CONTENT = {
 </script>
 <script>
 /* content.modules.js */
-/* Placeholder: module briefs are being written. */
-(function () { "use strict"; window.FG_CONTENT.moduleBriefs = window.FG_CONTENT.moduleBriefs || {}; })();
+/* Module briefs: rule, three steps and key figures, drawn from the existing module content. */
+(function () {
+  "use strict";
+  const C = window.FG_CONTENT;
+  C.moduleBriefs = {
+    "po-file": {
+      title: "Prepare a PO file",
+      lead: "Build a complete, signature-ready and audit-ready purchase order file for the selected service type.",
+      remember: "No activity starts before the PO is issued and documents are countersigned.",
+      understand: "The PO is the commitment that allows work to start, so it must rest on confirmed budget, a valid supplier route and the correct signatures.",
+      do: "Confirm the budget and supplier route, prepare the contractual package, collect the required signatures and submit the complete file to Finance.",
+      check: "The PO has been issued, the countersigned documents have been returned to the supplier and the issued PO is kept in the file.",
+      figures: [
+        ["2 weeks", "Submission lead time", "Submit the PO request at least two weeks before the scheduled start date to leave enough time for approval."],
+        ["€55k–€184k", "Legal review band", "Procurements in the €55,000 to €184,000 band should follow the applicable legal and procurement review route."]
+      ]
+    },
+    "payment-file": {
+      title: "Prepare a payment file",
+      lead: "Continue the control trail from the PO stage and build a finance-ready payment file.",
+      remember: "Pay only for completed, accepted work that matches the approved contractual basis.",
+      understand: "A payment closes the trail opened at PO stage, so it must match the same contract, supplier and approval route.",
+      do: "Confirm completion, match the invoice to the PO and contract, collect the supporting evidence and submit the signed Payment Request to Finance.",
+      check: "The payment file is complete, discrepancies are resolved and the payment evidence is archived until settlement.",
+      figures: [
+        ["60 days", "Default payment term", "The default payment term is 60 days from receipt of the invoice or execution, whichever is later, unless the contract sets other terms."]
+      ]
+    },
+    "year-end": {
+      title: "Year-end closing",
+      lead: "Check delivery dates, complete payment files, follow up suppliers and finalise POs when the expenditure is fully recorded.",
+      remember: "Only delivery by 31 December 2026 counts as 2026 expenditure.",
+      understand: "Expenditure must be charged to the financial year in which the goods were delivered or the services were rendered.",
+      do: "Review open POs, follow up suppliers for missing invoices and send complete payment files to Finance as soon as they are ready.",
+      check: "All 2026 expenditure is recorded in FIMS and the Fiche PO shows it under Amount billed or Invoices before the PO is finalised.",
+      figures: [
+        ["31/12/2026", "Delivery cut-off", "Only goods delivered and services rendered by 31 December 2026 can be included in 2026 expenditure."]
+      ]
+    },
+    "petty-cash": {
+      title: "Petty cash",
+      lead: "Use petty cash only for small-value operational needs, within the authorised limit, with a clear supporting file.",
+      remember: "Get CCM approval before spending, and stay within the limit.",
+      understand: "Petty cash is a small-value exception, so it must not replace the normal procurement or payment route.",
+      do: "Check the amount against the limit for your budget type, obtain CCM approval and keep a readable receipt or invoice.",
+      check: "The approval and supporting evidence are kept together, and the purpose and coding of the expense are clear.",
+      figures: [
+        ["€100", "Projects limit", "Petty cash expenses on Projects are limited to €100; above that, use the normal purchasing and payment route."],
+        ["€50", "Ordinary Budget limit", "Petty cash expenses on the Ordinary Budget are limited to €50."]
+      ]
+    },
+    "filing": {
+      title: "Filing and audit trail",
+      lead: "Keep project, procurement and financial records easy to find, easy to verify and ready for review.",
+      remember: "Store every approval and document with the transaction it supports.",
+      understand: "A complete and traceable file shows why each action was taken, who approved it and how it was executed.",
+      do: "File decision, approval and execution evidence in the DMS project folder, using clear names, dates and references.",
+      check: "Final PDF evidence and its editable source are kept together and every file can be found and verified.",
+      figures: []
+    },
+    "foma": {
+      title: "FOMA workflows",
+      lead: "Controlled handover workflows and financial guidance for day-to-day field-office operations.",
+      remember: "Each file moves to the next role only after its control is complete.",
+      understand: "Field-office files pass between the requester or Project Team, ACCM, RFO and CCM, and each role has its own control.",
+      do: "Choose the workflow, complete your stage and hand the file over to the next role in the route.",
+      check: "Each stage has been controlled and the file has reached the final validation or the donor route where required.",
+      figures: []
+    },
+    "foma/reports": {
+      title: "Financial reporting",
+      lead: "Prepare and reconcile the project's current financial position and retain a controlled reporting package.",
+      remember: "Reconcile spent and committed figures to the source data before finalising.",
+      understand: "The financial report gives a clear and traceable picture of the project's current financial position for review and validation.",
+      do: "Build the report from the correct data, reconcile it, apply the JP or VC structure and complete the reporting controls.",
+      check: "No unexplained discrepancy, broken formula or unsupported figure remains, and the final report is archived with its evidence.",
+      figures: [
+        ["Quarterly", "Reporting frequency", "Quarterly financial reporting is required."],
+        ["Once a year", "Forecast in the report", "At least once per year, the report should include actual and forecast expenditure for the coming year."]
+      ]
+    },
+    "foma/forecast": {
+      title: "Forecast and budget revision",
+      lead: "Plan future expenditure, revise the budget and identify the applicable route.",
+      remember: "Assess the ±25% threshold per Budget Heading, not the project total.",
+      understand: "The size of each Budget Heading variation and any contractual change decide whether a revision follows the Notification or Addendum route.",
+      do: "Prepare the FORECAST working sheet, collect the Project Team input, then review the variations and decide the route.",
+      check: "Formulas are intact, the Project Team input is consistent and the route decision is documented.",
+      figures: [
+        ["±25%", "Budget Heading threshold", "For a Joint Programme, a variation within ±25% at Budget Heading level follows Notification, and a variation above ±25% follows Addendum."]
+      ]
+    },
+    "foma/addendum": {
+      title: "Addendum workflow",
+      lead: "Prepare a Joint Programme Addendum package from the latest financial report and forecast.",
+      remember: "Changes to total cost, duration or scope always require an Addendum.",
+      understand: "An Addendum amends the donor-approved contractual budget, so it needs a clean, validated and justified package.",
+      do: "Confirm the route, prepare the revised budget, collect the Project Team justification and build the clean donor package.",
+      check: "The Addendum is signed by both parties, the revised budget is uploaded to PMM and all project records are aligned.",
+      figures: [
+        ["±25%", "Addendum trigger", "Where any relevant Budget Heading of a Joint Programme exceeds ±25%, the Addendum route applies."]
+      ]
+    },
+    "vat": {
+      title: "VAT procedures",
+      lead: "Clarify VAT before signature, check it at PO and invoice stage, and keep the VAT trail.",
+      remember: "Clarify VAT before signing the contract or order form.",
+      understand: "VAT is a procurement planning issue as well as a payment issue, and the guide requires it to be clarified before signature.",
+      do: "Establish the supplier's VAT status and place of taxation, check the invoice particulars and pay to the contractual bank account.",
+      check: "The invoice matches the agreed VAT treatment and the VAT correspondence is filed in the DMS with the invoice and payment evidence.",
+      figures: [
+        ["€5,000", "Single card purchase", "A single card purchase is limited to €5,000, and card payments remain exceptions."],
+        ["€30,000", "Monthly card limit", "The Organisation-wide monthly card limit is €30,000; larger amounts should preferably be paid by transfer."],
+        ["60 days", "Default payment term", "The default payment term is 60 days from receipt of the invoice or execution, whichever is later, unless the contract sets other terms."]
+      ]
+    },
+    "events": {
+      title: "Events and GDD",
+      lead: "Manage event finance from the call-off to the payment file, including budget reconciliation and exchange-rate evidence.",
+      remember: "Document every budget change and keep CCM approval for significant ones.",
+      understand: "The final event budget often differs from the initial one, so each change must be explained and supported in the payment file.",
+      do: "Run the call-off, submit the Event Management PO, collect delivery evidence and compare the final budget with the initial one.",
+      check: "The payment file holds the signed final budget, CCM approval e-mails for significant changes and exchange-rate evidence where needed.",
+      figures: []
+    }
+  };
+})();
 
 </script>
 <script>
@@ -9117,7 +9242,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:21</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:22</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10164,8 +10289,7 @@ window.FG_CONTENT = {
       const all = d.signed.length + d.support.length, ticked = Object.keys(FG.ticks(signedId)).length + Object.keys(FG.ticks(supportId)).length;
       const visa = FG.ticks("visa"), required = VISA_ROWS.reduce((a, r) => a + r[2].filter(Boolean).length, 0), verified = Object.keys(visa).length;
       return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
-        ${ui.callout("warn", "Before any activity starts", "No activity or service should begin until the PO is opened, required signatures are collected and the service provider has received the countersigned documents.")}
-        <div class="split mt">
+        <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><div><h3>Document builder</h3><small>Documents to be signed are separated from supporting evidence.</small></div>${ui.tag(`${ticked}/${all} ready`, ticked === all ? "good" : "")}</div><div class="card-body stack">
               ${servicePicker("po", service)}<p class="small muted">${esc(d.sub || "")}</p>

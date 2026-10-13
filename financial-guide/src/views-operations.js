@@ -56,8 +56,7 @@
       const all = d.signed.length + d.support.length, ticked = Object.keys(FG.ticks(signedId)).length + Object.keys(FG.ticks(supportId)).length;
       const visa = FG.ticks("visa"), required = VISA_ROWS.reduce((a, r) => a + r[2].filter(Boolean).length, 0), verified = Object.keys(visa).length;
       return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
-        ${ui.callout("warn", "Before any activity starts", "No activity or service should begin until the PO is opened, required signatures are collected and the service provider has received the countersigned documents.")}
-        <div class="split mt">
+        <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><div><h3>Document builder</h3><small>Documents to be signed are separated from supporting evidence.</small></div>${ui.tag(`${ticked}/${all} ready`, ticked === all ? "good" : "")}</div><div class="card-body stack">
               ${servicePicker("po", service)}<p class="small muted">${esc(d.sub || "")}</p>
