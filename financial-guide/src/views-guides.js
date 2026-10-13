@@ -32,6 +32,7 @@
   const PROJECT_ITEMS = [
     ["⚖", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract execution.", "procurement"],
     ["✦", "Grant", "Grant procedures, calls, evaluation and agreement preparation.", "grants"],
+    ["◆", "DPC financial management", "Delegation, roles, commitments and payments, visa route, VAT, petty cash and audit lessons (DPC manual, 2024).", "dpc-manual"],
     ["↔", "PO & payment files", "Prepare the PO, continue through delivery and complete the payment package.", "po-file"],
     ["◷", "End of year procedure", "Year-end closure, commitments, reporting and clean-up.", "year-end"],
     ["€", "Petty cash", "Petty cash rules, reconciliation and supporting evidence.", "petty-cash"],
@@ -42,7 +43,7 @@
   ];
   // Projects: the financial life cycle as three phases (commit → spend → close) with their modules.
   const PHASES = [
-    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
+    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["DPC financial management", "Who decides, visa route, payments and controls.", "dpc-manual", "MANUAL"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
     ["02", "Spend", "Order, receive and pay", 2, [["PO & payment files", "PO, delivery and payment package.", "po-file", "CORE"], ["Petty cash", "Limits, approval and reconciliation.", "petty-cash"], ["VAT procedures", "Exemptions and supporting documents.", "vat"], ["Events & GDD", "Event budget, logistics and GDD.", "events"]]],
     ["03", "Close", "Year-end and audit trail", 3, [["End of year", "Cut-off, allocation and closing checklist.", "year-end", "DEADLINE"], ["Filing management", "Evidence map, DMS and naming.", "filing"]]],
   ];
@@ -229,7 +230,7 @@
           const m = (lab, a, b, tab) => `<button type="button" class="sb-meter" data-go-tab="${tab}" style="--p:${b ? Math.round((a / b) * 100) : 0}"><i></i><b>${a}<small>/${b}</small></b><span>${lab}</span></button>`;
           return `<div class="sb-meters">${m("topics read", rd, s.sections.length, "guide")}${m("checks done", ck, cl.length, "check")}<button type="button" class="sb-meter rules" data-go-tab="rules"><b>${musts.length}</b><span>key rules</span></button><button type="button" class="sb-meter print" data-print title="Print a one-page summary of this stage"><b>⎙</b><span>summary</span></button></div>`; })()}
       </div>
-      <div class="sb-grid">
+      <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
           <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>
