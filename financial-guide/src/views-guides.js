@@ -64,7 +64,7 @@
         <div class="pj-chev">${PHASES.map(([n, t, sub, c]) => `<div style="--c:var(--c${c})"><small>PHASE ${n}</small><b>${t}</b><span>${sub}</span></div>`).join("")}</div>
         <div class="pj-cols">${PHASES.map(([, , , c, mods]) => `<div class="pj-col${mods.length > 2 ? " two" : ""}">${mods.map((m) => card(m, c)).join("")}</div>`).join("")}
           <div class="pj-flow">CONTRACT SIGNED<i></i>PO RAISED → RECEIVED → INVOICE PAID<i></i>BOOKS CLOSED · FILE ARCHIVED</div></div>
-        <div class="pj-bottom"><section class="pj-box"><h3>KEY THRESHOLDS · PROCUREMENT</h3><div class="pj-rules">${rules.map(([v, t]) => `<a href="#/rules"><b>${euro(v)}</b><span>${t}</span></a>`).join("")}</div></section>
+        ${FG.routeFinder()}<div class="pj-bottom"><section class="pj-box"><h3>KEY THRESHOLDS · PROCUREMENT</h3><div class="pj-rules">${rules.map(([v, t]) => `<a href="#/rules"><b>${euro(v)}</b><span>${t}</span></a>`).join("")}</div></section>
           <section class="pj-box pj-links"><h3>RESOURCES</h3><a href="#/links">Useful links & guidelines →</a><a href="#/roles">Roles & documents →</a><a href="#/glossary">Glossary →</a></section></div>` };
     },
   });
@@ -72,13 +72,13 @@
     crumbs: () => [["Tools", "tools"]],
     render: () => {
       const groups = [
-        ["Templates & documents", [["Roles & documents", "Who does what and which evidence each module expects.", "roles"], ["PO document builder", "Signed and supporting documents by service type.", "po-file"], ["Payment file builder", "Finance-ready payment package.", "payment-file"], ["Filing & DMS structure", "Evidence map and audit documents.", "filing"], ["Useful links & templates", "Manuals, templates and internal systems.", "links"]]],
-        ["Checklists", [["Payment readiness", "Pre-flight check before sending the file.", "engines/payment-readiness"], ["Audit readiness", "Decision trail, approvals and evidence.", "engines/audit-readiness"], ["Year-end checklist", "2026 project-team closing list.", "year-end"], ["Petty cash check", "Limit and pre-spend approval.", "petty-cash"], ["Grant cost eligibility", "Core cost test before commitment.", "grants/costs"]]],
-        ["Calculators", [["Procedure decision tree", "Value, type and funding → procedure.", "rules"], ["What-if simulator", "Budget Heading change → route.", "engines/what-if"], ["Which financial year?", "2026 allocation table.", "year-end"]]],
-        ["Learn", [["Rules at a glance", "Every threshold with its source.", "rules"], ["Glossary", "Terms and abbreviations.", "glossary"], ["Scenario practice", "48 cases with feedback.", "scenarios"]]],
+        ["Templates & documents", [["Roles & documents", "Who does what and which evidence each module expects.", "roles", "people"], ["PO document builder", "Signed and supporting documents by service type.", "po-file", "doc"], ["Payment file builder", "Finance-ready payment package.", "payment-file", "pay"], ["Filing & DMS structure", "Evidence map and audit documents.", "filing", "folder"], ["Useful links & templates", "Manuals, templates and internal systems.", "links", "link"]]],
+        ["Checklists", [["Payment readiness", "Pre-flight check before sending the file.", "engines/payment-readiness", "check"], ["Audit readiness", "Decision trail, approvals and evidence.", "engines/audit-readiness", "shield"], ["Year-end checklist", "2026 project-team closing list.", "year-end", "calendar"], ["Petty cash check", "Limit and pre-spend approval.", "petty-cash", "coins"], ["Grant cost eligibility", "Core cost test before commitment.", "grants/costs", "grant"]]],
+        ["Calculators", [["Procedure decision tree", "Value, type and funding → procedure.", "rules", "tree"], ["What-if simulator", "Budget Heading change → route.", "engines/what-if", "sliders"], ["Which financial year?", "2026 allocation table.", "year-end", "calendar"]]],
+        ["Learn", [["Rules at a glance", "Every threshold with its source.", "rules", "book"], ["Glossary", "Terms and abbreviations.", "glossary", "abc"], ["Scenario practice", "48 cases with feedback.", "scenarios", "target"]]],
       ];
       return { html: `${FG.ui.head("03 / Practical resources", "Tools", "Templates, checklists, calculators and practical resources.")}
-        ${groups.map(([g, items], k) => `<div class="section-title"><h2>${esc(g)}</h2></div><div class="modules">${items.map(([t, d, p]) => `<a class="module" style="--tone:var(--c${k + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${esc(t[0])}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`).join("")}</div>`).join("")}` };
+        ${groups.map(([g, items], k) => `<div class="section-title"><h2>${esc(g)}</h2></div><div class="modules">${items.map(([t, d, p, ic]) => `<a class="module" style="--tone:var(--c${k + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${FG.icon(ic, 20)}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`).join("")}</div>`).join("")}` };
     },
   });
 
@@ -110,7 +110,7 @@
       const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
       const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
       const fs = FG.myFilesSummary ? FG.myFilesSummary() : { count: 0, mine: 0 };
-      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Ask the guide", "Question in, rule out", "ask"], ["Test yourself", "20 questions per module", "procurement/test"]];
+      const quick = [["Procurement guide", "15 stages, need to filing", "procurement", "route"], ["My files", fs.count ? `${fs.count} file${fs.count > 1 ? "s" : ""}${FG.role() ? ` · ${fs.mine} action${fs.mine === 1 ? "" : "s"} for you` : ""}` : "Follow a purchase end to end", "files", "files"], ["Grants guide", "13 stages, call to agreement", "grants", "grant"], ["Ask the guide", "Question in, rule out", "ask", "ask"], ["Test yourself", "20 questions per module", "procurement/test", "trophy"]];
       return { html: `
         <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
           <h1>Find the rule, plan your case, keep the right documents.</h1>
@@ -118,7 +118,8 @@
           ${last ? `<a class="hx-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hx-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
         </section>
         ${FG.rolePicker ? FG.rolePicker() : ""}
-        <section class="hx-quick">${quick.map(([t, d, h]) => `<a href="#/${h}"><b>${t}</b><span>${d}</span></a>`).join("")}</section>
+        <section class="hx-quick">${quick.map(([t, d, h, ic], i) => `<a href="#/${h}" style="--c:var(--c${(i % 4) + 1})"><i>${FG.icon(ic, 20)}</i><b>${t}</b><span>${d}</span></a>`).join("")}</section>
+        ${FG.routeFinder()}
         <h2 class="hx-h">All spaces</h2>
         <section class="hx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="hx-hub" style="--c:var(--c${c})" href="#/${p}"><span class="hx-ico" aria-hidden="true">${ic}</span><div><small>${esc(sub)}</small><h3>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</h3><p>${esc(d)}</p><em>${counts[i]} →</em></div></a>`).join("")}</section>` };
     },

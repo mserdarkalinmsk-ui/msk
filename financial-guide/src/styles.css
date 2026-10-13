@@ -1773,3 +1773,49 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .fsw a.on i { background: rgba(255, 255, 255, .18); border-color: transparent; color: #fff; }
 .fsw-arrow { color: var(--muted); font-weight: 700; }
 @media (max-width: 640px) { .fsw { width: 100%; } .fsw a { flex: 1; padding: 8px 10px; } .fsw small { display: none; } }
+/* Home quick links with icons */
+.hx-quick a { grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; }
+.hx-quick a i { grid-row: span 2; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); transition: transform .18s, background .18s, color .18s; }
+.hx-quick a:hover i { background: var(--c); color: #fff; transform: rotate(-4deg) scale(1.05); }
+.hx-quick a { box-shadow: 0 1px 2px rgba(15, 30, 60, .04), 0 8px 20px -16px rgba(15, 30, 60, .35); }
+/* Tools: line icons instead of letters */
+.module .ico svg { display: block; }
+.module:hover .ico { transform: translateY(-1px) rotate(-3deg); }
+.module .ico { transition: transform .18s; }
+/* Route finder */
+.rf { display: block; grid-column: 1 / -1; position: relative; margin: 28px 0 8px; padding: 26px 28px 24px; border-radius: 22px; border: 1px solid var(--line); overflow: hidden;
+  background: radial-gradient(90% 120% at 100% 0%, rgba(45, 107, 216, .10), transparent 60%), radial-gradient(60% 90% at 0% 100%, rgba(31, 157, 107, .07), transparent 60%), var(--panel);
+  box-shadow: 0 24px 48px -32px rgba(15, 30, 60, .45); }
+.rf-top { display: flex; gap: 24px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.rf-top h2 { margin: 4px 0 4px; font-size: 1.45rem; letter-spacing: -.01em; }
+.rf-top p { margin: 0; color: var(--muted); max-width: 620px; }
+.rf-k { font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #2d6bd8; }
+.rf-amt { text-align: right; } .rf-amt small { display: block; color: var(--muted); font-size: .76rem; }
+.rf-amt b { font-size: 2.2rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--navy, var(--ink)); }
+.rf-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 6px; }
+.rf-presets button { font: inherit; font-size: .85rem; display: grid; text-align: left; padding: 7px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; transition: border-color .15s, transform .15s; }
+.rf-presets button small { color: var(--muted); font-size: .72rem; }
+.rf-presets button:hover { border-color: #2d6bd8; transform: translateY(-1px); }
+.rf-presets button[aria-pressed="true"] { border-color: #2d6bd8; background: color-mix(in srgb, #2d6bd8 9%, var(--panel)); }
+.rf-ladder { position: relative; margin: 26px 0 8px; padding-top: 4px; }
+.rf-bands { position: relative; height: 30px; }
+.rf-bands span { position: absolute; top: 0; height: 30px; display: grid; place-items: center; font-size: .74rem; font-weight: 700; color: var(--muted); border-radius: 8px; background: color-mix(in srgb, var(--c) 8%, transparent); border: 1px dashed color-mix(in srgb, var(--c) 30%, transparent); transition: all .2s; white-space: nowrap; overflow: hidden; }
+.rf-bands span.on { color: #fff; background: var(--c); border-style: solid; box-shadow: 0 8px 18px -10px var(--c); }
+.rf-track { position: relative; height: 10px; margin: 30px 0 34px; border-radius: 10px; background: linear-gradient(90deg, var(--c1), var(--c2) 55%, var(--c3)); opacity: .9; }
+.rf-track > i { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(90deg, transparent var(--x), color-mix(in srgb, var(--panel) 70%, transparent) var(--x)); }
+.rf-track em { position: absolute; top: -6px; width: 2px; height: 22px; background: var(--ink); opacity: .55; transform: translateX(-1px); }
+.rf-track em b { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .72rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.rf-pin { position: absolute; left: var(--x); top: 50%; width: 22px; height: 22px; border-radius: 50%; transform: translate(-50%, -50%); background: #fff; border: 4px solid #2d6bd8; box-shadow: 0 6px 16px -4px rgba(45, 107, 216, .7); transition: left .12s; pointer-events: none; }
+.rf-pin b { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); padding: 3px 8px; border-radius: 8px; background: #1f3f7a; color: #fff; font-size: .74rem; white-space: nowrap; }
+.rf-ladder input[type=range] { position: absolute; left: 0; right: 0; top: 52px; width: 100%; height: 34px; margin: 0; opacity: 0; cursor: grab; }
+.rf-opts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.rf-out { list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-radius: 16px; border: 1px solid var(--line); overflow: hidden; background: var(--panel); counter-reset: rf; }
+.rf-out li { position: relative; padding: 14px 16px 14px 46px; border-right: 1px solid var(--line); counter-increment: rf; }
+.rf-out li:last-child { border-right: 0; }
+.rf-out li::before { content: counter(rf); position: absolute; left: 14px; top: 15px; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: .72rem; font-weight: 800; color: #fff; background: #2d6bd8; }
+.rf-out li.warn { background: color-mix(in srgb, #e0a100 10%, var(--panel)); } .rf-out li.warn::before { background: #c98a00; }
+.rf-out small { display: block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.rf-out b { display: block; margin-top: 3px; font-size: .92rem; line-height: 1.35; }
+.rf-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+@media (max-width: 900px) { .rf-out { grid-template-columns: 1fr 1fr; } .rf-out li:nth-child(2) { border-right: 0; } .rf-out li:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
+@media (max-width: 560px) { .rf { padding: 20px 16px; } .rf-amt { text-align: left; } .rf-out { grid-template-columns: 1fr; } .rf-out li { border-right: 0; border-bottom: 1px solid var(--line); } .rf-bands span { font-size: .62rem; } }
