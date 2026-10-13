@@ -2187,3 +2187,11 @@ body.img-edit .h7-map > span { position: relative; }
 .pa-next { margin: 18px 0 8px; }
 .pa-more summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #1d5bd8; margin: 10px 0 4px; }
 .stage-nav-after { margin-top: 14px; } .stage-nav-after + .pa-backbar { margin-top: 10px; }
+.pa-flow{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px;padding:22px 18px 28px;background:linear-gradient(180deg,#fff,#f6f8fd);border:1px solid #e6ebf3;border-radius:22px;box-shadow:0 10px 30px rgba(20,40,90,.06);overflow-x:auto}
+.pa-fs{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:12px 4px;border-radius:16px;text-decoration:none;color:#5b6475;min-width:78px}
+.pa-fs:not(:last-child)::after{content:"";position:absolute;top:39px;left:calc(50% + 30px);right:calc(-50% + 30px);height:2px;background:#dfe5ee}
+.pa-fs-dot{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:16px;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border:1px solid color-mix(in srgb,var(--c) 35%,#fff);transition:.2s}
+.pa-fs small{font-size:10px;font-weight:700;color:#9aa3b2;margin-top:6px}.pa-fs b{font-size:11px;line-height:1.2;font-weight:700}
+.pa-fs:hover .pa-fs-dot{transform:translateY(-2px);box-shadow:0 8px 18px color-mix(in srgb,var(--c) 30%,transparent)}
+.pa-fs.on{background:#fff;box-shadow:0 10px 26px rgba(37,99,235,.14)}.pa-fs.on .pa-fs-dot{background:var(--c);color:#fff;box-shadow:0 8px 20px color-mix(in srgb,var(--c) 40%,transparent)}.pa-fs.on b{color:var(--c)}
+@media(max-width:900px){.pa-flow{grid-template-columns:repeat(13,96px)}}
