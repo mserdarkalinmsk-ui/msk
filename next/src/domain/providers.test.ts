@@ -2,20 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { kindOf } from './providers';
 
 describe('service provider kinds', () => {
-  it('reads budget and PO wording', () => {
-    expect(kindOf('Local 1.1.3 Local short-term consultant', '1.1.3')).toBe('consult');
-    expect(kindOf('International short-term consultant', '1.2.3')).toBe('intl');
-    expect(kindOf('5.5.2 Interpretation', '5.5.2')).toBe('interp');
-    expect(kindOf('Simultaneous interpretation for the conference', '5.7.2')).toBe('interp');
-    expect(kindOf('Translation of the manual', '5.5.1')).toBe('transl');
-    expect(kindOf('Capacity building activities', '5.7.1')).toBe('events');
-    expect(kindOf('Local project officer', '1.1.1')).toBeNull();
-    expect(kindOf('Short-term', '1.1.3')).toBe('consult');
-    expect(kindOf('Fees', '1.2.3')).toBe('intl');
-    expect(kindOf('Services', '5.5.1')).toBe('transl');
-    expect(kindOf('Services', '5.5.2')).toBe('interp');
+  it('reads the PO wording first', () => {
+    expect(kindOf('Organisation of the national conference, catering and venue', '5.7.2')).toBe('events');
+    expect(kindOf('National consultant for the baseline study', '1.1.3')).toBe('consult');
+    expect(kindOf('International expert fees', '5.7.1')).toBe('intl');
+    expect(kindOf('Printing of the handbook', '5.1')).toBe('publication');
+    expect(kindOf('Roll-up banners and leaflets', '5.8')).toBe('visibility');
+    expect(kindOf('Needs assessment survey', '5.8')).toBe('research');
+    expect(kindOf('Danışmanlık hizmeti', '5.7.1')).toBe('consult');
+    expect(kindOf('Kitap basımı', '5.1')).toBe('publication');
+  });
+  it('falls back to the line', () => {
+    expect(kindOf('PO 1234', '1.2.3')).toBe('intl');
+    expect(kindOf('PO 1234', '5.7.3')).toBe('events');
+    expect(kindOf('Services', '5.2', 'Visibility actions')).toBe('visibility');
+    expect(kindOf('Petty cash advance request - 1/2026 Petty cash multiple BLs', '5.7')).toBeNull();
     expect(kindOf('Office rent', '4.1')).toBeNull();
-    expect(kindOf('Publications incl. translation', '5.1')).toBeNull();
-    expect(kindOf('Expert evaluation', '5.8')).toBeNull();
+    expect(kindOf('Salary of the project officer', '1.1.1')).toBeNull();
   });
 });
