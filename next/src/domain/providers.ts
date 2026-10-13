@@ -15,8 +15,8 @@ export const KINDS: { k: Kind; label: string; color: string; optional?: boolean;
   { k: 'visibility', label: 'Visibility', color: '#e5484d' },
   { k: 'research', label: 'Research', color: '#0e9384' },
   { k: 'publication', label: 'Publication', color: '#c27c0e' },
-  // Groups that can be switched on or off on the screen (grants on by default).
-  { k: 'grants', label: 'Grants (6.1, 6.2)', color: '#30a46c', optional: true, on: true },
+  // Groups that can be added to the totals on request.
+  { k: 'grants', label: 'Grants (6.1, 6.2)', color: '#30a46c' },
   { k: 'perdiem', label: 'Per diem (1.3.1, 1.3.2, DSA)', color: '#a16207', optional: true },
   { k: 'staff', label: 'Staff salaries', color: '#94a3b8', optional: true },
   { k: 'petty', label: 'Petty cash', color: '#78716c', optional: true },
