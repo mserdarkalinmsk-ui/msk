@@ -54,7 +54,8 @@
     { id: "filing", title: "Filing & audit", icon: "folder", c: "--m8", sub: "Keep an audit-ready file" },
   ];
   const MOD = Object.fromEntries(MODULES.map((m) => [m.id, m]));
-  const BRIEF_MODULE = { "po-file": "payment", "payment-file": "payment", "petty-cash": "payment", vat: "payment", "year-end": "yearend", "foma-forecast": "forecast", "foma-reports": "reporting", "foma-addendum": "forecast", foma: "mission", events: "mission", filing: "filing" };
+  const BRIEF_ORDER = ["po-file", "payment-file", "foma-handover", "petty-cash", "vat", "year-end", "foma-forecast", "foma-addendum", "foma-reports", "foma", "foma-claim", "events", "filing", "links"];
+  const BRIEF_MODULE = { "foma-handover": "payment", "foma-claim": "mission", links: "filing", "po-file": "payment", "payment-file": "payment", "petty-cash": "payment", vat: "payment", "year-end": "yearend", "foma-forecast": "forecast", "foma-reports": "reporting", "foma-addendum": "forecast", foma: "mission", events: "mission", filing: "filing" };
   const LESSONS = []; // {key, module, kind, title, short, minutes, href, data, path?, index?}
   const PATHS = {};
   [["procurement", "Procurement", D.paths.procurement], ["grants", "Grants", D.paths.grants]].forEach(([id, title, p]) => {
@@ -65,9 +66,9 @@
       LESSONS.push(l); PATHS[id].lessons.push(l);
     });
   });
-  Object.entries(D.briefs).forEach(([k, b]) => {
+  Object.entries(D.briefs).sort(([a], [b]) => BRIEF_ORDER.indexOf(a.replace(/\//g, "-")) - BRIEF_ORDER.indexOf(b.replace(/\//g, "-"))).forEach(([k, b]) => {
     const id = k.replace(/\//g, "-"), mod = BRIEF_MODULE[id]; if (!mod) return;
-    LESSONS.push({ key: `brief/${id}`, module: mod, kind: "brief", title: b.title, name: b.title, short: b.remember || b.lead, minutes: 3, href: `#/learn/brief/${id}`, data: b });
+    LESSONS.push({ key: `brief/${id}`, module: mod, kind: "brief", title: b.title, name: b.title, short: b.remember || b.lead, minutes: 3 + (b.blocks || []).length * 2, href: `#/learn/brief/${id}`, data: b });
   });
   const LESSON = Object.fromEntries(LESSONS.map((l) => [l.key, l]));
   const lessonsOf = (m) => LESSONS.filter((l) => l.module === m);
@@ -266,6 +267,56 @@
   const countQM = (m) => QUESTIONS.filter((q) => q.module === m).length;
   const notFound = () => `${head("Not found", "This page does not exist", "")}<a class="btn" href="#/">Back home</a>`;
 
+  /* ---------- rich lesson blocks ---------- */
+  const tickKey = (id) => (S.ticks || (S.ticks = {}))[id] || (S.ticks[id] = {});
+  const bh = (b, extra = "") => `<header class="bk-h"><div><h3>${esc(b.title)}</h3>${b.sub ? `<p>${esc(b.sub)}</p>` : ""}</div>${extra}</header>`;
+  const tickRow = (id, k, title, desc) => { const on = !!tickKey(id)[k]; return `<button type="button" class="tick${on ? " on" : ""}" data-tick="${esc(id)}" data-k="${k}" aria-pressed="${on}"><i>${ic("check")}</i><span><b>${esc(title)}</b>${desc ? `<small>${esc(desc)}</small>` : ""}</span></button>`; };
+  const tickMeter = (id, n) => { const d = Object.keys(tickKey(id)).length; return `<span class="bk-count" data-count="${esc(id)}" data-n="${n}"><b>${d}</b>/${n} done</span>`; };
+  const BLOCK = {
+    steps: (b) => `<section class="bk">${bh(b, `<span class="chip">${b.items.length} steps</span>`)}<ol class="tl">${b.items.map((s, i) => `<li class="tl-i${i === 0 ? " open" : ""}"><button type="button" class="tl-b" data-tl><em>${i + 1}</em><span><b>${esc(s.t)}</b>${s.role ? `<small>${esc(s.role)}</small>` : ""}</span>${ic("chev")}</button><div class="tl-d"><p>${rich(s.text || "")}</p>${(s.list || []).length ? `<ul>${s.list.map((x) => `<li>${rich(x)}</li>`).join("")}</ul>` : ""}${(s.docs || []).length ? `<div class="tl-docs">${s.docs.map((d) => `<span>${ic("doc")}${esc(d)}</span>`).join("")}</div>` : ""}${s.note ? `<p class="tl-note">${rich(s.note)}</p>` : ""}</div></li>`).join("")}</ol></section>`,
+    docs: (b) => { const keys = Object.keys(b.services), cur = keys[0];
+      return `<section class="bk" data-docs="${b.id}">${bh(b)}<div class="seg wrapseg" role="tablist">${keys.map((k) => `<button type="button" data-svc="${esc(k)}" aria-pressed="${k === cur}">${esc(k)}</button>`).join("")}</div>${keys.map((k) => { const v = b.services[k], id = `${b.id}:${k}`, n = v.signed.length + v.support.length;
+        return `<div class="docs-p" data-svc-p="${esc(k)}" ${k === cur ? "" : "hidden"}><div class="docs-top">${v.sub ? `<b>${esc(v.sub)}</b>` : `<b>${esc(k)}</b>`}${tickMeter(id, n)}</div><div class="docs-cols"><div><h4>${ic("flag")} To be signed</h4>${v.signed.map(([t, d], i) => tickRow(id, "s" + i, t, d)).join("")}</div><div><h4>${ic("folder")} Supporting documents</h4>${v.support.map(([t, d], i) => tickRow(id, "u" + i, t, d)).join("")}</div></div></div>`; }).join("")}</section>`; },
+    dodont: (b) => `<section class="bk" data-dd>${bh(b, `<span class="chip">${b.rows.length} rules</span>`)}<div class="dd"><div class="dd-h"><span class="ok">${ic("check")} Do</span><span class="no">✕ Avoid</span></div>${b.rows.map(([d, n], i) => `<div class="dd-r"${i >= 6 ? " hidden" : ""}><p>${rich(d)}</p><p>${rich(n)}</p></div>`).join("")}</div>${b.rows.length > 6 ? `<button type="button" class="btn sm dd-more" data-dd-more>Show all ${b.rows.length} rules</button>` : ""}</section>`,
+    flow: (b) => `<section class="bk" data-flow>${bh(b)}<div class="fl-chain">${b.stages.map((s, i) => `<button type="button" data-fl="${i}" aria-pressed="${i === 0}"><em>${String(i + 1).padStart(2, "0")}</em><b>${esc(s.role)}</b><small>${esc(s.label)}</small></button>`).join(`<i class="fl-ar">${ic("arrow")}</i>`)}</div>${b.stages.map((s, i) => `<div class="fl-d" data-fl-p="${i}" ${i ? "hidden" : ""}><div class="fl-who"><span class="chip accent">${esc(s.role)}</span><b>${esc(s.summary)}</b></div><div class="fl-g"><div><small>Action</small><p>${rich(s.action)}</p></div><div><small>Control</small><p>${rich(s.control)}</p></div><div><small>Handover</small><p>${rich(s.handover)}</p></div>${s.evidence ? `<div><small>Evidence</small><p>${rich(s.evidence)}</p></div>` : ""}</div></div>`).join("")}</section>`,
+    phases: (b) => `<section class="bk">${bh(b)}<div class="ph">${b.items.map((p, i) => `<article style="--c:var(--m${[1, 2, 3, 4][i % 4]})"><small>${esc(p.m)}</small><h4>${esc(p.t)}</h4><ul>${p.items.map((x) => `<li>${rich(x)}</li>`).join("")}</ul><dl><div><dt>Owner</dt><dd>${esc(p.owner)}</dd></div><div><dt>Control</dt><dd>${esc(p.control)}</dd></div><div><dt>Evidence</dt><dd>${esc(p.evidence)}</dd></div></dl></article>`).join("")}</div></section>`,
+    checklist: (b) => { const id = b.id || "chk"; return `<section class="bk">${bh(b, tickMeter(id, b.items.length))}<div class="ticks-l">${b.items.map((x, i) => Array.isArray(x) ? tickRow(id, i, x[0], x[1]) : tickRow(id, i, x)).join("")}</div></section>`; },
+    cards: (b) => `<section class="bk">${bh(b)}<div class="cd">${b.items.map((c, i) => `<article style="--c:var(--m${(i % 8) + 1})"><small>${esc(c.k)}</small><h4>${esc(c.title)}</h4><p>${rich(c.text)}</p></article>`).join("")}</div></section>`,
+    keys: (b) => `<section class="bk">${bh(b)}<ol class="keys">${b.items.map((k) => `<li><span>${rich(k)}</span></li>`).join("")}</ol></section>`,
+    triggers: (b) => `<section class="bk" data-trg>${bh(b)}<div class="trg">${b.items.map((t, i) => `<button type="button" data-tr="${i}" aria-pressed="${i === 0}"><small>${esc(t.tag)}</small><b>${esc(t.title)}</b></button>`).join("")}</div>${b.items.map((t, i) => `<div class="trg-d" data-tr-p="${i}" ${i ? "hidden" : ""}><p class="trg-s">${rich(t.summary)}</p><div class="ticks-l">${t.checks.map((c, j) => `<div class="tick static"><i>${j + 1}</i><span><b>${rich(c)}</b></span></div>`).join("")}</div>${t.decision ? `<div class="trg-dec"><small>${esc(t.decision.tag)}</small><b>${esc(t.decision.title)}</b><p>${rich(t.decision.text)}</p></div>` : ""}</div>`).join("")}</section>`,
+    folders: (b) => { const keys = Object.keys(b.groups); return `<section class="bk" data-fold>${bh(b)}<div class="seg wrapseg">${keys.map((k, i) => `<button type="button" data-fo="${i}" aria-pressed="${i === 0}">${esc(k)}</button>`).join("")}</div>${keys.map((k, i) => `<div class="fo" data-fo-p="${i}" ${i ? "hidden" : ""}>${b.groups[k].map(([ph, docs], j) => `<div class="fo-c" style="--c:var(--m${j + 1})"><h4>${ic("folder")}<span>${String(j + 1).padStart(2, "0")} · ${esc(ph)}</span></h4><ul>${docs.map((d) => `<li>${ic("doc")}${esc(d)}</li>`).join("")}</ul></div>`).join("")}</div>`).join("")}</section>`; },
+    links: (b) => { const cats = [...new Set(b.items.map((l) => l.cat))]; return `<section class="bk">${bh(b)}${cats.map((c) => `<h4 class="lk-h">${esc(c)}</h4><div class="lk">${b.items.filter((l) => l.cat === c).map((l) => `<div><b>${esc(l.title)}</b><p>${esc(l.desc)}</p><small>Use it for: ${esc(l.use)}</small></div>`).join("")}</div>`).join("")}</section>`; },
+    roles: (b) => `<section class="bk" data-roles>${bh(b)}<div class="rl">${b.items.map((r, i) => `<button type="button" data-rl="${i}" aria-pressed="${i === 0}"><b>${esc(r.name)}</b><small>${esc(r.tag)}</small></button>`).join("")}</div>${b.items.map((r, i) => `<div class="rl-d" data-rl-p="${i}" ${i ? "hidden" : ""}><p class="trg-s">${rich(r.summary)}</p>${r.when ? `<p class="rl-when"><b>When:</b> ${rich(r.when)}</p>` : ""}<div class="fl-g"><div><small>Does</small><ul>${(r.does || []).map((d) => `<li>${rich(d)}</li>`).join("")}</ul></div><div><small>Stages</small><div class="row">${(r.stages || []).map((s) => { const l = LESSON[`procurement/${slug(s)}`]; return l ? `<a class="chip" href="${l.href}">${esc(s)}</a>` : `<span class="chip">${esc(s)}</span>`; }).join("")}</div></div></div></div>`).join("")}</section>`,
+    costs: (b) => `<section class="bk" data-costs>${bh(b)}<div class="rl">${b.items.map(([k, st], i) => `<button type="button" data-ct="${i}" aria-pressed="${i === 0}" class="${/^Ineligible/.test(st) ? "bad" : /Potentially/.test(st) ? "good" : "mid"}"><b>${esc(k[0].toUpperCase() + k.slice(1))}</b><small>${esc(st)}</small></button>`).join("")}</div>${b.items.map(([k, st, t], i) => `<div class="rl-d" data-ct-p="${i}" ${i ? "hidden" : ""}><span class="chip ${/^Ineligible/.test(st) ? "risk" : /Potentially/.test(st) ? "good" : "warn"}">${esc(st)}</span><p class="trg-s" style="margin-top:10px">${rich(t)}</p></div>`).join("")}</section>`,
+    yearsplit: (b) => `<section class="bk" data-ys>${bh(b)}<div class="ys-in"><label>Service start<input type="date" data-ys-a value="2026-12-01"></label><label>Service end<input type="date" data-ys-b value="2027-01-31"></label><label>Amount (€)<input type="number" data-ys-v value="10000" min="0" step="100"></label></div><div class="ys-bar"><i data-ys-1></i><i data-ys-2></i></div><div class="ys-out" data-ys-o></div></section>`,
+  };
+  const blocksHtml = (list) => (list || []).map((b) => (BLOCK[b.type] ? BLOCK[b.type](b) : "")).join("");
+  function yearSplit(box) {
+    const a = new Date($("[data-ys-a]", box).value), b = new Date($("[data-ys-b]", box).value), v = +$("[data-ys-v]", box).value || 0;
+    if (!(a <= b)) { $("[data-ys-o]", box).innerHTML = `<p class="tl-note">The end date must be after the start date.</p>`; return; }
+    const day = 864e5, total = Math.round((b - a) / day) + 1, cut = new Date(a.getFullYear(), 11, 31);
+    const d1 = b <= cut ? total : Math.max(0, Math.round((cut - a) / day) + 1), d2 = total - d1, y1 = a.getFullYear(), y2 = y1 + 1;
+    $("[data-ys-1]", box).style.width = (d1 / total) * 100 + "%"; $("[data-ys-2]", box).style.width = (d2 / total) * 100 + "%";
+    $("[data-ys-o]", box).innerHTML = `<div><small>${y1}</small><b>${euro((v * d1) / total)}</b><span>${d1} of ${total} days</span></div><div><small>${y2}</small><b>${euro((v * d2) / total)}</b><span>${d2} of ${total} days</span></div><p>${d2 ? `Charge only the ${y1} share to ${y1}; the rest belongs to ${y2}. Keep the service-period evidence in the file.` : `Fully performed in ${y1}: the whole amount is ${y1} expenditure if delivered by 31 December.`}</p>`;
+  }
+  function mountBlocks(root) {
+    $$("[data-ys]", root).forEach(yearSplit);
+    const sw = (e, attr, scope) => { const t = e.target.closest(`[${attr}]`); if (!t) return false; const box = t.closest(scope); $$(`[${attr}]`, box).forEach((x) => x.setAttribute("aria-pressed", x === t)); $$(`[${attr}-p]`, box).forEach((p) => (p.hidden = p.getAttribute(`${attr}-p`) !== t.getAttribute(attr))); return true; };
+    const onClick = (e) => {
+      const more = e.target.closest("[data-dd-more]"); if (more) { $$(".dd-r[hidden]", more.closest("[data-dd]")).forEach((r) => (r.hidden = false)); more.remove(); return; }
+      const tl = e.target.closest("[data-tl]"); if (tl) { tl.parentElement.classList.toggle("open"); return; }
+      const tk = e.target.closest("[data-tick]");
+      if (tk) { const id = tk.dataset.tick, k = tk.dataset.k, m = tickKey(id); if (m[k]) delete m[k]; else m[k] = 1; save(); tk.classList.toggle("on", !!m[k]); tk.setAttribute("aria-pressed", !!m[k]);
+        $$(`[data-count="${CSS.escape(id)}"]`, root).forEach((c) => { const d = Object.keys(m).length; c.querySelector("b").textContent = d; c.classList.toggle("full", d >= +c.dataset.n); }); return; }
+      if (sw(e, "data-svc", "[data-docs]")) { const t = e.target.closest("[data-svc]"), box = t.closest("[data-docs]"); $$("[data-svc-p]", box).forEach((p) => (p.hidden = p.dataset.svcP !== t.dataset.svc)); return; }
+      if (sw(e, "data-fl", "[data-flow]") || sw(e, "data-tr", "[data-trg]") || sw(e, "data-fo", "[data-fold]") || sw(e, "data-rl", "[data-roles]") || sw(e, "data-ct", "[data-costs]")) return;
+    };
+    const onInput = (e) => { const y = e.target.closest("[data-ys]"); if (y) yearSplit(y); };
+    root.addEventListener("click", onClick); root.addEventListener("input", onInput);
+    $$("[data-count]", root).forEach((c) => c.classList.toggle("full", +c.querySelector("b").textContent >= +c.dataset.n));
+    return () => { root.removeEventListener("click", onClick); root.removeEventListener("input", onInput); };
+  }
+
   /* ---------- lesson ---------- */
   function lessonPage(l) {
     S.last = l.key; save();
@@ -296,8 +347,10 @@
         <div class="trio">${[["Why it matters", s.understand, "--m1", "1"], ["What you do", s.do, "--m2", "2"], ["Done when", s.check, "--m3", "3"]].map(([t, x, c, n]) => x ? `<div style="--c:var(${c})"><small><i>${n}</i>${t}</small><p>${rich(x)}</p></div>` : "").join("")}</div>
         ${s.example ? `<div class="example"><span class="tag">EXAMPLE</span><p>${rich(s.example)}</p></div>` : ""}
         ${figures.length ? `<div class="figs" style="--n:${Math.min(3, figures.length)}">${figures.map(([v, lab, n]) => `<div class="fig"><b>${esc(v)}</b><span>${esc(lab)}</span>${n && n.what ? `<details><summary>Why it matters</summary><p>${rich(n.what)}</p>${n.why ? `<p>${rich(n.why)}</p>` : ""}</details>` : ""}</div>`).join("")}</div>` : ""}
+        ${blocksHtml(s.blocks)}
         ${sections ? `<section class="deep"><div class="h2" style="margin-top:0"><div><h2>Go deeper</h2><p>${(s.sections || []).length} topics. Open each one; it is marked as read.</p></div></div>${sections}</section>` : ""}
         ${s.warning || s.best ? `<div class="pitfalls">${s.warning ? `<div class="bad"><h4>Common mistake</h4><p>${rich(s.warning)}</p></div>` : ""}${s.best ? `<div class="ok"><h4>Good practice</h4><p>${rich(s.best)}</p></div>` : ""}</div>` : ""}
+        ${(s.checks || []).length ? blocksHtml([{ type: "checklist", title: "Stage checklist", sub: "Tick each control as you complete it on your file.", id: l.key, items: s.checks }]) : ""}
         <div data-quiz></div>
         <div class="lesson-nav">${prev ? `<a href="${prev.href}"><small>← Previous</small><b>${esc(prev.name)}</b></a>` : "<span></span>"}${next ? `<a class="next" href="${next.href}"><small>Next lesson →</small><b>${esc(next.name)}</b></a>` : `<a class="next" href="#/learn/${l.module}"><small>Path complete →</small><b>Back to ${esc(m.title)}</b></a>`}</div>
         ${foot}</div>`,
@@ -312,7 +365,8 @@
           if (e.target.closest("[data-complete]")) { S.done[l.key] = 1; save(); toast("Lesson completed"); quizBox.innerHTML = completeCard(l); sideMeter(); }
         };
         root.addEventListener("click", onClick);
-        return () => root.removeEventListener("click", onClick);
+        const unBlocks = mountBlocks(root);
+        return () => { root.removeEventListener("click", onClick); unBlocks(); };
       },
     };
   }
@@ -459,6 +513,7 @@
         ["cal", "I don't know which year to charge", "Delivery date decides the financial year.", "#/learn/brief/year-end"],
         ["trend", "My budget has changed", "Forecast first, then the right revision route.", "#/learn/brief/foma-forecast"],
         ["plane", "I need to travel", "Authorisation comes before the mission.", "#/learn/brief/foma"],
+        ["folder", "I can't find a system or template", "Links to every system and template.", "#/learn/brief/links"],
         ["search", "Something else", "Search everything: rules, lessons, terms.", "#search"],
       ].map(([i, t, d, h]) => `<a class="card lift" href="${h}"><span class="ico">${ic(i)}</span><div><b>${t}</b><span>${d}</span></div>${ic("arrow")}</a>`).join("")}</div>${foot}`,
     mount(root) { const f = (e) => { const a = e.target.closest('a[href="#search"]'); if (a) { e.preventDefault(); openPalette(); } }; root.addEventListener("click", f); return () => root.removeEventListener("click", f); },
