@@ -131,6 +131,8 @@
       const out = r.fn(...m.slice(1).map(decodeURIComponent), qs);
       view.innerHTML = `<div class="view">${out.html}</div>`;
       document.title = (out.title ? out.title + " · " : "") + "Financial Guide";
+      pushTrail(out.trail || out.title || "Home");
+      const jb = $("[data-jbar-back]", view); if (jb) fillBack(jb);
       $$("[data-nav]").forEach((a) => a.dataset.nav === r.nav ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
       if (out.mount) cleanup = out.mount(view) || null;
       sideMeter();
@@ -140,7 +142,34 @@
     }
     location.hash = "#/";
   }
+  // Trail of visited pages for this tab: [{h, t}]. Station switches on the route replace, not push.
+  const TRAIL_KEY = "fga:trail";
+  const trail = () => { try { return JSON.parse(sessionStorage.getItem(TRAIL_KEY) || "[]"); } catch (e) { return []; } };
+  const setTrail = (t) => { try { sessionStorage.setItem(TRAIL_KEY, JSON.stringify(t.slice(-30))); } catch (e) { /* ignore */ } };
+  const pagePath = (h) => h.split("?")[0];
+  function pushTrail(t) {
+    const h = location.hash || "#/", tr = trail(), last = tr[tr.length - 1];
+    if (last && pagePath(last.h) === pagePath(h)) { last.h = h; last.t = t; }
+    else if (tr.length > 1 && pagePath(tr[tr.length - 2].h) === pagePath(h)) tr.pop(); // went back
+    else tr.push({ h, t });
+    setTrail(tr);
+  }
+  const backTarget = () => { const tr = trail(); return tr.length > 1 ? tr[tr.length - 2] : null; };
   const go = (h) => { if (location.hash === h) render(); else location.hash = h; };
+
+  /* ---------- journey bar: where am I, how do I get back ---------- */
+  function fillBack(el) {
+    const b = backTarget(), fallback = el.dataset.jbarBack;
+    if (b) el.innerHTML = `<a class="jb-back" href="${esc(b.h)}" title="Back to ${esc(b.t)}">${ic("arrow")}<span>Back to <b>${esc(b.t)}</b></span></a>`;
+    else if (fallback) el.innerHTML = `<a class="jb-back" href="${esc(fallback)}">${ic("arrow")}<span>Back to <b>${esc(el.dataset.jbarLabel || "overview")}</b></span></a>`;
+  }
+  // crumbs: [[label, href?]]; dots: {list, cur, c} for a route; nav: {prev, next} lessons
+  const jbar = ({ crumbs, back, backLabel, dots, nav }) => `<nav class="jbar" aria-label="You are here">
+      <div class="jb-l" data-jbar-back="${esc(back || "")}" data-jbar-label="${esc(backLabel || "")}"></div>
+      <ol class="jb-c">${crumbs.map(([t, h], i) => `<li>${h && i < crumbs.length - 1 ? `<a href="${h}">${esc(t)}</a>` : `<b>${esc(t)}</b>`}</li>`).join("")}</ol>
+      ${dots ? `<div class="jb-dots" style="--c:var(${dots.c})">${dots.list.map((l, i) => `<a href="${l.href}" class="${i === dots.cur ? "on" : S.done[l.key] ? "done" : S.review[l.key] ? "rev" : ""}" title="${i + 1}. ${esc(l.name)}"></a>`).join("")}</div>` : ""}
+      ${nav ? `<div class="jb-n">${nav.prev ? `<a class="icon-btn" href="${nav.prev.href}" title="Previous: ${esc(nav.prev.name)}" aria-label="Previous station">←</a>` : `<span class="icon-btn off">←</span>`}${nav.next ? `<a class="icon-btn" href="${nav.next.href}" title="Next: ${esc(nav.next.name)}" aria-label="Next station">→</a>` : `<span class="icon-btn off">→</span>`}</div>` : ""}
+    </nav>`;
 
   /* ---------- shared bits ---------- */
   const ring = (v, c = "var(--accent)") => `<span class="ring" style="--p:${v};--c:${c}" data-v="${v}%"></span>`;
@@ -288,7 +317,8 @@
       return `<li><button type="button" role="tab" class="stn s-${st}${i === start ? " sel" : ""}" data-st="${i}" aria-selected="${i === start}" title="${esc(l.title)}"><span class="dot">${st === "done" ? ic("check") : st === "review" ? "!" : i + 1}</span><span class="nm" title="${esc(l.name)}">${esc(short(l.name))}</span>${q ? `<span class="q">${q}Q</span>` : ""}${st === "here" ? `<span class="pin">You are here</span>` : ""}</button></li>`; }).join("")}</ol></section>`).join("")}</div>`;
     return {
       title: m.title,
-      html: `<div class="crumbs"><a href="#/learn">Learn</a><span>/</span><span>${esc(m.title)}</span></div>
+      trail: `${m.title} route`,
+      html: `${jbar({ crumbs: [["Learn", "#/learn"], [`${m.title} route`]], back: "#/learn", backLabel: "all routes" })}
         <div class="card night pad mhero" style="margin-top:14px">
           <div><span class="eyebrow">Learning route · ${ls.length} stations · ${ls.reduce((a, l) => a + l.minutes, 0)} min</span><h1>${esc(m.title)}</h1><p>${esc(m.sub)}. ${x.done} of ${x.total} stations completed${x.att ? ` · ${x.att} answers given` : ""}.</p>
           <div class="row" style="margin-top:20px"><a class="btn brass" href="${nl.href}">${x.done ? "Continue" : "Start"}: ${esc(nl.name)} ${ic("arrow")}</a><a class="btn ghost-night" href="#/practice?m=${mod}">Practise ${countQM(mod)} questions</a></div></div>
@@ -382,9 +412,9 @@
     const pre = [prev ? `<a class="chip ${S.done[prev.key] ? "good" : "warn"}" href="${prev.href}">${S.done[prev.key] ? "✓" : "○"} ${esc(prev.name)}</a>` : "", ...terms.map((t) => `<button type="button" class="chip termchip" data-term="${esc(t)}">${esc(t)}</button>`)].filter(Boolean).join("");
     const steps = siblings.map((x, j) => `<a href="${x.href}" class="${j === k ? "on" : S.done[x.key] ? "done" : ""}" title="${esc(x.name)}"></a>`).join("");
     return {
-      title: l.title,
+      title: l.title, trail: `${l.name} (${m.title})`,
       html: `<div class="narrow">
-        <div class="lesson-top"><div class="crumbs"><a href="#/learn">Learn</a><span>/</span><a href="#/learn/${l.module}">${esc(m.title)}</a><span>/</span><span>Lesson ${k + 1} of ${siblings.length}</span></div><div class="steps-mini" aria-hidden="true">${siblings.length <= 16 ? steps : ""}</div></div>
+        ${jbar({ crumbs: [["Learn", "#/learn"], [`${m.title} route`, `#/learn/${l.module}?s=${encodeURIComponent(l.key)}`], [`Station ${k + 1} of ${siblings.length} · ${l.name}`]], back: `#/learn/${l.module}?s=${encodeURIComponent(l.key)}`, backLabel: `${m.title} route`, dots: { list: siblings, cur: k, c: m.c }, nav: { prev, next } })}
         <header class="lesson-head"><span class="eyebrow">${esc(m.title)}${s.source ? ` · Guide ${esc(s.source)}` : ""}</span><h1>${esc(l.title)}</h1><p class="lead">${rich(s.lead)}</p>
           <div class="row"><span class="chip">${ic("clock")} ${l.minutes} min read</span>${qs.length ? `<span class="chip accent">${qs.length} check question${qs.length > 1 ? "s" : ""}</span>` : ""}${S.done[l.key] ? `<span class="chip good">✓ Completed</span>` : ""}${S.review[l.key] ? `<span class="chip warn">To review</span>` : ""}</div></header>
         ${s.remember ? `<div class="night sentence"><small>In one sentence</small><b>${esc(s.remember)}</b></div>` : ""}
@@ -416,7 +446,7 @@
     };
   }
   const completeCard = (l) => S.done[l.key]
-    ? `<div class="card complete"><div><b>✓ Lesson completed</b><p class="muted" style="color:var(--muted)">It counts towards your ${esc(MOD[l.module].title)} mastery.</p></div><a class="btn sm" href="#/practice?m=${l.module}">Practise this module →</a></div>`
+    ? `<div class="card complete"><div><b>✓ Lesson completed</b><p class="muted" style="color:var(--muted)">It counts towards your ${esc(MOD[l.module].title)} mastery.</p></div>${(() => { const sib = lessonsOf(l.module), nx = sib[sib.indexOf(l) + 1]; return nx ? `<a class="btn primary sm" href="${nx.href}">Next station: ${esc(nx.name)} →</a>` : `<a class="btn primary sm" href="#/learn/${l.module}">Back to the route →</a>`; })()}</div>`
     : `<div class="card complete"><div><b>Got it?</b><p style="color:var(--muted)">Mark the lesson complete to update your knowledge map.</p></div><button type="button" class="btn primary" data-complete>${ic("check")} Mark complete</button></div>`;
   route("learn/brief/:id", (id) => LESSON[`brief/${id}`] ? lessonPage(LESSON[`brief/${id}`]) : { html: notFound() }, "learn");
   route("learn/:path/:stage", (p, st) => LESSON[`${p}/${st}`] ? lessonPage(LESSON[`${p}/${st}`]) : { html: notFound() }, "learn");
@@ -448,7 +478,7 @@
     box.addEventListener("click", onClick);
     draw();
   }
-  const summary = (c, n, l) => `<section class="card quiz"><span class="eyebrow">Result</span><h3>${c} of ${n} correct${c === n ? " — well done." : "."}</h3><p style="margin-top:8px;color:var(--ink-2)">${c === n ? "This lesson is marked complete and counts as mastered." : "The lesson is marked complete. Wrong answers were added to your review list on the home page."}</p><div class="row" style="margin-top:16px"><button type="button" class="btn sm" data-retry>Try again</button>${l ? `<a class="btn primary sm" href="#/practice?m=${l.module}">Practise the module →</a>` : ""}</div></section>`;
+  const summary = (c, n, l) => `<section class="card quiz"><span class="eyebrow">Result</span><h3>${c} of ${n} correct${c === n ? " — well done." : "."}</h3><p style="margin-top:8px;color:var(--ink-2)">${c === n ? "This lesson is marked complete and counts as mastered." : "The lesson is marked complete. Wrong answers were added to your review list on the home page."}</p><div class="row" style="margin-top:16px"><button type="button" class="btn sm" data-retry>Try again</button>${l ? (() => { const sib = lessonsOf(l.module), nx = sib[sib.indexOf(l) + 1]; return nx ? `<a class="btn primary sm" href="${nx.href}">Next station: ${esc(nx.name)} →</a>` : `<a class="btn primary sm" href="#/learn/${l.module}">Route complete · back to ${esc(MOD[l.module].title)} →</a>`; })() : ""}</div></section>`;
 
   /* ---------- practice ---------- */
   route("practice", (qs) => {
@@ -460,7 +490,8 @@
     const f = (key, val, label) => `<a href="#/practice?${new URLSearchParams({ m: key === "m" ? val : m, l: key === "l" ? val : lv })}" aria-pressed="${(key === "m" ? m : lv) === val}">${label}</a>`;
     return {
       title: "Practise",
-      html: `${head("Practise", "Real cases, instant feedback", "Rounds of eight questions, weakest topics first. A wrong answer links straight to the lesson that explains it.")}
+      trail: m === "all" ? "Practice" : `Practice · ${MOD[m].title}`,
+      html: `${jbar({ crumbs: [["Practise", "#/practice"], [m === "all" ? "All modules" : MOD[m].title]], back: "#/", backLabel: "home" })}${head("Practise", "Real cases, instant feedback", "Rounds of eight questions, weakest topics first. A wrong answer links straight to the lesson that explains it.")}
         <div class="filters">${f("m", "all", "All modules")}${MODULES.map((x) => f("m", x.id, x.title)).join("")}</div>
         <div class="filters">${f("l", "all", "All levels")}${f("l", "1", "Foundation")}${f("l", "2", "Advanced")}</div>
         <div data-pq>${list.length ? "" : `<div class="card pad empty">No questions for this filter.</div>`}</div>${foot}`,
@@ -474,7 +505,7 @@
     const list = MODULES.flatMap((m) => { const p = QUESTIONS.filter((q) => q.module === m.id); const a = p.filter((q) => q.level === 1); return (a.length >= 2 ? a : p).slice().sort(() => Math.random() - .5).slice(0, 2); });
     return {
       title: "Find my gaps",
-      html: `${head("Find my gaps · about 5 minutes", "Where do you stand?", `${list.length} questions, two per area. You get a knowledge map and a personal plan: what to learn first, and what you can skip.`)}<div data-cq></div>${foot}`,
+      html: `${jbar({ crumbs: [["Find my gaps"]], back: "#/", backLabel: "home" })}${head("Find my gaps · about 5 minutes", "Where do you stand?", `${list.length} questions, two per area. You get a knowledge map and a personal plan: what to learn first, and what you can skip.`)}<div data-cq></div>${foot}`,
       mount(root) {
         quiz($("[data-cq]", root), list, { title: "Gap check", showModule: true, summary: (c, res) => {
           const per = MODULES.map((m) => { const idx = list.map((q, j) => (q.module === m.id ? j : -1)).filter((j) => j >= 0); const ok = idx.filter((j) => res[j]).length; return { m, ok, n: idx.length }; });

@@ -509,3 +509,36 @@ input[type="range"]::-moz-range-thumb { border-color: var(--accent); }
   .line li:nth-child(even) .pin { top: auto; bottom: 4px; }
   .line:first-child li:first-child .pin { left: 0; transform: none; }
 }
+
+/* ==========================================================================
+   Journey bar: always know where you are
+   ========================================================================== */
+.jbar { position: sticky; top: calc(var(--top) + 8px); z-index: 20; display: flex; align-items: center; gap: 14px; margin: -8px 0 18px; padding: 8px 10px; border-radius: 16px; background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); border: 1px solid var(--line); box-shadow: var(--e1); }
+.jb-l:empty { display: none; }
+.jb-back { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px 0 10px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); text-decoration: none; font-size: 13px; white-space: nowrap; max-width: 240px; }
+.jb-back span { overflow: hidden; text-overflow: ellipsis; }
+.jb-back b { font-weight: 700; }
+.jb-back svg { width: 16px; height: 16px; transform: rotate(180deg); flex: none; }
+.jb-back:hover { background: var(--accent); color: #fff; }
+.jb-c { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.jb-c li { display: flex; align-items: center; gap: 6px; white-space: nowrap; min-width: 0; }
+.jb-c li + li::before { content: "›"; color: var(--faint); }
+.jb-c a { color: var(--muted); text-decoration: none; } .jb-c a:hover { color: var(--accent); }
+.jb-c b { color: var(--ink); font-weight: 650; overflow: hidden; text-overflow: ellipsis; }
+.jb-dots { margin-left: auto; display: flex; align-items: center; gap: 4px; flex: none; }
+.jb-dots a { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); transition: transform var(--dur) var(--ease); }
+.jb-dots a:hover { transform: scale(1.4); }
+.jb-dots a.done { background: var(--good); } .jb-dots a.rev { background: var(--warn); }
+.jb-dots a.on { width: 22px; border-radius: 6px; background: var(--c); }
+.jb-n { display: flex; gap: 6px; flex: none; }
+.jb-dots + .jb-n { margin-left: 4px; }
+.jbar > .jb-c:last-child { margin-right: auto; }
+.jb-n .icon-btn { width: 36px; height: 36px; text-decoration: none; font-weight: 700; }
+.jb-n .off { opacity: .35; }
+.lesson-top { display: none; }
+@media (max-width: 900px) {
+  .jbar { top: calc(var(--top) + 6px); flex-wrap: wrap; gap: 8px; }
+  .jb-c { order: 3; width: 100%; font-size: 12px; } .jb-c li:not(:last-child) { display: none; } .jb-c li + li::before { display: none; }
+  .jb-dots { margin-left: auto; } .jb-dots a { width: 7px; height: 7px; } .jb-dots a.on { width: 16px; }
+  .jb-back { max-width: 200px; }
+}
