@@ -469,6 +469,20 @@ mark { background: color-mix(in srgb, var(--brass) 28%, transparent); color: inh
   .steps-mini { display: none; }
 }
 .search span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- modern product type (no editorial serif) ---------- */
+:root { --serif: var(--sans); }
+h1, h2 { font-weight: 700; letter-spacing: -.032em; }
+.head h1, .lesson-head h1 { letter-spacing: -.035em; }
+.hero h1 { font-weight: 750; letter-spacing: -.04em; line-height: 1.02; }
+.hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--brass-2), #f3dcae); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.h2 h2 { font-size: 21px; letter-spacing: -.025em; }
+.stats b, .fig b, .sim-val { font-weight: 700; letter-spacing: -.035em; }
+.sentence b { font-weight: 600; letter-spacing: -.02em; }
+.example p { font-size: 15.5px; }
+.tour-card .q { font-style: normal; font-weight: 600; font-size: 16px; }
+.quiz h3 { font-weight: 650; font-size: 20px; letter-spacing: -.02em; }
+.gl b { font-weight: 700; }
 </style>
 </head>
 <body>
