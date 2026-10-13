@@ -11,8 +11,10 @@ const kl = (k: Kind) => KINDS.find((x) => x.k === k)!;
 const pct = (v: number) => (Number.isFinite(v) ? `${Math.round(v * 100)}%` : '—');
 const sum = (L: ProviderPO[]) => L.reduce((a, x) => a + x.value, 0);
 function readOn(): Set<Kind> {
-  try { const v = JSON.parse(localStorage.getItem('pl-sp-kinds') ?? 'null'); if (Array.isArray(v)) return new Set(v); } catch { /* ignore */ }
-  return new Set(KINDS.filter((k) => !k.optional || k.on).map((k) => k.k));
+  // The main kinds are always counted; only the optional groups (per diem, salaries, petty cash) are remembered.
+  const base = KINDS.filter((k) => !k.optional).map((k) => k.k);
+  try { const v = JSON.parse(localStorage.getItem('pl-sp-kinds') ?? 'null'); if (Array.isArray(v)) return new Set([...base, ...v.filter((k: Kind) => KINDS.some((x) => x.k === k && x.optional))]); } catch { /* ignore */ }
+  return new Set(base);
 }
 function readLimit() { try { return Number(localStorage.getItem('pl-sp-limit')) || 0; } catch { return 0; } }
 const Dot = ({ k }: { k: Kind }) => <i style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: kl(k).color, marginRight: '6px' }} />;
@@ -32,7 +34,9 @@ export function Providers() {
   const [on, setOnS] = useState(readOn);
   const toggle = (k: Kind) => { const n = new Set(on); n.has(k) ? n.delete(k) : n.add(k); setOnS(n); try { localStorage.setItem('pl-sp-kinds', JSON.stringify([...n])); } catch { /* ignore */ } };
   const [year, setYear] = useState('');
-  const [sortBy, setSortBy] = useState<'project' | 'year' | 'amount'>('project');
+  const [sortBy, setSortBy] = useState<'amount' | 'year' | 'name'>('amount');
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const flip = (k: string) => { const n = new Set(open); n.has(k) ? n.delete(k) : n.add(k); setOpen(n); };
   const [limit, setLimitS] = useState(readLimit);
   const setLimit = (v: number) => { setLimitS(v); try { localStorage.setItem('pl-sp-limit', String(v || '')); } catch { /* ignore */ } };
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id.toUpperCase();
@@ -44,11 +48,17 @@ export function Providers() {
   const projects = [...new Set(ALL.map((x) => x.p))].sort((a, b) => sum(ALL.filter((x) => x.p === b)) - sum(ALL.filter((x) => x.p === a)));
   const cell = (p: Project | null, k: Kind | null) => sum(ALL.filter((x) => (!p || x.p === p) && (!k || x.kind === k)));
   const total = sum(ALL);
+  // Kinds with nothing in the selection are left out of the table (fewer, wider columns).
+  const cols = active.filter((k) => cell(null, k.k)).length ? active.filter((k) => cell(null, k.k)) : active;
   const rows = (review ? every.filter((x) => inYear(x) && !(x.kind && !on.has(x.kind))) : ALL).filter((x) => (!kind || x.kind === kind) && (!proj || x.p.id === proj))
-    .sort(sortBy === 'year' ? (a, b) => b.date.localeCompare(a.date) || b.value - a.value : sortBy === 'amount' ? (a, b) => b.value - a.value : (a, b) => a.p.code.localeCompare(b.p.code) || (a.kind ?? '').localeCompare(b.kind ?? '') || b.value - a.value);
+    .sort((a, b) => b.date.localeCompare(a.date) || b.value - a.value);
+  // Service providers: one row each, their POs folded underneath.
+  const groups = [...rows.reduce((m, x) => { const name = x.supplier.trim() || '(no supplier)', k = name.toLowerCase(); const g = m.get(k) ?? { k, name, L: [] as ProviderPO[] }; g.L.push(x); return m.set(k, g); }, new Map<string, { k: string; name: string; L: ProviderPO[] }>()).values()].map((g) => {
+    const per = new Map<string, number>(); for (const x of g.L) per.set(x.p.id, (per.get(x.p.id) ?? 0) + x.value);
+    return { ...g, kinds: [...new Set(g.L.map((x) => x.kind).filter((k): k is Kind => !!k))], projects: [...per], last: g.L.reduce((a, x) => (x.date > a ? x.date : a), ''), spent: g.L.reduce((a, x) => a + x.spent, 0), sc: sum(g.L), max: Math.max(0, ...per.values()) };
+  }).sort(sortBy === 'year' ? (a, b) => b.last.localeCompare(a.last) : sortBy === 'name' ? (a, b) => a.name.localeCompare(b.name) : (a, b) => b.sc - a.sc);
   const byYear = years.map((y) => ({ y, v: active.map((k) => sum(every.filter((x) => x.kind === k.k && x.date.startsWith(y)))) }));
-  const S = suppliers(ALL.filter((x) => (!kind || x.kind === kind) && (!proj || x.p.id === proj)));
-  const over = S.filter((x) => limit && x.max > limit);
+  const over = groups.filter((g) => limit && g.max > limit);
   const C = ceilings(P);
   const hand = every.filter((x) => set[x.key]).length, none = every.filter((x) => inYear(x) && !x.kind).length;
   const off = KINDS.filter((k) => k.optional && !on.has(k.k)).map((k) => ({ ...k, L: every.filter((x) => x.kind === k.k && inYear(x)) }));
@@ -59,76 +69,68 @@ export function Providers() {
     { name: 'By year', money: active.map((_, i) => i + 1).concat(active.length + 1), rows: [['Year', ...active.map((k) => k.label), 'Total'], ...byYear.map((r) => [r.y, ...r.v, r.v.reduce((a, b) => a + b, 0)])] },
     { name: 'Service providers', money: [3, 4, 5], rows: [['Service provider', 'Kind', 'POs', 'Spent', 'Spent + committed', 'Largest in one project', 'Projects'], ...suppliers(ALL).map((x) => [x.supplier, kl(x.kind).label, x.pos, x.spent, x.sc, x.max, [...x.projects.keys()].map((id) => lab(P.find((p) => p.id === id)!)).join(', ')])] },
   ]);
+  const Kinds = ({ L }: { L: Kind[] }) => <>{L.map((k) => <span class="sp-k" style={{ borderColor: kl(k).color, color: kl(k).color }}>{kl(k).label}</span>)}</>;
   return (
     <>
       <section class="hero" aria-label="Service providers">
         <div class="kpi lead"><span class="label">Service providers — total{year ? ` ${year}` : ''}</span><span class="value">{short(total)}</span><span class="ctx">spent + committed · {ALL.length} POs · {projects.length} projects · {suppliers(ALL).length} providers</span></div>
-        {active.filter((k) => cell(null, k.k)).slice(0, 3).map((k) => <div class="kpi"><span class="label">{k.label}</span><span class="value">{short(cell(null, k.k))}</span><span class="ctx">{ALL.filter((x) => x.kind === k.k).length} POs · {total ? Math.round(cell(null, k.k) / total * 100) : 0}% of the total</span></div>)}
+        {active.filter((k) => cell(null, k.k)).sort((a, b) => cell(null, b.k) - cell(null, a.k)).slice(0, 3).map((k) => <div class="kpi"><span class="label">{k.label}</span><span class="value">{short(cell(null, k.k))}</span><span class="ctx">{ALL.filter((x) => x.kind === k.k).length} POs · {total ? Math.round(cell(null, k.k) / total * 100) : 0}% of the total</span></div>)}
       </section>
-      <div class="grid g-12" style={{ marginTop: '16px' }}>
-        <section class="card span-12"><div class="card-b" style={{ display: 'grid', gap: '8px' }}>
-          <div class="cm-chips"><span class="muted">Year</span><button class={`chip${!year ? ' on' : ''}`} onClick={() => setYear('')}>All years</button>{years.map((y) => <button class={`chip${year === y ? ' on' : ''}`} aria-pressed={year === y} onClick={() => setYear(year === y ? '' : y)}>{y}</button>)}</div>
-          <div class="cm-chips"><span class="muted">Included</span>{KINDS.filter((k) => k.optional && on.has(k.k)).map((k) => <button class="chip on" title="Click to leave out" onClick={() => toggle(k.k)}>✓ {k.label} ✕</button>)}</div>
-          <details class="sp-off"><summary><b>Not included</b> — {off.map((k) => `${k.label} ${short(sum(k.L))}`).join(' · ') || 'nothing'}{offTot ? <span class="muted"> · total {full(offTot)}</span> : ''}</summary>
-            {off.map((k) => <div style={{ marginTop: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Dot k={k.k} /><b>{k.label}</b><span class="muted">{k.L.length} POs · {full(sum(k.L))}</span><button class="btn" style={{ marginLeft: 'auto' }} onClick={() => toggle(k.k)}>Include</button></div>
-              {k.L.length > 0 && <div class="table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th>Date</th><th class="r">Spent + committed</th></tr></thead>
-                <tbody>{k.L.slice(0, 200).map((x) => <tr><td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td>{x.supplier}</td><td class="num">{x.date ? date(x.date) : '—'}</td><td class="r num">{full(x.value)}</td></tr>)}</tbody></table></div>}
-            </div>)}
-          </details>
-        </div></section>
-        {years.length > 0 && <section class="card span-12">
-          <div class="card-h"><div><h2>By year</h2><p>Spent + committed by the year the PO was raised · click a year to filter the page</p></div></div>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Year</th>{active.map((k) => <th class="r"><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
-            <tbody>{byYear.map((r) => <tr class={`click${year === r.y ? ' sel' : ''}`} onClick={() => setYear(year === r.y ? '' : r.y)}><td><b>{r.y}</b></td>{r.v.map((v) => <td class="r num">{v ? full(v) : <span class="muted">—</span>}</td>)}<td class="r num"><b>{full(r.v.reduce((a, b) => a + b, 0))}</b></td></tr>)}</tbody>
-            <tfoot><tr><td><b>Total</b></td>{active.map((_, i) => <td class="r num"><b>{full(byYear.reduce((a, r) => a + r.v[i], 0))}</b></td>)}<td class="r num"><b>{full(byYear.reduce((a, r) => a + r.v.reduce((x, y) => x + y, 0), 0))}</b></td></tr></tfoot></table></div>
-        </section>}
+      <div class="sp-bar">
+        <div class="cm-chips"><span class="muted">Year</span><button class={`chip${!year ? ' on' : ''}`} onClick={() => setYear('')}>All</button>{years.map((y) => <button class={`chip${year === y ? ' on' : ''}`} aria-pressed={year === y} onClick={() => setYear(year === y ? '' : y)}>{y}</button>)}</div>
+        <div class="cm-chips"><span class="muted">Add</span>{KINDS.filter((k) => k.optional).map((k) => { const v = sum(every.filter((x) => x.kind === k.k && inYear(x))); return <button class={`chip${on.has(k.k) ? ' on' : ''}`} aria-pressed={on.has(k.k)} onClick={() => toggle(k.k)} title={on.has(k.k) ? 'Counted — click to leave out' : 'Not counted — click to add'}>{on.has(k.k) ? '✓ ' : '+ '}{k.label} <small class="muted">{short(v)}</small></button>; })}</div>
+        <button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button>
+      </div>
+      <div class="grid g-12" style={{ marginTop: '12px', gap: '12px' }}>
         <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>By project and kind{year ? ` — ${year}` : ''}</h2><p>Spent + committed of the purchase orders in the latest report workbook of each project · click a figure to list its POs</p></div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>{(kind || proj) && <button class="btn ghost" onClick={() => { setKind(''); setProj(''); }}>Clear selection</button>}<button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th>{active.map((k) => <th class={`r click${kind === k.k ? ' sel' : ''}`} onClick={() => { setKind(kind === k.k ? '' : k.k); setProj(''); }}><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>By project and kind{year ? ` — ${year}` : ''}</h2><p>Spent + committed · click a figure to see its providers{cols.length < active.length ? ` · kinds with no PO hidden: ${active.filter((k) => !cols.includes(k)).map((k) => k.label).join(', ')}` : ''}</p></div>
+            {(kind || proj) && <button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => { setKind(''); setProj(''); }}>Clear selection</button>}</div>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th>{cols.map((k) => <th class={`r click${kind === k.k ? ' sel' : ''}`} onClick={() => { setKind(kind === k.k ? '' : k.k); setProj(''); }}><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
             <tbody>{projects.map((p) => <tr class={proj === p.id ? 'sel' : ''}>
               <td class="click" onClick={() => { setProj(proj === p.id ? '' : p.id); setKind(''); }}><b>{lab(p)}</b><small class="muted"> {cname(p.country)}</small></td>
-              {active.map((k) => { const v = cell(p, k.k); return <td class={`r num${v ? ' click' : ''}`} style={{ outline: proj === p.id && kind === k.k ? '2px solid var(--accent, #3b82c4)' : undefined }} onClick={() => v && (setProj(p.id), setKind(k.k))}>{v ? full(v) : <span class="muted">—</span>}</td>; })}
+              {cols.map((k) => { const v = cell(p, k.k); return <td class={`r num${v ? ' click' : ''}`} style={{ outline: proj === p.id && kind === k.k ? '2px solid var(--accent, #3b82c4)' : undefined }} onClick={() => v && (setProj(p.id), setKind(k.k))}>{v ? full(v) : <span class="muted">—</span>}</td>; })}
               <td class="r num"><b>{full(cell(p, null))}</b></td></tr>)}</tbody>
-            <tfoot><tr><td><b>Total</b></td>{active.map((k) => <td class="r num"><b>{full(cell(null, k.k))}</b></td>)}<td class="r num"><b>{full(total)}</b></td></tr></tfoot></table>
+            <tfoot><tr><td><b>Total</b></td>{cols.map((k) => <td class="r num"><b>{full(cell(null, k.k))}</b></td>)}<td class="r num"><b>{full(total)}</b></td></tr></tfoot></table>
             {!every.length && <p class="muted">No purchase orders yet — load the report workbooks or system extractions (with the “Purchase Orders” sheet).</p>}</div>
         </section>
         <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Purchase orders{kind ? ` — ${kl(kind).label}` : ''}{proj ? ` — ${lab(P.find((p) => p.id === proj)!)}` : ''}</h2>
-            <p>{rows.length} POs · {full(sum(rows.filter((x) => x.kind)))} · the kind is read from what the PO buys; change it in the list if it is wrong{hand ? ` · ${hand} set by hand` : ''}</p></div>
-            <div class="seg" style={{ marginLeft: 'auto' }}>{(['project', 'year', 'amount'] as const).map((k) => <button aria-pressed={sortBy === k} onClick={() => setSortBy(k)}>{k === 'project' ? 'By project' : k === 'year' ? 'By year' : 'By amount'}</button>)}</div>
-            <label style={{ display: 'flex', gap: '6px', alignItems: 'center' }}><input type="checkbox" checked={review} onChange={(e) => setReview((e.target as HTMLInputElement).checked)} />Also show the other POs ({none}) to add them</label></div>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Service provider</th><th>Date</th><th>Kind</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
-            <tbody>{rows.slice(0, 500).map((x) => <tr style={{ opacity: x.kind ? 1 : 0.6, borderLeft: x.kind ? `4px solid ${kl(x.kind).color}` : undefined }}>
-              <td class="click" onClick={() => go(`project/${x.p.id}`)}><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td>
-              <td><div class="cm-d">{x.description || x.nature}</div>{x.description && x.nature && x.nature !== x.description && <small class="muted">{x.nature}</small>}</td><td><b>{x.supplier || '—'}</b></td>
-              <td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}</td>
-              <td><select value={set[x.key] ?? ''} onChange={(e) => setPoKind(x.key, (e.target as HTMLSelectElement).value)} style={{ fontWeight: set[x.key] ? 700 : 400 }} title={set[x.key] ? 'Set by hand' : 'Read automatically'}>
-                <option value="">{x.auto ? `Auto: ${kl(x.auto).label}` : 'Auto: not a service'}</option>
-                {KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td>
-              <td class="r num">{full(x.spent)}</td><td class="r num"><b>{full(x.value)}</b></td></tr>)}</tbody></table>
-            {rows.length > 500 && <p class="muted">First 500 shown — the Excel file has them all.</p>}</div>
-        </section>
-        <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Service providers</h2><p>Spent + committed per provider and kind, across projects</p></div>
-            <label style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>Limit per provider in one project (€)
-              <input type="number" min="0" step="1000" value={limit || ''} placeholder="e.g. 60000" style={{ width: '120px' }} onChange={(e) => setLimit(Number((e.target as HTMLInputElement).value) || 0)} /></label></div>
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Service providers{kind ? ` — ${kl(kind).label}` : ''}{proj ? ` — ${lab(P.find((p) => p.id === proj)!)}` : ''}</h2>
+            <p>{groups.length} providers · {rows.length} POs · {full(sum(rows.filter((x) => x.kind)))} · click a provider to see its POs{hand ? ` · ${hand} POs set by hand` : ''}</p></div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div class="seg">{(['amount', 'year', 'name'] as const).map((k) => <button aria-pressed={sortBy === k} onClick={() => setSortBy(k)}>{k === 'amount' ? 'By amount' : k === 'year' ? 'Latest first' : 'A–Z'}</button>)}</div>
+              <label class="muted" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>Limit / project €<input type="number" min="0" step="1000" value={limit || ''} placeholder="—" style={{ width: '90px' }} onChange={(e) => setLimit(Number((e.target as HTMLInputElement).value) || 0)} /></label>
+              <label class="muted" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}><input type="checkbox" checked={review} onChange={(e) => setReview((e.target as HTMLInputElement).checked)} />Unsorted POs ({none})</label></div></div>
           <div class="card-b table-scroll">
             {limit > 0 && <p style={{ margin: '0 0 8px', color: over.length ? '#e5484d' : undefined }}>{over.length ? `${over.length} providers above ${full(limit)} in a single project.` : `No provider above ${full(limit)} in a single project.`}</p>}
-            <table class="mini"><thead><tr><th>Service provider</th><th>Kind</th><th class="r">POs</th><th class="r">Spent</th><th class="r">Spent + committed</th><th class="r">Largest in one project</th><th>Projects</th></tr></thead>
-              <tbody>{S.slice(0, 300).map((x) => <tr style={{ background: limit && x.max > limit ? 'color-mix(in srgb, #e5484d 10%, transparent)' : undefined }}>
-                <td><b>{x.supplier}</b></td><td><Dot k={x.kind} />{kl(x.kind).label}</td><td class="r num">{x.pos}</td>
-                <td class="r num">{full(x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td><td class="r num" style={{ color: limit && x.max > limit ? '#e5484d' : undefined }}>{full(x.max)}</td>
-                <td>{[...x.projects].map(([id, v]) => <button class="chip" onClick={() => go(`project/${id}`)} title={full(v)}>{lab(P.find((q) => q.id === id)!)}</button>)}</td></tr>)}</tbody>
-              {S.length > 0 && <tfoot><tr><td><b>Total</b></td><td /><td class="r num">{S.reduce((a, x) => a + x.pos, 0)}</td><td class="r num">{full(S.reduce((a, x) => a + x.spent, 0))}</td><td class="r num"><b>{full(S.reduce((a, x) => a + x.sc, 0))}</b></td><td colSpan={2} /></tr></tfoot>}</table></div>
+            <table class="mini sp-t"><thead><tr><th style={{ width: '18px' }} /><th>Service provider</th><th>Kind</th><th>Projects</th><th class="r">POs</th><th>Last PO</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
+              <tbody>{groups.slice(0, 300).map((g) => { const o = open.has(g.k), hot = limit > 0 && g.max > limit; return <>
+                <tr class="click" onClick={() => flip(g.k)} style={{ background: hot ? 'color-mix(in srgb, #e5484d 9%, transparent)' : undefined }}>
+                  <td class="muted">{o ? '▾' : '▸'}</td><td><b>{g.name}</b></td><td>{g.kinds.length ? <Kinds L={g.kinds} /> : <span class="muted">unsorted</span>}</td>
+                  <td>{g.projects.map(([id, v]) => <span class="sp-p" title={full(v)} style={{ color: limit && v > limit ? '#e5484d' : undefined }}>{lab(P.find((q) => q.id === id)!)}</span>)}</td>
+                  <td class="r num">{g.L.length}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{g.last ? date(g.last) : '—'}</td><td class="r num">{full(g.spent)}</td><td class="r num"><b>{full(g.sc)}</b></td></tr>
+                {o && <tr class="sp-sub"><td /><td colSpan={7}><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Date</th><th>Kind</th><th class="r">Spent + committed</th></tr></thead>
+                  <tbody>{g.L.map((x) => <tr><td class="click" onClick={() => go(`project/${x.p.id}`)}><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}</td>
+                    <td><select value={set[x.key] ?? ''} onChange={(e) => setPoKind(x.key, (e.target as HTMLSelectElement).value)} style={{ fontWeight: set[x.key] ? 700 : 400 }}>
+                      <option value="">{x.auto ? `Auto: ${kl(x.auto).label}` : 'Auto: not sorted'}</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td>
+                    <td class="r num">{full(x.value)}</td></tr>)}</tbody></table></td></tr>}</>; })}</tbody>
+              {groups.length > 0 && <tfoot><tr><td /><td colSpan={3}><b>Total</b></td><td class="r num">{rows.length}</td><td /><td class="r num">{full(groups.reduce((a, g) => a + g.spent, 0))}</td><td class="r num"><b>{full(groups.reduce((a, g) => a + g.sc, 0))}</b></td></tr></tfoot>}</table>
+            {groups.length > 300 && <p class="muted">First 300 providers shown — the Excel file has them all.</p>}</div>
         </section>
-        {C.length > 0 && <section class="card span-12">
-          <div class="card-h"><div><h2>Budget ceilings</h2><p>For comparison: consultant lines (1.1.2–1.1.3, 1.2.2–1.2.3) and conferences (5.7) of the approved budget, with unit rates</p></div></div>
+        {years.length > 0 && <details class="card span-12 sp-fold"><summary><b>By year</b> <span class="muted">{byYear.map((r) => `${r.y} ${short(r.v.reduce((a, b) => a + b, 0))}`).join(' · ')}</span></summary>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Year</th>{active.map((k) => <th class="r"><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
+            <tbody>{byYear.map((r) => <tr class={`click${year === r.y ? ' sel' : ''}`} onClick={() => setYear(year === r.y ? '' : r.y)}><td><b>{r.y}</b></td>{r.v.map((v) => <td class="r num">{v ? full(v) : <span class="muted">—</span>}</td>)}<td class="r num"><b>{full(r.v.reduce((a, b) => a + b, 0))}</b></td></tr>)}</tbody></table></div>
+        </details>}
+        {off.some((k) => k.L.length) && <details class="card span-12 sp-fold"><summary><b>Not counted</b> <span class="muted">{off.filter((k) => k.L.length).map((k) => `${k.label} ${short(sum(k.L))}`).join(' · ')} · total {full(offTot)}</span></summary>
+          <div class="card-b">{off.filter((k) => k.L.length).map((k) => <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Dot k={k.k} /><b>{k.label}</b><span class="muted">{k.L.length} POs · {full(sum(k.L))}</span><button class="btn" style={{ marginLeft: 'auto' }} onClick={() => toggle(k.k)}>+ Add to the totals</button></div>
+            <div class="table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th>Date</th><th class="r">Spent + committed</th></tr></thead>
+              <tbody>{k.L.slice(0, 100).map((x) => <tr><td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td>{x.supplier}</td><td class="num">{x.date ? date(x.date) : '—'}</td><td class="r num">{full(x.value)}</td></tr>)}</tbody></table></div></div>)}</div>
+        </details>}
+        {C.length > 0 && <details class="card span-12 sp-fold"><summary><b>Budget ceilings</b> <span class="muted">consultants (1.1.2–1.1.3, 1.2.2–1.2.3) and conferences (5.7) · {full(C.reduce((a, r) => a + r.approved, 0))}</span></summary>
           <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Line</th><th>Unit</th><th class="r">Rate ceiling</th><th class="r">Budget ceiling</th><th class="r">Spent + committed</th><th class="r">Remaining</th><th class="r">Used</th></tr></thead>
             <tbody>{C.map((r) => <tr><td><b>{lab(r.p)}</b></td><td><span class="num">{r.code}</span> {r.description}</td><td>{r.unit || '—'}</td><td class="r num">{r.rate ? full(r.rate) : '—'}</td><td class="r num"><b>{full(r.approved)}</b></td><td class="r num">{full(r.exposure)}</td>
               <td class="r num" style={{ color: r.remaining < 0 ? '#e5484d' : undefined }}>{full(r.remaining)}</td><td class="r num" style={{ color: r.used > 1 ? '#e5484d' : r.used > 0.9 ? '#c27c0e' : undefined }}>{pct(r.used)}</td></tr>)}</tbody></table></div>
-        </section>}
+        </details>}
       </div>
     </>
   );
