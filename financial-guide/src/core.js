@@ -209,6 +209,9 @@
     const crumbs = [["Home", "home"], ...(hit.route.crumbs ? hit.route.crumbs(hit.params) : [])];
     $("#crumbs").innerHTML = crumbs.map(([t, p], i) => (i === crumbs.length - 1 ? `<b>${esc(t)}</b>` : `<a href="#/${p}">${esc(t)}</a><span aria-hidden="true">/</span>`)).join("");
     document.title = `${crumbs[crumbs.length - 1][0]} · Financial Guide`;
+    { const top = FG.path().split("/")[0]; document.querySelectorAll("[data-top]").forEach((a) => a.classList.toggle("on", a.dataset.top === top || (top === "" && a.dataset.top === "home"))); }
+    // Recent activity for the home page: last five distinct pages opened (stored on this device only).
+    { const p = FG.path(); if (p && p !== "home") { const r = FG.store.get("recent", []).filter((x) => x.p !== p); r.unshift({ p, t: crumbs[crumbs.length - 1][0], s: crumbs.length > 1 ? crumbs[0][0] : "", at: Date.now() }); FG.store.set("recent", r.slice(0, 5)); } }
     const section = hit.route.section || path.split("/")[0];
     $$(".nav a").forEach((a) => { if (a.dataset.section === section) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     FG.bindCommon(root, view.onSeg);
@@ -298,6 +301,7 @@
   <div class="main">
     <header class="top">
       <a class="brand" href="#/home"><span class="brand-mark" aria-hidden="true">FG</span><span><b>Financial Guide</b><small>Council of Europe</small></span></a>
+      <nav class="topnav" aria-label="Main">${[["Home", "home"], ["Projects", "projects"], ["FOMA", "foma"], ["Tools", "tools"]].map(([t, h]) => `<a href="#/${h}" data-top="${h}">${t}</a>`).join("")}</nav>
       <div class="top-actions">
         <button class="search-btn" id="searchBtn" aria-label="Search the guide">${ICON.search}<span>Search the guide…</span><kbd>Ctrl K</kbd></button>
         <button class="icon-btn" id="themeBtn" aria-label="Change theme"></button>

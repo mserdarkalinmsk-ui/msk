@@ -84,6 +84,42 @@
 
 
   /* ---------- home ---------- */
+  /* Home illustrations: inline SVG scenes (offline, theme-safe). */
+  const SCENE_HERO = `<svg viewBox="0 0 640 420" preserveAspectRatio="xMidYMid slice"><defs>
+    <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe1ff"/><stop offset=".55" stop-color="#e9f1ff"/><stop offset="1" stop-color="#fff3df"/></linearGradient>
+    <linearGradient id="hglass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5d8fe0"/><stop offset=".5" stop-color="#a9c8f5"/><stop offset="1" stop-color="#3a64b4"/></linearGradient>
+    <linearGradient id="hwater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fbfe8"/><stop offset="1" stop-color="#e8f0fb"/></linearGradient>
+    <radialGradient id="hsun" cx=".78" cy=".32" r=".35"><stop offset="0" stop-color="#fff6d8"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient></defs>
+    <rect width="640" height="420" fill="url(#hsky)"/><rect width="640" height="420" fill="url(#hsun)"/>
+    <path d="M0 250 L90 190 L170 230 L260 170 L360 225 L450 180 L560 220 L640 190 L640 290 L0 290Z" fill="#b9cbe6" opacity=".7"/>
+    <path d="M0 270 L120 220 L220 255 L330 215 L430 250 L540 225 L640 245 L640 300 L0 300Z" fill="#9db6dc" opacity=".6"/>
+    <g><path d="M300 290 L300 150 Q420 70 560 120 L560 290Z" fill="url(#hglass)"/>
+    ${Array.from({ length: 13 }, (_, i) => `<line x1="${310 + i * 19}" y1="${150 - Math.sin(i / 12 * 3.1) * 40 - i * 1.5}" x2="${310 + i * 19}" y2="290" stroke="#fff" stroke-opacity=".35"/>`).join("")}
+    ${Array.from({ length: 7 }, (_, i) => `<line x1="300" y1="${170 + i * 18}" x2="560" y2="${170 + i * 18}" stroke="#fff" stroke-opacity=".22"/>`).join("")}
+    <path d="M220 290 L220 210 L300 196 L300 290Z" fill="#7ea4dc"/><path d="M560 290 L560 175 L612 190 L612 290Z" fill="#6c93cf"/></g>
+    ${Array.from({ length: 11 }, (_, i) => `<g transform="translate(${80 + i * 20} ${232 + i * 2})"><line x1="0" y1="0" x2="0" y2="${58 - i * 2}" stroke="#7b8aa6" stroke-width="1.6"/><path d="M1 1h12v8H1z" fill="${["#2d6bd8", "#d23b3b", "#f2c230", "#1f9d6b"][i % 4]}"/></g>`).join("")}
+    ${[[40, 300, 70], [190, 292, 52], [612, 296, 64]].map(([x, y, h]) => `<path d="M${x} ${y} Q${x - 14} ${y - h * .6} ${x} ${y - h} Q${x + 14} ${y - h * .6} ${x} ${y}Z" fill="#3f7a52"/><path d="M${x} ${y} Q${x - 9} ${y - h * .5} ${x} ${y - h * .85}" stroke="#2e5d3d" fill="none"/>`).join("")}
+    <rect y="296" width="640" height="124" fill="url(#hwater)"/>
+    <path d="M300 300 L560 300 L560 360 Q430 380 300 350Z" fill="#6f97d8" opacity=".35"/>
+    ${Array.from({ length: 9 }, (_, i) => `<line x1="${40 + i * 70}" y1="${320 + (i % 3) * 22}" x2="${90 + i * 70}" y2="${320 + (i % 3) * 22}" stroke="#fff" stroke-opacity=".6"/>`).join("")}
+    <text x="470" y="62" font-family="Georgia, serif" font-style="italic" font-size="24" fill="#2b4f8f" opacity=".75" transform="rotate(-10 470 62)">Human rights</text>
+    <text x="490" y="92" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#2b4f8f" opacity=".7" transform="rotate(-10 490 92)">democracy</text>
+    <text x="500" y="120" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#2b4f8f" opacity=".7" transform="rotate(-10 500 120)">rule of law</text>
+    <path d="M480 140 Q550 122 630 112" stroke="#f2c230" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
+  const SCENES = {
+    "sc-proj": `<svg viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sp1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4fa8"/><stop offset="1" stop-color="#0e2a5c"/></linearGradient></defs><rect width="400" height="180" fill="url(#sp1)"/>
+      <path d="M0 110 L70 60 L130 95 L210 40 L290 90 L350 55 L400 80 L400 180 L0 180Z" fill="#2e66c4" opacity=".6"/><path d="M0 130 L90 95 L170 120 L260 85 L340 115 L400 100 L400 180 L0 180Z" fill="#245aa9"/>
+      <path d="M230 140 h170" stroke="#cfe0ff" stroke-width="5"/>${[0, 1, 2].map((i) => `<path d="M${240 + i * 52} 140 a26 26 0 0 1 52 0" stroke="#cfe0ff" stroke-width="4" fill="none"/>`).join("")}
+      <rect y="150" width="400" height="30" fill="#0b2350" opacity=".7"/></svg>`,
+    "sc-foma": `<svg viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sf1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f5c57"/><stop offset="1" stop-color="#0a3b3f"/></linearGradient></defs><rect width="400" height="180" fill="url(#sf1)"/>
+      <g transform="rotate(-12 260 90)"><rect x="170" y="30" width="210" height="140" rx="6" fill="#e9f4f2" opacity=".92"/>${[0, 1, 2, 3, 4].map((i) => `<rect x="190" y="${52 + i * 18}" width="${150 - (i % 2) * 40}" height="6" rx="3" fill="#9cc7c1"/>`).join("")}
+      <polyline points="190,150 225,132 255,140 290,112 330,120 360,96" fill="none" stroke="#1f9d6b" stroke-width="3"/></g>
+      <g transform="rotate(28 150 120)"><rect x="60" y="116" width="170" height="9" rx="4" fill="#1b2430"/><path d="M230 116 l18 4.5 -18 4.5z" fill="#c9a24a"/></g></svg>`,
+    "sc-tools": `<svg viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="st1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a3a12"/><stop offset="1" stop-color="#2a1a08"/></linearGradient><radialGradient id="st2" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f6e7c4"/><stop offset=".85" stop-color="#d7b46a"/><stop offset="1" stop-color="#8a6420"/></radialGradient></defs><rect width="400" height="180" fill="url(#st1)"/>
+      <circle cx="310" cy="80" r="70" fill="url(#st2)"/><circle cx="310" cy="80" r="58" fill="none" stroke="#7a5418" stroke-width="2"/>${Array.from({ length: 24 }, (_, i) => `<line x1="310" y1="26" x2="310" y2="${i % 6 ? 32 : 38}" stroke="#5e3f10" stroke-width="1.5" transform="rotate(${i * 15} 310 80)"/>`).join("")}
+      <path d="M310 36 L320 80 L310 124 L300 80Z" fill="#b5382c" transform="rotate(35 310 80)"/><circle cx="310" cy="80" r="5" fill="#3b2a10"/></svg>`,
+  };
+
   const TASKS = [
     ["⚖", "Procure something", "Need, procedure, approvals and documents.", "engines/procurement"],
     ["±", "Revise a forecast or budget", "Assess the change and follow the route.", "engines/budget-revision"],
@@ -120,15 +156,42 @@
         fin: [["pay", "Payment readiness", "Pre-flight before Finance", "engines/payment-readiness"], ["calendar", "Year-end", "Cut-off and allocation", "year-end"], ["coins", "Petty cash", "Limits and reconciliation", "petty-cash"], ["files", "My open actions", `${fs.mine || 0} waiting for you`, "files"]],
       }[role] || [];
       const HUB_IC = ["folder", "people", "check", "tree"];
-      const stats = [[C.procurementStages.length + C.grantStages.length, "guided stages"], [engines, "decision engines"], ["48", "practice cases"], ["100%", "offline, no data leaves"]];
+      const V = (b) => Object.keys(FG.store.get(b + ":visited", {})).length, pN = C.procurementStages.length, gN = C.grantStages.length;
+      const prog = [["Procurement", V("procurement"), pN, "procurement"], ["Grants", V("grants"), gN, "grants"]];
+      const tot = Math.round(((prog[0][1] + prog[1][1]) / (pN + gN)) * 100);
+      const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+      const recent = FG.store.get("recent", []).slice(0, 4);
+      const L = E.LIMITS;
+      const CARDS = [
+        ["projects", "folder", "Projects", "Procurement, grants, PO and payment files, year-end, petty cash and filing.", "c1", "sc-proj", [["9", "Modules"], ["route", "Procurement", "procurement"], ["grant", "Grants", "grants"], ["doc", "PO file", "po-file"]]],
+        ["foma", "people", "FOMA <span>field operations</span>", "PO and payment requests, missions, expense claims, reports and forecast.", "c2", "sc-foma", [["6", "Workflows"], ["doc", "PO request", "foma/po-request"], ["pay", "Payment", "foma/payment-request"], ["calendar", "Forecast", "foma/forecast"]]],
+        ["tools", "check", "Tools", "Documents, calculators, rules, glossary and practice.", "c3", "sc-tools", [["20+", "Tools"], ["sliders", "Calculators", "engines"], ["book", "Rules", "rules"], ["target", "Practice", "scenarios"]]],
+      ];
+      const I = window.FG_IMG || {}, pV = prog[0][1], pPct = Math.round((pV / pN) * 100);
+      const CARDS7 = [
+        ["projects", "folder", "Projects", "", "Procurement, grants, PO and payment files, year-end, petty cash and filing.", "#1f5fd6", "proj", "#0d2a63", ["9", "Modules"], [["doc", "Templates", "tools"], ["book", "Guides", "procurement"], ["target", "Case studies", "scenarios"]]],
+        ["foma", "people", "FOMA", "field operations", "PO and payment requests, missions, expense claims, reports and forecast.", "#14a08a", "foma", "#073b3c", ["6", "Workflows"], [["check", "Checklists", "foma/po-request"], ["doc", "Templates", "foma/payment-request"], ["files", "Examples", "foma/forecast"]]],
+        ["tools", "grid", "Tools", "", "Documents, calculators, rules, glossary and practice.", "#f2a516", "tools", "#3a2408", ["20+", "Tools"], [["sliders", "Calculators", "engines"], ["doc", "Templates", "links"], ["ask", "Guidance", "rules"]]],
+      ];
       return { html: `
-        <section class="hp"><div class="hp-in">
-          <span class="hp-pill"><i></i>Procurement · Grants · Payments · Year-end</span>
-          <h1>Find the rule, plan your case,<br><span>keep the right documents.</span></h1>
-          <form class="hp-ask" data-hz-ask>${FG.icon("ask", 20)}<input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask <kbd>↵</kbd></button></form>
-          ${last ? `<a class="hp-last" href="${esc(last.href)}"><small>Continue</small>${esc(last.title)} <em>→</em></a>` : `<a class="hp-last" href="#/procurement"><small>New here</small>Start with the procurement guide <em>→</em></a>`}
-          <dl class="hp-stats">${stats.map(([v, l]) => `<div><dt>${v}</dt><dd>${l}</dd></div>`).join("")}</dl></div></section>
-        <section class="hp-grid">${HUBS.map(([k, t, sub, d, p, c], i) => `<a style="--c:var(--c${c})" href="#/${p}"><span class="hp-n">0${i + 1}</span><i>${FG.icon(HUB_IC[i], 24)}</i><b>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</b><span>${esc(d)}</span><em>${counts[i]} <u>→</u></em></a>`).join("")}</section>` };
+        <section class="h7"><div class="h7-art" style="background-image:url(${I.hero || ""})" aria-hidden="true"></div>
+          <div class="h7-txt"><span class="h7-eye">Knowledge <i></i> Guidance <i></i> Practical tools</span>
+            <h1>Find the rule, plan your case, <br>keep the <span>right documents.</span></h1>
+            <p>A single workspace for procurement, financial operations <br>and project delivery at the Council of Europe.</p>
+            <form class="h7-ask" data-hz-ask>${FG.icon("search", 22)}<input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask <span aria-hidden="true">→</span></button></form>
+            <div class="h7-chips">${[["Procurement procedure", "procurement/thresholds-and-procedure"], ["Payment request", "payment-file"], ["Thresholds", "rules"], ["Contract templates", "procurement/contract-types"], ["FOMA workflow", "foma"]].map(([t, h]) => `<a href="#/${h}">${t}</a>`).join("")}</div></div></section>
+        <section class="h7-cards">${CARDS7.map(([h, ic, t, t2, d, c, img, bg, big, links]) => `<article class="h7-card" style="--c:${c};--bg:${bg}"><a class="h7-top" href="#/${h}"><span class="h7-photo" style="background-image:url(${I[img] || ""})"></span>
+            <i class="h7-ic">${FG.icon(ic, 28)}</i><h3>${t}${t2 ? `<span>${t2}</span>` : ""}</h3><p>${esc(d)}</p><span class="h7-go">→</span></a>
+          <div class="h7-foot"><span class="h7-big"><i>${FG.icon(ic, 20)}</i><span><b>${big[0]}</b><small>${big[1]}</small></span></span>${links.map(([li, lt, lh]) => `<a href="#/${lh}"><i>${FG.icon(li, 17)}</i>${lt}</a>`).join("")}</div></article>`).join("")}</section>
+        <section class="h7-row">
+          <div class="h7-panel"><h4><i>${FG.icon("doc", 18)}</i>Key resources<em>›</em></h4>${[["doc", "Procurement Rules", "rules"], ["coins", "Financial Provisions", "projects"], ["check", "Templates & Checklists", "tools"], ["files", "Glossary", "glossary"], ["trophy", "Learning Academy", "procurement/test"]].map(([i, t, h]) => `<a class="h7-li" href="#/${h}"><i>${FG.icon(i, 17)}</i>${t}<em>›</em></a>`).join("")}</div>
+          <div class="h7-panel"><h4><i>${FG.icon("sliders", 18)}</i>Council of Europe in numbers<a href="#/rules">View all →</a></h4>
+            <div class="h7-nums">${[["46", "Member states"], [String(pN + gN), "Guided stages"], ["€184k", "Tenders Board threshold"], [String(engines), "Decision engines"]].map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join("")}</div>
+            <div class="h7-map"><span style="background-image:url(${I.map || ""})"></span><ul><li><i style="background:#1d4ed8"></i>Council of Europe<small>(46 member states)</small></li><li><i style="background:#c7d7f5"></i>Map for illustration<small>(not activity data)</small></li></ul></div></div>
+          <div class="h7-panel"><h4><i>${FG.icon("trophy", 18)}</i>My learning progress<em>›</em></h4>
+            <a class="h7-prog" href="#/procurement"><span class="h7-ring" style="--p:${pPct}"><b>${pPct}%</b></span><span><b>Procurement fundamentals</b><small>${pV} of ${pN} stages completed</small><i><u style="width:${pPct}%"></u></i></span><em>›</em></a>
+            <h5><i>${FG.icon("calendar", 18)}</i>Recent activity<em>›</em></h5>${recent.length ? recent.slice(0, 3).map((r, k) => `<a class="h7-act" href="#/${esc(r.p)}"><i style="--k:${["#f59e0b", "#f59e0b", "#14a08a"][k]}">${FG.icon(k === 2 ? "check" : "doc", 15)}</i><span>${esc(r.t)}</span><em>${ago(r.at)}</em></a>`).join("") : `<p class="h7-empty">Pages you open will appear here.</p>`}</div>
+        </section>` };
     },
   });
   const askGo = (q) => { FG.store.set("ask:q", q); FG.go("ask"); };
