@@ -107,7 +107,7 @@
     cb: ["Competitive bidding", "Invite at least three suppliers. Extrabudgetary from €55,000: Legal Compliance Review by DLAPIL. E-procurement above €55,000.", "#/procurement/my-case", "Plan this case", "c1"],
     ic: ["International public call for tenders", "Tenders Board competence, publication of at least three weeks, e-procurement.", "#/procurement/my-case", "Plan this case", "c3"],
   };
-  FG.vis.tree = () => `<section class="vt card" data-tree><div class="vc-head"><div><span class="eyebrow">Decision tree</span><b>Find your procedure in four questions</b></div><button type="button" class="btn sm" data-tr-reset>Start again</button></div><div data-tr-out></div></section>`;
+  FG.vis.tree = () => `<section class="vt card" data-ptree><div class="vc-head"><div><span class="eyebrow">Decision tree</span><b>Find your procedure in four questions</b></div><button type="button" class="btn sm" data-tr-reset>Start again</button></div><div data-tr-out></div></section>`;
   function drawTree(box) {
     const path = JSON.parse(box.dataset.path || "[]"), out = box.querySelector("[data-tr-out]");
     let node = "own", result = null, kind = "g";
@@ -127,7 +127,7 @@
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-tr]"), rs = e.target.closest("[data-tr-reset]"); if (!b && !rs) return;
-    const box = (b || rs).closest("[data-tree]");
+    const box = (b || rs).closest("[data-ptree]");
     if (rs) box.dataset.path = "[]"; else { const [n, l, g] = b.dataset.tr.split("|"); const p = JSON.parse(box.dataset.path || "[]"); p.push([n, l, g]); box.dataset.path = JSON.stringify(p); }
     drawTree(box);
   });
@@ -171,7 +171,7 @@
   new MutationObserver(() => {
     document.querySelectorAll("[data-clock]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawClock(b); });
     document.querySelectorAll("[data-budget]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawBudget(b); });
-    document.querySelectorAll("[data-tree]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawTree(b); });
+    document.querySelectorAll("[data-ptree]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawTree(b); });
     document.querySelectorAll("[data-chain]:not([data-ok])").forEach((b) => { b.dataset.ok = 1; drawChain(b, false); });
   }).observe(document.documentElement, { childList: true, subtree: true });
 })();
