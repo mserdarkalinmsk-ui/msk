@@ -14,7 +14,21 @@
       <div class="timeline mt" data-timeline="${esc(id)}">${steps.map((s, i) => { const m = map(s, i); return `<div class="tl"><div class="tl-dot"><button type="button" class="${t[i] ? "ok" : ""}" data-tl="${i}" aria-pressed="${!!t[i]}" aria-label="Mark step ${i + 1} ${t[i] ? "not done" : "done"}">${t[i] ? "✓" : i + 1}</button></div>
         <details class="tl-body" ${i === 0 ? "open" : ""}><summary>${esc(m.title)}${m.sub ? `<small>${esc(m.sub)}</small>` : ""}</summary><p>${esc(m.text)}</p>${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</details></div>`; }).join("")}</div>`;
   }
+  // Horizontal stepper: click a step to open its details underneath; ticks share the timeline store.
+  function stepper(id, steps, map) {
+    const t = FG.ticks(id), done = steps.filter((_, i) => t[i]).length, sel = Math.min(FG.store.get(id + ":sel", 0), steps.length - 1), m = map(steps[sel], sel);
+    return `<div class="progress-head"><span>${done} / ${steps.length} steps complete</span>${done ? `<button class="btn ghost sm" data-tl-reset="${esc(id)}">Reset</button>` : ""}</div>
+      <div class="hs" data-timeline="${esc(id)}"><ol class="hs-row" style="--n:${steps.length}">${steps.map((s, i) => `<li class="${t[i] ? "ok" : ""} ${i === sel ? "on" : ""}"><button type="button" data-hs="${i}" aria-expanded="${i === sel}"><em>${t[i] ? "✓" : i + 1}</em><span>${esc(map(s, i).title)}</span></button></li>`).join("")}</ol>
+      <div class="hs-panel"><div class="hs-top"><span class="hs-n">Step ${sel + 1} of ${steps.length}</span><h4>${esc(m.title)}${m.sub ? ` <small>${esc(m.sub)}</small>` : ""}</h4>
+        <button type="button" class="btn sm ${t[sel] ? "" : "primary"}" data-tl="${sel}" aria-pressed="${!!t[sel]}">${t[sel] ? "✓ Done · undo" : "Mark as done"}</button></div>
+        ${m.text ? `<p>${esc(m.text)}</p>` : ""}${m.list ? `<ul>${m.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+        <div class="hs-nav">${sel > 0 ? `<button type="button" class="btn ghost sm" data-hs="${sel - 1}">← Previous</button>` : "<span></span>"}${sel < steps.length - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">Next step →</button>` : ""}</div></div></div>`;
+  }
   function mountTimeline(root) {
+    root.addEventListener("click", (e) => {
+      const h = e.target.closest("[data-hs]");
+      if (h) { FG.store.set(h.closest("[data-timeline]").dataset.timeline + ":sel", +h.dataset.hs); FG.refresh(true); }
+    });
     root.addEventListener("click", (e) => {
       const b = e.target.closest("[data-tl]");
       if (b) { const id = b.closest("[data-timeline]").dataset.timeline; FG.tick(id, b.dataset.tl, !FG.ticks(id)[b.dataset.tl]); FG.refresh(); }
@@ -58,7 +72,7 @@
       return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
         <div class="split">
           <div class="stack">
-            <section class="card"><div class="card-head"><h3>PO process</h3></div><div class="card-body">${timeline("po:steps", C.poSteps, (s) => ({ title: s.t, text: s.x, list: s.l }))}</div></section>
+            <section class="card"><div class="card-head"><h3>PO process</h3></div><div class="card-body">${stepper("po:steps", C.poSteps, (s) => ({ title: s.t, text: s.x, list: s.l }))}</div></section>
             <section class="card"><div class="card-head"><div><h3>Document builder</h3><small>Documents to be signed are separated from supporting evidence.</small></div>${ui.tag(`${ticked}/${all} ready`, ticked === all ? "good" : "")}</div><div class="card-body stack">
               ${servicePicker("po", service)}<p class="small muted">${esc(d.sub || "")}</p>
               <div class="grid g2">${docList(signedId, "To be signed", d.signed)}${docList(supportId, "Supporting documents", d.support)}</div></div></section>
@@ -105,7 +119,7 @@
       return { html: `${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
         <div class="split">
           <div class="stack">
-            <section class="card"><div class="card-head"><h3>Payment process</h3></div><div class="card-body">${timeline("pay:steps", C.paySteps, (s) => ({ title: s.t, sub: s.s, text: s.text, list: s.list }))}</div></section>
+            <section class="card"><div class="card-head"><h3>Payment process</h3></div><div class="card-body">${stepper("pay:steps", C.paySteps, (s) => ({ title: s.t, sub: s.s, text: s.text, list: s.list }))}</div></section>
             <section class="card"><div class="card-head"><div><h3>Payment file builder</h3><small>Use the same service type as the PO.</small></div></div><div class="card-body stack">
               ${servicePicker("pay", service)}
               <div class="grid g2">${docList(`pay:${service}:signed`, "To be signed", d.signed)}${docList(`pay:${service}:support`, "Supporting documents", d.support)}</div></div></section>

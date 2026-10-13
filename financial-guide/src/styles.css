@@ -1706,3 +1706,25 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .ak-note { color: var(--muted); font-size: .85rem; margin-top: 16px; }
 @media (max-width: 900px) { .hx-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .ak-list { grid-template-columns: 1fr; } .ak-form { flex-direction: column; } }
+/* Horizontal process stepper */
+.hs-row { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+.hs-row li { position: relative; }
+.hs-row li::before { content: ""; position: absolute; top: 17px; left: -50%; width: 100%; height: 2px; background: var(--line); z-index: 0; }
+.hs-row li:first-child::before { display: none; }
+.hs-row li.ok::before { background: #1f9d6b; }
+.hs-row button { position: relative; z-index: 1; width: 100%; display: grid; justify-items: center; gap: 6px; padding: 0 4px 8px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .74rem; line-height: 1.25; text-align: center; cursor: pointer; hyphens: auto; overflow-wrap: anywhere; }
+.hs-row span { max-width: 100%; }
+.hs-row em { font-style: normal; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: var(--panel); font-weight: 700; font-size: .85rem; color: var(--ink); transition: all .15s; }
+.hs-row li.ok em { background: #1f9d6b; border-color: #1f9d6b; color: #fff; }
+.hs-row li.on em { border-color: #2d6bd8; box-shadow: 0 0 0 4px rgba(45, 107, 216, .18); }
+.hs-row li.on button { color: var(--ink); font-weight: 600; }
+.hs-row button:hover em { border-color: #2d6bd8; }
+.hs-panel { margin-top: 8px; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); border-top: 3px solid #2d6bd8; background: var(--panel); animation: hsIn .18s ease; }
+.hs-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hs-top h4 { margin: 0; flex: 1; font-size: 1.05rem; }
+.hs-n { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); width: 100%; }
+.hs-panel p { margin: 10px 0 6px; line-height: 1.55; }
+.hs-panel ul { margin: 0; padding-left: 20px; line-height: 1.6; }
+.hs-nav { display: flex; justify-content: space-between; margin-top: 12px; }
+@keyframes hsIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 760px) { .hs-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .hs-row li { flex: 0 0 92px; scroll-snap-align: start; } }
