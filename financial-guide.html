@@ -1477,6 +1477,9 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .tl-body p, .tl-body li { font-size: 14px; line-height: 1.55; }
 .check { border-radius: 12px; }
 .chips .chip[aria-pressed="true"] { background: #1b3a7a; color: #fff; border-color: #1b3a7a; }
+/* dark-safe colours for values that were hard-coded navy */
+.sb-fact summary b { color: var(--navy); }
+.chips .chip[aria-pressed="true"], .rc-seg button[aria-pressed="true"] { background: var(--accent, #2d6bd8); border-color: var(--accent, #2d6bd8); }
 
 </style>
 </head>
@@ -3819,7 +3822,7 @@ window.FG_CONTENT = {
     ],
     [
      "Pre-validation",
-     "CCM / N. Claus",
+     "CCM",
      "✓",
      "Performs pre-validation of the mission order.",
      "Review and pre-validate the mission request in line with the applicable internal route.",
@@ -3848,7 +3851,7 @@ window.FG_CONTENT = {
   },
   "Expense Claim": {
    "title": "Expense Claim Process Flow",
-   "desc": "The expense claim moves from the requester to ACCM verification and then to CCM / N. Claus for validation.",
+   "desc": "The expense claim moves from the requester to ACCM verification and then to CCM for validation.",
    "stages": [
     [
      "Preparation",
@@ -3870,7 +3873,7 @@ window.FG_CONTENT = {
     ],
     [
      "Validation",
-     "CCM / N. Claus",
+     "CCM",
      "✓",
      "Provides formal validation of the expense claim.",
      "Review the verified claim and complete the applicable validation.",
@@ -9242,7 +9245,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:22</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:30</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>

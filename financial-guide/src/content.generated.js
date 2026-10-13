@@ -2333,7 +2333,7 @@ window.FG_CONTENT = {
     ],
     [
      "Pre-validation",
-     "CCM / N. Claus",
+     "CCM",
      "✓",
      "Performs pre-validation of the mission order.",
      "Review and pre-validate the mission request in line with the applicable internal route.",
@@ -2362,7 +2362,7 @@ window.FG_CONTENT = {
   },
   "Expense Claim": {
    "title": "Expense Claim Process Flow",
-   "desc": "The expense claim moves from the requester to ACCM verification and then to CCM / N. Claus for validation.",
+   "desc": "The expense claim moves from the requester to ACCM verification and then to CCM for validation.",
    "stages": [
     [
      "Preparation",
@@ -2384,7 +2384,7 @@ window.FG_CONTENT = {
     ],
     [
      "Validation",
-     "CCM / N. Claus",
+     "CCM",
      "✓",
      "Provides formal validation of the expense claim.",
      "Review the verified claim and complete the applicable validation.",

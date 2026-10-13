@@ -1465,3 +1465,6 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .tl-body p, .tl-body li { font-size: 14px; line-height: 1.55; }
 .check { border-radius: 12px; }
 .chips .chip[aria-pressed="true"] { background: #1b3a7a; color: #fff; border-color: #1b3a7a; }
+/* dark-safe colours for values that were hard-coded navy */
+.sb-fact summary b { color: var(--navy); }
+.chips .chip[aria-pressed="true"], .rc-seg button[aria-pressed="true"] { background: var(--accent, #2d6bd8); border-color: var(--accent, #2d6bd8); }
