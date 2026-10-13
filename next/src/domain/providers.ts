@@ -29,10 +29,12 @@ const RULES: [Kind | 'person', RegExp][] = [
 const INTL = /international|foreign|uluslararası|yabancı|abroad/i;
 const PETTY = /petty cash|caisse|avance de fonds|cash advance/i; // advances to the office, not a provider
 const STAFF = /^1\.[12]\.1(\.|$)/; // salaries of the project team are not service providers
+/** Staff salaries and per diems: never a service provider, not even listed among the other POs. */
+export const EXCLUDED = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission|\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|ücret bordro/i;
 
 /** Kind of a PO from its wording, then from its budget line's code and wording; null when it buys none of these. */
 export function kindOf(text: string, code = '', lineText = ''): Kind | null {
-  if (STAFF.test(code) || PETTY.test(text)) return null;
+  if (STAFF.test(code) || PETTY.test(text) || EXCLUDED.test(text)) return null;
   const byText = (t: string): Kind | null => {
     for (const [k, re] of RULES) if (re.test(t)) return k === 'person' ? (INTL.test(t) || /^1\.2(\.|$)/.test(code) ? 'intl' : 'consult') : k;
     return null;
@@ -57,6 +59,7 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
     const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
     return wb.pos.flatMap((x) => {
       const value = x.sc || x.amount; if (!value) return [];
+      if (STAFF.test(x.line) || EXCLUDED.test(`${x.description} ${x.nature} ${x.supplier}`)) return [];
       const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`);
       const u = set[key], kind = u === 'none' ? null : isKind(u) ? u : auto;
       return kind || all ? [{ ...x, p, kind, auto, key, value }] : [];

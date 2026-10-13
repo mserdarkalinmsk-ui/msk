@@ -17,6 +17,9 @@ describe('service provider kinds', () => {
     expect(kindOf('PO 1234', '5.7.3')).toBe('events');
     expect(kindOf('Services', '5.2', 'Visibility actions')).toBe('visibility');
     expect(kindOf('Petty cash advance request - 1/2026 Petty cash multiple BLs', '5.7')).toBeNull();
+    expect(kindOf('DSA for participants of the conference', '5.7.1')).toBeNull();
+    expect(kindOf('Per diem national consultant', '1.1.3')).toBeNull();
+    expect(kindOf('PAIE TEMPORAIRE Plan 01 General', '1.1.1.4')).toBeNull();
     expect(kindOf('Office rent', '4.1')).toBeNull();
     expect(kindOf('Salary of the project officer', '1.1.1')).toBeNull();
   });
