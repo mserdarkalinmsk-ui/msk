@@ -2195,3 +2195,10 @@ body.img-edit .h7-map > span { position: relative; }
 .pa-fs:hover .pa-fs-dot{transform:translateY(-2px);box-shadow:0 8px 18px color-mix(in srgb,var(--c) 30%,transparent)}
 .pa-fs.on{background:#fff;box-shadow:0 10px 26px rgba(37,99,235,.14)}.pa-fs.on .pa-fs-dot{background:var(--c);color:#fff;box-shadow:0 8px 20px color-mix(in srgb,var(--c) 40%,transparent)}.pa-fs.on b{color:var(--c)}
 @media(max-width:900px){.pa-flow{grid-template-columns:repeat(13,96px)}}
+.main:has(.pa-flow) .crumbs{display:none}
+.pa-flow{margin-bottom:16px}.pa-stage{margin-top:0}
+.pa-fs.seen .pa-fs-dot{background:var(--c);color:#fff;opacity:.55}
+.pa-flow{grid-template-columns:repeat(var(--n,13),minmax(80px,1fr))}
+.pa-fs-dot{width:48px;height:48px;font-size:15px}.pa-fs:not(:last-child)::after{top:36px;left:calc(50% + 27px);right:calc(-50% + 27px)}
+.sb-rule small{color:rgba(255,255,255,.75)!important}
+.pa-flow{grid-template-columns:repeat(var(--n,13),minmax(64px,1fr));padding:18px 10px 20px;gap:0}.pa-fs{min-width:0;padding:10px 2px}.pa-fs b{font-size:10.5px}.pa-fs-dot{width:42px;height:42px;font-size:14px}.pa-fs:not(:last-child)::after{top:31px;left:calc(50% + 24px);right:calc(-50% + 24px)}@media(max-width:900px){.pa-flow{grid-template-columns:repeat(var(--n,13),84px)}}

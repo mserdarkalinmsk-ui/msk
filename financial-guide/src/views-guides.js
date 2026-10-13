@@ -458,7 +458,21 @@
         const guidance = `${reader(`${cfg.base}:${s.name}`, s.sections)}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}`;
         const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
-        const html = `
+        const html = isP && FG.procAcademy ? `
+          ${FG.procAcademy.flow(i)}
+          <section class="card stage-card pa-stage"><div class="card-body">
+            ${briefHtml(cfg, s, ph, pc, i)}
+          </div></section>
+          <div class="mt">${ui.tabs(cfg.base + ":stage", [
+            ["guide", "Guidance", guidance, s.sections.length],
+            ["rules", "Summary", keyRulesHtml(s, best), null],
+            ["tool", "Interactive tool", widget || "", null],
+            ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
+            ["who", "Who is involved", people, roles.length || null],
+            ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
+          ])}</div>
+          
+          <div class="stage-nav mt">${i > 0 ? `<a class="btn" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="btn primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}">${esc(stages[i + 1].name)} →</a>` : ""}</div>` : `
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
             <span class="sb-mini-arrows">${i > 0 ? `<a href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage" tabindex="-1">←</a>` : ""}${i < stages.length - 1 ? `<a href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage" tabindex="-1">→</a>` : ""}</span></div>
