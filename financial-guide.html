@@ -1773,6 +1773,18 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
   .hs-panel { grid-template-columns: 1fr; padding: 18px; } .hs-panel::before { display: none; }
   .hs-nav { grid-template-columns: 1fr 1fr; } .hs-nav > .btn.sm[data-tl] { grid-column: 1 / -1; order: -1; justify-self: stretch; }
 }
+/* PO / payment switch */
+.fsw { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; padding: 6px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 8px 24px -18px rgba(15, 30, 60, .35); width: fit-content; max-width: 100%; }
+.fsw a { display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 12px; border-radius: 13px; text-decoration: none; color: var(--muted); transition: background .15s, color .15s; }
+.fsw a:hover { background: color-mix(in srgb, #2d6bd8 7%, transparent); color: var(--ink); }
+.fsw i { font-style: normal; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; border: 1.5px solid var(--line); font-weight: 800; color: var(--ink); }
+.fsw span { display: grid; gap: 1px; }
+.fsw b { font-size: .98rem; color: inherit; }
+.fsw small { font-size: .76rem; opacity: .85; }
+.fsw a.on { background: linear-gradient(135deg, #1f3f7a, #2d6bd8); color: #fff; box-shadow: 0 10px 22px -10px rgba(45, 107, 216, .7); }
+.fsw a.on i { background: rgba(255, 255, 255, .18); border-color: transparent; color: #fff; }
+.fsw-arrow { color: var(--muted); font-weight: 700; }
+@media (max-width: 640px) { .fsw { width: 100%; } .fsw a { flex: 1; padding: 8px 10px; } .fsw small { display: none; } }
 
 </style>
 </head>
@@ -9642,7 +9654,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 08:14</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 08:27</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10974,6 +10986,8 @@ window.FG_CONTENT = {
             ${sel < n - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">${esc(map(steps[sel + 1], 0).title)} →</button>` : "<span></span>"}</div></div>
         <span class="hs-wm" aria-hidden="true">${String(sel + 1).padStart(2, "0")}</span></div></div>`;
   }
+  // PO ↔ payment switch: one file builder, two stages; the whole page below follows the choice.
+  const fileSwitch = (cur) => `<nav class="fsw" aria-label="File type">${[["po-file", "1", "Purchase order", "Commit before work starts"], ["payment-file", "2", "Payment", "Pay against the PO"]].map(([h, n, t, d]) => `<a href="#/${h}" class="${h === cur ? "on" : ""}" ${h === cur ? 'aria-current="page"' : ""}><i>${n}</i><span><b>${t}</b><small>${d}</small></span></a>`).join('<span class="fsw-arrow" aria-hidden="true">→</span>')}</nav>`;
   function mountTimeline(root) {
     root.addEventListener("click", (e) => {
       const h = e.target.closest("[data-hs]");
@@ -11019,7 +11033,7 @@ window.FG_CONTENT = {
       const signedId = `po:${service}:signed`, supportId = `po:${service}:support`;
       const all = d.signed.length + d.support.length, ticked = Object.keys(FG.ticks(signedId)).length + Object.keys(FG.ticks(supportId)).length;
       const visa = FG.ticks("visa"), required = VISA_ROWS.reduce((a, r) => a + r[2].filter(Boolean).length, 0), verified = Object.keys(visa).length;
-      return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
+      return { html: `${fileSwitch("po-file")}${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
         <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><h3>PO process</h3></div><div class="card-body">${stepper("po:steps", C.poSteps, (s) => ({ title: s.t, text: s.x, list: s.l }))}</div></section>
@@ -11066,7 +11080,7 @@ window.FG_CONTENT = {
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.payServices[service] || { signed: [], support: [] };
       const row = VISA_ROWS.find((r) => (r[3] || []).includes(service)) || VISA_ROWS[3];
-      return { html: `${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
+      return { html: `${fileSwitch("payment-file")}${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
         <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><h3>Payment process</h3></div><div class="card-body">${stepper("pay:steps", C.paySteps, (s) => ({ title: s.t, sub: s.s, text: s.text, list: s.list }))}</div></section>

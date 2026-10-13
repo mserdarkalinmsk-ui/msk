@@ -49,6 +49,8 @@
             ${sel < n - 1 ? `<button type="button" class="btn ghost sm" data-hs="${sel + 1}">${esc(map(steps[sel + 1], 0).title)} →</button>` : "<span></span>"}</div></div>
         <span class="hs-wm" aria-hidden="true">${String(sel + 1).padStart(2, "0")}</span></div></div>`;
   }
+  // PO ↔ payment switch: one file builder, two stages; the whole page below follows the choice.
+  const fileSwitch = (cur) => `<nav class="fsw" aria-label="File type">${[["po-file", "1", "Purchase order", "Commit before work starts"], ["payment-file", "2", "Payment", "Pay against the PO"]].map(([h, n, t, d]) => `<a href="#/${h}" class="${h === cur ? "on" : ""}" ${h === cur ? 'aria-current="page"' : ""}><i>${n}</i><span><b>${t}</b><small>${d}</small></span></a>`).join('<span class="fsw-arrow" aria-hidden="true">→</span>')}</nav>`;
   function mountTimeline(root) {
     root.addEventListener("click", (e) => {
       const h = e.target.closest("[data-hs]");
@@ -94,7 +96,7 @@
       const signedId = `po:${service}:signed`, supportId = `po:${service}:support`;
       const all = d.signed.length + d.support.length, ticked = Object.keys(FG.ticks(signedId)).length + Object.keys(FG.ticks(supportId)).length;
       const visa = FG.ticks("visa"), required = VISA_ROWS.reduce((a, r) => a + r[2].filter(Boolean).length, 0), verified = Object.keys(visa).length;
-      return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
+      return { html: `${fileSwitch("po-file")}${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
         <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><h3>PO process</h3></div><div class="card-body">${stepper("po:steps", C.poSteps, (s) => ({ title: s.t, text: s.x, list: s.l }))}</div></section>
@@ -141,7 +143,7 @@
     render() {
       const service = pick("service", SERVICES, SERVICES[0]), d = C.payServices[service] || { signed: [], support: [] };
       const row = VISA_ROWS.find((r) => (r[3] || []).includes(service)) || VISA_ROWS[3];
-      return { html: `${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
+      return { html: `${fileSwitch("payment-file")}${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
         <div class="split">
           <div class="stack">
             <section class="card"><div class="card-head"><h3>Payment process</h3></div><div class="card-body">${stepper("pay:steps", C.paySteps, (s) => ({ title: s.t, sub: s.s, text: s.text, list: s.list }))}</div></section>
