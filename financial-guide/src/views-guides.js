@@ -32,7 +32,6 @@
   const PROJECT_ITEMS = [
     ["⚖", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract execution.", "procurement"],
     ["✦", "Grant", "Grant procedures, calls, evaluation and agreement preparation.", "grants"],
-    ["◆", "DPC financial management", "Delegation, roles, commitments and payments, visa route, VAT, petty cash and audit lessons (DPC manual, 2024).", "dpc-manual"],
     ["↔", "PO & payment files", "Prepare the PO, continue through delivery and complete the payment package.", "po-file"],
     ["◷", "End of year procedure", "Year-end closure, commitments, reporting and clean-up.", "year-end"],
     ["€", "Petty cash", "Petty cash rules, reconciliation and supporting evidence.", "petty-cash"],
@@ -43,7 +42,7 @@
   ];
   // Projects: the financial life cycle as three phases (commit → spend → close) with their modules.
   const PHASES = [
-    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["DPC financial management", "Who decides, visa route, payments and controls.", "dpc-manual", "MANUAL"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
+    ["01", "Commit", "Select the procedure and sign", 1, [["Procurement", "Thresholds, tender, evaluation and contract.", "procurement", "CORE"], ["Grant", "Call, criteria, evaluation and agreement.", "grants"]]],
     ["02", "Spend", "Order, receive and pay", 2, [["PO & payment files", "PO, delivery and payment package.", "po-file", "CORE"], ["Petty cash", "Limits, approval and reconciliation.", "petty-cash"], ["VAT procedures", "Exemptions and supporting documents.", "vat"], ["Events & GDD", "Event budget, logistics and GDD.", "events"]]],
     ["03", "Close", "Year-end and audit trail", 3, [["End of year", "Cut-off, allocation and closing checklist.", "year-end", "DEADLINE"], ["Filing management", "Evidence map, DMS and naming.", "filing"]]],
   ];
