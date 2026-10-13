@@ -22,7 +22,7 @@ data = {
     "factNotes": src["factNotes"],
 }
 data_json = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-css = (HERE / "src/styles.css").read_text(encoding="utf-8").replace("__INTER__", (HERE / "content/inter.woff2.b64").read_text().strip())
+css = ((HERE / "src/styles.css").read_text(encoding="utf-8") + "\n" + (HERE / "src/theme.css").read_text(encoding="utf-8")).replace("__INTER__", (HERE / "content/inter.woff2.b64").read_text().strip())
 js = (HERE / "src/app.js").read_text(encoding="utf-8")
 html = (HERE / "src/shell.html").read_text(encoding="utf-8")
 html = html.replace("__CSS__", css).replace("__JS__", js).replace("__DATA__", data_json)

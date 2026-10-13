@@ -164,47 +164,47 @@
   route("", () => {
     const lv = S.level, ov = overall(), rv = reviewList();
     const resume = S.last && LESSON[S.last] ? LESSON[S.last] : null;
-    const firstLesson = PATHS.procurement.lessons[0];
-    const glass = resume
-      ? `<div class="glass"><small>Continue learning</small><b>${esc(resume.title)}</b><p>${esc(MOD[resume.module].title)} · ${resume.minutes} min</p><div class="bar" style="--c:var(--brass-2)"><i style="--w:${mastery(resume.module).v}%"></i></div><a href="${resume.href}">Resume lesson →</a></div>`
-      : lv === "pro"
-        ? `<div class="glass"><small>Check a route</small><b>Which procedure applies?</b><p>Enter a value; see the route, approvals and extra controls.</p><a href="#/tools/route">Open the route simulator →</a></div>`
-        : `<div class="glass"><small>New here? Start here</small><b>Your first day in 10 minutes</b><p>How money moves through a Council of Europe project, in seven stops.</p><a href="#/tour">Start the tour →</a></div>`;
     const levels = [
-      ["new", "01", "I'm new to this", "Start with the 10-minute tour, then learn step by step."],
-      ["some", "02", "I know the basics", "Find your gaps with a short check, then practise."],
-      ["pro", "03", "I have a case to handle", "Go straight to routes, rules and documents."],
+      ["new", "I'm new to this", "Tour first, then step-by-step lessons."],
+      ["some", "I know the basics", "Find my gaps, then practise."],
+      ["pro", "I have a case to handle", "Routes, rules and documents first."],
     ];
-    const primary = lv === "pro" ? ["#/tools/route", "Check my route"] : lv === "some" ? ["#/check", "Find my gaps · 5 min"] : ["#/tour", "Start the first-day tour"];
-    const secondary = lv === "some" ? ["#/practice", "Practise with cases"] : lv === "pro" ? ["#/stuck", "I'm stuck"] : ["#/check", "Find my gaps"];
-    const map = `<div class="kmap">${MODULES.map((m) => { const x = mastery(m.id); return `<a class="kcell" href="#/learn/${m.id}" style="--c:var(${m.c})"><header><div><b>${esc(m.title)}</b><small style="display:block">${x.done}/${x.total} lessons</small></div>${ring(x.v, `var(${m.c})`)}</header><span class="state ${x.state}">● ${stateLabel[x.state]}</span></a>`; }).join("")}</div>`;
+    // The four spaces, ordered by the learning loop. The level decides which one is highlighted.
+    const pick = lv === "pro" ? 3 : lv === "some" ? 2 : 0;
+    const SPACES = [
+      ["01 / Start here", "Learn", `${LESSONS.length} short lessons in 8 paths, plus a 10-minute first-day tour.`, "#/learn", "--m1", "learn", resume ? `Resume: ${resume.name}` : "Start the tour"],
+      ["02 / Practise", "Practise", `${QUESTIONS.length} questions and real cases with instant feedback.`, "#/practice", "--m2", "practice", "Start a round"],
+      ["03 / Find my gaps", "Diagnose", "Five minutes, sixteen questions: your knowledge map and a personal plan.", "#/check", "--m4", "map", "Take the check"],
+      ["04 / Apply", "Tools", "Route simulator, thresholds, glossary and the I'm-stuck helper.", "#/tools", "--m3", "tool", "Open tools"],
+    ];
+    const map = `<div class="kmap">${MODULES.map((m) => { const x = mastery(m.id); return `<a class="kcell" href="#/learn/${m.id}" style="--c:var(${m.c})"><span class="kico">${ic(m.icon)}</span><div><b>${esc(m.title)}</b><small>${x.done}/${x.total} lessons · <span class="state ${x.state}">${stateLabel[x.state]}</span></small></div>${ring(x.v, `var(${m.c})`)}</a>`; }).join("")}</div>`;
     return {
       title: "Home",
       html: `
-      <section class="night hero">
-        <div class="hero-grid"><div>
-          <span class="eyebrow">Council of Europe · Financial Guide</span>
-          <h1>Learn the rules. <em>Then</em> handle the case.</h1>
-          <p class="lead">A guided academy for project finance: short lessons, real cases with feedback, and tools that tell you which route, approvals and documents apply.</p>
-          <div class="row"><a class="btn brass" href="${primary[0]}">${primary[1]} ${ic("arrow")}</a><a class="btn ghost-night" href="${secondary[0]}">${secondary[1]}</a></div>
-        </div>${glass}</div>
-        <div class="stats"><div><b>${LESSONS.length}</b><span>short lessons</span></div><div><b>${QUESTIONS.length}</b><span>questions & real cases</span></div><div><b>${TERMS.length}</b><span>terms explained in context</span></div><div><b>${ov}%</b><span>your overall mastery</span></div></div>
+      <section class="hx">
+        <span class="eyebrow">Council of Europe · Programme finance</span>
+        <h1>Financial Guide <span>Academy</span></h1>
+        <p>Learn the rules, find your gaps, then handle the real case — in one guided place.</p>
+        <button type="button" class="hx-search" data-open-search>${ic("search")}<span>Search a rule, an amount (“40k consultant”) or a term…</span><kbd>Ctrl K</kbd></button>
+        <div class="hx-level" role="group" aria-label="Your experience">${levels.map(([k, t, d]) => `<button type="button" data-level="${k}" aria-pressed="${lv === k}"><b>${t}</b><span>${d}</span></button>`).join("")}</div>
       </section>
 
-      <div class="h2"><div><h2>How familiar are you with project finance?</h2><p>The guide adapts what it puts first. You can change this at any time.</p></div></div>
-      <div class="level">${levels.map(([k, n, t, d]) => `<button type="button" data-level="${k}" aria-pressed="${lv === k}"><i>${n}</i><b>${t}</b><span>${d}</span></button>`).join("")}</div>
+      <section class="spaces">${SPACES.map(([e, t, d, h, c, i, cta], k) => `<a class="space${k === pick && lv ? " pick" : ""}" href="${k === 0 && !resume ? "#/tour" : k === 0 ? resume.href : h}" style="--c:var(${c})"><small>${e}</small><span class="sico">${ic(i)}</span><h2>${t}</h2><p>${d}</p><span class="go"><em>${cta}</em><i>${ic("arrow")}</i></span>${k === pick && lv ? `<span class="rec">Recommended for you</span>` : ""}</a>`).join("")}</section>
 
-      ${rv.length ? `<div class="h2"><div><h2>To review</h2><p>Topics where your last answer was wrong. One short lesson fixes each.</p></div></div>
-        <div class="review"><span class="badge">${rv.length}</span><div><b>${rv.slice(0, 3).map((k) => esc(LESSON[k].title)).join(" · ")}${rv.length > 3 ? ` · +${rv.length - 3}` : ""}</b><p>Re-read the lesson, then answer its check again to clear it.</p></div><a class="btn sm" href="${LESSON[rv[0]].href}">Review now →</a></div>` : ""}
+      ${rv.length ? `<div class="review"><span class="badge">${rv.length}</span><div><b>To review: ${rv.slice(0, 3).map((k) => esc(LESSON[k].name)).join(" · ")}${rv.length > 3 ? ` · +${rv.length - 3}` : ""}</b><p>Your last answer on these topics was wrong. One short lesson fixes each.</p></div><a class="btn primary sm" href="${LESSON[rv[0]].href}">Review now →</a></div>` : ""}
 
-      <div class="h2"><div><h2>Your knowledge map</h2><p>${ov ? "Computed from the lessons you completed and the questions you answered." : "Empty for now. Take the 5-minute check to see where you stand."}</p></div><a href="#/check">Find my gaps →</a></div>
-      ${map}
+      <section class="panel">
+        <header class="panel-h"><div><span class="eyebrow">Guided start</span><h2>What do you need to do?</h2><p>Start from your task. Each one opens the lesson or tool you need.</p></div><a class="btn primary" href="#/stuck">${ic("help")} I'm stuck</a></header>
+        <div class="tasks">${TASKS.map(([i, t, d, h], k) => `<a class="task" href="${h}" style="--c:var(--m${(k % 8) + 1})"><span class="ico">${ic(i)}</span><b>${t}</b><span>${d}</span><u>${ic("arrow")}</u></a>`).join("")}</div>
+      </section>
 
-      <div class="h2"><div><h2>What do you need to do?</h2><p>Have a real task? Each one opens the lesson or tool you need.</p></div></div>
-      <div class="tasks">${TASKS.map(([i, t, d, h]) => `<a class="card task" href="${h}"><span class="ico">${ic(i)}</span><b>${t}</b><span>${d}</span><u>${ic("arrow")}</u></a>`).join("")}</div>
+      <section class="panel">
+        <header class="panel-h"><div><span class="eyebrow">Your progress</span><h2>Knowledge map</h2><p>${ov ? `Overall mastery ${ov}%. Computed from lessons completed and answers given.` : "Empty for now. The 5-minute check fills it in."}</p></div><a class="btn" href="#/check">${ic("map")} Find my gaps</a></header>
+        ${map}
+      </section>
       ${foot}`,
       mount(root) {
-        const onClick = (e) => { const b = e.target.closest("[data-level]"); if (!b) return; S.level = b.dataset.level; save(); render(); };
+        const onClick = (e) => { if (e.target.closest("[data-open-search]")) { openPalette(); return; } const b = e.target.closest("[data-level]"); if (!b) return; S.level = b.dataset.level; save(); render(); };
         root.addEventListener("click", onClick);
         return () => root.removeEventListener("click", onClick);
       },
@@ -550,13 +550,10 @@
   }
 
   /* ---------- chrome ---------- */
-  function sideMeter() { const el = $("#meter"); if (el) el.innerHTML = `<small>Overall mastery</small><b class="num">${overall()}%</b>${bar(overall())}<small style="margin-top:8px">${Object.keys(S.done).length} lessons · ${reviewList().length} to review</small>`; }
+  function sideMeter() { const el = $("#meter"); if (el) { const n = reviewList().length; el.innerHTML = `<i class="${overall() ? "on" : ""}"></i><span><b>My progress · ${overall()}%</b><small>${Object.keys(S.done).length} lessons done · ${n} to review</small></span>${ic("arrow")}`; } }
   function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 2200); }
   const NAV = [["home", "#/", "Home"], ["learn", "#/learn", "Learn"], ["practice", "#/practice", "Practise"], ["check", "#/check", "Find my gaps", "map"], ["tools", "#/tools", "Tools", "tool"]];
-  $("#side").innerHTML = `<h6>Academy</h6>${NAV.map(([k, h, t, i]) => `<a href="${h}" data-nav="${k}">${ic(i || k)}${t}</a>`).join("")}
-    <h6>Learning paths</h6>${MODULES.map((m) => `<a href="#/learn/${m.id}">${ic(m.icon)}${m.title}<em>${lessonsOf(m.id).length}</em></a>`).join("")}
-    <h6>Reference</h6><a href="#/glossary" data-nav="glossary">${ic("book")}Glossary</a><a href="#/stuck" data-nav="stuck">${ic("help")}I'm stuck</a>
-    <div class="meter" id="meter"></div>`;
+  $("#side").innerHTML = NAV.map(([k, h, t]) => `<a href="${h}" data-nav="${k}">${t}</a>`).join("") + `<a href="#/glossary" data-nav="glossary">Glossary</a>`;
   $("#tabbar").innerHTML = NAV.map(([k, h, t, i]) => `<a href="${h}" data-nav="${k}">${ic(i || k)}${t.replace("Find my gaps", "Gaps")}</a>`).join("");
   $("#searchBtn").innerHTML = `${ic("search")}<span>Search rules, amounts, terms…</span><kbd>Ctrl K</kbd>`;
   $("#searchBtn").addEventListener("click", () => openPalette());
