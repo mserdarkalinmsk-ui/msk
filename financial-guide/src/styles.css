@@ -2066,3 +2066,46 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .h7-foot { gap: 0; } .h7-foot a { font-size: .76rem; gap: 5px; } .h7-foot a i { width: 24px; height: 24px; } .h7-foot a i svg { width: 14px; height: 14px; }
 .h7-big > i { width: 30px; height: 30px; }
 .h7-cards { grid-template-columns: 1fr 1.08fr 1fr; } .h7-foot a { overflow: visible; }
+/* Projects v7 — matches the reference mockup */
+.main:has(.pj7) .crumbs { display: none; }
+.content:has(.pj7) { max-width: 1440px; }
+.pj7 { position: relative; min-height: 300px; margin: -8px -40px 0; padding: 26px 40px 34px; overflow: hidden; background: #f3f6fb; }
+.pj7-art { position: absolute; top: 0; right: 0; bottom: 0; width: 62%; background-size: cover; background-position: center; }
+.pj7-art::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #f3f6fb 0%, rgba(243,246,251,.85) 14%, rgba(243,246,251,0) 42%); }
+.pj7-art::after { content: ""; position: absolute; inset: auto 0 0 0; height: 25%; background: linear-gradient(0deg, #f3f6fb, transparent); }
+.pj7-txt { position: relative; z-index: 1; }
+.pj7-crumb { display: flex; gap: 10px; font-size: .9rem; color: #3b4a63; } .pj7-crumb a { color: #3b4a63; text-decoration: none; } .pj7-crumb b { color: #0f1b33; font-weight: 500; }
+.pj7 h1 { margin: 18px 0 12px; font-size: 2.35rem; font-weight: 800; letter-spacing: -.02em; color: #0f1b33; }
+.pj7-txt > p { margin: 0 0 22px; font-size: 1.05rem; line-height: 1.45; color: #3b4a63; }
+.pj7-kpis { display: flex; gap: 16px; flex-wrap: wrap; }
+.pj7-kpis > div { display: flex; align-items: center; gap: 14px; min-width: 145px; padding: 14px 18px 14px 12px; border-radius: 10px; background: #fff; box-shadow: 0 8px 22px -16px rgba(20,50,110,.45); }
+.pj7-kpis i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); }
+.pj7-kpis b { display: block; font-size: 1.3rem; color: #0f1b33; line-height: 1.1; } .pj7-kpis small { font-size: .84rem; color: #3b4a63; }
+.pj7-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 26px; margin: 22px -20px 24px; }
+.pj7-card { position: relative; display: flex; gap: 22px; min-height: 176px; padding: 24px 22px; border-radius: 12px; overflow: hidden; isolation: isolate; text-decoration: none; color: #0f1b33;
+  background: linear-gradient(90deg, #fff 45%, color-mix(in srgb, var(--c) 6%, #fff)); border: 1px solid #e3e9f3; border-left: 3px solid var(--c); box-shadow: 0 14px 30px -24px rgba(20,50,110,.5); transition: transform .2s, box-shadow .2s; }
+.pj7-card:hover { transform: translateY(-3px); box-shadow: 0 24px 40px -24px rgba(20,50,110,.55); }
+.pj7-photo { position: absolute; top: 0; right: 0; bottom: 0; width: 42%; z-index: -2; background-size: cover; background-position: center; }
+.pj7-card::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #fff 52%, rgba(255,255,255,.75) 66%, rgba(255,255,255,0) 82%); }
+.pj7-ic { flex: none; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 12px; color: #fff; background: var(--c); box-shadow: 0 10px 20px -10px var(--c); }
+.pj7-card small { font-size: .9rem; font-weight: 500; color: var(--c); }
+.pj7-card h3 { margin: 6px 0 10px; font-size: 1.15rem; font-weight: 700; }
+.pj7-card p { margin: 0 0 16px; max-width: 220px; font-size: .86rem; line-height: 1.45; color: #3b4a63; }
+.pj7-meta { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: #3b4a63; } .pj7-meta svg { color: #3b4a63; } .pj7-meta em { font-style: normal; color: #aab4c6; margin: 0 4px; }
+.pj7-meta .dl { color: #e5484d; } .pj7-card .pj7-meta > span:not(.dl) { color: #3b4a63; }
+.pj7-go { position: absolute; right: 18px; bottom: 18px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #fff; color: #1d5bd8; font-weight: 700; box-shadow: 0 6px 16px -6px rgba(20,50,110,.5); transition: transform .2s; }
+.pj7-card:hover .pj7-go { transform: translateX(3px); }
+.pj7-card.noimg { background: linear-gradient(120deg, #fff 55%, color-mix(in srgb, var(--c) 10%, #fff)); }
+.pj7-foot { display: grid; grid-template-columns: .85fr 1.3fr; gap: 0; margin: 0 -20px 28px; padding: 22px 24px; border-radius: 12px; background: #fff; border: 1px solid #e6ecf5; box-shadow: 0 14px 30px -26px rgba(20,50,110,.45); }
+.pj7-how { display: flex; gap: 18px; padding-right: 24px; border-right: 1px solid #eef2f8; }
+.pj7-how > i { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; color: #1d5bd8; background: #e9f0fd; }
+.pj7-how b { font-size: 1rem; } .pj7-how p { margin: 8px 0 0; font-size: .9rem; line-height: 1.5; color: #3b4a63; }
+.pj7-quick { padding-left: 28px; } .pj7-quick > b { display: flex; align-items: center; gap: 10px; font-size: 1rem; } .pj7-quick > b svg { color: #1d5bd8; }
+.pj7-quick > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.pj7-quick a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid #e6ecf5; font-size: .84rem; color: #0f1b33; text-decoration: none; white-space: nowrap; }
+.pj7-quick a i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; color: #1d5bd8; background: #e9f0fd; flex: none; } .pj7-quick a em { margin-left: auto; font-style: normal; color: #8a97ad; }
+.pj7-quick a:hover { border-color: #1d5bd8; }
+@media (max-width: 1200px) { .pj7-grid, .pj7-foot { margin-left: 0; margin-right: 0; } .pj7 { margin: -8px -16px 0; padding: 24px; } .pj7-quick > div { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1000px) { .pj7-grid { grid-template-columns: 1fr 1fr; } .pj7-foot { grid-template-columns: 1fr; } .pj7-how { border-right: 0; padding: 0 0 18px; border-bottom: 1px solid #eef2f8; } .pj7-quick { padding: 18px 0 0; } .pj7-art { width: 100%; opacity: .3; } }
+@media (max-width: 640px) { .pj7-grid { grid-template-columns: 1fr; } .pj7-txt > p br { display: none; } .pj7-kpis > div { min-width: 0; flex: 1; } .pj7-quick > div { grid-template-columns: 1fr; } }
+.pj7-card:not(.noimg) .pj7-go { display: none; } .pj7-art { background-position: right center; }

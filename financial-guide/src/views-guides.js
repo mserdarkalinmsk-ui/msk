@@ -59,13 +59,26 @@
         <span class="pj-r"><b>${esc(t)}</b>${badge ? `<span class="pj-badge">${badge}</span>` : lifecycle[p] ? `<em>${lifecycle[p]} steps</em>` : ""}</span>
         <small>${esc(d)}</small>${v !== null ? `<span class="pj-bar" title="${v}% of steps opened"><i style="width:${v}%"></i></span>` : ""}</a>`; };
       const rules = [[L.lowGoods, "Direct award · goods & services"], [L.lowIntellectual, "Direct award · intellectual services"], [L.legalReview, "E-procurement · legal review (XB)"], [L.international, "International public call"]];
-      return { html: `<header class="pj-head"><div>${FG.ui.head("01 / Project finance · Project Team", "Projects", "The financial life cycle of a project, from commitment to closure. Select a module to open its procedure, controls and documents.")}</div>
-        <div class="pj-kpis"><div><small>MODULES</small><b>${modules}</b></div><div><small>PROCEDURE STEPS</small><b>${steps}</b></div><div><small>STEPS OPENED</small><b>${completed}%</b></div></div></header>
-        <div class="pj-chev">${PHASES.map(([n, t, sub, c]) => `<div style="--c:var(--c${c})"><small>PHASE ${n}</small><b>${t}</b><span>${sub}</span></div>`).join("")}</div>
-        <div class="pj-cols">${PHASES.map(([, , , c, mods]) => `<div class="pj-col${mods.length > 2 ? " two" : ""}">${mods.map((m) => card(m, c)).join("")}</div>`).join("")}
-          <div class="pj-flow">CONTRACT SIGNED<i></i>PO RAISED → RECEIVED → INVOICE PAID<i></i>BOOKS CLOSED · FILE ARCHIVED</div></div>
-        ${FG.routeFinder()}<div class="pj-bottom"><section class="pj-box"><h3>KEY THRESHOLDS · PROCUREMENT</h3><div class="pj-rules">${rules.map(([v, t]) => `<a href="#/rules"><b>${euro(v)}</b><span>${t}</span></a>`).join("")}</div></section>
-          <section class="pj-box pj-links"><h3>RESOURCES</h3><a href="#/links">Useful links & guidelines →</a><a href="#/roles">Roles & documents →</a><a href="#/glossary">Glossary →</a></section></div>` };
+      const I = window.FG_IMG || {};
+      const MODS = [
+        ["procurement", "cart", "Procurement", "Tendering, thresholds, contracts, evaluation, award and contract.", "#1d5bd8", "pj-proc", `${lifecycle.procurement} stages`, "Core"],
+        ["po-file", "db", "PO & Payment Files", "PO creation, delivery, payment package and reconciliation.", "#12a07a", "pj-po", `${C.poSteps.length + C.paySteps.length} steps`, "Core"],
+        ["petty-cash", "db", "Petty Cash", "Limits, approval, reconciliation and supporting documents.", "#e3a008", "pj-pc", "€50 per invoice", "Core"],
+        ["year-end", "calendar", "End of Year Procedure", "Cut-off, allocations, commitments, reporting and closure checklist.", "#6d3fd6", "pj-ye", `${(C.eoyPhases || []).length} phases`, "Deadline"],
+        ["events", "people", "Events & GDD", "Event budget, logistics, procurement and GDD support.", "#e5484d", "pj-ev", "Budget & logistics", "Core"],
+        ["filing", "folder", "Filing Management", "Evidence map, DMS structure, naming and audit-ready filing.", "#0ea5c6", "pj-fil", `${Object.keys(C.filingMap || {}).length} filing areas`, "Core"],
+        ["grants", "grant", "Grants", "Call, criteria, cost eligibility, evaluation and agreement.", "#0f766e", "", `${lifecycle.grants} stages`, "Core"],
+        ["vat", "coins", "VAT Procedures", "Exemptions, supporting documents and follow-up.", "#475569", "", "Exemptions", "Core"],
+      ];
+      return { html: `<section class="pj7"><div class="pj7-art" style="background-image:url(${I["pj-hero"] || ""})" aria-hidden="true"></div>
+          <div class="pj7-txt"><nav class="pj7-crumb"><a href="#/home">Home</a><span>›</span><b>Projects</b></nav><h1>Projects</h1>
+            <p>Project finance guidance, operational workflows and practical tools<br>for day-to-day implementation.</p>
+            <div class="pj7-kpis">${[["layers", modules, "Modules", "#1d5bd8"], ["doc", steps, "Procedure Steps", "#12a07a"], ["chart", completed + "%", "Steps Opened", "#1d5bd8"]].map(([i, v, l, c]) => `<div style="--c:${c}"><i>${FG.icon(i, 22)}</i><span><b>${v}</b><small>${l}</small></span></div>`).join("")}</div></div></section>
+        <section class="pj7-grid">${MODS.map(([h, ic, t, d, c, img, cnt, tag], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" style="background-image:url(${I[img] || ""})"></span>` : ""}
+            <i class="pj7-ic">${FG.icon(ic, 28)}</i><div><small>${String(i + 1).padStart(2, "0")}</small><h3>${t}</h3><p>${esc(d)}</p>
+            <span class="pj7-meta">${FG.icon(tag === "Deadline" ? "calendar" : "book", 15)}${cnt}<em>|</em><span class="${tag === "Deadline" ? "dl" : ""}">${tag}</span></span></div><span class="pj7-go">→</span></a>`).join("")}</section>
+        <section class="pj7-foot"><div class="pj7-how"><i>${FG.icon("trophy", 22)}</i><div><b>How to use</b><p>Each module includes short learning modules, step-by-step procedures, practical examples and templates. Start with the module relevant to your current task.</p></div></div>
+          <div class="pj7-quick"><b>${FG.icon("link", 20)} Quick links</b><div>${[["files", "Project templates", "links"], ["doc", "Guidance notes", "rules"], ["check", "Checklist library", "tools"], ["book", "Knowledge base", "glossary"]].map(([i, t, h]) => `<a href="#/${h}"><i>${FG.icon(i, 16)}</i>${t}<em>›</em></a>`).join("")}</div></div></section>` };
     },
   });
   route("tools", {
