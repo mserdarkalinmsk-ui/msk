@@ -121,17 +121,10 @@
       }[role] || [];
       const HUB_IC = ["folder", "people", "check", "tree"];
       return { html: `
-        <section class="hz-hero"><div class="hz-main"><span class="hz-eye">Council of Europe · Financial Guide</span>
-          <h1>Find the rule, plan your case, keep the right documents.</h1>
-          <form class="hz-ask" data-hz-ask><span aria-hidden="true">${FG.icon("ask", 20)}</span><input name="q" type="search" placeholder="Ask anything — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask</button></form>
-          <div class="hz-try">${["Tenders Board threshold", "Gift from a bidder", "Offer validity", "Indirect cost cap"].map((q) => `<button type="button" data-hz-q="${esc(q)}">${esc(q)}</button>`).join("")}</div></div>
-          ${last ? `<a class="hz-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hz-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
-        </section>
-        <section class="hz-for"><div class="hz-for-h"><h2>${role ? "Your work" : "Start here"}</h2>${FG.rolePicker ? FG.rolePicker() : ""}</div>
-          <div class="hz-tasks">${FOR.map(([ic, t, d, h], i) => `<a href="#/${h}" style="--c:var(--c${(i % 4) + 1})"><i>${FG.icon(ic, 22)}</i><b>${esc(t)}</b><span>${esc(d)}</span><em>→</em></a>`).join("")}</div></section>
-        <section class="hz-spaces">${HUBS.map(([k, t, sub, d, p, c], i) => `<a style="--c:var(--c${c})" href="#/${p}"><i>${FG.icon(HUB_IC[i], 20)}</i><div><b>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</b><small>${counts[i]}</small></div></a>`).join("")}</section>
-        ${FG.routeFinder()}
-        <section class="hz-more"><a href="#/ask">${FG.icon("ask", 18)} Ask the guide</a><a href="#/procurement/test">${FG.icon("trophy", 18)} Test yourself</a><a href="#/scenarios">${FG.icon("target", 18)} Scenario practice</a><a href="#/glossary">${FG.icon("abc", 18)} Glossary</a></section>` };
+        <section class="hs2"><h1>Find the rule, plan your case, keep the right documents.</h1>
+          <form class="hz-ask" data-hz-ask><span aria-hidden="true">${FG.icon("ask", 20)}</span><input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask</button></form>
+          ${last ? `<a class="hs2-last" href="${esc(last.href)}">Continue: <b>${esc(last.title)}</b> →</a>` : `<a class="hs2-last" href="#/procurement">New here? <b>Start with procurement</b> →</a>`}</section>
+        <section class="hs2-grid">${HUBS.map(([k, t, sub, d, p, c], i) => `<a style="--c:var(--c${c})" href="#/${p}"><i>${FG.icon(HUB_IC[i], 26)}</i><b>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</b><span>${esc(d)}</span><em>${counts[i]} →</em></a>`).join("")}</section>` };
     },
   });
   const askGo = (q) => { FG.store.set("ask:q", q); FG.go("ask"); };

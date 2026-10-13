@@ -1862,3 +1862,17 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .hz-more a:hover { border-color: #2d6bd8; color: #2d6bd8; }
 @media (max-width: 1000px) { .hz-hero { grid-template-columns: 1fr; padding: 32px 26px; } .hz-tasks, .hz-spaces { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .hz-hero { padding: 26px 18px; border-radius: 20px; } .hz-spaces { grid-template-columns: 1fr; } .hz-tasks { gap: 10px; } .hz-tasks a { padding: 14px; } .hz-tasks i { width: 36px; height: 36px; margin-bottom: 6px; } .hz-tasks em { display: none; } .hz-tasks span { font-size: .78rem; } .hz-ask button { padding: 10px 14px; } }
+/* Home v4: calm — one question box, four doors */
+.hs2 { max-width: 760px; margin: 56px auto 0; text-align: center; }
+.hs2 h1 { margin: 0 0 26px; font-size: clamp(1.9rem, 3.6vw, 2.8rem); line-height: 1.1; letter-spacing: -.025em; }
+.hs2 .hz-ask { margin: 0 auto; border: 1px solid var(--line); box-shadow: 0 18px 40px -28px rgba(15, 30, 60, .45); text-align: left; }
+.hs2-last { display: inline-block; margin-top: 16px; color: var(--muted); text-decoration: none; font-size: .92rem; }
+.hs2-last b { color: #2d6bd8; }
+.hs2-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 52px 0 24px; }
+.hs2-grid a { display: grid; align-content: start; gap: 8px; padding: 24px 22px; border-radius: 20px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; transition: transform .18s, box-shadow .18s, border-color .18s; }
+.hs2-grid a:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 45%, var(--line)); box-shadow: 0 20px 40px -26px color-mix(in srgb, var(--c) 70%, transparent); }
+.hs2-grid i { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 8px; border-radius: 15px; color: var(--c); background: color-mix(in srgb, var(--c) 11%, transparent); }
+.hs2-grid b { font-size: 1.12rem; } .hs2-grid span { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.hs2-grid em { font-style: normal; font-weight: 700; color: var(--c); font-size: .88rem; margin-top: 4px; }
+@media (max-width: 1000px) { .hs2-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .hs2 { margin-top: 28px; } .hs2-grid { grid-template-columns: 1fr; margin-top: 32px; } }
