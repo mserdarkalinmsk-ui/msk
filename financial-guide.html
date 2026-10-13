@@ -2378,6 +2378,7 @@ body.pk-compact .pk .pa-fs:not(:last-child)::after{top:15px;left:calc(50% + 16px
 .pk .sm-col li p{margin:0 0 6px;font-size:13.5px;line-height:1.5}
 .pk .sm-col li .sb-src{position:static;display:inline-block;width:auto;height:auto;border-radius:6px;padding:2px 8px;font-size:11px}
 .pk .sb-fact summary b{white-space:normal;font-size:clamp(18px,1.6vw,24px)}
+.pk .pa-flow{transition:none}
 
 </style>
 </head>
@@ -10257,7 +10258,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 22:01</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 22:04</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -12956,7 +12957,7 @@ function sourceCards(chapter){let [a,b]=chapter.pages;const pages=[];for(let k=a
 function stageCards(chapter){const vis=FG.store.get('procurement:visited',{});return `<div class="pa-lessons">${chapter.stages.map((name)=>{const i=C.procurementStages.findIndex(x=>x.name===name),st=C.procurementStages[i]||{},done=vis[i]||vis[name];return `<a class="pa-lesson-card${done?' done':''}" href="${stageurl(name)}"><span class="pa-ln">${done?'✓':String(i+1).padStart(2,'0')}</span><div><small>Stage ${i+1} of ${C.procurementStages.length}</small><b>${esc(st.title||name)}</b>${st.remember?`<p>${esc(st.remember)}</p>`:''}</div><u>${done?'Review':'Open lesson'} →</u></a>`}).join('')}</div>`}
 function chapterPage(id){const idx=chapters.findIndex(c=>c.id===id),ch=chapters[idx]||chapters[0],next=chapters[idx+1];return `<div class="pa-root">${hero(ch.title,ch.sub,`CHAPTER ${ch.n} / 06 · PDF PP. ${ch.pages[0]}–${ch.pages[1]}`)}<nav class="pa-module-nav" aria-label="Learning chapters">${chapters.map(c=>`<a href="${purl(c.id)}" class="${c.id===ch.id?'on':''}">${c.n} · ${esc(c.title)}</a>`).join('')}</nav><div class="pa-lesson-layout"><main class="pa-lesson">${[].concat(visual(ch.id))[0]||''}<div class="pa-headline"><div><h2>Lessons</h2></div></div>${stageCards(ch)}<div class="pa-next">${next?`<a class="pa-btn primary" href="${purl(next.id)}">Next chapter: ${esc(next.title)} →</a>`:`<a class="pa-btn primary" href="#/procurement">Back to the Academy →</a>`}</div></main><aside class="pa-side"><div class="pa-panel"><h3>What you will learn</h3><div class="pa-ref-list" style="margin-top:11px">${ch.outcomes.map((o,i)=>`<div style="display:flex;align-items:start;gap:8px;font-size:12px;color:var(--ink-2);line-height:1.6"><span style="color:#1f72cf">✓</span>${esc(o)}</div>`).join('')}</div></div>${sourceCards(ch)}</aside></div></div>`}
 function flow(cur,phases){const st=C.procurementStages,vis=FG.store.get('procurement:visited',{}),cols=['#2563eb','#14b8a6','#f59e0b','#8b5cf6'],pi=(i)=>Math.max(0,(phases||[]).findIndex(([,n])=>n.includes(st[i].name)));return `<nav class="pa-flow" aria-label="Procurement stages" style="--n:${st.length}">${(phases||[]).map(([t,n],k)=>`<span class="pa-ph${k===pi(cur)?' on':''}" style="grid-column:span ${n.length};--c:${cols[k%4]}">${esc(t)}</span>`).join('')}${st.map((x,i)=>{const c=cols[pi(i)%4],n=String(i+1).padStart(2,'0');return `<a class="pa-fs${i===cur?' on':''}${vis[i]&&i!==cur?' seen':''}" href="${stageurl(x.name)}" data-pk="${i}" style="--c:${c}"${i===cur?' aria-current="step"':''}><span class="pa-fs-dot">${vis[i]&&i!==cur?'✓':n}</span><b>${esc(x.name)}</b></a>`}).join('')}</nav>`}
-addEventListener('scroll',()=>{const f=document.querySelector('.pa-flow');if(f)document.body.classList.toggle('pk-compact',window.scrollY>260)},{passive:true});
+addEventListener('scroll',()=>{if(!document.querySelector('.pa-flow'))return;const y=window.scrollY,b=document.body.classList,on=b.contains('pk-compact');if(!on&&y>320)b.add('pk-compact');else if(on&&y<40)b.remove('pk-compact');},{passive:true});
 // In-place stage switching: swap the stage under the stepper without leaving the page.
 function go(href,dir){const y=window.scrollY,top=(document.querySelector('.pa-flow')||{}).offsetTop||0;history.replaceState(null,'',href);FG.store.set('pk:dir',dir);FG.refresh(true);window.scrollTo(0,Math.min(y,Math.max(0,top-80)));}
 document.addEventListener('click',e=>{const a=e.target.closest('.pk a[href^="#/procurement/"]');if(!a||e.ctrlKey||e.metaKey)return;const cur=FG.store.get('procurement:last',0),to=+(a.dataset.pk??NaN);e.preventDefault();go(a.getAttribute('href'),isNaN(to)?(a.classList.contains('primary')?1:-1):(to>cur?1:-1));});

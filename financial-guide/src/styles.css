@@ -2366,3 +2366,4 @@ body.pk-compact .pk .pa-fs:not(:last-child)::after{top:15px;left:calc(50% + 16px
 .pk .sm-col li p{margin:0 0 6px;font-size:13.5px;line-height:1.5}
 .pk .sm-col li .sb-src{position:static;display:inline-block;width:auto;height:auto;border-radius:6px;padding:2px 8px;font-size:11px}
 .pk .sb-fact summary b{white-space:normal;font-size:clamp(18px,1.6vw,24px)}
+.pk .pa-flow{transition:none}
