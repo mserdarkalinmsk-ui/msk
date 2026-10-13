@@ -120,11 +120,15 @@
         fin: [["pay", "Payment readiness", "Pre-flight before Finance", "engines/payment-readiness"], ["calendar", "Year-end", "Cut-off and allocation", "year-end"], ["coins", "Petty cash", "Limits and reconciliation", "petty-cash"], ["files", "My open actions", `${fs.mine || 0} waiting for you`, "files"]],
       }[role] || [];
       const HUB_IC = ["folder", "people", "check", "tree"];
+      const stats = [[C.procurementStages.length + C.grantStages.length, "guided stages"], [engines, "decision engines"], ["48", "practice cases"], ["100%", "offline, no data leaves"]];
       return { html: `
-        <section class="hs2"><h1>Find the rule, plan your case, keep the right documents.</h1>
-          <form class="hz-ask" data-hz-ask><span aria-hidden="true">${FG.icon("ask", 20)}</span><input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask</button></form>
-          ${last ? `<a class="hs2-last" href="${esc(last.href)}">Continue: <b>${esc(last.title)}</b> →</a>` : `<a class="hs2-last" href="#/procurement">New here? <b>Start with procurement</b> →</a>`}</section>
-        <section class="hs2-grid">${HUBS.map(([k, t, sub, d, p, c], i) => `<a style="--c:var(--c${c})" href="#/${p}"><i>${FG.icon(HUB_IC[i], 26)}</i><b>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</b><span>${esc(d)}</span><em>${counts[i]} →</em></a>`).join("")}</section>` };
+        <section class="hp"><div class="hp-in">
+          <span class="hp-pill"><i></i>Procurement · Grants · Payments · Year-end</span>
+          <h1>Find the rule, plan your case,<br><span>keep the right documents.</span></h1>
+          <form class="hp-ask" data-hz-ask>${FG.icon("ask", 20)}<input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask <kbd>↵</kbd></button></form>
+          ${last ? `<a class="hp-last" href="${esc(last.href)}"><small>Continue</small>${esc(last.title)} <em>→</em></a>` : `<a class="hp-last" href="#/procurement"><small>New here</small>Start with the procurement guide <em>→</em></a>`}
+          <dl class="hp-stats">${stats.map(([v, l]) => `<div><dt>${v}</dt><dd>${l}</dd></div>`).join("")}</dl></div></section>
+        <section class="hp-grid">${HUBS.map(([k, t, sub, d, p, c], i) => `<a style="--c:var(--c${c})" href="#/${p}"><span class="hp-n">0${i + 1}</span><i>${FG.icon(HUB_IC[i], 24)}</i><b>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</b><span>${esc(d)}</span><em>${counts[i]} <u>→</u></em></a>`).join("")}</section>` };
     },
   });
   const askGo = (q) => { FG.store.set("ask:q", q); FG.go("ask"); };
