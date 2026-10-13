@@ -241,11 +241,17 @@
   }
   function keyRulesHtml(s, best) {
     const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
-    const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
-    return `<div class="sb-bottom">
-        ${musts.length ? `<div class="sb-must"><h4><span>!</span> Must not miss <small>${musts.length} binding rules from this stage</small></h4><ul>${musts.map(mustLi).join("")}</ul></div>` : ""}
-        <div class="sb-side">${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}${best ? `<div class="sb-good"><h4>Best practice</h4><p>${esc(best)}</p></div>` : ""}</div>
-      </div>`;
+    // The first obligation in the sentence decides: "must not / never / cannot …" is a don't, "must / should …" a do.
+    const isDont = (m) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); };
+    const dos = musts.filter((x) => !isDont(x[2])), donts = musts.filter((x) => isDont(x[2]));
+    const li = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
+    const col = (cls, icon, title, list) => list.length ? `<div class="sm-col ${cls}"><h4><span>${icon}</span>${title}<small>${list.length}</small></h4><ol>${list.map(li).join("")}</ol></div>` : "";
+    return `<div class="sm">
+      <div class="sm-head">${s.remember ? `<div class="sm-rule"><small>The rule of this stage</small><b>${esc(s.remember)}</b></div>` : ""}
+        ${(s.keyFacts || []).length ? `<div class="sm-figs">${s.keyFacts.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : ""}</div>
+      ${musts.length ? `<div class="sm-cols">${col("do", "✓", "Always do", dos)}${col("dont", "✕", "Never do", donts)}</div>` : ""}
+      ${s.warning || best ? `<div class="sm-cols">${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}${best ? `<div class="sb-good"><h4>Best practice</h4><p>${esc(best)}</p></div>` : ""}</div>` : ""}
+    </div>`;
   }
   FG.reviewChip = () => { const n = FG.store.get("recall:review", []).length; return n ? `<button type="button" class="hub-ref" data-review><span>↻</span><div><b>Cards to review</b><small>${n} point${n > 1 ? "s" : ""} you marked "review later"</small></div><u>Open →</u></button>` : ""; };
   document.addEventListener("click", (e) => {
@@ -373,7 +379,7 @@
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
-            ["rules", "Summary", keyRulesHtml(s, best), nMust || null],
+            ["rules", "Summary", keyRulesHtml(s, best), null],
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],

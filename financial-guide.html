@@ -1589,6 +1589,29 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .vs-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
 .vs-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
 @media (max-width: 700px) { .vs-rank li { grid-template-columns: 26px 1fr 50px; } .vs-bar { grid-column: 1 / -1; } }
+/* summary tab: do / don't */
+.sm { display: grid; gap: 14px; }
+.sm-head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; }
+.sm-rule { padding: 16px 18px; border-radius: 14px; color: #fff; background: linear-gradient(135deg, #1b3a7a, #24529e); }
+.sm-rule small { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; font-weight: 700; }
+.sm-rule b { display: block; margin-top: 4px; font-size: 17px; line-height: 1.4; }
+.sm-figs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+.sm-figs div { padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); display: grid; align-content: center; gap: 2px; }
+.sm-figs b { font-size: 18px; color: var(--navy); line-height: 1.2; }
+.sm-figs span { font-size: 12px; color: var(--muted); }
+.sm-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: start; }
+.sm-col { border-radius: 16px; padding: 14px 16px; border: 1px solid var(--line); background: var(--panel); }
+.sm-col h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.sm-col h4 span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; }
+.sm-col h4 small { margin-left: auto; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.sm-col.do { border-top: 4px solid #1f9d6b; } .sm-col.do h4 { color: #167a53; } .sm-col.do h4 span { background: #1f9d6b; }
+.sm-col.dont { border-top: 4px solid #c0392b; } .sm-col.dont h4 { color: #b03a2e; } .sm-col.dont h4 span { background: #c0392b; }
+.sm-col ol { list-style: none; margin: 0; padding: 0; counter-reset: r; }
+.sm-col li { counter-increment: r; display: grid; grid-template-columns: 22px 1fr; gap: 4px 10px; padding: 10px 0; border-top: 1px dashed var(--line); }
+.sm-col li::before { content: counter(r); font-size: 12px; font-weight: 700; color: var(--muted); padding-top: 2px; }
+.sm-col li p { margin: 0; font-size: 14px; line-height: 1.5; }
+.sm-col li .sb-src { grid-column: 2; justify-self: start; }
+@media (max-width: 800px) { .sm-head { grid-template-columns: 1fr; } .sm-figs { grid-auto-flow: row; } }
 
 </style>
 </head>
@@ -9368,7 +9391,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 06:15</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 06:34</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10230,11 +10253,17 @@ window.FG_CONTENT = {
   }
   function keyRulesHtml(s, best) {
     const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
-    const mustLi = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
-    return `<div class="sb-bottom">
-        ${musts.length ? `<div class="sb-must"><h4><span>!</span> Must not miss <small>${musts.length} binding rules from this stage</small></h4><ul>${musts.map(mustLi).join("")}</ul></div>` : ""}
-        <div class="sb-side">${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}${best ? `<div class="sb-good"><h4>Best practice</h4><p>${esc(best)}</p></div>` : ""}</div>
-      </div>`;
+    // The first obligation in the sentence decides: "must not / never / cannot …" is a don't, "must / should …" a do.
+    const isDont = (m) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); };
+    const dos = musts.filter((x) => !isDont(x[2])), donts = musts.filter((x) => isDont(x[2]));
+    const li = ([k, h, m]) => `<li><p>${esc(m)}</p><button type="button" class="sb-src" data-rd-jump="${k}">${esc(h)} →</button></li>`;
+    const col = (cls, icon, title, list) => list.length ? `<div class="sm-col ${cls}"><h4><span>${icon}</span>${title}<small>${list.length}</small></h4><ol>${list.map(li).join("")}</ol></div>` : "";
+    return `<div class="sm">
+      <div class="sm-head">${s.remember ? `<div class="sm-rule"><small>The rule of this stage</small><b>${esc(s.remember)}</b></div>` : ""}
+        ${(s.keyFacts || []).length ? `<div class="sm-figs">${s.keyFacts.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : ""}</div>
+      ${musts.length ? `<div class="sm-cols">${col("do", "✓", "Always do", dos)}${col("dont", "✕", "Never do", donts)}</div>` : ""}
+      ${s.warning || best ? `<div class="sm-cols">${s.warning ? `<div class="sb-warn"><h4>Common pitfall</h4><p>${esc(s.warning)}</p></div>` : ""}${best ? `<div class="sb-good"><h4>Best practice</h4><p>${esc(best)}</p></div>` : ""}</div>` : ""}
+    </div>`;
   }
   FG.reviewChip = () => { const n = FG.store.get("recall:review", []).length; return n ? `<button type="button" class="hub-ref" data-review><span>↻</span><div><b>Cards to review</b><small>${n} point${n > 1 ? "s" : ""} you marked "review later"</small></div><u>Open →</u></button>` : ""; };
   document.addEventListener("click", (e) => {
@@ -10362,7 +10391,7 @@ window.FG_CONTENT = {
           </div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
-            ["rules", "Summary", keyRulesHtml(s, best), nMust || null],
+            ["rules", "Summary", keyRulesHtml(s, best), null],
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
             ["who", "Who is involved", people, roles.length || null],
