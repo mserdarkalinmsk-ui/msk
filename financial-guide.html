@@ -2330,6 +2330,54 @@ body.pk-compact .pk .pa-fs:not(:last-child)::after{top:15px;left:calc(50% + 16px
 .pk .sb-fact summary span{font-size:13px;color:var(--muted)}
 .pk .sb-fact summary::after{position:absolute;right:0;top:0}
 .pk .sb-fact summary b *,.pk .sb-rule b *{background:none!important;padding:0!important}.pk .sb-flow::before,.pk .sb-flow::after{display:none}
+/* ===== Compact infographic pass ===== */
+.pk{--blue:#2c5be6;--green:#0f8a5f;--amber:#c27c0e;--red:#c43838}
+.pk .sb-hero{padding:28px 40px 22px}.pk .sb-hero h2{font-size:32px;margin:10px 0 8px}.pk .sb-hero p{font-size:15.5px}
+.pk .sb-grid{padding:24px 40px 28px;gap:22px}
+/* rule: highlighted banner with icon */
+.pk .sb-rule{display:flex;gap:16px;align-items:center;border:0;border-radius:14px;padding:16px 20px;margin-bottom:18px;background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 16%,var(--panel)),var(--panel));border-left:4px solid var(--gold)}
+.pk .sb-rule::before{content:"!";flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#fff;font:800 18px/1 var(--font)}
+.pk .sb-rule small{display:block}.pk .sb-rule b{font-size:20px;margin-top:2px;font-weight:600}
+/* understand/do/control as icon cards */
+.pk .sb-flow{gap:14px}
+.pk .sb-flow li{padding:16px 18px!important;border:1px solid var(--line)!important;border-top:3px solid var(--c)!important;border-radius:14px;background:var(--panel)}
+.pk .sb-flow li:nth-child(1){--c:var(--blue)}.pk .sb-flow li:nth-child(2){--c:var(--green)}.pk .sb-flow li:nth-child(3){--c:var(--amber)}
+.pk .sb-flow em{display:grid!important;place-items:center;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);margin-bottom:10px;position:static}
+.pk .sb-flow em svg{width:18px;height:18px}
+.pk .sb-flow small{color:var(--c);margin-bottom:6px;font-weight:800}.pk .sb-flow p{font-size:14px;line-height:1.55}
+/* key figures as stat tiles */
+.pk .sb-facts{padding-top:18px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.pk .sb-fact{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel-2)}
+.pk .sb-fact[open]{border-color:var(--line)}
+.pk .sb-fact > :not(summary){display:none}
+.pk .sb-fact summary{padding:0 0 0 46px;min-height:36px;cursor:default;pointer-events:none}
+.pk .sb-fact summary::after{display:none}
+.pk .sb-fic{position:absolute;left:0;top:2px;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--navy) 10%,transparent);color:var(--navy)}
+.pk .sb-fic svg{width:18px;height:18px}
+.pk .sb-fact summary b{font-size:24px;color:var(--navy)}
+.pk .sb-fact:nth-of-type(2) .sb-fic{color:var(--green);background:color-mix(in srgb,var(--green) 12%,transparent)}.pk .sb-fact:nth-of-type(2) summary b{color:var(--green)}
+.pk .sb-fact:nth-of-type(3) .sb-fic{color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,transparent)}.pk .sb-fact:nth-of-type(3) summary b{color:var(--amber)}
+/* reading */
+.pk-read .card-body{padding:26px 40px}.pk-h{margin-bottom:8px}.pk-h h3{font-size:22px}
+.pk .sd{margin-bottom:16px}
+.pk .rd-panel header h3{font-size:24px}
+/* summary lists: two columns, icon bullets */
+.pk .sm-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pk .sm-col ol{display:grid;gap:8px;padding:0;counter-reset:none}
+.pk .sm-col li{list-style:none;padding:10px 12px 10px 40px;border-radius:10px;background:var(--panel-2);position:relative;font-size:13.5px}
+.pk .sm-col li::before{position:absolute;left:12px;top:10px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:800 11px/1 var(--font);color:#fff}
+.pk .sm-col.do li::before{content:"✓";background:var(--green)}.pk .sm-col.dont li::before{content:"✕";background:var(--red)}
+.pk .sb-warn,.pk .sb-good{position:relative;padding-left:56px!important;border-radius:14px}
+.pk .sb-warn::before,.pk .sb-good::before{position:absolute;left:16px;top:16px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font:800 14px/1 var(--font)}
+.pk .sb-warn::before{content:"⚠";background:var(--amber)}.pk .sb-good::before{content:"★";background:var(--green)}
+.pk-end{margin-top:20px}.pk-next{padding:22px 28px}.pk-next b{font-size:22px}
+@media(max-width:900px){.pk .sm-cols{grid-template-columns:1fr}}
+.pk .sm-cols{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.pk .sm-col ol{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.pk .sm-col li{display:block!important;grid-template-columns:none!important}
+.pk .sm-col li p{margin:0 0 6px;font-size:13.5px;line-height:1.5}
+.pk .sm-col li .sb-src{position:static;display:inline-block;width:auto;height:auto;border-radius:6px;padding:2px 8px;font-size:11px}
+.pk .sb-fact summary b{white-space:normal;font-size:clamp(18px,1.6vw,24px)}
 
 </style>
 </head>
@@ -10209,7 +10257,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 21:53</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 22:01</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11308,10 +11356,10 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
       <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
-          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>${FG.roleAtStage ? FG.roleAtStage(cfg.base, s.name) : ""}
+          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${FG.icon(["book", "target", "check"][k], 18)}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>${FG.roleAtStage ? FG.roleAtStage(cfg.base, s.name) : ""}
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
-          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+          return `<details class="sb-fact"${k ? "" : " open"}><summary><i class="sb-fic">${FG.icon(/€/.test(v) ? "coins" : /\b(h|day|days|week|weeks|month|months|year|years)\b/i.test(v) ? "calendar" : /%/.test(v) ? "chart" : "target", 18)}</i><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
       </div>
     </div>`;
   }
@@ -11347,8 +11395,8 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
         ${actions ? `<div class="mod-actions">${actions}</div>` : ""}</div>
       <div class="sb-grid${(b.figures || []).length ? "" : " solo"}"><div class="sb-main">
         ${b.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(b.remember)}</b></div>` : ""}
-        <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol></div>
-        ${(b.figures || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${b.figures.map(([v, l, w], k) => `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary><div class="sb-note"><p>${esc(w)}</p></div></details>`).join("")}</aside>` : ""}
+        <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${FG.icon(["book", "target", "check"][k], 18)}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol></div>
+        ${(b.figures || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${b.figures.map(([v, l, w], k) => `<details class="sb-fact"${k ? "" : " open"}><summary><i class="sb-fic">${FG.icon(/€/.test(v) ? "coins" : /\b(h|day|days|week|weeks|month|months|year|years)\b/i.test(v) ? "calendar" : /%/.test(v) ? "chart" : "target", 18)}</i><b>${esc(v)}</b><span>${esc(l)}</span></summary><div class="sb-note"><p>${esc(w)}</p></div></details>`).join("")}</aside>` : ""}
       </div></div></div></section><div class="mt"></div>`;
   };
   /* ---------- fact details: everything the guide says about a key figure ---------- */

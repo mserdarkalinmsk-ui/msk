@@ -334,10 +334,10 @@
       <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
-          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>${FG.roleAtStage ? FG.roleAtStage(cfg.base, s.name) : ""}
+          <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${FG.icon(["book", "target", "check"][k], 18)}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol>${FG.roleAtStage ? FG.roleAtStage(cfg.base, s.name) : ""}
         </div>
         ${(s.keyFacts || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${s.keyFacts.map(([v, l], k) => { const f = factInfo(cfg.base, s.name, v);
-          return `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
+          return `<details class="sb-fact"${k ? "" : " open"}><summary><i class="sb-fic">${FG.icon(/€/.test(v) ? "coins" : /\b(h|day|days|week|weeks|month|months|year|years)\b/i.test(v) ? "calendar" : /%/.test(v) ? "chart" : "target", 18)}</i><b>${esc(v)}</b><span>${esc(l)}</span></summary>${(() => { const n = ((C.factNotes || {})[cfg.base] || {})[s.name], fn = n && (n[`${v}|${l}`] || n[v]); return fn ? `<div class="sb-note"><p>${esc(fn.what)}</p><div class="sb-why"><small>Why it matters</small><p>${esc(fn.why)}</p></div>${fn.ref ? `<span class="sb-ref">Guide § ${esc(fn.ref)}</span>` : ""}</div>` : f.text ? `<p>${esc(f.text)}</p>` : ""; })()}${f.lim ? `<button type="button" class="sb-more" data-fact="${esc(v)}" data-fact-label="${esc(l)}" data-base="${cfg.base}" data-stage="${esc(s.name)}">Full rule &amp; where else it applies ›</button>` : ""}</details>`; }).join("")}</aside>` : ""}
       </div>
     </div>`;
   }
@@ -373,8 +373,8 @@
         ${actions ? `<div class="mod-actions">${actions}</div>` : ""}</div>
       <div class="sb-grid${(b.figures || []).length ? "" : " solo"}"><div class="sb-main">
         ${b.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(b.remember)}</b></div>` : ""}
-        <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${k + 1}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol></div>
-        ${(b.figures || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${b.figures.map(([v, l, w], k) => `<details class="sb-fact"${k ? "" : " open"}><summary><b>${esc(v)}</b><span>${esc(l)}</span></summary><div class="sb-note"><p>${esc(w)}</p></div></details>`).join("")}</aside>` : ""}
+        <ol class="sb-flow">${steps.map(([t, x, sub], k) => `<li style="--c:var(--c${k + 1})"><em>${FG.icon(["book", "target", "check"][k], 18)}</em><div><small>${t} <i>· ${sub}</i></small><p>${esc(x)}</p></div></li>`).join("")}</ol></div>
+        ${(b.figures || []).length ? `<aside class="sb-facts"><h4>Key figures</h4>${b.figures.map(([v, l, w], k) => `<details class="sb-fact"${k ? "" : " open"}><summary><i class="sb-fic">${FG.icon(/€/.test(v) ? "coins" : /\b(h|day|days|week|weeks|month|months|year|years)\b/i.test(v) ? "calendar" : /%/.test(v) ? "chart" : "target", 18)}</i><b>${esc(v)}</b><span>${esc(l)}</span></summary><div class="sb-note"><p>${esc(w)}</p></div></details>`).join("")}</aside>` : ""}
       </div></div></div></section><div class="mt"></div>`;
   };
   /* ---------- fact details: everything the guide says about a key figure ---------- */
