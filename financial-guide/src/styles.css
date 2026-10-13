@@ -2109,3 +2109,5 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 @media (max-width: 1000px) { .pj7-grid { grid-template-columns: 1fr 1fr; } .pj7-foot { grid-template-columns: 1fr; } .pj7-how { border-right: 0; padding: 0 0 18px; border-bottom: 1px solid #eef2f8; } .pj7-quick { padding: 18px 0 0; } .pj7-art { width: 100%; opacity: .3; } }
 @media (max-width: 640px) { .pj7-grid { grid-template-columns: 1fr; } .pj7-txt > p br { display: none; } .pj7-kpis > div { min-width: 0; flex: 1; } .pj7-quick > div { grid-template-columns: 1fr; } }
 .pj7-card:not(.noimg) .pj7-go { display: none; } .pj7-art { background-position: right center; }
+.pj7-kpis .pj7-wide { font-size: 1.15rem; line-height: 1.15; }
+.pj7-card p { max-width: min(220px, 100%); } .pj7-card > div { max-width: 58%; }

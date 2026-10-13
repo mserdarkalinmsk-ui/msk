@@ -270,10 +270,28 @@
   ];
   route("foma", {
     crumbs: () => [["FOMA", "foma"]],
-    render: () => ({ html: `${FG.modHead("foma", "Field operations", "FOMA workflows", "Controlled handover workflows and financial guidance for day-to-day field-office operations.")}
-      <div class="modules">${FOMA.map(([p, t, s, i]) => `<a class="module" href="#/foma/${p}"><span class="ico" aria-hidden="true">${i}</span><span><b>${esc(t)}</b><small>${esc(s)}</small></span></a>`).join("")}</div>
-      <div class="section-title"><h2>Financial management lifecycle</h2></div>
-      <div class="grid g4">${C.financeLifecycle.map((x, i) => `<div class="card card-pad"><div class="eyebrow">${i + 1} · ${esc(x.question)}</div><b>${esc(x.title)}</b><p class="small muted mt">${esc(x.lead)}</p><p class="small mt"><b>Output:</b> ${esc(x.output)}</p></div>`).join("")}</div>` }),
+    render: () => {
+      const I = window.FG_IMG || {}, F = C.fomaFlows, n = (k) => (F[k].stages || []).length;
+      const W = [
+        ["foma/po-request", "cart", "PO Request", "Create and track purchase order requests.", "#1d5bd8", "fo-po", C.fomaPoStages.length],
+        ["foma/payment-request", "db", "Payment Request", "Prepare and submit payment requests.", "#12a07a", "fo-pay", C.fomaPaymentStages.length],
+        ["foma/mission-order", "plane", "Mission Order", "Mission order preparation and approval workflow.", "#e3a008", "fo-mis", n("Mission Order")],
+        ["foma/expense-claim", "doc", "Expense Claim", "Expense claim checks and reimbursement logic.", "#6d3fd6", "fo-exp", n("Expense Claim")],
+        ["foma/reports", "chart", "Financial Reports", "Understand the current financial position and prepare reports.", "#e5484d", "fo-rep", n("Financial Reports")],
+        ["foma/forecast", "trend", "Forecast", "Plan future expenditure, revise the budget and determine the applicable route.", "#0ea5c6", "fo-fc", n("Forecast")],
+        ["foma/addendum", "files", "Addendum", "Decide the route for an addendum from the latest report and forecast.", "#475569", "", 0],
+      ];
+      const total = W.reduce((t, w) => t + w[6], 0);
+      return { html: `<section class="pj7"><div class="pj7-art" style="background-image:url(${I["fo-hero"] || ""})" aria-hidden="true"></div>
+          <div class="pj7-txt"><nav class="pj7-crumb"><a href="#/home">Home</a><span>›</span><b>FOMA</b></nav><h1>FOMA</h1>
+            <p>Field-office workflows and practical financial guidance<br>for day-to-day operations.</p>
+            <div class="pj7-kpis">${[["layers", "<b>" + W.length + "</b><small>Workflows</small>", "#1d5bd8"], ["doc", "<b>" + total + "</b><small>Procedure Steps</small>", "#12a07a"], ["chart", "<b class=\"pj7-wide\">Practical<br>tools</b>", "#1d5bd8"]].map(([i, h, c]) => `<div style="--c:${c}"><i>${FG.icon(i, 22)}</i><span>${h}</span></div>`).join("")}</div></div></section>
+        <section class="pj7-grid">${W.map(([h, ic, t, d, c, img, cnt], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" style="background-image:url(${I[img] || ""})"></span>` : ""}
+            <i class="pj7-ic">${FG.icon(ic, 28)}</i><div><small>${String(i + 1).padStart(2, "0")}</small><h3>${t}</h3><p>${esc(d)}</p>
+            <span class="pj7-meta">${FG.icon("book", 15)}${cnt ? `${cnt} steps` : "Decision support"}<em>|</em><span>Core</span></span></div><span class="pj7-go">→</span></a>`).join("")}</section>
+        <section class="pj7-foot"><div class="pj7-how"><i>${FG.icon("trophy", 22)}</i><div><b>How to use</b><p>Each workflow includes short learning modules, step-by-step procedures, practical examples and templates. Start with the workflow relevant to your current task.</p></div></div>
+          <div class="pj7-quick"><b>${FG.icon("link", 20)} Quick links</b><div>${[["files", "Request templates", "links"], ["doc", "Guidance notes", "rules"], ["check", "Checklist library", "tools"], ["book", "Knowledge base", "glossary"]].map(([i, t, h]) => `<a href="#/${h}"><i>${FG.icon(i, 16)}</i>${t}<em>›</em></a>`).join("")}</div></div></section>` };
+    },
   });
 
   // Role-handover flows: fomaPoStages / fomaPaymentStages are objects; fomaFlows stages are tuples.
