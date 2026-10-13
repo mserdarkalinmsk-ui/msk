@@ -2186,3 +2186,4 @@ body.img-edit .h7-map > span { position: relative; }
 .pa-slim a, .pa-slim button { border: 0; background: none; padding: 0; color: #1d5bd8; font-weight: 700; font-size: 14px; }
 .pa-next { margin: 18px 0 8px; }
 .pa-more summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #1d5bd8; margin: 10px 0 4px; }
+.stage-nav-after { margin-top: 14px; } .stage-nav-after + .pa-backbar { margin-top: 10px; }

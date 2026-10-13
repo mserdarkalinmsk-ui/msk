@@ -462,11 +462,11 @@
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
             <span class="sb-mini-arrows">${i > 0 ? `<a href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage" tabindex="-1">←</a>` : ""}${i < stages.length - 1 ? `<a href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage" tabindex="-1">→</a>` : ""}</span></div>
-          ${map}
-          ${isP && FG.procAcademy ? FG.procAcademy.stageBar(s) : ""}
-          <section class="card stage-card mt"><div class="card-body">
+          <section class="card stage-card"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
-          </div></section>${cfg.hero && cfg.hero[s.name] ? `<div class="mt">${cfg.hero[s.name]()}</div>` : ""}
+          </div></section>
+          <div class="stage-nav-after">${map}</div>
+          ${isP && FG.procAcademy ? FG.procAcademy.stageBar(s) : ""}${cfg.hero && cfg.hero[s.name] ? `<div class="mt">${cfg.hero[s.name]()}</div>` : ""}
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],

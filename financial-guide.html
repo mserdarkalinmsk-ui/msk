@@ -2198,6 +2198,7 @@ body.img-edit .h7-map > span { position: relative; }
 .pa-slim a, .pa-slim button { border: 0; background: none; padding: 0; color: #1d5bd8; font-weight: 700; font-size: 14px; }
 .pa-next { margin: 18px 0 8px; }
 .pa-more summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #1d5bd8; margin: 10px 0 4px; }
+.stage-nav-after { margin-top: 14px; } .stage-nav-after + .pa-backbar { margin-top: 10px; }
 
 </style>
 </head>
@@ -10077,7 +10078,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 21:09</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 21:16</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11304,11 +11305,11 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
             <span class="sb-mini-arrows">${i > 0 ? `<a href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage" tabindex="-1">←</a>` : ""}${i < stages.length - 1 ? `<a href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage" tabindex="-1">→</a>` : ""}</span></div>
-          ${map}
-          ${isP && FG.procAcademy ? FG.procAcademy.stageBar(s) : ""}
-          <section class="card stage-card mt"><div class="card-body">
+          <section class="card stage-card"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
-          </div></section>${cfg.hero && cfg.hero[s.name] ? `<div class="mt">${cfg.hero[s.name]()}</div>` : ""}
+          </div></section>
+          <div class="stage-nav-after">${map}</div>
+          ${isP && FG.procAcademy ? FG.procAcademy.stageBar(s) : ""}${cfg.hero && cfg.hero[s.name] ? `<div class="mt">${cfg.hero[s.name]()}</div>` : ""}
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
