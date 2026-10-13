@@ -7,7 +7,7 @@ SRC = ROOT / 'src'
 # Extra guides: every src/guides/*.js file registers itself through FG.registerGuide (see docs/ADDING_A_GUIDE.md).
 GUIDES = sorted('guides/' + p.name for p in (SRC / 'guides').glob('*.js')) if (SRC / 'guides').exists() else []
 SCRIPTS = ['content.generated.js', 'content.procurement.js', 'content.grants.js', 'content.facts.js', 'content.modules.js', 'quiz.procurement.js', 'quiz.grants.js', 'assets.generated.js', 'engines.js', 'core.js', 'visuals.js', 'ui-premium.js', 'views-case.js',
-           'views-guides.js', 'guide-kit.js', *GUIDES, 'views-operations.js', 'views-files.js', 'views-ask.js', 'views-engines.js', 'views-analysis.js', 'views-reference.js', 'views-modules.js']
+           'views-guides.js', 'guide-kit.js', *GUIDES, 'views-operations.js', 'views-files.js', 'views-ask.js', 'views-engines.js', 'views-analysis.js', 'views-reference.js', 'views-modules.js', 'content.procpages.js', 'views-academy.js']
 
 template = (SRC / 'index.html').read_text()
 import base64
@@ -21,6 +21,9 @@ for name in SCRIPTS:
     code = (SRC / name).read_text()
     assert '</script' not in code.lower(), name
     blocks.append(f'<script>\n/* {name} */\n{code}\n</script>')
+# The original Procurement Guide PDF travels inside the page (opened from the Academy) — inserted before the Academy script.
+pdf = base64.b64encode((SRC / 'procurement-guide.pdf').read_bytes()).decode()
+blocks.insert(len(blocks) - 1, f'<script id="fg-proc-original-pdf" type="application/x-proc-pdf">{pdf}</script>')
 html = template.replace('<!--STYLE-->', f'<style>\n{css}\n</style>').replace('<!--SCRIPTS-->', '\n'.join(blocks))
 import datetime
 html = html.replace('__BUILD__', datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))

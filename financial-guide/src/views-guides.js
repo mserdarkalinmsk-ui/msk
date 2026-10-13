@@ -463,6 +463,7 @@
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
             <span class="sb-mini-arrows">${i > 0 ? `<a href="#/${cfg.base}/${slug(stages[i - 1].name)}" aria-label="Previous stage" tabindex="-1">←</a>` : ""}${i < stages.length - 1 ? `<a href="#/${cfg.base}/${slug(stages[i + 1].name)}" aria-label="Next stage" tabindex="-1">→</a>` : ""}</span></div>
           ${map}
+          ${isP && FG.procAcademy ? FG.procAcademy.stageBar(s) : ""}
           <section class="card stage-card mt"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>${cfg.hero && cfg.hero[s.name] ? `<div class="mt">${cfg.hero[s.name]()}</div>` : ""}

@@ -6,7 +6,7 @@
     procurement: {
       "Foundations": {
         "Rule No. 1395": { what: "Rule No. 1395 of 20 June 2019 complements the Financial Regulations and lays down the details of every procurement procedure, from tender file to contract signature.", why: "All Council of Europe purchases must follow one of its procedures; an annotated version on the Tenders Board page answers recurring questions.", ref: "1.1.1" },
-        "31 January": { what: "Staff involved in procurement must submit a declaration of interests each year by the end of January, or within one month of any change or of taking up duties.", why: "The declaration (Rule No. 1282) is checked in audits and protects you and the procedure from conflict-of-interest challenges.", ref: "1.1.2" },
+        "31 March": { what: "Staff involved in procurement must submit a declaration of interests each year by 31 March, or within one month of taking up duties for new appointees.", why: "The declaration (Rule No. 1/2026) is checked in audits and protects you and the procedure from conflict-of-interest challenges.", ref: "1.1.2" },
         "0": { what: "The Council applies a no-gift policy: staff involved in procurement or grants cannot receive any gifts or hospitality from current or prospective contractors, whatever their value.", why: "Accepting even a small gift breaches the Code of Conduct and can lead to disciplinary sanctions and tainted procedures.", ref: "1.1.2" }
       },
       "Roles & Funding": {
