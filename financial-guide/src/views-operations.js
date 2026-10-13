@@ -58,6 +58,7 @@
       return { html: `${FG.modHead("po-file", "Purchase order · file builder", "How to prepare a PO file", "Build a complete, signature-ready and audit-ready PO file. Follow the steps, then choose the service type to get the exact document package from the Financial Documents Content List.", `<a class="btn" href="#/payment-file">Continue to payment →</a>`)}
         <div class="split">
           <div class="stack">
+            <section class="card"><div class="card-head"><h3>PO process</h3></div><div class="card-body">${timeline("po:steps", C.poSteps, (s) => ({ title: s.t, text: s.x, list: s.l }))}</div></section>
             <section class="card"><div class="card-head"><div><h3>Document builder</h3><small>Documents to be signed are separated from supporting evidence.</small></div>${ui.tag(`${ticked}/${all} ready`, ticked === all ? "good" : "")}</div><div class="card-body stack">
               ${servicePicker("po", service)}<p class="small muted">${esc(d.sub || "")}</p>
               <div class="grid g2">${docList(signedId, "To be signed", d.signed)}${docList(supportId, "Supporting documents", d.support)}</div></div></section>
@@ -83,7 +84,6 @@
             <section class="card"><div class="card-head"><h3>Best practice & common mistakes</h3></div><div class="card-body">${ui.pairs(C.poBestPractice)}</div></section>
           </div>
           <aside class="stack sticky">
-            <section class="card"><div class="card-head"><h3>PO process</h3></div><div class="card-body">${timeline("po:steps", C.poSteps, (s) => ({ title: s.t, text: s.x, list: s.l }))}</div></section>
             ${contextPanel("pofile")}
           </aside>
         </div>`,
@@ -105,6 +105,7 @@
       return { html: `${FG.modHead("payment-file", "Payment · file builder", "How to prepare a payment file", "Continue the control trail created at PO stage: verify delivery, match the invoice to the contractual package and build the finance-ready payment file.", `<a class="btn" href="#/po-file">← PO file</a><a class="btn primary" href="#/engines/payment-readiness">Payment readiness check</a>`)}
         <div class="split">
           <div class="stack">
+            <section class="card"><div class="card-head"><h3>Payment process</h3></div><div class="card-body">${timeline("pay:steps", C.paySteps, (s) => ({ title: s.t, sub: s.s, text: s.text, list: s.list }))}</div></section>
             <section class="card"><div class="card-head"><div><h3>Payment file builder</h3><small>Use the same service type as the PO.</small></div></div><div class="card-body stack">
               ${servicePicker("pay", service)}
               <div class="grid g2">${docList(`pay:${service}:signed`, "To be signed", d.signed)}${docList(`pay:${service}:support`, "Supporting documents", d.support)}</div></div></section>
@@ -115,7 +116,6 @@
             <section class="card"><div class="card-head"><h3>Best practice & common mistakes</h3></div><div class="card-body">${ui.pairs(C.payBestPractice)}</div></section>
           </div>
           <aside class="stack sticky">
-            <section class="card"><div class="card-head"><h3>Payment process</h3></div><div class="card-body">${timeline("pay:steps", C.paySteps, (s) => ({ title: s.t, sub: s.s, text: s.text, list: s.list }))}</div></section>
             ${contextPanel("paymentfile")}
           </aside>
         </div>`,
