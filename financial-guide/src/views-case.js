@@ -3,6 +3,33 @@
    are matched ahead of "procurement/:stage". */
 (function () {
   "use strict";
+
+  /* ---------- procurement hub: interactive comparison of the three routes ---------- */
+  const RC = [
+    ["direct", "Direct award", "--c2", "Up to €2,000 · €6,000 for intellectual services", [["Competition", "None: one supplier is chosen"], ["Who decides", "CCM, on a justified memorandum"], ["Key document", "Justified memorandum"]]],
+    ["comp", "Competitive bidding", "--c1", "Above the direct-award limit, below €184,000", [["Competition", "At least 3 suppliers invited (below €10,000: public prices of 3+ may be compared)"], ["Who decides", "CCM"], ["Extrabudgetary €55,000+", "Legal Compliance Review by DLAPIL (5 working days)"], ["E-procurement", "Mandatory above €55,000 since 1 April 2026"]]],
+    ["intl", "International public call", "--c3", "€184,000 and above", [["Competition", "Open international call for tenders"], ["Who decides", "Tenders Board"], ["Publication", "At least 3 weeks"], ["After award", "Complaints within 30 days; offers valid 180 days"]]],
+  ];
+  FG.routeCompare = () => `<section class="rc card" data-rc>
+      <div class="rc-head"><div><span class="eyebrow">Compare the routes</span><b>Which procedure applies to your purchase?</b></div>
+        <div class="rc-in"><label><span>Estimated value (excl. VAT, whole period)</span><div class="rc-val"><b>€</b><input type="number" min="0" step="500" value="25000" data-rc-v aria-label="Estimated value in euros"></div></label>
+          <div class="rc-seg" role="group" aria-label="Type of purchase"><button type="button" aria-pressed="true" data-rc-t="g">Goods, services, works</button><button type="button" aria-pressed="false" data-rc-t="i">Intellectual services</button></div>
+          <label class="rc-chk"><input type="checkbox" data-rc-x> Extrabudgetary funding</label></div></div>
+      <div class="rc-cols">${RC.map(([k, t, c, band, rows]) => `<article class="rc-col" data-rc-col="${k}" style="--c:var(${c})"><header><small>${band}</small><h4>${t}</h4></header><dl>${rows.map(([a, b]) => `<div${/Extrabudgetary/.test(a) ? ' data-rc-xrow' : ""}><dt>${a}</dt><dd>${b}</dd></div>`).join("")}</dl><span class="rc-you">Your purchase</span></article>`).join("")}</div>
+      <p class="rc-verdict" data-rc-out aria-live="polite"></p>
+    </section>`;
+  function rcUpdate(box) {
+    const v = +box.querySelector("[data-rc-v]").value || 0, intel = box.querySelector('[data-rc-t="i"]').getAttribute("aria-pressed") === "true", x = box.querySelector("[data-rc-x]").checked;
+    const low = intel ? 6000 : 2000, k = v <= low ? "direct" : v < 184000 ? "comp" : "intl";
+    box.querySelectorAll("[data-rc-col]").forEach((c) => c.classList.toggle("on", c.dataset.rcCol === k));
+    box.querySelectorAll("[data-rc-xrow]").forEach((r) => r.classList.toggle("hit", x && k === "comp" && v >= 55000));
+    const f = (n) => "€" + n.toLocaleString("en-GB");
+    const extra = [k === "comp" && x && v >= 55000 ? "a Legal Compliance Review by DLAPIL" : "", v > 55000 ? "e-procurement" : ""].filter(Boolean);
+    box.querySelector("[data-rc-out]").innerHTML = `<b>${f(v)} → ${k === "direct" ? "Direct award" : k === "comp" ? "Competitive bidding" : "International public call"}.</b> ${extra.length ? `Also required: ${extra.join(" and ")}.` : ""} <a href="#/procurement/my-case">Plan this case in detail →</a>`;
+  }
+  document.addEventListener("input", (e) => { const b = e.target.closest("[data-rc]"); if (b) rcUpdate(b); });
+  document.addEventListener("click", (e) => { const t = e.target.closest("[data-rc-t]"); if (!t) return; const b = t.closest("[data-rc]"); b.querySelectorAll("[data-rc-t]").forEach((x) => x.setAttribute("aria-pressed", x === t)); rcUpdate(b); });
+  new MutationObserver(() => document.querySelectorAll("[data-rc]:not([data-rc-ok])").forEach((b) => { b.dataset.rcOk = 1; rcUpdate(b); })).observe(document.documentElement, { childList: true, subtree: true });
   const { esc, euro, slug, ui, route } = FG;
   const E = window.FG_ENGINES;
   const L = E.LIMITS;
@@ -78,7 +105,7 @@
           <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
         <div class="hub-sec">${FG.reviewChip()}<a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to</small></div><u>Open →</u></a><a class="hub-ref" href="#/procurement/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
-        <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
+        ${FG.routeCompare()}` };
     },
   });
 

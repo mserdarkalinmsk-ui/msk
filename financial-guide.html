@@ -1407,6 +1407,36 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
   .sb-mini { top: 58px; }
 }
 
+/* ---------- route comparison ---------- */
+.rc { margin-top: 16px; padding: 20px; }
+.rc-head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+.rc-head b { display: block; font-size: 18px; margin-top: 2px; }
+.rc-in { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.rc-in label > span { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.rc-val { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: var(--panel); }
+.rc-val b { margin: 0; font-size: 15px; color: var(--muted); }
+.rc-val input { border: 0; outline: 0; font: inherit; font-size: 16px; font-weight: 600; width: 120px; padding: 8px 6px; background: none; color: var(--ink); }
+.rc-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; padding: 3px; background: var(--panel); }
+.rc-seg button { border: 0; background: none; font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 7px; cursor: pointer; color: var(--ink-2); }
+.rc-seg button[aria-pressed="true"] { background: #1b3a7a; color: #fff; }
+.rc-chk { display: flex; align-items: center; gap: 6px; font-size: 13px; padding-bottom: 8px; }
+.rc-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.rc-col { position: relative; border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--panel); transition: transform .2s, box-shadow .2s, border-color .2s, opacity .2s; opacity: .62; }
+.rc-col header { border-top: 4px solid var(--c); margin: -16px -16px 12px; padding: 12px 16px 0; border-radius: 16px 16px 0 0; }
+.rc-col header small { font-size: 12px; color: var(--muted); }
+.rc-col h4 { margin: 4px 0 0; font-size: 17px; color: var(--c); }
+.rc-col dl { margin: 0; display: grid; gap: 10px; }
+.rc-col dt { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.rc-col dd { margin: 2px 0 0; font-size: 13.5px; line-height: 1.45; }
+.rc-col [data-rc-xrow].hit { background: color-mix(in srgb, #c0392b 8%, var(--panel)); border-radius: 8px; padding: 6px 8px; margin: -6px -8px; }
+.rc-col [data-rc-xrow].hit dt { color: #b03a2e; }
+.rc-you { display: none; position: absolute; top: -11px; right: 14px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--c); color: #fff; }
+.rc-col.on { opacity: 1; border-color: var(--c); transform: translateY(-4px); box-shadow: 0 18px 34px -22px var(--c); }
+.rc-col.on .rc-you { display: block; }
+.rc-verdict { margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, #2d6bd8 6%, var(--panel)); font-size: 14px; }
+.rc-verdict a { color: #2d6bd8; font-weight: 600; margin-left: 4px; }
+@media (max-width: 800px) { .rc-cols { grid-template-columns: 1fr; } .rc-col { opacity: 1; } .rc-col:not(.on) dl { display: none; } }
+
 </style>
 </head>
 <body>
@@ -9040,7 +9070,7 @@ window.FG_CONTENT = {
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:07</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 05:08</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -9081,6 +9111,33 @@ window.FG_CONTENT = {
    are matched ahead of "procurement/:stage". */
 (function () {
   "use strict";
+
+  /* ---------- procurement hub: interactive comparison of the three routes ---------- */
+  const RC = [
+    ["direct", "Direct award", "--c2", "Up to €2,000 · €6,000 for intellectual services", [["Competition", "None: one supplier is chosen"], ["Who decides", "CCM, on a justified memorandum"], ["Key document", "Justified memorandum"]]],
+    ["comp", "Competitive bidding", "--c1", "Above the direct-award limit, below €184,000", [["Competition", "At least 3 suppliers invited (below €10,000: public prices of 3+ may be compared)"], ["Who decides", "CCM"], ["Extrabudgetary €55,000+", "Legal Compliance Review by DLAPIL (5 working days)"], ["E-procurement", "Mandatory above €55,000 since 1 April 2026"]]],
+    ["intl", "International public call", "--c3", "€184,000 and above", [["Competition", "Open international call for tenders"], ["Who decides", "Tenders Board"], ["Publication", "At least 3 weeks"], ["After award", "Complaints within 30 days; offers valid 180 days"]]],
+  ];
+  FG.routeCompare = () => `<section class="rc card" data-rc>
+      <div class="rc-head"><div><span class="eyebrow">Compare the routes</span><b>Which procedure applies to your purchase?</b></div>
+        <div class="rc-in"><label><span>Estimated value (excl. VAT, whole period)</span><div class="rc-val"><b>€</b><input type="number" min="0" step="500" value="25000" data-rc-v aria-label="Estimated value in euros"></div></label>
+          <div class="rc-seg" role="group" aria-label="Type of purchase"><button type="button" aria-pressed="true" data-rc-t="g">Goods, services, works</button><button type="button" aria-pressed="false" data-rc-t="i">Intellectual services</button></div>
+          <label class="rc-chk"><input type="checkbox" data-rc-x> Extrabudgetary funding</label></div></div>
+      <div class="rc-cols">${RC.map(([k, t, c, band, rows]) => `<article class="rc-col" data-rc-col="${k}" style="--c:var(${c})"><header><small>${band}</small><h4>${t}</h4></header><dl>${rows.map(([a, b]) => `<div${/Extrabudgetary/.test(a) ? ' data-rc-xrow' : ""}><dt>${a}</dt><dd>${b}</dd></div>`).join("")}</dl><span class="rc-you">Your purchase</span></article>`).join("")}</div>
+      <p class="rc-verdict" data-rc-out aria-live="polite"></p>
+    </section>`;
+  function rcUpdate(box) {
+    const v = +box.querySelector("[data-rc-v]").value || 0, intel = box.querySelector('[data-rc-t="i"]').getAttribute("aria-pressed") === "true", x = box.querySelector("[data-rc-x]").checked;
+    const low = intel ? 6000 : 2000, k = v <= low ? "direct" : v < 184000 ? "comp" : "intl";
+    box.querySelectorAll("[data-rc-col]").forEach((c) => c.classList.toggle("on", c.dataset.rcCol === k));
+    box.querySelectorAll("[data-rc-xrow]").forEach((r) => r.classList.toggle("hit", x && k === "comp" && v >= 55000));
+    const f = (n) => "€" + n.toLocaleString("en-GB");
+    const extra = [k === "comp" && x && v >= 55000 ? "a Legal Compliance Review by DLAPIL" : "", v > 55000 ? "e-procurement" : ""].filter(Boolean);
+    box.querySelector("[data-rc-out]").innerHTML = `<b>${f(v)} → ${k === "direct" ? "Direct award" : k === "comp" ? "Competitive bidding" : "International public call"}.</b> ${extra.length ? `Also required: ${extra.join(" and ")}.` : ""} <a href="#/procurement/my-case">Plan this case in detail →</a>`;
+  }
+  document.addEventListener("input", (e) => { const b = e.target.closest("[data-rc]"); if (b) rcUpdate(b); });
+  document.addEventListener("click", (e) => { const t = e.target.closest("[data-rc-t]"); if (!t) return; const b = t.closest("[data-rc]"); b.querySelectorAll("[data-rc-t]").forEach((x) => x.setAttribute("aria-pressed", x === t)); rcUpdate(b); });
+  new MutationObserver(() => document.querySelectorAll("[data-rc]:not([data-rc-ok])").forEach((b) => { b.dataset.rcOk = 1; rcUpdate(b); })).observe(document.documentElement, { childList: true, subtree: true });
   const { esc, euro, slug, ui, route } = FG;
   const E = window.FG_ENGINES;
   const L = E.LIMITS;
@@ -9156,7 +9213,7 @@ window.FG_CONTENT = {
           <span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
         <div class="hub-sec">${FG.reviewChip()}<a class="hub-ref" href="#/procurement/reference"><span>§</span><div><b>Quick reference</b><small>Contract types · limits & deadlines · roles · how-to</small></div><u>Open →</u></a><a class="hub-ref" href="#/procurement/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
-        <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The three procurement routes</b></div>${FG.ui.ruler({ max: 400000, marks: [[L.lowGoods, "Goods / services"], [L.lowIntellectual, "Intellectual"], [L.legalReview, "LCR if extrabudgetary"], [L.international, "Tenders Board"]], zones: [[0, L.lowIntellectual, "Direct award", "--c2"], [L.lowIntellectual, L.international, "Competitive bidding", "--c1"], [L.international, 400000, "International public call", "--c3"]] })}</section>` };
+        ${FG.routeCompare()}` };
     },
   });
 
