@@ -20,13 +20,15 @@ export const KINDS: { k: Kind; label: string; color: string; optional?: boolean;
   { k: 'grants', label: 'Grants (6.1, 6.2)', color: '#30a46c' },
   { k: 'perdiem', label: 'Per diem & travel (1.3, 2.x, OM)', color: '#a16207', optional: true },
   { k: 'staff', label: 'Staff salaries', color: '#94a3b8', optional: true },
-  { k: 'petty', label: 'Petty cash', color: '#78716c', optional: true },
+  { k: 'petty', label: 'Petty cash & internal services', color: '#78716c', optional: true },
 ];
 export const isKind = (v: unknown): v is Kind => KINDS.some((x) => x.k === v);
 
 // Order matters: a PO naming a consultant is a consultant even when it is "for the research study".
 const RULES: [Kind | 'person', RegExp][] = [
   ['interp', /interpr|tercüm|sözlü çeviri|simultan|consecutive|ardıl|booth|kabin|headset|kulaklık/i],
+  // A PO that says it organises an event is event management, whatever the event is about (a study, a training).
+  ['events', /event management|event organi[sz]|organi[sz](?:ation|ing|e) (?:of|the)|organisation of|organizasyon/i],
   ['person', /consult|\bexpert|danışman|uzman|trainer|eğitmen|facilitator|moderat|rapporteur|\bfees?\b|honorari/i],
   ['research', /research|\bstudy\b|studies|survey|assessment|analys[ie]s|mapping|baseline|needs? analysis|evaluation|araştırma|anket|inceleme|değerlendirme|çalışması/i],
   ['publication', /publicat|printing|\bprint|layout|typesett|editing|\bbook|booklet|manual|handbook|guide(?:line)?s?\b|yayın|basım|baskı|matbaa|kitap|kılavuz|el kitabı|dizgi/i],
@@ -44,7 +46,7 @@ const STAFF_T = /\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|bordro
 /** Kind of a PO from its wording, then from its budget line's code and wording; null when it buys none of these. */
 export function kindOf(text: string, code = '', lineText = '', supplier = ''): Kind | null {
   // Groups first: they never count as a service, whatever else the wording says.
-  if (PETTY.test(text)) return 'petty';
+  if (PETTY.test(text) || /service interne|internal service|internal recharge/i.test(`${text} ${supplier}`)) return 'petty';
   if (STAFF.test(code) || STAFF_T.test(text)) return 'staff';
   const byText = (t: string): Kind | null => {
     for (const [k, re] of RULES) if (re.test(t)) return k === 'person' ? (INTL.test(t) || /^1\.2(\.|$)/.test(code) ? 'intl' : 'consult') : k;
