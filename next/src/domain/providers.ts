@@ -20,20 +20,20 @@ const INTERP = /interpr|tercüm|sözlü çeviri|simultan|consecutive|ardıl/i;
 const TRANSL = /translat|çeviri|traduc|proof-?read|redaksiyon/i;
 const CONSULT = /consult|expert|danışman|uzman|trainer|eğitmen/i;
 const INTL = /international|uluslararası|foreign/i;
-const STAFF = /^1\.[12]\.1(\.|$)/; // remuneration of the project team, not a service
-/** Kind of a text (line description with its heading names, or a PO description). */
+/** Kind of a line by its budget code only: 1.1.2 / 1.1.3 local consultants, 1.2.2 / 1.2.3 international consultants,
+ *  5.5.1 translation, 5.5.2 interpretation, 5.7 conferences. Other lines (5.1, 5.8 …) never count, whatever their wording.
+ *  Within 5.7 a PO's own wording can name it an interpretation, translation or consultant service. */
 export function kindOf(text: string, code = ''): Kind | null {
-  if (STAFF.test(code)) return null;
-  if (INTERP.test(text)) return 'interp';
-  if (TRANSL.test(text)) return 'transl';
-  if (CONSULT.test(text)) return INTL.test(text) || /^1\.2(\.|$)/.test(code) ? 'intl' : 'consult';
-  // Standard budget codes when the wording says nothing: 5.5.1 translation, 5.5.2 interpretation,
-  // 1.1.2 / 1.1.3 local consultants, 1.2.2 / 1.2.3 international consultants, 5.7 conferences.
   if (/^5\.5\.1(\.|$)/.test(code)) return 'transl';
   if (/^5\.5\.2(\.|$)/.test(code)) return 'interp';
   if (/^1\.1\.[23](\.|$)/.test(code)) return 'consult';
   if (/^1\.2\.[23](\.|$)/.test(code)) return 'intl';
-  if (/^5\.7(\.|$)/.test(code)) return 'events';
+  if (/^5\.7(\.|$)/.test(code)) {
+    if (INTERP.test(text)) return 'interp';
+    if (TRANSL.test(text)) return 'transl';
+    if (CONSULT.test(text)) return INTL.test(text) ? 'intl' : 'consult';
+    return 'events';
+  }
   return null;
 }
 

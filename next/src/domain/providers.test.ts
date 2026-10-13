@@ -15,5 +15,7 @@ describe('service provider kinds', () => {
     expect(kindOf('Services', '5.5.1')).toBe('transl');
     expect(kindOf('Services', '5.5.2')).toBe('interp');
     expect(kindOf('Office rent', '4.1')).toBeNull();
+    expect(kindOf('Publications incl. translation', '5.1')).toBeNull();
+    expect(kindOf('Expert evaluation', '5.8')).toBeNull();
   });
 });

@@ -45,7 +45,7 @@ export function Providers() {
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
         <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Overall ceilings</h2><p>From the approved budget (or latest report) of each project · lines 1.1.2–1.1.3, 1.2.2–1.2.3, 5.5.1, 5.5.2 and 5.7, and any line whose wording names consultants, interpretation or translation</p></div>
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Overall ceilings</h2><p>From the approved budget (or latest report) of each project · lines 1.1.2–1.1.3, 1.2.2–1.2.3, 5.5.1, 5.5.2 and 5.7 only</p></div>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}><button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
           <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Kind</th><th class="r">Projects</th><th class="r">Budget ceiling</th><th class="r">Spent + committed</th><th class="r">Remaining</th><th class="r">Used</th><th>Unit</th><th class="r">Unit rate: lowest</th><th class="r">median</th><th class="r">highest</th></tr></thead>
             <tbody>{byKind.map((k) => <tr class={`click${kind === k.k ? ' sel' : ''}`} onClick={() => setKind(kind === k.k ? '' : k.k)}>
