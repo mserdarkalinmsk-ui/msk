@@ -18,6 +18,19 @@
       <div class="rc-cols">${RC.map(([k, t, c, band, rows]) => `<article class="rc-col" data-rc-col="${k}" style="--c:var(${c})"><header><small>${band}</small><h4>${t}</h4></header><dl>${rows.map(([a, b]) => `<div${/Extrabudgetary/.test(a) ? ' data-rc-xrow' : ""}><dt>${a}</dt><dd>${b}</dd></div>`).join("")}</dl><span class="rc-you">Your purchase</span></article>`).join("")}</div>
       <p class="rc-verdict" data-rc-out aria-live="polite"></p>
     </section>`;
+
+  FG.grantCompare = () => `<section class="rc card" data-gc>
+      <div class="rc-head"><div><span class="eyebrow">Compare the routes</span><b>Direct award or call for proposals?</b></div>
+        <div class="rc-in"><label><span>Total estimated budget of the procedure</span><div class="rc-val"><b>€</b><input type="number" min="0" step="500" value="40000" data-gc-v aria-label="Total budget in euros"></div></label></div></div>
+      <div class="rc-cols two">
+        <article class="rc-col" data-gc-col="d" style="--c:var(--c2)"><header><small>Below €15,000</small><h4>Direct award</h4></header><dl><div><dt>Template</dt><dd>G9.2A</dd></div><div><dt>Competition</dt><dd>No published call is required</dd></div><div><dt>Who checks</dt><dd>Commitments Officer</dd></div></dl><span class="rc-you">Your grant</span></article>
+        <article class="rc-col" data-gc-col="c" style="--c:var(--c1)"><header><small>€15,000 and above</small><h4>Call for proposals</h4></header><dl><div><dt>Competition</dt><dd>A published call for proposals is required</dd></div><div><dt>Evaluation</dt><dd>Evaluation Committee with at least 1 staff member; criteria scored 0–5</dd></div><div><dt>After award</dt><dd>Unsuccessful applicants informed within 15 calendar days; complaints within 30</dd></div></dl><span class="rc-you">Your grant</span></article>
+      </div><p class="rc-verdict" data-gc-out aria-live="polite"></p></section>`;
+  function gcUpdate(b) { const v = +b.querySelector("[data-gc-v]").value || 0, k = v < 15000 ? "d" : "c";
+    b.querySelectorAll("[data-gc-col]").forEach((c) => c.classList.toggle("on", c.dataset.gcCol === k));
+    b.querySelector("[data-gc-out]").innerHTML = `<b>€${v.toLocaleString("en-GB")} → ${k === "d" ? "Direct award (G9.2A)" : "Call for proposals"}.</b> <a href="#/grants/my-grant">Plan this grant in detail →</a>`; }
+  document.addEventListener("input", (e) => { const b = e.target.closest("[data-gc]"); if (b) gcUpdate(b); });
+  new MutationObserver(() => document.querySelectorAll("[data-gc]:not([data-gc-ok])").forEach((b) => { b.dataset.gcOk = 1; gcUpdate(b); })).observe(document.documentElement, { childList: true, subtree: true });
   function rcUpdate(box) {
     const v = +box.querySelector("[data-rc-v]").value || 0, intel = box.querySelector('[data-rc-t="i"]').getAttribute("aria-pressed") === "true", x = box.querySelector("[data-rc-x]").checked;
     const low = intel ? 6000 : 2000, k = v <= low ? "direct" : v < 184000 ? "comp" : "intl";
@@ -213,7 +226,7 @@
         <section class="hub-paths">${paths.map(([n, t, d, p, meta, prog, c, cta]) => `<a class="hub-path" href="#/${p}" style="--c:var(--c${c})"><span class="hub-n">${n}</span><h2>${t}</h2><p>${d}</p>
           <div class="hub-meta"><span>${esc(meta)}</span><i><u style="width:${Math.round(prog * 100)}%"></u></i></div><b class="hub-cta">${esc(cta)} →</b></a>`).join("")}</section>
         <div class="hub-sec">${FG.reviewChip()}<a class="hub-ref" href="#/grants/reference"><span>§</span><div><b>Quick reference</b><small>Limits & deadlines · roles · how-to with templates</small></div><u>Open →</u></a><a class="hub-ref" href="#/grants/essentials"><span>12</span><div><b>The essentials</b><small>Twelve rules to know, one at a time · ${k} learnt</small></div><u>Open →</u></a></div>
-        <section class="hub-strip card"><div><span class="eyebrow">At a glance</span><b>The €15,000 threshold — total budget of the procedure</b></div>${FG.ui.ruler({ max: 60000, marks: [[L.grant, "Call for proposals"]], zones: [[0, L.grant, "Direct award (G9.2A)", "--c2"], [L.grant, 60000, "Call for proposals", "--c1"]] })}</section>` };
+        ${FG.grantCompare()}` };
     },
   });
   route("grants/essentials", {

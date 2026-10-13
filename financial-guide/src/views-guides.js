@@ -95,8 +95,8 @@
     ["▥", "Prepare a financial report", "Reconcile the position and finalise.", "foma/reports"],
   ];
   const MODULES = [
-    ["PR", "Procurement", "13-stage lifecycle from need to filing, with thresholds and contract types.", "procurement", "13 stages"],
-    ["GR", "Grants", "Procedure, criteria, cost eligibility, evaluation and agreement.", "grants", "12 stages"],
+    ["PR", "Procurement", "15-stage lifecycle from need to filing, with thresholds and contract types.", "procurement", "15 stages"],
+    ["GR", "Grants", "Procedure, criteria, cost eligibility, evaluation and agreement.", "grants", "13 stages"],
     ["PO", "PO file", "Steps, document package by service type and visa matrix.", "po-file", "5 service types"],
     ["PA", "Payment file", "Delivery, invoice match and finance-ready package.", "payment-file", "9 checkpoints"],
     ["YE", "Year-end closing", "Delivery cut-off, allocation table and closing checklist.", "year-end", "2026"],
@@ -108,24 +108,17 @@
     section: "home",
     render() {
       const modules = FG.routes.length, engines = FG.index.filter((x) => x.kind === "Engine").length;
-      const meters = [90, 70, 80, 100], counts = ["09 modules", "06 workflows", "20+ tools", `${String(engines).padStart(2, "0")} engines`];
+      const last = FG.store.get("last", null), counts = ["9 modules", "6 workflows", "20+ tools", `${engines} engines`];
+      const quick = [["Procurement guide", "15 stages, need to filing", "procurement"], ["Plan my purchase", "Route, approvals, timeline", "procurement/my-case"], ["Grants guide", "13 stages, call to agreement", "grants"], ["Test yourself", "20 questions per module", "procurement/test"]];
       return { html: `
-        <section class="fx-hero">
-          <span class="fx-status"><b aria-hidden="true"></b>Guide online · ${modules} pages · ${engines} engines</span>
-          <h1>Guidance. Decisions.<br><span>Templates. One place.</span></h1>
-          <p>Choose your space. Every path ends with the applicable rule, the route for your case and the documents to keep.</p>
+        <section class="hx-hero"><div><span class="eyebrow">Council of Europe · Financial Guide</span>
+          <h1>Find the rule, plan your case, keep the right documents.</h1>
+          <p>Procurement, grants, payment files, year-end and field operations, in one guided place.</p></div>
+          ${last ? `<a class="hx-last" href="${esc(last.href)}"><small>Continue where you left off</small><b>${esc(last.title)}</b><span>${esc(last.sub)}</span><u>Resume →</u></a>` : `<a class="hx-last" href="#/procurement"><small>New here?</small><b>Start with procurement</b><span>The most used guide: 15 stages from need to filing</span><u>Start →</u></a>`}
         </section>
-        <section class="fx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="fx-hub" style="--c:var(--c${c});animation-delay:${i * 0.08}s" href="#/${p}">
-          <span class="fx-num">${esc(k)}</span><span class="fx-ico" aria-hidden="true">${ic}</span><h2>${esc(t)}</h2><em>// ${esc(sub.toLowerCase())}</em><p>${esc(d)}</p>
-          <div class="fx-meter"><i style="--w:${meters[i]}%"></i></div><div class="fx-bar"><span>${counts[i].toUpperCase()}</span><u aria-hidden="true">→</u></div></a>`).join("")}</section>`,
-        mount(root) {
-          // Cards tilt toward the pointer; skipped when the user prefers reduced motion.
-          if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-          root.querySelectorAll(".fx-hub").forEach((h) => {
-            h.addEventListener("mousemove", (e) => { const r = h.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5; h.style.transform = `translateY(-8px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`; });
-            h.addEventListener("mouseleave", () => { h.style.transform = ""; });
-          });
-        } };
+        <section class="hx-quick">${quick.map(([t, d, h]) => `<a href="#/${h}"><b>${t}</b><span>${d}</span></a>`).join("")}</section>
+        <h2 class="hx-h">All spaces</h2>
+        <section class="hx-hubs">${HUBS.map(([k, t, sub, d, p, c, ic], i) => `<a class="hx-hub" style="--c:var(--c${c})" href="#/${p}"><span class="hx-ico" aria-hidden="true">${ic}</span><div><small>${esc(sub)}</small><h3>${esc({ PROJECTS: "Projects", FOMA: "FOMA field operations", TOOLS: "Tools", "DECISION ENGINES": "Decision engines" }[t] || t)}</h3><p>${esc(d)}</p><em>${counts[i]} →</em></div></a>`).join("")}</section>` };
     },
   });
 
@@ -322,6 +315,7 @@
         FG.store.set(cfg.base + ":last", i);
         const s = stages[i], visited = FG.store.get(cfg.base + ":visited", {});
         visited[i] = 1; FG.store.set(cfg.base + ":visited", visited);
+        FG.store.set("last", { href: `#/${cfg.base}/${slug(s.name)}`, title: s.title, sub: `${cfg.title} · stage ${i + 1} of ${stages.length}` });
         const checks = cfg.checklist(s), best = cfg.bestPractice(s), roles = cfg.roles ? cfg.roles(s) : [];
         const widget = cfg.widgets[s.name] ? cfg.widgets[s.name]() : null;
         const related = (s.links || []).map((l) => cfg.link(l)).filter(Boolean);
@@ -398,11 +392,16 @@
     ["Framework Agreement", "Variable / complex recurring need", "Regular but less predictable need; precise deliverables not known upfront.", "Multiple preselected suppliers (pool)", "Mini-competition for each call-off", "Generally up to 4 years (5 only exceptionally)", "Use only where the extra administration adds value; rarely recommended below €184,000."],
   ];
   function contractMatrix() {
-    return `<section class="card"><div class="card-head"><div><h3>Contract type matrix</h3><small>Contract type ≠ procurement procedure. Choose the structure here, then determine the procedure from the thresholds.</small></div><a class="btn sm" href="#/engines/contract-strategy">Contract Strategy engine</a></div>
-      <div class="card-body"><div class="table-wrap"><table class="t"><thead><tr><th>Type</th><th>Best fit</th><th>Suppliers</th><th>Ordering / competition</th><th>Duration</th><th>Key control</th></tr></thead><tbody>
-      ${CONTRACT_ROWS.map((r) => `<tr><td><b>${esc(r[0])}</b><small>${esc(r[1])}</small></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td>${esc(r[6])}</td></tr>`).join("")}
-      </tbody></table></div></div></section>`;
+    const need = [["Fixed", "A one-off, clearly defined need"], ["Recurring", "Recurring need with definable units"], ["Variable", "Regular but unpredictable, complex need"]];
+    const lab = ["Need", "Suppliers", "Ordering / competition", "Duration", "Key control"];
+    return `<section class="rc card ctc" data-ct><div class="rc-head"><div><span class="eyebrow">Contract type ≠ procedure</span><b>Which contract structure fits your need?</b></div>
+      <div class="rc-seg" role="group" aria-label="Your need">${need.map(([k, t], i) => `<button type="button" aria-pressed="${i === 0}" data-ct-k="${i}" title="${esc(t)}">${k}</button>`).join("")}</div></div>
+      <div class="rc-cols">${CONTRACT_ROWS.map((r, i) => `<article class="rc-col${i ? "" : " on"}" data-ct-col="${i}" style="--c:var(--c${i + 1})"><header><small>${esc(r[1])}</small><h4>${esc(r[0])}</h4></header><dl>${r.slice(2).map((x, j) => `<div><dt>${lab[j]}</dt><dd>${esc(x)}</dd></div>`).join("")}</dl><span class="rc-you">Fits your need</span></article>`).join("")}</div>
+      <p class="rc-verdict">Choose the structure here, then determine the procedure from the total value over the whole period. <a href="#/engines/contract-strategy">Contract Strategy engine →</a></p></section>`;
   }
+  document.addEventListener("click", (e) => { const t = e.target.closest("[data-ct-k]"); if (!t) return; const b = t.closest("[data-ct]");
+    b.querySelectorAll("[data-ct-k]").forEach((x) => x.setAttribute("aria-pressed", x === t)); b.querySelectorAll("[data-ct-col]").forEach((c) => c.classList.toggle("on", c.dataset.ctCol === t.dataset.ctK)); });
+
   // Route finder: value, type and funding in → the matching lane lights up with its approvals, controls, steps and documents.
   const LANES = [
     ["direct", "◆", 2, "Direct award", (lo) => `Up to ${euro(lo)}`, "Low-value, clearly defined need. Competition is not required solely because of value, provided the direct-award conditions are met.", ["Buyer entity", "CCM validation"], "Document the need and the value-for-money basis; keep the file."],
