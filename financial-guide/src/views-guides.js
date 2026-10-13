@@ -254,10 +254,10 @@
       ${(b.must || []).length ? `<div class="rd-rules"><small>Rules to follow</small><ul>${b.must.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       ${b.tip ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(b.tip)}</p></div>` : ""}`;
   }
-  function reader(key, sections) {
+  function reader(key, sections, draw) {
     const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
-    return `<div class="rd" data-rd="${esc(key)}">
+    return `<div class="rd${draw ? " rd-draw" : ""}" data-rd="${esc(key)}">${draw ? stageDrawing({ sections }, draw, "data-rd-go", read) : ""}
       <div class="rd-side">
         <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
       <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
@@ -271,11 +271,11 @@
       const key = "read:" + rd.dataset.rd, n = rd.querySelectorAll("[data-rd-panel]").length;
       const show = (k) => {
         rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; });
-        rd.querySelectorAll(".rd-nav [data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
+        rd.querySelectorAll(".rd-nav [data-rd-go], .sd-node[data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
       };
       const mark = (k) => {
         const read = FG.store.get(key, {}); read[k] = 1; FG.store.set(key, read);
-        const b = rd.querySelector(`.rd-nav [data-rd-go="${k}"]`); b.classList.add("read"); b.querySelector("em").textContent = "✓";
+        rd.querySelectorAll(`.rd-nav [data-rd-go="${k}"], .sd-node[data-rd-go="${k}"]`).forEach((b) => { b.classList.add("read"); const em = b.querySelector("em"); if (em) em.textContent = "✓"; });
         const done = Object.keys(read).length, mt = document.querySelector('.sb-meter[data-go-tab="guide"]');
         if (mt) { mt.style.setProperty("--p", Math.round((done / n) * 100)); mt.querySelector("b").firstChild.textContent = done; }
         if (done === n) { const fin = rd.parentElement.querySelector(".rd-done"); if (fin) fin.hidden = false; }
@@ -308,15 +308,15 @@
   }
   // Stage drawing: the stage's topics as a winding route of milestones; each opens its topic in Guidance.
   const DRAW_ICONS = [[/fund|budget|cost|price|financ|pay|invoice|vat/i, "coins"], [/role|actor|staff|dut|who|board|committee|supplier|market/i, "people"], [/contract|agreement|sign|addend/i, "doc"], [/threshold|procedure|route|choice/i, "route"], [/deadline|time|period|date|duration/i, "calendar"], [/file|archiv|record|audit/i, "folder"], [/evaluat|criteri|score|award/i, "target"], [/check|control|verif|complian/i, "check"], [/risk|conflict|ethic|integrit/i, "shield"]];
-  function stageDrawing(s, c) {
-    const items = s.sections.map(([h], k) => [k, h]).slice(0, 6), n = items.length;
+  function stageDrawing(s, c, attr = "data-rd-jump", read = {}) {
+    const items = s.sections.map(([h], k) => [k, h]), n = items.length;
     if (n < 2) return "";
     const W = 1000, H = 150, xs = items.map((_, k) => 70 + (k * (W - 140)) / (n - 1)), ys = items.map((_, k) => (k % 2 ? 98 : 52));
     const d = xs.map((x, k) => (k ? `C ${xs[k - 1] + (x - xs[k - 1]) / 2} ${ys[k - 1]}, ${xs[k - 1] + (x - xs[k - 1]) / 2} ${ys[k]}, ${x} ${ys[k]}` : `M ${x} ${ys[k]}`)).join(" ");
     const ic = (h) => (DRAW_ICONS.find(([r]) => r.test(h)) || [0, "book"])[1];
     return `<figure class="sd" style="--c:${c}" aria-label="Topics of this stage">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" class="sd-road"/><path d="${d}" class="sd-dash"/></svg>
-      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}" data-rd-jump="${k}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
+      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === 0}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
     </figure>`;
   }
   function briefHtml(cfg, s, ph, pc, idx) {
@@ -331,7 +331,6 @@
           const m = (lab, a, b, tab) => `<button type="button" class="sb-meter" data-go-tab="${tab}" style="--p:${b ? Math.round((a / b) * 100) : 0}"><i></i><b>${a}<small>/${b}</small></b><span>${lab}</span></button>`;
           return `<div class="sb-meters">${m("topics read", rd, s.sections.length, "guide")}${m("checks done", ck, cl.length, "check")}<button type="button" class="sb-meter rules" data-go-tab="rules"><b>${musts.length}</b><span>key rules</span></button><button type="button" class="sb-meter print" data-print title="Print a one-page summary of this stage"><b>⎙</b><span>summary</span></button></div>`; })()}
       </div>
-      ${stageDrawing(s, pc(ph))}
       <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
@@ -423,7 +422,7 @@
     }
     const j = e.target.closest("[data-rd-jump]");
     if (j) { const tab = document.querySelector('[data-tab="guide"],[role="tab"][data-id="guide"]'); if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
-      const go = document.querySelector(`.rd-nav [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
+      const go = document.querySelector(`.rd [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
   });
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
 
@@ -477,8 +476,9 @@
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
+          <section class="card pk-read"><div class="card-body"><div class="pk-h"><h3>Read the stage</h3><small>${s.sections.length} topics · click a stop on the route</small></div>${reader(`${cfg.base}:${s.name}`, s.sections, pc(ph))}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}</div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
-            ["guide", "Guidance", guidance, s.sections.length],
+            ["guide", "Guidance", isP ? "" : guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],

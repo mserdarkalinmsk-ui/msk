@@ -2229,7 +2229,7 @@ body.img-edit .h7-map > span { position: relative; }
 .sd>svg{position:absolute;inset:20px 0 20px;width:100%;height:150px}
 .sd-road{fill:none;stroke:color-mix(in srgb,var(--c) 18%,transparent);stroke-width:14;stroke-linecap:round}
 .sd-dash{fill:none;stroke:var(--c);stroke-width:2;stroke-dasharray:6 8;opacity:.6}
-.sd-node{position:absolute;transform:translate(-50%,-50%);margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:inherit;font:inherit;width:150px}
+.sd-node{position:absolute;transform:translate(-50%,-50%);margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:inherit;font:inherit;width:clamp(110px,14%,150px)}
 .sd-node i{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--surface,#fff);color:var(--c);border:2px solid var(--c);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 25%,transparent);transition:.2s}
 .sd-node span{font-size:11.5px;font-weight:700;line-height:1.25;text-align:center;color:var(--ink-2,#3b4456)}
 .sd-node small{display:block;font-size:9.5px;color:var(--c);letter-spacing:.08em}
@@ -2238,6 +2238,12 @@ body.img-edit .h7-map > span { position: relative; }
 @media(max-width:700px){.sd{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;margin:4px 0 8px}.sd>svg{display:none}.sd-node{position:static;transform:none;margin:0;width:auto;flex-direction:row;text-align:left}.sd-node span{order:0!important;text-align:left}.sd-node i{flex:none;width:34px;height:34px}}
 .sd-node i svg{width:18px;height:18px}
 .sd-node{gap:12px}.sd-node span{background:color-mix(in srgb,var(--surface,#fff) 85%,transparent);padding:2px 6px;border-radius:6px}
+.rd-draw{display:block}.rd-draw .rd-side{display:none}.rd-draw .sd{margin:0 0 14px}
+.rd-draw .rd-stage{border-top:0}
+.sd-node[aria-selected="true"] i{background:var(--c);color:#fff;transform:scale(1.12);box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 18%,transparent)}
+.sd-node[aria-selected="true"] span{color:var(--c)}
+.sd-node.read:not([aria-selected="true"]) i{background:color-mix(in srgb,var(--c) 14%,#fff)}
+.pk-read{margin-top:16px}.pk-h{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}.pk-h h3{margin:0;font-size:18px}.pk-h small{color:var(--muted,#7a8496)}
 
 </style>
 </head>
@@ -10117,7 +10123,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 21:45</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 21:49</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11136,10 +11142,10 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
       ${(b.must || []).length ? `<div class="rd-rules"><small>Rules to follow</small><ul>${b.must.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       ${b.tip ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(b.tip)}</p></div>` : ""}`;
   }
-  function reader(key, sections) {
+  function reader(key, sections, draw) {
     const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
-    return `<div class="rd" data-rd="${esc(key)}">
+    return `<div class="rd${draw ? " rd-draw" : ""}" data-rd="${esc(key)}">${draw ? stageDrawing({ sections }, draw, "data-rd-go", read) : ""}
       <div class="rd-side">
         <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
       <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
@@ -11153,11 +11159,11 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
       const key = "read:" + rd.dataset.rd, n = rd.querySelectorAll("[data-rd-panel]").length;
       const show = (k) => {
         rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; });
-        rd.querySelectorAll(".rd-nav [data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
+        rd.querySelectorAll(".rd-nav [data-rd-go], .sd-node[data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
       };
       const mark = (k) => {
         const read = FG.store.get(key, {}); read[k] = 1; FG.store.set(key, read);
-        const b = rd.querySelector(`.rd-nav [data-rd-go="${k}"]`); b.classList.add("read"); b.querySelector("em").textContent = "✓";
+        rd.querySelectorAll(`.rd-nav [data-rd-go="${k}"], .sd-node[data-rd-go="${k}"]`).forEach((b) => { b.classList.add("read"); const em = b.querySelector("em"); if (em) em.textContent = "✓"; });
         const done = Object.keys(read).length, mt = document.querySelector('.sb-meter[data-go-tab="guide"]');
         if (mt) { mt.style.setProperty("--p", Math.round((done / n) * 100)); mt.querySelector("b").firstChild.textContent = done; }
         if (done === n) { const fin = rd.parentElement.querySelector(".rd-done"); if (fin) fin.hidden = false; }
@@ -11190,15 +11196,15 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
   }
   // Stage drawing: the stage's topics as a winding route of milestones; each opens its topic in Guidance.
   const DRAW_ICONS = [[/fund|budget|cost|price|financ|pay|invoice|vat/i, "coins"], [/role|actor|staff|dut|who|board|committee|supplier|market/i, "people"], [/contract|agreement|sign|addend/i, "doc"], [/threshold|procedure|route|choice/i, "route"], [/deadline|time|period|date|duration/i, "calendar"], [/file|archiv|record|audit/i, "folder"], [/evaluat|criteri|score|award/i, "target"], [/check|control|verif|complian/i, "check"], [/risk|conflict|ethic|integrit/i, "shield"]];
-  function stageDrawing(s, c) {
-    const items = s.sections.map(([h], k) => [k, h]).slice(0, 6), n = items.length;
+  function stageDrawing(s, c, attr = "data-rd-jump", read = {}) {
+    const items = s.sections.map(([h], k) => [k, h]), n = items.length;
     if (n < 2) return "";
     const W = 1000, H = 150, xs = items.map((_, k) => 70 + (k * (W - 140)) / (n - 1)), ys = items.map((_, k) => (k % 2 ? 98 : 52));
     const d = xs.map((x, k) => (k ? `C ${xs[k - 1] + (x - xs[k - 1]) / 2} ${ys[k - 1]}, ${xs[k - 1] + (x - xs[k - 1]) / 2} ${ys[k]}, ${x} ${ys[k]}` : `M ${x} ${ys[k]}`)).join(" ");
     const ic = (h) => (DRAW_ICONS.find(([r]) => r.test(h)) || [0, "book"])[1];
     return `<figure class="sd" style="--c:${c}" aria-label="Topics of this stage">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" class="sd-road"/><path d="${d}" class="sd-dash"/></svg>
-      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}" data-rd-jump="${k}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
+      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === 0}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
     </figure>`;
   }
   function briefHtml(cfg, s, ph, pc, idx) {
@@ -11213,7 +11219,6 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
           const m = (lab, a, b, tab) => `<button type="button" class="sb-meter" data-go-tab="${tab}" style="--p:${b ? Math.round((a / b) * 100) : 0}"><i></i><b>${a}<small>/${b}</small></b><span>${lab}</span></button>`;
           return `<div class="sb-meters">${m("topics read", rd, s.sections.length, "guide")}${m("checks done", ck, cl.length, "check")}<button type="button" class="sb-meter rules" data-go-tab="rules"><b>${musts.length}</b><span>key rules</span></button><button type="button" class="sb-meter print" data-print title="Print a one-page summary of this stage"><b>⎙</b><span>summary</span></button></div>`; })()}
       </div>
-      ${stageDrawing(s, pc(ph))}
       <div class="sb-grid${(s.keyFacts || []).length ? "" : " solo"}">
         <div class="sb-main">
           ${s.remember ? `<div class="sb-rule"><small>If you remember one thing</small><b>${esc(s.remember)}</b></div>` : ""}
@@ -11305,7 +11310,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     }
     const j = e.target.closest("[data-rd-jump]");
     if (j) { const tab = document.querySelector('[data-tab="guide"],[role="tab"][data-id="guide"]'); if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
-      const go = document.querySelector(`.rd-nav [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
+      const go = document.querySelector(`.rd [data-rd-go="${j.dataset.rdJump}"]`); if (go) { go.click(); document.querySelector(".rd").scrollIntoView({ behavior: "smooth", block: "start" }); } }
   });
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-fact]"); if (b) factSheet(b); if (e.target.closest("#sheetBody a")) FG.closeOverlays(); });
 
@@ -11359,8 +11364,9 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
+          <section class="card pk-read"><div class="card-body"><div class="pk-h"><h3>Read the stage</h3><small>${s.sections.length} topics · click a stop on the route</small></div>${reader(`${cfg.base}:${s.name}`, s.sections, pc(ph))}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}</div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
-            ["guide", "Guidance", guidance, s.sections.length],
+            ["guide", "Guidance", isP ? "" : guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
             ["tool", "Interactive tool", widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
