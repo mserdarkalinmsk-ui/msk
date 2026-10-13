@@ -376,7 +376,7 @@
           ${map}
           <section class="card stage-card mt"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
-          </div></section>
+          </div></section>${cfg.hero && cfg.hero[s.name] ? `<div class="mt">${cfg.hero[s.name]()}</div>` : ""}
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
             ["guide", "Guidance", guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
@@ -414,15 +414,24 @@
     ["Framework Agreement", "Variable / complex recurring need", "Regular but less predictable need; precise deliverables not known upfront.", "Multiple preselected suppliers (pool)", "Mini-competition for each call-off", "Generally up to 4 years (5 only exceptionally)", "Use only where the extra administration adds value; rarely recommended below €184,000."],
   ];
   function contractMatrix() {
-    const need = [["Fixed", "A one-off, clearly defined need"], ["Recurring", "Recurring need with definable units"], ["Variable", "Regular but unpredictable, complex need"]];
-    const lab = ["Need", "Suppliers", "Ordering / competition", "Duration", "Key control"];
-    return `<section class="rc card ctc" data-ct><div class="rc-head"><div><span class="eyebrow">Contract type ≠ procedure</span><b>Which contract structure fits your need?</b></div>
-      <div class="rc-seg" role="group" aria-label="Your need">${need.map(([k, t], i) => `<button type="button" aria-pressed="${i === 0}" data-ct-k="${i}" title="${esc(t)}">${k}</button>`).join("")}</div></div>
-      <div class="rc-cols">${CONTRACT_ROWS.map((r, i) => `<article class="rc-col${i ? "" : " on"}" data-ct-col="${i}" style="--c:var(--c${i + 1})"><header><small>${esc(r[1])}</small><h4>${esc(r[0])}</h4></header><dl>${r.slice(2).map((x, j) => `<div><dt>${lab[j]}</dt><dd>${esc(x)}</dd></div>`).join("")}</dl><span class="rc-you">Fits your need</span></article>`).join("")}</div>
-      <p class="rc-verdict">Choose the structure here, then determine the procedure from the total value over the whole period. <a href="#/engines/contract-strategy">Contract Strategy engine →</a></p></section>`;
+    const need = [["Fixed", "One-off, clearly defined need"], ["Recurring", "Recurring need with definable units"], ["Variable", "Regular but unpredictable or complex need"]];
+    const ico = ["①", "∞", "↻"], rows = [["Best fit", 2, "◎"], ["Suppliers", 3, "◫"], ["Ordering & competition", 4, "⇄"], ["Duration", 5, "◷"], ["Key control", 6, "✓"]];
+    const sel = FG.store.get("ct:k", 0);
+    const cell = (i, html, extra) => `<div class="cx-c${i === sel ? " on" : ""}${extra || ""}" data-ct-col="${i}" style="--c:var(--c${i + 1})">${html}</div>`;
+    return `<section class="cx card" data-ct>
+      <div class="cx-head"><div><span class="eyebrow">Contract structure · quick comparison</span><h3>Which contract type fits the need?</h3><p>Choose the structure from how predictable and recurrent the need is. The procedure is decided separately, by value.</p></div>
+        <div class="rc-seg" role="group" aria-label="Your need">${need.map(([k, t], i) => `<button type="button" aria-pressed="${i === sel}" data-ct-k="${i}" title="${esc(t)}">${k}</button>`).join("")}</div></div>
+      <div class="cx-spec"><span>Defined, one-off</span><i></i><span>Recurring, defined units</span><i></i><span>Variable or complex</span></div>
+      <div class="cx-grid">
+        <div class="cx-corner"></div>${CONTRACT_ROWS.map((r, i) => cell(i, `<em>${ico[i]}</em><b>${esc(r[0])}</b><small>${esc(r[1])}</small><u>Fits your need</u>`, " cx-top")).join("")}
+        ${rows.map(([lab, k, ic]) => `<div class="cx-l"><span>${ic}</span>${lab}</div>${CONTRACT_ROWS.map((r, i) => cell(i, `<p>${esc(r[k])}</p>`)).join("")}`).join("")}
+      </div>
+      <div class="cx-foot"><div><b>Contract type ≠ procedure</b><span>This chart chooses the structure. The total value over the whole period decides how it is awarded.</span></div>
+        <a class="btn sm" href="#/procurement/thresholds-and-procedure">Check the procedure →</a><a class="btn sm" href="#/procurement/tender-design">Tender design →</a></div>
+    </section>`;
   }
   document.addEventListener("click", (e) => { const t = e.target.closest("[data-ct-k]"); if (!t) return; const b = t.closest("[data-ct]");
-    b.querySelectorAll("[data-ct-k]").forEach((x) => x.setAttribute("aria-pressed", x === t)); b.querySelectorAll("[data-ct-col]").forEach((c) => c.classList.toggle("on", c.dataset.ctCol === t.dataset.ctK)); });
+    b.querySelectorAll("[data-ct-k]").forEach((x) => x.setAttribute("aria-pressed", x === t)); FG.store.set("ct:k", +t.dataset.ctK); b.querySelectorAll("[data-ct-col]").forEach((c) => c.classList.toggle("on", c.dataset.ctCol === t.dataset.ctK)); });
 
   // Route finder: value, type and funding in → the matching lane lights up with its approvals, controls, steps and documents.
   const LANES = [
@@ -503,7 +512,8 @@
     bestPractice: (s) => s.best,
     roles: (s) => Object.values(C.procurementRoles).filter((r) => (r.stages || []).includes(s.name)),
     link: (l) => { const st = C.procurementStages.find((x) => x.name === l); return st ? [l, `procurement/${slug(l)}`] : stageLinkMap[l] ? [l, stageLinkMap[l]] : null; },
-    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"), "Contract Types": contractMatrix, "Thresholds & Procedure": () => FG.vis.tree() + thresholdMatrix(), "Tender Design": tenderDesign, "Open & Evaluate": () => procGates() + FG.vis.scoring() },
+    widgets: { "Roles & Funding": () => FG.vis.approvals(), "Authorise & Launch": () => FG.vis.clock("procurement"), "Negotiate & Award": () => FG.vis.clock("procurement"),  "Thresholds & Procedure": () => FG.vis.tree() + thresholdMatrix(), "Tender Design": tenderDesign, "Open & Evaluate": () => procGates() + FG.vis.scoring() },
+    hero: { "Contract Types": contractMatrix },
     mount: { "Thresholds & Procedure": mountSelector, "Tender Design": mountFlow("tender:i") },
   });
 
