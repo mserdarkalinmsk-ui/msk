@@ -2111,3 +2111,20 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .pj7-card:not(.noimg) .pj7-go { display: none; } .pj7-art { background-position: right center; }
 .pj7-kpis .pj7-wide { font-size: 1.15rem; line-height: 1.15; }
 .pj7-card p { max-width: min(220px, 100%); } .pj7-card > div { max-width: 58%; }
+/* Change photos */
+.img-bar { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: rgba(15, 27, 51, .92); color: #fff; box-shadow: 0 16px 34px -14px rgba(0,0,0,.6); font-size: .86rem; }
+.img-bar span { padding: 0 6px 0 8px; }
+.img-bar button { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 600; padding: 9px 14px; border: 0; border-radius: 10px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+.img-bar button.pri { background: #2563eb; } .img-bar button:disabled { opacity: .4; cursor: default; }
+body.img-edit [data-img] { outline: 3px dashed #f2b01e; outline-offset: -6px; cursor: copy; }
+body.img-edit .h7-photo, body.img-edit .pj7-photo { z-index: 3; }
+body.img-edit [data-img]:not(.h7-art):not(.pj7-art)::after { content: "Click to replace"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 6px 12px; border-radius: 8px; background: rgba(15,27,51,.85); color: #fff; font-size: .8rem; font-weight: 600; white-space: nowrap; pointer-events: none; z-index: 4; }
+body.img-edit .h7-map > span { position: relative; }
+.img-pop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 80; width: min(420px, calc(100vw - 32px)); display: grid; gap: 12px; padding: 22px; border-radius: 16px; background: #fff; color: #0f1b33; box-shadow: 0 30px 70px -20px rgba(0,0,0,.5); border: 1px solid #e3e9f3; }
+.img-pop b { font-size: 1.05rem; } .img-pop p { margin: 0; font-size: .78rem; color: #6b7a93; }
+.img-pop button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 600; padding: 10px 14px; border-radius: 10px; border: 1px solid #dbe3ef; background: #fff; color: #0f1b33; cursor: pointer; }
+.img-pop button.pri { background: #2563eb; border-color: #2563eb; color: #fff; } .img-pop button:disabled { opacity: .4; cursor: default; }
+.img-pop form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.img-pop label { display: grid; gap: 6px; font-size: .84rem; color: #3b4a63; }
+.img-pop input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid #dbe3ef; }
+.img-pop > div { display: flex; justify-content: space-between; gap: 8px; }

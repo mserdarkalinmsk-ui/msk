@@ -75,3 +75,66 @@
     const f = e.target.closest("[data-rf-f]"); if (f) return update({ f: f.dataset.rfF });
   });
 })();
+
+/* Replaceable background photos: each [data-img] area can take the reader's own picture.
+   Pictures are resized in the browser and kept on this device only; "Reset photos" restores the defaults. */
+(function () {
+  "use strict";
+  const DEF = window.FG_IMG || {};
+  window.FG_IMG = new Proxy(DEF, { get: (t, k) => (typeof k === "string" && FG.store.get("img:" + k, "")) || t[k] });
+  const keys = () => Object.keys(DEF).filter((k) => FG.store.get("img:" + k, ""));
+  let target = null;
+  const picker = document.createElement("input"); picker.type = "file"; picker.accept = "image/*"; picker.hidden = true;
+  function shrink(file, done) {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const max = 1600, r = Math.min(1, max / img.width), c = document.createElement("canvas");
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); done(c.toDataURL("image/jpeg", 0.82)); };
+    img.onerror = () => { URL.revokeObjectURL(url); FG.toast && FG.toast("This file could not be read as an image."); };
+    img.src = url;
+  }
+  picker.addEventListener("change", () => { const f = picker.files[0], k = target; picker.value = ""; if (!f || !k) return;
+    shrink(f, (data) => { FG.store.set("img:" + k, data);
+      let saved = true; try { saved = (localStorage.getItem("fg.v15") || "").includes(data.slice(-40)); } catch { saved = false; }
+      FG.toast && FG.toast(saved ? "Photo updated." : "Photo updated for this session — the browser has no room to keep it."); FG.refresh(true); }); });
+  function bar() {
+    let b = document.getElementById("imgBar");
+    const has = document.querySelector("#content [data-img]");
+    if (!has) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("div"); b.id = "imgBar"; b.className = "img-bar no-print"; document.body.appendChild(b); }
+    const on = document.body.classList.contains("img-edit");
+    const html = on ? `<span>Click any photo to replace it</span><button type="button" data-img-reset ${keys().length ? "" : "disabled"}>Reset photos</button><button type="button" class="pri" data-img-toggle>Done</button>`
+      : `<button type="button" data-img-toggle>${FG.icon("folder", 16)} Change photos</button>`;
+    if (b.dataset.h !== html) { b.dataset.h = html; b.innerHTML = html; }
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-img-toggle]")) { document.body.classList.toggle("img-edit"); return bar(); }
+    if (e.target.closest("[data-img-reset]")) { keys().forEach((k) => FG.store.set("img:" + k, "")); FG.toast && FG.toast("Default photos restored."); FG.refresh(true); return; }
+    if (!document.body.classList.contains("img-edit")) return;
+    const el = e.target.closest("#content [data-img]") || (e.target.closest(".h7-card,.pj7-card") || {}).querySelector?.("[data-img]");
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation(); target = el.dataset.img; pop();
+  }, true);
+  // Chooser: upload a file from the computer, paste an image link, or restore this photo's default.
+  function pop() {
+    document.getElementById("imgPop")?.remove();
+    const d = document.createElement("div"); d.id = "imgPop"; d.className = "img-pop"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Replace photo");
+    d.innerHTML = `<b>Replace this photo</b><button type="button" class="pri" data-ip="file">${FG.icon("folder", 16)} Upload from computer</button>
+      <form data-ip-form><label>…or paste an image link<input name="u" type="url" placeholder="https://…/photo.jpg" required></label><button type="submit">Use link</button></form>
+      <p>A linked photo needs an internet connection to show.</p>
+      <div><button type="button" data-ip="reset" ${FG.store.get("img:" + target, "") ? "" : "disabled"}>Restore default</button><button type="button" data-ip="close">Cancel</button></div>`;
+    document.body.appendChild(d); d.querySelector("input").focus();
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-ip]"); if (!b) return; const a = b.dataset.ip; document.getElementById("imgPop")?.remove();
+    if (a === "file") picker.click();
+    if (a === "reset") { FG.store.set("img:" + target, ""); FG.toast && FG.toast("Default photo restored."); FG.refresh(true); } });
+  document.addEventListener("submit", (e) => { if (!e.target.matches("[data-ip-form]")) return; e.preventDefault();
+    const u = e.target.u.value.trim(); if (!/^https?:\/\//i.test(u)) return;
+    const test = new Image(); test.onload = () => { FG.store.set("img:" + target, u); FG.toast && FG.toast("Photo updated from link."); FG.refresh(true); };
+    test.onerror = () => FG.toast && FG.toast("That link did not load as an image.");
+    test.src = u; document.getElementById("imgPop")?.remove(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.getElementById("imgPop")?.remove(); });
+  new MutationObserver(() => requestAnimationFrame(bar)).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(picker));
+  if (document.body) document.body.appendChild(picker);
+})();

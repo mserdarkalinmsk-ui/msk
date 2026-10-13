@@ -282,11 +282,11 @@
         ["foma/addendum", "files", "Addendum", "Decide the route for an addendum from the latest report and forecast.", "#475569", "", 0],
       ];
       const total = W.reduce((t, w) => t + w[6], 0);
-      return { html: `<section class="pj7"><div class="pj7-art" style="background-image:url(${I["fo-hero"] || ""})" aria-hidden="true"></div>
+      return { html: `<section class="pj7"><div class="pj7-art" data-img="fo-hero" style="background-image:url(${I["fo-hero"] || ""})" aria-hidden="true"></div>
           <div class="pj7-txt"><nav class="pj7-crumb"><a href="#/home">Home</a><span>›</span><b>FOMA</b></nav><h1>FOMA</h1>
             <p>Field-office workflows and practical financial guidance<br>for day-to-day operations.</p>
             <div class="pj7-kpis">${[["layers", "<b>" + W.length + "</b><small>Workflows</small>", "#1d5bd8"], ["doc", "<b>" + total + "</b><small>Procedure Steps</small>", "#12a07a"], ["chart", "<b class=\"pj7-wide\">Practical<br>tools</b>", "#1d5bd8"]].map(([i, h, c]) => `<div style="--c:${c}"><i>${FG.icon(i, 22)}</i><span>${h}</span></div>`).join("")}</div></div></section>
-        <section class="pj7-grid">${W.map(([h, ic, t, d, c, img, cnt], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" style="background-image:url(${I[img] || ""})"></span>` : ""}
+        <section class="pj7-grid">${W.map(([h, ic, t, d, c, img, cnt], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" data-img="${img}" style="background-image:url(${I[img] || ""})"></span>` : ""}
             <i class="pj7-ic">${FG.icon(ic, 28)}</i><div><small>${String(i + 1).padStart(2, "0")}</small><h3>${t}</h3><p>${esc(d)}</p>
             <span class="pj7-meta">${FG.icon("book", 15)}${cnt ? `${cnt} steps` : "Decision support"}<em>|</em><span>Core</span></span></div><span class="pj7-go">→</span></a>`).join("")}</section>
         <section class="pj7-foot"><div class="pj7-how"><i>${FG.icon("trophy", 22)}</i><div><b>How to use</b><p>Each workflow includes short learning modules, step-by-step procedures, practical examples and templates. Start with the workflow relevant to your current task.</p></div></div>

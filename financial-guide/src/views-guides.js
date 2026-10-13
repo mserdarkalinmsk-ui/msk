@@ -70,11 +70,11 @@
         ["grants", "grant", "Grants", "Call, criteria, cost eligibility, evaluation and agreement.", "#0f766e", "", `${lifecycle.grants} stages`, "Core"],
         ["vat", "coins", "VAT Procedures", "Exemptions, supporting documents and follow-up.", "#475569", "", "Exemptions", "Core"],
       ];
-      return { html: `<section class="pj7"><div class="pj7-art" style="background-image:url(${I["pj-hero"] || ""})" aria-hidden="true"></div>
+      return { html: `<section class="pj7"><div class="pj7-art" data-img="pj-hero" style="background-image:url(${I["pj-hero"] || ""})" aria-hidden="true"></div>
           <div class="pj7-txt"><nav class="pj7-crumb"><a href="#/home">Home</a><span>›</span><b>Projects</b></nav><h1>Projects</h1>
             <p>Project finance guidance, operational workflows and practical tools<br>for day-to-day implementation.</p>
             <div class="pj7-kpis">${[["layers", modules, "Modules", "#1d5bd8"], ["doc", steps, "Procedure Steps", "#12a07a"], ["chart", completed + "%", "Steps Opened", "#1d5bd8"]].map(([i, v, l, c]) => `<div style="--c:${c}"><i>${FG.icon(i, 22)}</i><span><b>${v}</b><small>${l}</small></span></div>`).join("")}</div></div></section>
-        <section class="pj7-grid">${MODS.map(([h, ic, t, d, c, img, cnt, tag], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" style="background-image:url(${I[img] || ""})"></span>` : ""}
+        <section class="pj7-grid">${MODS.map(([h, ic, t, d, c, img, cnt, tag], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" data-img="${img}" style="background-image:url(${I[img] || ""})"></span>` : ""}
             <i class="pj7-ic">${FG.icon(ic, 28)}</i><div><small>${String(i + 1).padStart(2, "0")}</small><h3>${t}</h3><p>${esc(d)}</p>
             <span class="pj7-meta">${FG.icon(tag === "Deadline" ? "calendar" : "book", 15)}${cnt}<em>|</em><span class="${tag === "Deadline" ? "dl" : ""}">${tag}</span></span></div><span class="pj7-go">→</span></a>`).join("")}</section>
         <section class="pj7-foot"><div class="pj7-how"><i>${FG.icon("trophy", 22)}</i><div><b>How to use</b><p>Each module includes short learning modules, step-by-step procedures, practical examples and templates. Start with the module relevant to your current task.</p></div></div>
@@ -187,20 +187,20 @@
         ["tools", "grid", "Tools", "", "Documents, calculators, rules, glossary and practice.", "#f2a516", "tools", "#3a2408", ["20+", "Tools"], [["sliders", "Calculators", "engines"], ["doc", "Templates", "links"], ["ask", "Guidance", "rules"]]],
       ];
       return { html: `
-        <section class="h7"><div class="h7-art" style="background-image:url(${I.hero || ""})" aria-hidden="true"></div>
+        <section class="h7"><div class="h7-art" data-img="hero" style="background-image:url(${I.hero || ""})" aria-hidden="true"></div>
           <div class="h7-txt"><span class="h7-eye">Knowledge <i></i> Guidance <i></i> Practical tools</span>
             <h1>Find the rule, plan your case, <br>keep the <span>right documents.</span></h1>
             <p>A single workspace for procurement, financial operations <br>and project delivery at the Council of Europe.</p>
             <form class="h7-ask" data-hz-ask>${FG.icon("search", 22)}<input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask <span aria-hidden="true">→</span></button></form>
             <div class="h7-chips">${[["Procurement procedure", "procurement/thresholds-and-procedure"], ["Payment request", "payment-file"], ["Thresholds", "rules"], ["Contract templates", "procurement/contract-types"], ["FOMA workflow", "foma"]].map(([t, h]) => `<a href="#/${h}">${t}</a>`).join("")}</div></div></section>
-        <section class="h7-cards">${CARDS7.map(([h, ic, t, t2, d, c, img, bg, big, links]) => `<article class="h7-card" style="--c:${c};--bg:${bg}"><a class="h7-top" href="#/${h}"><span class="h7-photo" style="background-image:url(${I[img] || ""})"></span>
+        <section class="h7-cards">${CARDS7.map(([h, ic, t, t2, d, c, img, bg, big, links]) => `<article class="h7-card" style="--c:${c};--bg:${bg}"><a class="h7-top" href="#/${h}"><span class="h7-photo" data-img="${img}" style="background-image:url(${I[img] || ""})"></span>
             <i class="h7-ic">${FG.icon(ic, 28)}</i><h3>${t}${t2 ? `<span>${t2}</span>` : ""}</h3><p>${esc(d)}</p><span class="h7-go">→</span></a>
           <div class="h7-foot"><span class="h7-big"><i>${FG.icon(ic, 20)}</i><span><b>${big[0]}</b><small>${big[1]}</small></span></span>${links.map(([li, lt, lh]) => `<a href="#/${lh}"><i>${FG.icon(li, 17)}</i>${lt}</a>`).join("")}</div></article>`).join("")}</section>
         <section class="h7-row">
           <div class="h7-panel"><h4><i>${FG.icon("doc", 18)}</i>Key resources<em>›</em></h4>${[["doc", "Procurement Rules", "rules"], ["coins", "Financial Provisions", "projects"], ["check", "Templates & Checklists", "tools"], ["files", "Glossary", "glossary"], ["trophy", "Learning Academy", "procurement/test"]].map(([i, t, h]) => `<a class="h7-li" href="#/${h}"><i>${FG.icon(i, 17)}</i>${t}<em>›</em></a>`).join("")}</div>
           <div class="h7-panel"><h4><i>${FG.icon("sliders", 18)}</i>Council of Europe in numbers<a href="#/rules">View all →</a></h4>
             <div class="h7-nums">${[["46", "Member states"], [String(pN + gN), "Guided stages"], ["€184k", "Tenders Board threshold"], [String(engines), "Decision engines"]].map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join("")}</div>
-            <div class="h7-map"><span style="background-image:url(${I.map || ""})"></span><ul><li><i style="background:#1d4ed8"></i>Council of Europe<small>(46 member states)</small></li><li><i style="background:#c7d7f5"></i>Map for illustration<small>(not activity data)</small></li></ul></div></div>
+            <div class="h7-map"><span data-img="map" style="background-image:url(${I.map || ""})"></span><ul><li><i style="background:#1d4ed8"></i>Council of Europe<small>(46 member states)</small></li><li><i style="background:#c7d7f5"></i>Map for illustration<small>(not activity data)</small></li></ul></div></div>
           <div class="h7-panel"><h4><i>${FG.icon("trophy", 18)}</i>My learning progress<em>›</em></h4>
             <a class="h7-prog" href="#/procurement"><span class="h7-ring" style="--p:${pPct}"><b>${pPct}%</b></span><span><b>Procurement fundamentals</b><small>${pV} of ${pN} stages completed</small><i><u style="width:${pPct}%"></u></i></span><em>›</em></a>
             <h5><i>${FG.icon("calendar", 18)}</i>Recent activity<em>›</em></h5>${recent.length ? recent.slice(0, 3).map((r, k) => `<a class="h7-act" href="#/${esc(r.p)}"><i style="--k:${["#f59e0b", "#f59e0b", "#14a08a"][k]}">${FG.icon(k === 2 ? "check" : "doc", 15)}</i><span>${esc(r.t)}</span><em>${ago(r.at)}</em></a>`).join("") : `<p class="h7-empty">Pages you open will appear here.</p>`}</div>

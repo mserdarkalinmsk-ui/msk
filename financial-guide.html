@@ -2123,6 +2123,23 @@ button.hub-ref { font: inherit; text-align: left; cursor: pointer; width: 100%; 
 .pj7-card:not(.noimg) .pj7-go { display: none; } .pj7-art { background-position: right center; }
 .pj7-kpis .pj7-wide { font-size: 1.15rem; line-height: 1.15; }
 .pj7-card p { max-width: min(220px, 100%); } .pj7-card > div { max-width: 58%; }
+/* Change photos */
+.img-bar { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: rgba(15, 27, 51, .92); color: #fff; box-shadow: 0 16px 34px -14px rgba(0,0,0,.6); font-size: .86rem; }
+.img-bar span { padding: 0 6px 0 8px; }
+.img-bar button { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 600; padding: 9px 14px; border: 0; border-radius: 10px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+.img-bar button.pri { background: #2563eb; } .img-bar button:disabled { opacity: .4; cursor: default; }
+body.img-edit [data-img] { outline: 3px dashed #f2b01e; outline-offset: -6px; cursor: copy; }
+body.img-edit .h7-photo, body.img-edit .pj7-photo { z-index: 3; }
+body.img-edit [data-img]:not(.h7-art):not(.pj7-art)::after { content: "Click to replace"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 6px 12px; border-radius: 8px; background: rgba(15,27,51,.85); color: #fff; font-size: .8rem; font-weight: 600; white-space: nowrap; pointer-events: none; z-index: 4; }
+body.img-edit .h7-map > span { position: relative; }
+.img-pop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 80; width: min(420px, calc(100vw - 32px)); display: grid; gap: 12px; padding: 22px; border-radius: 16px; background: #fff; color: #0f1b33; box-shadow: 0 30px 70px -20px rgba(0,0,0,.5); border: 1px solid #e3e9f3; }
+.img-pop b { font-size: 1.05rem; } .img-pop p { margin: 0; font-size: .78rem; color: #6b7a93; }
+.img-pop button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 600; padding: 10px 14px; border-radius: 10px; border: 1px solid #dbe3ef; background: #fff; color: #0f1b33; cursor: pointer; }
+.img-pop button.pri { background: #2563eb; border-color: #2563eb; color: #fff; } .img-pop button:disabled { opacity: .4; cursor: default; }
+.img-pop form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.img-pop label { display: grid; gap: 6px; font-size: .84rem; color: #3b4a63; }
+.img-pop input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid #dbe3ef; }
+.img-pop > div { display: flex; justify-content: space-between; gap: 8px; }
 
 </style>
 </head>
@@ -10002,7 +10019,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 14:44</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-13 14:51</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -10336,6 +10353,69 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     const t = e.target.closest("[data-rf-t]"); if (t) return update({ t: t.dataset.rfT });
     const f = e.target.closest("[data-rf-f]"); if (f) return update({ f: f.dataset.rfF });
   });
+})();
+
+/* Replaceable background photos: each [data-img] area can take the reader's own picture.
+   Pictures are resized in the browser and kept on this device only; "Reset photos" restores the defaults. */
+(function () {
+  "use strict";
+  const DEF = window.FG_IMG || {};
+  window.FG_IMG = new Proxy(DEF, { get: (t, k) => (typeof k === "string" && FG.store.get("img:" + k, "")) || t[k] });
+  const keys = () => Object.keys(DEF).filter((k) => FG.store.get("img:" + k, ""));
+  let target = null;
+  const picker = document.createElement("input"); picker.type = "file"; picker.accept = "image/*"; picker.hidden = true;
+  function shrink(file, done) {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const max = 1600, r = Math.min(1, max / img.width), c = document.createElement("canvas");
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); done(c.toDataURL("image/jpeg", 0.82)); };
+    img.onerror = () => { URL.revokeObjectURL(url); FG.toast && FG.toast("This file could not be read as an image."); };
+    img.src = url;
+  }
+  picker.addEventListener("change", () => { const f = picker.files[0], k = target; picker.value = ""; if (!f || !k) return;
+    shrink(f, (data) => { FG.store.set("img:" + k, data);
+      let saved = true; try { saved = (localStorage.getItem("fg.v15") || "").includes(data.slice(-40)); } catch { saved = false; }
+      FG.toast && FG.toast(saved ? "Photo updated." : "Photo updated for this session — the browser has no room to keep it."); FG.refresh(true); }); });
+  function bar() {
+    let b = document.getElementById("imgBar");
+    const has = document.querySelector("#content [data-img]");
+    if (!has) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("div"); b.id = "imgBar"; b.className = "img-bar no-print"; document.body.appendChild(b); }
+    const on = document.body.classList.contains("img-edit");
+    const html = on ? `<span>Click any photo to replace it</span><button type="button" data-img-reset ${keys().length ? "" : "disabled"}>Reset photos</button><button type="button" class="pri" data-img-toggle>Done</button>`
+      : `<button type="button" data-img-toggle>${FG.icon("folder", 16)} Change photos</button>`;
+    if (b.dataset.h !== html) { b.dataset.h = html; b.innerHTML = html; }
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-img-toggle]")) { document.body.classList.toggle("img-edit"); return bar(); }
+    if (e.target.closest("[data-img-reset]")) { keys().forEach((k) => FG.store.set("img:" + k, "")); FG.toast && FG.toast("Default photos restored."); FG.refresh(true); return; }
+    if (!document.body.classList.contains("img-edit")) return;
+    const el = e.target.closest("#content [data-img]") || (e.target.closest(".h7-card,.pj7-card") || {}).querySelector?.("[data-img]");
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation(); target = el.dataset.img; pop();
+  }, true);
+  // Chooser: upload a file from the computer, paste an image link, or restore this photo's default.
+  function pop() {
+    document.getElementById("imgPop")?.remove();
+    const d = document.createElement("div"); d.id = "imgPop"; d.className = "img-pop"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Replace photo");
+    d.innerHTML = `<b>Replace this photo</b><button type="button" class="pri" data-ip="file">${FG.icon("folder", 16)} Upload from computer</button>
+      <form data-ip-form><label>…or paste an image link<input name="u" type="url" placeholder="https://…/photo.jpg" required></label><button type="submit">Use link</button></form>
+      <p>A linked photo needs an internet connection to show.</p>
+      <div><button type="button" data-ip="reset" ${FG.store.get("img:" + target, "") ? "" : "disabled"}>Restore default</button><button type="button" data-ip="close">Cancel</button></div>`;
+    document.body.appendChild(d); d.querySelector("input").focus();
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-ip]"); if (!b) return; const a = b.dataset.ip; document.getElementById("imgPop")?.remove();
+    if (a === "file") picker.click();
+    if (a === "reset") { FG.store.set("img:" + target, ""); FG.toast && FG.toast("Default photo restored."); FG.refresh(true); } });
+  document.addEventListener("submit", (e) => { if (!e.target.matches("[data-ip-form]")) return; e.preventDefault();
+    const u = e.target.u.value.trim(); if (!/^https?:\/\//i.test(u)) return;
+    const test = new Image(); test.onload = () => { FG.store.set("img:" + target, u); FG.toast && FG.toast("Photo updated from link."); FG.refresh(true); };
+    test.onerror = () => FG.toast && FG.toast("That link did not load as an image.");
+    test.src = u; document.getElementById("imgPop")?.remove(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.getElementById("imgPop")?.remove(); });
+  new MutationObserver(() => requestAnimationFrame(bar)).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(picker));
+  if (document.body) document.body.appendChild(picker);
 })();
 
 </script>
@@ -10774,11 +10854,11 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
         ["grants", "grant", "Grants", "Call, criteria, cost eligibility, evaluation and agreement.", "#0f766e", "", `${lifecycle.grants} stages`, "Core"],
         ["vat", "coins", "VAT Procedures", "Exemptions, supporting documents and follow-up.", "#475569", "", "Exemptions", "Core"],
       ];
-      return { html: `<section class="pj7"><div class="pj7-art" style="background-image:url(${I["pj-hero"] || ""})" aria-hidden="true"></div>
+      return { html: `<section class="pj7"><div class="pj7-art" data-img="pj-hero" style="background-image:url(${I["pj-hero"] || ""})" aria-hidden="true"></div>
           <div class="pj7-txt"><nav class="pj7-crumb"><a href="#/home">Home</a><span>›</span><b>Projects</b></nav><h1>Projects</h1>
             <p>Project finance guidance, operational workflows and practical tools<br>for day-to-day implementation.</p>
             <div class="pj7-kpis">${[["layers", modules, "Modules", "#1d5bd8"], ["doc", steps, "Procedure Steps", "#12a07a"], ["chart", completed + "%", "Steps Opened", "#1d5bd8"]].map(([i, v, l, c]) => `<div style="--c:${c}"><i>${FG.icon(i, 22)}</i><span><b>${v}</b><small>${l}</small></span></div>`).join("")}</div></div></section>
-        <section class="pj7-grid">${MODS.map(([h, ic, t, d, c, img, cnt, tag], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" style="background-image:url(${I[img] || ""})"></span>` : ""}
+        <section class="pj7-grid">${MODS.map(([h, ic, t, d, c, img, cnt, tag], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" data-img="${img}" style="background-image:url(${I[img] || ""})"></span>` : ""}
             <i class="pj7-ic">${FG.icon(ic, 28)}</i><div><small>${String(i + 1).padStart(2, "0")}</small><h3>${t}</h3><p>${esc(d)}</p>
             <span class="pj7-meta">${FG.icon(tag === "Deadline" ? "calendar" : "book", 15)}${cnt}<em>|</em><span class="${tag === "Deadline" ? "dl" : ""}">${tag}</span></span></div><span class="pj7-go">→</span></a>`).join("")}</section>
         <section class="pj7-foot"><div class="pj7-how"><i>${FG.icon("trophy", 22)}</i><div><b>How to use</b><p>Each module includes short learning modules, step-by-step procedures, practical examples and templates. Start with the module relevant to your current task.</p></div></div>
@@ -10891,20 +10971,20 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
         ["tools", "grid", "Tools", "", "Documents, calculators, rules, glossary and practice.", "#f2a516", "tools", "#3a2408", ["20+", "Tools"], [["sliders", "Calculators", "engines"], ["doc", "Templates", "links"], ["ask", "Guidance", "rules"]]],
       ];
       return { html: `
-        <section class="h7"><div class="h7-art" style="background-image:url(${I.hero || ""})" aria-hidden="true"></div>
+        <section class="h7"><div class="h7-art" data-img="hero" style="background-image:url(${I.hero || ""})" aria-hidden="true"></div>
           <div class="h7-txt"><span class="h7-eye">Knowledge <i></i> Guidance <i></i> Practical tools</span>
             <h1>Find the rule, plan your case, <br>keep the <span>right documents.</span></h1>
             <p>A single workspace for procurement, financial operations <br>and project delivery at the Council of Europe.</p>
             <form class="h7-ask" data-hz-ask>${FG.icon("search", 22)}<input name="q" type="search" placeholder="Ask a question — e.g. Who approves a contract above €184,000?" aria-label="Ask the guide" autocomplete="off"><button type="submit">Ask <span aria-hidden="true">→</span></button></form>
             <div class="h7-chips">${[["Procurement procedure", "procurement/thresholds-and-procedure"], ["Payment request", "payment-file"], ["Thresholds", "rules"], ["Contract templates", "procurement/contract-types"], ["FOMA workflow", "foma"]].map(([t, h]) => `<a href="#/${h}">${t}</a>`).join("")}</div></div></section>
-        <section class="h7-cards">${CARDS7.map(([h, ic, t, t2, d, c, img, bg, big, links]) => `<article class="h7-card" style="--c:${c};--bg:${bg}"><a class="h7-top" href="#/${h}"><span class="h7-photo" style="background-image:url(${I[img] || ""})"></span>
+        <section class="h7-cards">${CARDS7.map(([h, ic, t, t2, d, c, img, bg, big, links]) => `<article class="h7-card" style="--c:${c};--bg:${bg}"><a class="h7-top" href="#/${h}"><span class="h7-photo" data-img="${img}" style="background-image:url(${I[img] || ""})"></span>
             <i class="h7-ic">${FG.icon(ic, 28)}</i><h3>${t}${t2 ? `<span>${t2}</span>` : ""}</h3><p>${esc(d)}</p><span class="h7-go">→</span></a>
           <div class="h7-foot"><span class="h7-big"><i>${FG.icon(ic, 20)}</i><span><b>${big[0]}</b><small>${big[1]}</small></span></span>${links.map(([li, lt, lh]) => `<a href="#/${lh}"><i>${FG.icon(li, 17)}</i>${lt}</a>`).join("")}</div></article>`).join("")}</section>
         <section class="h7-row">
           <div class="h7-panel"><h4><i>${FG.icon("doc", 18)}</i>Key resources<em>›</em></h4>${[["doc", "Procurement Rules", "rules"], ["coins", "Financial Provisions", "projects"], ["check", "Templates & Checklists", "tools"], ["files", "Glossary", "glossary"], ["trophy", "Learning Academy", "procurement/test"]].map(([i, t, h]) => `<a class="h7-li" href="#/${h}"><i>${FG.icon(i, 17)}</i>${t}<em>›</em></a>`).join("")}</div>
           <div class="h7-panel"><h4><i>${FG.icon("sliders", 18)}</i>Council of Europe in numbers<a href="#/rules">View all →</a></h4>
             <div class="h7-nums">${[["46", "Member states"], [String(pN + gN), "Guided stages"], ["€184k", "Tenders Board threshold"], [String(engines), "Decision engines"]].map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join("")}</div>
-            <div class="h7-map"><span style="background-image:url(${I.map || ""})"></span><ul><li><i style="background:#1d4ed8"></i>Council of Europe<small>(46 member states)</small></li><li><i style="background:#c7d7f5"></i>Map for illustration<small>(not activity data)</small></li></ul></div></div>
+            <div class="h7-map"><span data-img="map" style="background-image:url(${I.map || ""})"></span><ul><li><i style="background:#1d4ed8"></i>Council of Europe<small>(46 member states)</small></li><li><i style="background:#c7d7f5"></i>Map for illustration<small>(not activity data)</small></li></ul></div></div>
           <div class="h7-panel"><h4><i>${FG.icon("trophy", 18)}</i>My learning progress<em>›</em></h4>
             <a class="h7-prog" href="#/procurement"><span class="h7-ring" style="--p:${pPct}"><b>${pPct}%</b></span><span><b>Procurement fundamentals</b><small>${pV} of ${pN} stages completed</small><i><u style="width:${pPct}%"></u></i></span><em>›</em></a>
             <h5><i>${FG.icon("calendar", 18)}</i>Recent activity<em>›</em></h5>${recent.length ? recent.slice(0, 3).map((r, k) => `<a class="h7-act" href="#/${esc(r.p)}"><i style="--k:${["#f59e0b", "#f59e0b", "#14a08a"][k]}">${FG.icon(k === 2 ? "check" : "doc", 15)}</i><span>${esc(r.t)}</span><em>${ago(r.at)}</em></a>`).join("") : `<p class="h7-empty">Pages you open will appear here.</p>`}</div>
@@ -11735,11 +11815,11 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
         ["foma/addendum", "files", "Addendum", "Decide the route for an addendum from the latest report and forecast.", "#475569", "", 0],
       ];
       const total = W.reduce((t, w) => t + w[6], 0);
-      return { html: `<section class="pj7"><div class="pj7-art" style="background-image:url(${I["fo-hero"] || ""})" aria-hidden="true"></div>
+      return { html: `<section class="pj7"><div class="pj7-art" data-img="fo-hero" style="background-image:url(${I["fo-hero"] || ""})" aria-hidden="true"></div>
           <div class="pj7-txt"><nav class="pj7-crumb"><a href="#/home">Home</a><span>›</span><b>FOMA</b></nav><h1>FOMA</h1>
             <p>Field-office workflows and practical financial guidance<br>for day-to-day operations.</p>
             <div class="pj7-kpis">${[["layers", "<b>" + W.length + "</b><small>Workflows</small>", "#1d5bd8"], ["doc", "<b>" + total + "</b><small>Procedure Steps</small>", "#12a07a"], ["chart", "<b class=\"pj7-wide\">Practical<br>tools</b>", "#1d5bd8"]].map(([i, h, c]) => `<div style="--c:${c}"><i>${FG.icon(i, 22)}</i><span>${h}</span></div>`).join("")}</div></div></section>
-        <section class="pj7-grid">${W.map(([h, ic, t, d, c, img, cnt], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" style="background-image:url(${I[img] || ""})"></span>` : ""}
+        <section class="pj7-grid">${W.map(([h, ic, t, d, c, img, cnt], i) => `<a class="pj7-card${img ? "" : " noimg"}" href="#/${h}" style="--c:${c}">${img ? `<span class="pj7-photo" data-img="${img}" style="background-image:url(${I[img] || ""})"></span>` : ""}
             <i class="pj7-ic">${FG.icon(ic, 28)}</i><div><small>${String(i + 1).padStart(2, "0")}</small><h3>${t}</h3><p>${esc(d)}</p>
             <span class="pj7-meta">${FG.icon("book", 15)}${cnt ? `${cnt} steps` : "Decision support"}<em>|</em><span>Core</span></span></div><span class="pj7-go">→</span></a>`).join("")}</section>
         <section class="pj7-foot"><div class="pj7-how"><i>${FG.icon("trophy", 22)}</i><div><b>How to use</b><p>Each workflow includes short learning modules, step-by-step procedures, practical examples and templates. Start with the workflow relevant to your current task.</p></div></div>
