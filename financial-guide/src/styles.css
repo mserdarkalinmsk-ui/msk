@@ -2202,3 +2202,14 @@ body.img-edit .h7-map > span { position: relative; }
 .pa-fs-dot{width:48px;height:48px;font-size:15px}.pa-fs:not(:last-child)::after{top:36px;left:calc(50% + 27px);right:calc(-50% + 27px)}
 .sb-rule small{color:rgba(255,255,255,.75)!important}
 .pa-flow{grid-template-columns:repeat(var(--n,13),minmax(64px,1fr));padding:18px 10px 20px;gap:0}.pa-fs{min-width:0;padding:10px 2px}.pa-fs b{font-size:10.5px}.pa-fs-dot{width:42px;height:42px;font-size:14px}.pa-fs:not(:last-child)::after{top:31px;left:calc(50% + 24px);right:calc(-50% + 24px)}@media(max-width:900px){.pa-flow{grid-template-columns:repeat(var(--n,13),84px)}}
+.pa-flow{row-gap:6px;padding-top:14px}
+.pa-ph{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa3b2;text-align:center;padding:5px 0 7px;margin:0 6px;border-bottom:2px solid color-mix(in srgb,var(--c) 25%,transparent)}
+.pa-ph.on{color:var(--c);border-color:var(--c)}
+.pa-fs:not(:last-child)::after{top:31px}
+.pa-fs small{display:none}.pa-fs b{margin-top:6px}
+.pa-fs.on::before{content:"";position:absolute;bottom:-11px;left:50%;width:14px;height:14px;background:#fff;border:1px solid #e6ebf3;border-top:0;border-left:0;transform:translateX(-50%) rotate(45deg)}
+.pa-fs.seen .pa-fs-dot{opacity:1;background:color-mix(in srgb,var(--c) 75%,#fff)}
+.pk-in{animation:pkIn .28s ease}.pk-in.back{animation-name:pkBack}
+@keyframes pkIn{from{opacity:0;transform:translateX(24px)}}@keyframes pkBack{from{opacity:0;transform:translateX(-24px)}}
+@media (prefers-reduced-motion:reduce){.pk-in{animation:none}}
+.pk{overflow-x:clip}
