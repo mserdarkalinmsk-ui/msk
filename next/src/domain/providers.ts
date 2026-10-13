@@ -7,14 +7,19 @@ import type { PO } from './workbook';
  * Visibility, Research and Publication by what they buy (the PO wording), not by the budget code they are posted on.
  * The budget code only decides when the wording says nothing. A user's choice for a PO always wins.
  */
-export type Kind = 'events' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication';
-export const KINDS: { k: Kind; label: string; color: string }[] = [
+export type Kind = 'events' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
+export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
   { k: 'events', label: 'Event management', color: '#64748b' },
   { k: 'consult', label: 'Consultant — national', color: '#3b82c4' },
   { k: 'intl', label: 'Consultant — international', color: '#8e4ec6' },
   { k: 'visibility', label: 'Visibility', color: '#e5484d' },
   { k: 'research', label: 'Research', color: '#0e9384' },
   { k: 'publication', label: 'Publication', color: '#c27c0e' },
+  // Groups that can be switched on or off on the screen (grants on by default).
+  { k: 'grants', label: 'Grants (6.1, 6.2)', color: '#30a46c', optional: true, on: true },
+  { k: 'perdiem', label: 'Per diem (1.3.1, 1.3.2, DSA)', color: '#a16207', optional: true },
+  { k: 'staff', label: 'Staff salaries', color: '#94a3b8', optional: true },
+  { k: 'petty', label: 'Petty cash', color: '#78716c', optional: true },
 ];
 export const isKind = (v: unknown): v is Kind => KINDS.some((x) => x.k === v);
 
@@ -28,14 +33,16 @@ const RULES: [Kind | 'person', RegExp][] = [
 ];
 const INTL = /international|foreign|uluslararası|yabancı|abroad/i;
 const PETTY = /petty cash|caisse|avance de fonds|cash advance/i; // advances to the office, not a provider
-// Salaries of the project team (1.1.1, 1.2.1), per diems (1.3.1, 1.3.2) and grants (6.1, 6.2) are not service providers.
-const STAFF = /^(1\.[12]\.1|1\.3\.[12]|6\.[12])(\.|$)/;
-/** Staff salaries and per diems: never a service provider, not even listed among the other POs. */
-export const EXCLUDED = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission|\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|ücret bordro/i;
-
+const STAFF = /^1\.[12]\.1(\.|$)/, PERDIEM = /^1\.3\.[12](\.|$)/, GRANTS = /^6\.[12](\.|$)/;
+const PERDIEM_T = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission/i;
+const STAFF_T = /\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|bordro/i;
 /** Kind of a PO from its wording, then from its budget line's code and wording; null when it buys none of these. */
 export function kindOf(text: string, code = '', lineText = ''): Kind | null {
-  if (STAFF.test(code) || PETTY.test(text) || EXCLUDED.test(text)) return null;
+  // Groups first: they never count as a service, whatever else the wording says.
+  if (PETTY.test(text)) return 'petty';
+  if (STAFF.test(code) || STAFF_T.test(text)) return 'staff';
+  if (PERDIEM.test(code) || PERDIEM_T.test(text)) return 'perdiem';
+  if (GRANTS.test(code) || /\bgrant|sub-?grant|hibe/i.test(text)) return 'grants';
   const byText = (t: string): Kind | null => {
     for (const [k, re] of RULES) if (re.test(t)) return k === 'person' ? (INTL.test(t) || /^1\.2(\.|$)/.test(code) ? 'intl' : 'consult') : k;
     return null;
@@ -60,8 +67,7 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
     const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
     return wb.pos.flatMap((x) => {
       const value = x.sc || x.amount; if (!value) return [];
-      if (STAFF.test(x.line) || EXCLUDED.test(`${x.description} ${x.nature} ${x.supplier}`)) return [];
-      const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`);
+      const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature} ${PETTY.test(x.supplier) ? x.supplier : ''}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`);
       const u = set[key], kind = u === 'none' ? null : isKind(u) ? u : auto;
       return kind || all ? [{ ...x, p, kind, auto, key, value }] : [];
     });
