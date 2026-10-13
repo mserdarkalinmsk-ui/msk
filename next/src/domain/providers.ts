@@ -95,12 +95,28 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
   for (const x of out) {
     if (x.auto && interp.has(supKey(x.supplier)) && ['events', 'consult', 'intl'].includes(x.auto)) x.auto = 'interp';
     // Choices: a PO's own choice, then the choice made for the whole provider, then the automatic kind.
-    const u = set[x.key] ?? set[`sup|${supKey(x.supplier)}`];
+    const u = set[x.key] ?? set[`sup|${supKey(x.supplier)}`] ?? set[`sup|${x.supplier.trim().toLowerCase()}`];
     x.kind = u === 'none' ? null : isKind(u) ? u : x.auto;
   }
   return out.filter((x) => x.kind || all);
 }
-export const supKey = (s: string) => s.trim().toLowerCase();
+/**
+ * One key per company, however the name was typed: case, punctuation, the legal form (A.S., INC., LTD. STI …),
+ * a city after a dash and "(Fournisseur …)" notes are ignored, so "SERENAS … INC.- ANKARA" and "SERENAS … INC." merge.
+ */
+export function supKey(s: string) {
+  return s.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/\s*[-–]\s*(ankara|istanbul|izmir|kyiv|tbilisi|strasbourg)\b.*$/i, ' ')
+    .replace(/[.,;:'"’()\-–_/&]+/g, ' ')
+    .replace(/(?<=^|\s)(a ?s|aş|a ?ş|inc|ltd|limited|sti|şti|org|co|corp|llc|gmbh|sarl|sa|srl|tic|ticaret|san|sanayi|ve)(?=\s|$)/g, ' ').replace(/(?<=^|\s)(a ?s|aş|inc|ltd|sti|şti|org)(?=\s|$)/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+/** Concentration: the largest provider's share of a kind (procurement spread). */
+export function topShare(L: ProviderPO[]): { name: string; share: number } | null {
+  const m = new Map<string, { name: string; v: number }>(); let t = 0;
+  for (const x of L) { const k = supKey(x.supplier); const g = m.get(k) ?? { name: x.supplier, v: 0 }; g.v += x.value; t += x.value; m.set(k, g); }
+  const top = [...m.values()].sort((a, b) => b.v - a.v)[0];
+  return top && t > 0 && m.size > 1 ? { name: top.name, share: top.v / t } : top && m.size === 1 && t > 0 ? { name: top.name, share: 1 } : null;
+}
 export interface SupplierRow { supplier: string; kind: Kind; pos: number; spent: number; sc: number; projects: Map<string, number>; max: number }
 /** Suppliers per kind, summed over the projects; `max` is the largest amount in a single project. */
 export function suppliers(L: ProviderPO[]): SupplierRow[] {

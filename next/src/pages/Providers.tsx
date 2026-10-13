@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
-import { filtered, go, setPoKind, useStore } from '../data/store';
-import { supKey, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
+import { filtered, go, setFramework, setPoKind, useStore } from '../data/store';
+import { supKey, topShare, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
@@ -55,7 +55,7 @@ export function Providers() {
   const rows = (review ? every.filter((x) => inYear(x) && !(x.kind && !on.has(x.kind))) : ALL).filter((x) => (!kind || x.kind === kind) && (!proj || x.p.id === proj))
     .sort((a, b) => b.date.localeCompare(a.date) || b.value - a.value);
   // Service providers: one row each, their POs folded underneath.
-  const groups = [...rows.reduce((m, x) => { const name = x.supplier.trim() || '(no supplier)', k = (byKind ? `${x.kind ?? ''}|` : '') + name.toLowerCase(); const g = m.get(k) ?? { k, name, L: [] as ProviderPO[] }; g.L.push(x); return m.set(k, g); }, new Map<string, { k: string; name: string; L: ProviderPO[] }>()).values()].map((g) => {
+  const groups = [...rows.reduce((m, x) => { const name = x.supplier.trim() || '(no supplier)', k = (byKind ? `${x.kind ?? ''}|` : '') + supKey(name); const g = m.get(k) ?? { k, name, L: [] as ProviderPO[] }; g.L.push(x); if (name.length > g.name.length) g.name = name; return m.set(k, g); }, new Map<string, { k: string; name: string; L: ProviderPO[] }>()).values()].map((g) => {
     const per = new Map<string, number>(); for (const x of g.L) per.set(x.p.id, (per.get(x.p.id) ?? 0) + x.value);
     return { ...g, kinds: [...new Set(g.L.map((x) => x.kind).filter((k): k is Kind => !!k))], projects: [...per], last: g.L.reduce((a, x) => (x.date > a ? x.date : a), ''), spent: g.L.reduce((a, x) => a + x.spent, 0), sc: sum(g.L), max: Math.max(0, ...per.values()) };
   }).sort(sortBy === 'year' ? (a, b) => b.last.localeCompare(a.last) : sortBy === 'name' ? (a, b) => a.name.localeCompare(b.name) : (a, b) => b.sc - a.sc);
@@ -72,15 +72,28 @@ export function Providers() {
   ]);
   const row = (g: typeof groups[number]) => { const o = open.has(g.k), hot = limit > 0 && g.max > limit; return <>
                 <tr class="click" onClick={() => flip(g.k)} style={{ background: hot ? 'color-mix(in srgb, #e5484d 9%, transparent)' : undefined }}>
-                  <td class="muted">{o ? '▾' : '▸'}</td><td><b>{g.name}</b></td><td>{g.kinds.length ? <Kinds L={g.kinds} /> : <span class="muted">unsorted</span>}</td>
+                  <td class="muted">{o ? '▾' : '▸'}</td><td><b>{g.name}</b><FwLine name={g.name} /></td><td>{g.kinds.length ? <Kinds L={g.kinds} /> : <span class="muted">unsorted</span>}</td>
                   <td>{g.projects.map(([id, v]) => <span class="sp-p" title={full(v)} style={{ color: limit && v > limit ? '#e5484d' : undefined }}>{lab(P.find((q) => q.id === id)!)}</span>)}</td>
                   <td class="r num">{g.L.length}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{g.last ? date(g.last) : '—'}</td><td class="r num">{full(g.spent)}</td><td class="r num"><b>{full(g.sc)}</b></td></tr>
                 {o && <tr class="sp-sub"><td /><td colSpan={7}><div class="sp-all"><span class="muted">Kind for all POs of this provider</span><select value={set[`sup|${supKey(g.name)}`] ?? ''} onChange={(e) => setPoKind(`sup|${supKey(g.name)}`, (e.target as HTMLSelectElement).value)}>
-                  <option value="">Automatic (per PO)</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select><small class="muted">a choice made on a single PO below still wins</small></div><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Date</th><th>Kind</th><th class="r">Spent + committed</th></tr></thead>
+                  <option value="">Automatic (per PO)</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select><small class="muted">a choice made on a single PO below still wins</small></div>
+                  {(() => { const k = supKey(g.name), f = FW[k] ?? {}; const save = (p: { cap?: number; end?: string; ref?: string }) => setFramework(k, { ...f, ...p }); return <div class="sp-all"><span class="muted">Framework contract</span>
+                    <label>ceiling € <input type="number" min="0" step="1000" style={{ width: '110px' }} value={f.cap ?? ''} onChange={(e) => save({ cap: Number((e.target as HTMLInputElement).value) || undefined })} /></label>
+                    <label>ends <input type="date" value={f.end ?? ''} onChange={(e) => save({ end: (e.target as HTMLInputElement).value || undefined })} /></label>
+                    <label>ref. <input style={{ width: '130px' }} value={f.ref ?? ''} placeholder="contract no." onChange={(e) => save({ ref: (e.target as HTMLInputElement).value.trim() || undefined })} /></label>
+                    {f.cap ? <span>used <b>{full(fwUse(g.name))}</b> · left <b style={{ color: f.cap - fwUse(g.name) < 0 ? '#e5484d' : undefined }}>{full(f.cap - fwUse(g.name))}</b></span> : null}
+                    {(f.cap || f.end || f.ref) && <button class="btn ghost" onClick={() => setFramework(k, null)}>Remove</button>}</div>; })()}<table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Date</th><th>Kind</th><th class="r">Spent + committed</th></tr></thead>
                   <tbody>{g.L.map((x) => <tr><td class="click" onClick={() => go(`project/${x.p.id}`)}><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}</td>
                     <td><select value={set[x.key] ?? ''} onChange={(e) => setPoKind(x.key, (e.target as HTMLSelectElement).value)} style={{ fontWeight: set[x.key] ? 700 : 400 }}>
                       <option value="">{x.auto ? `Auto: ${kl(x.auto).label}` : 'Auto: not sorted'}</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td>
                     <td class="r num">{full(x.value)}</td></tr>)}</tbody></table></td></tr>}</>; };
+  const FW = s.ledger.frameworks ?? {};
+  // Framework use counts every PO of the provider in the selected projects, all years and kinds.
+  const fwUse = (name: string) => sum(every.filter((x) => x.kind && supKey(x.supplier) === supKey(name)));
+  const today = TODAY.toISOString().slice(0, 10);
+  const FwLine = ({ name }: { name: string }) => { const f = FW[supKey(name)]; if (!f) return null; const u = fwUse(name), r = f.cap ? u / f.cap : 0, ended = f.end && f.end < today, soon = f.end && !ended && Date.parse(f.end) - Date.parse(today) < 90 * 864e5;
+    return <div class="sp-fw">{f.cap ? <><span class="sp-fwbar"><i style={{ width: `${Math.min(100, r * 100)}%`, background: r > 1 ? '#e5484d' : r > 0.9 ? '#f5a524' : '#30a46c' }} /></span><span style={{ color: r > 1 ? '#e5484d' : r > 0.9 ? '#c27c0e' : undefined }}>{Math.round(r * 100)}% of {short(f.cap)}</span></> : null}
+      {f.end && <span style={{ color: ended ? '#e5484d' : soon ? '#c27c0e' : undefined }}>{ended ? 'ended' : 'ends'} {date(f.end)}</span>}{f.ref && <span class="muted">{f.ref}</span>}</div>; };
   const Kinds = ({ L }: { L: Kind[] }) => <>{L.map((k) => <span class="sp-k" style={{ borderColor: kl(k).color, color: kl(k).color }}>{kl(k).label}</span>)}</>;
   return (
     <>
@@ -117,7 +130,7 @@ export function Providers() {
             {limit > 0 && <p style={{ margin: '0 0 8px', color: over.length ? '#e5484d' : undefined }}>{over.length ? `${over.length} providers above ${full(limit)} in a single project.` : `No provider above ${full(limit)} in a single project.`}</p>}
             <table class="mini sp-t"><thead><tr><th style={{ width: '18px' }} /><th>Service provider</th><th>Kind</th><th>Projects</th><th class="r">POs</th><th>Last PO</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
               <tbody>{byKind ? [...KINDS.map((k) => k.k as Kind | ''), ''].map((k) => { const G = groups.filter((g) => (g.L[0].kind ?? '') === k); if (!G.length) return null; const o = !shut.has(k || 'none'); return <>
-                <tr class="click sp-h" onClick={() => fold(k || 'none')}><td>{o ? '▾' : '▸'}</td><td colSpan={5}>{k ? <><Dot k={k as Kind} /><b>{kl(k as Kind).label}</b></> : <b>Unsorted</b>} <span class="muted">· {G.length} providers · {G.reduce((a, g) => a + g.L.length, 0)} POs</span></td><td class="r num">{full(G.reduce((a, g) => a + g.spent, 0))}</td><td class="r num"><b>{full(G.reduce((a, g) => a + g.sc, 0))}</b></td></tr>
+                <tr class="click sp-h" onClick={() => fold(k || 'none')}><td>{o ? '▾' : '▸'}</td><td colSpan={5}>{k ? <><Dot k={k as Kind} /><b>{kl(k as Kind).label}</b></> : <b>Unsorted</b>} <span class="muted">· {G.length} providers · {G.reduce((a, g) => a + g.L.length, 0)} POs</span>{k && (() => { const t = topShare(G.flatMap((g) => g.L)); return t && t.share > 0.5 && G.length > 1 ? <span class="sp-warn" title="Share of this kind going to one provider">⚠ {Math.round(t.share * 100)}% to {t.name}</span> : null; })()}</td><td class="r num">{full(G.reduce((a, g) => a + g.spent, 0))}</td><td class="r num"><b>{full(G.reduce((a, g) => a + g.sc, 0))}</b></td></tr>
                 {o && G.slice(0, 300).map(row)}</>; }) : groups.slice(0, 300).map(row)}</tbody>
               {groups.length > 0 && <tfoot><tr><td /><td colSpan={3}><b>Total</b></td><td class="r num">{rows.length}</td><td /><td class="r num">{full(groups.reduce((a, g) => a + g.spent, 0))}</td><td class="r num"><b>{full(groups.reduce((a, g) => a + g.sc, 0))}</b></td></tr></tfoot>}</table>
             {groups.length > 300 && <p class="muted">First 300 providers shown — the Excel file has them all.</p>}</div>
