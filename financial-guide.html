@@ -2425,6 +2425,49 @@ body.pk-compact .pk .pa-fs-dot{width:42px;height:42px;font-size:14px}body.pk-com
 .gl-t b{display:block;font:600 22px/1.1 var(--serif);color:var(--navy)}.gl-t span{font-size:12.5px;color:var(--muted)}
 .gl-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:18px}.gl-nums b{display:block;font:600 22px var(--serif);color:var(--navy)}.gl-nums span{font-size:12.5px;color:var(--muted)}
 @media(max-width:700px){.gl-ar{display:none}}
+.vz h4{font:600 20px/1.25 var(--serif);letter-spacing:0;text-transform:none;color:var(--ink);margin:0 0 14px}.vz h4 small{display:block;font:400 13.5px/1.5 var(--font);color:var(--muted);margin-top:4px}
+.gl h4.mt2{margin-top:26px}
+.vz-wheel{position:relative;width:min(100%,460px);aspect-ratio:1;margin:10px auto 6px}
+.vz-wheel svg{position:absolute;inset:12%;width:76%;height:76%}
+.vz-ring{fill:none;stroke:var(--line-2);stroke-width:2;stroke-dasharray:4 6}.vz-dot{fill:var(--navy);stroke:var(--panel);stroke-width:4}
+.vz-c1{font:600 56px var(--serif);fill:var(--navy);text-anchor:middle}.vz-c2{font:700 13px var(--font);fill:var(--muted);text-anchor:middle;text-transform:uppercase;letter-spacing:.1em}
+.vz-wl{position:absolute;transform:translate(-50%,-50%);background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:6px 10px;font-size:12.5px;max-width:150px;text-align:center;box-shadow:0 4px 14px rgba(15,23,42,.06)}
+.vz-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px 22px;margin-top:10px}.vz-legend div{font-size:13px;line-height:1.45}.vz-legend b{color:var(--navy);margin-right:6px}.vz-legend span{color:var(--ink-2)}
+.vz-steps{list-style:none;padding:0;margin:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;counter-reset:none}
+.vz-steps li{position:relative;padding:18px 26px 18px 30px;background:color-mix(in srgb,var(--navy) calc(6% + var(--k,0)*1%),var(--panel));clip-path:polygon(0 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,0 100%,16px 50%);margin-left:-8px}
+.vz-steps li:first-child{clip-path:polygon(0 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,0 100%);margin-left:0;border-radius:12px 0 0 12px}
+.vz-steps li:nth-child(2){background:color-mix(in srgb,var(--navy) 12%,var(--panel))}.vz-steps li:nth-child(3){background:color-mix(in srgb,var(--navy) 18%,var(--panel))}.vz-steps li:nth-child(4){background:color-mix(in srgb,var(--navy) 24%,var(--panel))}
+.vz-steps em{display:block;font:600 22px var(--serif);color:var(--gold);font-style:normal}.vz-steps b{display:block;font-size:14px;color:var(--ink);margin:2px 0 4px}.vz-steps span{font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+.vz-split{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+.vz-split>div{border-radius:16px;padding:20px;border:1px solid var(--line)}.vz-split .l{background:color-mix(in srgb,var(--navy) 7%,var(--panel));border-top:4px solid var(--navy)}.vz-split .r{background:color-mix(in srgb,var(--gold) 9%,var(--panel));border-top:4px solid var(--gold)}
+.vz-split small{font:800 11px var(--font);letter-spacing:.12em;color:var(--muted)}.vz-split b{display:block;font:600 20px var(--serif);color:var(--ink);margin:4px 0 8px}.vz-split p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
+.vz-vs{align-self:center;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--panel);font:700 13px var(--serif)}
+.vz-ask,.vz-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+.vz-ask>div,.vz-board>div{position:relative;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel-2)}
+.vz-ask i{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--gold);color:#fff;font:700 16px var(--serif);font-style:normal;margin-bottom:10px}
+.vz-board em{font:600 26px var(--serif);color:color-mix(in srgb,var(--navy) 35%,transparent);font-style:normal;display:block;margin-bottom:4px}
+.vz-ask b,.vz-board b{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}.vz-ask span,.vz-board span{font-size:12.5px;line-height:1.5;color:var(--ink-2)}
+.vz-check{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:8px 16px}
+.vz-check>div{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line)}
+.vz-check i{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font:800 12px var(--font);font-style:normal}
+.vz-check b{display:block;font-size:13.5px;color:var(--ink)}.vz-check span{font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+@media(max-width:800px){.vz-steps{grid-auto-flow:row}.vz-steps li,.vz-steps li:first-child{clip-path:none;margin:0 0 6px;border-radius:12px}.vz-split{grid-template-columns:1fr}.vz-vs{justify-self:center}.vz-wl{font-size:10.5px;max-width:96px;padding:4px 6px}}
+.pk{position:relative}.pk-print{position:absolute;right:16px;top:calc(100% - 0px);display:none}
+.pk>.pk-print{position:static;display:inline-flex;align-items:center;gap:6px;margin:0 0 10px auto;float:right;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:999px;padding:7px 14px;font:600 12.5px var(--font);cursor:pointer}
+.pk>.pk-print:hover{border-color:var(--navy);color:var(--navy)}.pk>.pk-print svg{width:16px;height:16px}
+.pk-body{clear:both}
+.vz-wl{max-width:140px}
+@media print{
+  html.print-sum #printSum .pc{font-family:Georgia,serif;color:#111;max-width:180mm;margin:0 auto}
+  .pc header small{font:700 8pt Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a6a2a}
+  .pc h1{font-size:20pt;margin:4pt 0 4pt;color:#14244a}.pc header p{font:10pt/1.4 Arial,sans-serif;color:#444;margin:0 0 8pt}
+  .pc-rule{border-left:4pt solid #b08a3e;background:#f7f1e5;padding:8pt 10pt;font-size:13pt;margin:6pt 0 10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pc-3,.pc-figs,.pc-2{display:grid;grid-template-columns:repeat(3,1fr);gap:8pt;margin-bottom:10pt;font:9pt/1.4 Arial,sans-serif}
+  .pc-2{grid-template-columns:1fr 1fr}.pc-3 b,.pc h2{font:700 8pt Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#14244a}.pc-3 p{margin:2pt 0 0}
+  .pc-figs div{border:1pt solid #ccc;border-radius:6pt;padding:6pt}.pc-figs b{display:block;font:700 14pt Georgia,serif;color:#14244a}
+  .pc ul{margin:4pt 0 0;padding-left:12pt}.pc-box{list-style:"☐  "}.pc-docs{font:9pt Arial,sans-serif}
+  .pc footer{margin-top:10pt;padding-top:6pt;border-top:1pt solid #ccc;font:7.5pt Arial,sans-serif;color:#777}
+}
 
 </style>
 </head>
@@ -10304,7 +10347,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-14 05:01</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-14 05:06</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11324,12 +11367,12 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
       ${b.tip ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(b.tip)}</p></div>` : ""}`;
   }
   function reader(key, sections, draw) {
-    const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
+    const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length, k0 = Math.min(n - 1, FG.store.get("rdpos:" + key, 0));
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
-    return `<div class="rd${draw ? " rd-draw" : ""}" data-rd="${esc(key)}">${draw ? stageDrawing({ sections }, draw, "data-rd-go", read) : ""}
+    return `<div class="rd${draw ? " rd-draw" : ""}" data-rd="${esc(key)}">${draw ? stageDrawing({ sections }, draw, "data-rd-go", read, k0) : ""}
       <div class="rd-side">
-        <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
-      <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
+        <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === k0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
+      <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k === k0 ? "" : "hidden"} role="tabpanel">
         <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
         <div class="rd-text">${sectionHtml(body)}</div>
         <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
@@ -11339,7 +11382,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     root.querySelectorAll("[data-rd]").forEach((rd) => {
       const key = "read:" + rd.dataset.rd, n = rd.querySelectorAll("[data-rd-panel]").length;
       const show = (k) => {
-        rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; });
+        rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; }); FG.store.set("rdpos:" + rd.dataset.rd, k);
         rd.querySelectorAll(".rd-nav [data-rd-go], .sd-node[data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
       };
       const mark = (k) => {
@@ -11377,7 +11420,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
   }
   // Stage drawing: the stage's topics as a winding route of milestones; each opens its topic in Guidance.
   const DRAW_ICONS = [[/fund|budget|cost|price|financ|pay|invoice|vat/i, "coins"], [/role|actor|staff|dut|who|board|committee|supplier|market/i, "people"], [/contract|agreement|sign|addend/i, "doc"], [/threshold|procedure|route|choice/i, "route"], [/deadline|time|period|date|duration/i, "calendar"], [/file|archiv|record|audit/i, "folder"], [/evaluat|criteri|score|award/i, "target"], [/check|control|verif|complian/i, "check"], [/risk|conflict|ethic|integrit/i, "shield"]];
-  function stageDrawing(s, c, attr = "data-rd-jump", read = {}) {
+  function stageDrawing(s, c, attr = "data-rd-jump", read = {}, sel = 0) {
     const items = s.sections.map(([h], k) => [k, h]), n = items.length;
     if (n < 2) return "";
     const W = 1000, H = 150, xs = items.map((_, k) => 70 + (k * (W - 140)) / (n - 1)), ys = items.map((_, k) => (k % 2 ? 98 : 52));
@@ -11385,7 +11428,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     const ic = (h) => (DRAW_ICONS.find(([r]) => r.test(h)) || [0, "book"])[1];
     return `<figure class="sd" style="--c:${c}" aria-label="Topics of this stage">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" class="sd-road"/><path d="${d}" class="sd-dash"/></svg>
-      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === 0}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
+      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === sel}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
     </figure>`;
   }
   // Documents named in the stage's own text, each with the sentence it comes from.
@@ -11409,12 +11452,41 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     return hits.length ? `<section class="pk-docs"><div class="pk-h"><span class="pk-tag gold">${FG.icon("files", 14)} Documents in this stage</span></div><div class="pk-dl">${hits.map(([n, ic, x]) => `<details class="pk-d"><summary><i>${FG.icon(ic, 18)}</i><b>${esc(n)}</b></summary><p>${esc(x)}</p></details>`).join("")}</div></section>` : "";
   }
   // Infographic for stages without a dedicated tool: who acts, then the stage's time limits on one line.
+  // Stage-specific infographic: one section's points drawn as a wheel, a sequence, a comparison or a board.
+  const VIZ = {
+    procurement: { "Foundations": [1, "wheel"], "Market & Suppliers": [0, "board"], "Define the Need": [1, "ask"], "Terms & Specifications": [6, "board"], "Contract Signing": [1, "steps"], "Contract Management": [3, "steps"], "Contract Execution & Payment": [0, "check"], "Performance & Filing": [3, "check"] },
+    grants: { "Foundations": [2, "split"], "Principles": [0, "wheel"], "Roles": [1, "board"], "Criteria": [0, "steps"], "Call": [1, "check"], "Submission": [5, "steps"], "Eligibility Check": [0, "steps"], "Agreement": [2, "board"], "Filing": [2, "board"] },
+  };
+  function stageViz(cfg, s) {
+    const spec = (VIZ[cfg.base] || {})[s.name], sec = spec && s.sections[spec[0]];
+    if (!sec || !(sec[1].items || []).length) return "";
+    const [h, b] = sec, it = b.items, t = spec[1], n2 = (k) => String(k + 1).padStart(2, "0");
+    let body = "";
+    if (t === "wheel") {
+      const R = 150, cx = 200, cy = 200;
+      body = `<div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/>${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<circle cx="${cx + R * Math.cos(a)}" cy="${cy + R * Math.sin(a)}" r="9" class="vz-dot"/>`; }).join("")}<text x="200" y="196" class="vz-c1">${it.length}</text><text x="200" y="224" class="vz-c2">${esc(h)}</text></svg>
+        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<div class="vz-wl" style="left:${50 + 47 * Math.cos(a)}%;top:${50 + 47 * Math.sin(a)}%" title="${esc(d)}"><b>${esc(x)}</b></div>`; }).join("")}</div>
+        <div class="vz-legend">${it.map(([x, d]) => `<div><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+    } else if (t === "steps") {
+      body = `<ol class="vz-steps">${it.map(([x, d], k) => `<li><em>${n2(k)}</em><b>${esc(x)}</b><span>${esc(d)}</span></li>`).join("")}</ol>`;
+    } else if (t === "split") {
+      body = `<div class="vz-split">${it.slice(0, 2).map(([x, d], k) => `<div class="${k ? "r" : "l"}"><small>${k ? "B" : "A"}</small><b>${esc(x)}</b><p>${esc(d)}</p></div>`).join('<span class="vz-vs">vs</span>')}</div>`;
+    } else if (t === "ask") {
+      body = `<div class="vz-ask">${it.map(([x, d]) => `<div><i>?</i><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+    } else if (t === "check") {
+      body = `<div class="vz-check">${it.map(([x, d]) => `<div><i>✓</i><div><b>${esc(x)}</b><span>${esc(d)}</span></div></div>`).join("")}</div>`;
+    } else {
+      body = `<div class="vz-board">${it.map(([x, d], k) => `<div><em>${n2(k)}</em><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+    }
+    return `<div class="vz"><h4>${esc(h)}${b.lead ? `<small>${esc(b.lead)}</small>` : ""}</h4>${body}</div>`;
+  }
   function glance(cfg, s, roles) {
+    const vz = stageViz(cfg, s);
     const T = (s.keyFacts || []).filter(([v]) => /\b(h|hours?|days?|weeks?|months?|years?)\b/i.test(v)), N = (s.keyFacts || []).filter((f) => !T.includes(f));
     const who = roles.length ? `<div class="gl-who">${roles.slice(0, 5).map((r, k) => `${k ? '<span class="gl-ar">→</span>' : ""}<div class="gl-r"><i>${FG.icon("people", 18)}</i><b>${esc(r.name)}</b><small>${esc(r.summary || "")}</small></div>`).join("")}</div>` : "";
     const time = T.length ? `<div class="gl-time"><h4>Time limits</h4><div class="gl-line">${T.map(([v, l]) => `<div class="gl-t"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div></div>` : "";
     const nums = N.length ? `<div class="gl-nums">${N.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : "";
-    return who || T.length > 1 ? `<div class="gl">${who ? `<h4>Who acts</h4>${who}` : ""}${time}${!time ? nums : ""}</div>` : "";
+    return vz || who || T.length > 1 ? `<div class="gl">${vz}${who ? `<h4${vz ? ' class="mt2"' : ""}>Who acts</h4>${who}` : ""}${time}${!time && !vz ? nums : ""}</div>` : "";
   }
   function briefHtml(cfg, s, ph, pc, idx) {
     const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
@@ -11510,6 +11582,21 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     if (li && !li.classList.contains("shown")) { li.classList.add("shown"); if (!li.querySelector(".rd-rate")) li.querySelector("div").insertAdjacentHTML("beforeend", `<div class="rd-rate"><button type="button" data-rate="knew">✓ Knew it</button><button type="button" data-rate="later">↻ Review later</button></div>`); }
     if (e.target.closest("[data-print]")) {
       const box = document.createElement("div"); box.id = "printSum";
+      const pkr = document.querySelector(".pk");
+      if (pkr) {
+        const q = (sel) => [...pkr.querySelectorAll(sel)], tx = (el) => (el ? el.textContent.trim() : "");
+        const li = (arr) => arr.map((x) => `<li>${esc(x)}</li>`).join("");
+        box.innerHTML = `<div class="pc"><header><small>Council of Europe · Financial Guide · ${esc(tx(pkr.querySelector(".sh-phase")))}</small><h1>${esc(tx(pkr.querySelector(".sb-hero h2")))}</h1><p>${esc(tx(pkr.querySelector(".sb-hero p")))}</p></header>
+          <div class="pc-rule">${esc(tx(pkr.querySelector(".sb-rule b")))}</div>
+          <div class="pc-3">${q(".sb-flow li").map((l) => `<div><b>${esc(tx(l.querySelector("small")).split("·")[0])}</b><p>${esc(tx(l.querySelector("p")))}</p></div>`).join("")}</div>
+          <div class="pc-figs">${q(".sb-fact summary").map((f) => `<div><b>${esc(tx(f.querySelector("b")))}</b><span>${esc(tx(f.querySelector("span")))}</span></div>`).join("")}</div>
+          <div class="pc-2"><section><h2>Avoid</h2><ul>${li(q(".pk-av p").map(tx))}</ul></section><section><h2>Checklist</h2><ul class="pc-box">${li(q('[data-panel="check"] label, [data-panel="check"] li').map(tx).filter(Boolean).slice(0, 10))}</ul></section></div>
+          ${q(".pk-d b").length ? `<p class="pc-docs"><b>Documents:</b> ${q(".pk-d b").map((b) => esc(tx(b))).join(" · ")}</p>` : ""}
+          <footer>Guidance tool — it does not replace the applicable rules. Printed ${new Date().toLocaleDateString()}</footer></div>`;
+        document.body.append(box); document.documentElement.classList.add("print-sum");
+        const done = () => { box.remove(); document.documentElement.classList.remove("print-sum"); window.removeEventListener("afterprint", done); };
+        window.addEventListener("afterprint", done); window.print(); setTimeout(done, 1500); return;
+      }
       const sb = document.querySelector(".sb").cloneNode(true), rules = document.querySelector('[data-panel="rules"]');
       sb.querySelectorAll("details").forEach((d) => d.setAttribute("open", "")); sb.querySelectorAll("button").forEach((x) => x.remove());
       box.append(sb); if (rules) { const r = rules.cloneNode(true); r.hidden = false; r.querySelectorAll("button").forEach((x) => x.remove()); box.append(r); }
@@ -11569,11 +11656,11 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
         const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = pk ? `<div class="pk" data-base="${cfg.base}">
-          ${FG.procAcademy.flow(i, cfg.phases, cfg.base)}<div class="pk-body pk-in${FG.store.get("pk:dir", 1) < 0 ? " back" : ""}">
+          ${FG.procAcademy.flow(i, cfg.phases, cfg.base)}<button type="button" class="pk-print" data-print title="Print a one-page card of this stage">${FG.icon("doc", 16)} Print stage card</button><div class="pk-body pk-in${FG.store.get("pk:dir", 1) < 0 ? " back" : ""}">
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
-          ${(() => { const vis = (cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget) || glance(cfg, s, roles); return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span><h3>See it in one picture</h3></div>${vis}</div></section>` : ""; })()}
+          ${(() => { const vis = (cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget) || glance(cfg, s, roles); return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span></div>${vis}</div></section>` : ""; })()}
           ${(() => { const dn = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m])).filter(([, , m]) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); });
             const items = dn.slice(0, 3).map(([k, h, m]) => `<button type="button" class="pk-av" data-rd-jump="${k}"><i>✕</i><p>${esc(m)}</p><small>${esc(h)} →</small></button>`);
             if (s.warning) items.push(`<div class="pk-av warn"><i>!</i><p>${esc(s.warning)}</p><small>Common pitfall</small></div>`);

@@ -255,12 +255,12 @@
       ${b.tip ? `<div class="rd-tipbox"><small>Good practice</small><p>${esc(b.tip)}</p></div>` : ""}`;
   }
   function reader(key, sections, draw) {
-    const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length;
+    const read = FG.store.get("read:" + key, {}), n = sections.length, done = sections.filter((_, k) => read[k]).length, k0 = Math.min(n - 1, FG.store.get("rdpos:" + key, 0));
     const icon = { rule: "!", tip: "★" }, label = { rule: "Rule", tip: "Tip" };
-    return `<div class="rd${draw ? " rd-draw" : ""}" data-rd="${esc(key)}">${draw ? stageDrawing({ sections }, draw, "data-rd-go", read) : ""}
+    return `<div class="rd${draw ? " rd-draw" : ""}" data-rd="${esc(key)}">${draw ? stageDrawing({ sections }, draw, "data-rd-go", read, k0) : ""}
       <div class="rd-side">
-        <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === 0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
-      <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k ? "hidden" : ""} role="tabpanel">
+        <ol class="rd-nav" role="tablist">${sections.map(([t], k) => `<li><button type="button" role="tab" data-rd-go="${k}" aria-selected="${k === k0}" class="${read[k] ? "read" : ""}"><em>${read[k] ? "✓" : k + 1}</em><span>${esc(t)}</span></button></li>`).join("")}</ol></div>
+      <div class="rd-stage">${sections.map(([t, body], k) => `<article class="rd-panel" data-rd-panel="${k}" ${k === k0 ? "" : "hidden"} role="tabpanel">
         <header><small>Step ${k + 1} of ${n}</small><h3>${esc(t)}</h3></header>
         <div class="rd-text">${sectionHtml(body)}</div>
         <footer>${k ? `<button type="button" class="btn sm ghost" data-rd-go="${k - 1}">← Previous</button>` : "<span></span>"}<button type="button" class="btn sm primary" data-rd-next="${k}">${k < n - 1 ? "Got it · next →" : "Got it ✓"}</button></footer></article>`).join("")}</div></div>`;
@@ -270,7 +270,7 @@
     root.querySelectorAll("[data-rd]").forEach((rd) => {
       const key = "read:" + rd.dataset.rd, n = rd.querySelectorAll("[data-rd-panel]").length;
       const show = (k) => {
-        rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; });
+        rd.querySelectorAll("[data-rd-panel]").forEach((p) => { p.hidden = +p.dataset.rdPanel !== k; }); FG.store.set("rdpos:" + rd.dataset.rd, k);
         rd.querySelectorAll(".rd-nav [data-rd-go], .sd-node[data-rd-go]").forEach((b) => b.setAttribute("aria-selected", +b.dataset.rdGo === k));
       };
       const mark = (k) => {
@@ -308,7 +308,7 @@
   }
   // Stage drawing: the stage's topics as a winding route of milestones; each opens its topic in Guidance.
   const DRAW_ICONS = [[/fund|budget|cost|price|financ|pay|invoice|vat/i, "coins"], [/role|actor|staff|dut|who|board|committee|supplier|market/i, "people"], [/contract|agreement|sign|addend/i, "doc"], [/threshold|procedure|route|choice/i, "route"], [/deadline|time|period|date|duration/i, "calendar"], [/file|archiv|record|audit/i, "folder"], [/evaluat|criteri|score|award/i, "target"], [/check|control|verif|complian/i, "check"], [/risk|conflict|ethic|integrit/i, "shield"]];
-  function stageDrawing(s, c, attr = "data-rd-jump", read = {}) {
+  function stageDrawing(s, c, attr = "data-rd-jump", read = {}, sel = 0) {
     const items = s.sections.map(([h], k) => [k, h]), n = items.length;
     if (n < 2) return "";
     const W = 1000, H = 150, xs = items.map((_, k) => 70 + (k * (W - 140)) / (n - 1)), ys = items.map((_, k) => (k % 2 ? 98 : 52));
@@ -316,7 +316,7 @@
     const ic = (h) => (DRAW_ICONS.find(([r]) => r.test(h)) || [0, "book"])[1];
     return `<figure class="sd" style="--c:${c}" aria-label="Topics of this stage">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" class="sd-road"/><path d="${d}" class="sd-dash"/></svg>
-      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === 0}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
+      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === sel}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
     </figure>`;
   }
   // Documents named in the stage's own text, each with the sentence it comes from.
@@ -340,12 +340,41 @@
     return hits.length ? `<section class="pk-docs"><div class="pk-h"><span class="pk-tag gold">${FG.icon("files", 14)} Documents in this stage</span></div><div class="pk-dl">${hits.map(([n, ic, x]) => `<details class="pk-d"><summary><i>${FG.icon(ic, 18)}</i><b>${esc(n)}</b></summary><p>${esc(x)}</p></details>`).join("")}</div></section>` : "";
   }
   // Infographic for stages without a dedicated tool: who acts, then the stage's time limits on one line.
+  // Stage-specific infographic: one section's points drawn as a wheel, a sequence, a comparison or a board.
+  const VIZ = {
+    procurement: { "Foundations": [1, "wheel"], "Market & Suppliers": [0, "board"], "Define the Need": [1, "ask"], "Terms & Specifications": [6, "board"], "Contract Signing": [1, "steps"], "Contract Management": [3, "steps"], "Contract Execution & Payment": [0, "check"], "Performance & Filing": [3, "check"] },
+    grants: { "Foundations": [2, "split"], "Principles": [0, "wheel"], "Roles": [1, "board"], "Criteria": [0, "steps"], "Call": [1, "check"], "Submission": [5, "steps"], "Eligibility Check": [0, "steps"], "Agreement": [2, "board"], "Filing": [2, "board"] },
+  };
+  function stageViz(cfg, s) {
+    const spec = (VIZ[cfg.base] || {})[s.name], sec = spec && s.sections[spec[0]];
+    if (!sec || !(sec[1].items || []).length) return "";
+    const [h, b] = sec, it = b.items, t = spec[1], n2 = (k) => String(k + 1).padStart(2, "0");
+    let body = "";
+    if (t === "wheel") {
+      const R = 150, cx = 200, cy = 200;
+      body = `<div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/>${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<circle cx="${cx + R * Math.cos(a)}" cy="${cy + R * Math.sin(a)}" r="9" class="vz-dot"/>`; }).join("")}<text x="200" y="196" class="vz-c1">${it.length}</text><text x="200" y="224" class="vz-c2">${esc(h)}</text></svg>
+        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<div class="vz-wl" style="left:${50 + 47 * Math.cos(a)}%;top:${50 + 47 * Math.sin(a)}%" title="${esc(d)}"><b>${esc(x)}</b></div>`; }).join("")}</div>
+        <div class="vz-legend">${it.map(([x, d]) => `<div><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+    } else if (t === "steps") {
+      body = `<ol class="vz-steps">${it.map(([x, d], k) => `<li><em>${n2(k)}</em><b>${esc(x)}</b><span>${esc(d)}</span></li>`).join("")}</ol>`;
+    } else if (t === "split") {
+      body = `<div class="vz-split">${it.slice(0, 2).map(([x, d], k) => `<div class="${k ? "r" : "l"}"><small>${k ? "B" : "A"}</small><b>${esc(x)}</b><p>${esc(d)}</p></div>`).join('<span class="vz-vs">vs</span>')}</div>`;
+    } else if (t === "ask") {
+      body = `<div class="vz-ask">${it.map(([x, d]) => `<div><i>?</i><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+    } else if (t === "check") {
+      body = `<div class="vz-check">${it.map(([x, d]) => `<div><i>✓</i><div><b>${esc(x)}</b><span>${esc(d)}</span></div></div>`).join("")}</div>`;
+    } else {
+      body = `<div class="vz-board">${it.map(([x, d], k) => `<div><em>${n2(k)}</em><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+    }
+    return `<div class="vz"><h4>${esc(h)}${b.lead ? `<small>${esc(b.lead)}</small>` : ""}</h4>${body}</div>`;
+  }
   function glance(cfg, s, roles) {
+    const vz = stageViz(cfg, s);
     const T = (s.keyFacts || []).filter(([v]) => /\b(h|hours?|days?|weeks?|months?|years?)\b/i.test(v)), N = (s.keyFacts || []).filter((f) => !T.includes(f));
     const who = roles.length ? `<div class="gl-who">${roles.slice(0, 5).map((r, k) => `${k ? '<span class="gl-ar">→</span>' : ""}<div class="gl-r"><i>${FG.icon("people", 18)}</i><b>${esc(r.name)}</b><small>${esc(r.summary || "")}</small></div>`).join("")}</div>` : "";
     const time = T.length ? `<div class="gl-time"><h4>Time limits</h4><div class="gl-line">${T.map(([v, l]) => `<div class="gl-t"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div></div>` : "";
     const nums = N.length ? `<div class="gl-nums">${N.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : "";
-    return who || T.length > 1 ? `<div class="gl">${who ? `<h4>Who acts</h4>${who}` : ""}${time}${!time ? nums : ""}</div>` : "";
+    return vz || who || T.length > 1 ? `<div class="gl">${vz}${who ? `<h4${vz ? ' class="mt2"' : ""}>Who acts</h4>${who}` : ""}${time}${!time && !vz ? nums : ""}</div>` : "";
   }
   function briefHtml(cfg, s, ph, pc, idx) {
     const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
@@ -441,6 +470,21 @@
     if (li && !li.classList.contains("shown")) { li.classList.add("shown"); if (!li.querySelector(".rd-rate")) li.querySelector("div").insertAdjacentHTML("beforeend", `<div class="rd-rate"><button type="button" data-rate="knew">✓ Knew it</button><button type="button" data-rate="later">↻ Review later</button></div>`); }
     if (e.target.closest("[data-print]")) {
       const box = document.createElement("div"); box.id = "printSum";
+      const pkr = document.querySelector(".pk");
+      if (pkr) {
+        const q = (sel) => [...pkr.querySelectorAll(sel)], tx = (el) => (el ? el.textContent.trim() : "");
+        const li = (arr) => arr.map((x) => `<li>${esc(x)}</li>`).join("");
+        box.innerHTML = `<div class="pc"><header><small>Council of Europe · Financial Guide · ${esc(tx(pkr.querySelector(".sh-phase")))}</small><h1>${esc(tx(pkr.querySelector(".sb-hero h2")))}</h1><p>${esc(tx(pkr.querySelector(".sb-hero p")))}</p></header>
+          <div class="pc-rule">${esc(tx(pkr.querySelector(".sb-rule b")))}</div>
+          <div class="pc-3">${q(".sb-flow li").map((l) => `<div><b>${esc(tx(l.querySelector("small")).split("·")[0])}</b><p>${esc(tx(l.querySelector("p")))}</p></div>`).join("")}</div>
+          <div class="pc-figs">${q(".sb-fact summary").map((f) => `<div><b>${esc(tx(f.querySelector("b")))}</b><span>${esc(tx(f.querySelector("span")))}</span></div>`).join("")}</div>
+          <div class="pc-2"><section><h2>Avoid</h2><ul>${li(q(".pk-av p").map(tx))}</ul></section><section><h2>Checklist</h2><ul class="pc-box">${li(q('[data-panel="check"] label, [data-panel="check"] li').map(tx).filter(Boolean).slice(0, 10))}</ul></section></div>
+          ${q(".pk-d b").length ? `<p class="pc-docs"><b>Documents:</b> ${q(".pk-d b").map((b) => esc(tx(b))).join(" · ")}</p>` : ""}
+          <footer>Guidance tool — it does not replace the applicable rules. Printed ${new Date().toLocaleDateString()}</footer></div>`;
+        document.body.append(box); document.documentElement.classList.add("print-sum");
+        const done = () => { box.remove(); document.documentElement.classList.remove("print-sum"); window.removeEventListener("afterprint", done); };
+        window.addEventListener("afterprint", done); window.print(); setTimeout(done, 1500); return;
+      }
       const sb = document.querySelector(".sb").cloneNode(true), rules = document.querySelector('[data-panel="rules"]');
       sb.querySelectorAll("details").forEach((d) => d.setAttribute("open", "")); sb.querySelectorAll("button").forEach((x) => x.remove());
       box.append(sb); if (rules) { const r = rules.cloneNode(true); r.hidden = false; r.querySelectorAll("button").forEach((x) => x.remove()); box.append(r); }
@@ -500,11 +544,11 @@
         const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
         const html = pk ? `<div class="pk" data-base="${cfg.base}">
-          ${FG.procAcademy.flow(i, cfg.phases, cfg.base)}<div class="pk-body pk-in${FG.store.get("pk:dir", 1) < 0 ? " back" : ""}">
+          ${FG.procAcademy.flow(i, cfg.phases, cfg.base)}<button type="button" class="pk-print" data-print title="Print a one-page card of this stage">${FG.icon("doc", 16)} Print stage card</button><div class="pk-body pk-in${FG.store.get("pk:dir", 1) < 0 ? " back" : ""}">
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
-          ${(() => { const vis = (cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget) || glance(cfg, s, roles); return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span><h3>See it in one picture</h3></div>${vis}</div></section>` : ""; })()}
+          ${(() => { const vis = (cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget) || glance(cfg, s, roles); return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span></div>${vis}</div></section>` : ""; })()}
           ${(() => { const dn = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m])).filter(([, , m]) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); });
             const items = dn.slice(0, 3).map(([k, h, m]) => `<button type="button" class="pk-av" data-rd-jump="${k}"><i>✕</i><p>${esc(m)}</p><small>${esc(h)} →</small></button>`);
             if (s.warning) items.push(`<div class="pk-av warn"><i>!</i><p>${esc(s.warning)}</p><small>Common pitfall</small></div>`);
