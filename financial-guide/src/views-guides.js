@@ -363,17 +363,17 @@
         ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<button type="button" class="vz-node${k ? "" : " on"}" data-vz="${k}" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></button>`; }).join("")}</div>
         <div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""}><em>${n2(k)} <small>/ ${n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>
 </div>`;
-    } else if (t === "steps") {
-      body = `<ol class="vz-tl" style="--n:${it.length}">${it.map(([x, d], k) => `<li><div class="vz-tl-dot"><i>${FG.icon(ico(x, d), 20)}</i><em>${n2(k)}</em></div><div class="vz-tl-card"><b>${esc(x)}</b><span>${esc(d)}</span></div></li>`).join("")}</ol>`;
     } else if (t === "split") {
       body = `<div class="vz-split">${it.slice(0, 2).map(([x, d], k) => `<div class="${k ? "r" : "l"}"><i>${FG.icon(k ? "coins" : "target", 22)}</i><small>Option ${k ? "B" : "A"}</small><b>${esc(x)}</b><p>${esc(d)}</p></div>`).join('<span class="vz-vs">or</span>')}</div>`;
-    } else if (t === "ask") {
-      body = `<div class="vz-ask"><div class="vz-ask-c"><span>?</span><b>${esc(h)}</b><small>${it.length} questions to answer before you start</small></div><div class="vz-ask-q">${it.map(([x, d], k) => `<div><em>Q${k + 1}</em><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div></div>`;
-    } else if (t === "check") {
-      body = `<div class="vz-dos"><div class="vz-doc" aria-hidden="true"><div class="vz-doc-p"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="vz-doc-badge"><b>${it.length}</b><span>${esc(unit)}</span></div></div>
-        <div class="vz-check">${it.map(([x, d], k) => `<div><i>${FG.icon(ico(x, d), 16)}</i><div><b>${esc(x)}</b><span>${esc(d)}</span></div><u>✓</u></div>`).join("")}</div></div>`;
     } else {
-      body = `<div class="vz-bento">${it.map(([x, d], k) => `<div class="${k === 0 ? "hero" : ""}"><em>${n2(k)}</em><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+      const det = `<div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""}><em>${t === "ask" ? `Q${k + 1}` : n2(k)} <small>/ ${t === "ask" ? `Q${it.length}` : n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>`;
+      const item = (x, d, k, inner) => `<button type="button" class="vz-it${k ? "" : " on"}" data-vz="${k}">${inner}</button>`;
+      let left;
+      if (t === "steps") left = `<ol class="vz-vt">${it.map(([x, d], k) => `<li>${item(x, d, k, `<span class="vz-vt-dot"><i>${FG.icon(ico(x, d), 18)}</i></span><span class="vz-vt-t"><small>Step ${n2(k)}</small><b>${esc(x)}</b></span>`)}</li>`).join("")}</ol>`;
+      else if (t === "ask") left = `<div class="vz-qs"><div class="vz-qs-h"><span>?</span><b>${it.length} questions</b><small>to answer before you start</small></div>${it.map(([x, d], k) => item(x, d, k, `<em>Q${k + 1}</em><b>${esc(x)}</b>`)).join("")}</div>`;
+      else if (t === "check") left = `<div class="vz-dl2"><div class="vz-dl2-h"><b>${it.length}</b><span>items to check</span></div>${it.map(([x, d], k) => item(x, d, k, `<u>✓</u><b>${esc(x)}</b><i>${FG.icon(ico(x, d), 16)}</i>`)).join("")}</div>`;
+      else left = `<div class="vz-tiles">${it.map(([x, d], k) => item(x, d, k, `<em>${n2(k)}</em><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b>`)).join("")}</div>`;
+      body = `<div class="vz-wx vz-wx-${t}">${left}${det}</div>`;
     }
     return `<div class="vz vzt-${t}"><div class="vz-head"><div class="vz-count"><b>${it.length}</b><span>${esc(unit)}</span></div><div><h4>${esc(h)}</h4>${b.lead ? `<p>${esc(b.lead)}</p>` : ""}</div></div>${body}</div>`;
   }
