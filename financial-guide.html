@@ -2625,6 +2625,39 @@ body.pk-compact .pk .pa-fs-dot{width:42px;height:42px;font-size:14px}body.pk-com
 .vz-det{position:sticky;top:calc(var(--top) + 60px)}
 @media(max-width:900px){.vz-det{position:static}.vz-tiles{grid-template-columns:1fr 1fr}}
 .vz-head .vz-count{display:none}
+/* ===== Depth & colour pass ===== */
+.pk{--h0:#2c5be6;--h1:#0f9d8a;--h2:#c28a2c;--h3:#7a4fd6;--h4:#d0486a;--h5:#0b84b8}
+.vz-it,.vz-node,.vz-det article,.gl-r{--h:var(--navy)}
+/* tiles */
+.vz-tiles .vz-it{background:radial-gradient(120% 120% at 100% 0%,color-mix(in srgb,var(--h) 14%,transparent),transparent 60%),var(--panel);border-color:color-mix(in srgb,var(--h) 22%,var(--line));box-shadow:0 1px 0 rgba(15,23,42,.03),0 8px 20px -12px color-mix(in srgb,var(--h) 45%,transparent)}
+.vz-tiles .vz-it:hover{transform:translateY(-3px);box-shadow:0 18px 30px -16px color-mix(in srgb,var(--h) 60%,transparent);border-color:var(--h)}
+.vz-tiles i{background:linear-gradient(145deg,var(--h),color-mix(in srgb,var(--h) 60%,#000));color:#fff;box-shadow:0 8px 16px -6px color-mix(in srgb,var(--h) 70%,transparent)}
+.vz-tiles em{background:linear-gradient(180deg,color-mix(in srgb,var(--h) 30%,transparent),transparent);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:44px}
+.vz-tiles .vz-it.on{background:linear-gradient(150deg,var(--h),color-mix(in srgb,var(--h) 55%,#000));border-color:transparent;box-shadow:0 20px 34px -14px color-mix(in srgb,var(--h) 75%,transparent)}
+.vz-tiles .vz-it.on i{background:rgba(255,255,255,.18);box-shadow:none}.vz-tiles .vz-it.on em{background:linear-gradient(180deg,rgba(255,255,255,.35),transparent);-webkit-background-clip:text;background-clip:text}
+.vz-tiles .vz-it.seen:not(.on)::after{content:"✓";position:absolute;left:12px;bottom:10px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:var(--h);color:#fff;font:800 10px var(--font)}
+/* questions + timeline + checklist colour */
+.vz-qs em{background:color-mix(in srgb,var(--h) 14%,transparent);color:var(--h)}.vz-qs .vz-it.on{border-color:var(--h);background:color-mix(in srgb,var(--h) 7%,var(--panel));box-shadow:0 12px 24px -16px var(--h)}.vz-qs .vz-it.on em{background:var(--h)}
+.vz-vt .vz-it.on .vz-vt-dot{background:linear-gradient(145deg,var(--h),color-mix(in srgb,var(--h) 60%,#000));border-color:transparent;box-shadow:0 0 0 5px var(--panel),0 10px 22px -6px var(--h)}
+.vz-vt-dot{color:var(--h);border-color:color-mix(in srgb,var(--h) 40%,var(--line))}
+.vz-dl2 .vz-it i{color:var(--h)}
+.vz-node i{color:var(--h)!important;border-color:var(--h)!important;box-shadow:0 0 0 6px color-mix(in srgb,var(--h) 12%,transparent),0 10px 22px rgba(15,23,42,.12)!important}
+.vz-node.on i{background:linear-gradient(145deg,var(--h),color-mix(in srgb,var(--h) 60%,#000))!important;color:#fff!important}
+.vz-node.on b{color:var(--h)}
+/* detail card */
+.vz-det article{overflow:hidden;border-left:0;padding:0 28px 26px;background:var(--panel);box-shadow:0 24px 50px -28px rgba(15,23,42,.35);border:1px solid color-mix(in srgb,var(--h) 22%,var(--line))}
+.vz-det-band{height:86px;margin:0 -28px 18px;background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.22) 1px,transparent 1.5px) 0 0/14px 14px,linear-gradient(120deg,var(--h),color-mix(in srgb,var(--h) 55%,#000))}
+.vz-det i{top:52px;right:24px;width:64px;height:64px;border-radius:18px;background:var(--panel);color:var(--h);box-shadow:0 12px 26px -10px color-mix(in srgb,var(--h) 70%,transparent);border:1px solid var(--line)}
+.vz-det i svg{width:28px;height:28px}
+.vz-det em{color:var(--h)}.vz-det h5{padding-right:80px}
+.vz-det nav button:last-child{background:var(--h);border-color:var(--h)}
+/* who acts */
+.gl-who{position:relative;gap:14px}
+.gl-r{border:1px solid color-mix(in srgb,var(--h) 22%,var(--line));border-top:0;background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--h) 10%,transparent),transparent 60%),var(--panel);padding:18px;box-shadow:0 10px 24px -18px color-mix(in srgb,var(--h) 70%,transparent);position:relative;overflow:hidden}
+.gl-r::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--h),color-mix(in srgb,var(--h) 40%,var(--gold)))}
+.gl-r i{width:48px;height:48px;border-radius:50%;background:linear-gradient(145deg,var(--h),color-mix(in srgb,var(--h) 55%,#000));color:#fff;font:800 13px/1 var(--font);font-style:normal;letter-spacing:.04em;box-shadow:0 0 0 4px var(--panel),0 8px 18px -6px var(--h)}
+.gl-ar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);color:var(--muted);flex:none}
+.gl-r i{font-size:11px}
 
 </style>
 </head>
@@ -10504,7 +10537,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-14 05:29</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-14 05:33</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11629,14 +11662,14 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
           <circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/><circle cx="${cx}" cy="${cy}" r="92" class="vz-core"/><circle cx="${cx}" cy="${cy}" r="104" class="vz-halo"/>
           ${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<line x1="${cx + 104 * Math.cos(a)}" y1="${cy + 104 * Math.sin(a)}" x2="${cx + (R - 26) * Math.cos(a)}" y2="${cy + (R - 26) * Math.sin(a)}" class="vz-spoke"/>`; }).join("")}
           <text x="200" y="200" class="vz-c1">${it.length}</text><text x="200" y="228" class="vz-c2">${esc(unit)}</text></svg>
-        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<button type="button" class="vz-node${k ? "" : " on"}" data-vz="${k}" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></button>`; }).join("")}</div>
-        <div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""}><em>${n2(k)} <small>/ ${n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>
+        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<button type="button" class="vz-node${k ? "" : " on"}" data-vz="${k}" style="--h:var(--h${k % 6});left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></button>`; }).join("")}</div>
+        <div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""} style="--h:var(--h${k % 6})"><div class="vz-det-band" aria-hidden="true"></div><em>${n2(k)} <small>/ ${n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>
 </div>`;
     } else if (t === "split") {
       body = `<div class="vz-split">${it.slice(0, 2).map(([x, d], k) => `<div class="${k ? "r" : "l"}"><i>${FG.icon(k ? "coins" : "target", 22)}</i><small>Option ${k ? "B" : "A"}</small><b>${esc(x)}</b><p>${esc(d)}</p></div>`).join('<span class="vz-vs">or</span>')}</div>`;
     } else {
-      const det = `<div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""}><em>${t === "ask" ? `Q${k + 1}` : n2(k)} <small>/ ${t === "ask" ? `Q${it.length}` : n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>`;
-      const item = (x, d, k, inner) => `<button type="button" class="vz-it${k ? "" : " on"}" data-vz="${k}">${inner}</button>`;
+      const det = `<div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""} style="--h:var(--h${k % 6})"><div class="vz-det-band" aria-hidden="true"></div><em>${t === "ask" ? `Q${k + 1}` : n2(k)} <small>/ ${t === "ask" ? `Q${it.length}` : n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>`;
+      const item = (x, d, k, inner) => `<button type="button" class="vz-it${k ? "" : " on"}" data-vz="${k}" style="--h:var(--h${k % 6})">${inner}</button>`;
       let left;
       if (t === "steps") left = `<ol class="vz-vt">${it.map(([x, d], k) => `<li>${item(x, d, k, `<span class="vz-vt-dot"><i>${FG.icon(ico(x, d), 18)}</i></span><span class="vz-vt-t"><small>Step ${n2(k)}</small><b>${esc(x)}</b></span>`)}</li>`).join("")}</ol>`;
       else if (t === "ask") left = `<div class="vz-qs"><div class="vz-qs-h"><span>?</span><b>${it.length} questions</b><small>to answer before you start</small></div>${it.map(([x, d], k) => item(x, d, k, `<em>Q${k + 1}</em><b>${esc(x)}</b>`)).join("")}</div>`;
@@ -11649,7 +11682,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
   function glance(cfg, s, roles) {
     const vz = stageViz(cfg, s);
     const T = (s.keyFacts || []).filter(([v]) => /\b(h|hours?|days?|weeks?|months?|years?)\b/i.test(v)), N = (s.keyFacts || []).filter((f) => !T.includes(f));
-    const who = roles.length ? `<div class="gl-who">${roles.slice(0, 5).map((r, k) => `${k ? '<span class="gl-ar">→</span>' : ""}<div class="gl-r"><i>${FG.icon("people", 18)}</i><b>${esc(r.name)}</b><small>${esc(r.summary || "")}</small></div>`).join("")}</div>` : "";
+    const who = roles.length ? `<div class="gl-who">${roles.slice(0, 5).map((r, k) => `${k ? '<span class="gl-ar">→</span>' : ""}<div class="gl-r" style="--h:var(--h${k % 6})"><i>${esc((r.name.match(/\(([A-Z]{2,6})\)/) || r.name.match(/\b([A-Z]{2,6})\b/) || [])[1] || r.name.split(/[\s/]+/).filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join(""))}</i><b>${esc(r.name)}</b><small>${esc(r.summary || "")}</small></div>`).join("")}</div>` : "";
     const time = T.length ? `<div class="gl-time"><h4>Time limits</h4><div class="gl-line">${T.map(([v, l]) => `<div class="gl-t"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div></div>` : "";
     const nums = N.length ? `<div class="gl-nums">${N.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : "";
     return vz || who || T.length > 1 ? `<div class="gl">${vz}${who ? `<h4${vz ? ' class="mt2"' : ""}>Who acts</h4>${who}` : ""}${time}${!time && !vz ? nums : ""}</div>` : "";
