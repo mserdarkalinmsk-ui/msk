@@ -2456,3 +2456,33 @@ body.pk-compact .pk .pa-fs-dot{width:42px;height:42px;font-size:14px}body.pk-com
   .pc ul{margin:4pt 0 0;padding-left:12pt}.pc-box{list-style:"☐  "}.pc-docs{font:9pt Arial,sans-serif}
   .pc footer{margin-top:10pt;padding-top:6pt;border-top:1pt solid #ccc;font:7.5pt Arial,sans-serif;color:#777}
 }
+/* ===== Tools & FOMA/Projects: premium pass ===== */
+.tl,.pj7{--serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;--navy:#14244a;--gold:#b08a3e}
+:root[data-theme="dark"] :is(.tl,.pj7){--navy:#7e9be6;--gold:#d2ad62}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.tl,.pj7){--navy:#7e9be6;--gold:#d2ad62}}
+.main:has(.tl) .crumbs{display:none}
+.tl-hero{padding:34px 40px;border:1px solid var(--line);border-radius:20px;background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--gold) 12%,transparent),transparent 55%),var(--panel);margin:8px 0 26px}
+.tl-hero small{font:800 11px var(--font);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.tl-hero h1{font:600 42px/1.1 var(--serif);color:var(--ink);margin:6px 0 8px}.tl-hero p{color:var(--muted);font-size:16px;margin:0 0 22px}
+.tl-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tl-kpis>*{display:block;text-decoration:none;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel-2);color:inherit;position:relative}
+.tl-kpis i{position:absolute;right:14px;top:14px;color:var(--gold)}.tl-kpis i svg{width:18px;height:18px}
+.tl-kpis b{display:block;font:600 28px var(--serif);color:var(--navy)}.tl-kpis span{font-size:12.5px;color:var(--muted)}
+.tl-kpis>div{background:var(--navy);border-color:var(--navy)}.tl-kpis>div b{color:#fff}.tl-kpis>div span{color:rgba(255,255,255,.7)}
+.tl .section-title h2{display:flex;align-items:center;gap:10px;font:600 22px var(--serif);color:var(--ink)}
+.tl .section-title h2 i{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold)}.tl .section-title h2 i svg{width:16px;height:16px}
+.tl .section-title h2 small{font:700 12px var(--font);color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+.tl .module{position:relative;box-shadow:none;border:1px solid var(--line);border-radius:16px;transition:border-color .2s,transform .2s}
+.tl .module:hover{border-color:var(--navy);transform:translateY(-2px)}
+.tl .module .ico{background:color-mix(in srgb,var(--tone) 12%,transparent)!important;color:var(--tone)!important;box-shadow:none!important}
+.tl .module u{position:absolute;right:16px;top:50%;transform:translateY(-50%);text-decoration:none;color:var(--faint);font-weight:700;transition:.2s}.tl .module:hover u{color:var(--navy);right:12px}
+.tl .module b{font-weight:700;color:var(--ink)}
+/* FOMA / Projects */
+.pj7 h1{font-family:var(--serif)!important;font-weight:600!important;color:var(--ink)}
+.pj7 :is(h2,h3){font-family:var(--serif);font-weight:600}
+.pj7-grid>a,.pj7-grid>div{box-shadow:none!important;border:1px solid var(--line)!important;border-radius:18px!important;transition:transform .2s,border-color .2s}
+.pj7-grid>a:hover{transform:translateY(-3px);border-color:var(--navy)!important}
+.pj7-foot{box-shadow:none!important;border:1px solid var(--line)!important;border-radius:18px!important}
+@media(max-width:700px){.tl-hero{padding:24px 20px}.tl-hero h1{font-size:32px}}
+.tl{display:block;width:100%;grid-column:1/-1;min-width:0}
+.tl .module{padding-right:40px}

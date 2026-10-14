@@ -90,8 +90,10 @@
         ["Calculators", [["Procedure decision tree", "Value, type and funding → procedure.", "rules", "tree"], ["What-if simulator", "Budget Heading change → route.", "engines/what-if", "sliders"], ["Which financial year?", "2026 allocation table.", "year-end", "calendar"]]],
         ["Learn", [["Rules at a glance", "Every threshold with its source.", "rules", "book"], ["Glossary", "Terms and abbreviations.", "glossary", "abc"], ["Scenario practice", "48 cases with feedback.", "scenarios", "target"]]],
       ];
-      return { html: `${FG.ui.head("03 / Practical resources", "Tools", "Templates, checklists, calculators and practical resources.")}
-        ${groups.map(([g, items], k) => `<div class="section-title"><h2>${esc(g)}</h2></div><div class="modules">${items.map(([t, d, p, ic]) => `<a class="module" style="--tone:var(--c${k + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${FG.icon(ic, 20)}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></a>`).join("")}</div>`).join("")}` };
+      const n = groups.reduce((a, [, it]) => a + it.length, 0), gi = ["files", "check", "sliders", "book"];
+      return { html: `<div class="tl"><header class="tl-hero"><small>Practical resources</small><h1>Tools</h1><p>Templates, checklists, calculators and practical resources.</p>
+        <div class="tl-kpis">${groups.map(([g, it], k) => `<a href="#tl-${k}"><i>${FG.icon(gi[k], 18)}</i><b>${it.length}</b><span>${esc(g)}</span></a>`).join("")}<div><b>${n}</b><span>tools in total</span></div></div></header>
+        ${groups.map(([g, items], k) => `<div class="section-title" id="tl-${k}"><h2><i>${FG.icon(gi[k], 16)}</i>${esc(g)}<small>${items.length}</small></h2></div><div class="modules">${items.map(([t, d, p, ic]) => `<a class="module" style="--tone:var(--c${k + 1})" href="#/${p}"><span class="ico" aria-hidden="true">${FG.icon(ic, 20)}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span><u aria-hidden="true">→</u></a>`).join("")}</div>`).join("")}</div>` };
     },
   });
 
