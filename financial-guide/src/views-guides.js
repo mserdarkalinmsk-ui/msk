@@ -351,24 +351,30 @@
     const spec = (VIZ[cfg.base] || {})[s.name], sec = spec && s.sections[spec[0]];
     if (!sec || !(sec[1].items || []).length) return "";
     const [h, b] = sec, it = b.items, t = spec[1], n2 = (k) => String(k + 1).padStart(2, "0");
+    const ico = (x, d = "") => (DRAW_ICONS.find(([r]) => r.test(`${x} ${d}`)) || [0, ["layers", "target", "doc", "check", "people", "route", "calendar", "shield"][x.length % 8]])[1];
+    const unit = { wheel: "principles", steps: "steps", split: "options", ask: "questions", check: "items", board: "points" }[t];
     let body = "";
     if (t === "wheel") {
       const R = 150, cx = 200, cy = 200;
-      body = `<div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/>${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<circle cx="${cx + R * Math.cos(a)}" cy="${cy + R * Math.sin(a)}" r="9" class="vz-dot"/>`; }).join("")}<text x="200" y="196" class="vz-c1">${it.length}</text><text x="200" y="224" class="vz-c2">${esc(h)}</text></svg>
-        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<div class="vz-wl" style="left:${50 + 47 * Math.cos(a)}%;top:${50 + 47 * Math.sin(a)}%" title="${esc(d)}"><b>${esc(x)}</b></div>`; }).join("")}</div>
-        <div class="vz-legend">${it.map(([x, d]) => `<div><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+      body = `<div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="vzg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="var(--navy)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>
+          <circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/><circle cx="${cx}" cy="${cy}" r="92" class="vz-core"/><circle cx="${cx}" cy="${cy}" r="104" class="vz-halo"/>
+          ${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<line x1="${cx + 104 * Math.cos(a)}" y1="${cy + 104 * Math.sin(a)}" x2="${cx + (R - 26) * Math.cos(a)}" y2="${cy + (R - 26) * Math.sin(a)}" class="vz-spoke"/>`; }).join("")}
+          <text x="200" y="200" class="vz-c1">${it.length}</text><text x="200" y="228" class="vz-c2">${esc(unit)}</text></svg>
+        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<div class="vz-node" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></div>`; }).join("")}</div>
+        <div class="vz-legend">${it.map(([x, d], k) => `<div><em>${n2(k)}</em><div><b>${esc(x)}</b><span>${esc(d)}</span></div></div>`).join("")}</div>`;
     } else if (t === "steps") {
-      body = `<ol class="vz-steps">${it.map(([x, d], k) => `<li><em>${n2(k)}</em><b>${esc(x)}</b><span>${esc(d)}</span></li>`).join("")}</ol>`;
+      body = `<ol class="vz-tl" style="--n:${it.length}">${it.map(([x, d], k) => `<li><div class="vz-tl-dot"><i>${FG.icon(ico(x, d), 20)}</i><em>${n2(k)}</em></div><div class="vz-tl-card"><b>${esc(x)}</b><span>${esc(d)}</span></div></li>`).join("")}</ol>`;
     } else if (t === "split") {
-      body = `<div class="vz-split">${it.slice(0, 2).map(([x, d], k) => `<div class="${k ? "r" : "l"}"><small>${k ? "B" : "A"}</small><b>${esc(x)}</b><p>${esc(d)}</p></div>`).join('<span class="vz-vs">vs</span>')}</div>`;
+      body = `<div class="vz-split">${it.slice(0, 2).map(([x, d], k) => `<div class="${k ? "r" : "l"}"><i>${FG.icon(k ? "coins" : "target", 22)}</i><small>Option ${k ? "B" : "A"}</small><b>${esc(x)}</b><p>${esc(d)}</p></div>`).join('<span class="vz-vs">or</span>')}</div>`;
     } else if (t === "ask") {
-      body = `<div class="vz-ask">${it.map(([x, d]) => `<div><i>?</i><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+      body = `<div class="vz-ask"><div class="vz-ask-c"><span>?</span><b>${esc(h)}</b><small>${it.length} questions to answer before you start</small></div><div class="vz-ask-q">${it.map(([x, d], k) => `<div><em>Q${k + 1}</em><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div></div>`;
     } else if (t === "check") {
-      body = `<div class="vz-check">${it.map(([x, d]) => `<div><i>✓</i><div><b>${esc(x)}</b><span>${esc(d)}</span></div></div>`).join("")}</div>`;
+      body = `<div class="vz-dos"><div class="vz-doc" aria-hidden="true"><div class="vz-doc-p"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="vz-doc-badge"><b>${it.length}</b><span>${esc(unit)}</span></div></div>
+        <div class="vz-check">${it.map(([x, d], k) => `<div><i>${FG.icon(ico(x, d), 16)}</i><div><b>${esc(x)}</b><span>${esc(d)}</span></div><u>✓</u></div>`).join("")}</div></div>`;
     } else {
-      body = `<div class="vz-board">${it.map(([x, d], k) => `<div><em>${n2(k)}</em><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
+      body = `<div class="vz-bento">${it.map(([x, d], k) => `<div class="${k === 0 ? "hero" : ""}"><em>${n2(k)}</em><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b><span>${esc(d)}</span></div>`).join("")}</div>`;
     }
-    return `<div class="vz"><h4>${esc(h)}${b.lead ? `<small>${esc(b.lead)}</small>` : ""}</h4>${body}</div>`;
+    return `<div class="vz vzt-${t}"><div class="vz-head"><div class="vz-count"><b>${it.length}</b><span>${esc(unit)}</span></div><div><h4>${esc(h)}</h4>${b.lead ? `<p>${esc(b.lead)}</p>` : ""}</div></div>${body}</div>`;
   }
   function glance(cfg, s, roles) {
     const vz = stageViz(cfg, s);
