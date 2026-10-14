@@ -318,7 +318,7 @@
     const ic = (h) => (DRAW_ICONS.find(([r]) => r.test(h)) || [0, "book"])[1];
     return `<figure class="sd" style="--c:${c}" aria-label="Topics of this stage">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" class="sd-road"/><path d="${d}" class="sd-dash"/></svg>
-      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === sel}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
+      ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === sel}" style="--h:var(--h${j % 6});left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
     </figure>`;
   }
   // Documents named in the stage's own text, each with the sentence it comes from.
