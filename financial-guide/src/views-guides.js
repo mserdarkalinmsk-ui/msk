@@ -319,6 +319,34 @@
       ${items.map(([k, h], j) => `<button type="button" class="sd-node${j % 2 ? " lo" : ""}${read[k] ? " read" : ""}" ${attr}="${k}" aria-selected="${k === 0}" style="left:${(xs[j] / W) * 100}%;top:${(ys[j] / H) * 100}%"><i>${FG.icon(ic(h), 18)}</i><span><small>${String(j + 1).padStart(2, "0")}</small>${esc(h)}</span></button>`).join("")}
     </figure>`;
   }
+  // Documents named in the stage's own text, each with the sentence it comes from.
+  const DOCS = [
+    ["Tender file", /tender (file|documents|documentation|package)/i, "files"], ["Act of engagement", /acts? of engagement/i, "doc"],
+    ["Memo to the Tenders Board", /memo/i, "doc"], ["Purchase order (PO)", /\bPOs?\b|purchase order/i, "cart"], ["Order form / call-off", /order form|call-off/i, "cart"],
+    ["MSA 1002", /MSA ?1002/i, "doc"], ["MSA 4002", /MSA ?4002/i, "doc"], ["AI questionnaire", /AI questionnaire/i, "doc"],
+    ["Declaration", /declaration/i, "shield"], ["Specifications / terms of reference", /specification|terms of reference/i, "sliders"],
+    ["Opening / evaluation record", /minutes|evaluation report|analysis report|evaluation grid/i, "chart"], ["Notification letter", /notification|letters? to (suppliers|tenderers)/i, "doc"],
+    ["Addendum / amendment", /addend|amendment/i, "layers"], ["Invoice", /invoice/i, "pay"], ["Performance assessment", /performance (assessment|evaluation|monitoring)/i, "target"],
+    ["Archived file", /archiv|kept for|retain/i, "folder"], ["Grant agreement", /grant agreement/i, "doc"], ["Call for proposals", /call for proposals/i, "doc"],
+    ["Narrative / financial report", /(narrative|financial|final|interim) report/i, "chart"],
+  ];
+  function stageText(s) {
+    const out = [s.lead, s.understand, s.do, s.check, s.example];
+    s.sections.forEach(([h, b]) => { if (!b) return; out.push(b.lead, b.tip); (b.items || []).forEach(([t, d]) => out.push(`${t}: ${d}`)); (b.must || []).forEach((m) => out.push(m)); });
+    return out.filter(Boolean).join(" ").split(/(?<=[.!?])\s+/);
+  }
+  function docsHtml(s) {
+    const sents = stageText(s), hits = DOCS.map(([n, re, ic]) => [n, ic, sents.find((x) => re.test(x))]).filter((x) => x[2]).slice(0, 6);
+    return hits.length ? `<section class="pk-docs"><div class="pk-h"><span class="pk-tag gold">${FG.icon("files", 14)} Documents in this stage</span></div><div class="pk-dl">${hits.map(([n, ic, x]) => `<details class="pk-d"><summary><i>${FG.icon(ic, 18)}</i><b>${esc(n)}</b></summary><p>${esc(x)}</p></details>`).join("")}</div></section>` : "";
+  }
+  // Infographic for stages without a dedicated tool: who acts, then the stage's time limits on one line.
+  function glance(cfg, s, roles) {
+    const T = (s.keyFacts || []).filter(([v]) => /\b(h|hours?|days?|weeks?|months?|years?)\b/i.test(v)), N = (s.keyFacts || []).filter((f) => !T.includes(f));
+    const who = roles.length ? `<div class="gl-who">${roles.slice(0, 5).map((r, k) => `${k ? '<span class="gl-ar">→</span>' : ""}<div class="gl-r"><i>${FG.icon("people", 18)}</i><b>${esc(r.name)}</b><small>${esc(r.summary || "")}</small></div>`).join("")}</div>` : "";
+    const time = T.length ? `<div class="gl-time"><h4>Time limits</h4><div class="gl-line">${T.map(([v, l]) => `<div class="gl-t"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div></div>` : "";
+    const nums = N.length ? `<div class="gl-nums">${N.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : "";
+    return who || T.length > 1 ? `<div class="gl">${who ? `<h4>Who acts</h4>${who}` : ""}${time}${!time ? nums : ""}</div>` : "";
+  }
   function briefHtml(cfg, s, ph, pc, idx) {
     const musts = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m]));
     const steps = [["Understand", s.understand, "Why this stage exists"], ["Do", s.do, "What you actually do"], ["Control", s.check, "How you know it is done"]];
@@ -451,7 +479,7 @@
         const phaseOf = (j) => (order.find(([k]) => k === j) || [0, 0])[1], pc = (pi) => `var(--c${(pi % 4) + 1})`;
         const pos = order.findIndex(([j]) => j === i), fill = order.length > 1 ? (pos / (order.length - 1)) * 100 : 0;
         const ph = phaseOf(i);
-        const isP = cfg.base === "procurement", hasCase = isP || cfg.base === "grants", caseR = !hasCase ? null : isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
+        const isP = cfg.base === "procurement", pk = (isP || cfg.base === "grants") && FG.procAcademy, hasCase = isP || cfg.base === "grants", caseR = !hasCase ? null : isP ? FG.procurementCase && FG.procurementCase() : FG.grantCase && FG.grantCase();
         const pcase = caseR && FG.store.get(isP ? "pcase" : "gcase", {}), caseUrl = isP ? "#/procurement/my-case" : "#/grants/my-grant";
         const caseBar = caseR
           ? `<a class="case-chip" href="${caseUrl}" title="${esc(pcase.what || "")}"><i></i><span>${isP ? "My case" : "My grant"}: <b>${euro(isP ? caseR.value : caseR.budget)} → ${esc(caseR.route)}</b> · ${caseR.skip.includes(s.name) ? "not needed for your route" : caseR.keyStages.includes(s.name) ? "key stage" : "applies"}</span></a>`
@@ -471,27 +499,28 @@
         const guidance = `${reader(`${cfg.base}:${s.name}`, s.sections)}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}`;
         const nMust = s.sections.reduce((a, [, b]) => a + (((b && b.must) || []).length), 0);
         const people = roles.length ? `<div class="grid g2">${roles.map((r) => `<div class="card card-pad"><div class="row"><b>${esc(r.name)}</b>${ui.tag(r.tag, "accent")}</div><p class="small muted mt">${esc(r.summary)}</p>${r.does ? `<ul class="small mt">${r.does.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>`).join("")}</div>` : "";
-        const html = isP && FG.procAcademy ? `<div class="pk">
-          ${FG.procAcademy.flow(i, cfg.phases)}<div class="pk-body pk-in${FG.store.get("pk:dir", 1) < 0 ? " back" : ""}">
+        const html = pk ? `<div class="pk" data-base="${cfg.base}">
+          ${FG.procAcademy.flow(i, cfg.phases, cfg.base)}<div class="pk-body pk-in${FG.store.get("pk:dir", 1) < 0 ? " back" : ""}">
           <section class="card stage-card pa-stage"><div class="card-body">
             ${briefHtml(cfg, s, ph, pc, i)}
           </div></section>
-          ${(() => { const vis = cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget; return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span><h3>See it in one picture</h3></div>${vis}</div></section>` : ""; })()}
+          ${(() => { const vis = (cfg.hero && cfg.hero[s.name] ? cfg.hero[s.name]() : widget) || glance(cfg, s, roles); return vis ? `<section class="card pk-vis"><div class="card-body"><div class="pk-h"><span class="pk-tag">${FG.icon("chart", 14)} At a glance</span><h3>See it in one picture</h3></div>${vis}</div></section>` : ""; })()}
           ${(() => { const dn = s.sections.flatMap(([h, b], k) => ((b && b.must) || []).map((m) => [k, h, m])).filter(([, , m]) => { const f = m.match(/\b(must not|may not|should not|shall not|cannot|never|prohibited|must|should|shall|may|are|is)\b/i); return !!f && /not|never|cannot|prohibited/i.test(f[1]); });
             const items = dn.slice(0, 3).map(([k, h, m]) => `<button type="button" class="pk-av" data-rd-jump="${k}"><i>✕</i><p>${esc(m)}</p><small>${esc(h)} →</small></button>`);
             if (s.warning) items.push(`<div class="pk-av warn"><i>!</i><p>${esc(s.warning)}</p><small>Common pitfall</small></div>`);
             return items.length ? `<section class="pk-avoid"><div class="pk-h"><span class="pk-tag red">${FG.icon("shield", 14)} Avoid these mistakes</span></div><div class="pk-avs">${items.join("")}</div></section>` : ""; })()}
+          ${docsHtml(s)}
           <section class="card pk-read"><div class="card-body"><div class="pk-h"><h3>Read the stage</h3><small>${s.sections.length} topics · click a stop on the route</small></div>${reader(`${cfg.base}:${s.name}`, s.sections, pc(ph))}${doneCard}${s.example ? `<div class="example mt"><span aria-hidden="true">◆</span><div><small>In practice</small><p>${esc(s.example)}</p></div></div>` : ""}</div></section>
           <div class="mt">${ui.tabs(cfg.base + ":stage", [
-            ["guide", "Guidance", isP ? "" : guidance, s.sections.length],
+            ["guide", "Guidance", pk ? "" : guidance, s.sections.length],
             ["rules", "Summary", keyRulesHtml(s, best), null],
-            ["tool", "Interactive tool", isP ? "" : widget || "", null],
+            ["tool", "Interactive tool", pk ? "" : widget || "", null],
             ["check", "Checklist", checks.length ? ui.checklist(`${cfg.base}:${s.name}`, checks, "Stage checklist") : "", checks.length],
-            ["who", "Who is involved", people, roles.length || null],
+            ["who", "Who is involved", pk && !(widget || (cfg.hero && cfg.hero[s.name])) ? "" : people, roles.length || null],
             ["tpl", "Templates", (s.templates || []).length ? `<div class="docs">${s.templates.map(([c, d]) => `<div><b>${esc(c)}</b><span>${esc(d)}</span></div>`).join("")}</div>` : "", (s.templates || []).length || null],
           ])}</div>
           
-          ${(() => { const qs = ((C.quizzes || {}).procurement || []).filter((q) => q.stage === s.name).slice(0, 3); return qs.length ? `<section class="card pk-quiz"><div class="card-body"><div class="pk-h"><span class="pk-tag green">${FG.icon("trophy", 14)} Quick check</span><h3>${qs.length} question${qs.length > 1 ? "s" : ""} on this stage</h3></div>${qs.map((q, n) => `<div class="pk-q" data-ans="${q.answer}"><p><b>${n + 1}.</b> ${esc(q.q)}</p><div class="pk-opts">${q.options.map((o, k) => `<button type="button" data-opt="${k}">${esc(o)}</button>`).join("")}</div><div class="pk-exp" hidden>${esc(q.explain)}</div></div>`).join("")}</div></section>` : ""; })()}
+          ${(() => { const qs = ((C.quizzes || {})[cfg.base] || []).filter((q) => q.stage === s.name).slice(0, 3); return qs.length ? `<section class="card pk-quiz"><div class="card-body"><div class="pk-h"><span class="pk-tag green">${FG.icon("trophy", 14)} Quick check</span><h3>${qs.length} question${qs.length > 1 ? "s" : ""} on this stage</h3></div>${qs.map((q, n) => `<div class="pk-q" data-ans="${q.answer}"><p><b>${n + 1}.</b> ${esc(q.q)}</p><div class="pk-opts">${q.options.map((o, k) => `<button type="button" data-opt="${k}">${esc(o)}</button>`).join("")}</div><div class="pk-exp" hidden>${esc(q.explain)}</div></div>`).join("")}</div></section>` : ""; })()}
           <div class="pk-end">${i > 0 ? `<a class="pk-prev" href="#/${cfg.base}/${slug(stages[i - 1].name)}">← ${esc(stages[i - 1].name)}</a>` : "<span></span>"}${i < stages.length - 1 ? `<a class="pk-next primary" href="#/${cfg.base}/${slug(stages[i + 1].name)}"><small>Next stage · ${String(i + 2).padStart(2, "0")}</small><b>${esc(stages[i + 1].title)}</b><span>${esc(stages[i + 1].lead || "")}</span><u>Continue →</u></a>` : `<div class="pk-next done"><small>Route complete</small><b>You have reached the last stage</b><span>Go back to any stage from the route above.</span></div>`}</div></div></div>` : `
           <div class="sb-mini" aria-hidden="true"><span class="sb-mini-n" style="--c:${pc(ph)}">${i + 1}<small>/${stages.length}</small></span><b>${esc(s.title)}</b>
             <nav>${[["guide", "Guidance"], ["rules", "Summary"], ["check", "Checklist"]].map(([k, t]) => `<button type="button" data-go-tab="${k}">${t}</button>`).join("")}</nav>
