@@ -2563,6 +2563,25 @@ body.pk-compact .pk .pa-fs-dot{width:42px;height:42px;font-size:14px}body.pk-com
 .vz-wheel svg{position:static}.vz-wheel>svg{position:absolute;inset:0;width:100%;height:100%}
 .vz-node i svg{position:static;width:22px;height:22px}
 .vz-ask>.vz-ask-c{background:linear-gradient(160deg,var(--navy),color-mix(in srgb,var(--navy) 70%,#000));border:0}
+.vzt-wheel .vz-head .vz-count{display:none}
+.vz-wx{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:center}
+.vz-wx .vz-wheel{margin:0 auto}
+.vz-c1{fill:color-mix(in srgb,var(--navy) 55%,var(--gold));font-size:54px}.vz-core{fill:color-mix(in srgb,var(--gold) 7%,var(--panel))}
+.vz-node{all:unset;position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:120px;text-align:center;cursor:pointer}
+.vz-node i{transition:transform .2s,background .2s,color .2s}
+.vz-node:hover i{transform:scale(1.08)}
+.vz-node.on i{background:var(--navy);color:#fff;border-color:var(--navy);transform:scale(1.12)}
+.vz-node.on b{color:var(--navy);font-weight:800}
+.vz-node:focus-visible i{outline:3px solid var(--gold);outline-offset:3px}
+.vz-det article{position:relative;padding:30px 28px;border-radius:20px;background:var(--panel-2);border:1px solid var(--line);border-left:4px solid var(--gold);animation:pkIn .25s ease}
+.vz-det em{font:600 15px var(--serif);color:var(--gold);font-style:normal}.vz-det em small{color:var(--faint)}
+.vz-det i{position:absolute;right:24px;top:24px;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--navy) 9%,transparent);color:var(--navy)}
+.vz-det h5{font:600 28px/1.15 var(--serif);color:var(--ink);margin:10px 0 12px}
+.vz-det p{font-size:16px;line-height:1.65;color:var(--ink-2);margin:0 0 22px}
+.vz-det nav{display:flex;gap:8px}.vz-det nav button{border:1px solid var(--line-2);background:var(--panel);border-radius:999px;padding:8px 16px;font:600 13px var(--font);color:var(--ink);cursor:pointer}
+.vz-det nav button:last-child{background:var(--navy);border-color:var(--navy);color:#fff}
+@media(max-width:900px){.vz-wx{grid-template-columns:1fr}}
+.vz-c1{fill:var(--gold);font-weight:500}
 
 </style>
 </head>
@@ -10442,7 +10461,7 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     </header>
     <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
     <main class="content" id="content" tabindex="-1"></main>
-    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-14 05:18</span></footer>
+    <footer class="foot">Guidance tool. It does not replace the applicable rules, the Procurement Guide or Finance validation. <span class="build">Version 2026-10-14 05:23</span></footer>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -11563,12 +11582,13 @@ window.FG_IMG = {"fo-exp": "data:image/webp;base64,UklGRioWAABXRUJQVlA4IB4WAABwc
     let body = "";
     if (t === "wheel") {
       const R = 150, cx = 200, cy = 200;
-      body = `<div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="vzg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="var(--navy)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>
+      body = `<div class="vz-wx"><div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="vzg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="var(--navy)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>
           <circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/><circle cx="${cx}" cy="${cy}" r="92" class="vz-core"/><circle cx="${cx}" cy="${cy}" r="104" class="vz-halo"/>
           ${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<line x1="${cx + 104 * Math.cos(a)}" y1="${cy + 104 * Math.sin(a)}" x2="${cx + (R - 26) * Math.cos(a)}" y2="${cy + (R - 26) * Math.sin(a)}" class="vz-spoke"/>`; }).join("")}
           <text x="200" y="200" class="vz-c1">${it.length}</text><text x="200" y="228" class="vz-c2">${esc(unit)}</text></svg>
-        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<div class="vz-node" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></div>`; }).join("")}</div>
-        <div class="vz-legend">${it.map(([x, d], k) => `<div><em>${n2(k)}</em><div><b>${esc(x)}</b><span>${esc(d)}</span></div></div>`).join("")}</div>`;
+        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<button type="button" class="vz-node${k ? "" : " on"}" data-vz="${k}" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></button>`; }).join("")}</div>
+        <div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""}><em>${n2(k)} <small>/ ${n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>
+</div>`;
     } else if (t === "steps") {
       body = `<ol class="vz-tl" style="--n:${it.length}">${it.map(([x, d], k) => `<li><div class="vz-tl-dot"><i>${FG.icon(ico(x, d), 20)}</i><em>${n2(k)}</em></div><div class="vz-tl-card"><b>${esc(x)}</b><span>${esc(d)}</span></div></li>`).join("")}</ol>`;
     } else if (t === "split") {
@@ -13255,6 +13275,7 @@ chapters.forEach(ch=>FG.addIndex(ch.title,`${ch.sub} · original Guide pp. ${ch.
 FG.addIndex('Full Procurement Guide 69 pages','Original edition 16 September 2026, exact source page text and PDF','procurement/reference-library/all','Official Reference');
 })();
 document.addEventListener('click',e=>{const b=e.target.closest('.pk-q [data-opt]');if(!b)return;const q=b.closest('.pk-q');if(q.classList.contains('done'))return;q.classList.add('done');const ok=+b.dataset.opt===+q.dataset.ans;b.classList.add(ok?'ok':'no');q.querySelector(`[data-opt="${q.dataset.ans}"]`).classList.add('ok');const x=q.querySelector('.pk-exp');x.hidden=false;x.classList.add(ok?'ok':'no');});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-vz]');if(!b)return;const w=b.closest('.vz-wx');if(!w)return;const k=b.dataset.vz;w.querySelectorAll('.vz-node').forEach(n=>n.classList.toggle('on',n.dataset.vz===k));w.querySelectorAll('[data-vzp]').forEach(p=>p.hidden=p.dataset.vzp!==k);});
 
 </script>
 <script>FG.start();</script>

@@ -2551,3 +2551,22 @@ body.pk-compact .pk .pa-fs-dot{width:42px;height:42px;font-size:14px}body.pk-com
 .vz-wheel svg{position:static}.vz-wheel>svg{position:absolute;inset:0;width:100%;height:100%}
 .vz-node i svg{position:static;width:22px;height:22px}
 .vz-ask>.vz-ask-c{background:linear-gradient(160deg,var(--navy),color-mix(in srgb,var(--navy) 70%,#000));border:0}
+.vzt-wheel .vz-head .vz-count{display:none}
+.vz-wx{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:center}
+.vz-wx .vz-wheel{margin:0 auto}
+.vz-c1{fill:color-mix(in srgb,var(--navy) 55%,var(--gold));font-size:54px}.vz-core{fill:color-mix(in srgb,var(--gold) 7%,var(--panel))}
+.vz-node{all:unset;position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:120px;text-align:center;cursor:pointer}
+.vz-node i{transition:transform .2s,background .2s,color .2s}
+.vz-node:hover i{transform:scale(1.08)}
+.vz-node.on i{background:var(--navy);color:#fff;border-color:var(--navy);transform:scale(1.12)}
+.vz-node.on b{color:var(--navy);font-weight:800}
+.vz-node:focus-visible i{outline:3px solid var(--gold);outline-offset:3px}
+.vz-det article{position:relative;padding:30px 28px;border-radius:20px;background:var(--panel-2);border:1px solid var(--line);border-left:4px solid var(--gold);animation:pkIn .25s ease}
+.vz-det em{font:600 15px var(--serif);color:var(--gold);font-style:normal}.vz-det em small{color:var(--faint)}
+.vz-det i{position:absolute;right:24px;top:24px;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--navy) 9%,transparent);color:var(--navy)}
+.vz-det h5{font:600 28px/1.15 var(--serif);color:var(--ink);margin:10px 0 12px}
+.vz-det p{font-size:16px;line-height:1.65;color:var(--ink-2);margin:0 0 22px}
+.vz-det nav{display:flex;gap:8px}.vz-det nav button{border:1px solid var(--line-2);background:var(--panel);border-radius:999px;padding:8px 16px;font:600 13px var(--font);color:var(--ink);cursor:pointer}
+.vz-det nav button:last-child{background:var(--navy);border-color:var(--navy);color:#fff}
+@media(max-width:900px){.vz-wx{grid-template-columns:1fr}}
+.vz-c1{fill:var(--gold);font-weight:500}

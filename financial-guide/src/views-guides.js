@@ -356,12 +356,13 @@
     let body = "";
     if (t === "wheel") {
       const R = 150, cx = 200, cy = 200;
-      body = `<div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="vzg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="var(--navy)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>
+      body = `<div class="vz-wx"><div class="vz-wheel"><svg viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="vzg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="var(--navy)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>
           <circle cx="${cx}" cy="${cy}" r="${R}" class="vz-ring"/><circle cx="${cx}" cy="${cy}" r="92" class="vz-core"/><circle cx="${cx}" cy="${cy}" r="104" class="vz-halo"/>
           ${it.map((_, k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<line x1="${cx + 104 * Math.cos(a)}" y1="${cy + 104 * Math.sin(a)}" x2="${cx + (R - 26) * Math.cos(a)}" y2="${cy + (R - 26) * Math.sin(a)}" class="vz-spoke"/>`; }).join("")}
           <text x="200" y="200" class="vz-c1">${it.length}</text><text x="200" y="228" class="vz-c2">${esc(unit)}</text></svg>
-        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<div class="vz-node" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></div>`; }).join("")}</div>
-        <div class="vz-legend">${it.map(([x, d], k) => `<div><em>${n2(k)}</em><div><b>${esc(x)}</b><span>${esc(d)}</span></div></div>`).join("")}</div>`;
+        ${it.map(([x, d], k) => { const a = (k / it.length) * 2 * Math.PI - Math.PI / 2; return `<button type="button" class="vz-node${k ? "" : " on"}" data-vz="${k}" style="left:${50 + 37.5 * Math.cos(a)}%;top:${50 + 37.5 * Math.sin(a)}%"><i>${FG.icon(ico(x, d), 20)}</i><b>${esc(x)}</b></button>`; }).join("")}</div>
+        <div class="vz-det" aria-live="polite">${it.map(([x, d], k) => `<article data-vzp="${k}"${k ? " hidden" : ""}><em>${n2(k)} <small>/ ${n2(it.length - 1)}</small></em><i>${FG.icon(ico(x, d), 22)}</i><h5>${esc(x)}</h5><p>${esc(d)}</p><nav><button type="button" data-vz="${(k + it.length - 1) % it.length}">←</button><button type="button" data-vz="${(k + 1) % it.length}">Next →</button></nav></article>`).join("")}</div>
+</div>`;
     } else if (t === "steps") {
       body = `<ol class="vz-tl" style="--n:${it.length}">${it.map(([x, d], k) => `<li><div class="vz-tl-dot"><i>${FG.icon(ico(x, d), 20)}</i><em>${n2(k)}</em></div><div class="vz-tl-card"><b>${esc(x)}</b><span>${esc(d)}</span></div></li>`).join("")}</ol>`;
     } else if (t === "split") {
