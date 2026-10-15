@@ -1,5 +1,7 @@
 # Portfolio Ledger
 
+**New offline decision workspace:** download [Portfolio Analysis Enterprise HTML](downloads/portfolio-analysis-enterprise.html) or the [application and source ZIP](downloads/portfolio-analysis-enterprise.zip). It adds source-aware financial coverage, reporting-date selection, accountable follow-ups, scenarios and exportable executive briefs while retaining the uploaded engine. See [usage, architecture and limitations](enterprise/README.md) and [validation results](enterprise/VALIDATION.md). This edition does not add server-backed team collaboration.
+
 **Uploaded Ledger 40, with its original structure preserved:** use
 [portfolio-ledger-professional.html](portfolio-ledger-professional.html) or the
 [dedicated ZIP](downloads/portfolio-ledger-professional.zip). This separate variant
