@@ -74,12 +74,14 @@ function createEnterpriseDomain() {
     const pace = fresh && actual != null && budget > 0 && elapsed != null ? actual / budget - elapsed : null;
     return {projectId:project.id, budget, latest, previous, reports, age, fresh, actual, committed, exposure, balance, delta, intervalDays, sameScope, elapsed, pace, forecastEligible, reasons, rate, start, end};
   }
-  function scenario(row, asOf, multiplier = 1, adjustment = 0) {
-    const factor = number(multiplier), extra = number(adjustment);
-    if (!row.forecastEligible || factor == null || factor < .5 || factor > 1.5 || extra == null || extra < 0) return null;
-    const months = Math.max(0, (row.end - day(asOf)) / DAY / 30.4375);
-    const projected = Math.max(row.exposure, row.actual + Math.max(0, row.rate) * factor * months + extra);
-    return {projected, overrun:Math.max(0, projected - row.budget), unused:Math.max(0, row.budget - projected), months, multiplier:factor, adjustment:extra, rate:row.rate};
+  function scenario(row, asOf, multiplier = 1, adjustment = 0, assumptions = {}) {
+    // An observed rate is not a complete remaining-cost model until its overlap
+    // with commitments is explicitly confirmed. Never manufacture that consent.
+    if(assumptions.rateIncludesCommitments!==true)return null;
+    const factor=number(multiplier),extra=number(adjustment);
+    if(factor==null||factor<.5||factor>1.5||extra==null||extra<0)return null;
+    const result=AdvancedScenarioDomain.calculate(row,{mode:'recent-rate',rateIncludesCommitments:true},{extend:0,budgetPct:0,pacePct:(factor-1)*100,staffPct:0,extra},asOf,'fixed-rate');
+    return result.status==='ready'?result:null;
   }
   function model(projects, asOf, policy = defaults, resolver) {
     const rows = projects.map(project => ({project, ...evidence(project, asOf, policy, resolver)}));
@@ -102,8 +104,8 @@ function createEnterpriseDomain() {
     }).map(alert=>({...alert, sourceDate:rows.get(alert.projectId)?.latest?.date || '', next:alert.kind==='deadline'?'Review the reporting obligation and record the next submission action.':'Open project evidence and record an owner and next step.'}));
     for (const row of model.rows) {
       if (row.actual == null || !row.fresh || row.committed == null) list.push({projectId:row.project.id,kind:'evidence',severity:row.actual==null?'serious':'warning',title:row.actual==null?'Financial evidence needs review':!row.fresh?'Financial report needs refreshing':'Commitment coverage needs review',detail:row.latest?`${row.latest.date} · ${row.latest.coverage}/${row.latest.lines} actual-spend fields · ${row.age} days old`:'No complete dated financial snapshot is available',sourceDate:row.latest?.date||'',next:'Import or verify a complete financial report before interpreting balances and forecasts.'});
-      const forecast=scenario(row, model.asOf);
-      if(forecast?.overrun>1)list.push({projectId:row.project.id,kind:'forecast',severity:'serious',title:'Scenario exceeds registered budget',detail:`Base scenario exceeds budget by €${Math.round(forecast.overrun).toLocaleString('en-GB')}`,sourceDate:row.latest.date,next:'Review remaining obligations and the scenario assumptions.'});
+      const forecast=row.savedScenario?.status==='ready'?row.savedScenario:null;
+      if(forecast?.overrun>1)list.push({projectId:row.project.id,kind:'forecast',severity:'serious',title:'Saved scenario projects an overrun',detail:`${forecast.card.name}: projected cost exceeds its scenario budget by €${Math.round(forecast.overrun).toLocaleString('en-GB')}; this is not current actual-spend overrun`,sourceDate:row.latest.date,next:'Review saved cost assumptions, obligations and the hypothetical budget.'});
     }
     const order={critical:0,serious:1,warning:2};
     return [...new Map(list.map(alert=>[fingerprint(alert),alert])).values()].sort((a,b)=>(order[a.severity]??3)-(order[b.severity]??3)||String(a.projectId).localeCompare(String(b.projectId)));

@@ -13,11 +13,14 @@ def once(old,new):
     global html
     assert html.count(old)==1, f'Unsupported engine boundary: {old[:80]}'
     html=html.replace(old,new,1)
-modules=['domain.js','bridge.js','components.js','overview.js','report.js']
+modules=['scenario-domain.js','domain.js','bridge.js','components.js','scenario-ui.js','overview.js','report.js']
 code='\n\n'.join((ROOT/'src'/name).read_text() for name in modules)
 assert '</script' not in code.lower(), 'Unsafe inline script boundary'
 once('function ud(){', code+'\nfunction EnterpriseLegacyOverview(){')
 once('s==="project"?e(dh,{id:a},a)', 's==="project"?e(EnterpriseProjectPage,{id:a},a)')
+# Replace the exact legacy comparison screen, including its unsafe rate fallback.
+start=html.index('function Nu(');end=html.index('const Wu=',start)
+html=html[:start]+'function Hu({p:t}){return e("div",{class:"ex-workspace",children:e(AdvancedScenarioPanel,{project:t,asOf:et().enterpriseAsOf||enterpriseToday()})});}'+html[end:]
 # The decision workspace contains a nonblocking selected-portfolio weekly view.
 start=html.index('function qd(){');end=html.index('const ji=',start)
 html=html[:start]+'function qd(){return null;}'+html[end:]
@@ -32,7 +35,7 @@ print(f'Built {output.name}: {output.stat().st_size:,} bytes')
 archive=ROOT.parent/'downloads/portfolio-analysis-enterprise.zip'
 with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
     sources=[file for folder in ['src','tests','vendor'] for file in sorted((ROOT/folder).rglob('*')) if file.is_file()]
-    sources += [ROOT/name for name in ['build.py','README.md','VALIDATION.md','package.json','package-lock.json'] if (ROOT/name).is_file()]
+    sources += [ROOT/name for name in ['build.py','README.md','VALIDATION.md','SCENARIO_MODEL.md','package.json','package-lock.json'] if (ROOT/name).is_file()]
     files=[(output,output.name)]+[(file,'enterprise/'+str(file.relative_to(ROOT))) for file in sources]
     for file,name in files:
         info=zipfile.ZipInfo(name,(1980,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED;info.external_attr=0o644<<16

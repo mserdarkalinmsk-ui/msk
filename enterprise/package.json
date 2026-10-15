@@ -1,12 +1,12 @@
 {
   "name": "portfolio-ledger-enterprise-offline",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "Reproducible offline decision workspace around the preserved uploaded Portfolio Ledger engine",
   "scripts": {
     "build": "python3 build.py",
-    "test": "node tests/domain.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test": "node tests/domain.cjs && node tests/scenarios.cjs",
+    "test:browser": "node tests/browser.cjs && node tests/scenario-browser.cjs"
   },
   "engines": {"node": ">=20"},
   "devDependencies": {"playwright": "1.62.1"}

@@ -33,3 +33,20 @@ The synthetic 1,000-project fixture completed the decision/evidence navigation a
 - No new-cloud-task restoration or environment publication was performed as part of this feature work.
 
 Detailed run artifacts are generated in ignored `test-results/enterprise/` by the browser suite and are not bundled as user portfolio data.
+
+## Advanced scenario model v3 update
+
+The following supersede the earlier scenario behavior and counts above:
+
+| Check | Result |
+|---|---|
+| `npm test` in `enterprise/` | **27 general domain + 32 advanced scenario checks passed** |
+| `node enterprise/tests/browser.cjs` | **16 browser groups passed** after the shared component-key adapter and scenario integration changes |
+| `node enterprise/tests/scenario-browser.cjs` | **14 advanced browser groups passed** |
+| Replaced original project comparison route | The exact original Scenario tab renders **Advanced scenario model**; the unsafe `Nu` function and exposure/time fallback are absent from production HTML |
+
+The advanced tests cover the screenshot regression, a genuine separately labeled projected overrun, commitment overlap, extra costs beyond the commitment floor, observed and assumed zero, missing history, negative changes, staff-only uncommitted savings, both extension policies, calendar-month boundaries, reporting lag, source-linked confirmation reset, scenario reload persistence, undo, executive-report inclusion, nonmutation, read-only persistence guards and malformed configuration handling.
+
+Advanced controls and cards were checked at 320, 390, 768, 1024 and 1600 pixels, including a dark mobile capture. No uncaught browser errors occurred in the exercised advanced flows. The broader decision-workspace suite also retained its no-external-request assertion. The current 1,000-project run measured 1,046 ms for its bounded decision/evidence checks; it remains synthetic fixture evidence.
+
+The arithmetic has explicit overlap rules, but real-world completeness and whether a manually entered cost is already committed still depend on source review and the user's stated coverage confirmation. No payment-maturity schedule or probabilistic confidence model was added.

@@ -2,14 +2,14 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/domain.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'../src/scenario-domain.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../src/domain.js'),'utf8');
 const D=vm.runInNewContext(source+';EnterpriseDomain',{Intl,Date,Map,Set,Object,Number,JSON,Math});
 const report=(date,actual,committed=100,codes=['1'])=>({id:date,date,snapshot:{lines:codes.map(code=>({code,actual,committed,approved:1000}))}});
 const project=(reports=[],extra={})=>({id:'p',code:'P1',name:'Example',budget:10000,start:'2026-01-01',end:'2027-01-01',reportingPeriods:reports,...extra});
 const asOf='2026-10-15';let count=0;
 function test(name,run){run();console.log(`PASS ${++count}: ${name}`);}
 test('missing report remains unknown, not zero',()=>{const row=D.evidence(project(),asOf);assert.equal(row.actual,null);assert.equal(row.balance,null);assert.equal(row.forecastEligible,false);});
-test('recorded zero actuals and commitments remain known',()=>{const row=D.evidence(project([report('2026-08-01',0,0),report('2026-10-01',0,0)]),asOf);assert.equal(row.actual,0);assert.equal(row.committed,0);assert.equal(row.forecastEligible,true);assert.equal(D.scenario(row,asOf).projected,0);});
+test('recorded zero actuals and commitments remain known',()=>{const row=D.evidence(project([report('2026-08-01',0,0),report('2026-10-01',0,0)]),asOf);assert.equal(row.actual,0);assert.equal(row.committed,0);assert.equal(row.forecastEligible,true);assert.equal(D.scenario(row,asOf,1,0,{rateIncludesCommitments:true}).projected,0);});
 test('future and invalid calendar dates are excluded',()=>{const row=D.evidence(project([report('2026-02-30',999),report('2027-01-01',888),report('2026-09-01',10)]),asOf);assert.equal(row.actual,10);assert.equal(row.reports.length,1);});
 test('stale report remains known but cannot establish forecast or pace',()=>{const row=D.evidence(project([report('2025-10-01',100)]),asOf);assert.equal(row.actual,100);assert.equal(row.fresh,false);assert.equal(row.pace,null);assert.equal(row.forecastEligible,false);});
 test('duplicate source dates require explicit resolution',()=>{const row=D.evidence(project([report('2026-10-01',100),{...report('2026-10-01',200),id:'revision'}]),asOf);assert.equal(row.actual,null);assert.equal(row.forecastEligible,false);});
@@ -24,8 +24,8 @@ test('unknown schedule withholds pace and scenarios',()=>{const row=D.evidence(p
 test('zero budget withholds scenario without treating budget as unknown',()=>{const row=D.evidence(project([report('2026-08-01',500),report('2026-10-01',700)],{budget:0}),asOf);assert.equal(row.budget,0);assert.equal(row.forecastEligible,false);});
 test('coverage subset is explicit, portfolio actual withheld',()=>{const model=D.model([project([report('2026-10-01',200)]),project([],{id:'missing'})],asOf);assert.equal(model.actual.value,null);assert.equal(model.actual.coveredValue,200);assert.equal(model.actual.covered,1);assert.equal(model.forecast,null);});
 test('resolver semantics apply consistently to latest and prior reports',()=>{const row=D.evidence(project([report('2026-08-01',500),report('2026-10-01',700)]),asOf,D.defaults,(_p,date)=>({spent:date==='2026-08-01'?600:850,committed:100}));assert.equal(row.actual,850);assert.equal(row.delta,250);});
-test('refunds remain signed; future rate cannot create negative spend',()=>{const row=D.evidence(project([report('2026-08-01',500),report('2026-10-01',400,0)]),asOf);assert.equal(row.delta,-100);assert.equal(D.scenario(row,asOf).projected,400);});
-test('scenario can expose overruns and never edits actuals',()=>{const row=D.evidence(project([report('2026-08-01',1000),report('2026-10-01',2000)],{budget:2500}),asOf);const result=D.scenario(row,asOf,1.5,5000);assert.ok(result.overrun>0);assert.equal(row.actual,2000);assert.equal(row.budget,2500);});
+test('refunds remain signed and do not establish a forward spending rate',()=>{const row=D.evidence(project([report('2026-08-01',500),report('2026-10-01',400,0)]),asOf);assert.equal(row.delta,-100);assert.equal(D.scenario(row,asOf,1,0,{rateIncludesCommitments:true}),null);});
+test('scenario can expose overruns and never edits actuals',()=>{const row=D.evidence(project([report('2026-08-01',1000),report('2026-10-01',2000)],{budget:2500}),asOf);const result=D.scenario(row,asOf,1.5,5000,{rateIncludesCommitments:true});assert.ok(result.overrun>0);assert.equal(row.actual,2000);assert.equal(row.budget,2500);});
 test('invalid scenario assumptions do not become zero',()=>{const row=D.evidence(project([report('2026-08-01',0),report('2026-10-01',100)]),asOf);assert.equal(D.scenario(row,asOf,2,0),null);assert.equal(D.scenario(row,asOf,1,-100),null);assert.equal(D.scenario(row,asOf,1,NaN),null);});
 test('changed source fingerprints invalidate previous review association',()=>{const base={projectId:'p',kind:'risk',title:'Risk',detail:'Details',sourceDate:'2026-08-01'};assert.notEqual(D.fingerprint(base),D.fingerprint({...base,sourceDate:'2026-10-01'}));});
 const entry={owner:'Team',due:'2026-10-25',status:'Open',notes:'Review',projectId:'p',title:'Risk',detail:'Details',updatedAt:'2026-10-15T00:00:00Z'};
@@ -35,4 +35,5 @@ test('invalid review state and calendar date are rejected',()=>{assert.equal(D.v
 test('CSV escapes formulas, quotes, commas and unknowns',()=>{const csv=D.csv([['=1+1','a,b','"x"',null,-10]]);assert.ok(csv.includes('"\'=1+1"'));assert.ok(csv.includes('"a,b"'));assert.ok(csv.includes('"""x"""'));assert.ok(csv.includes('"\'-10"'));});
 test('missing evidence produces source review, not false financial pace',()=>{const model=D.model([project()],asOf);const actions=D.actions(model,[{projectId:'p',kind:'underspend',title:'Behind',severity:'warning'}]);assert.equal(actions.length,1);assert.equal(actions[0].kind,'evidence');});
 test('empty scope never fabricates financial totals',()=>{const model=D.model([],asOf);assert.equal(model.actual.value,null);assert.equal(model.forecast,null);assert.equal(model.count,0);});
+test('a rate does not imply confirmation of commitment coverage',()=>{const row=D.evidence(project([report('2026-08-01',500),report('2026-10-01',700)]),asOf);assert.equal(D.scenario(row,asOf),null);});
 console.log(`${count} domain checks passed.`);
