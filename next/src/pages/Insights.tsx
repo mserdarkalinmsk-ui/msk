@@ -1,0 +1,276 @@
+import { useMemo, useState } from 'preact/hooks';
+import { go, set, useStore } from '../data/store';
+import { progress } from '../domain/logframe';
+import { money } from '../domain/calc';
+import { ALERT_KINDS, alerts, changes, headings, readiness, status, outcome, scenario, type Alert } from '../domain/insights';
+import type { Project } from '../domain/types';
+import { TODAY } from '../today';
+import { parseAmount } from '../ui/csv';
+import { date, full, pct, short } from '../ui/format';
+
+/* ---------------- alert centre ---------------- */
+export function AlertCentre({ projects }: { projects: Project[] }) {
+  const A = useMemo(() => alerts(projects, TODAY), [projects]);
+  const [area, setArea] = useState('');
+  const [sev, setSev] = useState('');
+  const areas = [...new Set(A.map((a) => ALERT_KINDS[a.kind] ?? a.kind))];
+  const shown = A.filter((a) => (!area || (ALERT_KINDS[a.kind] ?? a.kind) === area) && (!sev || a.severity === sev));
+  const code = (a: Alert) => projects.find((p) => p.id === a.projectId)?.code ?? '';
+  const n = (s: string) => A.filter((a) => a.severity === s).length;
+  return (
+    <>
+      <section class="hero" aria-label="Alert summary">
+        <div class="kpi lead"><span class="label">Open alerts</span><span class="value">{A.length}</span><span class="ctx">finance, staff, reporting, activities</span></div>
+        {(['critical', 'serious', 'warning'] as const).map((s) => (
+          <button class={`kpi kpi-btn ${sev === s ? 'on' : ''}`} onClick={() => setSev(sev === s ? '' : s)} aria-pressed={sev === s}>
+            <span class="label">{s}</span><span class="value" style={{ color: n(s) ? `var(--${s === 'warning' ? 'warn' : s})` : undefined }}>{n(s)}</span><span class="ctx">{sev === s ? 'showing only these — click to clear' : 'click to filter'}</span>
+          </button>
+        ))}
+      </section>
+      <section class="card">
+        <div class="card-h"><div><h2>Alert centre</h2><p>Everything that needs a decision, most urgent first</p></div>
+          <div class="seg" style={{ marginLeft: 'auto' }} role="group" aria-label="Area">
+            <button aria-pressed={!area} onClick={() => setArea('')}>All</button>
+            {areas.map((x) => <button aria-pressed={area === x} onClick={() => setArea(x)}>{x} <span class="muted">{A.filter((a) => (ALERT_KINDS[a.kind] ?? a.kind) === x).length}</span></button>)}
+          </div>
+        </div>
+        <ul class="att alerts" style={{ marginTop: '12px' }}>
+          {shown.map((a) => (
+            <li onClick={() => go(`project/${a.projectId}`)}>
+              <span class={`badge ${a.severity}`}>{a.severity}</span>
+              <div><div class="t"><b class="num">{code(a)}</b> · {a.title}</div><div class="d">{ALERT_KINDS[a.kind] ?? a.kind} · {a.detail}</div></div>
+              <span class="num muted" style={{ fontSize: '12px' }}>{a.due ? date(a.due) : ''}</span>
+            </li>
+          ))}
+          {!shown.length && <li style={{ cursor: 'default' }}><span class="badge good">clear</span><div class="d">No alerts in this view.</div><span /></li>}
+        </ul>
+      </section>
+    </>
+  );
+}
+
+/* ---------------- what changed ---------------- */
+export function Changes({ projects }: { projects: Project[] }) {
+  const [since, setSince] = useState('');
+  const C = changes(projects, since || undefined);
+  const tot = C.reduce((s, c) => s + c.spent[1] - c.spent[0], 0);
+  const max = Math.max(1, ...C.map((c) => Math.abs(c.spent[1] - c.spent[0])));
+  return (
+    <section class="card">
+      <div class="card-h"><div><h2>What changed</h2><p>{since ? `Latest report vs the last one on or before ${date(since)}` : 'Latest report vs the previous one, per project'} · <b>{full(tot)}</b> new spending</p></div>
+        <label class="muted" style={{ marginLeft: 'auto', fontSize: '12.5px', display: 'flex', gap: '6px', alignItems: 'center' }}>Compare with
+          <input class="input" type="date" value={since} onInput={(e) => setSince((e.target as HTMLInputElement).value)} style={{ height: '30px' }} /></label>
+      </div>
+      <div class="card-b table-scroll">
+        <table class="mini chg-t">
+          <thead><tr><th>Project</th><th>Period</th><th class="r">Spent before</th><th class="r">Spent now</th><th>Change</th><th class="r">Exposure Δ</th><th class="r">Lines</th><th>Notes</th></tr></thead>
+          <tbody>{C.map((c) => { const d = c.spent[1] - c.spent[0]; return (
+            <tr class="click" onClick={() => go(`project/${c.project.id}`)}>
+              <td><b class="num">{c.project.code}</b> <span class="muted">{c.project.name}</span></td>
+              <td class="num" style={{ whiteSpace: 'nowrap' }}>{c.from ? date(c.from) : '—'} → {c.to ? date(c.to) : '—'}</td>
+              <td class="r num">{short(c.spent[0])}</td><td class="r num">{short(c.spent[1])}</td>
+              <td style={{ minWidth: '140px' }}><div class="delta-bar"><span style={{ width: `${Math.abs(d) / max * 100}%`, background: d < 0 ? 'var(--serious)' : 'var(--c1)' }} /><b class="num">{d >= 0 ? '+' : '−'}{short(Math.abs(d)).replace('−', '')}</b></div></td>
+              <td class="r num">{short(c.exposure[1] - c.exposure[0])}</td><td class="r num">{c.lines}</td><td class="muted">{c.note.join(', ')}</td>
+            </tr>); })}</tbody>
+        </table>
+        {!C.length && <p class="muted">No project has two reports to compare yet.</p>}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- history ---------------- */
+export function History({ project }: { project?: string }) {
+  const A = useStore((s) => s.ledger.audit ?? []).filter((e) => !project || e.project === project || e.message.includes(project));
+  const [q, setQ] = useState('');
+  const shown = A.filter((e) => !q || e.message.toLowerCase().includes(q.toLowerCase())).slice(0, 200);
+  const day = (s: string) => s.slice(0, 10);
+  return (
+    <section class="card">
+      <div class="card-h"><div><h2>Change history</h2><p>Every saved change, newest first · kept in this browser with the data</p></div>
+        <input class="input" placeholder="Filter…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} style={{ marginLeft: 'auto', width: '180px', height: '30px' }} /></div>
+      <ol class="hist">
+        {shown.map((e, i) => (
+          <li>
+            {(i === 0 || day(shown[i - 1].at) !== day(e.at)) && <div class="hist-d">{e.at ? date(day(e.at)) : 'Earlier'}</div>}
+            <div class="hist-i"><span class="num muted">{e.at ? new Date(e.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''}</span>{e.project && <b class="num">{e.project}</b>}<span>{e.message}</span></div>
+          </li>
+        ))}
+        {!shown.length && <li class="muted" style={{ padding: '12px 0' }}>No changes recorded yet.</li>}
+      </ol>
+    </section>
+  );
+}
+
+/* ---------------- project: status in words + forecast ---------------- */
+export function StatusWords({ p }: { p: Project }) {
+  const S = status(p, TODAY);
+  const [done, setDone] = useState(false);
+  const copy = () => { navigator.clipboard?.writeText(S.plain); setDone(true); setTimeout(() => setDone(false), 1500); };
+  return (
+    <section class={`card span-8 stw tone-${S.tone}`}>
+      <div class="stw-top">
+        <span class="stw-verdict">{S.verdict}</span>
+        <button class="btn ghost" style={{ marginLeft: 'auto', height: '28px' }} onClick={copy}>{done ? 'Copied ✓' : 'Copy as text'}</button>
+      </div>
+      <h3 class="stw-head">{S.headline}</h3>
+      <ul class="stw-list">
+        {S.points.map((x) => (
+          <li class={`t-${x.tone}`}>
+            <span class="stw-area">{x.area}</span>
+            <div><b>{x.head}</b><small>{x.text}</small></div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function ForecastCard({ p }: { p: Project }) {
+  const o = outcome(p, TODAY), m = money(p);
+  const use = Math.min(1.2, o.utilisation);
+  const tone = o.overrun > 1 ? 'critical' : o.utilisation < 0.7 ? 'serious' : o.utilisation < 0.85 ? 'warn' : 'good';
+  return (
+    <section class="card span-4">
+      <div class="card-h"><div><h2>End-of-project forecast</h2><p>{o.basis === 'no data' ? 'Needs at least one report' : o.basis === 'recent rate' ? 'Average since start, adjusted for recent months' : 'Average monthly spend since start'}</p></div></div>
+      <div class="card-b fc">
+        <div class="fc-big" style={{ color: `var(--${tone})` }}>{pct(o.utilisation)}<small>of budget used</small></div>
+        <div class="meter fc-m"><span style={{ width: `${Math.min(100, use / 1.2 * 100)}%`, background: `var(--${tone})` }} /><i class="tick" style={{ left: `calc(${100 / 1.2}% - 1px)` }} /></div>
+        <dl class="fc-dl">
+          <dt>Projected spend</dt><dd class="num">{full(o.projected)}</dd>
+          <dt>{o.overrun > 1 ? 'Over budget' : 'Likely unused'}</dt><dd class="num">{full(o.overrun > 1 ? o.overrun : o.unused)}</dd>
+          <dt>Current rate</dt><dd class="num">{full(o.rate)}/mo</dd>
+          <dt>Needed to use all</dt><dd class="num">{full(o.needRate)}/mo</dd>
+          <dt>Months left</dt><dd class="num">{o.monthsLeft.toFixed(1)}</dd>
+          <dt>Remaining budget</dt><dd class="num">{full(m.budget - m.spent)}</dd>
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- project: budget revision scenario ---------------- */
+export function Scenario({ p }: { p: Project }) {
+  const [d, setD] = useState<Record<string, number>>({});
+  const [limit, setLimit] = useState(Number((p as { flexPct?: number }).flexPct) || 25); // heading flexibility (25% unless the project sets its own)
+  const S = scenario(p, d, limit / 100);
+  if (!S.rows.length) return <div class="card empty-page"><div><h2>No budget lines yet</h2><p>Import a financial report to model a budget revision.</p></div></div>;
+  const balance = () => {
+    // Puts the net difference on the line with the largest uncommitted balance.
+    const best = [...S.rows].sort((a, b) => (b.revised - b.exposure) - (a.revised - a.exposure))[0];
+    if (best && !S.balanced) setD({ ...d, [best.code]: (d[best.code] ?? 0) - S.net });
+  };
+  return (
+    <section class="card">
+      <div class="card-h"><div><h2>Budget revision scenario</h2><p>Type increases or decreases per line — nothing is saved until you decide; the project data stays unchanged</p></div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label class="muted" style={{ fontSize: '12.5px' }}>Flag changes above <input class="input num" type="number" min={1} max={100} value={limit} onInput={(e) => setLimit(Number((e.target as HTMLInputElement).value) || 10)} style={{ width: '56px', height: '30px' }} />%</label>
+          <button class="btn" disabled={S.balanced} onClick={balance}>Balance</button>
+          <button class="btn ghost" disabled={!Object.keys(d).length} onClick={() => setD({})}>Reset</button>
+        </div>
+      </div>
+      <div class="scn-sum">
+        <div><span>Approved total</span><b class="num">{full(S.approved)}</b></div>
+        <div><span>Revised total</span><b class="num">{full(S.revised)}</b></div>
+        <div><span>Moved between lines</span><b class="num">{full(S.moved)}</b></div>
+        <div><span>Net change</span><b class="num" style={{ color: S.balanced ? 'var(--good)' : 'var(--serious)' }}>{S.balanced ? 'balanced' : (S.net > 0 ? '+' : '−') + full(Math.abs(S.net))}</b></div>
+        <div><span>Flags</span><b class="num" style={{ color: S.flags ? 'var(--serious)' : undefined }}>{S.flags}</b></div>
+      </div>
+      <div class="card-b table-scroll">
+        <table class="mini scn">
+          <thead><tr><th>Line</th><th>Description</th><th class="r">Approved</th><th class="r">Spent + committed</th><th class="r">Change</th><th class="r">Revised</th><th class="r">Δ %</th><th /></tr></thead>
+          <tbody>{S.rows.map((r) => (
+            <tr class={r.flag ? 'flag' : r.delta ? 'chg' : ''}>
+              <td class="num">{r.code}</td><td>{r.description}</td><td class="r num">{full(r.approved)}</td><td class="r num">{full(r.exposure)}</td>
+              <td class="r"><input class="input num scn-in" inputMode="decimal" aria-label={`Change for line ${r.code}`} value={r.delta ? String(Math.round(r.delta)) : ''} placeholder="0"
+                onChange={(e) => { const v = (e.target as HTMLInputElement).value.trim(); const x = v.startsWith('-') ? -(parseAmount(v.slice(1)) ?? 0) : parseAmount(v) ?? 0; const n = { ...d }; if (x) n[r.code] = x; else delete n[r.code]; setD(n); }} /></td>
+              <td class="r num"><b>{full(r.revised)}</b></td><td class="r num">{r.delta ? `${r.share > 0 ? '+' : ''}${(r.share * 100).toFixed(1)}%` : ''}</td>
+              <td>{r.flag && <span class="badge serious">{r.flag}</span>}</td>
+            </tr>))}</tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- project: budget headings vs approved baseline ---------------- */
+export function HeadingsCard({ p }: { p: Project }) {
+  const H = headings(p);
+  if (!H.rows.length) return null;
+  const T = { good: 'good', ok: 'good', warn: 'warning', breach: 'serious' } as const;
+  return (
+    <section class="card span-12">
+      <div class="card-h"><div><h2>Budget headings vs approved budget</h2><p>Transfers between headings up to {Math.round(H.flex * 100)}% need no amendment{p.approvedBudget ? ` · baseline: ${p.approvedBudget.source}` : ' · no approved budget on file, the latest report is used'}</p></div></div>
+      <div class="card-b table-scroll">
+        <table class="mini hd">
+          <thead><tr><th>Heading</th><th class="r">Approved baseline</th><th class="r">Current budget</th><th class="r">Change</th><th class="r">Spent + committed</th><th>Use of heading</th><th /></tr></thead>
+          <tbody>{H.rows.map((r) => (
+            <tr>
+              <td><b>{r.code}</b> {r.label}</td><td class="r num">{full(r.baseline)}</td><td class="r num">{full(r.approved)}</td>
+              <td class="r num" style={{ color: Math.abs(r.change) > H.flex ? 'var(--serious)' : undefined }}>{Math.abs(r.change) >= 0.0005 ? `${r.change > 0 ? '+' : ''}${(r.change * 100).toFixed(1)}%` : '—'}</td>
+              <td class="r num">{full(r.exposure)}</td>
+              <td style={{ minWidth: '160px' }}><div class="minibar"><span style={{ width: `${Math.min(100, r.baseline ? r.exposure / r.baseline * 100 : 0)}%`, background: r.overspend > 0 ? 'var(--serious)' : 'var(--c1)' }} /><i style={{ left: '100%' }} /></div></td>
+              <td><span class={`badge ${T[r.status]}`}>{r.status === 'ok' ? 'within' : r.status === 'warn' ? 'watch' : 'amendment'}</span></td>
+            </tr>))}</tbody>
+          <tfoot class="hd-f">
+            {([['Total direct costs', H.direct], ['Administrative costs (indirect)', H.admin], ...(H.contingency ? [['Contingency reserve', { baseline: H.contingency, approved: H.contingency, exposure: 0 }]] : []), ['Total budget', H.total]] as [string, { baseline: number; approved: number; exposure: number }][]).map(([k, v], i, a) => {
+              const ch = v.baseline ? (v.approved - v.baseline) / v.baseline : 0;
+              return <tr class={i === a.length - 1 ? 'hd-total' : ''}><td>{k}</td><td class="r num">{full(v.baseline)}</td><td class="r num">{full(v.approved)}</td><td class="r num">{Math.abs(ch) >= 0.0005 ? `${ch > 0 ? '+' : ''}${(ch * 100).toFixed(1)}%` : '—'}</td><td class="r num">{full(v.exposure)}</td>
+                <td><div class="minibar"><span style={{ width: `${Math.min(100, v.baseline ? v.exposure / v.baseline * 100 : 0)}%`, background: 'var(--c1)' }} /></div></td><td class="muted num">{v.baseline ? `${Math.round(v.exposure / v.baseline * 100)}%` : ''}</td></tr>;
+            })}
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- project: set-up completeness ---------------- */
+export function ReadinessCard({ p }: { p: Project }) {
+  const R = readiness(p);
+  return (
+    <section class="card span-12 rd">
+      <div class="card-h"><div><h2>Project file · {Math.round(R.score * 100)}% complete</h2><p>What has been read from documents and reports — open an item to add what is missing</p></div>
+        <button class="btn primary" style={{ marginLeft: 'auto' }} onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div>
+      <ol class="rd-list">{R.items.map((i) => (
+        <li class={i.done ? 'ok' : ''}><span class="rd-dot" aria-hidden="true">{i.done ? '✓' : ''}</span><div><b>{i.label}</b><small>{i.hint}</small></div></li>
+      ))}</ol>
+    </section>
+  );
+}
+
+/* ---------------- portfolio: compliance & results ---------------- */
+export function Compliance({ projects }: { projects: Project[] }) {
+  const rows = projects.map((p) => {
+    const R = readiness(p), H = headings(p), I = p.indicators ?? [];
+    const P = I.map(progress).filter((v): v is number => v != null);
+    return { p, ready: R.score, missing: R.items.filter((i) => !i.done).map((i) => i.label), breach: H.rows.filter((r) => r.status === 'breach').length, watch: H.rows.filter((r) => r.status === 'warn').length, ok: H.rows.length > 0, ind: I.length, prog: P.length ? P.reduce((a, b) => a + Math.min(1, b), 0) / P.length : null };
+  }).sort((a, b) => a.ready - b.ready);
+  const avg = rows.length ? rows.reduce((s, r) => s + r.ready, 0) / rows.length : 0;
+  return (
+    <>
+      <section class="hero" aria-label="Compliance summary">
+        <div class="kpi lead"><span class="label">Project files complete</span><span class="value">{Math.round(avg * 100)}%</span><span class="ctx">average over {rows.length} projects</span></div>
+        <div class="kpi"><span class="label">Headings beyond flexibility</span><span class="value" style={{ color: rows.some((r) => r.breach) ? 'var(--serious)' : undefined }}>{rows.reduce((s, r) => s + r.breach, 0)}</span><span class="ctx">need a budget amendment</span></div>
+        <div class="kpi"><span class="label">Indicators tracked</span><span class="value">{rows.reduce((s, r) => s + r.ind, 0)}</span><span class="ctx">{rows.filter((r) => r.prog != null).length} projects with measured progress</span></div>
+        <div class="kpi"><span class="label">Set-up incomplete</span><span class="value">{rows.filter((r) => r.p.datesTbc).length}</span><span class="ctx">dates and budget to confirm</span></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><div><h2>Compliance & results by project</h2><p>Least complete first · click a project to open it</p></div></div>
+        <div class="card-b table-scroll">
+          <table class="mini chg-t">
+            <thead><tr><th>Project</th><th>Project file</th><th>Missing</th><th class="r">Headings</th><th>Results</th></tr></thead>
+            <tbody>{rows.map((r) => (
+              <tr class="click" onClick={() => go(`project/${r.p.id}`)}>
+                <td><b class="num">{r.p.code}</b> <span class="muted">{r.p.name}</span></td>
+                <td style={{ minWidth: '150px' }}><div class="delta-bar"><span style={{ width: `${r.ready * 100}%`, background: r.ready >= 0.8 ? 'var(--good)' : r.ready >= 0.5 ? 'var(--c1)' : 'var(--warn)' }} /><b class="num">{Math.round(r.ready * 100)}%</b></div></td>
+                <td class="muted" style={{ fontSize: '12px' }}>{r.missing.slice(0, 4).join(', ')}{r.missing.length > 4 ? ` +${r.missing.length - 4}` : ''}</td>
+                <td class="r">{r.p.datesTbc || !r.ok ? <span class="muted">—</span> : r.breach ? <span class="badge serious">{r.breach} amendment</span> : r.watch ? <span class="badge warning">{r.watch} watch</span> : <span class="badge good">within</span>}</td>
+                <td>{r.prog != null ? <div class="delta-bar"><span style={{ width: `${r.prog * 100}px`, background: 'var(--c1)' }} /><b class="num">{Math.round(r.prog * 100)}%</b></div> : <span class="muted">{r.ind ? `${r.ind} indicators, none measured` : 'no logframe'}</span>}</td>
+              </tr>))}</tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
