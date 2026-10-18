@@ -7,7 +7,7 @@ import type { Plugin } from 'vite';
  * decompressed and run the first time it is needed — the browser does not parse it on opening.
  */
 const LOADER = `const __lzp={},__lzr={};window.__lzDone=(n,m)=>{document.querySelector('script[data-lz="'+n+'"]')?.remove();__lzr[n](m)};
-function __lz(n){return __lzp[n]??=new Promise(async(res,rej)=>{try{__lzr[n]=res;const b=Uint8Array.from(atob(document.getElementById("lz:"+n).textContent.trim()),c=>c.charCodeAt(0));const t=await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text();const s=document.createElement("script");s.type="module";s.dataset.lz=n;s.textContent=t;s.onerror=rej;document.head.appendChild(s)}catch(e){rej(e)}})}
+function __lz(n){return __lzp[n]??=new Promise(async(res,rej)=>{try{__lzr[n]=res;const a=atob(document.getElementById("lz:"+n).textContent.trim()),b=new Uint8Array(a.length);for(let i=0;i<a.length;i++)b[i]=a.charCodeAt(i);const t=await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text();const s=document.createElement("script");s.type="module";s.dataset.lz=n;s.textContent=t;s.onerror=rej;document.head.appendChild(s)}catch(e){rej(e)}})}
 `;
 
 export function lazySingleFile(): Plugin {

@@ -1,4 +1,4 @@
-import { elapsed, HEADINGS, lineExposure, lines, n, parseDate } from './calc';
+import { elapsed, HEADINGS, perProject, lineExposure, lines, n, parseDate } from './calc';
 import { headings } from './insights';
 import type { Project } from './types';
 import { ahead, type Basis } from './forecast';
@@ -22,7 +22,8 @@ export interface HeadWarn {
 }
 const MONTH = 30.44 * 864e5;
 
-export function earlyWarnings(p: Project, today: Date): HeadWarn[] {
+export const earlyWarnings = perProject(earlyWarningsOf);
+function earlyWarningsOf(p: Project, today: Date): HeadWarn[] {
   if (!p.approvedBudget?.lines?.length || p.datesTbc) return [];
   const H = headings(p), flex = H.flex, el = elapsed(p, today), L = lines(p);
   const t0 = parseDate(p.start).getTime(), t1 = parseDate(p.end).getTime(), now = today.getTime();
