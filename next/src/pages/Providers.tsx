@@ -63,7 +63,7 @@ export function Providers() {
   }).sort(sortBy === 'year' ? (a, b) => b.last.localeCompare(a.last) : sortBy === 'name' ? (a, b) => a.name.localeCompare(b.name) : (a, b) => b.sc - a.sc);
   const byYear = years.map((y) => ({ y, v: active.map((k) => sum(every.filter((x) => x.kind === k.k && x.date.startsWith(y)))) }));
   const over = groups.filter((g) => limit && g.max > limit);
-  const hand = every.filter((x) => set[x.key]).length, none = every.filter((x) => inYear(x) && !x.kind).length;
+  const handN = every.filter((x) => set[x.key]).length, none = every.filter((x) => inYear(x) && !x.kind).length;
   const off = KINDS.filter((k) => k.optional && !on.has(k.k)).map((k) => ({ ...k, L: every.filter((x) => x.kind === k.k && inYear(x)) }));
   const offTot = off.reduce((a, k) => a + sum(k.L), 0);
   const xlsx = () => download(`service-providers-${TODAY.toISOString().slice(0, 10)}.xlsx`, [
@@ -108,6 +108,9 @@ export function Providers() {
       <svg width={TY.length * 12} height="22" aria-hidden="true">{v.map((x, i) => <rect x={i * 12 + 1} y={22 - Math.max(x ? 2 : 0, x / max * 22)} width="9" height={Math.max(x ? 2 : 0, x / max * 22)} rx="1.5" class={i === v.length - 1 ? 'now' : ''} />)}</svg>
       {ch != null ? <b class={ch > 0.1 ? 'up' : ch < -0.1 ? 'down' : ''}>{ch > 0 ? '▲' : ch < 0 ? '▼' : '='} {Math.abs(Math.round(ch * 100))}%</b> : nz.length === 1 && v[v.length - 1] > 0 && TY.length > 1 ? <b class="new">new</b> : <span class="muted">—</span>}</span>;
   };
+  // One-page summary: printed alone (the rest of the screen is hidden while it prints).
+  const brief = () => { document.body.classList.add('sp-brief'); const off = () => { document.body.classList.remove('sp-brief'); removeEventListener('afterprint', off); }; addEventListener('afterprint', off); print(); };
+  const hand = every.filter((x) => set[x.key] || set[`sup|${supKey(x.supplier)}`]);
   const Kinds = ({ L }: { L: Kind[] }) => <>{L.map((k) => <span class="sp-k" style={{ borderColor: kl(k).color, color: kl(k).color }}>{kl(k).label}</span>)}</>;
   return (
     <>
@@ -131,7 +134,7 @@ export function Providers() {
       <div class="sp-bar">
         <div class="cm-chips"><span class="muted">Year</span><button class={`chip${!year ? ' on' : ''}`} onClick={() => setYear('')}>All</button>{years.map((y) => <button class={`chip${year === y ? ' on' : ''}`} aria-pressed={year === y} onClick={() => setYear(year === y ? '' : y)}>{y}</button>)}</div>
         <div class="cm-chips"><span class="muted">Add</span>{KINDS.filter((k) => k.optional).map((k) => { const v = sum(every.filter((x) => x.kind === k.k && inYear(x))); return <button class={`chip${on.has(k.k) ? ' on' : ''}`} aria-pressed={on.has(k.k)} onClick={() => toggle(k.k)} title={on.has(k.k) ? 'Counted — click to leave out' : 'Not counted — click to add'}>{on.has(k.k) ? '✓ ' : '+ '}{k.label} <small class="muted">{short(v)}</small></button>; })}</div>
-        <button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button>
+        <button class="btn" style={{ marginLeft: 'auto' }} onClick={brief} title="Country and kind totals, top 10 providers — one A4 page (Save as PDF)">⎙ One-page summary</button><button class="btn" onClick={xlsx}>⤓ Excel</button>
       </div>
       <div class="grid g-12" style={{ marginTop: '12px', gap: '12px' }}>
         <section class="card span-12">
@@ -147,7 +150,7 @@ export function Providers() {
         </section>
         <section class="card span-12">
           <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Service providers{kind ? ` — ${kl(kind).label}` : ''}{year ? ` — ${year}` : ''}{ctry ? ` — ${cname(ctry)}` : ''}{proj ? ` — ${lab(P.find((p) => p.id === proj)!)}` : ''}</h2>
-            <p>{groups.length} providers · {rows.length} POs · {full(sum(rows.filter((x) => x.kind)))} · click a provider to see its POs{hand ? ` · ${hand} POs set by hand` : ''}</p></div>
+            <p>{groups.length} providers · {rows.length} POs · {full(sum(rows.filter((x) => x.kind)))} · click a provider to see its POs{handN ? ` · ${handN} POs set by hand` : ''}</p></div>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <select class="sp-sel" value={ctry} onChange={(e) => { setCtry((e.target as HTMLSelectElement).value); setProj(''); }} title="Country"><option value="">All countries</option>{[...new Set(everyAll.filter((x) => x.kind && on.has(x.kind)).map((x) => x.p.country))].map((c) => <option value={c}>{cname(c)}</option>)}</select>
               <select class="sp-sel" value={proj} onChange={(e) => { setProj((e.target as HTMLSelectElement).value); setKind(''); }} title="Project"><option value="">All projects</option>{[...new Set(every.filter((x) => x.kind && on.has(x.kind)).map((x) => x.p))].sort((a, b) => lab(a).localeCompare(lab(b))).map((p) => <option value={p.id}>{lab(p)} · {cname(p.country)}</option>)}</select>
@@ -165,6 +168,13 @@ export function Providers() {
               {groups.length > 0 && <tfoot><tr><td /><td colSpan={3}><b>Total</b></td><td class="r num">{rows.length}</td><td /><td /><td class="r num">{full(groups.reduce((a, g) => a + g.spent, 0))}</td><td class="r num"><b>{full(groups.reduce((a, g) => a + g.sc, 0))}</b></td></tr></tfoot>}</table>
             {groups.length > 300 && <p class="muted">First 300 providers shown — the Excel file has them all.</p>}</div>
         </section>
+        {hand.length > 0 && <details class="card span-12 sp-fold"><summary><b>Set by hand</b> <span class="muted">{hand.length} POs whose kind you chose · {full(sum(hand))} · check them after loading new files</span></summary>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Service provider</th><th>Automatic</th><th>Chosen</th><th class="r">Spent + committed</th><th /></tr></thead>
+            <tbody>{hand.map((x) => { const own = set[x.key], sup = set[`sup|${supKey(x.supplier)}`], u = own ?? sup; return <tr>
+              <td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td>{x.supplier}</td>
+              <td class="muted">{x.auto ? kl(x.auto).label : 'not a service'}</td><td><b>{u === 'none' ? 'Not a service provider' : kl(u as Kind)?.label ?? u}</b>{!own && <small class="muted"> (whole provider)</small>}</td>
+              <td class="r num">{full(x.value)}</td><td><button class="btn ghost" onClick={() => setPoKind(own ? x.key : `sup|${supKey(x.supplier)}`, '')}>Back to automatic</button></td></tr>; })}</tbody></table></div>
+        </details>}
         {years.length > 0 && <details class="card span-12 sp-fold"><summary><b>By year</b> <span class="muted">{byYear.map((r) => `${r.y} ${short(r.v.reduce((a, b) => a + b, 0))}`).join(' · ')}</span></summary>
           <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Year</th>{active.map((k) => <th class="r"><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
             <tbody>{byYear.map((r) => <tr class={`click${year === r.y ? ' sel' : ''}`} onClick={() => setYear(year === r.y ? '' : r.y)}><td><b>{r.y}</b></td>{r.v.map((v) => <td class="r num">{v ? full(v) : <span class="muted">—</span>}</td>)}<td class="r num"><b>{full(r.v.reduce((a, b) => a + b, 0))}</b></td></tr>)}</tbody></table></div>
@@ -176,6 +186,19 @@ export function Providers() {
               <tbody>{k.L.slice(0, 100).map((x) => <tr><td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td>{x.supplier}</td><td class="num">{x.date ? date(x.date) : '—'}</td><td class="r num">{full(x.value)}</td></tr>)}</tbody></table></div></div>)}</div>
         </details>}
       </div>
+      {(() => { const base = ALL, T = sum(base), top = suppliers(base).slice(0, 10), C = [...new Set(base.map((x) => x.p.country))].map((c) => ({ c, t: sum(base.filter((x) => x.p.country === c)) })).sort((a, b) => b.t - a.t);
+        return <section class="sp-brief-page">
+          <h1>Service providers{year ? ` — ${year}` : ''}{ctry ? ` — ${cname(ctry)}` : ''}</h1>
+          <p class="sp-bm">Spent + committed of purchase orders · {base.length} POs · {projects.length} projects · {suppliers(base).length} providers · as of {date(TODAY.toISOString().slice(0, 10))}</p>
+          <div class="sp-bk"><div><span>Total</span><b>{full(T)}</b></div>{C.map((x) => <div><span>{cname(x.c)}</span><b>{full(x.t)}</b><small>{T ? Math.round(x.t / T * 100) : 0}%</small></div>)}</div>
+          <h2>By kind</h2>
+          <table><thead><tr><th>Kind</th><th class="r">POs</th><th class="r">Providers</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
+            <tbody>{cols.map((k) => { const L = base.filter((x) => x.kind === k.k), v = sum(L); return <tr><td>{k.label}</td><td class="r">{L.length}</td><td class="r">{new Set(L.map((x) => supKey(x.supplier))).size}</td><td class="r">{full(v)}</td><td class="r">{T ? Math.round(v / T * 100) : 0}%</td></tr>; })}</tbody>
+            <tfoot><tr><td>Total</td><td class="r">{base.length}</td><td class="r">{suppliers(base).length}</td><td class="r">{full(T)}</td><td class="r">100%</td></tr></tfoot></table>
+          <h2>Ten largest providers</h2>
+          <table><thead><tr><th>#</th><th>Service provider</th><th>Kind</th><th>Projects</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
+            <tbody>{top.map((x, i) => <tr><td>{i + 1}</td><td>{x.supplier}</td><td>{kl(x.kind).label}</td><td>{[...x.projects.keys()].map((id) => lab(P.find((q) => q.id === id)!)).join(', ')}</td><td class="r">{x.pos}</td><td class="r">{full(x.sc)}</td><td class="r">{T ? Math.round(x.sc / T * 100) : 0}%</td></tr>)}</tbody></table>
+        </section>; })()}
     </>
   );
 }
