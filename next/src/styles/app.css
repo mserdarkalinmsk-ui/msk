@@ -475,3 +475,34 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 :root[data-theme="dark"] .hero .kpi.lead { background: linear-gradient(135deg, #1a3150 0%, #23497a 100%); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero .kpi.lead { background: linear-gradient(135deg, #1a3150 0%, #23497a 100%); } }
 @media print { .hero .kpi.lead { background: none !important; color: inherit; box-shadow: none; } .hero .kpi.lead .label, .hero .kpi.lead .ctx { color: inherit; } }
+
+/* ---- What can be clicked looks clickable, everywhere ---- */
+.click { cursor: pointer; }
+tr.click > td { transition: background .12s; }
+tr.click:hover > td { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+/* rows that open something show a chevron at the end on hover */
+tr.click > td:last-child { position: relative; padding-right: 22px; }
+tr.click > td:last-child::after { content: '›'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 16px; font-weight: 700; color: var(--accent); opacity: .25; transition: opacity .12s, right .12s; }
+tr.click:hover > td:last-child::after { opacity: 1; right: 3px; }
+/* single cells, headers and labels that filter or open */
+td.click, th.click, span.click, div.click, b.click { text-decoration: underline dotted color-mix(in srgb, var(--accent) 55%, transparent); text-underline-offset: 3px; }
+td.click:hover, th.click:hover, span.click:hover, div.click:hover, b.click:hover { color: var(--accent); text-decoration-style: solid; }
+tr.click td.click { text-decoration: none; }
+/* text buttons inside the page read as actions */
+.page .btn.ghost { color: var(--accent); font-weight: 600; }
+.page .btn.ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.page .btn.ghost.danger { color: var(--critical, #e5484d); }
+.page a:not(.btn):not(.chip) { color: var(--accent); text-decoration: none; font-weight: 550; }
+.page a:not(.btn):not(.chip):hover { text-decoration: underline; }
+/* keyboard users see where they are */
+.click:focus-visible, .chip:focus-visible, .btn:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.on:hover, .chip[aria-pressed="true"]:hover { color: inherit; }
+@media print { tr.click > td:last-child::after { display: none; } td.click, th.click, span.click, div.click, b.click { text-decoration: none; } }
+/* lists that open a project: hover and a chevron, like table rows */
+.att li, .dg-s li { position: relative; transition: background .12s; }
+.att li:hover, .dg-s li:hover { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.att li::after, .dg-s li::after { content: '›'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 16px; font-weight: 700; color: var(--accent); opacity: 0; transition: opacity .12s; }
+.att li:hover::after, .dg-s li:hover::after { opacity: 1; }
+.att li { padding-right: 26px; }
+.wc:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
