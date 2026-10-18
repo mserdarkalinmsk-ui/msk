@@ -1,6 +1,8 @@
 import { useState } from 'preact/hooks';
 import { updateProject, useStore } from '../data/store';
-import { autofillStaff, balanceOn, computePlan, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
+import { autofillStaff, balanceOn, computePlan, resolvedLines, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
+import { costFactor, CPI_LAST, recentCpi, salaryPath, type InflationSettings } from '../domain/salaryProjection';
+import { forecastPeriod } from '../domain/forecastTemplate';
 import { defaultOptions, FORECAST_KINDS, forecastFileName, forecastSheets, type ForecastKind, type ForecastMode, type ForecastOptions } from '../domain/forecastTemplate';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -30,7 +32,7 @@ export function ForecastEditor({ p }: { p: Project }) {
   const twelve = d.opt.kind === 'twelve';
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
   const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (R.decision === 'addendum' ? 'addendum' : 'notification')) : undefined };
-  const xlsx = (mode: ForecastMode) => download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, d.lines, mode));
+  const xlsx = (mode: ForecastMode) => download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, d), mode));
   const tone = R.decision === 'addendum' ? 'critical' : R.decision === 'notification' ? 'warn' : 'good';
   return (
     <div class="fe">
@@ -64,6 +66,8 @@ export function ForecastEditor({ p }: { p: Project }) {
         </div>
         {d.notes?.length ? <details class="fe-notes"><summary>How the staff lines were filled ({d.notes.length})</summary><ul>{d.notes.map((x) => <li>{x}</li>)}</ul></details> : null}
       </section>
+
+      <Inflation p={p} d={d} save={save} />
 
       {!twelve && <section class={`fe-decision ${tone}`} role="status">
         <div><b>{R.decision === 'addendum' ? 'Addendum needed' : R.decision === 'notification' ? 'Notification is enough' : R.direct.planned ? 'No change to the budget' : 'Fill in the planned expenditure'}</b>
@@ -102,7 +106,7 @@ export function ForecastEditor({ p }: { p: Project }) {
                       <td class="r num">{l.sc ? num(l.sc) : ''}</td>
                       {R.blocks.map((b) => { const c = d.lines[l.code]?.[b.id], cls = l.staff || l.cb ? 'fe-in g' : 'fe-in y'; return <>
                         <td><input class={cls} inputMode="decimal" value={c?.u ?? ''} onChange={(e) => setCell(l.code, b.id, 'u', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} units`} /></td>
-                        <td><input class={cls} inputMode="decimal" value={c?.r ?? ''} placeholder={l.defRate ? String(Math.round(l.defRate)) : ''} onChange={(e) => setCell(l.code, b.id, 'r', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} rate`} /></td>
+                        <td><input class={cls} inputMode="decimal" value={c?.r ?? ''} placeholder={(l.defRates?.[b.id] ?? l.defRate) ? String(Math.round((l.defRates?.[b.id] ?? l.defRate)!)) : ''} onChange={(e) => setCell(l.code, b.id, 'r', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} rate`} /></td>
                         <td class="r num">{l.cells[b.id]?.cost ? num(l.cells[b.id]!.cost) : ''}</td></>; })}
                       {!twelve && <><td class="r num">{l.rounded ? num(l.rounded) : ''}</td><td class={`r num ${l.variation != null && l.variation > 0.25 ? 'warn' : ''}`}>{pc(l.variation)}</td></>}
                     </tr>))}
@@ -114,5 +118,36 @@ export function ForecastEditor({ p }: { p: Project }) {
       </section>
       <p class="muted" style={{ fontSize: '12px' }}>An empty rate uses the grey one: staff at the latest cost plus the guideline margin, 4.2 / 4.4 at the latest monthly rate, other lines at the budget rate. Saved with the project; the Excel carries what is typed here, and the 25% check is made on the sub-totals against the amounts originally agreed (EU–CoE rules).</p>
     </div>
+  );
+}
+
+/** Local salary projection: the Türkiye raise policy on known and assumed CPI, and the EUR/TRY assumption. */
+function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: ForecastDraft) => void }) {
+  const s: InflationSettings = d.infl ?? { on: false };
+  const set = (x: Partial<InflationSettings>) => save({ ...d, infl: { ...s, ...x } });
+  const per = forecastPeriod(p, TODAY, d.opt), end = (d.opt.extendTo && d.opt.extendTo > p.end ? d.opt.extendTo : p.end).slice(0, 7);
+  const path = salaryPath(end, s), ev = path.events.filter((e) => e.month > per.asAt.slice(0, 7));
+  const blocks = computePlan(p, TODAY, d).blocks;
+  const numIn = (k: keyof InflationSettings, ph: string, w = 64) => <input type="number" step="0.01" style={{ width: `${w}px` }} value={(s[k] as number | undefined) ?? ''} placeholder={ph} onChange={(e) => set({ [k]: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) })} />;
+  return (
+    <section class={`card fe-inf${s.on ? ' on' : ''}`}>
+      <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div><h2>Local salary projection</h2><p>Raise policy: CPI compounded since the last raise above {s.threshold ?? 7}% → {s.raise ?? 7}% raise from the next month (the cumulative rate after a single-month spike) · June triggers and the gap of the financial year go to the January catch-up</p></div>
+        <label class="fe-all" style={{ marginLeft: 'auto' }}><input type="checkbox" checked={s.on} onChange={() => set({ on: !s.on })} /> Apply to local staff rates (1.1.1.x)</label>
+      </div>
+      {s.on && <div class="card-b fe-inf-b">
+        <div class="fe-inf-in">
+          <label>Monthly CPI after {CPI_LAST} {numIn('cpi', String(recentCpi(6, s.extra)))} %</label>
+          <label>EUR/TRY change per month {numIn('fx', '0')} %</label>
+          <label>Threshold {numIn('threshold', '7', 52)} %</label>
+          <label>Raise {numIn('raise', '7', 52)} %</label>
+        </div>
+        <div class="fe-inf-g">
+          <div><b>Raises expected</b>{ev.length ? <ul>{ev.map((e) => <li class={e.projected ? 'proj' : ''}>{e.month} · {e.kind === 'catch-up' ? 'January catch-up' : e.kind === 'spike' ? 'raise after a spike' : 'raise'} <b>+{e.pct.toFixed(2)}%</b>{e.projected ? ' (projected)' : ''}</li>)}</ul> : <p class="muted">None up to the end date.</p>}</div>
+          <div><b>Effect on the monthly cost in euros</b><ul>{blocks.map((b) => { const f = costFactor(per.asAt, b.from, b.to, s); return <li>{b.label}: <b>{f >= 1 ? '+' : ''}{((f - 1) * 100).toFixed(1)}%</b> <small class="muted">({b.from} → {b.to})</small></li>; })}</ul>
+            <p class="muted" style={{ fontSize: '12px' }}>Against the average cost per unit of the latest report; leave the EUR/TRY change at 0 when salaries are paid in euros. Known CPI: TurkStat to {CPI_LAST}; the assumption is the average of the last six months unless typed.</p></div>
+        </div>
+      </div>}
+    </section>
   );
 }
