@@ -1,6 +1,7 @@
 import { elapsed, HEADINGS, lineExposure, lines, n, parseDate } from './calc';
 import { headings } from './insights';
 import type { Project } from './types';
+import { ahead, type Basis } from './forecast';
 
 /**
  * Early warning for budget changes (EU–CoE): for each heading, the spending expected by the end date at the
@@ -17,7 +18,7 @@ export const STAGE: Record<Stage, { label: string; tone: string; order: number }
 };
 export interface HeadWarn {
   p: Project; code: string; label: string; baseline: number; current: number; exposure: number; projected: number;
-  need: number; changeIfCovered: number; flex: number; stage: Stage; by: string | null; from?: { code: string; label: string; spare: number }; why: string; lines: string[];
+  need: number; changeIfCovered: number; flex: number; stage: Stage; basis: Basis; by: string | null; from?: { code: string; label: string; spare: number }; why: string; lines: string[];
 }
 const MONTH = 30.44 * 864e5;
 
@@ -25,15 +26,16 @@ export function earlyWarnings(p: Project, today: Date): HeadWarn[] {
   if (!p.approvedBudget?.lines?.length || p.datesTbc) return [];
   const H = headings(p), flex = H.flex, el = elapsed(p, today), L = lines(p);
   const t0 = parseDate(p.start).getTime(), t1 = parseDate(p.end).getTime(), now = today.getTime();
-  const monthsLeft = Math.max(0, (t1 - now) / MONTH), monthsGone = Math.max(1, (now - t0) / MONTH);
+  const monthsGone = Math.max(1, (now - t0) / MONTH); void t1;
   const actual = (c: string) => L.filter((l) => l.code.split('.')[0] === c).reduce((a, l) => a + n(l.actual), 0);
   const rows = H.rows.map((h) => {
     const a = actual(h.code);
-    // At the end date: what is committed today plus the heading's average monthly spending for the months left.
-    const projected = el < 0.1 ? h.exposure : Math.max(h.exposure, h.exposure + (a / monthsGone) * monthsLeft);
-    return { h, a, projected, spare: Math.max(0, h.approved - projected) };
+    // At the end date: spent + committed today, then the report's plan for the heading and the heading's pace after it.
+    const f = ahead(p, today, el < 0.1 ? 0 : a / monthsGone, (l) => l.code.split('.')[0] === h.code);
+    const projected = h.exposure + f.add;
+    return { h, a, projected, basis: f.basis, spare: Math.max(0, h.approved - projected) };
   });
-  return rows.map(({ h, a, projected }) => {
+  return rows.map(({ h, a, projected, basis }) => {
     const need = projected - h.approved, after = h.approved + Math.max(0, need);
     const changeIfCovered = h.baseline ? (after - h.baseline) / h.baseline : 0;
     const already = h.baseline ? Math.abs(h.approved - h.baseline) / h.baseline : 0;
@@ -48,7 +50,7 @@ export function earlyWarnings(p: Project, today: Date): HeadWarn[] {
     else if (already > flex * 0.7 || h.approved && h.exposure / h.approved > 0.9 || over.length) { stage = 'watch'; why = already > flex * 0.7 ? `Already ${Math.round(already * 100)}% from the agreement — little room left for further transfers.` : over.length ? `Line${over.length > 1 ? 's' : ''} ${over.join(', ')} above budget — a transfer within the heading is enough.` : 'Over 90% used.'; }
     // Where the money could come from: the heading with the largest spare amount still inside its own flexibility.
     const src = rows.filter((r) => r.h.code !== h.code).map((r) => ({ code: r.h.code, label: HEADINGS[r.h.code] ?? r.h.code, spare: Math.min(r.spare, Math.max(0, r.h.approved - r.h.baseline * (1 - flex))) })).sort((x, y) => y.spare - x.spare)[0];
-    return { p, code: h.code, label: h.label, baseline: h.baseline, current: h.approved, exposure: h.exposure, projected, need: Math.max(0, need), changeIfCovered, flex, stage, by, from: need > 1 && src?.spare > 0 ? src : undefined, why, lines: over };
+    return { p, code: h.code, label: h.label, baseline: h.baseline, current: h.approved, exposure: h.exposure, projected, need: Math.max(0, need), changeIfCovered, flex, stage, basis, by, from: need > 1 && src?.spare > 0 ? src : undefined, why, lines: over };
   });
 }
 
