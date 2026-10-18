@@ -243,8 +243,8 @@ export function Compare() {
         <Gauge value={tp} label="Spent vs planned" sub={`${n0(T.s)} of ${n0(T.pl)} planned`} />
         <Gauge value={tsc} label="S&C vs planned" sub="staff commitments excluded" />
         <Gauge value={T.pl ? (T.sc - T.rk) / T.pl : 0} label="Adjusted S&C vs planned" sub={`after ${riskPct}% commitment risk`} />
-        <Gauge value={T.s ? T.hs / T.s : 0} max={1} label="Staff ratio (spent)" bands={[[0.35, '#30a46c'], [0.5, '#f5a524'], [1, '#e5484d']]} />
-        <Gauge value={rows.length ? rows.reduce((a, r) => a + r.ws.score, 0) / rows.length / 100 : 0} max={1} fmt={(v) => String(Math.round(v * 100))} label="Average attention score" sub={`${rows.filter((r) => r.ws.level === 'high').length} high · ${rows.filter((r) => r.ws.level === 'medium').length} medium`} bands={[[0.25, '#30a46c'], [0.5, '#f5a524'], [1, '#e5484d']]} />
+        <Gauge value={T.s ? T.hs / T.s : 0} max={1} label="Staff ratio (spent)" bands={[[0.35, 'var(--good)'], [0.5, 'var(--c4)'], [1, 'var(--critical)']]} />
+        <Gauge value={rows.length ? rows.reduce((a, r) => a + r.ws.score, 0) / rows.length / 100 : 0} max={1} fmt={(v) => String(Math.round(v * 100))} label="Average attention score" sub={`${rows.filter((r) => r.ws.level === 'high').length} high · ${rows.filter((r) => r.ws.level === 'medium').length} medium`} bands={[[0.25, 'var(--good)'], [0.5, 'var(--c4)'], [1, 'var(--critical)']]} />
       </div>
       <Simulator rows={rows.map((r) => ({ id: r.p.id, label: `${r.p.bh ? `BH ${r.p.bh}` : r.p.code} · ${r.p.name}`, p: r.p, spent: r.m.spent, committed: r.committed, budget: r.m.budget, rate: r.cu.rate }))} riskPct={riskPct} />
       <header class="em-h">
@@ -374,7 +374,7 @@ export function Simulator({ rows, riskPct }: { rows: SimRow[]; riskPct: number }
       <div class="gauges">
         <Gauge value={perf} label={`Spent vs planned in ${months} months`} sub={`${n0(spentThen)} of ${n0(plannedThen)} planned`} />
         <Gauge value={plannedThen ? Math.min(2, (spentThen + committedSafe) / plannedThen) : 0} label="With commitments (after risk)" sub={`${riskPct}% of open commitments at risk`} />
-        <Gauge value={use} max={1.2} label="Budget used at end at this pace" bands={[[0.85, '#e5484d'], [0.95, '#f5a524'], [1.02, '#30a46c'], [1.2, '#e5484d']]} sub={use < 1 ? `${n0(budget - endSpend)} would stay unused` : `${n0(endSpend - budget)} over budget`} />
+        <Gauge value={use} max={1.2} label="Budget used at end at this pace" bands={[[0.85, 'var(--critical)'], [0.95, 'var(--c4)'], [1.02, 'var(--good)'], [1.2, 'var(--critical)']]} sub={use < 1 ? `${n0(budget - endSpend)} would stay unused` : `${n0(endSpend - budget)} over budget`} />
       </div>
       <p class="em-note">Needed to use the full budget by the end dates: <b>{n0(needed)}</b> per month ({cur ? `${(needed / cur).toFixed(1)}×` : '—'} the current pace). The current pace is each project's recent monthly spending; the scenario shares the chosen amount between the selected projects in proportion to what each still needs per month.</p>
     </section>

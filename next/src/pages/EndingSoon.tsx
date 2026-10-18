@@ -7,7 +7,7 @@ import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
-const TONE = { bad: '#e5484d', warn: '#c27c0e', ok: '#30a46c' };
+const TONE = { bad: 'var(--critical)', warn: 'var(--warn)', ok: 'var(--good)' };
 
 /** Projects ending soon: the monthly spending needed to use the budget by the end date against the current pace. */
 export function EndingSoon() {

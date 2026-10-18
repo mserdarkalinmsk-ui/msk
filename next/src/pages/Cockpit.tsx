@@ -34,7 +34,7 @@ export function Cockpit({ p }: { p: Project }) {
       <div class="gauges ck-g">
         <Gauge value={el ? used / el : 0} label="Spent vs planned" sub={`${Math.round(used * 100)}% spent · ${Math.round(el * 100)}% time`} />
         <Gauge value={el && m.budget ? m.exposure / (m.budget * el) : 0} label="S&C vs planned" sub="spent + committed" />
-        <Gauge value={o.utilisation} max={1.2} label="Forecast use at end" bands={[[0.85, '#e5484d'], [0.95, '#f5a524'], [1.02, '#30a46c'], [1.2, '#e5484d']]} sub={o.basis === 'no data' ? 'needs reports' : `${short(o.projected)} projected`} />
+        <Gauge value={o.utilisation} max={1.2} label="Forecast use at end" bands={[[0.85, 'var(--critical)'], [0.95, 'var(--c4)'], [1.02, 'var(--good)'], [1.2, 'var(--critical)']]} sub={o.basis === 'no data' ? 'needs reports' : `${short(o.projected)} projected`} />
       </div>
       <div class="ck-chips">
         <span>Forecast at end <b class="num">{short(o.projected)}</b>{o.basis !== 'no data' && <> · {Math.round(o.utilisation * 100)}%</>}</span>

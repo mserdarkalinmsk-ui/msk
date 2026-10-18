@@ -2,7 +2,7 @@ import { go, useStore } from '../data/store';
 import { type Office, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
 import { date, full, short } from '../ui/format';
 
-const RED = '#e5484d', OB = '#1d5fa8', LS = '#7b2d8e';
+const RED = 'var(--critical)', OB = '#1d5fa8', LS = '#7b2d8e';
 const pc = (v: number) => `${Math.round(v * 100)}%`;
 
 /** Latest situation of each office (within the country filter): both funds, year-end outlook and what to decide. */
@@ -31,7 +31,7 @@ export function OfficeSummary({ variant }: { variant: 'card' | 'pack' | 'slide' 
         <td><b>{x.o.name}</b><small class="muted" style={{ display: 'block' }}>{cname(x.o.country)} · situation {date(x.r.date)}</small></td>
         <td class="r num">{full(x.T.ob.budget)}</td>
         <td class="r num"><span class="of-u"><i style={{ width: `${Math.min(1, x.T.ob.sc / (x.T.ob.budget || 1)) * 100}%`, background: x.T.ob.sc > x.T.ob.budget ? RED : OB }} /><u style={{ left: `${x.ys * 100}%` }} /></span>{pc(x.T.ob.budget ? x.T.ob.sc / x.T.ob.budget : 0)}</td>
-        <td class="r num">{full(x.end)}</td><td class="r num" style={{ color: x.short < -0.5 ? RED : '#30a46c' }}><b>{x.short < 0 ? '−' : '+'}{full(Math.abs(x.short))}</b></td>
+        <td class="r num">{full(x.end)}</td><td class="r num" style={{ color: x.short < -0.5 ? RED : 'var(--good)' }}><b>{x.short < 0 ? '−' : '+'}{full(Math.abs(x.short))}</b></td>
         <td class="r num">{x.moved ? full(x.moved) : '—'}</td><td class="r num" style={{ color: x.request > 0.5 ? RED : undefined }}><b>{x.request > 0.5 ? full(x.request) : '—'}</b></td>
         <td class="r num" style={{ color: LS }}>{full(x.T.ls.budget)}</td><td class="r num" style={{ color: x.T.ls.left < -0.5 ? RED : undefined }}>{full(x.T.ls.left)}</td>
         <td class="r num">{x.flags || '—'}</td></tr>)}</tbody></table>);

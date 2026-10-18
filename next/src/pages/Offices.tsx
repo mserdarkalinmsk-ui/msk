@@ -5,7 +5,7 @@ import { downloadDocx } from '../ui/docxwrite';
 import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 
-const RED = '#e5484d', AMB = '#f5a524', GRN = '#30a46c';
+const RED = 'var(--critical)', AMB = 'var(--c4)', GRN = 'var(--good)';
 const FUND: Record<Fund, { label: string; short: string; color: string }> = { ob: { label: 'Ordinary Budget', short: 'OB', color: '#1d5fa8' }, ls: { label: 'LS & Pagoda', short: 'LS & Pagoda', color: '#7b2d8e' } };
 const pc = (v: number) => (Number.isFinite(v) ? `${Math.round(v * 100)}%` : '—');
 const neg = (v: number) => (v < -0.5 ? { color: RED } : undefined);

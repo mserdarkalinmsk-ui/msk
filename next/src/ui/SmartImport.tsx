@@ -16,8 +16,8 @@ type Kind = 'office' | 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 
 interface Row { file: File; kind: Kind; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string; force?: boolean }
 const KIND: Record<Kind, { label: string; color: string }> = {
   office: { label: 'Office budget', color: '#0e7490' },
-  report: { label: 'Financial report', color: '#3b82c4' }, budget: { label: 'Approved budget', color: '#30a46c' }, plan: { label: 'DoA / action plan', color: '#8e4ec6' },
-  contract: { label: 'Contract', color: '#c27c0e' }, logframe: { label: 'Logframe / risks', color: '#0e9384' }, other: { label: 'Not recognised', color: '#8b8d98' }, error: { label: 'Unreadable', color: '#e5484d' },
+  report: { label: 'Financial report', color: 'var(--c1)' }, budget: { label: 'Approved budget', color: 'var(--good)' }, plan: { label: 'DoA / action plan', color: 'var(--c7)' },
+  contract: { label: 'Contract', color: 'var(--warn)' }, logframe: { label: 'Logframe / risks', color: 'var(--c3)' }, other: { label: 'Not recognised', color: '#8b8d98' }, error: { label: 'Unreadable', color: 'var(--critical)' },
 };
 
 /** Identifiers in a file name or document text: BH / JP / PMM / VC numbers, contract numbers. */

@@ -4,7 +4,7 @@ import { applyFix, health, type AutoFix, type Finding, type Level } from '../dom
 const AUTO: Record<AutoFix, string> = { 'use-approved': 'Use the approved budget', 'dedupe-docs': 'Keep the latest copy', 'dedupe-reports': 'Keep the latest of each month' };
 import { TODAY } from '../today';
 
-const C: Record<Level, string> = { ok: '#30a46c', warn: '#f5a524', bad: '#e5484d' };
+const C: Record<Level, string> = { ok: 'var(--good)', warn: 'var(--c4)', bad: 'var(--critical)' };
 const W: Record<Level, string> = { ok: 'Healthy', warn: 'Check', bad: 'Fix' };
 const ICON: Record<Level, string> = { ok: '✓', warn: '!', bad: '✕' };
 

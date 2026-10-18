@@ -8,7 +8,7 @@ import { download } from '../ui/xlsxwrite';
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 const REQ: Record<CashRow['request'], { t: string; c: string }> = {
-  now: { t: 'Request now', c: '#e5484d' }, soon: { t: 'Within 3 months', c: '#c27c0e' }, later: { t: 'Later', c: '#30a46c' }, none: { t: '—', c: 'var(--ink-3)' },
+  now: { t: 'Request now', c: 'var(--critical)' }, soon: { t: 'Within 3 months', c: 'var(--warn)' }, later: { t: 'Later', c: 'var(--good)' }, none: { t: '—', c: 'var(--ink-3)' },
 };
 function readTh() { try { return Number(localStorage.getItem('pl-cash-th')) || 70; } catch { return 70; } }
 
@@ -30,8 +30,8 @@ export function CashPlan() {
     <>
       <section class="hero" aria-label="Cash plan">
         <div class="kpi lead"><span class="label">Cash on hand</span><span class="value">{short(T.cash)}</span><span class="ctx">received {short(T.rec)} from donors · {R.length} projects{T.exp ? ` · ${T.exp} use the contract pre-financing (no payment entered)` : ''}</span></div>
-        <div class="kpi"><span class="label">Payment to request now</span><span class="value" style={{ color: T.now.length ? '#e5484d' : undefined }}>{T.now.length}</span><span class="ctx">{T.now.length ? T.now.map((r) => lab(r.p)).join(', ') : `no project has used ${th}% of what it received`}</span></div>
-        <div class="kpi"><span class="label">Cash runs out within 3 months</span><span class="value" style={{ color: T.short.length ? '#c27c0e' : undefined }}>{T.short.length}</span><span class="ctx">{T.short.length ? T.short.map((r) => lab(r.p)).join(', ') : 'at the current pace'}</span></div>
+        <div class="kpi"><span class="label">Payment to request now</span><span class="value" style={{ color: T.now.length ? 'var(--critical)' : undefined }}>{T.now.length}</span><span class="ctx">{T.now.length ? T.now.map((r) => lab(r.p)).join(', ') : `no project has used ${th}% of what it received`}</span></div>
+        <div class="kpi"><span class="label">Cash runs out within 3 months</span><span class="value" style={{ color: T.short.length ? 'var(--warn)' : undefined }}>{T.short.length}</span><span class="ctx">{T.short.length ? T.short.map((r) => lab(r.p)).join(', ') : 'at the current pace'}</span></div>
         <div class="kpi"><span class="label">No payment information</span><span class="value">{T.noPay}</span><span class="ctx">enter payments or the contract pre-financing</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
@@ -45,10 +45,10 @@ export function CashPlan() {
               <td class="r num">{full(r.contribution)}</td>
               <td class="r num">{r.received ? full(r.received) : <span class="muted">—</span>}{r.expected && <small class="muted" title="Contract pre-financing — no payment entered yet"> exp.</small>}</td>
               <td class="r num">{full(r.spent)}</td>
-              <td class="r num" style={{ color: r.received && r.cash < 0 ? '#e5484d' : undefined }}><b>{r.received ? full(r.cash) : '—'}</b></td>
-              <td>{r.received ? <span class="cp-bar" title={`${Math.round(r.used * 100)}% of the money received is spent`}><i style={{ width: `${Math.min(100, r.used * 100)}%`, background: r.used >= th / 100 ? '#e5484d' : r.used >= th / 100 - 0.15 ? '#f5a524' : 'var(--accent)' }} /><b style={{ left: `${th}%` }} /><span>{Math.round(r.used * 100)}%</span></span> : <span class="muted">no payment</span>}</td>
+              <td class="r num" style={{ color: r.received && r.cash < 0 ? 'var(--critical)' : undefined }}><b>{r.received ? full(r.cash) : '—'}</b></td>
+              <td>{r.received ? <span class="cp-bar" title={`${Math.round(r.used * 100)}% of the money received is spent`}><i style={{ width: `${Math.min(100, r.used * 100)}%`, background: r.used >= th / 100 ? 'var(--critical)' : r.used >= th / 100 - 0.15 ? 'var(--c4)' : 'var(--accent)' }} /><b style={{ left: `${th}%` }} /><span>{Math.round(r.used * 100)}%</span></span> : <span class="muted">no payment</span>}</td>
               <td class="r num">{full(r.burn)}</td>
-              <td class="num" style={{ color: r.runout && r.runout <= in90 ? '#c27c0e' : undefined }}>{r.runout ? date(r.runout) : '—'}</td>
+              <td class="num" style={{ color: r.runout && r.runout <= in90 ? 'var(--warn)' : undefined }}>{r.runout ? date(r.runout) : '—'}</td>
               <td><span class="badge" style={{ color: REQ[r.request].c, borderColor: REQ[r.request].c }}>{REQ[r.request].t}</span>{r.request !== 'now' && r.request !== 'none' && r.requestOn && <small class="muted"> from {date(r.requestOn)}</small>}</td></tr>
             {open === r.p.id && <tr class="sp-sub"><td colSpan={9}><Payments p={r.p} /></td></tr>}</>)}</tbody></table>
           {!R.length && <p class="muted">No projects in the selection.</p>}</div>

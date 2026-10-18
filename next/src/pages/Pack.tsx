@@ -14,7 +14,7 @@ import { Compare } from './Studio';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
 const band = (v: number) => (v >= 1 ? 'blue' : v >= 0.9 ? 'green' : v >= 0.7 ? 'amber' : 'red');
-const BAND_C: Record<string, string> = { blue: '#3b82c4', green: '#30a46c', amber: '#f5a524', red: '#e5484d' };
+const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
 const p0 = (v: number) => `${Math.round(v * 100)}%`;
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 const pts = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))} pts`;
@@ -104,7 +104,7 @@ export function MonthlyPack() {
               <td class="num muted" style={{ whiteSpace: 'nowrap' }}>{x.from ? `${date(x.from)} → ${date(x.to!)}` : x.to ? date(x.to) : '—'}</td>
               <td class="r" style={{ minWidth: '130px' }}>{x.added ? <div class="delta-bar"><span style={{ width: `${Math.abs(x.added) / maxAdd * 100}%`, background: x.added < 0 ? 'var(--serious)' : 'var(--c1)' }} /><b class="num">{short(x.added)}</b></div> : <span class="muted">—</span>}</td>
               <td class="r num"><b style={{ color: BAND_C[x.now] }}>{p0(x.perf)}</b></td>
-              <td class="r num" style={{ color: d == null ? undefined : d > 0.005 ? '#30a46c' : d < -0.005 ? '#e5484d' : undefined }}>{d == null ? '—' : `${d > 0.005 ? '▲' : d < -0.005 ? '▼' : '■'} ${pts(d)}`}</td>
+              <td class="r num" style={{ color: d == null ? undefined : d > 0.005 ? 'var(--good)' : d < -0.005 ? 'var(--critical)' : undefined }}>{d == null ? '—' : `${d > 0.005 ? '▲' : d < -0.005 ? '▼' : '■'} ${pts(d)}`}</td>
               <td style={{ whiteSpace: 'nowrap' }}>{x.was && x.was !== x.now ? <><span class="band" style={{ background: BAND_C[x.was] }} />→ </> : null}<span class="band" style={{ background: BAND_C[x.now] }} /> {x.now}</td>
             </tr>); })}</tbody>
         </table>

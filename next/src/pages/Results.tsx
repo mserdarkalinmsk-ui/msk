@@ -7,7 +7,7 @@ import { TODAY } from '../today';
 import { date } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 
-const TONE: Record<IndState, string> = { reached: '#30a46c', 'on track': '#3b82c4', behind: '#f5a524', 'off track': '#e5484d', 'not measured': '#8b8d98', 'no target': '#8b8d98' };
+const TONE: Record<IndState, string> = { reached: 'var(--good)', 'on track': 'var(--c1)', behind: 'var(--c4)', 'off track': 'var(--critical)', 'not measured': '#8b8d98', 'no target': '#8b8d98' };
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 const pct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`);
 const openInd = (p: Project) => { go(`project/${p.id}`); setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: 'Indicators' })), 60); };
@@ -31,8 +31,8 @@ export function Results() {
     <>
       <section class="hero" aria-label="Results">
         <div class="kpi lead"><span class="label">Indicators measured</span><span class="value">{measured.length}<small style={{ fontSize: '18px' }} class="muted"> / {inds.length}</small></span><span class="ctx">{inds.length - measured.length} without a current value · {rows.filter((r) => r.n).length} projects with a logframe</span></div>
-        <div class="kpi"><span class="label">Targets reached</span><span class="value" style={{ color: '#30a46c' }}>{reached}</span><span class="ctx">{measured.length ? Math.round(reached / measured.length * 100) : 0}% of measured</span></div>
-        <div class="kpi"><span class="label">Off track</span><span class="value" style={{ color: off ? '#e5484d' : undefined }}>{off}</span><span class="ctx">far behind the time elapsed</span></div>
+        <div class="kpi"><span class="label">Targets reached</span><span class="value" style={{ color: 'var(--good)' }}>{reached}</span><span class="ctx">{measured.length ? Math.round(reached / measured.length * 100) : 0}% of measured</span></div>
+        <div class="kpi"><span class="label">Off track</span><span class="value" style={{ color: off ? 'var(--critical)' : undefined }}>{off}</span><span class="ctx">far behind the time elapsed</span></div>
         <div class="kpi"><span class="label">Spending ahead of results</span><span class="value">{rows.filter((r) => r.flag === 'spending ahead of results').length}</span><span class="ctx">projects where spend runs 25 pp+ ahead</span></div>
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
@@ -42,9 +42,9 @@ export function Results() {
               <td><b>{lab(r.p)}</b><small class="muted" style={{ display: 'block', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.p.name}</small></td>
               <td><div class="rs-bars">
                 <span><i>Time</i><em><b style={{ width: `${r.time * 100}%`, background: '#8b8d98' }} /></em><small class="num">{pct(r.time)}</small></span>
-                <span><i>Money</i><em><b style={{ width: `${Math.min(1, r.spend) * 100}%`, background: '#3b82c4' }} /></em><small class="num">{pct(r.spend)}</small></span>
-                <span><i>Results</i><em><b style={{ width: `${(r.results ?? 0) * 100}%`, background: '#30a46c' }} /></em><small class="num">{pct(r.results)}</small></span></div></td>
-              <td class="r num" style={{ color: r.gap != null && r.gap > 0.25 ? '#e5484d' : undefined }}>{r.gap == null ? '—' : `${r.gap > 0 ? '+' : ''}${Math.round(r.gap * 100)} pp`}</td>
+                <span><i>Money</i><em><b style={{ width: `${Math.min(1, r.spend) * 100}%`, background: 'var(--c1)' }} /></em><small class="num">{pct(r.spend)}</small></span>
+                <span><i>Results</i><em><b style={{ width: `${(r.results ?? 0) * 100}%`, background: 'var(--good)' }} /></em><small class="num">{pct(r.results)}</small></span></div></td>
+              <td class="r num" style={{ color: r.gap != null && r.gap > 0.25 ? 'var(--critical)' : undefined }}>{r.gap == null ? '—' : `${r.gap > 0 ? '+' : ''}${Math.round(r.gap * 100)} pp`}</td>
               <td class="r num">{r.measured}/{r.n}</td><td class="r num">{r.reached}</td><td class="r num">{r.behind}</td>
               <td>{r.flag && <span class="badge warning">{r.flag}</span>}{r.stale > 0 && <span class="badge neutral" style={{ marginLeft: '4px' }}>{r.stale} not updated 6 m+</span>}</td></tr>)}</tbody></table>
             <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Gap = spent + committed share minus results share. An indicator is “behind” when its progress trails the time elapsed by 15 pp+, “off track” at 35 pp+ (or nothing achieved past mid-term).</p></div></section>
