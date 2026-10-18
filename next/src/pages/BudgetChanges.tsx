@@ -1,3 +1,4 @@
+import { FlexPanel } from '../ui/Visuals';
 import { useState } from 'preact/hooks';
 import { filtered, upsertProject, useStore } from '../data/store';
 import { adviseChanges, VERDICT, type Verdict } from '../domain/budgetchange';
@@ -55,7 +56,8 @@ export function BudgetChanges() {
           : <p class="muted" style={{ margin: 0 }}>No heading is heading for a shortfall at the current pace.</p>}
           <p class="muted" style={{ fontSize: '12px', marginTop: '8px' }}>Expected at end = spent + committed today + the heading's average monthly spending for the months left. "Addendum ahead": covering the shortfall would take the heading beyond the flexibility — plan the request early (an addendum takes time). "Notify now": already overspent.</p></div>
       </section>
-      <section class="card">
+      <FlexPanel p={p} />
+      <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Budget changes</h2><p>EU–CoE Contribution Agreement: within one heading free · between headings notified while each heading stays within {Math.round(A.flex * 100)}% of the amount originally entered (cumulative) · beyond, new headings, admin costs or the total need an addendum · contingency needs prior approval</p></div>
           <select class="sp-sel" style={{ marginLeft: 'auto' }} value={p.id} onChange={(e) => setPid((e.target as HTMLSelectElement).value)}>{P.map((x) => <option value={x.id}>{lab(x)} · {x.name.slice(0, 50)}</option>)}</select></div>
         <div class="card-b table-scroll"><table class="mini bt-h"><thead><tr><th>Heading</th><th class="r">Agreement</th><th class="r">Now</th><th class="r">After planned transfers</th><th style={{ width: '24%' }}>Change against the agreement (limit ±{Math.round(A.flex * 100)}%)</th><th class="r">Can still receive</th><th class="r">Can still give</th></tr></thead>
