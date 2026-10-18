@@ -515,3 +515,8 @@ tr.click td.click { text-decoration: none; }
 .pc-bars b { display: block; height: 100%; }
 .pc-bars em { font-style: normal; font-weight: 700; min-width: 34px; text-align: right; }
 .pc-bars em small { font-weight: 500; color: var(--ink-3, #6b7280); }
+.bc { border: 1px solid var(--line); border-left: 4px solid var(--good); border-radius: var(--r-md, 10px); padding: 10px 14px; background: var(--surface); }
+.bc.bad { border-left-color: var(--critical); } .bc.warn { border-left-color: var(--warn); }
+.bc header { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; text-decoration: none !important; }
+.bc-n { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
+.bc table { margin-top: 8px; }
