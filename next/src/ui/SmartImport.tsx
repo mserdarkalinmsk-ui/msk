@@ -54,11 +54,16 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
   const [rows, setRows] = useState<Row[] | null>(null);
   const [done, setDone] = useState(0);
   const P = get().ledger.projects;
+  // Files loaded before (same name, size and date) are skipped, so a whole folder can be chosen again each month.
+  const [all, setAll] = useState(false);
+  const cand = files.filter((f) => !f.name.startsWith('~$') && /\.(xlsx|xlsm|pdf|docx|txt)$/i.test(f.name));
+  const seen = readSeen(), fresh = all || cand.length < 2 ? cand : cand.filter((f) => !seen[stamp(f)]);
+  const skipped = cand.length - fresh.length;
   useEffect(() => {
-    let live = true;
+    let live = true; setRows(null); setDone(0);
     (async () => {
       const out: Row[] = [];
-      for (const f of files.filter((f) => !f.name.startsWith('~$') && /\.(xlsx|xlsm|pdf|docx|txt)$/i.test(f.name))) {
+      for (const f of fresh) {
         let r: Row | null = null;
         try {
         const off = await readOfficeFile(f).catch(() => null);
@@ -85,7 +90,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       if (live) setRows(out);
     })();
     return () => { live = false; };
-  }, []);
+  }, [all]);
   const setPid = (i: number, pid: string) => setRows((R) => R!.map((r, k) => (k === i ? { ...r, pid, why: pid ? 'chosen' : '' } : r)));
   const chk = (r: Row) => { const p = r.wb && r.pid ? P.find((x) => x.id === r.pid) : undefined; return p ? readCheck(r.wb!, p) : null; };
   // A report whose lines would not add up to the file (or that belongs to another project) waits until forced.
@@ -110,16 +115,18 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
         updateProject(pid, { reportingPeriods: R });
       }
     }
+    markSeen([...ok, ...(rows ?? []).filter((x) => x.kind === 'office')].map((r) => r.file));
     close();
     if (nOff && !ok.length) go('offices');
   };
   const lab = (p: Project) => `${p.bh ? `BH ${p.bh}` : p.code} · ${p.name.slice(0, 50)}`;
-  const nFiles = files.length;
+  const nFiles = fresh.length;
   return (
     <>
       <div class="drawer-h"><div><h2>Smart import · {nFiles} file{nFiles > 1 ? 's' : ''}</h2><p class="muted" style={{ margin: 0, fontSize: '12.5px' }}>Each file is recognised and sent to its project by BH, JP, PMM or contract number — check the project before importing</p></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
       <div class="drawer-b">
-        {!rows ? <div role="status"><div class="muted" style={{ marginBottom: '6px' }}><span class="spin" /> Reading {done} of {nFiles}…</div><div class="meter"><span style={{ width: `${(done / nFiles) * 100}%`, background: 'var(--c1)' }} /></div></div> : <>
+        {skipped > 0 && <div class="si-skip"><span>{skipped} file{skipped > 1 ? 's' : ''} already loaded earlier (same name, size and date) — skipped{fresh.length ? '' : '; nothing new in this folder'}.</span><button class="btn ghost" onClick={() => setAll(true)}>Read them too</button></div>}
+        {!fresh.length && !all ? null : !rows ? <div role="status"><div class="muted" style={{ marginBottom: '6px' }}><span class="spin" /> Reading {done} of {nFiles}…</div><div class="meter"><span style={{ width: `${(done / nFiles) * 100}%`, background: 'var(--c1)' }} /></div></div> : <>
           <div class="si-sum">{(Object.keys(KIND) as Kind[]).map((k) => { const n = rows.filter((r) => r.kind === k).length; return n ? <span style={{ background: KIND[k].color }}>{n} {KIND[k].label}</span> : null; })}</div>
           <ul class="si-l">{rows.map((r, i) => (
             <li style={{ borderLeftColor: KIND[r.kind].color }} class={usable(r) ? '' : 'off'}>
@@ -138,4 +145,12 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok.length && !nOff} onClick={apply}>Import {ok.length + nOff} file{ok.length + nOff === 1 ? '' : 's'}{ok.length ? ` into ${new Set(ok.map((r) => r.pid)).size} project${new Set(ok.map((r) => r.pid)).size === 1 ? '' : 's'}` : ''}{nOff ? `${ok.length ? ' +' : ''} ${nOff} office budget${nOff > 1 ? 's' : ''}` : ''}</button></div>
     </>
   );
+}
+
+const stamp = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
+function readSeen(): Record<string, string> { try { return JSON.parse(localStorage.getItem('pl-seen-files') ?? '{}'); } catch { return {}; } }
+function markSeen(F: File[]) {
+  try { const m = readSeen(), at = new Date().toISOString().slice(0, 10); for (const f of F) m[stamp(f)] = at;
+    // Keep the list small: the 3000 most recent.
+    const e = Object.entries(m).sort((a, b) => b[1].localeCompare(a[1])).slice(0, 3000); localStorage.setItem('pl-seen-files', JSON.stringify(Object.fromEntries(e))); } catch { /* ignore */ }
 }
