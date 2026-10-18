@@ -2,6 +2,29 @@ import { money, n, parseDate, spendPoints } from './calc';
 import type { Project } from './types';
 
 const DAY = 864e5, MONTH = 30.44 * DAY;
+
+/** Monthly pace of spending: the last six months of reports, else the average since the start. */
+export function pace(p: Project, today: Date): number {
+  const pts = spendPoints(p).filter((x) => x.t <= today.getTime()), last = pts.at(-1);
+  const back = last ? [...pts].reverse().find((x) => last.t - x.t >= 5 * MONTH) : undefined;
+  const months = Math.max(1, (today.getTime() - parseDate(p.start).getTime()) / MONTH);
+  return last && back && last.t > back.t ? Math.max(0, (last.v - back.v) / ((last.t - back.t) / MONTH)) : money(p).spent / months;
+}
+
+export interface EndingRow { p: Project; monthsLeft: number; budget: number; spent: number; sc: number; remaining: number; pace: number; need: number; unspent: number; share: number; level: 'bad' | 'warn' | 'ok' }
+/**
+ * Projects ending within `within` months: what is left, the monthly spending needed to use it by the end date,
+ * the current pace, and what would stay unspent (to be returned) at that pace. Commitments count as used.
+ */
+export function ending(P: Project[], today: Date, within = 12): EndingRow[] {
+  const t = today.getTime();
+  return P.filter((p) => !p.datesTbc && parseDate(p.end).getTime() > t && parseDate(p.end).getTime() - t <= within * MONTH).map((p) => {
+    const m = money(p), monthsLeft = Math.max(0.5, (parseDate(p.end).getTime() - t) / MONTH);
+    const sc = m.spent + m.committed, remaining = Math.max(0, m.budget - sc), pc = pace(p, today);
+    const need = remaining / monthsLeft, unspent = Math.max(0, remaining - pc * monthsLeft), share = m.budget ? unspent / m.budget : 0;
+    return { p, monthsLeft, budget: m.budget, spent: m.spent, sc, remaining, pace: pc, need, unspent, share, level: share > 0.1 ? 'bad' : share > 0.03 ? 'warn' : 'ok' } as EndingRow;
+  }).sort((a, b) => b.unspent - a.unspent);
+}
 export interface CashRow {
   p: Project; contribution: number; received: number; expected: boolean; spent: number; committed: number;
   cash: number; used: number; threshold: number; burn: number; runout: string | null; request: 'now' | 'soon' | 'later' | 'none'; requestOn: string | null;
@@ -20,11 +43,7 @@ export function cashRow(p: Project, today: Date, threshold = 0.7): CashRow {
   const paid = (p.payments ?? []).reduce((a, x) => a + n(x.amount), 0);
   const expected = !paid && !!(Number(c.firstPayment) || Number(c.prefin));
   const received = paid || (expected ? Number(c.firstPayment) || contribution * Number(c.prefin) / 100 : 0);
-  // Pace: spending over the last six months of reports, else the average since the start.
-  const pts = spendPoints(p).filter((x) => x.t <= today.getTime()), last = pts.at(-1);
-  const back = last ? [...pts].reverse().find((x) => last.t - x.t >= 5 * MONTH) : undefined;
-  const months = Math.max(1, (today.getTime() - parseDate(p.start).getTime()) / MONTH);
-  const burn = last && back && last.t > back.t ? Math.max(0, (last.v - back.v) / ((last.t - back.t) / MONTH)) : m.spent / months;
+  const burn = pace(p, today);
   const cash = received - m.spent, used = received ? m.spent / received : 0;
   const at = (amount: number) => (burn > 0 ? new Date(today.getTime() + (amount / burn) * MONTH).toISOString().slice(0, 10) : null);
   const runout = received ? (cash <= 0 ? today.toISOString().slice(0, 10) : at(cash)) : null;
