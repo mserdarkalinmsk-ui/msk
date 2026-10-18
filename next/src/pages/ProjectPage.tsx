@@ -1,4 +1,4 @@
-import { forecastPeriod, forecastSheets } from '../domain/forecastTemplate';
+import { ForecastDialog } from '../ui/ForecastDialog';
 import { auditSheets } from '../domain/audit';
 import { ScenarioCompare } from './ScenarioCompare';
 import { Closure, Revision } from './Closure';
@@ -44,6 +44,7 @@ export function ProjectPage({ id }: { id: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
   const countries = useStore((s) => s.ledger.countries);
   const [tab, setTab] = useState<Tab>('Summary');
+  const [fc, setFc] = useState(false);
   useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2><p>It may have been deleted.</p><button class="btn" onClick={() => go('projects')}>All projects</button></div></div>;
   const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
@@ -52,6 +53,7 @@ export function ProjectPage({ id }: { id: string }) {
   const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, Staff: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };
   return (
     <>
+      {fc && <ForecastDialog p={p} close={() => setFc(false)} />}
       <div class="ph">
         <div style={{ minWidth: 0 }}>
           <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span>{period(p)}</span>{p.pmm && <span>PMM <b class="num">{p.pmm}</b></span>}{p.bh && <span>BH <b class="num">{p.bh}</b></span>}{p.mae && <span>MAE <b>{p.mae}</b></span>}<span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
@@ -63,7 +65,7 @@ export function ProjectPage({ id }: { id: string }) {
           <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
           <button class="btn" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
-          <button class="btn" title="Forecast request in the CoE template: figures from the latest report, green cells for finance (staff, 4.2/4.4), yellow cells for the project team (12 months + budget revision), rounded proposal and variation, with the donor sheets (Budget presentation, variation). Load it back through Import report." onClick={() => { const f = forecastPeriod(p, TODAY); const mon = new Date(f.from).toLocaleString('en-GB', { month: 'short' }).toUpperCase(); const cn = countries.find((c) => c.id === p.country)?.name ?? ''; download(`${[p.bh && `BH${p.bh}`, p.jp ? `JP${p.jp}` : p.code, cn, 'IFR', 'Forecast request', mon, f.from.slice(0, 4)].filter(Boolean).join('-')}.xlsx`, forecastSheets(p, TODAY)); }}>⤓ Forecast Excel</button>
+          <button class="btn" title="Forecast request in the CoE templates: choose JP or VC and the template (revision with payment, 12-month, revision and extension, extension with details). Load it back through Import report." onClick={() => setFc(true)}>⤓ Forecast Excel</button>
           <button class="btn" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>

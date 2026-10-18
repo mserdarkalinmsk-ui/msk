@@ -43,3 +43,24 @@ describe('forecast template details', () => {
     expect(txt(S[0].rows[1][9])).toContain('NEXT INSTALMENT');
   });
 });
+
+describe('every forecast template', () => {
+  const txt = (c: unknown) => String(c && typeof c === 'object' ? (c as XCell).v ?? '' : c ?? '');
+  for (const [kind, programme, sheets, width] of [['payment', 'JP', 3, 22], ['twelve', 'JP', 1, 12], ['revision', 'JP', 3, 19], ['revision', 'VC', 3, 18], ['extension', 'JP', 3, 25]] as const) {
+    it(`${kind} (${programme}) is read back`, async () => {
+      const { forecastSheets: fs } = await import('./forecastTemplate');
+      const S = fs(p, new Date('2026-07-15'), { kind, programme, extendTo: '2028-06-30', change: 'addendum', changeNo: '2' });
+      expect(S.length).toBe(sheets);
+      expect(S[0].rows[3].length).toBe(width);
+      const r = S[0].rows.findIndex((x) => txt(x[0]).startsWith('5.7 '));
+      (S[0].rows[r][11] as XCell).v = 25000; // first planned block, cost column L
+      const x = await readXlsx(workbook(S).buffer as ArrayBuffer);
+      const wb = parseWorkbook(x.sheets.map((n) => ({ name: n, R: x.read(n) })));
+      expect(toBudgetLines(wb as never).find((l) => l.code === '5.7')!.forecast).toBe(25000);
+      expect(wb.meta.plannedFrom).toBe('2026-07-01');
+      expect(wb.meta.plannedTo).toBe(kind === 'revision' ? '2028-06-30' : kind === 'extension' ? '2027-12-31' : '2027-06-30');
+      if (programme === 'JP' && kind !== 'twelve') expect(S[0].rows[2].map(txt).join(' ')).toContain('Addendum n°2');
+      if (programme === 'VC') expect(S[0].rows[2].map(txt).join(' ')).toContain('Revised (');
+    });
+  }
+});
