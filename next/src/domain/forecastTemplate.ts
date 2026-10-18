@@ -120,7 +120,13 @@ function blocksFor(o: ForecastOptions, per: ReturnType<typeof forecastPeriod>, t
 type Row = (Cell | XCell)[];
 /** Planned units and rates typed in the app (see forecastPlan), written into the input cells. */
 export type DraftLines = Record<string, Partial<Record<string, { u?: number; r?: number }>>>;
-export function forecastSheets(p: Project, today: Date, o: ForecastOptions = defaultOptions(p), draft?: DraftLines): SheetSpec[] {
+/**
+ * working  every sheet, everything visible (finance)
+ * team     guidelines step 7: the rounded proposal and the variation columns hidden before it goes to the project team
+ * donor    guidelines steps 9–10: "Budget presentation" and "variation" with values only, the Forecast sheet hidden
+ */
+export type ForecastMode = 'working' | 'team' | 'donor';
+export function forecastSheets(p: Project, today: Date, o: ForecastOptions = defaultOptions(p), draft?: DraftLines, mode: ForecastMode = 'working'): SheetSpec[] {
   const per = forecastPeriod(p, today, o), L = lines(p);
   const monthsLeft = Math.max(0, (parseDate(per.extTo ?? p.end).getTime() - parseDate(per.from).getTime()) / MONTH);
   const names = p.approvedBudget?.names ?? {};
@@ -322,7 +328,8 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
   }
 
   const widths = [84, 15, 10.5, 13, 14.5, 10.5, 12.8, 14.5, 16.5, ...B.flatMap(() => [10.5, 12.8, 14.5]), ...(vari >= 0 ? [10] : [])];
-  const forecast: SheetSpec = { name: 'Forecast', rows, freeze: 4, merges, heights, landscape: true, widths };
+  const forecast: SheetSpec = { name: 'Forecast', rows, freeze: 4, merges, heights, landscape: true, widths,
+    ...(mode === 'team' && roundB ? { hiddenCols: [rc - 2, rc - 1, rc, ...(vari >= 0 ? [vari] : [])] } : {}) };
   if (!roundB) return [forecast];
 
   // Donor clean version: the rounded proposal against the contractual budget, linked to the Forecast sheet.
@@ -364,13 +371,22 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
     return { name: variation ? 'variation' : 'Budget presentation', rows: out, freeze: 4, merges: mm, heights: hh, landscape: true,
       widths: variation ? [84, 15, 10.5, 12.8, 14.5, 14.5, 10.5, 12.8, 14.5, 10, ...(just ? [60] : [])] : [84, 15, 10.5, 12.8, 14.5, 10.5, 12.8, 14.5] };
   };
-  return [forecast, donor(false), donor(true)];
+  if (mode !== 'donor') return [forecast, donor(false), donor(true)];
+  // The donor file carries values, not links to the working sheet; the Forecast sheet stays in it, hidden (best practice).
+  const values = (s: SheetSpec): SheetSpec => ({ ...s, rows: s.rows.map((r) => r.map((c) => (c && typeof c === 'object' && 'f' in c && c.f && /Forecast!/.test(c.f) ? { v: c.v, st: c.st } : c))) });
+  return [values(donor(false)), values(donor(true)), { ...forecast, name: 'FORECAST', hidden: true }];
 }
 
 /** The file name of the guidelines: BH…-JP(or VC)…-Country-IFR-Forecast request-MON-Year. */
-export function forecastFileName(p: Project, country: string, today: Date, o: ForecastOptions = defaultOptions(p)): string {
+export function forecastFileName(p: Project, country: string, today: Date, o: ForecastOptions = defaultOptions(p), mode: ForecastMode = 'working'): string {
   const per = forecastPeriod(p, today, o), d = new Date(per.from + 'T00:00:00Z');
   const id = o.programme === 'JP' ? (p.jp ? `JP${p.jp}` : p.code) : (p.pmm ? `VC${p.pmm}` : p.code);
+  if (mode === 'donor') {
+    // Guidelines step 9: VCs "Revised Budget proposal-Donor version", JPs "Revised Budget proposal-For notification n°/Addendum n°".
+    const t = new Date(today), mon = t.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+    const what = o.programme === 'VC' ? 'Revised Budget proposal-Donor version' : `Revised Budget proposal-For ${o.change === 'addendum' ? 'Addendum' : 'notification'} n°${o.changeNo ?? ''}`;
+    return `${[p.bh && `BH${p.bh}`, id, country, what, mon, t.getUTCFullYear()].filter(Boolean).join('-')}.xlsx`;
+  }
   const what = o.kind === 'twelve' ? '12-month forecast' : o.kind === 'payment' ? 'Forecast request' : o.kind === 'extension' ? 'Extension request' : 'Budget revision request';
   return `${[p.bh && `BH${p.bh}`, id, country, 'IFR', what, d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase(), d.getUTCFullYear()].filter(Boolean).join('-')}.xlsx`;
 }

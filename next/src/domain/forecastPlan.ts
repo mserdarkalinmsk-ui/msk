@@ -28,7 +28,7 @@ export function planBlocks(p: Project, today: Date, o: ForecastOptions): { id: B
 
 export interface PlanLine {
   code: string; description: string; unit: string; empty: boolean; staff: boolean; cb: boolean;
-  budget: number; actual: number; sc: number; aUnits: number; aRate: number; rate?: number; /** rate used when none is typed (as in the Excel) */ defRate?: number;
+  budget: number; bUnits?: number; actual: number; sc: number; aUnits: number; aRate: number; rate?: number; /** rate used when none is typed (as in the Excel) */ defRate?: number;
   cells: Partial<Record<BlockId, { u: number; r: number; cost: number }>>; planned: number;
   propUnits: number; propCost: number; rounded: number; variation: number | null;
 }
@@ -67,7 +67,7 @@ export function computePlan(p: Project, today: Date, d: ForecastDraft | undefine
     const u0 = staff || cb ? aUnits : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0, c0 = staff ? actual : sc;
     const propUnits = u0 + pu, propCost = c0 + planned;
     const rounded = propUnits > 0 ? Math.round(propCost / propUnits) * propUnits : propCost;
-    return { ...x, staff, cb, budget, actual, sc, aUnits, aRate, rate, defRate, cells, planned, propUnits, propCost, rounded, variation: budget > 0 ? (rounded - budget) / budget : null };
+    return { ...x, staff, cb, budget, bUnits: l?.approvedUnits ?? undefined, actual, sc, aUnits, aRate, rate, defRate, cells, planned, propUnits, propCost, rounded, variation: budget > 0 ? (rounded - budget) / budget : null };
   });
   const H = headings(p), flex = H.flex;
   const heads: PlanHeading[] = ['1', '2', '3', '4', '5', '6'].map((h) => {
