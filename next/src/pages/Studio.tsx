@@ -209,10 +209,13 @@ export function Compare() {
     const committed = Math.max(0, m.exposure - m.spent - staffCommitted), sc = m.spent + committed, risk = committed * riskPct / 100;
     const perf = planned ? m.spent / planned : 0, scp = planned ? sc / planned : 0;
     const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
-    // Without a forecast to the end date, the current pace decides: what would stay unspent at the end date (over 3 % of budget).
+    // Without a forecast to the end date, the current pace decides — but only once a quarter of the project has run (early pace
+    // says little), while S&C is below 90 % of plan and when at least 10 % of the budget would stay unspent.
     const paced = under0 == null ? ending([p], TODAY, 1200)[0] : undefined;
+    // The forecast column shows the amount for every project; the note flags only the real risks.
     const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : paced && paced.share > 0.03 ? Math.round(paced.unspent) : 0;
-    const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
+    const underRisk = under0 != null ? !!m.budget && under / m.budget >= 0.05 : !!paced && elapsed(p, TODAY) >= 0.25 && scp < 0.9 && paced.share >= 0.1;
+    const note = scp > 1 ? 'over' : underRisk ? 'under' : '';
     const tr = perfTrend(p), dPerf = tr.length > 1 ? perf - tr.at(-2)!.perf : null;
     return { p, m, planned, perf, scp, ccm, under, note, sr, scr, sc, committed, staffCommitted, risk, pct: m.budget ? sc / m.budget : 0, tr, dPerf,
       ws: warningScore(p, TODAY, { perf, scp, staffRatio: sr }), cu: catchUp(p, TODAY), sp: staffProjection(p, TODAY, sr * m.spent) };
@@ -323,7 +326,7 @@ export function Compare() {
           <li><b>Trend</b> ▲▼ = change in performance since the previous financial report. <b>Early warning score</b> adds points for spending behind plan (up to 35), S&C above plan (15), staff ratio (up to 15), late activities (15), overdue reports (20) and a worsening trend (10); ≥50 high, 25–49 medium.</li>
           <li><b>Catch-up plan</b> = (planned in 3 months − spent) ÷ 3, compared with the current monthly rate. <b>Staff projection</b> = staff spent ÷ months elapsed × months to the end.</li>
           <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments that may not be spent; <b>adjusted S&C vs planned</b> = (S&C − at risk) ÷ planned.</li>
-          <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of underspending” when an unspent balance is forecast at the end date (from the report's forecast, or at the current pace when there is none).</li>
+          <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of underspending” when the report's forecast leaves at least 5% of the budget unspent at the end date; without such a forecast, when a quarter of the project has run, S&C is below 90% of plan and at least 10% would stay unspent at the current pace.</li>
         </ol>
       </section>
       
