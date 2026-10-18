@@ -50,3 +50,17 @@ describe('service provider kinds', () => {
     expect(supKey('FLAP CONGRESS MEETING SERVICES')).not.toBe(supKey('SERENAS INTERNATIONAL TOURISM CONGRESS ORGANIZATION INC.'));
   });
 });
+
+import { providerSummary } from './providers';
+describe('provider summary', () => {
+  it('counts the main kinds only, by country and provider', () => {
+    const po = (po: string, line: string, description: string, supplier: string, sc: number) => ({ po, line, description, nature: '', supplier, amount: sc, spent: sc, balance: 0, sc, status: 'OPEN', date: '2026-03-01', units: null, unitType: '' });
+    const wb = { pos: [po('1', '5.7', 'Organisation of the conference', 'FLAP CONGRESS', 1000), po('2', '5.5.2', 'Interpretation', 'ENTERKON AS', 300), po('3', '1.1.1', 'Salary', 'PAIE TEMPORAIRE', 5000)] };
+    const p = { id: 'a', code: 'A', name: 'A', country: 'tr', start: '2025-01-01', end: '2027-01-01', budget: 1, reportingPeriods: [{ id: 'r', name: 'r', type: 'x', date: '2026-03-31', snapshot: { lines: [], workbook: wb } }] } as never;
+    const S = providerSummary([p]);
+    expect(S.total).toBe(1300);
+    expect(S.kinds.map((k) => k.k)).toEqual(['events', 'interp']);
+    expect(S.countries).toEqual([{ c: 'tr', v: 1300 }]);
+    expect(S.top[0].supplier).toBe('FLAP CONGRESS');
+  });
+});

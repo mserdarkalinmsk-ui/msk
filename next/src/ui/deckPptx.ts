@@ -8,7 +8,7 @@ import { date, month, pct, short } from './format';
 
 /** Everything the deck shows, computed once on the Presentation screen. */
 export interface DeckModel {
-  aud: 'management' | 'donor'; scope: string; logo?: string; app?: string; cname: (id: string) => string; lab: (p: Project) => string;
+  aud: 'management' | 'donor'; scope: string; logo?: string; app?: string; providers?: import('../domain/providers').ProviderSummary; cname: (id: string) => string; lab: (p: Project) => string;
   P: Project[]; T: { budget: number; spent: number; committed: number; exposure: number; remaining: number; elapsed: number; burn: number };
   perf: number; band: string; bandWord: (b: string) => string; PL: number; final: number | null;
   series: { t: number; actual: number | null; plan: number; mid: number | null }[];
@@ -167,6 +167,14 @@ export async function exportPptx(m: DeckModel) {
   if (mg && m.offices.length) {
     const s = page('Office running costs', `${m.offices.length} office${m.offices.length > 1 ? 's' : ''}: ordinary budget ${short(m.offices.reduce((a, o) => a + o.ob, 0))}, year-end outlook ${short(m.offices.reduce((a, o) => a + o.end, 0))}`, 'Ordinary Budget — latest situation and year-end outlook');
     table(s, ['Office', 'Ordinary budget', 'Spent + committed', 'Year-end outlook', 'Request'], m.offices.map((o) => [o.name, short(o.ob), short(o.sc), short(o.end), o.request > 0 ? short(o.request) : '—']), { right: [1, 2, 3, 4] });
+  }
+
+  // Service providers (management)
+  if (mg && m.providers?.total) {
+    const P = m.providers, pc = (v: number) => `${Math.round(v / P.total * 100)}%`;
+    const s = page('Service providers', `${short(P.total)} with ${P.providers} service providers; ${P.kinds[0]?.label.toLowerCase()} is the largest share (${pc(P.kinds[0]?.v ?? 0)})`, 'Spent + committed by kind and the largest providers');
+    table(s, ['Kind', 'POs', 'Amount', 'Share'], P.kinds.map((k) => [k.label, String(k.n), short(k.v), pc(k.v)]), { w: 5.2, right: [1, 2, 3], colW: [2.6, 0.7, 1.1, 0.8] });
+    table(s, ['Largest providers', 'Amount', 'Share'], P.top.map((x) => [cut(x.supplier, 44), short(x.sc), pc(x.sc)]), { x: 6.1, w: 6.73, right: [1, 2], colW: [4.73, 1.2, 0.8] });
   }
 
   // Milestones

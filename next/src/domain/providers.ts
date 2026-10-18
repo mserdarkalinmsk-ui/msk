@@ -143,3 +143,18 @@ export function ceilings(P: Project[]): CeilingRow[] {
     return [{ p, code: l.code, description: l.description || `Line ${l.code}`, kind, unit: l.unit ?? '', units: l.approvedUnits ?? null, rate: l.unitRate ?? null, approved, exposure, remaining: approved - exposure, used: approved ? exposure / approved : Infinity }];
   }));
 }
+
+/** Service providers in short for the monthly pack and the presentation: the main kinds only (no salaries,
+ *  per diems or petty cash), by country, by kind and the largest providers. */
+export function providerSummary(P: Project[], set: Record<string, string> = {}, top = 10) {
+  const L = providerPOs(P, set).filter((x) => x.kind && !KINDS.find((k) => k.k === x.kind)?.optional);
+  const total = L.reduce((a, x) => a + x.value, 0);
+  const by = <K,>(f: (x: ProviderPO) => K) => [...L.reduce((m, x) => m.set(f(x), (m.get(f(x)) ?? 0) + x.value), new Map<K, number>())].sort((a, b) => b[1] - a[1]);
+  return {
+    total, pos: L.length, providers: new Set(L.map((x) => supKey(x.supplier))).size, projects: new Set(L.map((x) => x.p.id)).size,
+    countries: by((x) => x.p.country).map(([c, v]) => ({ c, v })),
+    kinds: by((x) => x.kind as Kind).map(([k, v]) => ({ k, v, label: KINDS.find((x) => x.k === k)!.label, n: L.filter((x) => x.kind === k).length })),
+    top: suppliers(L).slice(0, top),
+  };
+}
+export type ProviderSummary = ReturnType<typeof providerSummary>;
