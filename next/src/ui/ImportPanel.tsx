@@ -2,10 +2,10 @@ import { applyMerge, lastActivity, planMerge, type MergePlan } from '../domain/m
 import { checkDraft, type Draft } from './Drawer';
 import { readOfficeFile } from './officeImport';
 
-import { backupNow } from './Backup';
+import { backupNow, FolderBackup } from './Backup';
 
 import { useEffect, useState } from 'preact/hooks';
-import { get, go, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
+import { checkpoint, get, go, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
 import { validateLedger } from '../domain/calc';
 import { normalizeSector, validUrl, type Ledger } from '../domain/types';
 
@@ -120,9 +120,9 @@ export function ImportPanel({ close }: { close: () => void }) {
             {json.errs.length > 0 && <ul class="errlist" style={{ marginTop: '12px' }}>{json.errs.slice(0, 8).map((e) => <li>{e}</li>)}</ul>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
               <button class="btn" disabled={json.errs.length > 0} title="Add a colleague's projects to yours; where both have a project you choose which version to keep" onClick={() => setMerge(planMerge(get().ledger, json.data))}>Merge with my data…</button>
-              <button class="btn primary" disabled={json.errs.length > 0} onClick={() => { replaceLedger(json.data, `Imported ${json.data.projects.length} projects`); close(); }}>Replace data</button>
+              <button class="btn primary" disabled={json.errs.length > 0} onClick={() => { void checkpoint('Before loading a backup'); replaceLedger(json.data, `Imported ${json.data.projects.length} projects`); close(); }}>Replace data</button>
             </div>
-            {merge && <MergeView plan={merge} onApply={(choice) => { replaceLedger(applyMerge(get().ledger, json.data, merge, choice), `Merged backup: ${merge.added.length} added, ${merge.conflicts.length} compared`); close(); }} />}
+            {merge && <MergeView plan={merge} onApply={(choice) => { void checkpoint('Before merging a backup'); replaceLedger(applyMerge(get().ledger, json.data, merge, choice), `Merged backup: ${merge.added.length} added, ${merge.conflicts.length} compared`); close(); }} />}
           </section>
         )}
 
@@ -166,6 +166,7 @@ export function ImportPanel({ close }: { close: () => void }) {
             <button class="btn" onClick={exportJSON}>Export JSON backup</button>
             <button class="btn ghost" onClick={() => { if (confirm('Replace ALL current data with the start data? Export a backup first — this removes your reports and documents (undo is possible right after).')) { resetDemo(); close(); } }}>Reset to start data</button>
           </div>
+          <FolderBackup />
         </section>
         <RestorePoints close={close} />
       </div>
@@ -181,7 +182,7 @@ export function ImportPanel({ close }: { close: () => void }) {
               if (at >= 0) L.projects[at] = { ...L.projects[at], ...fields };
               else L.projects.push({ id: `p${Date.now().toString(36)}${i}`, ...fields, status: 'Active', reportingPeriods: [], riskRegister: [] });
             });
-            replaceLedger(L, `Imported ${importable.length} project${importable.length > 1 ? 's' : ''}`); close();
+            void checkpoint('Before importing projects'); replaceLedger(L, `Imported ${importable.length} project${importable.length > 1 ? 's' : ''}`); close();
           }}>Import {importable.length} row{importable.length === 1 ? '' : 's'}</button>
         </div>
       )}
@@ -197,12 +198,12 @@ function RestorePoints({ close }: { close: () => void }) {
   return (
     <section class="card" style={{ padding: '16px', display: 'grid', gap: '8px' }}>
       <h3 style={{ margin: 0, fontSize: '14px' }}>Restore points</h3>
-      <p class="muted" style={{ margin: 0, fontSize: '13px' }}>A copy is kept each day you work (last 30 days). Now: {now.projects.length} projects, {nowReports} reports.</p>
+      <p class="muted" style={{ margin: 0, fontSize: '13px' }}>A copy is kept each day you work (last 30 days) and just before every import (last 10). Now: {now.projects.length} projects, {nowReports} reports.</p>
       {!P ? <span class="muted">Loading…</span> : !P.length ? <span class="muted">No restore points yet.</span> : (
         <table class="mini"><thead><tr><th>Saved</th><th class="r">Projects</th><th class="r">Reports</th><th>Missing now</th><th /></tr></thead>
           <tbody>{P.map((x) => { const miss = x.ledger.projects.filter((p) => !now.projects.some((q) => q.id === p.id || (p.bh && q.bh === p.bh))).map((p) => p.bh ? `BH ${p.bh}` : p.code);
-            return <tr><td>{x.key.endsWith('rescued') ? 'Rescued at load · ' : ''}{new Date(x.at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</td><td class="r num">{x.projects}</td><td class="r num">{x.reports}</td><td>{miss.join(', ') || '—'}</td>
-              <td><button class="btn" onClick={() => { if (confirm('Replace the current data with this restore point? (undo is possible right after)')) { replaceLedger(x.ledger, `Restored data from ${x.at.slice(0, 10)}`); close(); } }}>Restore</button></td></tr>; })}</tbody></table>)}
+            return <tr><td>{x.key.endsWith('rescued') ? 'Rescued at load · ' : x.label ? <><span class="badge info">{x.label}</span> </> : ''}{new Date(x.at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</td><td class="r num">{x.projects}</td><td class="r num">{x.reports}</td><td>{miss.join(', ') || '—'}</td>
+              <td><button class="btn" onClick={() => { if (confirm('Replace the current data with this restore point? (undo is possible right after)')) { void checkpoint('Before restoring'); replaceLedger(x.ledger, `Restored data from ${x.at.slice(0, 10)}`); close(); } }}>Restore</button></td></tr>; })}</tbody></table>)}
     </section>
   );
 }

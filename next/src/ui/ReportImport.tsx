@@ -1,6 +1,6 @@
 import { FORMAT, REPORT_TYPES } from '../domain/terms';
 import { useEffect, useState } from 'preact/hooks';
-import { upsertReport, upsertRisk, useStore } from '../data/store';
+import { checkpoint, upsertReport, upsertRisk, useStore } from '../data/store';
 import { checkReport, compareReports, reportsByDate, reportTotals } from '../domain/calc';
 import type { BudgetLine, Project, ReportingPeriod, Risk } from '../domain/types';
 import { parseAmount, parseCSV, parseDay } from './csv';
@@ -183,6 +183,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
       <div class="drawer-f">
         <button class="btn" onClick={close}>Cancel</button>
         <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => {
+          void checkpoint(`Before importing ${report.name}`);
           upsertReport(p.id, report);
           // An approved budget baseline (DoA annex) stays authoritative; reports only set the budget when there is none.
           const eb = useCoe && !p.approvedBudget ? coe!.totals.eligible?.budget : undefined;

@@ -1,6 +1,6 @@
 import { readOfficeFile } from './officeImport';
 import { useEffect, useState } from 'preact/hooks';
-import { get, go, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
+import { checkpoint, get, go, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
 import { applyFindings, mergeFindings } from '../domain/applydocs';
 import { reportDate, reportFrom } from '../domain/autoimport';
 import { readCheck } from '../domain/intake';
@@ -97,6 +97,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
   const usable = (r: Row) => r.pid && r.kind !== 'error' && r.kind !== 'other' && (r.force || !chk(r)?.blocking);
   const ok = rows?.filter(usable) ?? [], nOff = rows?.filter((r) => r.kind === 'office').length ?? 0;
   const apply = () => {
+    void checkpoint(`Before importing ${(rows ?? []).length} file${(rows ?? []).length === 1 ? '' : 's'}`);
     // Office budgets first (oldest first, so a raw export can borrow line budgets from a forecast of the same import).
     for (const r of (rows ?? []).filter((x) => x.kind === 'office').sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))) upsertOfficeReport(r.office!);
     for (const pid of new Set(ok.map((r) => r.pid))) {

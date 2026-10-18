@@ -587,3 +587,9 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 /* The expenditure-monitoring sheet is printed paper (always white): its controls use the light colours in every theme. */
 .em { color-scheme: light; --bg: #f5f5f3; --surface: #fcfcfb; --surface-2: #f0f0ed; --surface-hover: #ebebe7; --line: #e3e2de; --line-strong: #cfcdc7; --ink: #1a1a19; --ink-2: #4a4a46; --ink-3: #7a7a74; }
 .em select, .em input { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+/* Backup: automatic folder copy and the first-opening recovery prompt */
+.bk-auto { display: grid; gap: 6px; padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 13px; }
+.bk-auto .btn { justify-self: start; }
+.bk-fresh { display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; padding: 14px 18px; margin-bottom: 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%); font-size: 13.5px; }
+.bk-fresh > div:first-child { flex: 1 1 360px; }
+.bk-fresh-a { display: flex; gap: 8px; flex-wrap: wrap; }
