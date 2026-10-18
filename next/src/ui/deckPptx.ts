@@ -8,7 +8,7 @@ import { date, month, pct, short } from './format';
 
 /** Everything the deck shows, computed once on the Presentation screen. */
 export interface DeckModel {
-  aud: 'management' | 'donor'; scope: string; logo?: string; app?: string; providers?: import('../domain/providers').ProviderSummary; cname: (id: string) => string; lab: (p: Project) => string;
+  aud: 'management' | 'donor'; scope: string; logo?: string; app?: string; org?: string; providers?: import('../domain/providers').ProviderSummary; cname: (id: string) => string; lab: (p: Project) => string;
   P: Project[]; T: { budget: number; spent: number; committed: number; exposure: number; remaining: number; elapsed: number; burn: number };
   perf: number; band: string; bandWord: (b: string) => string; PL: number; final: number | null;
   series: { t: number; actual: number | null; plan: number; mid: number | null }[];
@@ -32,9 +32,11 @@ const F = 'Calibri';
 
 /** Builds an editable PowerPoint deck (native tables and charts) and downloads it. */
 export async function exportPptx(m: DeckModel) {
-  const { default: Pptx } = await import('pptxgenjs');
+  const { Pptx, JSZip } = await import('./pptxLib');
   const ppt: PptxGenJS = new Pptx();
   ppt.layout = 'LAYOUT_WIDE'; // 13.33 × 7.5 in
+  // File properties name the organisation, not the library that wrote the file.
+  ppt.author = m.org || 'Council of Europe'; ppt.company = m.org || 'Council of Europe'; ppt.title = `${m.scope} — ${m.aud === 'management' ? 'management review' : 'progress report'}`; ppt.subject = m.scope;
   ppt.title = `${m.scope} — ${m.aud === 'donor' ? 'Progress report' : 'Management review'}`;
   const mg = m.aud === 'management';
   let n = 0;
@@ -219,6 +221,17 @@ export async function exportPptx(m: DeckModel) {
   // Footers once the count is known.
   void total;
   for (const { s, n: k } of slides) if (k > 1) s.addText([{ text: `${m.scope} · ${mg ? 'Management review' : 'Progress report'} · ${month(TODAY.getTime())}` }], { x: 0.5, y: 7.0, w: 9, h: 0.3, fontFace: F, fontSize: 9, color: MUTED }), s.addText(`${k} / ${n}`, { x: 11.3, y: 7.0, w: 1.53, h: 0.3, fontFace: F, fontSize: 9, color: MUTED, align: 'right' });
-  const blob = (await ppt.write({ outputType: 'blob' })) as Blob;
+  const raw = (await ppt.write({ outputType: 'blob' })) as Blob;
+  // The chart data workbooks inside the file carry the library's name as author: replace it with the organisation.
+  const org = (m.org || 'Council of Europe').replace(/[&<>]/g, '');
+  const fix = (x: string) => x.replace(/PptxGenJS/g, org);
+  const z = await JSZip.loadAsync(raw);
+  for (const name of Object.keys(z.files).filter((n) => /embeddings\/.*\.xlsx$/.test(n))) {
+    const inner = await JSZip.loadAsync(await z.file(name)!.async('uint8array'));
+    for (const d of ['docProps/core.xml', 'docProps/app.xml']) { const f = inner.file(d); if (f) inner.file(d, fix(await f.async('string'))); }
+    z.file(name, await inner.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+  }
+  for (const d of ['docProps/core.xml', 'docProps/app.xml']) { const f = z.file(d); if (f) z.file(d, fix(await f.async('string'))); }
+  const blob = await z.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
   await saveFile(`${m.scope.replace(/\s+/g, '-')}-${mg ? 'management' : 'donor'}-${today}.pptx`, blob);
 }
