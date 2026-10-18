@@ -456,3 +456,9 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .wc header { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
 .wc-n { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
 .wc ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; display: grid; gap: 2px; }
+.cpj th:first-child { width: 22%; text-align: left; font-weight: 500; color: var(--ink-3, #6b7280); }
+.cpj td { vertical-align: middle; }
+.cpj td .num { font-size: 12.5px; }
+.cpj-bar { display: block; height: 5px; border-radius: 3px; background: var(--line); margin-bottom: 3px; overflow: hidden; }
+.cpj-bar i { display: block; height: 100%; }
+.cpj-h th { background: var(--surface-2, color-mix(in srgb, var(--ink) 4%, transparent)); font-weight: 700 !important; color: var(--ink) !important; padding-top: 10px; }
