@@ -51,7 +51,9 @@ export function forecastPeriod(p: Project, today: Date, o: ForecastOptions = def
   const ext = o.extendTo && o.extendTo > p.end ? o.extendTo : undefined;
   // First block: 12 months (payment, twelve) or to the end (revision: to the new end when extended; extension: to the current end).
   const to = o.kind === 'payment' || o.kind === 'twelve' ? to12 : o.kind === 'revision' ? ext ?? p.end : p.end;
-  return { asAt, from, to, revFrom: to12 < p.end ? addDays(to12, 1) : from, revTo: p.end, extFrom: addDays(p.end, 1), extTo: ext };
+  // A project ending within the 12 months has no period left after them: the revision columns cover the same months.
+  const short = to12 >= p.end;
+  return { asAt, from, to, revFrom: short ? from : addDays(to12, 1), revTo: p.end, extFrom: addDays(p.end, 1), extTo: ext, short, months };
 }
 
 /**
@@ -92,9 +94,10 @@ const STD_GROUP = new Set(STANDARD.filter(([, , u]) => !u).map(([c]) => c));
 type Block = { id: string; type: 'input' | 'calc' | 'sum' | 'round'; head: string; of?: string[] };
 
 function blocksFor(o: ForecastOptions, per: ReturnType<typeof forecastPeriod>, title: string): Block[] {
-  if (o.kind === 'twelve') return [{ id: 'p', type: 'input', head: `Planned expenditure \nfrom ${dmy(per.from)} to ${dmy(per.to)} (12 months)` }];
+  const twelve = per.short ? '(to the end of the project)' : `(${per.months} months)`;
+  if (o.kind === 'twelve') return [{ id: 'p', type: 'input', head: `Planned expenditure \nfrom ${dmy(per.from)} to ${dmy(per.to)} ${twelve}` }];
   if (o.kind === 'payment') return [
-    { id: 'p', type: 'input', head: `Planned expenditure \nfrom ${dmy(per.from)} to ${dmy(per.to)} (12 months)` },
+    { id: 'p', type: 'input', head: `Planned expenditure \nfrom ${dmy(per.from)} to ${dmy(per.to)} ${twelve}` },
     { id: 'r', type: 'input', head: `Planned expenditure \nfrom ${dmy(per.revFrom)} to ${dmy(per.revTo)} (for budget revision)` },
     { id: 'q', type: 'calc', head: 'Budget proposal\n(calculated)', of: ['p', 'r'] },
     { id: 's', type: 'round', head: `Budget proposal\n(Rounded version)${title}`, of: ['q'] },
