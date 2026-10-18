@@ -15,7 +15,7 @@ export function snapshotOf(wb: Workbook, p: Project, fileName?: string): NonNull
 export interface ReadCheck { level: 'ok' | 'warning' | 'error'; text: string }
 export interface ReadReport { lines: number; spent: number; sc: number; checks: ReadCheck[]; blocking: boolean }
 
-const eur = (n: number) => '€' + Math.round(n).toLocaleString('en-GB');
+const eur = (n: number) => '€' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const sum = (L: BudgetLine[], f: (l: BudgetLine) => number | null | undefined) => L.reduce((a, l) => a + (f(l) ?? 0), 0);
 
 /**

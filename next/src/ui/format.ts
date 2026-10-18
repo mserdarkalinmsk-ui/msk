@@ -1,5 +1,6 @@
-const nf = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
-export const full = (v: number) => '€' + nf.format(Math.round(v));
+const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** Exact amounts everywhere carry their cents (€5,403,333.01); `short` stays for headline figures and charts. */
+export const full = (v: number) => (v < 0 ? '−€' : '€') + nf2.format(Math.abs(v));
 export function short(v: number) {
   const a = Math.abs(v), s = v < 0 ? '−' : '';
   if (a >= 1e9) return `${s}€${(a / 1e9).toFixed(2)}B`;
@@ -15,6 +16,4 @@ export const month = (t: number | string) => mf.format(new Date(typeof t === 'st
 export const date = (s: string) => df.format(new Date(s + 'T00:00:00Z'));
 export const period = (p: { start: string; end: string; datesTbc?: boolean }) => (p.datesTbc ? 'dates to confirm' : `${month(p.start)} → ${month(p.end)}`);
 export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-/** Exact amount with cents, as in the financial reports: €5,403,333.01. */
-const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-export const cents = (v: number) => (v < 0 ? '−€' : '€') + nf2.format(Math.abs(v));
+export const cents = full;

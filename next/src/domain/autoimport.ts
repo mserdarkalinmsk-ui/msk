@@ -48,7 +48,7 @@ export function plan(wb: Workbook, fileName: string, L: Ledger, taken = new Set<
     project = { ...match, bh: match.bh || m.bh, contractNo: match.contractNo || m.contract, jp: match.jp || m.jp };
     // The workbook's total eligible budget (all years, incl. 7% admin) is authoritative for the project budget.
     if (E && E.budget > 0 && Math.abs(E.budget - match.budget) > 1 && !match.approvedBudget) {
-      guessed.push(`budget updated ${Math.round(match.budget).toLocaleString('en-GB')} → ${Math.round(E.budget).toLocaleString('en-GB')} (total eligible, all years)`);
+      guessed.push(`budget updated ${match.budget.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ${E.budget.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (total eligible, all years)`);
       project.budget = Math.round(E.budget * 100) / 100;
     }
   } else {
@@ -94,7 +94,7 @@ export interface DiffRow { label: string; before: string; after: string; changed
 export function planDiff(L: Ledger, pl: AutoPlan): DiffRow[] {
   const before = pl.match;
   const after = applyPlans(L, [pl]).projects.find((p) => p.id === pl.project.id)!;
-  const eur = (x: number) => `€${Math.round(x).toLocaleString('en-GB')}`;
+  const eur = (x: number) => `€${x.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const staff = (p?: Project) => new Set((p?.reportingPeriods ?? []).flatMap((r) => (r.snapshot?.staffRecords ?? []).map((s) => s.name)).filter(Boolean)).size;
   const last = (p?: Project) => latestReport(p ?? ({} as Project))?.date ?? '—';
   const mb = before ? money(before) : null, ma = money(after);

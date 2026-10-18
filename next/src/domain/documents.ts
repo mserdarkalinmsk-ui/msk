@@ -177,7 +177,7 @@ export function analyse(doc: Doc): DocFindings {
   const nn = Object.keys(notes).length;
   const summary = [
     nn && `justification for ${nn} budget lines`,
-    budget && `approved budget €${Math.round(budget.total).toLocaleString('en-GB')} (${budget.lines.length} lines)`,
+    budget && `approved budget €${budget.total.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${budget.lines.length} lines)`,
     Object.keys(contract).length && `${Object.keys(contract).length} contract facts`,
     plan && `${plan.acts.length} activities over ${plan.months} months`,
     R.length && `${R.length} risks`, NR.assumptions.length && `${NR.assumptions.length} assumptions`, I.length && `${I.length} indicators`,

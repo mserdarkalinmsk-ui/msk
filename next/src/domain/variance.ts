@@ -4,7 +4,7 @@ import type { BudgetNote } from './documents';
 export interface VarLine { code: string; d: string; aA: number; act: number; use: number | null; dRp: number | null; dU: number | null; unit: string }
 export interface Variance { code: string; d: string; kind: 'overspent' | 'under-used' | 'unit cost' | 'units'; facts: string; draft: string }
 
-const eur = (v: number) => `EUR ${Math.round(v).toLocaleString('en-GB')}`;
+const eur = (v: number) => `EUR ${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const pc = (v: number) => `${Math.round(v * 100)}%`;
 const just = (n?: BudgetNote) => (n?.justification || n?.clarification || '').replace(/\s+/g, ' ').trim().split(/(?<=[.;])\s/)[0]?.slice(0, 220) ?? '';
 
