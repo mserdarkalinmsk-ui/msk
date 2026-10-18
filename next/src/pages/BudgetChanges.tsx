@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
 import { filtered, upsertProject, useStore } from '../data/store';
 import { adviseChanges, VERDICT, type Verdict } from '../domain/budgetchange';
-import { lines } from '../domain/calc';
+import { lineExposure, lines, n } from '../domain/calc';
+import { portfolioWarnings, STAGE } from '../domain/earlywarn';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full } from '../ui/format';
@@ -29,8 +30,31 @@ export function BudgetChanges() {
   const V = VERDICT[A.verdict], c = (p.contract ?? {}) as { number?: string; title?: string };
   const total = planned.reduce((a, x) => a + x.amount, 0);
   const word = () => { if (letter) downloadDocx(`${p.code}-${A.verdict}-${TODAY.toISOString().slice(0, 10)}.docx`, letter, DOC[A.verdict]); };
+  const EW = portfolioWarnings(filtered(s), TODAY);
+  // Prefill a transfer that covers a warning: from the line with most room in the spare heading to the most overspent line.
+  const plan = (w: (typeof EW)[number]) => {
+    const LL = lines(w.p), inH = (h: string) => LL.filter((l) => l.code.split('.')[0] === h && n(l.approved) > 0);
+    const src = w.from ? inH(w.from.code).sort((a, b) => (n(b.approved) - lineExposure(b)) - (n(a.approved) - lineExposure(a)))[0] : undefined;
+    const dst = inH(w.code).sort((a, b) => (lineExposure(b) - n(b.approved)) - (lineExposure(a) - n(a.approved)))[0];
+    setPid(w.p.id); if (src) setFrom(src.code); if (dst) setTo(dst.code); setAmt(String(Math.ceil(w.need / 100) * 100)); setWhy(`Expected shortfall on heading ${w.code} ${w.label} at the current pace`);
+    setTimeout(() => document.querySelector('.bt-plan')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
   return (
     <>
+      <section class="card" style={{ marginBottom: '16px' }}>
+        <div class="card-h"><div><h2>Early warning — transfers ahead</h2><p>For each heading: spending expected at the end date at the current pace, the transfer it will need, and whether that stays a notification or will need an addendum</p></div></div>
+        <div class="card-b table-scroll">{EW.length ? <table class="mini"><thead><tr><th>Project</th><th>Heading</th><th>Stage</th><th class="r">Budget now</th><th class="r">Expected at end</th><th class="r">Shortfall</th><th class="r">Change if covered</th><th>Short by</th><th>Cover from</th><th /></tr></thead>
+          <tbody>{EW.map((w) => <tr>
+            <td><b>{lab(w.p)}</b></td><td><b>{w.code}</b> {w.label}</td>
+            <td><span class={`badge ${STAGE[w.stage].tone}`} title={w.why}>{STAGE[w.stage].label}</span><div class="muted" style={{ fontSize: '11.5px', maxWidth: '260px' }}>{w.why}</div></td>
+            <td class="r num">{full(w.current)}</td><td class="r num">{full(w.projected)}</td><td class="r num"><b>{w.need ? full(w.need) : '—'}</b></td>
+            <td class="r num" style={{ color: w.changeIfCovered > w.flex ? 'var(--critical)' : undefined }}>{w.need ? pc(w.changeIfCovered) : '—'}<small class="muted"> / ±{Math.round(w.flex * 100)}%</small></td>
+            <td class="num" style={{ whiteSpace: 'nowrap' }}>{w.by ? date(w.by) : '—'}</td>
+            <td>{w.from ? <><b>{w.from.code}</b> {w.from.label}<div class="muted" style={{ fontSize: '11.5px' }}>{full(w.from.spare)} spare</div></> : '—'}</td>
+            <td>{w.need > 0 && <button class="btn ghost" onClick={() => plan(w)}>Plan transfer</button>}</td></tr>)}</tbody></table>
+          : <p class="muted" style={{ margin: 0 }}>No heading is heading for a shortfall at the current pace.</p>}
+          <p class="muted" style={{ fontSize: '12px', marginTop: '8px' }}>Expected at end = spent + committed today + the heading's average monthly spending for the months left. "Addendum ahead": covering the shortfall would take the heading beyond the flexibility — plan the request early (an addendum takes time). "Notify now": already overspent.</p></div>
+      </section>
       <section class="card">
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Budget changes</h2><p>EU–CoE Contribution Agreement: within one heading free · between headings notified while each heading stays within {Math.round(A.flex * 100)}% of the amount originally entered (cumulative) · beyond, new headings, admin costs or the total need an addendum · contingency needs prior approval</p></div>
           <select class="sp-sel" style={{ marginLeft: 'auto' }} value={p.id} onChange={(e) => setPid((e.target as HTMLSelectElement).value)}>{P.map((x) => <option value={x.id}>{lab(x)} · {x.name.slice(0, 50)}</option>)}</select></div>
@@ -41,7 +65,7 @@ export function BudgetChanges() {
               <td class="r num">{full(h.room.up)}</td><td class="r num">{full(h.room.down)}</td></tr>; })}</tbody></table></div>
       </section>
 
-      <section class="card" style={{ marginTop: '16px' }}>
+      <section class="card bt-plan" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>Planned transfers — {lab(p)}</h2><p>Add the transfers you intend to make; the advice updates at once</p></div></div>
         <div class="card-b" style={{ display: 'grid', gap: '10px' }}>
           <div class="sp-all">

@@ -1,3 +1,4 @@
+import { earlyWarnings } from './earlywarn';
 import { ADMIN_LINE } from './terms';
 import { HEADINGS, attention, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
 import { daysUntil, renewals, roster } from './staff';
@@ -56,6 +57,12 @@ export function alerts(ps: Project[], today: Date): Alert[] {
     if (ps_ && ps_.late) out.push({ id: `${p.id}:plan`, projectId: p.id, kind: 'plan', severity: ps_.late > 3 ? 'serious' : 'warning', title: `${ps_.late} activit${ps_.late > 1 ? 'ies' : 'y'} past planned month`, detail: `${ps_.done}/${ps_.total} done in month ${ps_.month}` });
     for (const h of headings(p).rows) if (h.status === 'breach')
       out.push({ id: `${p.id}:heading:${h.code}`, projectId: p.id, kind: 'line', severity: 'serious', title: `Heading ${h.code} ${h.label} beyond flexibility`, detail: Math.abs(h.change) * 100 > h.overspend * 100 ? `budget changed ${(h.change * 100).toFixed(1)}% from the approved baseline — needs an amendment` : `spent + committed ${(h.overspend * 100).toFixed(1)}% above the approved heading` });
+    // Early warning: transfers the current pace will need, before they happen (EU–CoE flexibility).
+    for (const w of earlyWarnings(p, today)) {
+      if (w.stage === 'addendum') out.push({ id: `${p.id}:ew:${w.code}`, projectId: p.id, kind: 'line', severity: 'serious', title: `Addendum ahead: ${w.code} ${w.label}`, detail: `${w.why} Needs about ${eur(w.need)}${w.by ? `, short by ${w.by}` : ''}.`, due: w.by ?? undefined });
+      else if (w.stage === 'notify-now') out.push({ id: `${p.id}:ew:${w.code}`, projectId: p.id, kind: 'line', severity: 'serious', title: `Notify a transfer now: ${w.code} ${w.label}`, detail: w.why });
+      else if (w.stage === 'notify') out.push({ id: `${p.id}:ew:${w.code}`, projectId: p.id, kind: 'line', severity: 'warning', title: `Notification ahead: ${w.code} ${w.label}`, detail: `${w.why}${w.by ? ` Short by ${w.by}.` : ''}`, due: w.by ?? undefined });
+    }
     const left = daysUntil(p.end, today);
     if (left >= 0 && left <= 120) out.push({ id: `${p.id}:ending`, projectId: p.id, kind: 'ending', severity: left <= 45 ? 'serious' : 'warning', title: `Project ends in ${left} days`, detail: p.successor ? `Successor: ${p.successor}` : 'No successor recorded', due: p.end });
   }
