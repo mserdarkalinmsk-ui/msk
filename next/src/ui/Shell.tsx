@@ -78,7 +78,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           </button>
           {actions}
         </header>
-        <main class="page" id="content"><SharedBanner />{!READONLY && <BackupBanner />}{children}</main>
+        <main class="page" id="content"><OldCopyBanner /><SharedBanner />{!READONLY && <BackupBanner />}{children}</main>
       </div>
     </div>
   );
@@ -97,3 +97,13 @@ export function Placeholder({ id }: { id: string }) {
   );
 }
 void get;
+
+/**
+ * Warns when an older copy of the app is opened in a browser where a newer one has already been used: both read
+ * the same saved data, and an old copy may not show (or may overwrite) what the newer one stored.
+ */
+function OldCopyBanner() {
+  const [newest] = useState(() => { try { const k = 'pl-newest-build', seen = localStorage.getItem(k) ?? ''; if (__BUILD__ > seen) { localStorage.setItem(k, __BUILD__); return ''; } return seen > __BUILD__ ? seen : ''; } catch { return ''; } });
+  if (!newest || READONLY) return null;
+  return <div class="old-copy" role="alert"><b>This is an older copy of the app</b> (build {__BUILD__}). A newer build ({newest}) was already used in this browser — close this file and open the newer one, otherwise recent data may not appear or changes may be lost.</div>;
+}
