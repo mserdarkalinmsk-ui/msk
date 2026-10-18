@@ -644,3 +644,9 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fe-t td.bad { color: var(--critical); font-weight: 700; } .fe-t td.warn { color: var(--warn); }
 .fe-ext { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink-2); }
 .fe-ext select, .fe-ext input { height: 32px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 8px; }
+.fe-inf.on { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.fe-inf-b { display: grid; gap: 12px; }
+.fe-inf-in { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.fe-inf-in input { height: 30px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 6px; margin: 0 4px; }
+.fe-inf-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; font-size: 13px; }
+.fe-inf-g ul { margin: 6px 0 0; padding-left: 18px; } .fe-inf-g li.proj { color: var(--ink-2); }

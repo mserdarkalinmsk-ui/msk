@@ -3,6 +3,7 @@ import { headings } from './insights';
 import { roster } from './staff';
 import { defaultOptions, forecastPeriod, staffRate, STANDARD_LINES, type ForecastOptions } from './forecastTemplate';
 import type { Project } from './types';
+import { costFactor, type InflationSettings } from './salaryProjection';
 
 /**
  * The forecast filled in inside the app: planned units and rates per line for each planned block of the chosen template,
@@ -11,7 +12,7 @@ import type { Project } from './types';
  */
 export type BlockId = 'p' | 'r' | 'e';
 export interface PlanCell { u?: number; r?: number }
-export interface ForecastDraft { opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[] }
+export interface ForecastDraft { /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[] }
 
 export const isStaffLine = (code: string) => /^1\.[12]\.1\.\d+$/.test(code);
 export const isChargeBack = (code: string) => code === '4.2' || code === '4.4';
@@ -28,7 +29,7 @@ export function planBlocks(p: Project, today: Date, o: ForecastOptions): { id: B
 
 export interface PlanLine {
   code: string; description: string; unit: string; empty: boolean; staff: boolean; cb: boolean;
-  budget: number; bUnits?: number; actual: number; sc: number; aUnits: number; aRate: number; rate?: number; /** rate used when none is typed (as in the Excel) */ defRate?: number;
+  budget: number; bUnits?: number; actual: number; sc: number; aUnits: number; aRate: number; rate?: number; /** rate used when none is typed (as in the Excel) */ defRate?: number; /** per planned block, when it differs (local salaries under the inflation projection) */ defRates?: Partial<Record<BlockId, number>>;
   cells: Partial<Record<BlockId, { u: number; r: number; cost: number }>>; planned: number;
   propUnits: number; propCost: number; rounded: number; variation: number | null;
 }
@@ -51,23 +52,27 @@ export function planLines(p: Project): { code: string; description: string; unit
 
 export function computePlan(p: Project, today: Date, d: ForecastDraft | undefined): PlanResult {
   const o = d?.opt ?? defaultOptions(p), blocks = planBlocks(p, today, o), L = lines(p), byCode = new Map(L.map((l) => [l.code, l]));
+  const per0 = forecastPeriod(p, today, o);
   const end = o.extendTo && o.extendTo > p.end ? o.extendTo : p.end, monthsLeft = Math.max(0, (parseDate(end).getTime() - parseDate(blocks[0].from).getTime()) / MONTH);
   const out: PlanLine[] = planLines(p).map((x) => {
     const l = byCode.get(x.code), staff = isStaffLine(x.code), cb = isChargeBack(x.code);
     const budget = n(l?.approved), actual = n(l?.actual), sc = l ? lineExposure(l) : 0, aUnits = n(l?.reportedUnits);
     const aRate = aUnits ? actual / aUnits : n(l?.reportedUnitRate), rate = l?.unitRate ?? undefined;
     const defRate = staff ? staffRate(x.code, aRate || rate || 0, monthsLeft) || undefined : cb ? (aRate ? Math.round(aRate) : rate) : rate;
+    // Local staff under the inflation projection: latest cost × average raise and EUR/TRY effect over each planned period.
+    const defRates: Partial<Record<BlockId, number>> = {};
+    if (d?.infl?.on && /^1\.1\.1\./.test(x.code) && (aRate || rate)) for (const b of blocks) defRates[b.id] = Math.ceil((aRate || rate || 0) * costFactor(per0.asAt, b.from, b.to, d.infl) / 5) * 5;
     const cells: PlanLine['cells'] = {};
     let planned = 0, pu = 0;
     for (const b of blocks) {
       const c = d?.lines[x.code]?.[b.id]; if (!c) continue;
-      const u = n(c.u), r = c.r != null ? n(c.r) : n(defRate), cost = u * r; cells[b.id] = { u, r, cost }; planned += cost; pu += u;
+      const u = n(c.u), r = c.r != null ? n(c.r) : n(defRates[b.id] ?? defRate), cost = u * r; cells[b.id] = { u, r, cost }; planned += cost; pu += u;
     }
     // As in the template: staff build on what is spent, charging back on its units and spent + committed, others on spent + committed.
     const u0 = staff || cb ? aUnits : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0, c0 = staff ? actual : sc;
     const propUnits = u0 + pu, propCost = c0 + planned;
     const rounded = propUnits > 0 ? Math.round(propCost / propUnits) * propUnits : propCost;
-    return { ...x, staff, cb, budget, bUnits: l?.approvedUnits ?? undefined, actual, sc, aUnits, aRate, rate, defRate, cells, planned, propUnits, propCost, rounded, variation: budget > 0 ? (rounded - budget) / budget : null };
+    return { ...x, staff, cb, budget, bUnits: l?.approvedUnits ?? undefined, actual, sc, aUnits, aRate, rate, defRate, defRates, cells, planned, propUnits, propCost, rounded, variation: budget > 0 ? (rounded - budget) / budget : null };
   });
   const H = headings(p), flex = H.flex;
   const heads: PlanHeading[] = ['1', '2', '3', '4', '5', '6'].map((h) => {
@@ -114,7 +119,7 @@ export function autofillStaff(p: Project, today: Date, d: ForecastDraft): Foreca
       // check the fiche staff — the note below lists who was counted.
       const u = who.reduce((a, s) => a + (s.start ? monthsIn(b.from, b.to, s.start, end) * (s.fte ?? 1) : 0), 0);
       if (!who.length && !x.budget) continue;
-      cell[b.id] = { u: Math.round(u * 100) / 100, r: cell[b.id]?.r ?? rate };
+      cell[b.id] = { u: Math.round(u * 100) / 100, r: cell[b.id]?.r ?? (d.infl?.on && /^1\.1\./.test(x.code) ? undefined : rate) };
       if (/^1\.1\./.test(x.code)) localMonths[b.id] = (localMonths[b.id] ?? 0) + u;
     }
     if (who.length) notes.push(`${x.code}: ${who.map((s) => `${s.display}${s.fte != null && s.fte !== 1 ? ` (${Math.round(s.fte * 100)}%)` : ''}${s.end && s.end < end ? `, contract to ${s.end} carried on` : ''}`).join('; ')}`);
@@ -140,4 +145,11 @@ export function balanceOn(p: Project, today: Date, d: ForecastDraft, code = '5.7
   const b = plan.blocks.at(-1)!.id, c = d.lines[code]?.[b] ?? {}, r = n(c.r) || line.defRate || line.aRate || 1;
   const u = Math.max(0, n(c.u) + diff / r);
   return { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { u: Math.round(u * 100) / 100, r } } }, updatedAt: new Date().toISOString() };
+}
+
+/** The plan with every rate resolved (typed, or the default the screen shows), as written into the Excel. */
+export function resolvedLines(p: Project, today: Date, d: ForecastDraft): ForecastDraft['lines'] {
+  const R = computePlan(p, today, d), out: ForecastDraft['lines'] = {};
+  for (const l of R.lines) for (const [b, c] of Object.entries(l.cells) as [BlockId, { u: number; r: number }][]) (out[l.code] ??= {})[b] = { u: c.u || undefined, r: c.r };
+  return out;
 }
