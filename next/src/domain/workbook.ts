@@ -249,7 +249,7 @@ export function parseWorkbook(sheets: Sheet[]): Workbook {
 
 /* ---------- cross-checks ---------- */
 const close = (a: number, b: number, tol = 1) => Math.abs(a - b) <= tol;
-const eur = (v: number) => '€' + Math.round(v).toLocaleString('en-GB');
+const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function reconcile(wb: Workbook): Check[] {
   const C: Check[] = [];

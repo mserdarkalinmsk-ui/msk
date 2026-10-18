@@ -10,7 +10,7 @@ export type Level = 'bad' | 'warn' | 'info';
 export interface BudgetFinding { level: Level; where: string; code?: string; text: string; expected?: number; found?: number }
 export interface BudgetCheck { p: Project; findings: BudgetFinding[]; bad: number; warn: number }
 
-const eur = (v: number) => `€${Math.round(v).toLocaleString('en-GB')}`;
+const eur = (v: number) => `€${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const close = (a: number, b: number) => Math.abs(a - b) <= Math.max(1, Math.abs(b) * 0.005);
 const words = (s = '') => new Set(s.toLowerCase().replace(/[^a-z0-9çğıöşü ]/g, ' ').split(/\s+/).filter((w) => w.length > 2));
 /** Share of words two descriptions have in common (0–1). */

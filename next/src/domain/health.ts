@@ -14,7 +14,7 @@ export type AutoFix = 'use-approved' | 'dedupe-docs' | 'dedupe-reports';
 export interface Health { p: Project; level: Level; findings: Finding[] }
 
 const pctDiff = (a: number, b: number) => (b ? Math.abs(a - b) / b : a ? 1 : 0);
-const eur = (v: number) => `€${Math.round(v).toLocaleString('en-GB')}`;
+const eur = (v: number) => `€${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Consistency checks per project: report totals, template recognition, budgets, duplicates and freshness. */
 export function health(p: Project, today: Date): Health {

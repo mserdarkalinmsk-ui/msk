@@ -6,7 +6,7 @@ import { pct } from './format';
 const HEAD: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment and supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other' };
 const v = (x: number | null | undefined) => x ?? 0;
 const n0 = (x: number | null | undefined) => (x == null || x === 0 ? '' : Math.abs(x) < 100 && x % 1 ? x.toFixed(2) : Math.round(x).toLocaleString('en-GB'));
-const money = (x: number | null | undefined) => (x == null || Math.abs(x) < 0.5 ? '–' : Math.round(x).toLocaleString('en-GB'));
+const money = (x: number | null | undefined) => (x == null || Math.abs(x) < 0.005 ? '–' : x.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 interface Row { code: string; label: string; depth: number; leaf?: WbLine; sum: { b: number; a: number; sc: number; pl: number; pr: number; pb: number } }
 
@@ -92,7 +92,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names }: { na
                   <td class="r num">{money(r.sum.sc)}</td>
                   <td class="usedc"><div class="minibar"><span style={{ width: `${Math.min(100, u * 100)}%`, background: over ? 'var(--critical)' : 'var(--c1)' }} /><i style={{ left: `${elapsed * 100}%` }} /></div><span class="num">{r.sum.b ? pct(u) : ''}</span></td>
                   {hasPlan && <td class="r num">{money(r.sum.pl)}</td>}
-                  {hasProp && <><td class="r num">{money(r.sum.pr)}</td><td class={`r num ${d > 0.5 ? 'up' : d < -0.5 ? 'down' : ''}`}>{Math.abs(d) < 0.5 ? '–' : `${d > 0 ? '+' : '−'}${Math.round(Math.abs(d)).toLocaleString('en-GB')}`}</td></>}
+                  {hasProp && <><td class="r num">{money(r.sum.pr)}</td><td class={`r num ${d > 0.5 ? 'up' : d < -0.5 ? 'down' : ''}`}>{Math.abs(d) < 0.5 ? '–' : `${d > 0 ? '+' : '−'}${Math.abs(d).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td></>}
                 </tr>
               );
             })}

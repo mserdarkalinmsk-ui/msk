@@ -36,7 +36,7 @@ export function monthTasks(L: Ledger, today: Date, ctx: { events: { day: string;
     out.push({ key: `office:${o.id}`, group: 'Offices', title: `Load the office budget of ${o.name}`, detail: last ? `latest situation ${last}` : 'none yet', auto: true, done: ym(last) === m || ym(last) === prev, importer: true });
   }
   for (const r of ctx.officeRequests.filter((x) => x.request > 0))
-    out.push({ key: `transfer:${r.o.id}:${r.date}`, group: 'Offices', title: `Send the budget transfer request of ${r.o.name}`, detail: `about €${Math.round(r.request).toLocaleString('en-GB')} to request after transfers (situation ${r.date})`, to: 'offices' });
+    out.push({ key: `transfer:${r.o.id}:${r.date}`, group: 'Offices', title: `Send the budget transfer request of ${r.o.name}`, detail: `about €${r.request.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to request after transfers (situation ${r.date})`, to: 'offices' });
   out.push(
     { key: 'close:pack', group: 'Close the month', title: 'Share the monthly pack', detail: 'Reports → Summary → Monthly pack → Save as PDF', to: 'reports/pack' },
     { key: 'close:deck', group: 'Close the month', title: 'Prepare the presentation', detail: 'Reports → Presentation → PowerPoint (management or donor)', to: 'reports/deck' },

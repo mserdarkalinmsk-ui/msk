@@ -47,7 +47,7 @@ function earlyWarningsOf(p: Project, today: Date): HeadWarn[] {
     let stage: Stage = 'ok', why = 'Spending at the current pace stays within the heading.';
     if (need > 1 && changeIfCovered > flex + 1e-9) { stage = 'addendum'; why = `At the current pace the heading needs ${Math.round(changeIfCovered * 100)}% more than agreed — beyond the ${Math.round(flex * 100)}% flexibility.`; }
     else if (h.exposure > h.approved + 1) { stage = 'notify-now'; why = 'Spent + committed is already above the heading budget — transfer and notify now.'; }
-    else if (need > 1) { stage = 'notify'; why = `Will run short by the end date; a transfer of about ${Math.round(need).toLocaleString('en-GB')} € stays within ${Math.round(flex * 100)}%.`; }
+    else if (need > 1) { stage = 'notify'; why = `Will run short by the end date; a transfer of about ${need.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € stays within ${Math.round(flex * 100)}%.`; }
     else if (already > flex * 0.7 || h.approved && h.exposure / h.approved > 0.9 || over.length) { stage = 'watch'; why = already > flex * 0.7 ? `Already ${Math.round(already * 100)}% from the agreement — little room left for further transfers.` : over.length ? `Line${over.length > 1 ? 's' : ''} ${over.join(', ')} above budget — a transfer within the heading is enough.` : 'Over 90% used.'; }
     // Where the money could come from: the heading with the largest spare amount still inside its own flexibility.
     const src = rows.filter((r) => r.h.code !== h.code).map((r) => ({ code: r.h.code, label: HEADINGS[r.h.code] ?? r.h.code, spare: Math.min(r.spare, Math.max(0, r.h.approved - r.h.baseline * (1 - flex))) })).sort((x, y) => y.spare - x.spare)[0];

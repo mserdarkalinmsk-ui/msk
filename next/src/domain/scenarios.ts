@@ -37,10 +37,10 @@ export function runScenario(p: Project, s: ScenarioIn, today: Date): ScenarioOut
   const balance = budget - projected, use = budget ? projected / budget : 0, need = months ? Math.max(0, (budget - m.exposure) / months) : 0;
   const staffSaving = base * hrShare * (s.staffPct / 100) * months;
   const notes: string[] = [];
-  if (s.budgetPct < 0 && budget < m.exposure) notes.push(`the cut goes below what is already spent or committed (${Math.round(m.exposure).toLocaleString('en-GB')})`);
+  if (s.budgetPct < 0 && budget < m.exposure) notes.push(`the cut goes below what is already spent or committed (${m.exposure.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`);
   if (s.extend > 0) notes.push(`a no-cost extension needs an addendum before ${p.end}`);
   if (Math.abs(s.budgetPct) > 0) notes.push('a budget change needs a contract amendment');
-  if (s.staffPct > 0 && hrB) notes.push(`staff remaining ${Math.round(Math.max(0, hrB - hrSpent)).toLocaleString('en-GB')} would be reduced by ~${Math.round(staffSaving).toLocaleString('en-GB')}`);
+  if (s.staffPct > 0 && hrB) notes.push(`staff remaining ${Math.max(0, hrB - hrSpent).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} would be reduced by ~${staffSaving.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
   const verdict = use > 1.005 ? 'overrun' : use < 0.9 ? 'underspend' : 'fits';
   return { ...s, end, budget, months, rate, projected, balance, use, need, staffSaving, verdict, notes };
 }

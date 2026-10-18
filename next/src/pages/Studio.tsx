@@ -174,7 +174,7 @@ function LineTable({ rows, el }: { rows: LA[]; el: number }) {
 const rateTone = (v: number) => v >= 1 ? 'em-blue' : v >= 0.9 ? 'em-green' : v >= 0.7 ? 'em-amber' : 'em-red';
 const staffTone = (v: number) => v >= 0.5 ? '#d9534f' : v > 0.35 ? '#e8b96a' : '#4f9a7a';
 const d8 = (iso: string) => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '';
-const n0 = (v: number) => Math.round(v).toLocaleString('en-GB');
+const n0 = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const p0 = (v: number) => `${Math.round(v * 100)}%`;
 
 /** Expenditure monitoring: one row per project — performance (spent vs planned), S&C vs planned, amounts, forecast, staff ratios. */

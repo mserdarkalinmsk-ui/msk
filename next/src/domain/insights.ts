@@ -6,7 +6,7 @@ import type { Ledger, Project } from './types';
 
 const DAY = 86_400_000;
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const eur = (x: number) => `€${Math.round(x).toLocaleString('en-GB')}`;
+const eur = (x: number) => `€${x.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /* ---------------- end-of-project forecast ---------------- */
 export interface Outcome { projected: number; utilisation: number; unused: number; overrun: number; monthsLeft: number; rate: number; needRate: number; basis: 'recent rate' | 'average rate' | 'no data' }

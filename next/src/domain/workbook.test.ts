@@ -40,7 +40,7 @@ describe('CoE financial report workbook', () => {
     expect(t.some((x) => x.startsWith('info:Budget lines add up'))).toBe(true);
     expect(t.some((x) => x.startsWith('info:Administrative costs are 7%'))).toBe(true);
     expect(t.some((x) => /1\.1\.1\.2.*unit rate.*20% above/.test(x))).toBe(true);
-    expect(t).toContain('info:Open PO balances match PO commitments in the accounts (€27,000 vs €30,000)'.replace('info', 'warning'));
+    expect(t).toContain('info:Open PO balances match PO commitments in the accounts (€27,000.00 vs €30,000.00)'.replace('info', 'warning'));
   });
   it('converts to app budget lines with administrative costs as line 10', async () => {
     const L = toBudgetLines(await load());

@@ -30,7 +30,7 @@ export function closureSteps(p: Project, today: Date, wb?: WorkbookSummary): Ste
   const final = deadlines(p, today).find((d) => d.kind === 'Final report');
   const auto: Record<string, { v?: boolean; why: string }> = {
     staff: { v: R.length ? beyond.length === 0 : undefined, why: beyond.length ? `${beyond.length} contract(s) end after the project` : 'no contract beyond the end' },
-    commitments: { v: wb ? openPO < 1 : undefined, why: openPO >= 1 ? `€${Math.round(openPO).toLocaleString('en-GB')} still open` : 'no open purchase orders' },
+    commitments: { v: wb ? openPO < 1 : undefined, why: openPO >= 1 ? `€${openPO.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} still open` : 'no open purchase orders' },
     financial: { v: final ? final.status === 'submitted' : undefined, why: final?.status === 'submitted' ? 'final report on file' : '' },
   };
   return STEPS.map((s) => {
