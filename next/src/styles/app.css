@@ -506,3 +506,5 @@ tr.click td.click { text-decoration: none; }
 .att li:hover::after, .dg-s li:hover::after { opacity: 1; }
 .att li { padding-right: 26px; }
 .wc:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+.sp-sel { max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+@media (max-width: 700px) { .card-h .sp-sel { flex: 1 1 100%; } .cpj th:first-child { width: 30%; } }
