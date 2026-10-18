@@ -413,3 +413,7 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .sp-stack i { display: block; height: 100%; background: #8fb8ff; border-right: 1px solid #14243d; }
 .sp-cty { font-size: 11px; color: var(--ink-3, #6b7280); margin-top: 2px; }
 @media print { .sp-tile { box-shadow: none; } .sp-tile.lead { background: #fff; color: #000; border: 1px solid #999; } }
+.sp-tr { display: inline-flex; align-items: flex-end; gap: 8px; white-space: nowrap; font-size: 11.5px; }
+.sp-tr rect { fill: color-mix(in srgb, var(--accent) 40%, transparent); }
+.sp-tr rect.now { fill: var(--accent); }
+.sp-tr b.up { color: #c27c0e; } .sp-tr b.down { color: #30a46c; } .sp-tr b.new { color: var(--accent); }
