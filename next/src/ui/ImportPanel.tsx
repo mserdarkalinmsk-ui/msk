@@ -1,10 +1,11 @@
+import { applyMerge, lastActivity, planMerge, type MergePlan } from '../domain/merge';
 import { checkDraft, type Draft } from './Drawer';
 import { readOfficeFile } from './officeImport';
 
 import { backupNow } from './Backup';
 
 import { useEffect, useState } from 'preact/hooks';
-import { go, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
+import { get, go, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
 import { validateLedger } from '../domain/calc';
 import { normalizeSector, validUrl, type Ledger } from '../domain/types';
 
@@ -35,6 +36,7 @@ export function ImportPanel({ close }: { close: () => void }) {
   const ledger = useStore((s) => s.ledger);
   const [rows, setRows] = useState<string[][] | null>(null);
   const [map, setMap] = useState<Record<string, number>>({});
+  const [merge, setMerge] = useState<MergePlan | null>(null);
   const [json, setJson] = useState<{ data: Ledger; errs: string[]; from: string } | null>(null);
   const [over, setOver] = useState(false);
   const [err, setErr] = useState('');
@@ -116,9 +118,11 @@ export function ImportPanel({ close }: { close: () => void }) {
             <h3 style={{ margin: '0 0 8px', fontSize: '14px' }}>{json.from === 'previous app' ? 'Backup from the previous Portfolio Ledger' : 'Backup file'}</h3>
             <p class="muted" style={{ margin: 0 }}>{json.data.projects?.length ?? 0} projects · {json.data.countries?.length ?? 0} countries. {json.data.audit?.length ? ` · ${json.data.audit.length} history entries` : ''}. Importing replaces the current data (you can undo).</p>
             {json.errs.length > 0 && <ul class="errlist" style={{ marginTop: '12px' }}>{json.errs.slice(0, 8).map((e) => <li>{e}</li>)}</ul>}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+              <button class="btn" disabled={json.errs.length > 0} title="Add a colleague's projects to yours; where both have a project you choose which version to keep" onClick={() => setMerge(planMerge(get().ledger, json.data))}>Merge with my data…</button>
               <button class="btn primary" disabled={json.errs.length > 0} onClick={() => { replaceLedger(json.data, `Imported ${json.data.projects.length} projects`); close(); }}>Replace data</button>
             </div>
+            {merge && <MergeView plan={merge} onApply={(choice) => { replaceLedger(applyMerge(get().ledger, json.data, merge, choice), `Merged backup: ${merge.added.length} added, ${merge.conflicts.length} compared`); close(); }} />}
           </section>
         )}
 
@@ -201,4 +205,17 @@ function RestorePoints({ close }: { close: () => void }) {
               <td><button class="btn" onClick={() => { if (confirm('Replace the current data with this restore point? (undo is possible right after)')) { replaceLedger(x.ledger, `Restored data from ${x.at.slice(0, 10)}`); close(); } }}>Restore</button></td></tr>; })}</tbody></table>)}
     </section>
   );
+}
+
+/** Merge preview: what comes in, and for each project both sides have, which version to keep (newer chosen). */
+function MergeView({ plan, onApply }: { plan: MergePlan; onApply: (c: Record<string, 'mine' | 'theirs'>) => void }) {
+  const [c, setC] = useState<Record<string, 'mine' | 'theirs'>>({});
+  return <div class="mg">
+    <p style={{ margin: '12px 0 6px' }}><b>{plan.added.length}</b> new projects{plan.added.length ? ` (${plan.added.map((p) => p.code).join(', ')})` : ''} · <b>{plan.same}</b> identical · <b>{plan.conflicts.length}</b> in both with differences{plan.countries ? ` · ${plan.countries} new countries` : ''}{plan.offices ? ` · ${plan.offices} new offices` : ''}</p>
+    {plan.conflicts.length > 0 && <table class="mini"><thead><tr><th>Project</th><th>Differences (mine → backup)</th><th>Keep</th></tr></thead>
+      <tbody>{plan.conflicts.map((x) => { const v = c[x.id] ?? x.newer; return <tr><td><b>{x.mine.code}</b></td><td class="muted">{x.diff.join(' · ')}</td>
+        <td><div class="seg">{(['mine', 'theirs'] as const).map((k) => <button aria-pressed={v === k} onClick={() => setC({ ...c, [x.id]: k })} title={`last activity ${(k === 'mine' ? lastActivity(x.mine) : lastActivity(x.theirs)).slice(0, 10) || '—'}`}>{k === 'mine' ? 'Mine' : 'Backup'}{x.newer === k ? ' · newer' : ''}</button>)}</div></td></tr>; })}</tbody></table>}
+    <p class="muted" style={{ fontSize: '12px' }}>Kinds, framework contracts and checklist ticks set by hand are combined (yours win where both have one). You can undo right after.</p>
+    <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button class="btn primary" onClick={() => onApply(c)}>Merge</button></div>
+  </div>;
 }
