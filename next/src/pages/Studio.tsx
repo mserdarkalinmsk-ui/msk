@@ -1,3 +1,4 @@
+import { ending } from '../domain/cash';
 import { useState } from 'preact/hooks';
 import { filtered, set, useStore } from '../data/store';
 import { compareReports, elapsed, lineExposure, lines, money, planStats, reportsByDate, reportTotals, riskScore } from '../domain/calc';
@@ -208,7 +209,9 @@ export function Compare() {
     const committed = Math.max(0, m.exposure - m.spent - staffCommitted), sc = m.spent + committed, risk = committed * riskPct / 100;
     const perf = planned ? m.spent / planned : 0, scp = planned ? sc / planned : 0;
     const ccm = p.ccm || s.ledger.countries.find((c) => c.id === p.country)?.ccm || SR.find((r) => /operation/i.test(r.description) && r.ccm !== '00150')?.ccm || '';
-    const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : 0;
+    // Without a forecast to the end date, the current pace decides: what would stay unspent at the end date (over 3 % of budget).
+    const paced = under0 == null ? ending([p], TODAY, 1200)[0] : undefined;
+    const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : paced && paced.share > 0.03 ? Math.round(paced.unspent) : 0;
     const note = scp > 1 ? 'over' : under > 0 ? 'under' : '';
     const tr = perfTrend(p), dPerf = tr.length > 1 ? perf - tr.at(-2)!.perf : null;
     return { p, m, planned, perf, scp, ccm, under, note, sr, scr, sc, committed, staffCommitted, risk, pct: m.budget ? sc / m.budget : 0, tr, dPerf,
@@ -228,7 +231,7 @@ export function Compare() {
   const xlsx = () => download(`expenditure-monitoring-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Expenditure monitoring', rows: [
     ['Expenditure monitoring', rows.length, scope, d8(TODAY.toISOString()), 'Spent vs planned', p0(tp), 'Spent and committed vs planned', p0(tsc)], [],
     ['Performance', 'S&C vs planned', 'CCM', 'Title', 'Country', 'MAE', 'PMM', 'BH', 'Start date', 'End date', 'Source of funding', 'Notes', 'Project amount', 'Spent (actual, T)', 'Spent and Committed (T)', 'Left budget (T)', 'Underspent/overspent forecast', 'Staff ratio (spent)', 'Staff ratio (S&C)', 'S&C as % of project amount', 'Committed excl. staff', `Commitment risk (${riskPct}%)`, 'Adjusted S&C vs planned', 'Trend vs previous report (pts)', 'Attention score', 'Attention level', 'Catch-up need per month'],
-    ...rows.map((r) => [p0(r.perf), p0(r.scp), r.ccm, r.p.name, cname(r.p.country), r.p.mae ?? '', r.p.pmm ?? r.p.jp ?? '', r.p.bh ?? '', d8(r.p.start), d8(r.p.end), r.p.funding ?? '', r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : '', r.m.budget, r.m.spent, r.sc, r.m.budget - r.sc, r.under, p0(r.sr), p0(r.scr), p0(r.pct), r.committed, r.risk, p0(r.planned ? (r.sc - r.risk) / r.planned : 0), r.dPerf == null ? '' : Math.round(r.dPerf * 100), r.ws.score, r.ws.level, Math.round(r.cu.need)]),
+    ...rows.map((r) => [p0(r.perf), p0(r.scp), r.ccm, r.p.name, cname(r.p.country), r.p.mae ?? '', r.p.pmm ?? r.p.jp ?? '', r.p.bh ?? '', d8(r.p.start), d8(r.p.end), r.p.funding ?? '', r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of underspending' : '', r.m.budget, r.m.spent, r.sc, r.m.budget - r.sc, r.under, p0(r.sr), p0(r.scr), p0(r.pct), r.committed, r.risk, p0(r.planned ? (r.sc - r.risk) / r.planned : 0), r.dPerf == null ? '' : Math.round(r.dPerf * 100), r.ws.score, r.ws.level, Math.round(r.cu.need)]),
     ['Grand Total', '', '', '', '', '', '', '', '', '', '', '', T.b, T.s, T.sc, T.b - T.sc, T.u, p0(T.s ? T.hs / T.s : 0), p0(T.sc ? T.hsc / T.sc : 0), p0(T.b ? T.sc / T.b : 0), T.cm, T.rk, p0(T.pl ? (T.sc - T.rk) / T.pl : 0), '', '', '', '']], money: [12, 13, 14, 15, 16, 20, 21, 26] }]);
   const dot = (v: number) => <span class="em-dot" style={{ background: staffTone(v) }} />;
   return (
@@ -268,7 +271,7 @@ export function Compare() {
           <td class={`em-rate ${rateTone(r.perf)}`}>{p0(r.perf)}{r.dPerf != null && Math.abs(r.dPerf) >= 0.005 && <small class="em-tr" title="Change since the previous report">{r.dPerf > 0 ? '▲' : '▼'}{Math.abs(Math.round(r.dPerf * 100))}</small>}</td><td class={`em-rate ${rateTone(r.scp)}`}>{p0(r.scp)}</td>
           <td class="em-ccm">{r.ccm}</td><td class="em-title em-g">{r.p.name}</td><td>{cname(r.p.country)}</td><td class="em-g">{r.p.mae ?? ''}</td>
           <td><b>{r.p.pmm ?? r.p.jp ?? ''}</b></td><td class="em-g">{r.p.bh ?? ''}</td><td>{d8(r.p.start)}</td><td class="em-g">{d8(r.p.end)}</td><td>{r.p.funding ?? ''}</td>
-          <td class={r.note === 'over' ? 'em-over' : r.note === 'under' ? 'em-under' : ''}>{r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of unspent balance' : ''}</td>
+          <td class={r.note === 'over' ? 'em-over' : r.note === 'under' ? 'em-under' : ''}>{r.note === 'over' ? 'Risk of overspending' : r.note === 'under' ? 'Risk of underspending' : ''}</td>
           <td class="r">{n0(r.m.budget)}</td><td class="r">{n0(r.m.spent)}</td><td class="r">{n0(r.sc)}</td><td class="r">{n0(r.m.budget - r.sc)}</td><td class="r">{n0(r.under)}</td>
           <td class="em-sr">{dot(r.sr)}{p0(r.sr)}</td><td class="em-sr">{dot(r.scr)}{p0(r.scr)}</td><td>{p0(r.pct)}</td>
         </tr>)}
@@ -320,7 +323,7 @@ export function Compare() {
           <li><b>Trend</b> ▲▼ = change in performance since the previous financial report. <b>Early warning score</b> adds points for spending behind plan (up to 35), S&C above plan (15), staff ratio (up to 15), late activities (15), overdue reports (20) and a worsening trend (10); ≥50 high, 25–49 medium.</li>
           <li><b>Catch-up plan</b> = (planned in 3 months − spent) ÷ 3, compared with the current monthly rate. <b>Staff projection</b> = staff spent ÷ months elapsed × months to the end.</li>
           <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments that may not be spent; <b>adjusted S&C vs planned</b> = (S&C − at risk) ÷ planned.</li>
-          <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of unspent balance” when an underspend is forecast.</li>
+          <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of underspending” when an unspent balance is forecast at the end date (from the report's forecast, or at the current pace when there is none).</li>
         </ol>
       </section>
       
