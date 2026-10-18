@@ -33,6 +33,7 @@ export function Providers() {
   const [on, setOnS] = useState(readOn);
   const toggle = (k: Kind) => { const n = new Set(on); n.has(k) ? n.delete(k) : n.add(k); setOnS(n); try { localStorage.setItem('pl-sp-kinds', JSON.stringify([...n])); } catch { /* ignore */ } };
   const [year, setYear] = useState('');
+  const [ctry, setCtry] = useState('');
   const [sortBy, setSortBy] = useState<'amount' | 'year' | 'name'>('amount');
   const [byKind, setByKind] = useState(true);
   const [shut, setShut] = useState<Set<string>>(new Set());
@@ -42,7 +43,8 @@ export function Providers() {
   const [limit, setLimitS] = useState(readLimit);
   const setLimit = (v: number) => { setLimitS(v); try { localStorage.setItem('pl-sp-limit', String(v || '')); } catch { /* ignore */ } };
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id.toUpperCase();
-  const every = providerPOs(P, set, true);
+  const everyAll = providerPOs(P, set, true);
+  const every = ctry ? everyAll.filter((x) => x.p.country === ctry) : everyAll;
   const years = [...new Set(every.map((x) => x.date.slice(0, 4)).filter(Boolean))].sort().reverse();
   const active = KINDS.filter((k) => on.has(k.k));
   const inYear = (x: ProviderPO) => !year || x.date.startsWith(year);
@@ -73,7 +75,7 @@ export function Providers() {
   const row = (g: typeof groups[number]) => { const o = open.has(g.k), hot = limit > 0 && g.max > limit; return <>
                 <tr class="click" onClick={() => flip(g.k)} style={{ background: hot ? 'color-mix(in srgb, #e5484d 9%, transparent)' : undefined }}>
                   <td class="muted">{o ? '▾' : '▸'}</td><td><b>{g.name}</b><FwLine name={g.name} /></td><td>{g.kinds.length ? <Kinds L={g.kinds} /> : <span class="muted">unsorted</span>}</td>
-                  <td>{g.projects.map(([id, v]) => <span class="sp-p click" onClick={(e) => { e.stopPropagation(); setProj(proj === id ? '' : id); setKind(''); }} title={`${full(v)} · click to show only this project`} style={{ color: limit && v > limit ? '#e5484d' : undefined }}>{lab(P.find((q) => q.id === id)!)}</span>)}</td>
+                  <td>{g.projects.map(([id, v]) => <span class="sp-p click" onClick={(e) => { e.stopPropagation(); setProj(proj === id ? '' : id); setKind(''); }} title={`${full(v)} · click to show only this project`} style={{ color: limit && v > limit ? '#e5484d' : undefined }}>{lab(P.find((q) => q.id === id)!)}</span>)}<div class="sp-cty">{[...new Set(g.projects.map(([id]) => P.find((q) => q.id === id)!.country))].map(cname).join(' · ')}</div></td>
                   <td class="r num">{g.L.length}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{g.last ? date(g.last) : '—'}</td><td class="r num">{full(g.spent)}</td><td class="r num"><b>{full(g.sc)}</b></td></tr>
                 {o && <tr class="sp-sub"><td /><td colSpan={7}><div class="sp-all sp-split"><span class="muted">By year</span>{[...new Set(g.L.map((x) => x.date.slice(0, 4)).filter(Boolean))].sort().map((y) => <span><b>{y}</b> {full(sum(g.L.filter((x) => x.date.startsWith(y))))}</span>)}
                   <span class="muted" style={{ marginLeft: '12px' }}>By project</span>{g.projects.map(([id, v]) => <span><b>{lab(P.find((q) => q.id === id)!)}</b> {full(v)}</span>)}</div>
@@ -99,10 +101,23 @@ export function Providers() {
   const Kinds = ({ L }: { L: Kind[] }) => <>{L.map((k) => <span class="sp-k" style={{ borderColor: kl(k).color, color: kl(k).color }}>{kl(k).label}</span>)}</>;
   return (
     <>
-      <section class="hero" aria-label="Service providers">
-        <div class="kpi lead"><span class="label">Service providers — total{year ? ` ${year}` : ''}</span><span class="value">{short(total)}</span><span class="ctx">spent + committed · {ALL.length} POs · {projects.length} projects · {suppliers(ALL).length} providers</span></div>
-        {active.filter((k) => cell(null, k.k)).sort((a, b) => cell(null, b.k) - cell(null, a.k)).slice(0, 3).map((k) => <div class="kpi"><span class="label">{k.label}</span><span class="value">{short(cell(null, k.k))}</span><span class="ctx">{ALL.filter((x) => x.kind === k.k).length} POs · {total ? Math.round(cell(null, k.k) / total * 100) : 0}% of the total</span></div>)}
-      </section>
+      {(() => { const base = everyAll.filter((x) => x.kind && on.has(x.kind) && inYear(x)), grand = sum(base);
+        const C = [...new Set(base.map((x) => x.p.country))].map((c) => { const L = base.filter((x) => x.p.country === c), t = sum(L);
+          const top = (f: (x: ProviderPO) => string) => [...L.reduce((m, x) => m.set(f(x), (m.get(f(x)) ?? 0) + x.value), new Map<string, number>())].sort((a, b) => b[1] - a[1])[0];
+          return { c, t, L, k: top((x) => x.kind!), sp: top((x) => supKey(x.supplier)), sup: new Set(L.map((x) => supKey(x.supplier))).size, pr: new Set(L.map((x) => x.p.id)).size }; }).sort((a, b) => b.t - a.t);
+        const supName = (k: string) => base.find((x) => supKey(x.supplier) === k)?.supplier ?? k;
+        return <section class="sp-hero" aria-label="Service providers by country">
+          <button class={`sp-tile lead${!ctry ? ' on' : ''}`} onClick={() => setCtry('')}>
+            <span class="sp-tl">Service providers{year ? ` · ${year}` : ''}</span><span class="sp-tv">{short(grand)}</span>
+            <span class="sp-tc">{base.length} POs · {new Set(base.map((x) => x.p.id)).size} projects · {new Set(base.map((x) => supKey(x.supplier))).size} providers · {C.length} countries</span>
+            <span class="sp-stack">{C.map((x, i) => <i style={{ width: `${grand ? x.t / grand * 100 : 0}%`, opacity: 1 - i * 0.18 }} title={`${cname(x.c)} ${full(x.t)}`} />)}</span></button>
+          {C.map((x) => <button class={`sp-tile${ctry === x.c ? ' on' : ''}`} onClick={() => { setCtry(ctry === x.c ? '' : x.c); setProj(''); }}>
+            <span class="sp-tl">{cname(x.c)}</span><span class="sp-tv">{short(x.t)}</span>
+            <span class="sp-bar1"><i style={{ width: `${grand ? x.t / grand * 100 : 0}%` }} /></span>
+            <span class="sp-tc"><b>{grand ? Math.round(x.t / grand * 100) : 0}%</b> of the total · {x.pr} projects · {x.sup} providers</span>
+            {x.k && <span class="sp-tc"><Dot k={x.k[0] as Kind} />{kl(x.k[0] as Kind).label} <b>{short(x.k[1])}</b></span>}
+            {x.sp && <span class="sp-tc" title={supName(x.sp[0])}>Top: <b>{supName(x.sp[0])}</b> {short(x.sp[1])}</span>}</button>)}
+        </section>; })()}
       <div class="sp-bar">
         <div class="cm-chips"><span class="muted">Year</span><button class={`chip${!year ? ' on' : ''}`} onClick={() => setYear('')}>All</button>{years.map((y) => <button class={`chip${year === y ? ' on' : ''}`} aria-pressed={year === y} onClick={() => setYear(year === y ? '' : y)}>{y}</button>)}</div>
         <div class="cm-chips"><span class="muted">Add</span>{KINDS.filter((k) => k.optional).map((k) => { const v = sum(every.filter((x) => x.kind === k.k && inYear(x))); return <button class={`chip${on.has(k.k) ? ' on' : ''}`} aria-pressed={on.has(k.k)} onClick={() => toggle(k.k)} title={on.has(k.k) ? 'Counted — click to leave out' : 'Not counted — click to add'}>{on.has(k.k) ? '✓ ' : '+ '}{k.label} <small class="muted">{short(v)}</small></button>; })}</div>
@@ -121,9 +136,10 @@ export function Providers() {
             {!every.length && <p class="muted">No purchase orders yet — load the report workbooks or system extractions (with the “Purchase Orders” sheet).</p>}</div>
         </section>
         <section class="card span-12">
-          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Service providers{kind ? ` — ${kl(kind).label}` : ''}{year ? ` — ${year}` : ''}{proj ? ` — ${lab(P.find((p) => p.id === proj)!)}` : ''}</h2>
+          <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Service providers{kind ? ` — ${kl(kind).label}` : ''}{year ? ` — ${year}` : ''}{ctry ? ` — ${cname(ctry)}` : ''}{proj ? ` — ${lab(P.find((p) => p.id === proj)!)}` : ''}</h2>
             <p>{groups.length} providers · {rows.length} POs · {full(sum(rows.filter((x) => x.kind)))} · click a provider to see its POs{hand ? ` · ${hand} POs set by hand` : ''}</p></div>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select class="sp-sel" value={ctry} onChange={(e) => { setCtry((e.target as HTMLSelectElement).value); setProj(''); }} title="Country"><option value="">All countries</option>{[...new Set(everyAll.filter((x) => x.kind && on.has(x.kind)).map((x) => x.p.country))].map((c) => <option value={c}>{cname(c)}</option>)}</select>
               <select class="sp-sel" value={proj} onChange={(e) => { setProj((e.target as HTMLSelectElement).value); setKind(''); }} title="Project"><option value="">All projects</option>{[...new Set(every.filter((x) => x.kind && on.has(x.kind)).map((x) => x.p))].sort((a, b) => lab(a).localeCompare(lab(b))).map((p) => <option value={p.id}>{lab(p)} · {cname(p.country)}</option>)}</select>
               <select class="sp-sel" value={year} onChange={(e) => setYear((e.target as HTMLSelectElement).value)} title="Year"><option value="">All years</option>{years.map((y) => <option value={y}>{y}</option>)}</select>
               <div class="seg"><button aria-pressed={byKind} onClick={() => setByKind(true)}>By kind</button><button aria-pressed={!byKind} onClick={() => setByKind(false)}>One list</button></div>
@@ -132,7 +148,7 @@ export function Providers() {
               <label class="muted" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}><input type="checkbox" checked={review} onChange={(e) => setReview((e.target as HTMLInputElement).checked)} />Unsorted POs ({none})</label></div></div>
           <div class="card-b table-scroll">
             {limit > 0 && <p style={{ margin: '0 0 8px', color: over.length ? '#e5484d' : undefined }}>{over.length ? `${over.length} providers above ${full(limit)} in a single project.` : `No provider above ${full(limit)} in a single project.`}</p>}
-            <table class="mini sp-t"><thead><tr><th style={{ width: '18px' }} /><th>Service provider</th><th>Kind</th><th>Projects</th><th class="r">POs</th><th>Last PO</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
+            <table class="mini sp-t"><thead><tr><th style={{ width: '18px' }} /><th>Service provider</th><th>Kind</th><th>Projects · countries</th><th class="r">POs</th><th>Last PO</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
               <tbody>{byKind ? [...KINDS.map((k) => k.k as Kind | ''), ''].map((k) => { const G = groups.filter((g) => (g.L[0].kind ?? '') === k); if (!G.length) return null; const o = !shut.has(k || 'none'); return <>
                 <tr class="click sp-h" onClick={() => fold(k || 'none')}><td>{o ? '▾' : '▸'}</td><td colSpan={5}>{k ? <><Dot k={k as Kind} /><b>{kl(k as Kind).label}</b></> : <b>Unsorted</b>} <span class="muted">· {G.length} providers · {G.reduce((a, g) => a + g.L.length, 0)} POs</span>{k && (() => { const t = topShare(G.flatMap((g) => g.L)); return t && t.share > 0.5 && G.length > 1 ? <span class="sp-warn" title="Share of this kind going to one provider">⚠ {Math.round(t.share * 100)}% to {t.name}</span> : null; })()}</td><td class="r num">{full(G.reduce((a, g) => a + g.spent, 0))}</td><td class="r num"><b>{full(G.reduce((a, g) => a + g.sc, 0))}</b></td></tr>
                 {o && G.slice(0, 300).map(row)}</>; }) : groups.slice(0, 300).map(row)}</tbody>
