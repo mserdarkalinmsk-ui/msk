@@ -446,3 +446,7 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .cp-pay { padding: 6px 0 10px; display: grid; gap: 8px; }
 .cp-pay-h { display: flex; justify-content: space-between; align-items: center; }
 .si-skip { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 12px; margin-bottom: 10px; border-radius: var(--r-md, 10px); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); font-size: 13px; }
+.es-bars { display: grid; gap: 4px; }
+.es-bars span { position: relative; display: block; height: 14px; background: var(--line); border-radius: 3px; }
+.es-bars i { display: block; height: 100%; border-radius: 3px; opacity: .85; }
+.es-bars em { position: absolute; left: 6px; top: 0; font-size: 10.5px; line-height: 14px; font-style: normal; font-weight: 600; color: var(--ink); }
