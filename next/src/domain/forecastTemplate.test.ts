@@ -64,3 +64,19 @@ describe('every forecast template', () => {
     });
   }
 });
+
+describe('forecast outputs of the guidelines', () => {
+  it('hides the proposal for the team and gives the donor values only with the forecast hidden', async () => {
+    const { forecastSheets: fs, forecastFileName } = await import('./forecastTemplate');
+    const o = { kind: 'payment' as const, programme: 'JP' as const, change: 'notification' as const, changeNo: '3' };
+    const T = fs(p, new Date('2026-07-15'), o, undefined, 'team');
+    expect(T[0].hiddenCols).toEqual([18, 19, 20, 21]);
+    const D = fs(p, new Date('2026-07-15'), o, undefined, 'donor');
+    expect(D.map((s) => s.name)).toEqual(['Budget presentation', 'variation', 'FORECAST']);
+    expect(D[2].hidden).toBe(true);
+    expect(D[0].rows.flat().some((c) => c && typeof c === 'object' && (c as XCell).f?.includes('Forecast!'))).toBe(false);
+    expect(forecastFileName(p, 'Turkiye', new Date('2026-07-15'), o, 'donor')).toBe('BH5235-JP3220-Turkiye-Revised Budget proposal-For notification n°3-JUL-2026.xlsx');
+    const x = await readXlsx(workbook(D).buffer as ArrayBuffer);
+    expect(x.sheets.length).toBe(3);
+  });
+});

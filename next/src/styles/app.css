@@ -642,3 +642,5 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fe-in.g { background: #e3f3cf; border-color: #92d050; } .fe-in.y { background: #fff8c4; border-color: #e6cf3a; }
 .fe-in:focus { outline: 2px solid var(--accent); outline-offset: 0; }
 .fe-t td.bad { color: var(--critical); font-weight: 700; } .fe-t td.warn { color: var(--warn); }
+.fe-ext { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink-2); }
+.fe-ext select, .fe-ext input { height: 32px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 8px; }
