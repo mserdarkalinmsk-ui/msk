@@ -15,3 +15,6 @@ export const month = (t: number | string) => mf.format(new Date(typeof t === 'st
 export const date = (s: string) => df.format(new Date(s + 'T00:00:00Z'));
 export const period = (p: { start: string; end: string; datesTbc?: boolean }) => (p.datesTbc ? 'dates to confirm' : `${month(p.start)} → ${month(p.end)}`);
 export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+/** Exact amount with cents, as in the financial reports: €5,403,333.01. */
+const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const cents = (v: number) => (v < 0 ? '−€' : '€') + nf2.format(Math.abs(v));

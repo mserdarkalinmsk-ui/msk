@@ -8,7 +8,7 @@ import { alerts } from '../domain/insights';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
-import { full, month, pct, short, signedPct } from '../ui/format';
+import { cents, full, month, pct, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
 import { Count } from '../ui/Count';
 import { MapView, type MapMode } from '../ui/MapView';
@@ -203,9 +203,9 @@ export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cnam
     { key: 'pmm', label: 'PMM', width: 90, value: (p) => p.pmm ?? '', render: (p) => validUrl(p.pmmUrl) ? <a class="num" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>{p.pmm || 'link'} ↗</a> : <span class="num">{p.pmm ?? ''}</span> },
     { key: 'country', label: 'Country', width: 110, value: (p) => cname(p.country) },
     { key: 'sector', label: 'Sector', width: 120, value: (p) => p.sector ?? '' },
-    { key: 'budget', label: 'Budget', width: 110, align: 'r', sum: true, format: short, value: (p) => money(p).budget },
-    { key: 'spent', label: 'Spent', width: 110, align: 'r', sum: true, format: short, value: (p) => money(p).spent },
-    { key: 'committed', label: 'Committed', width: 110, align: 'r', sum: true, format: short, value: (p) => money(p).committed },
+    { key: 'budget', label: 'Budget', width: 140, align: 'r', sum: true, format: cents, value: (p) => money(p).budget },
+    { key: 'spent', label: 'Spent', width: 140, align: 'r', sum: true, format: cents, value: (p) => money(p).spent },
+    { key: 'committed', label: 'Committed', width: 140, align: 'r', sum: true, format: cents, value: (p) => money(p).committed },
     {
       key: 'pace', label: 'Spent vs time', width: 170, value: (p) => burnGap(p, TODAY), render: (p) => {
         const m = money(p), b = m.budget ? m.spent / m.budget : 0, el = elapsed(p, TODAY);
