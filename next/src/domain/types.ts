@@ -31,6 +31,8 @@ export interface Project {
   contract?: Record<string, unknown>;
   /** Payments received from the donor (pre-financing and further instalments). */
   payments?: { date: string; amount: number; note?: string }[];
+  /** Budget transfers planned or made (from line → to line), with how they were handled. */
+  budgetChanges?: { id: string; date: string; from: string; to: string; amount: number; reason?: string; status: 'planned' | 'notified' | 'addendum' }[];
   riskRegister?: Risk[];
   closure?: { done?: Record<string, boolean>; received?: number; euShare?: number; notes?: string };
   /** Assumptions from the DoA (risk analysis section). */

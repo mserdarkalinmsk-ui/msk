@@ -158,7 +158,7 @@ export interface HeadingRow { code: string; label: string; baseline: number; app
 type Sums = { baseline: number; approved: number; exposure: number };
 export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct: Sums; admin: Sums; contingency: number; total: Sums } {
   // Heading flexibility: 25% between headings (portfolio rule), unless the project sets its own.
-  const flex = (Number((p as { flexPct?: number }).flexPct) || 25) / 100;
+  const flex = (Number((p as { flexPct?: number }).flexPct) || Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 25) / 100;
   const base = p.approvedBudget?.lines ?? [];
   const cur = lines(p);
   const key = (c: string) => c.split('.')[0];

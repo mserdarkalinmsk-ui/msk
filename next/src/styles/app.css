@@ -520,3 +520,19 @@ tr.click td.click { text-decoration: none; }
 .bc header { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; text-decoration: none !important; }
 .bc-n { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
 .bc table { margin-top: 8px; }
+.bt-h tr.over td { background: color-mix(in srgb, var(--critical) 7%, var(--surface)); }
+.bt-scale { position: relative; display: block; height: 18px; border-radius: 4px; background: var(--line); }
+.bt-scale .lim { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink-3, #888); }
+.bt-scale .lim.l { left: 18.75%; } .bt-scale .lim.r { left: 81.25%; }
+.bt-scale::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--ink); opacity: .5; }
+.bt-scale b { position: absolute; top: 4px; height: 10px; border-radius: 3px; }
+.bt-scale em { position: absolute; right: 6px; top: 0; font-size: 10.5px; font-weight: 700; line-height: 18px; font-style: normal; }
+.bt-verdict { display: grid; gap: 4px; padding: 12px 16px; border-radius: var(--r-md, 10px); border-left: 5px solid var(--good); background: color-mix(in srgb, var(--good) 8%, var(--surface)); }
+.bt-verdict.warning { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--surface)); }
+.bt-verdict.serious { border-color: var(--serious); background: color-mix(in srgb, var(--serious) 9%, var(--surface)); }
+.bt-verdict.critical { border-color: var(--critical); background: color-mix(in srgb, var(--critical) 8%, var(--surface)); }
+.bt-verdict > b { font-size: 16px; } .bt-verdict small { color: var(--ink-2); }
+.bt-act { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.bt-letter { max-width: 760px; font-size: 13px; line-height: 1.55; }
+.bt-letter table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; } .bt-letter th, .bt-letter td { border: 1px solid var(--line); padding: 4px 6px; text-align: left; }
+.bt-letter h1 { font-size: 18px; } .bt-letter h2 { font-size: 14px; margin: 14px 0 4px; }
