@@ -80,9 +80,9 @@ export function Overview() {
           <span class="ctx" style={{ fontSize: '11.5px' }}><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', marginRight: '4px' }} />spent</span><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', opacity: .35, marginRight: '4px' }} />committed</span><span>│ time elapsed {pct(T.elapsed)}</span></span>
         </div>
         <div class="kpi">
-          <span class="label">Burn vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
+          <span class="label">Pace vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
           <span class="value"><Count value={gap} format={signedPct} /></span>
-          <span class="ctx">spend share minus time share</span>
+          <span class="ctx">percentage points {gap < 0 ? "behind" : "ahead of"} the time elapsed ({pct(T.burn)} spent · {pct(T.elapsed)} of time)</span>
           <div class="spark"><Sparkline values={actualPts.map((x) => x.actual!)} target={actualPts.map((x) => x.plan)} /></div>
         </div>
         <div class="kpi">
@@ -136,6 +136,10 @@ export function Overview() {
         </section>
 
         <OverviewMap />
+        <section class="card span-5">
+          <div class="card-h"><div><h2>Where the budget stands</h2><p>Budget → spent → committed → balance</p></div></div>
+          <div class="card-b"><Chart height={300} label="Budget waterfall" option={(t) => waterfallOption(t, T)} /></div>
+        </section>
 
         <OfficeSummary variant="card" />
 
@@ -161,12 +165,8 @@ export function Overview() {
           </div>
         </section>
 
-        <section class="card span-4">
-          <div class="card-h"><div><h2>Where the budget stands</h2><p>Budget → spent → committed → balance</p></div></div>
-          <div class="card-b"><Chart height={330} label="Budget waterfall" option={(t) => waterfallOption(t, T)} /></div>
-        </section>
 
-        <section class="card span-8" style={{ overflow: 'hidden' }}>
+        <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Projects</h2><p>Double-click name or status to edit · drag column edges to resize</p></div></div>
           <ProjectTable rows={P} cname={cname} maxHeight={360} />
         </section>
@@ -181,12 +181,12 @@ function OverviewMap() {
   const [mode, setMode] = useState<MapMode>('budget');
   const P = L.projects.filter((p) => !f.sector || p.sector === f.sector);
   return (
-    <section class="card span-12">
+    <section class="card span-7">
       <div class="card-h" style={{ alignItems: 'center' }}>
         <div><h2>Portfolio map</h2><p>Numbers are project counts · select a country to filter the page · Ctrl + scroll to zoom</p></div>
         <div class="tools"><ModeSwitch mode={mode} setMode={setMode} only={['budget', 'used', 'pace', 'attention']} /></div>
       </div>
-      <div class="card-b"><MapView compact countries={L.countries} data={mapData(L.countries, P)} mode={mode} height={380} selected={f.country || undefined}
+      <div class="card-b"><MapView compact countries={L.countries} data={mapData(L.countries, P)} mode={mode} height={300} selected={f.country || undefined}
         onSelect={(id) => set((s) => ({ filters: { ...s.filters, country: id ?? '' } }))} /></div>
     </section>
   );

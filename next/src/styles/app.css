@@ -462,3 +462,16 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .cpj-bar { display: block; height: 5px; border-radius: 3px; background: var(--line); margin-bottom: 3px; overflow: hidden; }
 .cpj-bar i { display: block; height: 100%; }
 .cpj-h th { background: var(--surface-2, color-mix(in srgb, var(--ink) 4%, transparent)); font-weight: 700 !important; color: var(--ink) !important; padding-top: 10px; }
+
+/* ---- Visual polish: shared look ---- */
+.seg button { white-space: nowrap; }
+/* The lead figure of every page: a deep navy card. */
+.hero .kpi.lead { background: linear-gradient(135deg, #14243d 0%, #1f3d63 60%, #24476f 100%); color: #fff; border-radius: var(--r-lg, 14px); margin: -1px; box-shadow: 0 10px 28px rgb(20 36 61 / .28); }
+.hero .kpi.lead .label, .hero .kpi.lead .ctx { color: rgb(255 255 255 / .78); }
+.hero .kpi.lead .ctx b { color: #fff; }
+.hero .kpi.lead .meter { background: rgb(255 255 255 / .16); }
+.hero .kpi.lead .meter span { background: #8fb8ff !important; }
+.hero .kpi.lead .meter .tick { background: #fff; }
+:root[data-theme="dark"] .hero .kpi.lead { background: linear-gradient(135deg, #1a3150 0%, #23497a 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero .kpi.lead { background: linear-gradient(135deg, #1a3150 0%, #23497a 100%); } }
+@media print { .hero .kpi.lead { background: none !important; color: inherit; box-shadow: none; } .hero .kpi.lead .label, .hero .kpi.lead .ctx { color: inherit; } }
