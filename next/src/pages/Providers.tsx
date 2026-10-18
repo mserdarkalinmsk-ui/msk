@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { filtered, go, setFramework, setPoKind, useStore } from '../data/store';
-import { supKey, topShare, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
+import { providerSummary, supKey, topShare, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
@@ -201,4 +201,19 @@ export function Providers() {
         </section>; })()}
     </>
   );
+}
+
+/** Service providers in short — for the monthly pack and the presentation (main kinds only). */
+export function ProviderBrief({ P, cname, rows = 8 }: { P: Project[]; cname: (id: string) => string; rows?: number }) {
+  const set = useStore((x) => x.ledger.poKinds) ?? {};
+  const S = providerSummary(P, set, rows);
+  if (!S.total) return <p class="muted">No service-provider purchase orders in the latest report workbooks.</p>;
+  return <div class="sp-mini">
+    <p class="sp-mini-k"><b>{full(S.total)}</b> spent + committed · {S.pos} POs · {S.providers} providers · {S.projects} projects{S.countries.length > 1 ? <> · {S.countries.map((c) => `${cname(c.c)} ${short(c.v)}`).join(' · ')}</> : ''}</p>
+    <div class="sp-mini-g">
+      <table class="mini"><thead><tr><th>Kind</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
+        <tbody>{S.kinds.map((k) => <tr><td><Dot k={k.k} />{k.label}</td><td class="r num">{k.n}</td><td class="r num">{full(k.v)}</td><td class="r num">{Math.round(k.v / S.total * 100)}%</td></tr>)}</tbody></table>
+      <table class="mini"><thead><tr><th>Largest providers</th><th>Kind</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
+        <tbody>{S.top.map((x) => <tr><td>{x.supplier}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
+    </div></div>;
 }

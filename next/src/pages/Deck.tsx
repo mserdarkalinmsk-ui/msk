@@ -1,4 +1,6 @@
 import { OfficeSummary, officeRows } from './OfficeSummary';
+import { ProviderBrief } from './Providers';
+import { providerSummary } from '../domain/providers';
 import { exportPptx } from '../ui/deckPptx';
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
@@ -73,11 +75,12 @@ export function Deck() {
   const CU = M.filter((x) => x.now === 'red' || x.now === 'amber').map((x) => ({ x, c: catchUp(x.p, TODAY, 3) })).filter((y) => y.c.need > 0).slice(0, 5);
   const nCountries = new Set(P.map((p) => p.country)).size;
   const hasOffice = mg && (get().ledger.offices ?? []).some((o) => o.reports.length);
+  const SP = mg ? providerSummary(P, s.ledger.poKinds ?? {}, 8) : null, hasProv = !!SP?.total, xo = (hasOffice ? 1 : 0) + (hasProv ? 1 : 0);
   const RR = resultRows(P, TODAY), I = RR.inds.filter((r) => r.prog != null);
   const PP = pages ? [...P].sort((a, b) => money(b).budget - money(a).budget) : [];
   // Slides: cover, summary, finance, spending, headings, countries, status, results (donor), risks, staff, offices (management),
   // milestones, next steps, one page per project (optional), annex.
-  const of = 12 + (mg ? 0 : 1) + (hasOffice ? 1 : 0) + PP.length;
+  const of = 12 + (mg ? 0 : 1) + xo + PP.length;
   deckCtx.n = 1; deckCtx.of = of; deckCtx.notes = notes; deckCtx.aud = aud;
   const gapPp = Math.round((perf - 1) * 100), behind = M.filter((x) => x.now === 'red' || x.now === 'amber');
   const topH = [...H].sort((a, b) => b.approved - a.approved)[0];
@@ -101,7 +104,7 @@ export function Deck() {
     ...(P.some((p) => { const d = (parseDate(p.end).getTime() - TODAY.getTime()) / 864e5; return d > 0 && d < 183; }) ? ['Prepare closure and final reports for projects ending within six months.'] : []),
     `Next update after the ${month(new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() + 1, 1)).getTime())} financial reports.`,
   ];
-  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, app: s.ledger.brand?.title, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
+  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, app: s.ledger.brand?.title, providers: hasProv ? SP! : undefined, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
     staff: active, renewals: ren.length, offices: hasOffice ? officeRows(get().ledger.offices ?? []).map((o) => ({ name: o.o.name, ob: o.T.ob.budget, sc: o.T.ob.sc, end: o.end, request: o.request })) : [],
     events: E, catchUp: CU.map(({ x, c }) => ({ p: x.p, perf: x.perf, rate: c.rate, need: c.need })), steps: STEPS, pages: PP, MS, NS }).catch((e) => alert(`PowerPoint export failed: ${(e as Error).message}`));
   const NS = {
@@ -223,11 +226,14 @@ export function Deck() {
         <OfficeSummary variant="slide" />
       </Slide>}
 
-      <Slide n={10+(hasOffice ? 1 : 0)} of={of} scope={scope} title="Upcoming milestones" msg={MS.upcoming} notes={NS.upcoming} sub="Next 90 days: reports due, planned activity ends and project end dates">
+      {hasProv && <Slide n={10+(hasOffice ? 1 : 0)} of={of} scope={scope} title="Service providers" msg={`${short(SP!.total)} with ${SP!.providers} service providers; ${SP!.kinds[0]?.label.toLowerCase()} is the largest share (${Math.round((SP!.kinds[0]?.v ?? 0) / SP!.total * 100)}%)`} notes="Purchase orders of the latest report workbooks for event management, interpretation, consultants, visibility, research, publication and grants; salaries, per diems and petty cash are left out." sub="Spent + committed by kind and the largest providers">
+        <ProviderBrief P={P} cname={cname} />
+      </Slide>}
+      <Slide n={10+xo} of={of} scope={scope} title="Upcoming milestones" msg={MS.upcoming} notes={NS.upcoming} sub="Next 90 days: reports due, planned activity ends and project end dates">
         {E.length ? <ul class="sl-tl">{E.map((e) => <li style={{ borderLeftColor: KIND_C[e.kind] }}><span class="num">{date(e.day)}</span><b>{lab(e.p)}</b><span>{cut(e.title, 70)}</span><small>{e.sub}</small></li>)}</ul> : <p class="sl-empty">Nothing scheduled in the next 90 days.</p>}
       </Slide>
 
-      <Slide n={11+(hasOffice ? 1 : 0)} of={of} scope={scope} title={mg ? "Next steps" : "Next steps"} msg={MS.next} notes={NS.next} sub="What is needed to get back on plan within three months">
+      <Slide n={11+xo} of={of} scope={scope} title={mg ? "Next steps" : "Next steps"} msg={MS.next} notes={NS.next} sub="What is needed to get back on plan within three months">
         {mg && CU.length ? <table class="mini sl-t"><thead><tr><th>Project</th><th class="r">Now</th><th class="r">Current pace / month</th><th class="r">Needed / month</th><th class="r">Factor</th><th>Focus headings</th></tr></thead>
           <tbody>{CU.map(({ x, c }) => <tr><td><b>{lab(x.p)}</b> {cut(x.p.name, 48)}</td><td class="r num" style={{ color: BAND_C[x.now] }}>{Math.round(x.perf * 100)}%</td><td class="r num">{short(c.rate)}</td><td class="r num"><b>{short(c.need)}</b></td><td class="r num">{c.rate ? `${c.factor.toFixed(1)}×` : '—'}</td><td>{c.gaps.map((g) => HEADINGS[g.heading] ?? g.heading).join(', ') || '—'}</td></tr>)}</tbody></table> : <p class="sl-empty">All projects are on or near plan — no catch-up needed.</p>}
         <ol class="sl-steps">{STEPS.map((t) => <li>{t}</li>)}</ol>
@@ -250,7 +256,7 @@ export function Deck() {
           </div>
         </Slide>; })}
 
-      <Slide n={12+(hasOffice ? 1 : 0)} of={of} scope={scope} title="Annex — method and definitions" cls="sl-annex">
+      <Slide n={12+xo} of={of} scope={scope} title="Annex — method and definitions" cls="sl-annex">
         <dl class="sl-def">
           <dt>Planned to date</dt><dd>Budget × share of the implementation period elapsed (linear plan).</dd>
           <dt>Spent vs planned</dt><dd>Actual spending ÷ planned to date. Blue ≥ 100%, green 90–100%, amber 70–90%, red below 70%.</dd>

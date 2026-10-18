@@ -434,3 +434,6 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
   .sp-brief-page .r { text-align: right; font-variant-numeric: tabular-nums; }
   .sp-brief-page tfoot td { font-weight: 700; border-top: 1px solid #555; }
 }
+.sp-mini-k { margin: 0 0 8px; font-size: 13px; }
+.sp-mini-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; }
+@media (max-width: 760px) { .sp-mini-g { grid-template-columns: 1fr; } }
