@@ -12,7 +12,7 @@ import { costFactor, type InflationSettings } from './salaryProjection';
  */
 export type BlockId = 'p' | 'r' | 'e';
 export interface PlanCell { u?: number; r?: number }
-export interface ForecastDraft { /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[] }
+export interface ForecastDraft { /** keep the total fixed: the remainder goes to this line (default on, 5.7) */ auto?: { on?: boolean; line?: string }; /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[] }
 
 export const isStaffLine = (code: string) => /^1\.[12]\.1\.\d+$/.test(code);
 export const isChargeBack = (code: string) => code === '4.2' || code === '4.4';
@@ -152,4 +152,16 @@ export function resolvedLines(p: Project, today: Date, d: ForecastDraft): Foreca
   const R = computePlan(p, today, d), out: ForecastDraft['lines'] = {};
   for (const l of R.lines) for (const [b, c] of Object.entries(l.cells) as [BlockId, { u: number; r: number }][]) (out[l.code] ??= {})[b] = { u: c.u || undefined, r: c.r };
   return out;
+}
+
+/**
+ * The total stays fixed: the plug line (5.7 by default) takes in its last planned period whatever keeps the direct costs
+ * equal to the budget. Off for the 12-month forecast, which is not a budget revision.
+ */
+export function autoLine(d: ForecastDraft): string | null { return d.opt.kind !== 'twelve' && d.auto?.on !== false ? d.auto?.line ?? '5.7' : null; }
+export function effective(p: Project, today: Date, d: ForecastDraft): ForecastDraft {
+  const code = autoLine(d); if (!code) return d;
+  const b = planBlocks(p, today, d.opt).at(-1)!.id, keep = d.lines[code]?.[b]?.r;
+  const cleared: ForecastDraft = { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { r: keep } } } };
+  return balanceOn(p, today, cleared, code);
 }

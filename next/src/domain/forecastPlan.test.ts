@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { autofillStaff, balanceOn, computePlan, monthsIn, type ForecastDraft } from './forecastPlan';
+import { autofillStaff, balanceOn, computePlan, effective, monthsIn, type ForecastDraft } from './forecastPlan';
 import { forecastSheets } from './forecastTemplate';
 import type { XCell } from '../ui/xlsxwrite';
 
@@ -57,5 +57,18 @@ describe('forecast in the app', () => {
     expect((row[9] as XCell).v).toBe(5); expect((row[10] as XCell).v).toBe(20000); expect((row[11] as XCell).v).toBe(100000);
     const R = computePlan(p, today, d), l = R.lines.find((x) => x.code === '5.7')!;
     expect((row[17] as XCell).v).toBe(l.rounded); // rounded version, column R
+  });
+});
+
+describe('fixed total', () => {
+  it('puts the remainder on 5.7 automatically, whatever is typed elsewhere', () => {
+    const d: ForecastDraft = autofillStaff(p, today, { opt: { kind: 'revision', programme: 'JP' }, lines: {} });
+    for (const extra of [0, 1, 3]) {
+      const x = { ...d, lines: { ...d.lines, '4.2': { p: { u: 10 + extra * 5, r: 300 } } } };
+      const R = computePlan(p, today, effective(p, today, x));
+      expect(Math.abs(R.direct.rounded - R.direct.budget)).toBeLessThan(20000); // within one 5.7 unit of rounding
+    }
+    const off = computePlan(p, today, effective(p, today, { ...d, auto: { on: false } }));
+    expect(Math.abs(off.direct.rounded - off.direct.budget)).toBeGreaterThan(20000);
   });
 });

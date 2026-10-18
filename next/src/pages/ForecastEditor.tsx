@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { updateProject, useStore } from '../data/store';
-import { autofillStaff, balanceOn, computePlan, resolvedLines, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
+import { autoLine, autofillStaff, balanceOn, computePlan, effective, resolvedLines, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
 import { costFactor, CPI_LAST, recentCpi, salaryPath, type InflationSettings } from '../domain/salaryProjection';
 import { forecastPeriod } from '../domain/forecastTemplate';
 import { defaultOptions, FORECAST_KINDS, forecastFileName, forecastSheets, type ForecastKind, type ForecastMode, type ForecastOptions } from '../domain/forecastTemplate';
@@ -28,11 +28,21 @@ export function ForecastEditor({ p }: { p: Project }) {
     save({ ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { ...d.lines[code]?.[b], [k]: x } } } });
   };
   const [all, setAll] = useState(false);
-  const R = computePlan(p, TODAY, d);
+  const plug = autoLine(d), E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), lastB = R.blocks.at(-1)!.id;
   const twelve = d.opt.kind === 'twelve';
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
   const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (R.decision === 'addendum' ? 'addendum' : 'notification')) : undefined };
-  const xlsx = (mode: ForecastMode) => download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, d), mode));
+  const xlsx = (mode: ForecastMode) => download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, E), mode));
+  // Units that look like a rate typed in the wrong box: more months than the period has for a monthly line, or far more
+  // than the budget has left.
+  const odd = (l: (typeof R.lines)[number], b: BlockId): string | null => {
+    const u = d.lines[l.code]?.[b]?.u; if (!u) return null;
+    const blk = R.blocks.find((x) => x.id === b)!, months = (Date.parse(blk.to) - Date.parse(blk.from)) / (30.44 * 864e5) + 1;
+    if (/month/i.test(l.unit) && u > months * (l.staff ? 3 : 2) + 0.5) return `${u} units for about ${Math.round(months)} months — is this a rate typed in the units box?`;
+    if (l.bUnits && u > l.bUnits * 3) return `${u} units against ${l.bUnits} in the budget — please check`;
+    return null;
+  };
+  const bad = R.lines.flatMap((l) => R.blocks.map((b) => odd(l, b.id)).filter(Boolean).map((m) => `${l.code}: ${m}`));
   const tone = R.decision === 'addendum' ? 'critical' : R.decision === 'notification' ? 'warn' : 'good';
   return (
     <div class="fe">
@@ -54,7 +64,12 @@ export function ForecastEditor({ p }: { p: Project }) {
           <button class="btn primary" title="Units from the staff contracts on each line (months in each period × FTE), rates from the latest cost plus the guideline margin; 4.2 / 4.4 on the local staff months" onClick={() => save(autofillStaff(p, TODAY, d))}>✦ Fill staff and 4.2 / 4.4</button>
           <label class="fe-rate">4.2 rate <input type="number" value={d.rates?.r42 ?? ''} placeholder="per month" onChange={(e) => save({ ...d, rates: { ...d.rates, r42: Number((e.target as HTMLInputElement).value) || undefined } })} /></label>
           <label class="fe-rate">4.4 rate <input type="number" value={d.rates?.r44 ?? ''} placeholder="per month" onChange={(e) => save({ ...d, rates: { ...d.rates, r44: Number((e.target as HTMLInputElement).value) || undefined } })} /></label>
-          {!twelve && <button class="btn" title="Puts the difference with the budget on 5.7 Cost of conferences/seminars (guidelines, step 8)" onClick={() => save(balanceOn(p, TODAY, d))}>⚖ Balance on 5.7</button>}
+          {!twelve && <label class="fe-ext" title="Guidelines step 8: the total of the agreement does not change — the remainder of the direct costs goes to one line, in its last planned period">
+            <input type="checkbox" checked={!!plug} onChange={() => save({ ...d, auto: { ...d.auto, on: !plug } })} /> Keep the total fixed — remainder on
+            <select value={d.auto?.line ?? '5.7'} disabled={!plug} onChange={(e) => save({ ...d, auto: { ...d.auto, line: (e.target as HTMLSelectElement).value } })}>
+              {R.lines.filter((l) => !l.staff && !l.cb && (l.budget || l.code === (d.auto?.line ?? '5.7'))).map((l) => <option value={l.code}>{l.code} {l.description.slice(0, 32)}</option>)}
+            </select></label>}
+          {!twelve && !plug && <button class="btn" title="Puts the difference with the budget on 5.7 once (guidelines, step 8)" onClick={() => save(balanceOn(p, TODAY, d))}>⚖ Balance on 5.7</button>}
           <button class="btn" title="Working file for the project team: the rounded proposal and variation columns hidden (guidelines, step 7)" onClick={() => xlsx('team')}>⤓ Excel for the project team</button>
           <button class="btn" title="Every sheet and column visible — the finance working file" onClick={() => xlsx('working')}>⤓ Working file</button>
           {!twelve && <button class="btn primary" title="Donor version (guidelines, steps 9–10): Budget presentation and variation with values only, the forecast sheet hidden, named as a revised budget proposal" onClick={() => {
@@ -72,6 +87,7 @@ export function ForecastEditor({ p }: { p: Project }) {
       {!twelve && <section class={`fe-decision ${tone}`} role="status">
         <div><b>{R.decision === 'addendum' ? 'Addendum needed' : R.decision === 'notification' ? 'Notification is enough' : R.direct.planned ? 'No change to the budget' : 'Fill in the planned expenditure'}</b>
           <span>{R.decision === 'addendum' ? ' — EU acceptance and a contract amendment' : R.decision === 'notification' ? ` — every heading stays within ${Math.round(R.flex * 100)}% of the agreement` : ''}</span></div>
+        {plug && (E.lines[plug]?.[lastB]?.u ?? 0) === 0 && R.direct.rounded > R.direct.budget + 50 && <p class="fe-over">The other lines already plan <b>{full(R.direct.rounded - R.direct.budget)}</b> more than the budget — {plug} cannot go below zero. Reduce the plan or request an increase of the total (addendum).</p>}
         {R.reasons.length > 0 && <ul>{R.reasons.map((x) => <li>{x}</li>)}</ul>}
         <div class="fe-tot">Direct: budget <b>{full(R.direct.budget)}</b> → proposal <b>{full(R.direct.rounded)}</b> · total eligible <b>{full(R.total.rounded)}</b> · planned <b>{full(R.direct.planned)}</b></div>
       </section>}
@@ -82,6 +98,16 @@ export function ForecastEditor({ p }: { p: Project }) {
           <i style={{ width: `${Math.min(100, Math.abs(h.change) / R.flex * 100)}%` }} />
         </div>))}</div>}
 
+      <div class="fe-dl" role="toolbar" aria-label="Download the forecast">
+        <span><b>Download</b> · {d.opt.programme} · {FORECAST_KINDS[d.opt.kind].label}{opt.change ? ` · ${opt.change} n°${d.opt.changeNo ?? '…'}` : ''}</span>
+        <button class="btn" title="Working file for the project team: the rounded proposal and variation columns hidden (guidelines, step 7)" onClick={() => xlsx('team')}>⤓ For the project team</button>
+        <button class="btn" title="Every sheet and column visible" onClick={() => xlsx('working')}>⤓ Working file</button>
+        {!twelve && <button class="btn primary" title="Budget presentation and variation with values only, the forecast sheet hidden (guidelines, steps 9–10)" onClick={() => {
+          if (d.opt.programme === 'JP' && !d.opt.changeNo && !confirm(`No ${opt.change} number yet (PMM → Documents → Contract, or the RFO). Download without it?`)) return;
+          xlsx('donor');
+        }}>⤓ Donor version</button>}
+        {bad.length > 0 && <span class="fe-dl-warn" title={bad.join('\n')}>⚠ {bad.length} unit{bad.length > 1 ? 's' : ''} to check</span>}
+      </div>
       <section class="card">
         <div class="card-b table-scroll">
           <table class="mini fe-t">
@@ -105,7 +131,7 @@ export function ForecastEditor({ p }: { p: Project }) {
                       <td class={`r num${l.bUnits && l.aUnits > l.bUnits ? ' bad' : ''}`} title={l.bUnits ? `${+(l.bUnits - l.aUnits).toFixed(2)} units left in the budget` : ''}>{l.aUnits ? +l.aUnits.toFixed(2) : ''}</td><td class={`r num${l.rate && l.aRate > l.rate * 1.15 ? ' warn' : ''}`}>{l.aRate ? num(l.aRate) : ''}</td>
                       <td class="r num">{l.sc ? num(l.sc) : ''}</td>
                       {R.blocks.map((b) => { const c = d.lines[l.code]?.[b.id], cls = l.staff || l.cb ? 'fe-in g' : 'fe-in y'; return <>
-                        <td><input class={cls} inputMode="decimal" value={c?.u ?? ''} onChange={(e) => setCell(l.code, b.id, 'u', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} units`} /></td>
+                        <td>{plug === l.code && b.id === lastB ? <span class="fe-auto" title="Calculated so the direct costs stay equal to the budget">{E.lines[l.code]?.[b.id]?.u ?? 0} <small>auto</small></span> : <input class={`${cls}${odd(l, b.id) ? ' odd' : ''}`} title={odd(l, b.id) ?? ''} inputMode="decimal" value={c?.u ?? ''} onChange={(e) => setCell(l.code, b.id, 'u', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} units`} />}</td>
                         <td><input class={cls} inputMode="decimal" value={c?.r ?? ''} placeholder={(l.defRates?.[b.id] ?? l.defRate) ? String(Math.round((l.defRates?.[b.id] ?? l.defRate)!)) : ''} onChange={(e) => setCell(l.code, b.id, 'r', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} rate`} /></td>
                         <td class="r num">{l.cells[b.id]?.cost ? num(l.cells[b.id]!.cost) : ''}</td></>; })}
                       {!twelve && <><td class="r num">{l.rounded ? num(l.rounded) : ''}</td><td class={`r num ${l.variation != null && l.variation > 0.25 ? 'warn' : ''}`}>{pc(l.variation)}</td></>}
