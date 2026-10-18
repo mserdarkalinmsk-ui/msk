@@ -81,6 +81,7 @@ const STANDARD: [string, string, string][] = ([
   ['5.4', 'Evaluation costs', 'Per item'], ['5.5.1', 'Translation', 'Per 250 words'], ['5.5.2', 'Interpretation', 'Per person/day'], ['5.6', 'Financial services (bank guarantee costs etc.)', 'Per item'],
   ['5.7', 'Cost of conferences/seminars', 'Per event'], ['5.8', 'Visibility actions', 'Per item'], ['6', 'Other', ''], ['6.1', 'Grants', 'Per item'], ['6.2', 'Specify…', 'Per item'],
 ] as [string, string, string][]);
+export const STANDARD_LINES = STANDARD;
 const STD = new Map(STANDARD.map(([c, d, u]) => [c, { d, u }]));
 const STD_GROUP = new Set(STANDARD.filter(([, , u]) => !u).map(([c]) => c));
 
@@ -117,7 +118,9 @@ function blocksFor(o: ForecastOptions, per: ReturnType<typeof forecastPeriod>, t
 }
 
 type Row = (Cell | XCell)[];
-export function forecastSheets(p: Project, today: Date, o: ForecastOptions = defaultOptions(p)): SheetSpec[] {
+/** Planned units and rates typed in the app (see forecastPlan), written into the input cells. */
+export type DraftLines = Record<string, Partial<Record<string, { u?: number; r?: number }>>>;
+export function forecastSheets(p: Project, today: Date, o: ForecastOptions = defaultOptions(p), draft?: DraftLines): SheetSpec[] {
   const per = forecastPeriod(p, today, o), L = lines(p);
   const monthsLeft = Math.max(0, (parseDate(per.extTo ?? p.end).getTime() - parseDate(per.from).getTime()) / MONTH);
   const names = p.approvedBudget?.names ?? {};
@@ -211,12 +214,15 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
       for (const b of B) {
         const c = at.get(b.id)!, U = F(c), R = F(c + 1), K = F(c + 2);
         if (b.type === 'input') {
-          row[c] = { st: inSt }; row[c + 1] = { v: pr, st: inSt }; row[c + 2] = { f: `+${R}*${U}`, v: 0, st: 'rNum' }; cv.set(b.id, { u: 0, c: 0 });
+          const dc = draft?.[code]?.[b.id], du = dc?.u || undefined, dr = dc?.r ?? pr;
+          row[c] = { v: du, st: inSt }; row[c + 1] = { v: dr, st: inSt }; row[c + 2] = { f: `+${R}*${U}`, v: (du ?? 0) * (dr ?? 0), st: 'rNum' }; cv.set(b.id, { u: du ?? 0, c: (du ?? 0) * (dr ?? 0) });
         } else if (b.type === 'calc') {
           // Staff build on what is spent; charging back on its units and spent + committed; others on spent and committed.
           const add = (b.of ?? []).map((id) => at.get(id)!);
           const plusU = add.map((x) => `+${col(x)}${r}`).join(''), plusC = add.map((x) => `+${col(x + 2)}${r}`).join('');
-          const u0 = staff || cb ? (aUnits ?? 0) : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0, c0 = staff ? actual : sc;
+          const ins = (b.of ?? []).map((id) => cv.get(id) ?? { u: 0, c: 0 });
+          const u0 = (staff || cb ? (aUnits ?? 0) : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0) + ins.reduce((a, x) => a + x.u, 0);
+          const c0 = (staff ? actual : sc) + ins.reduce((a, x) => a + x.c, 0);
           row[c] = staff || cb ? { f: `${F(C.aUnits)}${plusU}`, v: u0, st: 'rNum' }
             : { f: `+IF(${F(C.aRate)}<>0,ROUND(${F(C.sc)}/${F(C.aRate)},0)${plusU},IF(AND(${F(C.rate)}>0,${F(C.sc)}<>0),ROUND(${F(C.sc)}/${F(C.rate)},0)${plusU},0${plusU}))`, v: u0, st: 'rNum' };
           row[c + 2] = { f: `${staff ? F(C.actual) : F(C.sc)}${plusC}`, v: c0, st: 'rNum' };
