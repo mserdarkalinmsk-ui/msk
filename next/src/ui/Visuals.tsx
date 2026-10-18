@@ -1,7 +1,5 @@
 import type { EChartsCoreOption } from 'echarts/core';
-import { useState } from 'preact/hooks';
-import { go } from '../data/store';
-import { elapsed, money } from '../domain/calc';
+import { money } from '../domain/calc';
 import { earlyWarnings, STAGE } from '../domain/earlywarn';
 import { headings } from '../domain/insights';
 import type { Country, Project } from '../domain/types';
@@ -10,40 +8,6 @@ import { base, Chart, type Tokens } from './Chart';
 import { full, short } from './format';
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
-
-/** Where each project stands: time elapsed against budget used, bubble = budget, colour = country. */
-export function ProjectMap({ P, countries }: { P: Project[]; countries: Country[] }) {
-  const [y, setY] = useState<'spent' | 'sc'>('spent');
-  const R = P.filter((p) => !p.datesTbc).map((p) => { const m = money(p); return { p, el: elapsed(p, TODAY), sp: m.budget ? m.spent / m.budget : 0, sc: m.budget ? (m.spent + m.committed) / m.budget : 0, b: m.budget }; });
-  const C = [...new Set(R.map((r) => r.p.country))];
-  const cname = (id: string) => countries.find((c) => c.id === id)?.name ?? id;
-  const max = Math.max(...R.map((r) => r.b), 1);
-  const option = (t: Tokens): EChartsCoreOption => ({
-    ...base(t),
-    grid: { left: 52, right: 24, top: 34, bottom: 44 },
-    legend: { top: 0, right: 0, textStyle: { color: t.ink2 }, itemWidth: 10, itemHeight: 10 },
-    xAxis: { type: 'value', min: 0, max: 100, name: 'Time elapsed %', nameLocation: 'middle', nameGap: 26, axisLabel: { formatter: '{value}%', color: t.ink3 }, splitLine: { lineStyle: { color: t.line } } },
-    yAxis: { type: 'value', min: 0, max: (v: { max: number }) => Math.max(100, Math.ceil(v.max / 10) * 10), name: y === 'spent' ? 'Spent %' : 'Spent + committed %', nameLocation: 'middle', nameGap: 38, axisLabel: { formatter: '{value}%', color: t.ink3 }, splitLine: { lineStyle: { color: t.line } } },
-    tooltip: { ...(base(t).tooltip as object), formatter: (q: { data: { r: (typeof R)[number] } }) => { const r = q.data.r; return `<b>${lab(r.p)}</b> · ${cname(r.p.country)}<br/>${r.p.name.slice(0, 60)}<br/>Budget ${short(r.b)}<br/>Spent ${Math.round(r.sp * 100)}% · with commitments ${Math.round(r.sc * 100)}%<br/>Time elapsed ${Math.round(r.el * 100)}%<br/><b>${Math.round(((y === 'spent' ? r.sp : r.sc) - r.el) * 100)} pts</b> ${(y === 'spent' ? r.sp : r.sc) >= r.el ? 'ahead of' : 'behind'} time`; } },
-    series: [
-      // On plan (diagonal) with a ±15-point band: below = behind schedule.
-      { type: 'line', data: [[0, 0], [100, 100]], symbol: 'none', silent: true, lineStyle: { color: t.ink3, type: 'dashed', width: 1 }, z: 1,
-        markArea: { silent: true, itemStyle: { color: t.critical, opacity: 0.05 }, data: [[{ coord: [0, 0] }, { coord: [100, 0] }]] } },
-      { type: 'line', data: [[15, 0], [100, 85]], symbol: 'none', silent: true, lineStyle: { color: t.critical, type: 'dotted', width: 1, opacity: 0.6 }, z: 1 },
-      ...C.map((c, i) => ({ name: cname(c), type: 'scatter', z: 3,
-        data: R.filter((r) => r.p.country === c).map((r) => ({ value: [Math.round(r.el * 1000) / 10, Math.round((y === 'spent' ? r.sp : r.sc) * 1000) / 10], r, symbolSize: 14 + 46 * Math.sqrt(r.b / max), id: r.p.id })),
-        itemStyle: { color: t.c[i % t.c.length], opacity: 0.8, borderColor: t.surface, borderWidth: 1.5 },
-        label: { show: true, formatter: (q: { data: { r: (typeof R)[number] } }) => lab(q.data.r.p).replace('BH ', ''), position: 'top', color: t.ink2, fontSize: 10.5 } })),
-    ],
-  });
-  return (
-    <section class="card span-12">
-      <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Where each project stands</h2><p>Time elapsed against budget used · bubble size = budget · below the dashed line = behind schedule, below the dotted line = more than 15 points behind · click a bubble to open the project</p></div>
-        <div class="tools"><div class="seg"><button aria-pressed={y === 'spent'} onClick={() => setY('spent')}>Spent</button><button aria-pressed={y === 'sc'} onClick={() => setY('sc')}>+ Committed</button></div></div></div>
-      <div class="card-b"><Chart height={380} label="Project map" onClick={(e) => e.data?.id && go(`project/${e.data.id}`)} option={option} /></div>
-    </section>
-  );
-}
 
 /** Money flow: funding → country → project → spent / committed / still available. */
 export function MoneyFlow({ P, countries }: { P: Project[]; countries: Country[] }) {

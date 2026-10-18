@@ -1,4 +1,4 @@
-import { MoneyFlow, ProjectMap } from '../ui/Visuals';
+import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
 import { burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
@@ -136,7 +136,6 @@ export function Overview() {
           </ul>
         </section>
 
-        <ProjectMap P={P} countries={countries} />
         <OverviewMap />
         <section class="card span-5">
           <div class="card-h"><div><h2>Where the budget stands</h2><p>Budget → spent → committed → balance</p></div></div>
