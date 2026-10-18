@@ -104,7 +104,7 @@ export function Deck() {
     ...(P.some((p) => { const d = (parseDate(p.end).getTime() - TODAY.getTime()) / 864e5; return d > 0 && d < 183; }) ? ['Prepare closure and final reports for projects ending within six months.'] : []),
     `Next update after the ${month(new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() + 1, 1)).getTime())} financial reports.`,
   ];
-  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, app: s.ledger.brand?.title, providers: hasProv ? SP! : undefined, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
+  const pptx = () => exportPptx({ logo: s.ledger.brand?.logo, app: s.ledger.brand?.title, org: s.ledger.brand?.name, providers: hasProv ? SP! : undefined, aud, scope, cname, lab, P, T, perf, band, bandWord: (b) => BAND_W[b], PL, final, series: S, points: N, H, C, moves: M, results: RR.rows, risks: R, alerts: A,
     staff: active, renewals: ren.length, offices: hasOffice ? officeRows(get().ledger.offices ?? []).map((o) => ({ name: o.o.name, ob: o.T.ob.budget, sc: o.T.ob.sc, end: o.end, request: o.request })) : [],
     events: E, catchUp: CU.map(({ x, c }) => ({ p: x.p, perf: x.perf, rate: c.rate, need: c.need })), steps: STEPS, pages: PP, MS, NS }).catch((e) => alert(`PowerPoint export failed: ${(e as Error).message}`));
   const NS = {

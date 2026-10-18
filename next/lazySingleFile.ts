@@ -29,7 +29,7 @@ export function lazySingleFile(): Plugin {
         if (!m) throw new Error(`lazy-single-file: no export list at the end of ${n}`);
         const obj = m[1].split(',').map((s) => s.trim()).filter(Boolean).map((s) => { const [a, b] = s.split(/\s+as\s+/); return `${JSON.stringify(b ?? a)}:${a}`; }).join(',');
         body = body.slice(0, m.index) + `window.__lzDone(${JSON.stringify(n)},{${obj}});`;
-        if (/\bimport\s*\(?\s*["']\.\//.test(body) || /^import\s/m.test(body)) throw new Error(`lazy-single-file: ${n} imports other chunks`);
+        if (/\bimport\s*\(?\s*["']\.\//.test(body) || /^import[\s{*]/m.test(body) || /\bfrom\s*["']\.\//.test(body)) throw new Error(`lazy-single-file: ${n} imports other chunks`);
         data.push(`<script type="application/gzip" id="lz:${n}">${gzipSync(body, { level: 9 }).toString('base64')}</script>`);
         code = code.split(`import("./${n}")`).join(`__lz(${JSON.stringify(n)})`).split(`import('./${n}')`).join(`__lz(${JSON.stringify(n)})`);
         delete bundle[c.fileName];
