@@ -338,7 +338,7 @@ export function checkReport(p: Project, r: ReportingPeriod): ReportCheck[] {
   }
   if (isNaN(parseDate(r.date).getTime())) out.push({ level: 'error', text: 'Report date is invalid' });
   else if (r.date < p.start) out.push({ level: 'warning', text: 'Report date is before the project start' });
-  if ((p.reportingPeriods ?? []).some((x) => x.date === r.date && x.id !== r.id)) out.push({ level: 'warning', text: 'Another report already has this date' });
+  if ((p.reportingPeriods ?? []).some((x) => x.date === r.date && x.id !== r.id)) out.push({ level: 'warning', text: r.snapshot?.workbook?.meta.plannedTo ? 'Another report already has this date — this one is kept as the latest, with its plan' : 'Another report already has this date' });
   const prev = reportsByDate(p).filter((x) => x.date < r.date && x.id !== r.id).at(-1);
   if (prev) {
     for (const d of compareReports(prev, r))
