@@ -24,7 +24,7 @@ export function ForecastDialog({ p, close }: { p: Project; close: () => void }) 
   const go = () => {
     const opt = { ...o, change: o.programme === 'JP' && o.kind !== 'twelve' ? o.change ?? suggest : undefined };
     try { localStorage.setItem(KEY(p.id), JSON.stringify(opt)); } catch { /* storage blocked */ }
-    download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt), forecastSheets(p, TODAY, opt)); close();
+    download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt), forecastSheets(p, TODAY, opt, p.forecastDraft?.lines)); close();
   };
   return (
     <>

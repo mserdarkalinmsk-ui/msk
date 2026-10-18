@@ -250,7 +250,8 @@ function mergeSeed(l: Ledger): Ledger {
 let tid = 0;
 export function toast(text: string, undo?: () => void) {
   const id = ++tid;
-  set((s) => ({ toasts: [...s.toasts, { id, text, undo }].slice(-2) }));
+  // The same message again (e.g. typing in a table) replaces the one on screen instead of stacking.
+  set((s) => ({ toasts: [...s.toasts.filter((t) => t.text !== text), { id, text, undo }].slice(-2) }));
   setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 6000);
 }
 /** Set by the backup module: a folder copy follows saved changes. */

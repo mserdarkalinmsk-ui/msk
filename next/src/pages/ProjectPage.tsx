@@ -1,4 +1,5 @@
 import { ForecastDialog } from '../ui/ForecastDialog';
+import { ForecastEditor } from './ForecastEditor';
 import { auditSheets } from '../domain/audit';
 import { ScenarioCompare } from './ScenarioCompare';
 import { Closure, Revision } from './Closure';
@@ -28,12 +29,12 @@ import { download } from '../ui/xlsxwrite';
 import { ProjectForesight } from './Depletion';
 import { Plan, Risks, ResultsDocs } from './ProjectTabs';
 
-const TABS = ['Summary', 'Financial report', 'Budget lines', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
+const TABS = ['Summary', 'Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
 /** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
 const GROUPS: { label: string; tabs: Tab[] }[] = [
   { label: 'Summary', tabs: ['Summary'] },
-  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Annual plan', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
+  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
   { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
   { label: 'Staff', tabs: ['Staff'] },
   { label: 'Documents', tabs: ['Results & documents', 'History'] },
@@ -100,6 +101,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Justification' && <Justification p={p} />}
       {tab === 'Annual plan' && <AnnualPlanCard p={p} />}
       {tab === 'Scenario' && <><ScenarioCompare p={p} /><div style={{ marginTop: '16px' }} /><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
+      {tab === 'Forecast' && <ForecastEditor p={p} />}
       {tab === 'Revision' && <div class="grid g-12"><Revision p={p} /></div>}
       {tab === 'Closure' && <Closure p={p} />}
       {tab === 'History' && <History project={p.code} />}

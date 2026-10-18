@@ -32,6 +32,7 @@ export interface Project {
   /** Payments received from the donor (pre-financing and further instalments). */
   payments?: { date: string; amount: number; note?: string }[];
   /** Budget transfers planned or made (from line → to line), with how they were handled. */
+  /** forecast filled in inside the app (domain/forecastPlan) */ forecastDraft?: import('./forecastPlan').ForecastDraft;
   budgetChanges?: { id: string; date: string; from: string; to: string; amount: number; reason?: string; status: 'planned' | 'notified' | 'addendum' }[];
   riskRegister?: Risk[];
   closure?: { done?: Record<string, boolean>; received?: number; euShare?: number; notes?: string };
