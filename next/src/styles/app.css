@@ -537,12 +537,22 @@ tr.click td.click { text-decoration: none; }
 .bt-letter table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; } .bt-letter th, .bt-letter td { border: 1px solid var(--line); padding: 4px 6px; text-align: left; }
 .bt-letter h1 { font-size: 18px; } .bt-letter h2 { font-size: 14px; margin: 14px 0 4px; }
 
-/* Main tabs read as buttons: a tinted bar, each tab a raised chip, the open one in the accent colour. */
-.tabs { gap: 4px; padding: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; border-bottom: 1px solid var(--line); }
-.tabs button { height: 38px; padding: 0 16px; border-radius: 9px; border-bottom: 0; margin-bottom: 0; color: var(--ink-2); font-size: 14px; transition: background .12s, color .12s; }
-.tabs button:hover { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .06); }
-.tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent, var(--ink)); box-shadow: 0 1px 3px rgb(0 0 0 / .12), inset 0 -2px 0 var(--accent, var(--ink)); }
-.tabs button:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 1px; }
-.subtabs { margin: 0 0 16px; }
-.subtabs button { border-color: color-mix(in srgb, var(--ink) 22%, transparent); color: var(--ink); }
-.subtabs button:hover { border-color: var(--ink-2); background: var(--surface-2); }
+/* Main tabs read as buttons: a tinted bar, each tab a chip that lifts on hover, the open one raised in the accent colour. */
+.tabs { gap: 4px; padding: 5px; background: linear-gradient(180deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 70%, var(--line))); border: 1px solid var(--line); border-radius: 14px; box-shadow: inset 0 1px 2px rgb(0 0 0 / .05); }
+.tabs button { position: relative; height: 40px; padding: 0 18px; border-radius: 10px; border-bottom: 0; margin-bottom: 0; color: var(--ink-2); font-size: 14px; letter-spacing: .1px;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .18s cubic-bezier(.2,.8,.2,1); }
+.tabs button::after { content: ''; position: absolute; left: 50%; right: 50%; bottom: 5px; height: 2.5px; border-radius: 2px; background: var(--accent, var(--ink)); opacity: 0; transition: left .22s cubic-bezier(.2,.8,.2,1), right .22s cubic-bezier(.2,.8,.2,1), opacity .18s; }
+.tabs button:hover { background: color-mix(in srgb, var(--surface) 85%, var(--accent, var(--ink)) 15%); color: var(--ink); transform: translateY(-1px); box-shadow: 0 4px 12px -4px rgb(0 0 0 / .18); }
+.tabs button:hover::after { left: 30%; right: 30%; opacity: .5; }
+.tabs button:active { transform: translateY(0) scale(.97); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent, var(--ink)); box-shadow: 0 2px 8px -2px rgb(0 0 0 / .18), 0 0 0 1px color-mix(in srgb, var(--accent, var(--ink)) 25%, transparent); }
+.tabs button[aria-selected="true"]::after { left: 16px; right: 16px; opacity: 1; }
+.tabs button[aria-selected="true"] .tab-n { background: var(--accent, var(--ink)); color: #fff; }
+.tabs button:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
+.subtabs { margin: 0 0 16px; padding: 2px 0; }
+.subtabs button { border-color: color-mix(in srgb, var(--ink) 22%, transparent); color: var(--ink); transition: background .16s, border-color .16s, color .16s, transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s; }
+.subtabs button:hover { border-color: var(--accent, var(--ink)); color: var(--accent, var(--ink)); background: color-mix(in srgb, var(--surface) 88%, var(--accent, var(--ink)) 12%); transform: translateY(-1px); box-shadow: 0 3px 10px -4px rgb(0 0 0 / .2); }
+.subtabs button:active { transform: scale(.97); }
+body .subtabs button[aria-selected="true"] { background: var(--accent, var(--ink)); border-color: var(--accent, var(--ink)); color: #fff; box-shadow: 0 3px 10px -3px color-mix(in srgb, var(--accent, var(--ink)) 60%, transparent); }
+body .subtabs button[aria-selected="true"]:hover { color: #fff; }
+@media (prefers-reduced-motion: reduce) { .tabs button, .subtabs button, .tabs button::after { transition: none; transform: none !important; } }
