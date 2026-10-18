@@ -466,15 +466,6 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 /* ---- Visual polish: shared look ---- */
 .seg button { white-space: nowrap; }
 /* The lead figure of every page: a deep navy card. */
-.hero .kpi.lead { background: linear-gradient(135deg, #14243d 0%, #1f3d63 60%, #24476f 100%); color: #fff; border-radius: var(--r-lg, 14px); margin: -1px; box-shadow: 0 10px 28px rgb(20 36 61 / .28); }
-.hero .kpi.lead .label, .hero .kpi.lead .ctx { color: rgb(255 255 255 / .78); }
-.hero .kpi.lead .ctx b { color: #fff; }
-.hero .kpi.lead .meter { background: rgb(255 255 255 / .16); }
-.hero .kpi.lead .meter span { background: #8fb8ff !important; }
-.hero .kpi.lead .meter .tick { background: #fff; }
-:root[data-theme="dark"] .hero .kpi.lead { background: linear-gradient(135deg, #1a3150 0%, #23497a 100%); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero .kpi.lead { background: linear-gradient(135deg, #1a3150 0%, #23497a 100%); } }
-@media print { .hero .kpi.lead { background: none !important; color: inherit; box-shadow: none; } .hero .kpi.lead .label, .hero .kpi.lead .ctx { color: inherit; } }
 
 /* ---- What can be clicked looks clickable, everywhere ---- */
 .click { cursor: pointer; }
@@ -650,3 +641,34 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fe-inf-in input { height: 30px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 6px; margin: 0 4px; }
 .fe-inf-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; font-size: 13px; }
 .fe-inf-g ul { margin: 6px 0 0; padding-left: 18px; } .fe-inf-g li.proj { color: var(--ink-2); }
+
+/* Headline figures everywhere (overview, report pages, project tiles): separate cards, each in its own colour — a light
+   tint, a colour bar on top, the label in the colour — lifting into a deeper tint on hover. The figure stays the focus. */
+.hero { gap: 12px; background: transparent; border: 0; box-shadow: none; overflow: visible; }
+.hero > .kpi, .hero > .kpi.lead, .ph-tiles > .kpi, .ph-tiles > .kpi.lead {
+  --kc: var(--accent); position: relative; overflow: hidden; margin: 0; color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 92%, var(--kc) 8%); border: 1px solid color-mix(in srgb, var(--kc) 22%, var(--line));
+  border-radius: var(--r-lg, 14px); box-shadow: 0 1px 2px rgb(0 0 0 / .04);
+  transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s, background .2s, border-color .2s; }
+.hero > .kpi:nth-child(5n+1), .ph-tiles > .kpi:nth-child(5n+1) { --kc: #2a78d6; }
+.hero > .kpi:nth-child(5n+2), .ph-tiles > .kpi:nth-child(5n+2) { --kc: #7c5cd6; }
+.hero > .kpi:nth-child(5n+3), .ph-tiles > .kpi:nth-child(5n+3) { --kc: #1f9d6b; }
+.hero > .kpi:nth-child(5n+4), .ph-tiles > .kpi:nth-child(5n+4) { --kc: #e08a1e; }
+.hero > .kpi:nth-child(5n+5), .ph-tiles > .kpi:nth-child(5n+5) { --kc: #d6457a; }
+.hero > .kpi::before, .ph-tiles > .kpi::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--kc); }
+.hero > .kpi:hover, .ph-tiles > .kpi:hover { transform: translateY(-3px); background: color-mix(in srgb, var(--surface) 82%, var(--kc) 18%); border-color: var(--kc); box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--kc) 70%, transparent); }
+.hero > .kpi .label, .ph-tiles > .kpi .label { color: var(--kc) !important; font-weight: 650; }
+.hero > .kpi .value, .ph-tiles > .kpi .value { color: var(--ink); font-weight: 700; }
+.hero > .kpi .ctx, .ph-tiles > .kpi .ctx { color: var(--ink-2) !important; } .hero > .kpi .ctx b, .ph-tiles > .kpi .ctx b { color: var(--ink) !important; }
+.hero > .kpi.lead .value { font-size: var(--fs-hero); }
+.hero > .kpi.lead .meter, .ph-tiles > .kpi.lead .meter { background: color-mix(in srgb, var(--surface) 70%, var(--kc) 30%); }
+.hero > .kpi.lead .meter span, .ph-tiles > .kpi.lead .meter span { background: var(--kc) !important; }
+.hero > .kpi.lead .meter .tick, .ph-tiles > .kpi.lead .meter .tick { background: var(--ink); }
+:root[data-theme="dark"] .hero > .kpi, :root[data-theme="dark"] .ph-tiles > .kpi { background: color-mix(in srgb, var(--surface) 86%, var(--kc) 14%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero > .kpi, :root:not([data-theme="light"]) .ph-tiles > .kpi { background: color-mix(in srgb, var(--surface) 86%, var(--kc) 14%); } }
+@media (max-width: 1180px) { .hero > .kpi { border: 1px solid color-mix(in srgb, var(--kc) 22%, var(--line)); } }
+@media (prefers-reduced-motion: reduce) { .hero > .kpi, .ph-tiles > .kpi { transition: none; transform: none !important; } }
+@media print { .hero > .kpi, .ph-tiles > .kpi { background: none !important; box-shadow: none; } }
+.ap-h { margin: 14px 0 6px; font-size: 13.5px; }
+.ap-up { color: var(--critical); font-weight: 650; } .ap-down { color: var(--good); font-weight: 650; }
+.ap-note { display: grid; gap: 6px; margin: 10px 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; } .ap-note p { margin: 0; }
