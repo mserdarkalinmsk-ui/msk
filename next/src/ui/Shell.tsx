@@ -1,4 +1,4 @@
-import { BackupBanner } from './Backup';
+import { BackupBanner, FreshStart } from './Backup';
 import { SharedBanner } from './Share';
 import { READONLY } from '../data/store';
 import type { ComponentChildren } from 'preact';
@@ -78,7 +78,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           </button>
           {actions}
         </header>
-        <main class="page" id="content"><OldCopyBanner /><SharedBanner />{!READONLY && <BackupBanner />}{children}</main>
+        <main class="page" id="content"><OldCopyBanner /><SharedBanner />{!READONLY && <><FreshStart /><BackupBanner /></>}{children}</main>
       </div>
     </div>
   );

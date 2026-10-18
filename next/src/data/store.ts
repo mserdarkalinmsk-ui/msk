@@ -22,6 +22,7 @@ export interface State {
   toasts: Toast[];
   ready: boolean;
   /** shared copy waiting for its password */ locked?: boolean;
+  /** nothing was saved in this browser yet: the start data is shown and a backup can be restored */ fresh?: boolean;
 }
 
 /** A shared copy carries its data inside the file (see ui/Share): read once, before anything renders. */
@@ -134,15 +135,39 @@ function readStored(db: IDBDatabase): Promise<{ l?: Ledger; legacy: boolean }> {
 }
 let prevSaved: Ledger | null = null;
 /** Restore points kept in this browser, newest first. */
-export async function restorePoints(): Promise<{ key: string; at: string; projects: number; reports: number; ledger: Ledger }[]> {
+export async function restorePoints(): Promise<{ key: string; at: string; label?: string; projects: number; reports: number; ledger: Ledger }[]> {
   const db = await open(); if (!db) return [];
   return new Promise((res) => {
-    const st = db.transaction(STORE).objectStore(STORE), out: { key: string; at: string; projects: number; reports: number; ledger: Ledger }[] = [];
+    const st = db.transaction(STORE).objectStore(STORE), out: { key: string; at: string; label?: string; projects: number; reports: number; ledger: Ledger }[] = [];
     const c = st.openCursor();
-    c.onsuccess = () => { const cur = c.result; if (!cur) { res(out.sort((a, b) => b.key.localeCompare(a.key))); return; }
-      const k = String(cur.key); if (k.startsWith(`${KEY}:snap:`) || k === `${KEY}:rescued`) { const v = cur.value as { at: string; ledger: Ledger }; out.push({ key: k, at: v.at, projects: v.ledger.projects.length, reports: v.ledger.projects.reduce((s, p) => s + (p.reportingPeriods?.length ?? 0), 0), ledger: v.ledger }); }
+    c.onsuccess = () => { const cur = c.result; if (!cur) { res(out.sort((a, b) => b.at.localeCompare(a.at))); return; }
+      const k = String(cur.key); if (k.startsWith(`${KEY}:snap:`) || k.startsWith(`${KEY}:pre:`) || k === `${KEY}:rescued`) { const v = cur.value as { at: string; ledger: Ledger; label?: string }; out.push({ key: k, at: v.at, label: v.label, projects: v.ledger.projects.length, reports: v.ledger.projects.reduce((s, p) => s + (p.reportingPeriods?.length ?? 0), 0), ledger: v.ledger }); }
       cur.continue(); };
     c.onerror = () => res(out);
+  });
+}
+/**
+ * A restore point taken just before an import, so a wrong file is one click away from undone even after the page was
+ * closed. Imports in quick succession (a bulk drop) share one point; the last 10 are kept.
+ */
+let lastCheckpoint = 0;
+export async function checkpoint(label: string) {
+  if (READONLY || Date.now() - lastCheckpoint < 120_000) return;
+  lastCheckpoint = Date.now();
+  const before = state.ledger; // taken now, before the import changes it
+  const db = await open(); if (!db) return;
+  const st = db.transaction(STORE, 'readwrite').objectStore(STORE), at = new Date().toISOString();
+  st.put({ at, label, ledger: before }, `${KEY}:pre:${at}`);
+  const keys = st.getAllKeys(IDBKeyRange.bound(`${KEY}:pre:`, `${KEY}:pre:\uffff`));
+  keys.onsuccess = () => { const K = (keys.result as string[]).sort(); for (const x of K.slice(0, Math.max(0, K.length - 10))) st.delete(x); };
+}
+/** A small value kept with the data in this browser (e.g. the backup folder). */
+export async function kv<T>(key: string, value?: T | null): Promise<T | undefined> {
+  const db = await open(); if (!db) return undefined;
+  return new Promise((res) => {
+    const st = db.transaction(STORE, value === undefined ? 'readonly' : 'readwrite').objectStore(STORE), k = `${KEY}:${key}`;
+    const r = value === undefined ? st.get(k) : value === null ? st.delete(k) : st.put(value, k);
+    r.onsuccess = () => res(value === undefined ? r.result as T : undefined); r.onerror = () => res(undefined);
   });
 }
 /** Repairs instead of discarding: impossible dates are put back into set-up rather than throwing the whole ledger away. */
@@ -176,6 +201,7 @@ export async function load() {
   const db = await open();
   if (db) {
     const { l, legacy } = await readStored(db);
+    if (!l && !DEMO && !EMBED) state = { ...state, fresh: true };
     if (l && Array.isArray(l.projects)) {
       // Never fall back to the start data when stored data has a problem — that silently lost work before.
       if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
@@ -227,6 +253,9 @@ export function toast(text: string, undo?: () => void) {
   set((s) => ({ toasts: [...s.toasts, { id, text, undo }].slice(-2) }));
   setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 6000);
 }
+/** Set by the backup module: a folder copy follows saved changes. */
+let afterSave: (() => void) | undefined;
+export const onSaved = (f: () => void) => { afterSave = f; };
 export function commit(next: Ledger, message: string, project?: string) {
   if (READONLY) { toast('This is a view-only copy — changes are not saved'); return; }
   history.push(state.ledger);
@@ -234,6 +263,7 @@ export function commit(next: Ledger, message: string, project?: string) {
   if (history.length > 50) history.shift();
   set({ ledger: next });
   persist(next);
+  afterSave?.();
   toast(message, undo);
 }
 export function undo() {

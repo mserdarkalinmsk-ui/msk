@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { updateProject } from '../data/store';
+import { checkpoint, updateProject } from '../data/store';
 import { idConflicts, reportDate, reportFrom } from '../domain/autoimport';
 import type { Project, ReportingPeriod } from '../domain/types';
 import type { Workbook } from '../domain/workbook';
@@ -37,6 +37,7 @@ export function BulkReports({ p, files, close }: { p: Project; files: File[]; cl
   const good = rows.filter((r) => r.status === 'ok' || r.status === 'replace');
   const apply = () => {
     const R: ReportingPeriod[] = [...(p.reportingPeriods ?? [])];
+    void checkpoint(`Before importing ${good.length} reports`);
     let q: Project = { ...p };
     for (const r of good) {
       const { report } = reportFrom(r.wb!, r.file.name, { ...q, reportingPeriods: R });
