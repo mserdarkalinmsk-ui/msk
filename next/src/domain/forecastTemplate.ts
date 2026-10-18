@@ -35,7 +35,7 @@ export function forecastSheets(p: Project, today: Date): SheetSpec[] {
   const rows: (Cell | XCell)[][] = [
     [{ v: 'Financial report — forecast', st: 'title' }],
     [`JP ${p.jp ?? p.pmm ?? ''} - BH ${p.bh ?? ''}`.trim()],
-    [c.number ? `Contract n° ${c.number}` : ''],
+    [(p.contractNo || c.number) ? `Contract n° ${p.contractNo || c.number}` : ''],
     [`Interim report covering the period from ${dmy(p.start)} to ${dmy(per.asAt)}`],
     [{ v: p.name, st: 'bold' }],
     [{ v: `Fill in the yellow cells: planned expenditure from ${dmy(per.from)} to ${dmy(per.to)}, the budget proposal and comments. Totals recalculate. Save and load the file back through Import.`, st: 'wrap' }],
