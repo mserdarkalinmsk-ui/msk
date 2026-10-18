@@ -1,3 +1,4 @@
+import { staffCount, staffSplit } from '../domain/staff';
 import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
@@ -46,7 +47,7 @@ export function Overview() {
   const P = filtered(state);
   const countries = state.ledger.countries;
   const cname = (id: string) => countries.find((c) => c.id === id)?.name ?? id;
-  const T = totals(P, TODAY);
+  const T = totals(P, TODAY), staff = staffCount(P, TODAY);
   const S = portfolioSeries(P, TODAY);
   const flags = alerts(P, TODAY);
   const actualPts = S.filter((x) => x.actual != null);
@@ -68,6 +69,7 @@ export function Overview() {
           <span class="label">Total budget</span>
           <span class="value"><Count value={T.budget} format={short} /></span>
           <span class="ctx">{T.projects} project{T.projects === 1 ? '' : 's'} · {short(T.budget - T.exposure)} not yet spent or committed</span>
+          {staff.total > 0 && <span class="ctx kpi-staff" title="People with a contract running today (from the staff records of the reports)"><b>👥 {staff.total} staff</b><span>{staffSplit(staff)}</span></span>}
         </div>
         <div class="kpi lead">
           <span class="label">Spent to date</span>

@@ -605,3 +605,6 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fc-b input { height: 34px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 240px; }
 .fc-sum { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 12.5px; }
 .fc-b .seg { flex-wrap: wrap; }
+.kpi .kpi-staff { margin-top: 4px; color: var(--ink-2); }
+.kpi .kpi-staff b { color: var(--accent); font-weight: 650; }
+.kpi-staff.click { cursor: pointer; } .kpi-staff.click:hover b { text-decoration: underline; }

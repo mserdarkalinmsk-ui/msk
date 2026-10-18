@@ -162,3 +162,14 @@ export function coverage(people: Person[], from: Date, months: number) {
   }
   return out;
 }
+
+/** People working on the projects today (contracts not ended, not yet to start), by base. Undated contracts count. */
+export function staffCount(P: StaffProject[], today: Date): { total: number; hq: number; local: number } {
+  const seen = new Set<string>(); let hq = 0, local = 0;
+  for (const p of P) for (const x of roster(p, today)) {
+    if (x.status === 'Ended' || x.status === 'Upcoming' || seen.has(x.key)) continue;
+    seen.add(x.key); if (x.base === 'HQ') hq++; else if (x.base === 'Local') local++;
+  }
+  return { total: seen.size, hq, local };
+}
+export const staffSplit = (s: { hq: number; local: number }) => [s.hq && `${s.hq} HQ`, s.local && `${s.local} local`].filter(Boolean).join(' · ');

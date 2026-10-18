@@ -18,7 +18,7 @@ import { StaffPlanCard } from './StaffPlan';
 import { AnnualPlanCard } from './AnnualPlan';
 import { StaffReport } from './StaffReport';
 import { FinancialReport } from './FinancialReport';
-import { roster } from '../domain/staff';
+import { roster, staffCount, staffSplit } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
 import { Cockpit, IdentityCard } from './Cockpit';
 import { ForecastCard, HeadingsCard, ReadinessCard, History, Scenario, StatusWords } from './Insights';
@@ -47,7 +47,7 @@ export function ProjectPage({ id }: { id: string }) {
   const [fc, setFc] = useState(false);
   useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2><p>It may have been deleted.</p><button class="btn" onClick={() => go('projects')}>All projects</button></div></div>;
-  const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
+  const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY), pstaff = staffCount([p], TODAY);
   const reports = reportsByDate(p);
   const plan = planStats(p, TODAY);
   const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, Staff: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };
@@ -72,7 +72,7 @@ export function ProjectPage({ id }: { id: string }) {
         </div>
       </div>
       <section class={`hero ph-tiles${tab === "Summary" ? "" : " ph-tiles-tab"}`} aria-label="Project figures">
-        <div class="kpi"><span class="label">Total budget</span><span class="value">{short(m.budget)}</span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span></div>
+        <div class="kpi"><span class="label">Total budget</span><span class="value">{short(m.budget)}</span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span>{pstaff.total > 0 && <span class="ctx kpi-staff click" title="People with a contract running today — open the staff tab" onClick={() => setTab('Staff')}><b>👥 {pstaff.total} staff</b><span>{staffSplit(pstaff)}</span></span>}</div>
         <div class="kpi lead">
           <span class="label">Spent to date</span><span class="value">{short(m.spent)}</span>
           <span class="ctx"><b>{pct(m.budget ? m.spent / m.budget : 0)}</b> of {full(m.budget)}</span>
