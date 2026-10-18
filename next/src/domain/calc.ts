@@ -383,7 +383,16 @@ const addDays = (iso: string, n: number) => new Date(parseDate(iso).getTime() + 
  * after the end. A period counts as submitted when a report dated on or after
  * its end is on file. Defaults: 12 months / 60 days / 6 months.
  */
-export function deadlines(p: Project, today: Date): Deadline[] {
+/**
+ * Caches a per-project result for one day. Projects are replaced, never changed in place (see data/store), so a project
+ * object that is unchanged gives the same answer and the page does not recompute it on every render.
+ */
+export function perProject<T>(f: (p: Project, today: Date) => T): (p: Project, today: Date) => T {
+  const c = new WeakMap<Project, { t: number; v: T }>();
+  return (p, today) => { const t = today.getTime(), h = c.get(p); if (h && h.t === t) return h.v; const v = f(p, today); c.set(p, { t, v }); return v; };
+}
+export const deadlines = perProject(deadlinesOf);
+function deadlinesOf(p: Project, today: Date): Deadline[] {
   if (p.datesTbc) return [];
   const c = (p.contract ?? {}) as { repMonths?: number; progDays?: number; finalMonths?: number };
   const rep = c.repMonths || 12, prog = c.progDays || 60, fin = c.finalMonths || 6;

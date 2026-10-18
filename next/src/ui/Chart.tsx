@@ -43,11 +43,14 @@ export function base(t: Tokens): EChartsCoreOption {
   };
 }
 
+const keyOf = (o: unknown) => { try { return JSON.stringify(o, (_, v) => (typeof v === 'function' ? String(v) : v)); } catch { return String(Math.random()); } };
+
 interface Props { option: (t: Tokens) => EChartsCoreOption; height: number; onClick?: (p: any) => void; onAxisClick?: (x: number) => void; label: string }
 
 export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const inst = useRef<ECharts | null>(null);
+  const lastKey = useRef('');
   const optRef = useRef(option); optRef.current = option;
   const theme = useStore((s) => s.theme);
   const clickRef = useRef(onClick); clickRef.current = onClick;
@@ -60,7 +63,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c;
-    c.setOption(optRef.current(tokens()), true);
+    const o = optRef.current(tokens()); c.setOption(o, true); lastKey.current = keyOf(o);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
     c.getZr().on('click', (ev: any) => {
@@ -69,17 +72,20 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
       const v = c.convertFromPixel({ gridIndex: 0 }, pt) as number[];
       if (v && isFinite(v[0])) axisRef.current(v[0]);
     });
-    const ro = new ResizeObserver(() => c.resize());
+    // Resized only when the box really changes (the observer also reports the size it starts with).
+    let w = el.current.clientWidth, h = el.current.clientHeight;
+    const ro = new ResizeObserver(() => { const x = el.current; if (!x || (x.clientWidth === w && x.clientHeight === h)) return; w = x.clientWidth; h = x.clientHeight; c.resize(); });
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const re = () => c.setOption(optRef.current(tokens()), true);
+    const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(o, true); };
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
     off = () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
     };
     const stopWait = whenVisible(el.current!, () => { if (mod) draw(mod); else void loadCharts().then(draw); });
     return () => { dead = true; stopWait?.(); off(); };
   }, []);
-  useEffect(() => { inst.current?.setOption(option(tokens()), true); });
+  // A parent re-render redraws the chart only when its option really changed.
+  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.setOption(o, true); } });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
   return <div role="img" aria-label={label} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
