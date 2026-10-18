@@ -29,6 +29,8 @@ export interface Project {
   reportingPeriods?: ReportingPeriod[];
   doa?: { start: string; months: number; acts: Activity[] };
   contract?: Record<string, unknown>;
+  /** Payments received from the donor (pre-financing and further instalments). */
+  payments?: { date: string; amount: number; note?: string }[];
   riskRegister?: Risk[];
   closure?: { done?: Record<string, boolean>; received?: number; euShare?: number; notes?: string };
   /** Assumptions from the DoA (risk analysis section). */
