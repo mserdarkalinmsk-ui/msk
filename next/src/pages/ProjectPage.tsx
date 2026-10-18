@@ -72,7 +72,7 @@ export function ProjectPage({ id }: { id: string }) {
         </div>
       </div>
       <section class={`hero ph-tiles${tab === "Summary" ? "" : " ph-tiles-tab"}`} aria-label="Project figures">
-        <div class="kpi"><span class="label">Total budget</span><span class="value">{short(m.budget)}</span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span>{pstaff.total > 0 && <span class="ctx kpi-staff click" title="People with a contract running today — open the staff tab" onClick={() => setTab('Staff')}><b>👥 {pstaff.total} staff</b><span>{staffSplit(pstaff)}</span></span>}</div>
+        <div class="kpi"><span class="label">Total budget</span><span class="value">{short(m.budget)}</span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span>{pstaff.total > 0 && <span class="ctx kpi-staff click" title="People with a contract running today — open the staff tab" onClick={() => setTab('Staff')}><b>👥 {pstaff.total} {pstaff.positions ? "staff positions" : "staff"}</b><span>{staffSplit(pstaff)}</span></span>}</div>
         <div class="kpi lead">
           <span class="label">Spent to date</span><span class="value">{short(m.spent)}</span>
           <span class="ctx"><b>{pct(m.budget ? m.spent / m.budget : 0)}</b> of {full(m.budget)}</span>

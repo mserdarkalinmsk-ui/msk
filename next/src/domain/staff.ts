@@ -164,12 +164,21 @@ export function coverage(people: Person[], from: Date, months: number) {
 }
 
 /** People working on the projects today (contracts not ended, not yet to start), by base. Undated contracts count. */
-export function staffCount(P: StaffProject[], today: Date): { total: number; hq: number; local: number } {
-  const seen = new Set<string>(); let hq = 0, local = 0;
-  for (const p of P) for (const x of roster(p, today)) {
-    if (x.status === 'Ended' || x.status === 'Upcoming' || seen.has(x.key)) continue;
-    seen.add(x.key); if (x.base === 'HQ') hq++; else if (x.base === 'Local') local++;
+export function staffCount(P: StaffProject[], today: Date): { total: number; hq: number; local: number; positions?: boolean } {
+  const seen = new Set<string>(); let hq = 0, local = 0, posHq = 0, posLocal = 0;
+  for (const p of P) {
+    const R = roster(p, today);
+    for (const x of R) {
+      if (x.status === 'Ended' || x.status === 'Upcoming' || seen.has(x.key)) continue;
+      seen.add(x.key); if (x.base === 'HQ') hq++; else if (x.base === 'Local') local++;
+    }
+    // A project without staff records counts the staff positions of its latest report (lines 1.1.1.x local, 1.2.1.x HQ).
+    if (!R.length) {
+      const last = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length).sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+      for (const l of last?.snapshot?.lines ?? []) if (/^1\.[12]\.1\.\d+$/.test(l.code) && (Number(l.approved) > 0 || Number(l.actual) > 0)) { if (l.code.startsWith('1.2')) posHq++; else posLocal++; }
+    }
   }
-  return { total: seen.size, hq, local };
+  if (seen.size) return { total: seen.size + posHq + posLocal, hq: hq + posHq, local: local + posLocal, positions: posHq + posLocal > 0 };
+  return { total: posHq + posLocal, hq: posHq, local: posLocal, positions: posHq + posLocal > 0 };
 }
 export const staffSplit = (s: { hq: number; local: number }) => [s.hq && `${s.hq} HQ`, s.local && `${s.local} local`].filter(Boolean).join(' · ');
