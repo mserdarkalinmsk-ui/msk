@@ -1,3 +1,4 @@
+import { auditSheets } from '../domain/audit';
 import { ScenarioCompare } from './ScenarioCompare';
 import { Closure, Revision } from './Closure';
 import { useEffect, useState } from 'preact/hooks';
@@ -61,6 +62,7 @@ export function ProjectPage({ id }: { id: string }) {
           <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
           <button class="btn" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
+          <button class="btn" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>
