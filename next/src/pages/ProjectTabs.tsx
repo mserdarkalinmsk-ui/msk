@@ -126,7 +126,7 @@ export type { ReportingPeriod };
 export function ResultsDocs({ p }: { p: Project }) {
   const D = p.documents ?? [];
   const c = (p.contract ?? {}) as Record<string, unknown>;
-  const facts: [string, string][] = ([['Contract', c.number], ['Title', c.title], ['Total', typeof c.total === 'number' ? full(c.total) : ''], ['EU maximum', typeof c.euMax === 'number' ? full(c.euMax) : ''], ['Duration', c.months ? `${c.months} months` : ''], ['Reporting', c.repMonths ? `every ${c.repMonths} months, due ${c.progDays ?? 60} days after` : ''], ['Pre-financing', c.prefin ? `${c.prefin}%` : '']] as [string, unknown][]).filter(([, v]) => v).map(([k, v]) => [k, String(v)]);
+  const facts: [string, string][] = ([['Contract', c.number], ['Title', c.title], ['Total', typeof c.total === 'number' ? full(c.total) : ''], ['EU maximum', typeof c.euMax === 'number' ? full(c.euMax) : ''], ['Duration', c.months ? `${c.months} months` : ''], ['Reporting', c.repMonths ? `every ${c.repMonths} months, due ${c.progDays ?? 60} days after` : ''], ['Pre-financing', c.prefin ? `${c.prefin}%` : ''], ['First payment', typeof c.firstPayment === 'number' ? full(c.firstPayment) : ''], ['Instalments', c.instalments ? String(c.instalments) : ''], ['Next payment', c.payThreshold ? `once ${c.payThreshold}% of the previous payment is used` : '']] as [string, unknown][]).filter(([, v]) => v).map(([k, v]) => [k, String(v)]);
   return (
     <div class="grid g-12">
       <section class="card span-8">

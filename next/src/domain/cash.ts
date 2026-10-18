@@ -4,7 +4,7 @@ import type { Project } from './types';
 const DAY = 864e5, MONTH = 30.44 * DAY;
 export interface CashRow {
   p: Project; contribution: number; received: number; expected: boolean; spent: number; committed: number;
-  cash: number; used: number; burn: number; runout: string | null; request: 'now' | 'soon' | 'later' | 'none'; requestOn: string | null;
+  cash: number; used: number; threshold: number; burn: number; runout: string | null; request: 'now' | 'soon' | 'later' | 'none'; requestOn: string | null;
 }
 
 /**
@@ -13,11 +13,13 @@ export interface CashRow {
  * when the next payment can be requested — once `threshold` (70 % by default) of the money received is used.
  */
 export function cashRow(p: Project, today: Date, threshold = 0.7): CashRow {
-  const c = (p.contract ?? {}) as { total?: number; euMax?: number; prefin?: number };
+  const c = (p.contract ?? {}) as { total?: number; euMax?: number; prefin?: number; firstPayment?: number; payThreshold?: number };
+  // The contract's own rule for the next payment wins over the screen setting.
+  if (Number(c.payThreshold) > 0) threshold = Number(c.payThreshold) / 100;
   const m = money(p), contribution = Number(c.euMax) || Number(c.total) || m.budget;
   const paid = (p.payments ?? []).reduce((a, x) => a + n(x.amount), 0);
-  const expected = !paid && !!Number(c.prefin);
-  const received = paid || (expected ? contribution * Number(c.prefin) / 100 : 0);
+  const expected = !paid && !!(Number(c.firstPayment) || Number(c.prefin));
+  const received = paid || (expected ? Number(c.firstPayment) || contribution * Number(c.prefin) / 100 : 0);
   // Pace: spending over the last six months of reports, else the average since the start.
   const pts = spendPoints(p).filter((x) => x.t <= today.getTime()), last = pts.at(-1);
   const back = last ? [...pts].reverse().find((x) => last.t - x.t >= 5 * MONTH) : undefined;
@@ -31,5 +33,5 @@ export function cashRow(p: Project, today: Date, threshold = 0.7): CashRow {
   const ended = p.end < today.toISOString().slice(0, 10);
   const request: CashRow['request'] = !received || ended || received >= contribution - 1 ? 'none' : toThreshold <= 0 ? 'now'
     : requestOn && Date.parse(requestOn) - today.getTime() < 90 * DAY ? 'soon' : 'later';
-  return { p, contribution, received, expected, spent: m.spent, committed: m.committed, cash, used, burn, runout, request, requestOn };
+  return { p, contribution, received, expected, threshold, spent: m.spent, committed: m.committed, cash, used, burn, runout, request, requestOn };
 }

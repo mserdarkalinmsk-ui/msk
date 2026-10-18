@@ -17,7 +17,7 @@ export interface Indicator { id: string; result: string; indicator: string; base
 export interface BudgetNote { description: string; unit?: string; clarification: string; justification: string }
 export interface ContractFacts {
   number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;
-  repMonths?: number; progDays?: number; finalMonths?: number; prefinancing?: number; flexPct?: number; contingencyPct?: number; jp?: string; bh?: string;
+  repMonths?: number; progDays?: number; finalMonths?: number; prefinancing?: number; /** first pre-financing payment (EUR) */ firstPayment?: number; /** further payment possible once this % of the money received is used */ payThreshold?: number; /** number of payments (pre-financing instalments) */ instalments?: number; flexPct?: number; contingencyPct?: number; jp?: string; bh?: string;
 }
 export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; notes?: Record<string, BudgetNote>; assumptions?: string[]; summary: string[] }
 
@@ -80,6 +80,11 @@ export function contractFacts(doc: Doc): ContractFacts {
   const bh = pick(/\bBH\s*[:n°#]*\s*(\d{3,})\b/); if (bh) f.bh = bh;
   if (!f.title && doc.paragraphs[0] && /\b(?:in|for)\s+[A-ZÇİÖŞÜ]/.test(doc.paragraphs[0]) && doc.paragraphs[0].length < 160 && /budget/i.test(doc.paragraphs.slice(0, 8).join(' ') + doc.tables.flat(2).slice(0, 20).join(' '))) f.title = clean(doc.paragraphs[0]);
   const pf = pick(/pre-?financing[^.]{0,80}?(\d{1,3})\s*%/i); if (pf) f.prefinancing = +pf;
+  // Payments: the first instalment, how many instalments, and the share of the previous payment to use first.
+  const fp = pick(new RegExp(String.raw`(?:first|initial) (?:pre-?financing )?(?:payment|instalment)[^.]{0,160}?(?:${MONEY})`, 'i')); if (fp) f.firstPayment = amount(fp) ?? undefined;
+  const th = pick(/(?:at least|minimum of|not less than)\s*(\d{2,3})\s*%[^.]{0,160}?(?:previous|preceding|last|prior)\s+(?:pre-?financing\s+)?(?:payment|instalment|tranche)/i)
+    ?? pick(/(\d{2,3})\s*%\s*of the (?:previous|preceding|last)\s+(?:pre-?financing\s+)?(?:payment|instalment|tranche)[^.]{0,80}?(?:used|incurred|spent|consumed)/i); if (th) f.payThreshold = +th;
+  const ni = T.match(/(?:in|by)\s+(\d|one|two|three|four|five|six)\s+(?:pre-?financing\s+)?(?:instalments|tranches|payments)/i); if (ni) f.instalments = +(W[ni[1].toLowerCase()] || ni[1]);
   for (const k of Object.keys(f) as (keyof ContractFacts)[]) if (f[k] == null || f[k] === '') delete f[k];
   return f;
 }

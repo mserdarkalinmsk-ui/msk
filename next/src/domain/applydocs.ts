@@ -9,7 +9,7 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
   const q: Project = JSON.parse(JSON.stringify(p));
   const k = F.contract;
   if (c.contract && Object.keys(k).length) {
-    q.contract = { ...(q.contract ?? {}), ...Object.fromEntries(Object.entries({ number: k.number, title: k.title, total: k.total, euMax: k.euMax, start: k.start, end: k.end, months: k.months, repMonths: k.repMonths, progDays: k.progDays, finalMonths: k.finalMonths, flexPct: k.flexPct, contingencyPct: k.contingencyPct, prefin: k.prefinancing, share: k.euShare != null ? { eu: k.euShare } : undefined }).filter(([, v]) => v != null)) };
+    q.contract = { ...(q.contract ?? {}), ...Object.fromEntries(Object.entries({ number: k.number, title: k.title, total: k.total, euMax: k.euMax, start: k.start, end: k.end, months: k.months, repMonths: k.repMonths, progDays: k.progDays, finalMonths: k.finalMonths, flexPct: k.flexPct, contingencyPct: k.contingencyPct, prefin: k.prefinancing, firstPayment: k.firstPayment, payThreshold: k.payThreshold, instalments: k.instalments, share: k.euShare != null ? { eu: k.euShare } : undefined }).filter(([, v]) => v != null)) };
     if (k.number) q.contractNo = k.number;
   }
   if (c.dates) { if (k.start) q.start = k.start; if (k.end) q.end = k.end; if (k.start && k.end) delete q.datesTbc; }
