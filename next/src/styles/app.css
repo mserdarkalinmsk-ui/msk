@@ -536,3 +536,13 @@ tr.click td.click { text-decoration: none; }
 .bt-letter { max-width: 760px; font-size: 13px; line-height: 1.55; }
 .bt-letter table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; } .bt-letter th, .bt-letter td { border: 1px solid var(--line); padding: 4px 6px; text-align: left; }
 .bt-letter h1 { font-size: 18px; } .bt-letter h2 { font-size: 14px; margin: 14px 0 4px; }
+
+/* Main tabs read as buttons: a tinted bar, each tab a raised chip, the open one in the accent colour. */
+.tabs { gap: 4px; padding: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; border-bottom: 1px solid var(--line); }
+.tabs button { height: 38px; padding: 0 16px; border-radius: 9px; border-bottom: 0; margin-bottom: 0; color: var(--ink-2); font-size: 14px; transition: background .12s, color .12s; }
+.tabs button:hover { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .06); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent, var(--ink)); box-shadow: 0 1px 3px rgb(0 0 0 / .12), inset 0 -2px 0 var(--accent, var(--ink)); }
+.tabs button:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 1px; }
+.subtabs { margin: 0 0 16px; }
+.subtabs button { border-color: color-mix(in srgb, var(--ink) 22%, transparent); color: var(--ink); }
+.subtabs button:hover { border-color: var(--ink-2); background: var(--surface-2); }
