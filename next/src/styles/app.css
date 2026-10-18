@@ -593,3 +593,15 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .bk-fresh { display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; padding: 14px 18px; margin-bottom: 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%); font-size: 13.5px; }
 .bk-fresh > div:first-child { flex: 1 1 360px; }
 .bk-fresh-a { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Forecast template dialog */
+.fc-dlg { position: fixed; z-index: 41; top: 6vh; left: 50%; transform: translateX(-50%); width: min(640px, calc(100vw - 32px)); max-height: 88vh; overflow: auto; }
+.fc-b { display: grid; gap: 8px; }
+.fc-l { font-weight: 650; font-size: 13px; margin-top: 6px; }
+.fc-k { display: grid; gap: 6px; }
+.fc-opt { text-align: left; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color .15s, background .15s, transform .15s; }
+.fc-opt small { color: var(--ink-3); font-size: 12px; }
+.fc-opt:hover { border-color: var(--accent); background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%); transform: translateY(-1px); }
+.fc-opt.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%); }
+.fc-b input { height: 34px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 240px; }
+.fc-sum { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 12.5px; }
+.fc-b .seg { flex-wrap: wrap; }
