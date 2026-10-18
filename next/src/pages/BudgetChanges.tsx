@@ -4,6 +4,7 @@ import { filtered, upsertProject, useStore } from '../data/store';
 import { adviseChanges, VERDICT, type Verdict } from '../domain/budgetchange';
 import { lineExposure, lines, n } from '../domain/calc';
 import { portfolioWarnings, STAGE } from '../domain/earlywarn';
+import { BASIS_LABEL } from '../domain/forecast';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full } from '../ui/format';
@@ -48,13 +49,13 @@ export function BudgetChanges() {
           <tbody>{EW.map((w) => <tr>
             <td><b>{lab(w.p)}</b></td><td><b>{w.code}</b> {w.label}</td>
             <td><span class={`badge ${STAGE[w.stage].tone}`} title={w.why}>{STAGE[w.stage].label}</span><div class="muted" style={{ fontSize: '11.5px', maxWidth: '260px' }}>{w.why}</div></td>
-            <td class="r num">{full(w.current)}</td><td class="r num">{full(w.projected)}</td><td class="r num"><b>{w.need ? full(w.need) : '—'}</b></td>
+            <td class="r num">{full(w.current)}</td><td class="r num">{full(w.projected)}<small class="muted" style={{ display: 'block' }}>{BASIS_LABEL[w.basis]}</small></td><td class="r num"><b>{w.need ? full(w.need) : '—'}</b></td>
             <td class="r num" style={{ color: w.changeIfCovered > w.flex ? 'var(--critical)' : undefined }}>{w.need ? pc(w.changeIfCovered) : '—'}<small class="muted"> / ±{Math.round(w.flex * 100)}%</small></td>
             <td class="num" style={{ whiteSpace: 'nowrap' }}>{w.by ? date(w.by) : '—'}</td>
             <td>{w.from ? <><b>{w.from.code}</b> {w.from.label}<div class="muted" style={{ fontSize: '11.5px' }}>{full(w.from.spare)} spare</div></> : '—'}</td>
             <td>{w.need > 0 && <button class="btn ghost" onClick={() => plan(w)}>Plan transfer</button>}</td></tr>)}</tbody></table>
           : <p class="muted" style={{ margin: 0 }}>No heading is heading for a shortfall at the current pace.</p>}
-          <p class="muted" style={{ fontSize: '12px', marginTop: '8px' }}>Expected at end = spent + committed today + the heading's average monthly spending for the months left. "Addendum ahead": covering the shortfall would take the heading beyond the flexibility — plan the request early (an addendum takes time). "Notify now": already overspent.</p></div>
+          <p class="muted" style={{ fontSize: '12px', marginTop: '8px' }}>Expected at end = spent + committed today + the planned expenditure of the latest report (when it has a forecast), then the heading's average monthly spending until the end date. "Addendum ahead": covering the shortfall would take the heading beyond the flexibility — plan the request early (an addendum takes time). "Notify now": already overspent.</p></div>
       </section>
       <FlexPanel p={p} />
       <section class="card" style={{ marginTop: '16px' }}>

@@ -19,3 +19,15 @@ describe('early warning', () => {
     expect(W.find((w) => w.code === '2')!.stage).toBe('notify-now');
   });
 });
+
+describe('early warning with the report plan', () => {
+  it('uses the planned expenditure of the report before the pace', () => {
+    // Pace alone would leave travel fine; the report plans a large event on 2.1 in the next months.
+    const rep = [{ ...L('2.1', 100000, 30000), forecast: 90000 }, { ...L('5.7', 400000, 100000), forecast: 50000 }, { ...L('1.1.3', 200000, 100000), forecast: 40000 }];
+    const p = { ...(proj(rep) as object), reportingPeriods: [{ id: 'r', name: 'R', type: 'x', date: '2026-01-01', snapshot: { lines: rep, workbook: { meta: { plannedFrom: '2026-01-01', plannedTo: '2026-06-30' }, lines: [], totals: {}, pos: [] } } }] } as never;
+    const t = earlyWarnings(p, new Date('2026-01-01')).find((w) => w.code === '2')!;
+    expect(t.basis).toBe('plan+pace');
+    expect(t.projected).toBeGreaterThan(120000);
+    expect(t.stage).toBe('addendum');
+  });
+});
