@@ -608,3 +608,13 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .kpi .kpi-staff { margin-top: 4px; color: var(--ink-2); }
 .kpi .kpi-staff b { color: var(--accent); font-weight: 650; }
 .kpi-staff.click { cursor: pointer; } .kpi-staff.click:hover b { text-decoration: underline; }
+/* Project actions: tinted chips that light up on hover; Delete stays red. */
+.ph-actions .btn { text-decoration: none; background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); color: color-mix(in srgb, var(--accent) 70%, var(--ink)); font-weight: 600; }
+.ph-actions .btn:not(:disabled):hover { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--accent) 70%, transparent); }
+.ph-actions a.btn { text-decoration: none !important; }
+.ph-actions .btn.danger, .ph-actions .btn.ghost.danger { background: transparent; border-color: transparent; color: var(--critical); }
+.ph-actions .btn.danger:not(:disabled):hover { background: var(--critical); border-color: var(--critical); color: #fff; box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--critical) 70%, transparent); }
+/* PMM, BH and MAE in the project header read as tinted tags */
+.ph-meta > span:has(> b) { padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%); color: color-mix(in srgb, var(--accent) 65%, var(--ink)); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); transition: background .15s, color .15s; }
+.ph-meta > span:has(> b):hover { background: var(--accent); color: #fff; }
+.ph-meta > span:has(> b):hover b { color: #fff; }
