@@ -8,7 +8,7 @@ import { month, short } from '../ui/format';
 import { Simulator } from './Studio';
 
 const MS = 30.4375 * 86_400_000;
-const C = { ok: '#30a46c', warn: '#f5a524', bad: '#e5484d', idle: '#3b82c4' };
+const C = { ok: 'var(--good)', warn: 'var(--c4)', bad: 'var(--critical)', idle: 'var(--c1)' };
 
 export interface HeadRow { code: string; label: string; budget: number; spent: number; exposure: number; rate: number; endUse: number; runOut: number | null; status: 'over' | 'tight' | 'ok' | 'under' }
 

@@ -11,7 +11,7 @@ import { saveFile } from './save';
 const KEY = 'pl-digest-seen';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const lab = (e: Ev) => (e.p.bh ? `BH ${e.p.bh}` : e.p.code);
-const COLOR: Record<Ev['kind'], string> = { report: '#e5484d', contract: '#8e4ec6', activity: '#f5a524', project: '#3b82c4' };
+const COLOR: Record<Ev['kind'], string> = { report: 'var(--critical)', contract: 'var(--c7)', activity: 'var(--c4)', project: 'var(--c1)' };
 
 /** Calendar items as an .ics file for phone or Outlook calendars (all-day events). */
 export function downloadIcs(E: Ev[]) {
@@ -49,8 +49,8 @@ export function WeekDigest() {
         <div class="dg-h"><div><h2>This week</h2><p class="muted">{date(today)} – {date(iso(wk))}</p></div><button class="btn ghost" onClick={close} aria-label="Close">✕</button></div>
         {over.length > 0 && <section class="dg-s bad"><h3>Overdue · {over.length}</h3><ul>{over.slice(0, 8).map(item)}</ul></section>}
         {lateBy.length > 0 && <section class="dg-s warn"><h3>Activities past their planned end</h3><ul>{lateBy.map((L) => <li style={{ borderLeftColor: COLOR.activity }} onClick={() => { close(); go(`project/${L[0].p.id}`); setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: 'Activity plan' })), 60); }}><b>{lab(L[0])}</b><span>{L.length} activit{L.length > 1 ? 'ies' : 'y'} late</span><small class="muted">oldest planned end {date(L[0].day)} · open the activity plan</small></li>)}</ul></section>}
-        {slow.length > 0 && <section class="dg-s bad"><h3>Ending with money left</h3><ul>{slow.map((r) => <li style={{ borderLeftColor: '#e5484d' }} onClick={() => { close(); go('reports/ending'); }}><b>{r.p.bh ? `BH ${r.p.bh}` : r.p.code}</b><span>{short(r.unspent)} would stay unspent ({Math.round(r.share * 100)}%)</span><small class="muted">ends {date(r.p.end)} · needs {short(r.need)}/month, pace {short(r.pace)}</small></li>)}</ul></section>}
-        {worse.length > 0 && <section class="dg-s warn"><h3>Moved to a weaker band</h3><ul>{worse.map((x) => <li style={{ borderLeftColor: '#e5484d' }} onClick={() => { close(); go(`project/${x.p.id}`); }}><b>{x.p.bh ? `BH ${x.p.bh}` : x.p.code}</b><span>{x.was} → {x.now}</span><small class="muted">{Math.round(x.perf * 100)}% of plan</small></li>)}</ul></section>}
+        {slow.length > 0 && <section class="dg-s bad"><h3>Ending with money left</h3><ul>{slow.map((r) => <li style={{ borderLeftColor: 'var(--critical)' }} onClick={() => { close(); go('reports/ending'); }}><b>{r.p.bh ? `BH ${r.p.bh}` : r.p.code}</b><span>{short(r.unspent)} would stay unspent ({Math.round(r.share * 100)}%)</span><small class="muted">ends {date(r.p.end)} · needs {short(r.need)}/month, pace {short(r.pace)}</small></li>)}</ul></section>}
+        {worse.length > 0 && <section class="dg-s warn"><h3>Moved to a weaker band</h3><ul>{worse.map((x) => <li style={{ borderLeftColor: 'var(--critical)' }} onClick={() => { close(); go(`project/${x.p.id}`); }}><b>{x.p.bh ? `BH ${x.p.bh}` : x.p.code}</b><span>{x.was} → {x.now}</span><small class="muted">{Math.round(x.perf * 100)}% of plan</small></li>)}</ul></section>}
         <section class="dg-s"><h3>Next 7 days · {week.length}</h3>{week.length ? <ul>{week.slice(0, 12).map(item)}</ul> : <p class="muted">Nothing scheduled.</p>}</section>
         <div class="dg-f"><button class="btn" onClick={() => downloadIcs(E.filter((e) => e.day >= today))}>📅 Add all dates to my calendar (.ics)</button><button class="btn" onClick={() => { close(); go('reports/calendar'); }}>Open calendar</button><button class="btn primary" onClick={close}>Got it</button></div>
       </div>

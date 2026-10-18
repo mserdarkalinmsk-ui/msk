@@ -9,15 +9,15 @@ import type { PO } from './workbook';
  */
 export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
 export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
-  { k: 'events', label: 'Event management', color: '#64748b' },
+  { k: 'events', label: 'Event management', color: 'var(--ink-3)' },
   { k: 'interp', label: 'Interpretation', color: '#0891b2' },
-  { k: 'consult', label: 'Consultant — national', color: '#3b82c4' },
-  { k: 'intl', label: 'Consultant — international', color: '#8e4ec6' },
-  { k: 'visibility', label: 'Visibility', color: '#e5484d' },
-  { k: 'research', label: 'Research', color: '#0e9384' },
-  { k: 'publication', label: 'Publication', color: '#c27c0e' },
+  { k: 'consult', label: 'Consultant — national', color: 'var(--c1)' },
+  { k: 'intl', label: 'Consultant — international', color: 'var(--c7)' },
+  { k: 'visibility', label: 'Visibility', color: 'var(--critical)' },
+  { k: 'research', label: 'Research', color: 'var(--c3)' },
+  { k: 'publication', label: 'Publication', color: 'var(--warn)' },
   // Groups that can be added to the totals on request.
-  { k: 'grants', label: 'Grants (6.1, 6.2)', color: '#30a46c' },
+  { k: 'grants', label: 'Grants (6.1, 6.2)', color: 'var(--good)' },
   { k: 'perdiem', label: 'Per diem & travel (1.3, 2.x, OM)', color: '#a16207', optional: true },
   { k: 'staff', label: 'Staff salaries', color: '#94a3b8', optional: true },
   { k: 'petty', label: 'Petty cash, direct debit & internal', color: '#78716c', optional: true },

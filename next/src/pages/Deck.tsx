@@ -21,9 +21,9 @@ import { mapData } from './MapPage';
 import { spendOption } from './Overview';
 import { moves, narrative } from './Pack';
 
-const BAND_C: Record<string, string> = { blue: '#3b82c4', green: '#30a46c', amber: '#f5a524', red: '#e5484d' };
+const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
 const BAND_W: Record<string, string> = { blue: 'Ahead', green: 'On track', amber: 'Behind', red: 'Well behind' };
-const KIND_C: Record<string, string> = { report: '#e5484d', contract: '#8e4ec6', activity: '#f5a524', project: '#3b82c4' };
+const KIND_C: Record<string, string> = { report: 'var(--critical)', contract: 'var(--c7)', activity: 'var(--c4)', project: 'var(--c1)' };
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 /** Percent for headlines: small shares keep one decimal so 0.4% never reads as 0%. */
 const pq = (x: number) => (x > 0 && x < 0.095 ? `${(x * 100).toFixed(1)}%` : pct(x));
@@ -155,7 +155,7 @@ export function Deck() {
           <span style={{ flex: 1, background: 'var(--surface-2)', color: 'var(--ink-2)' }}>Uncommitted {pct(T.budget ? T.remaining / T.budget : 0)}</span>
           <i style={{ left: `${T.elapsed * 100}%` }} title="time elapsed" />
         </div>
-        <div class="gauges"><Gauge value={perf} label="Spent vs planned to date" /><Gauge value={T.budget ? T.exposure / T.budget : 0} max={1} label="Spent + committed of budget" bands={[[0.5, '#f5a524'], [1, '#30a46c']]} /><Gauge value={T.elapsed} max={1} label="Time elapsed" bands={[[1, '#3b82c4']]} /></div>
+        <div class="gauges"><Gauge value={perf} label="Spent vs planned to date" /><Gauge value={T.budget ? T.exposure / T.budget : 0} max={1} label="Spent + committed of budget" bands={[[0.5, 'var(--c4)'], [1, 'var(--good)']]} /><Gauge value={T.elapsed} max={1} label="Time elapsed" bands={[[1, 'var(--c1)']]} /></div>
       </Slide>
 
       <Slide n={4} of={of} scope={scope} title="Spending over time" msg={MS.spending} notes={NS.spending} sub="Cumulative actual spend against the linear plan; shaded band = forecast at the recent pace ±20%">
@@ -164,7 +164,7 @@ export function Deck() {
           <div class="sl-callouts">
             <div><span>Planned by now</span><b>{short(PL)}</b></div>
             <div><span>Actually spent</span><b>{short(T.spent)}</b></div>
-            <div><span>Gap to plan</span><b style={{ color: PL > T.spent ? '#e5484d' : '#30a46c' }}>{short(T.spent - PL)}</b></div>
+            <div><span>Gap to plan</span><b style={{ color: PL > T.spent ? 'var(--critical)' : 'var(--good)' }}>{short(T.spent - PL)}</b></div>
             {final != null && <div><span>Forecast at end</span><b>{short(final)}</b><small>{pct(T.budget ? final / T.budget : 0)} of budget</small></div>}
           </div>
         </div>
@@ -172,7 +172,7 @@ export function Deck() {
 
       <Slide n={5} of={of} scope={scope} title="Budget by heading" msg={MS.budget} notes={NS.budget} sub="Approved budget and use (spent + committed) per cost heading, all projects">
         {H.length ? <table class="mini sl-t"><thead><tr><th>Heading</th><th class="r">Approved</th><th class="r">Spent</th><th class="r">Spent + committed</th><th class="r">Used</th><th style={{ width: '30%' }} /></tr></thead>
-          <tbody>{H.map((h) => { const u = h.approved ? h.exposure / h.approved : 0; return <tr><td>{h.key}</td><td class="r num">{short(h.approved)}</td><td class="r num">{short(h.actual)}</td><td class="r num">{short(h.exposure)}</td><td class="r num"><b>{pct(u)}</b></td><td><div class="sl-bar"><span style={{ width: `${Math.min(100, u * 100)}%`, background: u > 1 ? '#e5484d' : 'var(--c1)' }} /><i style={{ left: `${T.elapsed * 100}%` }} /></div></td></tr>; })}</tbody>
+          <tbody>{H.map((h) => { const u = h.approved ? h.exposure / h.approved : 0; return <tr><td>{h.key}</td><td class="r num">{short(h.approved)}</td><td class="r num">{short(h.actual)}</td><td class="r num">{short(h.exposure)}</td><td class="r num"><b>{pct(u)}</b></td><td><div class="sl-bar"><span style={{ width: `${Math.min(100, u * 100)}%`, background: u > 1 ? 'var(--critical)' : 'var(--c1)' }} /><i style={{ left: `${T.elapsed * 100}%` }} /></div></td></tr>; })}</tbody>
           <tfoot><tr><td>Total</td><td class="r num">{short(H.reduce((a, h) => a + h.approved, 0))}</td><td class="r num">{short(H.reduce((a, h) => a + h.actual, 0))}</td><td class="r num">{short(H.reduce((a, h) => a + h.exposure, 0))}</td><td /><td /></tr></tfoot></table>
           : <p class="sl-empty">No financial reports with budget lines yet.</p>}
         <p class="sl-note">The black tick on each bar marks time elapsed: a bar well short of it is a heading behind schedule.</p>
@@ -188,7 +188,7 @@ export function Deck() {
 
       <Slide n={7} of={of} scope={scope} title="Project status" msg={MS.project} notes={NS.project} sub="Spending against plan to date — weakest first">
         <table class="mini sl-t sl-status"><thead><tr><th>Project</th><th>Country</th><th class="r">Budget</th><th class="r">Spent</th><th class="r">vs plan</th><th class="r">Trend</th><th>Status</th><th>Ends</th></tr></thead>
-          <tbody>{M.slice(0, 11).map((x) => { const d = x.prev == null ? null : x.perf - x.prev; return <tr style={{ borderLeft: `5px solid ${BAND_C[x.now]}` }}><td><b>{lab(x.p)}</b> {cut(x.p.name, 62)}</td><td>{cname(x.p.country)}</td><td class="r num">{short(money(x.p).budget)}</td><td class="r num">{short(x.spent)}</td><td class="r num"><b style={{ color: BAND_C[x.now] }}>{Math.round(x.perf * 100)}%</b></td><td class="r num" style={{ color: d == null ? undefined : d > 0 ? '#30a46c' : '#e5484d' }}>{d == null ? '—' : `${d > 0 ? '▲' : '▼'} ${Math.abs(Math.round(d * 100))}`}</td><td><span class="sl-pill" style={{ background: BAND_C[x.now] }}>{BAND_W[x.now]}</span></td><td class="num">{date(x.p.end)}</td></tr>; })}</tbody></table>
+          <tbody>{M.slice(0, 11).map((x) => { const d = x.prev == null ? null : x.perf - x.prev; return <tr style={{ borderLeft: `5px solid ${BAND_C[x.now]}` }}><td><b>{lab(x.p)}</b> {cut(x.p.name, 62)}</td><td>{cname(x.p.country)}</td><td class="r num">{short(money(x.p).budget)}</td><td class="r num">{short(x.spent)}</td><td class="r num"><b style={{ color: BAND_C[x.now] }}>{Math.round(x.perf * 100)}%</b></td><td class="r num" style={{ color: d == null ? undefined : d > 0 ? 'var(--good)' : 'var(--critical)' }}>{d == null ? '—' : `${d > 0 ? '▲' : '▼'} ${Math.abs(Math.round(d * 100))}`}</td><td><span class="sl-pill" style={{ background: BAND_C[x.now] }}>{BAND_W[x.now]}</span></td><td class="num">{date(x.p.end)}</td></tr>; })}</tbody></table>
         {M.length > 11 && <p class="sl-note">{M.length - 11} more projects in the annex of the monthly pack.</p>}
       </Slide>
 
@@ -200,7 +200,7 @@ export function Deck() {
       <Slide n={8} of={of} scope={scope} title="Risks and issues" msg={MS.risks} notes={NS.risks} sub="Open risks from the registers and the most serious alerts">
         <div class="sl-two">
           <div><h3 class="sl-h3">Top risks</h3>{R.length ? <table class="mini sl-t"><thead><tr><th>Project</th><th>Risk</th><th class="r">Score</th></tr></thead>
-            <tbody>{R.map((x) => <tr><td><b>{lab(x.p)}</b></td><td>{cut(x.r.title, 70)}{x.r.mitigation && <small class="sl-mit">Mitigation: {cut(x.r.mitigation, 90)}</small>}</td><td class="r num"><span class="sl-pill" style={{ background: x.sc >= 15 ? '#e5484d' : x.sc >= 8 ? '#f5a524' : '#30a46c' }}>{x.sc}</span></td></tr>)}</tbody></table> : <p class="sl-empty">No open risks recorded.</p>}</div>
+            <tbody>{R.map((x) => <tr><td><b>{lab(x.p)}</b></td><td>{cut(x.r.title, 70)}{x.r.mitigation && <small class="sl-mit">Mitigation: {cut(x.r.mitigation, 90)}</small>}</td><td class="r num"><span class="sl-pill" style={{ background: x.sc >= 15 ? 'var(--critical)' : x.sc >= 8 ? 'var(--c4)' : 'var(--good)' }}>{x.sc}</span></td></tr>)}</tbody></table> : <p class="sl-empty">No open risks recorded.</p>}</div>
           <div><h3 class="sl-h3">Alerts</h3>{A.length ? <ul class="sl-al">{A.slice(0, 9).map((a) => { const p = P.find((q) => q.id === a.projectId)!; return <li><span class={`badge ${a.severity}`}>{a.severity}</span><div><b>{lab(p)}</b> {a.title}<small>{a.detail}</small></div></li>; })}</ul> : <p class="sl-empty">No serious alerts.</p>}</div>
         </div>
       </Slide>
@@ -208,7 +208,7 @@ export function Deck() {
       <Slide n={9} of={of} scope={scope} title="Staff" msg={mg ? `${active.length} active staff; ${ren.length} contract${ren.length === 1 ? "" : "s"} end within 90 days` : `${active.length} staff paid from ${new Set(active.map((a) => a.project.id)).size} projects`} sub="Staff paid from the projects" notes={mg ? "Contracts ending within 90 days are in orange; decide renewals before they lapse." : undefined}>
         <div class="sl-kpis">
           <div><span>Active staff</span><b>{active.length}</b></div>
-          <div><span>Contracts ending ≤ 90 days</span><b style={{ color: ren.length ? '#c27c0e' : undefined }}>{ren.length}</b></div>
+          <div><span>Contracts ending ≤ 90 days</span><b style={{ color: ren.length ? 'var(--warn)' : undefined }}>{ren.length}</b></div>
           <div><span>Projects with staff</span><b>{new Set(active.map((a) => a.project.id)).size}</b></div>
           <div><span>All records</span><b>{people.length}</b></div>
         </div>
@@ -217,9 +217,9 @@ export function Deck() {
           const L = [...active].sort((a, b) => lab(a.project).localeCompare(lab(b.project)) || (a.end ?? '').localeCompare(b.end ?? '') || a.display.localeCompare(b.display));
           const soon = new Set(ren), cols = L.length > 12 ? [L.slice(0, Math.ceil(L.length / 2)), L.slice(Math.ceil(L.length / 2))] : [L];
           return <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols.length}, 1fr)`, gap: '18px' }}>{cols.map((C) => <table class="mini sl-t sl-staff"><thead><tr><th>Name</th><th>Position</th><th>Project</th><th>Contract ends</th></tr></thead>
-            <tbody>{C.map((a) => <tr><td>{a.display}</td><td>{a.position}</td><td>{lab(a.project)}</td><td class="num" style={soon.has(a) ? { color: '#c27c0e', fontWeight: 700 } : undefined}>{a.end ? date(a.end) : '—'}</td></tr>)}</tbody></table>)}</div>;
+            <tbody>{C.map((a) => <tr><td>{a.display}</td><td>{a.position}</td><td>{lab(a.project)}</td><td class="num" style={soon.has(a) ? { color: 'var(--warn)', fontWeight: 700 } : undefined}>{a.end ? date(a.end) : '—'}</td></tr>)}</tbody></table>)}</div>;
         })() : <p class="sl-empty">No active staff on file.</p>}
-        {ren.length > 0 && <p class="sl-empty" style={{ marginTop: '8px' }}><b style={{ color: '#c27c0e' }}>Orange</b> = contract ends within 90 days.</p>}
+        {ren.length > 0 && <p class="sl-empty" style={{ marginTop: '8px' }}><b style={{ color: 'var(--warn)' }}>Orange</b> = contract ends within 90 days.</p>}
       </Slide>
 
       {hasOffice && <Slide n={10} of={of} scope={scope} title="Office running costs" msg={(() => { const R = officeRows(get().ledger.offices ?? []); const sh = R.reduce((a, r) => a + Math.max(0, -r.short), 0); return sh > 0 ? `Offices are ${short(sh)} short on the Ordinary Budget at year end; ${short(R.reduce((a, r) => a + r.request, 0))} to request after transfers` : "Office budgets cover the year-end outlook"; })()} notes="Ordinary Budget and LS & Pagoda of the programme offices; the year-end outlook combines the office forecast and the pace of payments so far." sub="Programme offices' own budgets — Ordinary Budget and LS & Pagoda, latest situation and year-end outlook">

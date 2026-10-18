@@ -81,12 +81,12 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
         <div><b class="num">{short(m.spent)}</b><span>of {short(m.budget)}</span></div>
         <span class={`badge ${tone}`}>{signedPct(g)}</span>
       </div>
-      <div class="meter" title={`${pct(m.budget ? m.spent / m.budget : 0)} spent · ${pct(el)} of time`}>
-        <span style={{ width: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%`, background: 'var(--sc)' }} />
-        <span style={{ left: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%`, width: `${Math.min(100, (m.committed / (m.budget || 1)) * 100)}%`, background: 'var(--sc)', opacity: .35 }} />
-        <i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} />
-      </div>
-      <div class="pc-spark"><Sparkline values={pts.length > 1 ? pts : [0, 0]} color="var(--sc)" height={30} /></div>
+      {(() => { const sp = m.budget ? m.spent / m.budget : 0, cm = m.budget ? m.committed / m.budget : 0;
+        return <div class="pc-bars" title={`${pct(sp)} spent · ${pct(cm)} committed · ${pct(el)} of the time elapsed`}>
+          <div><span>Spent</span><i><b style={{ width: `${Math.min(100, sp * 100)}%`, background: 'var(--sc)' }} /><b style={{ width: `${Math.min(100 - Math.min(100, sp * 100), cm * 100)}%`, background: 'var(--sc)', opacity: .35 }} /></i><em class="num">{pct(sp)}{cm > 0.005 ? <small> +{pct(cm)}</small> : ''}</em></div>
+          <div><span>Time</span><i><b style={{ width: `${Math.min(100, el * 100)}%`, background: 'var(--ink-3, #8a8a8a)', opacity: .55 }} /></i><em class="num">{pct(el)}</em></div>
+        </div>; })()}
+      {pts.length > 2 && <div class="pc-spark"><Sparkline values={pts} color="var(--sc)" height={30} /></div>}
       </>}
       {!p.datesTbc && <footer>
         <span title="Change in cumulative spend since the previous report">{delta != null ? <><b class="num">+{short(delta)}</b> since last report</> : 'first report'}</span>

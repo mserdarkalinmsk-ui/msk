@@ -9,8 +9,8 @@ import { latestWorkbook } from './FinancialReport';
 
 const DAY = 864e5;
 const BUCKETS = [
-  { k: '0–3 months', max: 91, color: '#30a46c' }, { k: '3–6 months', max: 183, color: '#3b82c4' },
-  { k: '6–12 months', max: 365, color: '#f5a524' }, { k: 'over 12 months', max: Infinity, color: '#e5484d' },
+  { k: '0–3 months', max: 91, color: 'var(--good)' }, { k: '3–6 months', max: 183, color: 'var(--c1)' },
+  { k: '6–12 months', max: 365, color: 'var(--c4)' }, { k: 'over 12 months', max: Infinity, color: 'var(--critical)' },
 ];
 export interface OpenPO extends PO { p: Project; age: number; bucket: number; flags: string[]; staff: boolean }
 
@@ -69,7 +69,7 @@ export function Commitments() {
     <>
       <section class="hero" aria-label="Open commitments">
         <div class="kpi lead"><span class="label">Open commitments</span><span class="value">{short(tot)}</span><span class="ctx">of which staff <b>{short(all.filter((x) => x.staff).reduce((a, x) => a + x.balance, 0))}</b> · {all.length} open purchase orders in {new Set(all.map((x) => x.p.id)).size} projects{noWb ? ` · ${noWb} projects without a report workbook` : ''}</span></div>
-        <div class="kpi"><span class="label">To review</span><span class="value" style={{ color: flagged.length ? '#e5484d' : undefined }}>{short(flaggedTot)}</span><span class="ctx">{flagged.length} POs flagged — may be released to free budget</span></div>
+        <div class="kpi"><span class="label">To review</span><span class="value" style={{ color: flagged.length ? 'var(--critical)' : undefined }}>{short(flaggedTot)}</span><span class="ctx">{flagged.length} POs flagged — may be released to free budget</span></div>
         <div class="kpi"><span class="label">Older than 6 months</span><span class="value">{short(byB[2] + byB[3])}</span><span class="ctx">{tot ? Math.round((byB[2] + byB[3]) / tot * 100) : 0}% of the open balance</span></div>
         <div class="kpi"><span class="label">Largest supplier</span><span class="value" style={{ fontSize: '20px' }}>{sup[0] ? short(sup[0][1]) : '—'}</span><span class="ctx">{sup[0]?.[0] ?? ''}</span></div>
       </section>
@@ -86,7 +86,7 @@ export function Commitments() {
                 return <tr class={`click${on ? ' sel' : ''}`} onClick={() => (sumBy === 'project' ? setSelP(tog(selP, g.k)) : (setSelC(tog(selC, g.k)), setSelP([])))}>
                   <td><input type="checkbox" checked={on} tabIndex={-1} style={{ marginRight: '8px' }} /><b>{sumBy === 'project' ? lab(projOf(g.k)) : cname(g.k)}</b>{sumBy === 'project' ? <small class="muted"> {cname(projOf(g.k).country)}</small> : <small class="muted"> {g.projects.size} projects</small>}</td>
                   <td class="r num">{g.n}</td><td class="r num">{full(g.amount)}</td><td class="r num">{full(g.paid)}</td><td class="r num"><b>{full(g.open)}</b></td><td class="r num">{full(g.staff)}</td>
-                  <td class="r num">{full(g.old)}</td><td class="r num" style={{ color: g.review ? '#e5484d' : undefined }}>{full(g.review)}</td><td><span class="cm-bar"><i style={{ width: `${g.open / max * 100}%` }} /></span></td></tr>; })}</tbody>
+                  <td class="r num">{full(g.old)}</td><td class="r num" style={{ color: g.review ? 'var(--critical)' : undefined }}>{full(g.review)}</td><td><span class="cm-bar"><i style={{ width: `${g.open / max * 100}%` }} /></span></td></tr>; })}</tbody>
               <tfoot><tr><td><b>{selC.length || selP.length ? 'Selected' : 'Total'}</b></td><td class="r num">{all.length}</td><td class="r num">{full(all.reduce((a, x) => a + x.amount, 0))}</td><td class="r num">{full(all.reduce((a, x) => a + x.spent, 0))}</td><td class="r num"><b>{full(tot)}</b></td>
                 <td class="r num">{full(all.filter((x) => x.staff).reduce((a, x) => a + x.balance, 0))}</td><td class="r num">{full(byB[2] + byB[3])}</td><td class="r num">{full(flaggedTot)}</td><td /></tr></tfoot></table></div>
           </div>

@@ -82,7 +82,7 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
     if (mode === 'used') return ramp(d.budget ? d.spent / d.budget : 0);
     if (mode === 'pace') return diverge(d.gap);
     if (mode === 'staff') return d.staff ? ramp(0.15 + 0.85 * (d.staff / max.staff)) : 'var(--map-member)';
-    return d.critical ? '#c8312f' : d.alerts ? '#c9540f' : '#1f8a4c';
+    return d.critical ? 'var(--critical)' : d.alerts ? 'var(--serious)' : '#1f8a4c';
   };
 
   const zoom = (k: number, cx?: number, cy?: number) => setVb((v) => {
@@ -217,7 +217,7 @@ export function MapView({ countries, data, mode, height = 420, selected, onSelec
       )}
       <div class="map-legend">
         {legend && <><span>{legend[0]}</span><i style={{ background: mode === 'pace' ? 'linear-gradient(90deg,#d95926,#e9e8e4,#256abf)' : `linear-gradient(90deg,${SEQ.join(',')})` }} /><span>{legend[1]}</span></>}
-        {mode === 'attention' && <><i class="dot" style={{ background: '#1f8a4c' }} />clear <i class="dot" style={{ background: '#c9540f' }} />serious <i class="dot" style={{ background: '#c8312f' }} />critical</>}
+        {mode === 'attention' && <><i class="dot" style={{ background: '#1f8a4c' }} />clear <i class="dot" style={{ background: 'var(--serious)' }} />serious <i class="dot" style={{ background: 'var(--critical)' }} />critical</>}
         <span class="sep" /><i class="ring" />size = budget · ring = spent <span class="sep" /><i class="sw" style={{ background: 'var(--map-member)' }} />member <i class="sw hatch" />non-member
       </div>
     </div>

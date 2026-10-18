@@ -8,7 +8,7 @@ import { download } from '../ui/xlsxwrite';
 const lab = (x: UnitPoint) => (x.p.bh ? `BH ${x.p.bh}` : x.p.code);
 const pctS = (v: number | null) => (v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))}%`);
 const tone = (v: number | null, lim: number) => (v == null ? '' : v > lim ? 'bad' : v < -lim ? 'low' : 'ok');
-const COL = ['#3b82c4', '#e5484d', '#30a46c', '#f5a524', '#8e4ec6', '#0e9384', '#c2410c', '#64748b'];
+const COL = ['var(--c1)', 'var(--critical)', 'var(--good)', 'var(--c4)', 'var(--c7)', 'var(--c3)', '#c2410c', 'var(--ink-3)'];
 
 /** One group as a strip: each project's budget rate (ring) and actual rate (dot) on a shared scale, median marked. */
 function Strip({ g, color }: { g: UnitGroup; color: (id: string) => string }) {
@@ -48,8 +48,8 @@ export function UnitCosts() {
     <>
       <section class="hero" aria-label="Unit costs">
         <div class="kpi lead"><span class="label">Unit costs compared</span><span class="value">{G.length}</span><span class="ctx">budget lines with a unit rate across {ids.length} projects · {G.filter((g) => g.points.length > 1).length} shared by several projects</span></div>
-        <div class="kpi"><span class="label">Actual above budget rate</span><span class="value" style={{ color: over.length ? '#e5484d' : undefined }}>{over.length}</span><span class="ctx">lines where the real unit cost is more than 15% over the budgeted rate</span></div>
-        <div class="kpi"><span class="label">Above portfolio median</span><span class="value" style={{ color: aboveMed.length ? '#c27c0e' : undefined }}>{aboveMed.length}</span><span class="ctx">more than 25% above what other projects pay</span></div>
+        <div class="kpi"><span class="label">Actual above budget rate</span><span class="value" style={{ color: over.length ? 'var(--critical)' : undefined }}>{over.length}</span><span class="ctx">lines where the real unit cost is more than 15% over the budgeted rate</span></div>
+        <div class="kpi"><span class="label">Above portfolio median</span><span class="value" style={{ color: aboveMed.length ? 'var(--warn)' : undefined }}>{aboveMed.length}</span><span class="ctx">more than 25% above what other projects pay</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Unit cost benchmark</h2><p>○ budget rate · ● actual rate · line joins a project's two rates · black tick = portfolio median</p></div>

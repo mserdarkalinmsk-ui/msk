@@ -6,7 +6,7 @@ import { TODAY } from '../today';
 import { date, short } from '../ui/format';
 import { latestWorkbook } from './FinancialReport';
 
-const C: Record<StepState, string> = { done: '#30a46c', overdue: '#e5484d', due: '#f5a524', upcoming: 'var(--surface-2)' };
+const C: Record<StepState, string> = { done: 'var(--good)', overdue: 'var(--critical)', due: 'var(--c4)', upcoming: 'var(--surface-2)' };
 const SHORT: Record<string, string> = { plan: 'Plan', staff: 'Staff', procure: 'Last POs', assets: 'Assets', visibility: 'Final event', commitments: 'POs settled', narrative: 'Narrative', financial: 'Financial', verification: 'Audit', payment: 'Payment', archive: 'Archive' };
 
 /** Portfolio closure tracker: every project ending within six months or not yet closed, step by step. */
@@ -21,7 +21,7 @@ export function ClosureTracker() {
     <>
       <section class="hero" aria-label="Closure">
         <div class="kpi lead"><span class="label">Projects in closure</span><span class="value">{R.length}</span><span class="ctx">{win >= 600 ? 'all projects not yet fully closed' : `ending within ${win} months, or ended and not fully closed`}</span></div>
-        <div class="kpi"><span class="label">Overdue steps</span><span class="value" style={{ color: overdue ? '#e5484d' : undefined }}>{overdue}</span><span class="ctx">past their date and not ticked</span></div>
+        <div class="kpi"><span class="label">Overdue steps</span><span class="value" style={{ color: overdue ? 'var(--critical)' : undefined }}>{overdue}</span><span class="ctx">past their date and not ticked</span></div>
         <div class="kpi"><span class="label">Budget still to close</span><span class="value">{short(R.reduce((a, x) => a + money(x.p).budget, 0))}</span><span class="ctx">{short(R.reduce((a, x) => a + money(x.p).remaining, 0))} not yet spent or committed</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
@@ -32,7 +32,7 @@ export function ClosureTracker() {
             <tbody>{R.map(({ p, S }) => { const d = days(p.end); return (
               <tr class="click" onClick={() => open(p.id)}>
                 <td><b>{p.bh ? `BH ${p.bh}` : p.code}</b><small class="muted" style={{ display: 'block' }}>{p.name.length > 46 ? p.name.slice(0, 44) + '…' : p.name}</small></td>
-                <td class="num" style={{ whiteSpace: 'nowrap' }}>{date(p.end)}<small class="muted" style={{ display: 'block', color: d < 0 ? '#e5484d' : undefined }}>{d >= 0 ? `in ${d} days` : `${-d} days ago`}</small></td>
+                <td class="num" style={{ whiteSpace: 'nowrap' }}>{date(p.end)}<small class="muted" style={{ display: 'block', color: d < 0 ? 'var(--critical)' : undefined }}>{d >= 0 ? `in ${d} days` : `${-d} days ago`}</small></td>
                 {S.map((st) => <td class="clt-c"><span title={`${st.label} · ${date(st.due)} · ${st.state}${st.auto ? ` · ${st.auto}` : ''}`} style={{ background: C[st.state] }}>{st.state === 'done' ? '✓' : st.state === 'overdue' ? '!' : ''}</span></td>)}
                 <td class="r num"><b>{S.filter((x) => x.state === 'done').length}/{S.length}</b></td>
               </tr>); })}</tbody></table>}

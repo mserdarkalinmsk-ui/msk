@@ -8,7 +8,7 @@ import { date, full } from '../ui/format';
 const KEY = (id: string) => `pl-scn-${id}`;
 const load = (id: string): ScenarioIn[] => { try { const v = JSON.parse(localStorage.getItem(KEY(id)) ?? ''); return Array.isArray(v) && v.length ? v : PRESETS; } catch { return PRESETS; } };
 const save = (id: string, v: ScenarioIn[]) => { try { localStorage.setItem(KEY(id), JSON.stringify(v)); } catch { /* storage blocked */ } };
-const TONE = { fits: '#30a46c', underspend: '#f5a524', overrun: '#e5484d' } as const;
+const TONE = { fits: 'var(--good)', underspend: 'var(--c4)', overrun: 'var(--critical)' } as const;
 const WORD = { fits: 'uses the budget', underspend: 'money left unused', overrun: 'budget exceeded' } as const;
 
 /** Side-by-side what-ifs for one project: extension, budget change, spending pace and staff cuts. */
@@ -37,7 +37,7 @@ export function ScenarioCompare({ p }: { p: Project }) {
             <dt>{r.balance >= 0 ? 'Unused' : 'Overrun'}</dt><dd class="num" style={{ color: TONE[r.verdict] }}><b>{full(Math.abs(r.balance))}</b></dd>
             <dt>Needed a month to use it all</dt><dd class="num">{full(r.need)}</dd>
           </dl>
-          <div class="sc-bar" title="projected vs budget"><i style={{ width: `${Math.min(r.projected, r.budget) / maxV * 100}%`, background: '#3b82c4' }} />{r.projected > r.budget && <i style={{ width: `${(r.projected - r.budget) / maxV * 100}%`, background: '#e5484d' }} />}<em style={{ left: `${r.budget / maxV * 100}%` }} /></div>
+          <div class="sc-bar" title="projected vs budget"><i style={{ width: `${Math.min(r.projected, r.budget) / maxV * 100}%`, background: 'var(--c1)' }} />{r.projected > r.budget && <i style={{ width: `${(r.projected - r.budget) / maxV * 100}%`, background: 'var(--critical)' }} />}<em style={{ left: `${r.budget / maxV * 100}%` }} /></div>
           <div class="sc-v" style={{ color: TONE[r.verdict] }}>● {Math.round(r.use * 100)}% — {WORD[r.verdict]}</div>
           {r.notes.length > 0 && <ul class="sc-n">{r.notes.map((n) => <li>{n}</li>)}</ul>}
         </div>)}

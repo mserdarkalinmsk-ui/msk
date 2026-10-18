@@ -10,7 +10,7 @@ import { date, full, short } from '../ui/format';
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 const pc = (v: number) => `${Math.round(v * 100)}%`;
-const COL = ['#3b82c4', '#e5484d', '#0e9384'];
+const COL = ['var(--c1)', 'var(--critical)', 'var(--c3)'];
 // Unit rates worth comparing between projects (same budget codes in the CoE template).
 const RATES: [string, string][] = [['1.1.3', 'Local short-term consultant'], ['1.2.3', 'International short-term consultant'], ['5.5.1', 'Translation'], ['5.5.2', 'Interpretation']];
 
