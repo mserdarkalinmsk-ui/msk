@@ -116,3 +116,12 @@ describe('narrative risks', () => {
     expect(N.mitigation.length).toBe(2);
   });
 });
+
+import { contractFacts as cf2 } from './documents';
+describe('payment terms', () => {
+  it('reads the first payment, the instalments and the threshold for the next payment', () => {
+    const doc = { paragraphs: ['The pre-financing rate is 40 %.', 'The first pre-financing payment of EUR 1.200.000 shall be paid within 30 days.', 'The contribution will be paid in three instalments.', 'A further payment may be requested when at least 70 % of the previous payment has been used.'], tables: [] } as never;
+    const f = cf2(doc);
+    expect(f.prefinancing).toBe(40); expect(f.firstPayment).toBe(1200000); expect(f.instalments).toBe(3); expect(f.payThreshold).toBe(70);
+  });
+});
