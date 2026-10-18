@@ -672,3 +672,11 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .ap-h { margin: 14px 0 6px; font-size: 13.5px; }
 .ap-up { color: var(--critical); font-weight: 650; } .ap-down { color: var(--good); font-weight: 650; }
 .ap-note { display: grid; gap: 6px; margin: 10px 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; } .ap-note p { margin: 0; }
+.fe-dl { position: sticky; top: 64px; z-index: 6; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); box-shadow: 0 6px 18px -10px rgb(0 0 0 / .25); font-size: 13px; }
+.fe-dl > span:first-child { margin-right: auto; color: var(--ink-2); }
+.fe-dl-warn { color: var(--critical); font-weight: 650; cursor: help; }
+.fe-in.odd { background: #fde2e2 !important; border-color: var(--critical) !important; color: #8a1c1c; }
+.fe-auto { display: inline-flex; gap: 4px; align-items: baseline; justify-content: flex-end; width: 76px; padding: 4px 6px; border-radius: 6px; border: 1px dashed var(--accent); background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%); font-family: var(--mono); font-size: 12px; }
+.fe-auto small { font-family: var(--font); color: var(--accent); font-weight: 650; }
+.fe-over { margin: 0; color: var(--critical); font-size: 13px; }
