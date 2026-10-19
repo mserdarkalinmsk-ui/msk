@@ -705,7 +705,7 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .bh-v.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
 .bh-v.bad { border-color: var(--serious); background: color-mix(in srgb, var(--serious) 9%, transparent); }
 .fe-inf-cpi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 4px; padding: 8px 10px; border: 1px dashed var(--line-strong); border-radius: 8px; font-size: 12.5px; }
-.fe-inf-cpi input { width: 90px; height: 30px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 6px; }
+.fe-inf-cpi input { width: 90px; } .fe-inf-cpi input.fe-cpi-mon { width: 150px; } .fe-inf-cpi input { height: 30px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 6px; }
 .fe-inf-cpi small { flex-basis: 100%; }
 .fe-cpi-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 999px; background: var(--surface-2); font-family: var(--mono); font-size: 12px; }
 .fe-cpi-chip button { border: 0; background: none; cursor: pointer; color: var(--ink-3); }
