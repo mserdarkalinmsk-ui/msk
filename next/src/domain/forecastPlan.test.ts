@@ -83,5 +83,7 @@ describe('balance line keeps the total', () => {
     const row = S.rows.find((r) => String((r[0] as XCell)?.v ?? '').startsWith('7. Sub-total'))!;
     const v = (i: number) => (row[i] as XCell).v as number, last = row.length - 1, rc = (row[last] as XCell)?.f ? last - 1 : last;
     expect(Math.abs(v(rc) - v(4))).toBeLessThan(0.01);
+    expect(Math.abs(v(rc - 3) - v(4))).toBeLessThan(0.01); // calculated proposal too
+    expect(Math.abs(R.lines.reduce((x, l) => x + l.propCost, 0) - R.direct.budget)).toBeLessThan(0.01);
   });
 });

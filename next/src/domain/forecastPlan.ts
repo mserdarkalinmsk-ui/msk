@@ -146,11 +146,17 @@ export function autofillStaff(p: Project, today: Date, d: ForecastDraft): Foreca
 
 /** Guidelines step 8: the difference with the budget goes on 5.7 (or the line given), in its last planned block. */
 export function balanceOn(p: Project, today: Date, d: ForecastDraft, code = '5.7'): ForecastDraft {
-  const plan = computePlan(p, today, d), diff = plan.direct.budget - plan.direct.rounded;
-  const line = plan.lines.find((l) => l.code === code); if (!line || Math.abs(diff) < 1) return d;
-  const b = plan.blocks.at(-1)!.id, c = d.lines[code]?.[b] ?? {}, r = n(c.r) || line.defRate || line.aRate || 1;
-  const u = Math.max(0, n(c.u) + diff / r);
-  return { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { u: Math.round(u * 100) / 100, r } } }, updatedAt: new Date().toISOString() };
+  // The calculated proposal (spent and committed + planned) must equal the direct budget: the line's units are rounded to
+  // two decimals and its rate takes the exact remainder, so the cost matches to the cent (the rounded version is kept
+  // equal by computePlan, which gives the line the rounding of the other rates).
+  const plan = computePlan(p, today, d), line = plan.lines.find((l) => l.code === code); if (!line) return d;
+  const calc = plan.lines.reduce((a, l) => a + l.propCost, 0), diff = plan.direct.budget - calc;
+  const b = plan.blocks.at(-1)!.id, cur = line.cells[b], have = cur ? cur.u * cur.r : 0;
+  const need = have + diff, r0 = (cur?.r || line.defRate || line.aRate || 1);
+  if (Math.abs(diff) < 0.005) return d;
+  if (need <= 0) return { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { u: 0, r: r0 } } }, updatedAt: new Date().toISOString() };
+  const u = Math.max(0.01, Math.round((need / r0) * 100) / 100), r = need / u;
+  return { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { u, r } } }, updatedAt: new Date().toISOString() };
 }
 
 /** The plan with every rate resolved (typed, or the default the screen shows), as written into the Excel. */
