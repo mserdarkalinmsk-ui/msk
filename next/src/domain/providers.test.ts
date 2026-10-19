@@ -6,6 +6,8 @@ describe('service provider kinds', () => {
     expect(kindOf('Organisation of the national conference, catering and venue', '5.7.2')).toBe('events');
     expect(kindOf('National consultant for the baseline study', '1.1.3')).toBe('consult');
     expect(kindOf('International expert fees', '5.7.1')).toBe('intl');
+    expect(kindOf('Translation service from Eng to Tur of the comparative study of policies and practises until 16 Oct 2026', '5.5.1', 'Translation', 'ERENOGLU CONSULTANCY TRANSLATION LTD.CO - ANKARA')).toBe('interp');
+    expect(kindOf('Translation_2021 and 2024 CPT Report', '5.5.1', '', 'ANKA KONFERANS CEVIRMENLIGI TANITIM DAN VE ORG LTD STI')).toBe('interp');
     expect(kindOf('Printing of the handbook', '5.1')).toBe('publication');
     expect(kindOf('Roll-up banners and leaflets', '5.8')).toBe('visibility');
     expect(kindOf('Needs assessment survey', '5.8')).toBe('research');
