@@ -32,7 +32,7 @@ export function ForecastEditor({ p }: { p: Project }) {
   const plug = autoLine(d), E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), lastB = R.blocks.at(-1)!.id;
   const twelve = d.opt.kind === 'twelve';
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
-  const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (R.decision === 'addendum' ? 'addendum' : 'notification')) : undefined };
+  const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (R.decision === 'addendum' ? 'addendum' : 'notification')) : undefined, balance: plug ?? undefined };
   const xlsx = (mode: ForecastMode) => download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, E), mode));
   // Units that look like a rate typed in the wrong box: more months than the period has for a monthly line, or far more
   // than the budget has left.

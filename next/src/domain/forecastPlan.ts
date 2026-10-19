@@ -74,6 +74,12 @@ export function computePlan(p: Project, today: Date, d: ForecastDraft | undefine
     const rounded = propUnits > 0 ? Math.round(propCost / propUnits) * propUnits : propCost;
     return { ...x, staff, cb, budget, bUnits: l?.approvedUnits ?? undefined, actual, sc, aUnits, aRate, rate, defRate, defRates, cells, planned, propUnits, propCost, rounded, variation: budget > 0 ? (rounded - budget) / budget : null };
   });
+  // Keep the total fixed: the balance line takes the rounding of the others, so the rounded proposal equals the budget.
+  const plug = d ? autoLine(d) : null, pl = plug ? out.find((x) => x.code === plug) : undefined;
+  if (pl) { const target = out.reduce((a, x) => a + x.budget, 0), others = out.reduce((a, x) => a + (x === pl ? 0 : x.rounded), 0); const v = Math.round((target - others) * 100) / 100;
+    // Only the rounding of the rates (at most half a euro per unit) — never a real change typed on the line.
+    const slack = out.reduce((a, x) => a + Math.abs(x.propUnits) * 0.5, 0) + 1;
+    if (v >= 0 && Math.abs(v - pl.rounded) <= slack) pl.rounded = v; }
   const H = headings(p), flex = H.flex;
   const heads: PlanHeading[] = ['1', '2', '3', '4', '5', '6'].map((h) => {
     const ls = out.filter((x) => x.code.split('.')[0] === h), hr = H.rows.find((r) => r.code === h);
