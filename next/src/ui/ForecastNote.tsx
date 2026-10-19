@@ -36,7 +36,9 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${base}</title><style>@page{size:A4;margin:16mm}body{font:10.5pt Calibri,Arial,sans-serif;color:#1f2937}h1{font-size:17pt;margin:0 0 4mm}h2{font-size:12.5pt;color:#1d4e89;border-bottom:1px solid #c9ced6;padding-bottom:1mm;margin:6mm 0 2mm}table{border-collapse:collapse;width:100%;margin:2mm 0 3mm}th,td{border:1px solid #c9ced6;padding:1.2mm 2mm;text-align:left;vertical-align:top}th{background:#e8eef6}.r{text-align:right;white-space:nowrap}.hd{display:flex;align-items:center;justify-content:center;margin-bottom:6mm}.no-print{display:none}p{margin:1.5mm 0}</style>${end('head')}<body><div class="hd">${head}</div>${doc.current.innerHTML.replace(/<textarea[^>]*>([\s\S]*?)<\/textarea>/g, '<p>$1</p>')}${end('body')}${end('html')}`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
-  const ifr = () => download(forecastFileName(p, country, TODAY, opt).replace('-Forecast request', ''), [ifrSheet(p, TODAY, opt, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2 })]);
+  const [rk, setRk] = useState<'interim' | 'final'>(() => (p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim')), [withOrig, setWithOrig] = useState(!!opt.change);
+  const ifr = () => download(forecastFileName(p, country, TODAY, opt).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${rk === 'final' ? 'Final' : 'Interim'} financial report-$1`),
+    [ifrSheet(p, TODAY, opt, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind: rk, withOriginal: rk === 'final' && withOrig })]);
   const just = (code: string) => E.just?.[code] ?? '';
   return (
     <>
@@ -54,10 +56,15 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
           </div>
           {err && <p class="fe-over">{err}</p>}
           <div class="fn-ifr">
-            <b>Interim financial report (Excel)</b>
-            <span class="muted">The REPORT layout: left logo as the band, budget / actual / spent and committed per line, totals 7–11, footnotes, certification and signatures.</span>
+            <b>Financial report (Excel)</b>
+            <div class="seg" style={{ justifySelf: 'start' }}>{(['interim', 'final'] as const).map((k) => <button aria-pressed={rk === k} onClick={() => setRk(k)}>{k === 'interim' ? 'Interim' : 'Final'}</button>)}</div>
+            <span class="muted">{rk === 'interim' ? 'Budget, actual and spent and committed per line, totals, footnotes (1)–(3), certification and signatures.'
+              : opt.programme === 'JP' ? 'Budget and actual per line over the whole period, totals 7–11, sources of funding (EU priority of consumption), payments received and the balance to be paid, certification and signatures.'
+                : 'Budget and actual per line over the whole period, direct costs, administrative costs, total, source of funding with the balance, certification and signatures.'}</span>
+            {rk === 'final' && <label class="fe-all"><input type="checkbox" checked={withOrig} onChange={() => setWithOrig(!withOrig)} /> After a notification / addendum: show the contractual budget beside the revised one</label>}
+            {rk === 'final' && opt.programme === 'JP' && !(p.payments?.length) && <span class="fe-over" style={{ margin: 0 }}>No payments recorded — add them in Reports → Cash plan for the payments table.</span>}
             <div class="fn-sign">{(['sign1', 'sign2'] as const).map((k, i) => <textarea rows={4} placeholder={i ? 'Right signature: name\ntitle\nunit\norganisation' : 'Left signature: name\ntitle\nunit\norganisation'} value={brand?.[k] ?? ''} onChange={(e) => setBrand({ ...(brand ?? {}), [k]: (e.target as HTMLTextAreaElement).value || undefined })} />)}</div>
-            <button class="btn" onClick={ifr}>⤓ Interim financial report</button>
+            <button class="btn" onClick={ifr}>⤓ {rk === 'interim' ? 'Interim' : 'Final'} financial report</button>
           </div>
 
           <div class="fn-doc" ref={doc}>

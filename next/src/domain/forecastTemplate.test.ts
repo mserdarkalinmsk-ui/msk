@@ -98,3 +98,25 @@ describe('interim financial report sheet', () => {
     expect(files).toContain('xl/drawings/drawing1.xml'); expect(files).toContain('xl/media/image1.png');
   });
 });
+
+describe('final financial report', () => {
+  it('JP: spent only, sources of funding and payments; with the contractual budget after a notification', async () => {
+    const { ifrSheet } = await import('./forecastTemplate');
+    const q = { ...p, approvedBudget: { ...(p as any).approvedBudget, lines: [{ code: '5.7', description: 'Conf', approved: 90000, approvedUnits: 3, unitRate: 30000 }] }, payments: [{ date: '2025-02-01', amount: 100000 }], contract: { total: 400000, euMax: 360000 } } as never;
+    const S = ifrSheet(q, new Date('2026-07-15'), { kind: 'twelve', programme: 'JP', change: 'notification', changeNo: '2' }, { kind: 'final', withOriginal: true });
+    const text = S.rows.map((r) => r.map((c) => (c && typeof c === 'object' ? (c as XCell).v : c) ?? '').join('|')).join('\n');
+    expect(text).toMatch(/Final financial report covering the period from 01\/01\/2025 to 31\/12\/2027/);
+    expect(text).toContain('Notification n°2'); expect(text).toContain('Contractual');
+    expect(text).toContain('Source of Funding'); expect(text).toContain('Total payments received'); expect(text).toContain('Balance to be paid');
+    expect(text).not.toContain('Spent and');
+    expect(S.rows.every((r) => r.length === 11)).toBe(true);
+    expect(S.rows.some((r) => r.some((c) => c && typeof c === 'object' && 'f' in c && (c as XCell).f))).toBe(false);
+  });
+  it('VC: direct, administrative and total costs, source of funding with the balance', async () => {
+    const { ifrSheet } = await import('./forecastTemplate');
+    const S = ifrSheet(p, new Date('2026-07-15'), { kind: 'revision', programme: 'VC' }, { kind: 'final' });
+    const text = S.rows.map((r) => r.map((c) => (c && typeof c === 'object' ? (c as XCell).v : c) ?? '').join('|')).join('\n');
+    expect(text).toContain('8. Administrative costs'); expect(text).toContain('9. Total eligible costs (7 + 8)');
+    expect(text).not.toMatch(/11\. Total eligible/); expect(text).toContain('Action Plan-level funding');
+  });
+});

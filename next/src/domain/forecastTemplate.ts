@@ -406,42 +406,122 @@ export function forecastFileName(p: Project, country: string, today: Date, o: Fo
 }
 export type { BudgetLine };
 
-export interface ReportLook { /** logo band (PNG) */ logo?: { png: Uint8Array; w: number; h: number }; /** signature blocks, one line each (name, title, unit, organisation) */ sign1?: string; sign2?: string }
+export interface ReportLook {
+  /** logo band (PNG) */ logo?: { png: Uint8Array; w: number; h: number };
+  /** signature blocks, one line each (name, title, unit, organisation) */ sign1?: string; sign2?: string;
+  /** interim (with spent and committed) or final (spent only, sources of funding and payments) */ kind?: 'interim' | 'final';
+  /** final report after a notification: the contractual budget, the notified budget and the actual expenditure */ withOriginal?: boolean;
+}
+const txt = (c: unknown) => String(c && typeof c === 'object' ? (c as XCell).v ?? '' : c ?? '');
 /**
- * The interim financial report sheet in the layout of the REPORT tab: logo band, project name, contract and JP/BH
- * references, budget / actual / spent and committed per line, totals 7–11, the footnotes, the certification and the
- * two signature blocks. Built from the same rows as the Forecast sheet (columns A–I).
+ * The financial report sheets of the reporting layouts (interim and final, JP and VC): logo centred on top, project
+ * name, contract and JP/BH references, budget and actual per line, the totals, footnotes (interim), sources of funding
+ * and payments (final), the certification and the two signature blocks. Values only — a finished document — built from
+ * the same lines as the Forecast sheet, on one printed page.
  */
 export function ifrSheet(p: Project, today: Date, o: ForecastOptions = defaultOptions(p), look: ReportLook = {}): SheetSpec {
+  const final = look.kind === 'final', jp = o.programme === 'JP', orig = final && look.withOriginal && !!p.approvedBudget?.lines?.length;
   const f = forecastSheets(p, today, { ...o, kind: 'twelve' })[0], per = forecastPeriod(p, today, { ...o, kind: 'twelve' });
-  const W = 9, rows: Row[] = [], heights: Record<number, number> = {}, merges: string[] = [];
+  // Columns: A description, B unit, [contractual C–E], budget, actual, [spent and committed when interim].
+  const keep = final ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  const W = keep.length + (orig ? 3 : 0), last = String.fromCharCode(64 + W);
+  const rows: Row[] = [], heights: Record<number, number> = {}, merges: string[] = [];
   const blank = (): Row => Array.from({ length: W }, () => '');
-  const width = look.logo ? Math.min(880, 75 * look.logo.w / look.logo.h) : 0; // a banner spans A–I, a plain logo stays ~75 pt high
+  const width = look.logo ? Math.min(880, 75 * look.logo.w / look.logo.h) : 0; // a banner spans the page, a plain logo stays ~75 pt high
   const band = look.logo ? Math.ceil(width * look.logo.h / look.logo.w / 15) + 1 : 0;
   for (let i = 0; i < band; i++) rows.push(blank());
-  const title = String((f.rows[0][0] as XCell).v ?? '').split('\n').filter(Boolean);
-  for (const t of title) { const r = blank(); r[0] = { v: t, st: 'rTitle' }; rows.push(r); merges.push(`A${rows.length}:I${rows.length}`); heights[rows.length] = 20; }
+  for (const t of txt(f.rows[0][0]).split('\n').filter(Boolean)) { const r = blank(); r[0] = { v: t, st: 'rTitle' }; rows.push(r); merges.push(`A${rows.length}:${last}${rows.length}`); heights[rows.length] = 20; }
   rows.push(blank());
-  const off = rows.length - 2; // forecast rows 3… land after the title
-  const lastNote = f.rows.findIndex((r) => String((r[0] as XCell)?.v ?? '').startsWith('(3)'));
-  for (let i = 2; i <= lastNote; i++) rows.push(f.rows[i].slice(0, W));
-  (rows[off + 2][0] as XCell) = { v: `Interim financial report covering period from ${dmy(p.start)} to ${dmy(per.asAt)}`, st: 'rHead' };
-  for (const m of f.merges ?? []) {
-    const x = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(m); if (!x || +x[2] < 3 || x[3].length > 1 || x[3] > 'I' || +x[2] > lastNote + 1) continue;
-    merges.push(`${x[1]}${+x[2] + off}:${x[3]}${+x[4] + off}`);
+
+  // Body: the forecast rows from the column headers to 11 (and the footnotes of an interim report), values only.
+  const i11 = f.rows.findIndex((r) => txt(r[0]).startsWith('11.'));
+  const end = final ? i11 : f.rows.findIndex((r) => txt(r[0]).startsWith('(3)'));
+  const ab = new Map((p.approvedBudget?.lines ?? []).map((l) => [l.code, l]));
+  const codeOf = (r: Row) => /^(\d+(?:\.\d+)*)\s/.exec(txt(r[0]))?.[1] ?? '';
+  const vcFinal = final && !jp;
+  let sumO = 0, subO = 0;
+  const top = rows.length + 1;
+  for (let i = 2; i <= end; i++) {
+    const src = f.rows[i], label = txt(src[0]);
+    if (vcFinal && /^(8\.|9\.|10\.|11\.)/.test(label)) continue;
+    const row: Row = keep.map((k) => { const c = src[k]; return c && typeof c === 'object' ? { v: (c as XCell).v, st: (c as XCell).st } : c ?? ''; });
+    if (orig) {
+      const st = (row[2] as XCell)?.st ?? 'rNum', code = codeOf(src), isLine = !!txt(src[1]) && i > 3;
+      let ins: Row = [{ st }, { st }, { st }];
+      if (isLine) { const l = ab.get(code); const c = n(l?.approved); sumO += c; subO += c; ins = [{ v: l?.approvedUnits ?? undefined, st }, { v: l?.unitRate ?? undefined, st }, { v: c, st }]; }
+      else if (label.startsWith('Sub-total')) { ins = [{ st }, { st }, { v: subO, st }]; subO = 0; }
+      else if (/^(7\.|9\.)/.test(label)) ins = [{ st }, { st }, { v: sumO, st }];
+      else if (/^10\./.test(label)) ins = [{ st }, { st }, { v: Math.round(sumO * 7) / 100, st }];
+      if (i === 2) ins = [{ v: jp ? 'Budget All Years\nContractual' : 'Budget for all Years\nInitial', st: 'rHead' }, { st: 'rHead' }, { st: 'rHead' }];
+      if (i === 3) ins = ['# of units', 'Unit rate \n(in EUR)', 'Cost \n(in EUR)'].map((v) => ({ v, st: 'rHead' as const }));
+      row.splice(2, 0, ...ins);
+    }
+    if (vcFinal && /^7\./.test(label)) {
+      rows.push(row);
+      const a = blank(); a[0] = { v: '8. Administrative costs (maximum 7% of 7. Total direct eligible costs of the action)', st: 'rLab' };
+      const r10 = f.rows.find((r) => txt(r[0]).startsWith('10.'))!, r11 = f.rows[i11];
+      for (let c = 2; c < W; c++) { const k = keep[orig ? c - 3 : c]; if (k == null || (orig && c < 5)) continue; const x = r10[k] as XCell; if (x && typeof x === 'object') a[c] = { v: x.v, st: 'rNum' }; }
+      rows.push(blank(), a, blank());
+      const t = blank(); t[0] = { v: '9. Total eligible costs (7 + 8)', st: 'rSubL' };
+      for (let c = 2; c < W; c++) { const k = keep[orig ? c - 3 : c]; if (k == null || (orig && c < 5)) continue; const x = r11[k] as XCell; t[c] = x && typeof x === 'object' ? { v: x.v, st: 'rSubN' } : { st: 'rSubN' }; }
+      rows.push(t); continue;
+    }
+    rows.push(row);
   }
-  for (const [r, h] of Object.entries(f.heights ?? {})) if (+r >= 3 && +r <= lastNote + 1) heights[+r + off] = h;
-  rows.forEach((r, i) => { if (String((r[0] as XCell)?.v ?? '').startsWith('8. ')) heights[i + 1] = 28; });
+  const hdr = top, sub = top + 1;
+  rows[hdr - 1][0] = { v: `${final ? 'Final' : 'Interim'} financial report covering ${final ? 'the ' : ''}period from ${dmy(p.start)} to ${dmy(final ? p.end : per.asAt)}`, st: 'rHead' };
+  const bud = orig ? 5 : 2, act = bud + 3;
+  rows[hdr - 1][bud] = { v: orig ? (jp ? `Budget All Years\n${o.change === 'addendum' ? 'Addendum' : 'Notification'} n°${o.changeNo ?? '…'}` : `Budget for all Years\nRevised (${monYY(today)})`) : jp ? 'Budget for all Years\nContractual' : 'Budget for all Years', st: 'rHead' };
+  rows[hdr - 1][act] = { v: final ? 'Actual expenditure' : `Actual expenditure\nas at ${dmy(per.asAt)}`, st: 'rHead' };
+  if (final) rows[sub - 1][act + 2] = { v: 'Spent \n(in EUR)', st: 'rHead' };
+  const col = (i: number) => String.fromCharCode(65 + i);
+  merges.push(`${col(bud)}${hdr}:${col(bud + 2)}${hdr}`, `${col(act)}${hdr}:${col(act + 2)}${hdr}`);
+  if (orig) merges.push(`C${hdr}:E${hdr}`);
+  if (!final) merges.push(`${col(act + 3)}${hdr}:${col(act + 3)}${sub}`);
+  heights[hdr] = 48; heights[sub] = 32;
+  rows.forEach((r, i) => { if (i + 1 > sub && /^8\. Provision/.test(txt(r[0]))) heights[i + 1] = 28; if (/^\(\d\)/.test(txt(r[0]))) merges.push(`A${i + 1}:${last}${i + 1}`); });
+
+  // Final: sources of funding and payments.
+  if (final) {
+    const val = (lab: RegExp, c: number) => { const r = rows.find((x) => lab.test(txt(x[0]))); const v = r && (r[c] as XCell)?.v; return typeof v === 'number' ? v : 0; };
+    const spent = vcFinal ? val(/^9\. Total eligible/, act + 2) : val(/^11\./, act + 2), budget = vcFinal ? val(/^9\. Total eligible/, bud + 2) : val(/^11\./, bud + 2);
+    const ct = (p.contract ?? {}) as { total?: number; euMax?: number };
+    // Label in A, the amounts in the widest number columns.
+    const at = W === 8 ? [0, 4, 6, 7] : W === 11 ? [0, 4, 7, 10] : [0, 4, 7, 8];
+    const put = (r: Row, i: number, c: XCell) => { r[at[i]] = c; };
+    const head = (cells: string[]) => { const r = blank(); cells.forEach((v, i) => put(r, i, { v, st: 'rHead' })); rows.push(r); heights[rows.length] = 46; };
+    const line = (cells: (string | number | undefined)[], bold = false) => { const r = blank(); cells.forEach((v, i) => put(r, i, typeof v === 'number' ? { v, st: bold ? 'rSubN' : 'rNum' } : { v: v ?? '', st: bold ? 'rSubL' : 'rLab' })); rows.push(r); };
+    rows.push(blank(), blank());
+    if (jp) {
+      const eu = Number(ct.euMax) || budget, total = Number(ct.total) || budget, coe = Math.max(0, total - eu);
+      // EU priority of consumption (article 20 of the General Conditions): spending counts against the EU contribution first.
+      const euSpent = Math.min(eu, spent), coeSpent = Math.max(0, spent - euSpent);
+      head(['Source of Funding', 'Contribution as per contract\n(in EUR)', 'Amount spent*\n(in EUR)']);
+      line(['European Union', eu, euSpent]); line(['Council of Europe', coe, coeSpent]); line(['Total', eu + coe, spent], true);
+      rows.push(blank());
+      head(['European Union', 'Amount\n(in EUR)']);
+      const pay = [...(p.payments ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+      pay.forEach((x, i) => line([`${i ? 'Further payment' : 'Pre-financing'} ${dmy(x.date)}${x.note ? ` — ${x.note}` : ''}`, n(x.amount)]));
+      const got = pay.reduce((a, x) => a + n(x.amount), 0);
+      line(['Total payments received', got], true); line(['Total spent EU', euSpent]); line(['Balance to be paid', euSpent - got], true);
+      rows.push(blank());
+      const fn = blank(); fn[0] = { v: '* By virtue of article 20 of the General Conditions, the EU priority of consumption principle applies.', st: 'rNote' }; rows.push(fn); merges.push(`A${rows.length}:${last}${rows.length}`);
+    } else {
+      head(['Source of funding', 'Contribution\n(in EUR)', 'Spent\n(in EUR)', 'Balance\n(in EUR)']);
+      line(['Action Plan-level funding', budget, spent, budget - spent]); line(['Total', budget, spent, budget - spent], true);
+    }
+  }
+
   rows.push(blank(), blank());
-  const cert = blank(), r0 = rows.length + 1;
+  const half = Math.floor(W / 2), cert = blank(), r0 = rows.length + 1;
   cert[0] = { v: 'Expenditure incurred is in accordance with the Council of Europe Financial Regulations, the costs are eligible under and have been incurred in line with the project budget set out in the Agreement.', st: 'rNote' };
-  cert[4] = { v: 'The total eligible costs presented in this financial report match expenditure accounted for in the Council of Europe financial records.', st: 'rNote' };
-  rows.push(cert); heights[r0] = 48; merges.push(`A${r0}:C${r0}`, `E${r0}:I${r0}`);
+  cert[half] = { v: 'The total eligible costs presented in this financial report match expenditure accounted for in the Council of Europe financial records.', st: 'rNote' };
+  rows.push(cert); heights[r0] = 48; merges.push(`A${r0}:${col(half - 2)}${r0}`, `${col(half)}${r0}:${last}${r0}`);
   rows.push(blank());
-  const d = blank(); d[0] = 'Date:'; d[4] = 'Date:'; rows.push(d); rows.push(blank());
+  const d = blank(); d[0] = 'Date:'; d[half] = 'Date:'; rows.push(d); rows.push(blank());
   const s1 = (look.sign1 ?? '').split('\n'), s2 = (look.sign2 ?? '').split('\n');
-  for (let i = 0; i < Math.max(s1.length, s2.length, 4); i++) { const r = blank(); r[0] = i ? s1[i] ?? '' : { v: s1[0], st: 'bold' }; r[4] = i ? s2[i] ?? '' : { v: s2[0], st: 'bold' }; rows.push(r); }
-  const widths = [75, 15, 10, 11.2, 12.5, 9.2, 9.9, 11.8, 12.4], across = widths.reduce((a, w) => a + (w * 7 + 5) * 0.75, 0);
+  for (let i = 0; i < Math.max(s1.length, s2.length, 4); i++) { const r = blank(); r[0] = i ? s1[i] ?? '' : { v: s1[0], st: 'bold' }; r[half] = i ? s2[i] ?? '' : { v: s2[0], st: 'bold' }; rows.push(r); }
+  const widths = [75, 15, ...Array.from({ length: W - 2 }, (_, i) => [10, 11.2, 12.5][i % 3])], across = widths.reduce((a, w) => a + (w * 7 + 5) * 0.75, 0);
   // One printed page; the logo centred above the title.
   return { name: 'REPORT', rows, freeze: 0, merges, heights, portrait: true, onePage: true, widths,
     ...(look.logo ? { image: { ...look.logo, width, x: Math.max(0, (across - width) / 2) } } : {}) };
