@@ -93,7 +93,7 @@ export function extractStaff(sheets: Sheet[]): { records: StaffRecord[]; groups:
       const text = String((li >= 0 && r[li]) || (di >= 0 && r[di]) || '');
       const m = text.match(/([\p{L}][\p{L}'’.-]*(?:\s+[\p{L}][\p{L}'’.-]*)*,\s*[\p{L}][\p{L}'’.-]*(?:\s+(?!(?:de|vers|from|to)\b)[\p{L}][\p{L}'’.-]*)*)(?=\s+(?:de|vers|from|to|\d)|\s*[-–:;]|$)/iu);
       if (!m) continue;
-      out.push({ name: m[1].trim(), code, position: positionFor(code), po: `GL ${gi >= 0 ? r[gi] : ''}`, actual: ai >= 0 ? num(r[ai]) : null,
+      out.push({ name: cleanGlName(m[1]), code, position: positionFor(code), po: `GL ${gi >= 0 ? r[gi] : ''}`, actual: ai >= 0 ? num(r[ai]) : null,
         payrollPeriod: pi >= 0 ? String(r[pi] ?? '') : '', sourceRow: i + 1, sourceSheet: sh.name, review: true, recordKind: 'Payroll observation' });
     }
   }
@@ -109,6 +109,16 @@ export interface Person {
 
 /** "Doe, Jane" → "Jane Doe". */
 export const displayName = (s: string) => { const p = s.split(','); return p.length === 2 ? `${p[1].trim()} ${p[0].trim()}` : s; };
+/** A name read from a GL text without what stands before it: day counts ("16 JS", "14 JRS", "days") and similar. */
+export const cleanGlName = (s: string) => s.trim().replace(/^(?:(?:\d+\s*)?(?:JS|JRS|J|JOURS?|DAYS?|D|REGUL|IMP\.?|PAIE|PERM)\s+)+/i, '').trim();
+const surname = (name: string) => n2(name.split(',')[0]), given = (name: string) => n2(name.split(',').slice(1).join(' '));
+/** Edit distance up to 2 (enough to catch a typo in a first name). */
+function near(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0; while (i < a.length && a[i] === b[i]) i++;
+  const A = a.slice(i), B = b.slice(i);
+  return A.slice(1) === B.slice(1) || A === B.slice(1) || A.slice(1) === B;
+}
 export const personKey = (name: string, code: string) => `${n2(name)}|${code}`;
 
 type StaffProject = Project & { staffOverrides?: Record<string, StaffOverride> };
@@ -117,7 +127,10 @@ type StaffProject = Project & { staffOverrides?: Record<string, StaffOverride> }
 export function roster(p: StaffProject, today: Date): Person[] {
   const map = new Map<string, Person>();
   const reports = [...(p.reportingPeriods ?? [])].sort((a, b) => a.date.localeCompare(b.date));
-  for (const r of reports) for (const x of ((r.snapshot as { staffRecords?: StaffRecord[] } | undefined)?.staffRecords ?? [])) {
+  for (const r of reports) for (let x of ((r.snapshot as { staffRecords?: StaffRecord[] } | undefined)?.staffRecords ?? [])) {
+    if (!x.name) continue;
+    // Names stored by earlier imports may still carry a day count ("JS TUNER,…").
+    if (x.recordKind === 'Payroll observation') { const c = cleanGlName(x.name); if (c !== x.name) x = { ...x, name: c }; }
     if (!x.name) continue;
     const key = personKey(x.name, x.code);
     let a = map.get(key);
@@ -128,6 +141,14 @@ export function roster(p: StaffProject, today: Date): Person[] {
     }
     const same = a.contracts.findIndex((c) => c.po && c.po === x.po && c.recordKind === x.recordKind);
     if (same >= 0) a.contracts[same] = x; else a.contracts.push(x);
+  }
+  // The same person written twice (a typo in the first name, e.g. "Burcu" / "Bursu" in one GL line): merged into the entry
+  // with more records, on the same reporting line and surname.
+  const all = [...map.values()].sort((x, y) => y.contracts.length - x.contracts.length);
+  for (const b of all) {
+    if (!map.has(b.key)) continue;
+    const a = all.find((x) => x !== b && map.has(x.key) && x.code === b.code && x.contracts.length >= b.contracts.length && surname(x.name) === surname(b.name) && given(x.name).length >= 4 && near(given(x.name), given(b.name)));
+    if (a) { a.contracts.push(...b.contracts); map.delete(b.key); }
   }
   const t = today.toISOString().slice(0, 10);
   return [...map.values()].map((a) => {
