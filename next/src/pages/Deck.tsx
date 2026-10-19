@@ -18,7 +18,7 @@ import { MapView } from '../ui/MapView';
 import { date, month, pct, short } from '../ui/format';
 import { events } from './Agenda';
 import { mapData } from './MapPage';
-import { spendOption } from './Overview';
+import { endMarks, spendOption } from './Overview';
 import { moves, narrative } from './Pack';
 
 const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
@@ -160,7 +160,7 @@ export function Deck() {
 
       <Slide n={4} of={of} scope={scope} title="Spending over time" msg={MS.spending} notes={NS.spending} sub="Cumulative actual spend against the linear plan; shaded band = forecast at the recent pace ±20%">
         <div class="sl-split">
-          <div class="sl-chart"><Chart height={360} label="Spending over time" option={(t) => ({ ...spendOption(t, S, T.budget), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></div>
+          <div class="sl-chart"><Chart height={360} label="Spending over time" option={(t) => ({ ...spendOption(t, S, T.budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></div>
           <div class="sl-callouts">
             <div><span>Planned by now</span><b>{short(PL)}</b></div>
             <div><span>Actually spent</span><b>{short(T.spent)}</b></div>

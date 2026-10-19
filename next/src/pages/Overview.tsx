@@ -8,7 +8,7 @@ import { alerts } from '../domain/insights';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
-import { cents, full, month, pct, short, signedPct } from '../ui/format';
+import { cents, date, full, month, pct, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
 import { Count } from '../ui/Count';
 import { MapView, type MapMode } from '../ui/MapView';
@@ -117,7 +117,7 @@ export function Overview() {
               const tt = sm === 'monthly' ? A[Math.round(x) + 1]?.t : A.reduce((b, v) => Math.abs(v.t - x) < Math.abs(b.t - x) ? v : b, A[0])?.t;
               const i = S.findIndex((v) => v.t === tt);
               if (i > 0) set({ drawer: { kind: 'period', t: S[i].t, from: S[i - 1].t, ids: P.map((p) => p.id) } });
-            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
+            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget, endMarks(P)) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
           </div>
         </section>
 
@@ -279,14 +279,15 @@ export const axisMoney = (v: number) => (v === 0 ? '0' : Math.abs(v) >= 1e6 ? `�
 export const axisX = (t: Tokens) => ({ axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, hideOverlap: true }, splitLine: { show: false } });
 export const axisY = (t: Tokens) => ({ axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, fontFamily: t.mono, formatter: axisMoney }, splitLine: { lineStyle: { color: t.line } } });
 
-export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, budget: number) {
+/** `ends`: the end dates to mark (projects, or the portfolio's last end), drawn as dashed lines with the budget ceiling. */
+export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, budget: number, ends: { t: number; label: string }[] = []) {
   const pick = (k: 'actual' | 'plan' | 'low' | 'mid') => S.filter((x) => x[k] != null).map((x) => [x.t, x[k]]);
   const band = S.filter((x) => x.low != null).map((x) => [x.t, x.high! - x.low!]);
   const row = (c: string, name: string, v: number | null | undefined, dash = false) => v == null ? '' :
     `<div style="display:flex;gap:16px;align-items:center"><span><i style="display:inline-block;width:10px;height:${dash ? 0 : 2}px;border-top:${dash ? `2px dashed ${c}` : 'none'};background:${dash ? 'none' : c};margin-right:6px;vertical-align:3px"></i>${name}</span><b style="margin-left:auto;font-family:${t.mono};font-weight:600">${full(v)}</b></div>`;
   return {
     ...base(t),
-    grid: { left: 8, right: 16, top: 16, bottom: 40, containLabel: true },
+    grid: { left: 8, right: ends.length ? 72 : 16, top: 22, bottom: 40, containLabel: true },
     tooltip: {
       ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: t.ink3 } },
       formatter: (ps: any[]) => {
@@ -299,7 +300,9 @@ export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, bu
     dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6, borderColor: t.line, fillerColor: 'rgba(127,127,127,.12)', handleStyle: { color: t.surface, borderColor: t.ink3 }, textStyle: { color: t.ink3 }, dataBackground: { lineStyle: { color: t.line }, areaStyle: { color: t.surface2 } }, labelFormatter: (v: number) => month(v) }],
     series: [
       { name: 'Plan', type: 'line', data: pick('plan'), symbol: 'none', lineStyle: { color: t.plan, width: 1.5, type: 'dashed' }, z: 1,
-        markLine: { silent: true, symbol: 'none', label: { formatter: 'Today', color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'solid', width: 1 }, data: [{ xAxis: TODAY.getTime() }] } },
+        markLine: { silent: true, symbol: 'none', label: { formatter: 'Today', color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'solid', width: 1 }, data: [{ xAxis: TODAY.getTime() },
+          ...ends.map((e) => ({ xAxis: e.t, label: { formatter: e.label, color: t.serious, fontSize: 11, fontWeight: 600 }, lineStyle: { color: t.serious, type: 'dashed', width: 1.5 } })),
+          ...(ends.length ? [{ yAxis: budget, label: { formatter: `Budget ${axisMoney(budget)}`, position: 'insideStartTop', color: t.ink2, fontSize: 11 }, lineStyle: { color: t.ink2, type: 'dotted', width: 1 } }] : [])] } },
       { name: 'low', type: 'line', data: pick('low'), stack: 'band', symbol: 'none', lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 }, tooltip: { show: false } },
       { name: 'Range', type: 'line', data: band, stack: 'band', symbol: 'none', lineStyle: { opacity: 0 }, areaStyle: { color: t.c[1], opacity: 0.16 } },
       { name: 'Forecast', type: 'line', data: pick('mid'), symbol: 'none', lineStyle: { color: t.c[1], width: 2, type: [6, 4] } },
@@ -373,4 +376,12 @@ function waterfallOption(t: Tokens, T: ReturnType<typeof totals>) {
         label: { show: true, position: 'top', color: t.ink, fontFamily: t.mono, fontSize: 11.5, fontWeight: 600, formatter: (x: any) => short(steps[x.dataIndex].v) } },
     ],
   };
+}
+
+/** End lines for the chart: each project's end when there are a few, otherwise the last one only. */
+export function endMarks(P: { code: string; end: string; datesTbc?: boolean }[]): { t: number; label: string }[] {
+  const E = P.filter((p) => !p.datesTbc && p.end).map((p) => ({ t: Date.parse(p.end), label: `End ${p.code}` })).filter((e) => Number.isFinite(e.t)).sort((a, b) => a.t - b.t);
+  if (E.length <= 3) return E.map((e) => ({ ...e, label: `${e.label} · ${date(new Date(e.t).toISOString().slice(0, 10))}` }));
+  const last = E[E.length - 1];
+  return [{ t: last.t, label: `Last end · ${date(new Date(last.t).toISOString().slice(0, 10))}` }];
 }

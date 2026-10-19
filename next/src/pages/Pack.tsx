@@ -3,7 +3,7 @@ import { ProviderBrief } from './Providers';
 import { filtered, go, useStore } from '../data/store';
 import { deadlines, elapsed, money, parseDate, portfolioSeries, totals } from '../domain/calc';
 import { Chart } from '../ui/Chart';
-import { spendOption } from './Overview';
+import { endMarks, spendOption } from './Overview';
 import { alerts } from '../domain/insights';
 import { perfTrend, warningScore } from '../domain/monitor';
 import { renewals, roster } from '../domain/staff';
@@ -92,7 +92,7 @@ export function MonthlyPack() {
         <button class="btn ghost no-print" onClick={() => navigator.clipboard?.writeText(N.map((t) => `${t.label}: ${t.text}`).join('\n'))}>Copy summary</button>
       </section>
       {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '12.5px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
-        <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
+        <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
       <section class="pack-s">
         <h3>What changed since the previous report</h3>
         <table class="mini pack-t">
