@@ -161,7 +161,7 @@ function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: For
   return (
     <section class={`card fe-inf${s.on ? ' on' : ''}`}>
       <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-        <div><h2>Local salary projection</h2><p>Raise policy: CPI compounded since the last raise above {s.threshold ?? 7}% → {s.raise ?? 7}% raise from the next month (the cumulative rate after a single-month spike) · June triggers and the gap of the financial year go to the January catch-up</p></div>
+        <div><h2>📈 Inflation — local salary projection</h2><p>Raise policy: CPI compounded since the last raise above {s.threshold ?? 7}% → {s.raise ?? 7}% raise from the next month (the cumulative rate after a single-month spike) · June triggers and the gap of the financial year go to the January catch-up</p></div>
         <label class="fe-all" style={{ marginLeft: 'auto' }}><input type="checkbox" checked={s.on} onChange={() => set({ on: !s.on })} /> Apply to local staff rates (1.1.1.x)</label>
       </div>
       {s.on && <div class="card-b fe-inf-b">
