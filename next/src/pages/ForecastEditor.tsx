@@ -157,6 +157,11 @@ function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: For
   const per = forecastPeriod(p, TODAY, d.opt), end = (d.opt.extendTo && d.opt.extendTo > p.end ? d.opt.extendTo : p.end).slice(0, 7);
   const path = salaryPath(end, s), ev = path.events.filter((e) => e.month > per.asAt.slice(0, 7));
   const blocks = computePlan(p, TODAY, d).blocks;
+  // Actual CPI typed in as TurkStat publishes it (around the 3rd of each month): it replaces the assumption for that month.
+  const extra = s.extra ?? {}, lastKnown = path.lastKnown, nextMonth = (() => { const [y, m] = lastKnown.split('-').map(Number); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`; })();
+  const [cpiIn, setCpiIn] = useState('');
+  const addCpi = () => { const v = Number(cpiIn.replace(',', '.')); if (!Number.isFinite(v) || cpiIn.trim() === '') return; set({ extra: { ...extra, [nextMonth]: v } }); setCpiIn(''); };
+  const dropCpi = (k: string) => { const e = { ...extra }; delete e[k]; set({ extra: e }); };
   const numIn = (k: keyof InflationSettings, ph: string, w = 64) => <input type="number" step="0.01" style={{ width: `${w}px` }} value={(s[k] as number | undefined) ?? ''} placeholder={ph} onChange={(e) => set({ [k]: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) })} />;
   return (
     <section class={`card fe-inf${s.on ? ' on' : ''}`}>
@@ -166,10 +171,17 @@ function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: For
       </div>
       {s.on && <div class="card-b fe-inf-b">
         <div class="fe-inf-in">
-          <label>Monthly CPI after {CPI_LAST} {numIn('cpi', String(recentCpi(6, s.extra)))} %</label>
+          <label>Monthly CPI after {lastKnown} {numIn('cpi', String(recentCpi(6, s.extra)))} %</label>
           <label>EUR/TRY change per month {numIn('fx', '0')} %</label>
           <label>Threshold {numIn('threshold', '7', 52)} %</label>
           <label>Raise {numIn('raise', '7', 52)} %</label>
+        </div>
+        <div class="fe-inf-cpi">
+          <span>Actual CPI <b>{nextMonth}</b> (TurkStat, monthly %)</span>
+          <input type="number" step="0.01" value={cpiIn} placeholder="e.g. 1.85" onInput={(e) => setCpiIn((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === 'Enter' && addCpi()} />
+          <button class="btn" disabled={cpiIn.trim() === ''} onClick={addCpi}>Add</button>
+          {Object.keys(extra).sort().map((k) => <span class="fe-cpi-chip">{k} · {extra[k].toFixed(2)}% <button aria-label={`Remove ${k}`} onClick={() => dropCpi(k)}>✕</button></span>)}
+          <small class="muted">Every month you add replaces the assumption; the raises and the effect above are recalculated at once.</small>
         </div>
         <div class="fe-inf-g">
           <div><b>Raises expected</b>{ev.length ? <ul>{ev.map((e) => <li class={e.projected ? 'proj' : ''}>{e.month} · {e.kind === 'catch-up' ? 'January catch-up' : e.kind === 'spike' ? 'raise after a spike' : 'raise'} <b>+{e.pct.toFixed(2)}%</b>{e.projected ? ' (projected)' : ''}</li>)}</ul> : <p class="muted">None up to the end date.</p>}</div>
