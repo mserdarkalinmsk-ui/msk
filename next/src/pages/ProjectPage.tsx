@@ -57,7 +57,7 @@ export function ProjectPage({ id }: { id: string }) {
       {fc && <ForecastDialog p={p} close={() => setFc(false)} />}
       <div class="ph">
         <div style={{ minWidth: 0 }}>
-          <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span>{period(p)}</span>{p.pmm && <span>PMM <b class="num">{p.pmm}</b></span>}{p.bh && <span>BH <b class="num">{p.bh}</b></span>}{p.mae && <span>MAE <b>{p.mae}</b></span>}<span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
+          <div class="ph-meta"><span class="num">{p.code}</span><span>{countries.find((c) => c.id === p.country)?.name ?? p.country}</span><span>{p.sector}</span><span title="Project start → end">{p.datesTbc ? period(p) : <>Start <b class="num">{date(p.start)}</b> → End <b class="num">{date(p.end)}</b></>}</span>{p.pmm && <span>PMM <b class="num">{p.pmm}</b></span>}{p.bh && <span>BH <b class="num">{p.bh}</b></span>}{p.mae && <span>MAE <b>{p.mae}</b></span>}<span class={`badge ${p.status === 'Closed' ? 'neutral' : p.status === 'Pipeline' ? 'warning' : 'good'}`}>{p.status || 'Active'}</span></div>
           <h2 class="ph-title">{p.name}</h2>
         </div>
         <div class="ph-actions">
