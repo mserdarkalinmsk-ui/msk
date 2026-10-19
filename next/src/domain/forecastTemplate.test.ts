@@ -80,3 +80,21 @@ describe('forecast outputs of the guidelines', () => {
     expect(x.sheets.length).toBe(3);
   });
 });
+
+describe('interim financial report sheet', () => {
+  it('follows the REPORT layout: title, period header, lines, footnotes, certification and signatures, with the logo drawing', async () => {
+    const { ifrSheet } = await import('./forecastTemplate');
+    const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
+    const S = ifrSheet(p, new Date('2026-07-15'), undefined, { logo: { png, w: 4, h: 1 }, sign1: 'A NAME\nDirector', sign2: 'B NAME\nTreasurer' });
+    const text = S.rows.map((r) => r.map((c) => (c && typeof c === 'object' ? (c as XCell).v : c) ?? '').join('|')).join('\n');
+    expect(text).toContain('Test project');
+    expect(text).toMatch(/Interim financial report covering period from 01\/01\/2025 to/);
+    expect(text).toContain('Sub-total 1');
+    expect(text).toContain('11. Total eligible costs');
+    expect(text).toContain('(3) A levy of 7%');
+    expect(text).toContain('A NAME'); expect(text).toContain('Treasurer');
+    expect(S.rows.every((r) => r.length === 9)).toBe(true);
+    const files = new TextDecoder('latin1').decode(workbook([S]));
+    expect(files).toContain('xl/drawings/drawing1.xml'); expect(files).toContain('xl/media/image1.png');
+  });
+});

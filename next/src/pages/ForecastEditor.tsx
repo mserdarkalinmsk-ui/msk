@@ -8,6 +8,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { ForecastNote } from '../ui/ForecastNote';
 
 const pc = (v: number | null) => (v == null ? '' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%`);
 const num = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,7 +28,7 @@ export function ForecastEditor({ p }: { p: Project }) {
     if (x != null && !Number.isFinite(x)) return;
     save({ ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { ...d.lines[code]?.[b], [k]: x } } } });
   };
-  const [all, setAll] = useState(false);
+  const [all, setAll] = useState(false), [note, setNote] = useState(false);
   const plug = autoLine(d), E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), lastB = R.blocks.at(-1)!.id;
   const twelve = d.opt.kind === 'twelve';
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
@@ -106,6 +107,8 @@ export function ForecastEditor({ p }: { p: Project }) {
           if (d.opt.programme === 'JP' && !d.opt.changeNo && !confirm(`No ${opt.change} number yet (PMM → Documents → Contract, or the RFO). Download without it?`)) return;
           xlsx('donor');
         }}>⤓ Donor version</button>}
+        <button class="btn" title="Revision note (Word / PDF) and the interim financial report (Excel), with your logos" onClick={() => setNote(true)}>📄 Reports</button>
+        {note && <ForecastNote p={p} d={d} opt={opt} close={() => setNote(false)} />}
         {bad.length > 0 && <span class="fe-dl-warn" title={bad.join('\n')}>⚠ {bad.length} unit{bad.length > 1 ? 's' : ''} to check</span>}
       </div>
       <section class="card">
