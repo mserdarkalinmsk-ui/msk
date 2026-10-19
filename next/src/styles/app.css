@@ -709,3 +709,8 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fe-inf-cpi small { flex-basis: 100%; }
 .fe-cpi-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 999px; background: var(--surface-2); font-family: var(--mono); font-size: 12px; }
 .fe-cpi-chip button { border: 0; background: none; cursor: pointer; color: var(--ink-3); }
+.pack-dec ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pack-dec li { padding: 7px 10px; border-radius: 8px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); font-size: 13px; }
+.pack-dec li.t-bad { border-color: var(--serious); background: color-mix(in srgb, var(--serious) 8%, transparent); }
+.pack-dec .badge { margin-right: 6px; }
+@media print { .pack-dec li { break-inside: avoid; } }

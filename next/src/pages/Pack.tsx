@@ -11,6 +11,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, month, short } from '../ui/format';
 import { Compare } from './Studio';
+import { decisions } from '../domain/decisions';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
 const band = (v: number) => (v >= 1 ? 'blue' : v >= 0.9 ? 'green' : v >= 0.7 ? 'amber' : 'red');
@@ -80,6 +81,7 @@ export function MonthlyPack() {
   const S = portfolioSeries(P, TODAY);
   const A = alerts(P, TODAY).filter((a) => a.severity === 'critical' || a.severity === 'serious').slice(0, 8);
   const maxAdd = Math.max(1, ...M.map((x) => Math.abs(x.added)));
+  const DEC = decisions(P, TODAY);
   return (
     <article class="pack">
       <header class="pack-h">
@@ -90,6 +92,11 @@ export function MonthlyPack() {
         <h3>Summary</h3>
         <ul class="pack-pts">{N.map((t) => <li class={`t-${t.tone}`}><span>{t.label}</span><p>{t.text}</p></li>)}</ul>
         <button class="btn ghost no-print" onClick={() => navigator.clipboard?.writeText(N.map((t) => `${t.label}: ${t.text}`).join('\n'))}>Copy summary</button>
+      </section>
+      <section class="pack-s pack-dec">
+        <h3>Decisions and actions this month</h3>
+        {DEC.length ? <ul>{DEC.map((x) => <li class={`t-${x.tone}`} onClick={() => x.p && go(`project/${x.p.id}`)} style={{ cursor: x.p ? 'pointer' : undefined }}><span class="badge">{x.kind}</span> {x.text}</li>)}</ul>
+          : <p class="muted">Nothing needs a decision this month.</p>}
       </section>
       {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '12.5px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
         <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
