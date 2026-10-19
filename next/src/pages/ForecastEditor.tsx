@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { updateProject, useStore } from '../data/store';
+import { toast, updateProject, useStore } from '../data/store';
 import { autoLine, autofillStaff, balanceOn, computePlan, effective, resolvedLines, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
 import { costFactor, CPI_LAST, recentCpi, salaryPath, type InflationSettings } from '../domain/salaryProjection';
 import { forecastPeriod } from '../domain/forecastTemplate';
@@ -160,7 +160,7 @@ function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: For
   // Actual CPI typed in as TurkStat publishes it (around the 3rd of each month): it replaces the assumption for that month.
   const extra = s.extra ?? {}, lastKnown = path.lastKnown, nextMonth = (() => { const [y, m] = lastKnown.split('-').map(Number); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`; })();
   const [cpiIn, setCpiIn] = useState('');
-  const addCpi = () => { const v = Number(cpiIn.replace(',', '.')); if (!Number.isFinite(v) || cpiIn.trim() === '') return; set({ extra: { ...extra, [nextMonth]: v } }); setCpiIn(''); };
+  const addCpi = () => { const v = Number(cpiIn.trim().replace(',', '.')); if (!Number.isFinite(v) || cpiIn.trim() === '' || Math.abs(v) > 50) { toast('Type the monthly CPI in %, e.g. 1,85'); return; } set({ extra: { ...extra, [nextMonth]: v } }); setCpiIn(''); toast(`CPI ${nextMonth}: ${v.toFixed(2)}% saved — raises recalculated`); };
   const dropCpi = (k: string) => { const e = { ...extra }; delete e[k]; set({ extra: e }); };
   const numIn = (k: keyof InflationSettings, ph: string, w = 64) => <input type="number" step="0.01" style={{ width: `${w}px` }} value={(s[k] as number | undefined) ?? ''} placeholder={ph} onChange={(e) => set({ [k]: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) })} />;
   return (
@@ -178,7 +178,7 @@ function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: For
         </div>
         <div class="fe-inf-cpi">
           <span>Actual CPI <b>{nextMonth}</b> (TurkStat, monthly %)</span>
-          <input type="number" step="0.01" value={cpiIn} placeholder="e.g. 1.85" onInput={(e) => setCpiIn((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === 'Enter' && addCpi()} />
+          <input type="text" inputMode="decimal" value={cpiIn} placeholder="e.g. 1,85" onInput={(e) => setCpiIn((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === 'Enter' && addCpi()} />
           <button class="btn" disabled={cpiIn.trim() === ''} onClick={addCpi}>Add</button>
           {Object.keys(extra).sort().map((k) => <span class="fe-cpi-chip">{k} · {extra[k].toFixed(2)}% <button aria-label={`Remove ${k}`} onClick={() => dropCpi(k)}>✕</button></span>)}
           <small class="muted">Every month you add replaces the assumption; the raises and the effect above are recalculated at once.</small>
