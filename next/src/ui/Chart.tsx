@@ -36,7 +36,7 @@ export function base(t: Tokens): EChartsCoreOption {
     animationDuration: 350,
     textStyle: { fontFamily: t.font, color: t.ink2 },
     tooltip: {
-      backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, padding: [10, 12],
+      backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, padding: [10, 12], transitionDuration: 0.15, hideDelay: 0,
       textStyle: { color: t.ink, fontSize: 12.5, fontFamily: t.font },
       extraCssText: 'border-radius:10px;box-shadow:0 10px 30px rgb(0 0 0 / .14);',
     },
@@ -85,8 +85,9 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     return () => { dead = true; stopWait?.(); off(); };
   }, []);
   // A parent re-render redraws the chart only when its option really changed.
-  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.setOption(o, true); } });
+  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(o, true); } });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
-  return <div role="img" aria-label={label} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
+  // Leaving the chart hides its tooltip at once (otherwise a faded box can stay behind after switching views).
+  return <div role="img" aria-label={label} onMouseLeave={() => inst.current?.dispatchAction({ type: 'hideTip' })} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
 }
