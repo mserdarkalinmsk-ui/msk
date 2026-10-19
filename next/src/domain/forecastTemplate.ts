@@ -19,6 +19,7 @@ export interface ForecastOptions {
   programme: 'JP' | 'VC';
   /** new end date when the project is extended */ extendTo?: string;
   /** JP: notification or addendum, with its number */ change?: 'notification' | 'addendum'; changeNo?: string;
+  /** line that takes the rounding so the rounded proposal keeps the direct budget (5.7 by default in the app) */ balance?: string;
 }
 export const FORECAST_KINDS: Record<ForecastKind, { label: string; hint: string; programmes: ('JP' | 'VC')[] }> = {
   payment: { label: 'Budget revision with payment', hint: 'Next 12 months for the next instalment + planned expenditure to the end for a budget revision (with the annual report)', programmes: ['JP'] },
@@ -259,6 +260,19 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
     }
     push(row, 'sub', 15, h); subRow.set(h, r);
     if (vari >= 0) row[vari] = variation(r, 'rPctB');
+  }
+
+  // The balance line takes the rounding of the other lines: the rounded proposal then equals the direct budget exactly.
+  const plugRow = o.balance && roundB ? lineRow.get(o.balance) : undefined;
+  if (plugRow) {
+    const L2 = [...lineRow.values()], target = L2.reduce((a, r) => a + val(r, C.cost), 0), others = L2.reduce((a, r) => a + (r === plugRow ? 0 : val(r, rc)), 0);
+    const v = Math.round((target - others) * 100) / 100, row = rows[plugRow - 1], old = val(plugRow, rc), U = `${col(rc - 2)}${plugRow}`, K = `${col(rc)}${plugRow}`;
+    const slack = L2.reduce((a, r) => a + Math.abs(val(r, rc - 2)) * 0.5, 0) + 1;
+    if (v >= 0 && Math.abs(v - old) <= slack) {
+      row[rc] = { v, st: 'rNum' }; row[rc - 1] = { f: `+IF(${U}>0,${K}/${U},0)`, v: val(plugRow, rc - 2) > 0 ? v / val(plugRow, rc - 2) : 0, st: 'rNum' };
+      if (vari >= 0) row[vari] = variation(plugRow, 'rPct');
+      const h = o.balance!.split('.')[0], sr = subRow.get(h); if (sr) { (rows[sr - 1][rc] as XCell).v = val(sr, rc) - old + v; if (vari >= 0) rows[sr - 1][vari] = variation(sr, 'rPctB'); }
+    }
   }
 
   // 7–11 in the wording of the template.

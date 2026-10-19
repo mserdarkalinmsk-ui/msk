@@ -72,3 +72,16 @@ describe('fixed total', () => {
     expect(Math.abs(off.direct.rounded - off.direct.budget)).toBeGreaterThan(20000);
   });
 });
+
+describe('balance line keeps the total', () => {
+  it('rounded proposal equals the direct budget to the cent, in the plan and in the Excel', () => {
+    let d: ForecastDraft = autofillStaff(p, today, { opt: { kind: 'revision', programme: 'JP' }, lines: { '4.2': { r: { u: 17, r: 351 } }, '1.1.1.2': { r: { u: 17, r: 3371 } } } });
+    d = effective(p, today, d);
+    const R = computePlan(p, today, d);
+    expect(Math.abs(R.direct.rounded - R.direct.budget)).toBeLessThan(0.01);
+    const [S] = forecastSheets(p, today, { ...d.opt, balance: '5.7' }, d.lines);
+    const row = S.rows.find((r) => String((r[0] as XCell)?.v ?? '').startsWith('7. Sub-total'))!;
+    const v = (i: number) => (row[i] as XCell).v as number, last = row.length - 1, rc = (row[last] as XCell)?.f ? last - 1 : last;
+    expect(Math.abs(v(rc) - v(4))).toBeLessThan(0.01);
+  });
+});
