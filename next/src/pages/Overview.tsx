@@ -54,7 +54,7 @@ export function Overview() {
   const gap = T.burn - T.elapsed;
   const open = (id: string) => set({ drawer: { kind: 'project', id } });
   const final = S.at(-1);
-  const [sm, setSm] = useState<'cumulative' | 'monthly' | 'country'>('cumulative');
+  const [sm, setSm] = useState<'cumulative' | 'remaining' | 'monthly' | 'country'>('cumulative');
   const [pm, setPm] = useState<'spent' | 'exposure' | 'gap'>('spent');
   const [bm, setBm] = useState<'country' | 'sector' | 'funding'>('country');
   const keyOf = (p: Project) => (bm === 'country' ? p.country : bm === 'sector' ? p.sector ?? '' : p.funding ?? '');
@@ -103,21 +103,22 @@ export function Overview() {
       <div class="grid g-12">
         <section class="card span-8">
           <div class="card-h" style={{ alignItems: 'center' }}>
-            <div><h2>Spending over time</h2><p>{sm === 'cumulative' ? 'Cumulative actual spend, linear plan and forecast range (recent burn rate ±20%)' : sm === 'monthly' ? 'Spend added each month (interpolated between reports) against the linear plan' : 'Cumulative spend stacked by country'} · click a month for its breakdown</p></div>
-            <div class="tools"><div class="seg">{(['cumulative', 'monthly', 'country'] as const).map((m) => <button aria-pressed={sm === m} onClick={() => setSm(m)}>{m === 'cumulative' ? 'Cumulative' : m === 'monthly' ? 'Monthly' : 'By country'}</button>)}</div></div>
+            <div><h2>Spending over time</h2><p>{sm === 'remaining' ? 'Funds left: starts at the total budget and goes down with the spending — when the forecast reaches zero the money runs out before the end' : sm === 'cumulative' ? 'Cumulative actual spend, linear plan and forecast range (recent burn rate ±20%)' : sm === 'monthly' ? 'Spend added each month (interpolated between reports) against the linear plan' : 'Cumulative spend stacked by country'}{sm === 'remaining' ? '' : ' · click a month for its breakdown'}</p></div>
+            <div class="tools"><div class="seg">{(['cumulative', 'remaining', 'monthly', 'country'] as const).map((m) => <button aria-pressed={sm === m} onClick={() => setSm(m)}>{m === 'cumulative' ? 'Cumulative' : m === 'remaining' ? 'Funds left' : m === 'monthly' ? 'Monthly' : 'By country'}</button>)}</div></div>
           </div>
           <div class="card-b" style={{ paddingTop: '8px' }}>
-            {sm === 'cumulative' && <div class="legend" style={{ marginBottom: '4px' }}>
+            {(sm === 'cumulative' || sm === 'remaining') && <div class="legend" style={{ marginBottom: '4px' }}>
               <span><i class="line" style={{ background: 'var(--c1)' }} />Actual</span>
               <span><i class="dash" />Linear plan</span>
               <span><i style={{ background: 'var(--c2)', opacity: .25 }} />Forecast range</span>
             </div>}
             <Chart height={300} label="Spending over time" onAxisClick={(x) => {
+              if (sm === 'remaining') return;
               const A = S.filter((v) => v.actual != null);
               const tt = sm === 'monthly' ? A[Math.round(x) + 1]?.t : A.reduce((b, v) => Math.abs(v.t - x) < Math.abs(b.t - x) ? v : b, A[0])?.t;
               const i = S.findIndex((v) => v.t === tt);
               if (i > 0) set({ drawer: { kind: 'period', t: S[i].t, from: S[i - 1].t, ids: P.map((p) => p.id) } });
-            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget, endMarks(P)) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
+            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget, endMarks(P)) : sm === 'remaining' ? remainingOption(t, S, T.budget, endMarks(P)) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
           </div>
         </section>
 
@@ -384,4 +385,38 @@ export function endMarks(P: { code: string; end: string; datesTbc?: boolean }[])
   if (E.length <= 3) return E.map((e) => ({ ...e, label: `${e.label} · ${date(new Date(e.t).toISOString().slice(0, 10))}` }));
   const last = E[E.length - 1];
   return [{ t: last.t, label: `Last end · ${date(new Date(last.t).toISOString().slice(0, 10))}` }];
+}
+
+/**
+ * Burn-down: the money left (budget − cumulative spend) for the actual, the linear plan and the forecast range. Where the
+ * forecast reaches zero the funds run out before the end; otherwise what is left at the last end date is shown.
+ */
+export function remainingOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, budget: number, ends: { t: number; label: string }[] = []) {
+  const rem = (k: 'actual' | 'plan' | 'mid') => S.filter((x) => x[k] != null).map((x) => [x.t, budget - x[k]!]);
+  const lowR = S.filter((x) => x.high != null).map((x) => [x.t, budget - x.high!]), band = S.filter((x) => x.low != null).map((x) => [x.t, x.high! - x.low!]);
+  const F = S.filter((x) => x.mid != null), out = F.find((x) => budget - x.mid! <= 0), last = F.at(-1);
+  const mark = out ? { coord: [out.t, 0], value: `Funds run out · ${month(out.t)}`, color: t.serious }
+    : last ? { coord: [last.t, budget - last.mid!], value: `Left at end ${axisMoney(budget - last.mid!)}`, color: budget - last.mid! > budget * 0.1 ? t.warn : t.c[0] } : null;
+  const row = (c: string, name: string, v: number | null | undefined) => v == null ? '' : `<div style="display:flex;justify-content:space-between;gap:16px"><span style="color:${c}">${name}</span><b>${full(v)}</b></div>`;
+  return {
+    ...base(t),
+    grid: { left: 8, right: ends.length ? 72 : 16, top: 22, bottom: 40, containLabel: true },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: t.ink3 } },
+      formatter: (ps: any[]) => { const x = S.find((s) => s.t === ps[0].value[0]); if (!x) return '';
+        return `<div style="min-width:220px"><div style="font-weight:650;margin-bottom:6px">${month(x.t)} · funds left</div>${row(t.c[0], 'Actual', x.actual != null ? budget - x.actual : null)}${row(t.plan, 'Plan', x.plan != null ? budget - x.plan : null)}${row(t.c[1], 'Forecast', x.mid != null ? budget - x.mid : null)}</div>`; } },
+    xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
+    yAxis: { type: 'value', min: (v: { min: number }) => Math.min(0, Math.floor(v.min / 1e6) * 1e6), max: Math.ceil(budget / 1e6) * 1e6, ...axisY(t) },
+    dataZoom: [{ type: 'inside' }],
+    series: [
+      { name: 'Plan', type: 'line', data: rem('plan'), symbol: 'none', lineStyle: { color: t.plan, width: 1.5, type: 'dashed' }, z: 1,
+        markLine: { silent: true, symbol: 'none', label: { formatter: 'Today', color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'solid', width: 1 }, data: [{ xAxis: TODAY.getTime() },
+          { yAxis: 0, label: { formatter: 'Nothing left', position: 'insideStartTop', color: t.serious, fontSize: 11 }, lineStyle: { color: t.serious, type: 'solid', width: 1.5 } },
+          ...ends.map((e) => ({ xAxis: e.t, label: { formatter: e.label, color: t.serious, fontSize: 11, fontWeight: 600 }, lineStyle: { color: t.serious, type: 'dashed', width: 1.5 } }))] } },
+      { name: 'low', type: 'line', data: lowR, stack: 'band', symbol: 'none', lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 }, tooltip: { show: false } },
+      { name: 'Range', type: 'line', data: band, stack: 'band', symbol: 'none', lineStyle: { opacity: 0 }, areaStyle: { color: t.c[1], opacity: 0.16 } },
+      { name: 'Forecast', type: 'line', data: rem('mid'), symbol: 'none', lineStyle: { color: t.c[1], width: 2, type: [6, 4] },
+        ...(mark ? { markPoint: { symbol: 'circle', symbolSize: 9, itemStyle: { color: mark.color }, label: { show: true, position: out ? 'top' : 'left', distance: 8, formatter: mark.value, backgroundColor: t.surface, padding: [2, 5], borderRadius: 4, color: mark.color, fontWeight: 650, fontSize: 11.5 }, data: [{ coord: mark.coord, value: mark.value }] } } : {}) },
+      { name: 'Actual', type: 'line', data: rem('actual'), symbol: 'none', lineStyle: { color: t.c[0], width: 2.5 }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: t.c[0] + '33' }, { offset: 1, color: t.c[0] + '00' }] } }, z: 3 },
+    ],
+  };
 }
