@@ -391,3 +391,44 @@ export function forecastFileName(p: Project, country: string, today: Date, o: Fo
   return `${[p.bh && `BH${p.bh}`, id, country, 'IFR', what, d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase(), d.getUTCFullYear()].filter(Boolean).join('-')}.xlsx`;
 }
 export type { BudgetLine };
+
+export interface ReportLook { /** logo band (PNG) */ logo?: { png: Uint8Array; w: number; h: number }; /** signature blocks, one line each (name, title, unit, organisation) */ sign1?: string; sign2?: string }
+/**
+ * The interim financial report sheet in the layout of the REPORT tab: logo band, project name, contract and JP/BH
+ * references, budget / actual / spent and committed per line, totals 7–11, the footnotes, the certification and the
+ * two signature blocks. Built from the same rows as the Forecast sheet (columns A–I).
+ */
+export function ifrSheet(p: Project, today: Date, o: ForecastOptions = defaultOptions(p), look: ReportLook = {}): SheetSpec {
+  const f = forecastSheets(p, today, { ...o, kind: 'twelve' })[0], per = forecastPeriod(p, today, { ...o, kind: 'twelve' });
+  const W = 9, rows: Row[] = [], heights: Record<number, number> = {}, merges: string[] = [];
+  const blank = (): Row => Array.from({ length: W }, () => '');
+  const width = look.logo ? Math.min(880, 75 * look.logo.w / look.logo.h) : 0; // a banner spans A–I, a plain logo stays ~75 pt high
+  const band = look.logo ? Math.ceil(width * look.logo.h / look.logo.w / 15) + 1 : 0;
+  for (let i = 0; i < band; i++) rows.push(blank());
+  const title = String((f.rows[0][0] as XCell).v ?? '').split('\n').filter(Boolean);
+  for (const t of title) { const r = blank(); r[0] = { v: t, st: 'rTitle' }; rows.push(r); merges.push(`A${rows.length}:I${rows.length}`); heights[rows.length] = 20; }
+  rows.push(blank());
+  const off = rows.length - 2; // forecast rows 3… land after the title
+  const lastNote = f.rows.findIndex((r) => String((r[0] as XCell)?.v ?? '').startsWith('(3)'));
+  for (let i = 2; i <= lastNote; i++) rows.push(f.rows[i].slice(0, W));
+  (rows[off + 2][0] as XCell) = { v: `Interim financial report covering period from ${dmy(p.start)} to ${dmy(per.asAt)}`, st: 'rHead' };
+  for (const m of f.merges ?? []) {
+    const x = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(m); if (!x || +x[2] < 3 || x[3].length > 1 || x[3] > 'I' || +x[2] > lastNote + 1) continue;
+    merges.push(`${x[1]}${+x[2] + off}:${x[3]}${+x[4] + off}`);
+  }
+  for (const [r, h] of Object.entries(f.heights ?? {})) if (+r >= 3 && +r <= lastNote + 1) heights[+r + off] = h;
+  rows.forEach((r, i) => { if (String((r[0] as XCell)?.v ?? '').startsWith('8. ')) heights[i + 1] = 28; });
+  rows.push(blank(), blank());
+  const cert = blank(), r0 = rows.length + 1;
+  cert[0] = { v: 'Expenditure incurred is in accordance with the Council of Europe Financial Regulations, the costs are eligible under and have been incurred in line with the project budget set out in the Agreement.', st: 'rNote' };
+  cert[4] = { v: 'The total eligible costs presented in this financial report match expenditure accounted for in the Council of Europe financial records.', st: 'rNote' };
+  rows.push(cert); heights[r0] = 48; merges.push(`A${r0}:C${r0}`, `E${r0}:I${r0}`);
+  rows.push(blank());
+  const d = blank(); d[0] = 'Date:'; d[4] = 'Date:'; rows.push(d); rows.push(blank());
+  const s1 = (look.sign1 ?? '').split('\n'), s2 = (look.sign2 ?? '').split('\n');
+  for (let i = 0; i < Math.max(s1.length, s2.length, 4); i++) { const r = blank(); r[0] = i ? s1[i] ?? '' : { v: s1[0], st: 'bold' }; r[4] = i ? s2[i] ?? '' : { v: s2[0], st: 'bold' }; rows.push(r); }
+  const widths = [75, 15, 10, 11.2, 12.5, 9.2, 9.9, 11.8, 12.4], across = widths.reduce((a, w) => a + (w * 7 + 5) * 0.75, 0);
+  // One printed page; the logo centred above the title.
+  return { name: 'REPORT', rows, freeze: 0, merges, heights, portrait: true, onePage: true, widths,
+    ...(look.logo ? { image: { ...look.logo, width, x: Math.max(0, (across - width) / 2) } } : {}) };
+}

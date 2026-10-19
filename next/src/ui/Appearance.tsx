@@ -63,7 +63,7 @@ export function AppearancePanel({ close }: { close: () => void }) {
 }
 
 /** Reads an image and returns it as a PNG data URL no wider than 480 px (keeps the saved data small). */
-async function shrink(f: File): Promise<string> {
+export async function shrink(f: File): Promise<string> {
   const url = URL.createObjectURL(f);
   try {
     const img = await new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });

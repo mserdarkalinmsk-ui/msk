@@ -680,3 +680,22 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fe-auto { display: inline-flex; gap: 4px; align-items: baseline; justify-content: flex-end; width: 76px; padding: 4px 6px; border-radius: 6px; border: 1px dashed var(--accent); background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%); font-family: var(--mono); font-size: 12px; }
 .fe-auto small { font-family: var(--font); color: var(--accent); font-weight: 650; }
 .fe-over { margin: 0; color: var(--critical); font-size: 13px; }
+/* reports dialog (revision note, interim financial report) */
+.fn-dlg { width: min(920px, calc(100vw - 32px)); }
+.fn-logos { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.fn-logos > p { flex: 1 1 200px; margin: 0; font-size: 12px; }
+.fn-logo { display: flex; gap: 6px; align-items: center; }
+.fn-logo .brand-prev { width: 120px; height: 52px; }
+.fn-ifr { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2, transparent); }
+.fn-ifr .btn { justify-self: start; }
+.fn-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fn-sign textarea, .fn-just, .fn-sig { width: 100%; font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: inherit; box-sizing: border-box; }
+.fn-doc { border: 1px solid var(--border); border-radius: var(--r-md); padding: 18px 22px; background: #fff; color: #1f2937; }
+.fn-doc h1 { font-size: 20px; margin: 0 0 10px; }
+.fn-doc h2 { font-size: 15px; color: #1d4e89; border-bottom: 1px solid #c9ced6; padding-bottom: 3px; margin: 16px 0 6px; }
+.fn-doc table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin: 4px 0 8px; }
+.fn-doc th, .fn-doc td { border: 1px solid #c9ced6; padding: 4px 6px; text-align: left; vertical-align: top; }
+.fn-doc th { background: #e8eef6; }
+.fn-doc .r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fn-doc .fn-just, .fn-doc .fn-sig { background: #fffbe6; color: #1f2937; }
+@media (max-width: 640px) { .fn-sign { grid-template-columns: 1fr; } }

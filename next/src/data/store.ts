@@ -354,7 +354,7 @@ export function fixProject(pid: string, fix: import('../domain/health').AutoFix,
   L.projects[i] = p; commit(L, fix === 'use-approved' ? `${p.code}: budget set from the approved budget` : `${p.code}: ${removed.length} duplicate${removed.length === 1 ? '' : 's'} moved to the trash`, p.code);
 }
 /** The organisation's logo and name shown in the menu, the browser tab and on covers (null removes it). */
-export function setBrand(brand: { logo?: string; name?: string; title?: string } | null) {
+export function setBrand(brand: Ledger['brand'] | null) {
   const L = draft(state.ledger); if (brand) L.brand = brand; else delete L.brand;
   commit(L, brand ? 'Name and logo saved' : 'Name and logo removed');
 }
