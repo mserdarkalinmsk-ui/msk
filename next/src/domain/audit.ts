@@ -1,5 +1,6 @@
 import { byPeriodThenImport, latestReport, lineExposure, lines, n } from './calc';
 import type { Project } from './types';
+import { health } from './health';
 import type { SheetSpec } from '../ui/xlsxwrite';
 
 /**
@@ -34,6 +35,7 @@ export function auditSheets(p: Project, today: Date): SheetSpec[] {
       ...[...pos].sort((a, b) => a.line.localeCompare(b.line, undefined, { numeric: true }) || a.date.localeCompare(b.date)).map((x) => [x.line, L.find((l) => l.code === x.line)?.description ?? '', x.po, x.description || x.nature, x.supplier, x.date, x.amount, x.spent, x.balance, x.sc || x.amount, x.status]),
     ] },
     { name: 'Reports', rows: [['Report', 'Type', 'Period / date', 'File', 'Loaded'], ...[...(p.reportingPeriods ?? [])].sort(byPeriodThenImport).map((r) => [r.name, r.type, r.date, r.fileName ?? r.snapshot?.workbook?.fileName ?? '', (r.registeredAt ?? r.snapshot?.workbook?.importedAt ?? '').slice(0, 10)])] },
+    { name: 'Checks', rows: [['Level', 'Check'], ...health(p, today).findings.map((f) => [f.level === 'bad' ? 'Fix' : f.level === 'warn' ? 'Check' : 'OK', f.text])] },
     { name: 'Documents', rows: [['Document', 'Kind', 'Loaded', 'Read'], ...(p.documents ?? []).map((d) => [d.name, d.kind, d.importedAt.slice(0, 10), d.summary.slice(0, 3).join(' · ')])] },
   ];
 }

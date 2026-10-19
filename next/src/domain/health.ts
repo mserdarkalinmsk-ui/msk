@@ -6,6 +6,7 @@ import { sameDoc } from './applydocs';
 import { isExtraction } from './extraction';
 import { readCheck } from './intake';
 import type { Workbook } from './workbook';
+import { integrity } from './integrity';
 
 export type Level = 'ok' | 'warn' | 'bad';
 export interface Finding { level: Level; text: string; fix?: 'report' | 'documents' | 'edit' | 'reports' | AutoFix }
@@ -35,7 +36,7 @@ export function health(p: Project, today: Date): Health {
       // A system extraction has no totals block: check that every entry landed on a line instead.
       for (const c of readCheck(wb as unknown as Workbook, p, last.snapshot!.lines).checks) add(c.level === 'ok' ? 'ok' : c.level === 'error' ? 'bad' : 'warn', `System extraction: ${c.text}`, c.level === 'ok' ? undefined : 'reports');
     } else if (wb) {
-      const lay = wb.meta.layout ?? {}, T = wb.totals;
+      const lay = wb.meta?.layout ?? {}, T = wb.totals ?? {};
       if (!lay.direct || !T.direct) add('bad', 'Direct-cost total row not recognised — re-upload the report', 'report');
       if (!lay.admin || !T.admin) add('bad', 'Administrative-costs row missing in the stored reading — re-upload the report so it is read with the current rules', 'report');
       if (!lay.eligible || !T.eligible) add('warn', 'Total eligible costs row not recognised — re-upload the report', 'report');
@@ -71,6 +72,8 @@ export function health(p: Project, today: Date): Health {
   if (dup.length) add('warn', `More than one report for ${dup.join(', ')} — the most recent import is used`, 'dedupe-reports');
   const D = p.documents ?? [], dupD = D.filter((d, i) => D.some((x, k) => k < i && sameDoc(x.name, d.name)));
   if (dupD.length) add('warn', `${dupD.length} document${dupD.length > 1 ? 's' : ''} uploaded twice (${dupD.map((d) => d.name).slice(0, 2).join(', ')})`, 'dedupe-docs');
+
+  for (const x of integrity(p, today)) add(x.level, `${x.where}: ${x.text}`, 'reports');
 
   const level: Level = F.some((f) => f.level === 'bad') ? 'bad' : F.some((f) => f.level === 'warn') ? 'warn' : 'ok';
   return { p, level, findings: F.sort((a, b) => ['bad', 'warn', 'ok'].indexOf(a.level) - ['bad', 'warn', 'ok'].indexOf(b.level)) };
