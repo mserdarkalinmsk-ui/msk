@@ -699,3 +699,8 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fn-doc .r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .fn-doc .fn-just, .fn-doc .fn-sig { background: #fffbe6; color: #1f2937; }
 @media (max-width: 640px) { .fn-sign { grid-template-columns: 1fr; } }
+/* budget health card */
+.bh .seg { flex-wrap: wrap; }
+.bh-v { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; font-size: 13px; border-left: 3px solid var(--good); background: color-mix(in srgb, var(--good) 8%, transparent); }
+.bh-v.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
+.bh-v.bad { border-color: var(--serious); background: color-mix(in srgb, var(--serious) 9%, transparent); }

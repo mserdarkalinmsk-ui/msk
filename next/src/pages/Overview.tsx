@@ -1,6 +1,7 @@
 import { staffCount, staffSplit } from '../domain/staff';
 import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
+import { BudgetHealth } from './BudgetHealth';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
 import { burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
 import { SECTORS, validUrl, type Project } from '../domain/types';
@@ -138,6 +139,7 @@ export function Overview() {
             {!flags.length && <li style={{ cursor: 'default' }}><span class="badge good">ok</span><div class="d">All projects within thresholds.</div><span /></li>}
           </ul>
         </section>
+        <BudgetHealth P={P} />
 
         <OverviewMap />
         <section class="card span-5">
