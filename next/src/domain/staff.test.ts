@@ -70,3 +70,17 @@ describe('roster', () => {
     expect(C[3].HQ).toBe(1);
   });
 });
+
+describe('names read from GL texts', () => {
+  it('drops day counts before the name and merges a typo in the first name', async () => {
+    const { cleanGlName, roster } = await import('./staff');
+    expect(cleanGlName('JS Redacted,Arzu Bursu')).toBe('Redacted,Arzu Bursu');
+    expect(cleanGlName('16 JS Redacted,Arzu Burcu')).toBe('Redacted,Arzu Burcu');
+    const rec = (name: string, po: string) => ({ name, code: '1.1.1.2', position: 'Project manager', po, recordKind: 'Payroll observation' as const });
+    const p = { id: 'x', code: 'X', name: 'X', country: 'tr', start: '2024-01-01', end: '2029-01-01', budget: 1, reportingPeriods: [{ id: 'r', name: 'r', type: 'x', date: '2026-06-30',
+      snapshot: { lines: [], staffRecords: [rec('Redacted,Arzu Burcu', 'GL 1'), rec('Redacted,Arzu Burcu', 'GL 2'), rec('JS Redacted,Arzu Bursu', 'GL 3'), rec('Redacted,Mehmet', 'GL 4')] } }] };
+    const R = roster(p as never, new Date('2026-10-01'));
+    expect(R.map((x) => x.display).sort()).toEqual(['Arzu Burcu Redacted', 'Mehmet Redacted']);
+    expect(R.find((x) => x.display === 'Arzu Burcu Redacted')!.contracts).toHaveLength(3);
+  });
+});
