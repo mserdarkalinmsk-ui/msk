@@ -10,7 +10,7 @@ import type { PO } from './workbook';
 export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
 export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
   { k: 'events', label: 'Event management', color: 'var(--ink-3)' },
-  { k: 'interp', label: 'Interpretation', color: '#0891b2' },
+  { k: 'interp', label: 'Translation / interpretation', color: '#0891b2' },
   { k: 'consult', label: 'Consultant — national', color: 'var(--c1)' },
   { k: 'intl', label: 'Consultant — international', color: 'var(--c7)' },
   { k: 'visibility', label: 'Visibility', color: 'var(--critical)' },
@@ -26,7 +26,7 @@ export const isKind = (v: unknown): v is Kind => KINDS.some((x) => x.k === v);
 
 // Order matters: a PO naming a consultant is a consultant even when it is "for the research study".
 const RULES: [Kind | 'person', RegExp][] = [
-  ['interp', /interpr|tercüm|sözlü çeviri|simultan|consecutive|ardıl|booth|kabin|headset|kulaklık/i],
+  ['interp', /interpr|translat|çeviri|\bçevir|tercüm|sözlü çeviri|simultan|consecutive|ardıl|booth|kabin|headset|kulaklık/i],
   // A PO that says it organises an event is event management, whatever the event is about (a study, a training).
   ['events', /event management|event organi[sz]|organi[sz](?:ation|ing|e) (?:of|the)|organisation of|organizasyon/i],
   ['person', /consult|\bexpert|danışman|uzman|trainer|eğitmen|facilitator|moderat|rapporteur|\bfees?\b|honorari/i],
@@ -64,8 +64,9 @@ export function kindOf(text: string, code = '', lineText = '', supplier = ''): K
   }
   if (PERDIEM_T.test(text)) return 'perdiem';
   if (GRANTS.test(code) || /\bgrant|sub-?grant|hibe/i.test(text)) return 'grants';
+  // Translation (5.5.1) and interpretation (5.5.2) lines decide before the wording ("translation of the study").
+  if (/^5\.5\.[12](\.|$)/.test(code) || /translat|interpr|terc[üu]m|[çc]evir/i.test(supplier)) return 'interp';
   const own = byText(text); if (own) return own;
-  if (/^5\.5\.2(\.|$)/.test(code)) return 'interp';
   if (/^1\.1\.[23](\.|$)/.test(code)) return 'consult';
   if (/^1\.2\.[23](\.|$)/.test(code)) return 'intl';
   if (/^5\.7(\.|$)/.test(code)) return 'events';
