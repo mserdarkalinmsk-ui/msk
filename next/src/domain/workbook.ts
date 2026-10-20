@@ -13,6 +13,7 @@ export interface WbLine {
   budget: Triple; actual: Triple; sc: number | null; planned?: Triple; proposal?: Triple; rounded?: Triple;
   /** Budget of the part that has a proposal (portfolio sums mix projects with and without one). */
   proposalBase?: number;
+  /** Excel row number in the grid sheet (1-based). */ row?: number;
 }
 export interface WbTotals { budget: number; actual: number; sc: number; planned?: number; proposal?: number; rounded?: number; proposalBase?: number }
 export interface WbMeta {
@@ -20,7 +21,16 @@ export interface WbMeta {
   plannedFrom?: string; plannedTo?: string;
   /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
   /** Budget proposal with a secured-funding block (VC): what is already funded, by line code. Not spending. */ secured?: Record<string, number>;
+  /** Sheet of the line grid and how each block of columns was read (key = normalised heading, for remembered corrections). */
+  grid?: string; blocks?: Block[];
+  /** Sub-total rows of the grid by heading ("Sub-total 1 …"), with their row number. */ subtotals?: Record<string, { budget: number | null; actual: number | null; row: number }>;
+  /** Wording found at the top of the sheets. */ words?: { final?: boolean; interim?: boolean; proposal?: boolean; forecast?: boolean };
 }
+export type Role = 'budget' | 'actual' | 'sc' | 'planned' | 'planned2' | 'proposal' | 'rounded' | 'secured' | 'ignore';
+/** A block of "# of units | unit rate | cost" columns (or one S&C column) and what it was read as. */
+export interface Block { key: string; label: string; col: number; role: Role | 'unread'; byHand?: boolean }
+/** Corrections remembered for a file format: heading key → role. */
+export interface ReadOptions { roles?: Record<string, Role> }
 export interface SituationRow { ccm: string; article: string; description: string; budget: number; da: number; po: number; invoice: number; actual: number; available: number; balance: number }
 export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string }
 export interface Movement { article: string; period: string; date: string; amount: number; description: string; funding: boolean }
@@ -89,15 +99,20 @@ function groupOf(label: string): Group | null {
   return null;
 }
 
-function readGrid(sh: Sheet) {
+function readGrid(sh: Sheet, roles: Record<string, Role> = {}) {
   const hi = sh.R.findIndex((r) => n2(r[0]) === 'description' && r.some((x) => n2(x) === 'unit'));
   if (hi < 1) return null;
-  // group headings sit on one of the two rows above the sub-headings
-  const groups: { g: Group; at: number; label: string }[] = [];
+  // group headings sit on one of the two rows above the sub-headings; a heading corrected by hand wins over the wording
+  const groups: { g: Group; at: number; label: string; byHand?: boolean }[] = [], ignored: number[] = [];
+  const heads: { at: number; label: string; key: string }[] = [];
   for (const gr of [sh.R[hi - 1] ?? [], sh.R[hi - 2] ?? []]) gr.forEach((x, i) => {
-    let g = groupOf(String(x ?? '')); if (!g) return;
+    const label = String(x ?? '').replace(/\s+/g, ' ').trim(); if (!label || heads.some((h) => h.at === i)) return;
+    const key = n2(label).slice(0, 40); heads.push({ at: i, label, key });
+    const hand = roles[key];
+    if (hand === 'ignore') { ignored.push(i); return; }
+    let g = (hand as Group | undefined) ?? groupOf(label); if (!g) return;
     if (g === 'planned' && groups.some((y) => y.g === 'planned')) g = 'planned2';
-    if (!groups.some((y) => y.at === i)) groups.push({ g, at: i, label: String(x).replace(/\s+/g, ' ').trim() });
+    if (!groups.some((y) => y.at === i)) groups.push({ g, at: i, label, byHand: !!hand });
   });
   // The first group heading often sits on the "Interim report covering…" cell; the budget block starts at the first "# of units".
   const sub = sh.R[hi].map(n2);
@@ -108,16 +123,25 @@ function readGrid(sh: Sheet) {
     const u = unitsCols.find((c) => c >= g.at) ?? g.at;
     starts.set(g.g, g.g === 'sc' ? g.at : u);
   }
-  if (!starts.has('budget') && unitsCols.length) starts.set('budget', unitsCols[0]);
+  const ignoredCols = ignored.map((at) => unitsCols.find((c) => c >= at) ?? at);
+  if (!starts.has('budget') && unitsCols.length && !ignoredCols.includes(unitsCols[0])) starts.set('budget', unitsCols[0]);
   // The second block is the actual one only when nothing names it otherwise (a secured-funding block is not spending).
-  if (!starts.has('actual') && unitsCols.length > 1 && ![...starts.values()].includes(unitsCols[1])) starts.set('actual', unitsCols[1]);
+  if (!starts.has('actual') && unitsCols.length > 1 && ![...starts.values()].includes(unitsCols[1]) && !ignoredCols.includes(unitsCols[1])) starts.set('actual', unitsCols[1]);
+  // How each block was read, with the heading above it (for the preview and for corrections by hand).
+  const blocks: Block[] = unitsCols.map((c, k) => {
+    const h = heads.filter((x) => x.at <= c && x.at > (unitsCols[k - 1] ?? -1)).sort((a, b) => b.at - a.at)[0] ?? heads.filter((x) => x.at <= c).sort((a, b) => b.at - a.at)[0];
+    const g = [...starts].find(([gg, at]) => gg !== 'sc' && at === c)?.[0];
+    const label = h?.label ?? `Columns ${c + 1}–${c + 3}`, key = h?.key ?? `col${c}`;
+    return { key, label, col: c, role: g ?? (ignoredCols.includes(c) ? 'ignore' : 'unread'), byHand: !!roles[key] };
+  });
+  const scAt = starts.get('sc'); if (scAt != null) { const h = heads.find((x) => x.at === scAt); blocks.push({ key: h?.key ?? 'sc', label: h?.label ?? 'Spent and committed', col: scAt, role: 'sc', byHand: !!(h && roles[h.key]) }); }
   const trip = (r: string[], g: Group): Triple | undefined => {
     const s = starts.get(g); if (s == null) return undefined;
     return { units: num(r[s]), rate: num(r[s + 1]), cost: num(r[s + 2]) };
   };
   const lines: WbLine[] = [];
   const totals: Workbook['totals'] = {};
-  const meta: WbMeta = {};
+  const meta: WbMeta = { grid: sh.name, blocks };
   const costCols = (['budget', 'actual', 'sc', 'planned', 'proposal', 'rounded'] as Group[]).map((g) => [g, g === 'sc' ? starts.get('sc') : (starts.get(g) ?? -10) + 2] as const);
   for (const g of groups) {
     if (g.g === 'planned' || g.g === 'planned2') {
@@ -142,12 +166,14 @@ function readGrid(sh: Sheet) {
       if (key) { totals[key] = t; meta.layout = { ...meta.layout, [key]: tm[1] }; }
       continue;
     }
+    const st = a.match(/^sub-?total\s+(\d{1,2})\b/i);
+    if (st) { const c = (g: Group) => { const at = starts.get(g); return at == null ? null : num(r[at + 2]); }; meta.subtotals = { ...meta.subtotals, [st[1]]: { budget: c('budget'), actual: c('actual'), row: i + 1 } }; continue; }
     const m = a.match(/^(\d+(?:\.\d+)*)\.?\s+(.+)$/);
-    if (!m || /^sub-?total/i.test(a)) continue;
+    if (!m) continue;
     const b = trip(r, 'budget')!, ac = trip(r, 'actual') ?? { units: null, rate: null, cost: null };
     const se = trip(r, 'secured')?.cost; if (se) meta.secured = { ...meta.secured, [m[1]]: se };
     lines.push({
-      code: m[1], description: m[2].trim(), unit: String(r[1] ?? '').trim(), level: m[1].split('.').length, leaf: true,
+      code: m[1], description: m[2].trim(), unit: String(r[1] ?? '').trim(), level: m[1].split('.').length, leaf: true, row: i + 1,
       budget: b, actual: ac, sc: starts.has('sc') ? num(r[starts.get('sc')!]) : null,
       planned: trip(r, 'planned'), proposal: trip(r, 'proposal'), rounded: trip(r, 'rounded'),
     });
@@ -157,8 +183,8 @@ function readGrid(sh: Sheet) {
 }
 
 /* ---------- main ---------- */
-export function parseWorkbook(sheets: Sheet[]): Workbook {
-  const meta: WbMeta = {};
+export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook {
+  const meta: WbMeta = {}, words: NonNullable<WbMeta['words']> = {};
   const text = sheets.flatMap((s) => s.R.slice(0, 16).flat()).map((x) => String(x ?? ''));
   for (const t of text) {
     const c = t.match(/Contract\s*n[°o.]?\s*:?\s*(\d{5,})/i); if (c && !meta.contract) meta.contract = c[1];
@@ -167,9 +193,14 @@ export function parseWorkbook(sheets: Sheet[]): Workbook {
     const p = t.match(/period\s+from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i); if (p && !meta.periodFrom) { meta.periodFrom = dmy(p[1]); meta.periodTo = dmy(p[2]); }
     const sd = t.match(/^Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i); if (sd && !meta.situationDate) meta.situationDate = dmy(sd[1]);
     const sp = t.match(/Period\s*:\s*([A-Z]{3}-\d{2})/i); if (sp && !meta.situationPeriod) meta.situationPeriod = sp[1].toUpperCase();
+    if (/final\s+(financial\s+)?report/i.test(t)) words.final = true;
+    if (/interim\s+(financial\s+)?report/i.test(t)) words.interim = true;
+    if (/budget\s+proposal|proposed\s+budget|secured\s+budget/i.test(t)) words.proposal = true;
+    if (/planned\s+expenditure|forecast/i.test(t)) words.forecast = true;
   }
+  if (Object.keys(words).length) meta.words = words;
   // Prefer the Forecast grid (it carries planned + proposal columns), else REPORT.
-  const grids = sheets.map((s) => ({ s, g: readGrid(s) })).filter((x) => x.g && x.g.lines.length);
+  const grids = sheets.map((s) => ({ s, g: readGrid(s, opts.roles) })).filter((x) => x.g && x.g.lines.length);
   const best = grids.find((x) => x.g!.hasForecast) ?? grids[0];
   const report = grids.find((x) => !x.g!.hasForecast);
   let lines = best?.g!.lines ?? [];
@@ -243,7 +274,7 @@ export function parseWorkbook(sheets: Sheet[]): Workbook {
 
   const { records: staff, groups: staffGroups } = extractStaff(sheets);
   const wb: Workbook = { meta, lines, totals, situation, pos, monthly, movements, staff, staffGroups, sheets: sheets.map((s) => s.name), checks: [] };
-  wb.checks = reconcile(wb);
+  wb.checks = [...reconcile(wb), ...(meta.extraction ? [] : arithmetic(wb))];
   if (meta.extraction) {
     wb.checks = wb.checks.filter((c) => c.level !== 'error');
     wb.checks.unshift({ ok: true, level: 'info', text: `System extraction: ${lines.length} reporting lines summed from the posted entries; budgets, descriptions and administrative costs come from the project's approved budget or last full report.` });
@@ -321,3 +352,41 @@ export const summarize = (wb: Workbook, fileName?: string): WorkbookSummary => {
   const { staff: _s, staffGroups: _g, ...rest } = wb; void _s; void _g;
   return { ...rest, fileName, importedAt: new Date().toISOString() };
 };
+
+/**
+ * Re-does the arithmetic of the grid as read: units × rate = cost on each line, a parent row = the sum of its sub-lines,
+ * each "Sub-total n" = the lines of heading n. A difference points to a misread column or an error in the file, with the row.
+ */
+export function arithmetic(wb: Workbook): Check[] {
+  const out: Check[] = [], sheet = wb.meta.grid ? `${wb.meta.grid}, ` : '';
+  const at = (l: WbLine) => (l.row ? `${sheet}row ${l.row}` : sheet.replace(/, $/, ''));
+  // a unit rate rounded to the cent moves the cost by at most half a cent per unit
+  const tol = (units: number) => Math.max(1, Math.abs(units) * 0.01);
+  const issues: string[] = [];
+  let tested = 0;
+  for (const l of wb.lines) for (const [k, t] of [['budget', l.budget], ['actual', l.actual]] as const) {
+    if (t.units == null || t.rate == null || t.cost == null || !t.units || !t.rate) continue;
+    tested++;
+    const calc = t.units * t.rate;
+    if (Math.abs(calc - t.cost) > tol(t.units)) issues.push(`${l.code} (${at(l)}): ${k} ${t.units} × ${eur(t.rate)} = ${eur(calc)}, the file says ${eur(t.cost)}`);
+  }
+  for (const l of wb.lines.filter((x) => !x.leaf)) {
+    const kids = wb.lines.filter((x) => x.code.startsWith(l.code + '.') && x.level === l.level + 1);
+    for (const k of ['budget', 'actual'] as const) {
+      const own = l[k].cost; if (own == null || !kids.length) continue;
+      const sum = kids.reduce((a, x) => a + (x[k].cost ?? 0), 0);
+      if (Math.abs(sum - own) > 1) issues.push(`${l.code} (${at(l)}): ${k} ${eur(own)} but its sub-lines add up to ${eur(sum)}`);
+    }
+  }
+  for (const [h, st] of Object.entries(wb.meta.subtotals ?? {})) for (const k of ['budget', 'actual'] as const) {
+    const own = st[k]; if (own == null) continue;
+    const sum = wb.lines.filter((x) => x.leaf && x.code.split('.')[0] === h).reduce((a, x) => a + (x[k].cost ?? 0), 0);
+    if (Math.abs(sum - own) > 1) issues.push(`Sub-total ${h} (${sheet}row ${st.row}): ${k} ${eur(own)} but the lines of heading ${h} add up to ${eur(sum)}`);
+  }
+  const subs = Object.keys(wb.meta.subtotals ?? {}).length;
+  if (!issues.length) { if (tested || subs) out.push({ ok: true, level: 'info', text: `Arithmetic re-done: ${tested} units × rate = cost${subs ? `, ${subs} sub-totals` : ''} and parent rows add up` }); return out; }
+  out.push({ ok: false, level: 'warning', text: `${issues.length} figure${issues.length > 1 ? 's do' : ' does'} not add up in the file — check the cells below before saving` });
+  for (const t of issues.slice(0, 8)) out.push({ ok: false, level: 'warning', text: t });
+  if (issues.length > 8) out.push({ ok: false, level: 'warning', text: `…and ${issues.length - 8} more` });
+  return out;
+}

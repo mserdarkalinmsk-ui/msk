@@ -1,6 +1,7 @@
 import { FORMAT, REPORT_TYPES } from '../domain/terms';
 import { useEffect, useState } from 'preact/hooks';
-import { checkpoint, upsertReport, upsertRisk, useStore } from '../data/store';
+import { checkpoint, get, setFormat, upsertReport, upsertRisk, useStore } from '../data/store';
+import { docType, formatKey } from '../domain/doctype';
 import { checkReport, compareReports, reportsByDate, reportTotals } from '../domain/calc';
 import type { BudgetLine, Project, ReportingPeriod, Risk } from '../domain/types';
 import { parseAmount, parseCSV, parseDay } from './csv';
@@ -8,7 +9,7 @@ import { date, full, short } from './format';
 import { readXlsx, type Workbook } from './xlsx';
 import { extractStaff } from '../domain/staff';
 import { BulkReports } from './BulkReports';
-import { parseWorkbook, type Workbook as CoeWorkbook } from '../domain/workbook';
+import { parseWorkbook, type Role, type Workbook as CoeWorkbook } from '../domain/workbook';
 import { updateProject } from '../data/store';
 import { readCheck, snapshotOf } from '../domain/intake';
 
@@ -19,7 +20,13 @@ export const setPendingReport = (f: File) => { pending = f; };
 export async function readCoe(f: File): Promise<CoeWorkbook | null> {
   if (!/\.xlsx$/i.test(f.name)) return null;
   const x = await readXlsx(await f.arrayBuffer());
-  const wb = parseWorkbook(x.sheets.map((n) => ({ name: n, R: x.read(n) })));
+  return readSheets(x.sheets.map((n) => ({ name: n, R: x.read(n) })));
+}
+/** Reads the sheets, then again with the corrections remembered for this file format (column blocks set by hand). */
+export function readSheets(S: { name: string; R: string[][] }[], roles?: Record<string, Role>): CoeWorkbook | null {
+  let wb = parseWorkbook(S, { roles });
+  const known = get().ledger.formats?.[formatKey(wb)];
+  if (!roles && known?.roles) wb = parseWorkbook(S, { roles: known.roles as Record<string, Role> });
   return wb.lines.length ? wb : null;
 }
 
@@ -65,17 +72,23 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const [manual, setManual] = useState(false);
   const [saveIds, setSaveIds] = useState(true);
   const [bulk, setBulk] = useState<File[] | null>(null);
+  const [sheets, setSheets] = useState<{ name: string; R: string[][] }[] | null>(null);
+  const formats = useStore((s) => s.ledger.formats);
   useEffect(() => { if (pending) { const f = pending; pending = null; open(f); } }, []);
   const pick = (F: File[]) => { F = F.filter((f) => /\.(xlsx|csv)$/i.test(f.name) && !f.name.startsWith('~$')); if (F.length > 1) setBulk(F); else if (F[0]) open(F[0]); };
 
   async function open(f: File) {
     setErr(''); setCoe(null); setManual(false);
     try {
-      const wb = await readCoe(f).catch(() => null);
+      const S = /\.xlsx$/i.test(f.name) ? await readXlsx(await f.arrayBuffer()).then((x) => x.sheets.map((n) => ({ name: n, R: x.read(n) }))).catch(() => null) : null;
+      const wb = S ? readSheets(S) : null;
+      setSheets(S);
       if (wb) {
         setCoe(wb);
-        const to = wb.meta.periodTo || wb.meta.asAt || wb.meta.situationDate;
-        setMeta({ name: to ? `Interim report to ${date(to)}` : f.name.replace(/\.[^.]+$/, ''), type: 'Interim Financial Report', date: to || new Date().toISOString().slice(0, 10) });
+        const to = wb.meta.periodTo || wb.meta.asAt || wb.meta.situationDate, dt = docType(wb);
+        const type = get().ledger.formats?.[formatKey(wb)]?.type ?? dt.type;
+        const name = dt.kind === 'proposal' ? 'Budget' : dt.kind === 'final' ? 'Final report' : to ? `Interim report to ${date(to)}` : f.name.replace(/\.[^.]+$/, '');
+        setMeta({ name, type, date: to || new Date().toISOString().slice(0, 10) });
       }
       const t = await readTable(f);
       const d = detectHeader(t.rows);
@@ -153,7 +166,12 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
                   : <div class="field"><label for="r-head">Header row</label><input id="r-head" type="number" min={1} value={head + 1} onInput={(e) => setHead(Math.max(0, +(e.target as HTMLInputElement).value - 1))} /></div>}
               </div>
             </section>
-            {useCoe && <CoeSummary wb={coe!} onManual={() => setManual(true)} fillIds={!!fillIds} saveIds={saveIds} setSaveIds={setSaveIds} />}
+            {useCoe && <CoeSummary wb={coe!} onManual={() => setManual(true)} fillIds={!!fillIds} saveIds={saveIds} setSaveIds={setSaveIds} remembered={!!formats?.[formatKey(coe!)]}
+              onRole={(key, role) => {
+                const fk = formatKey(coe!), roles = { ...(formats?.[fk]?.roles ?? {}), [key]: role };
+                setFormat(fk, { roles }); const wb = sheets && readSheets(sheets, roles as Record<string, Role>); if (wb) { setCoe(wb); setMeta((m) => ({ ...m, type: formats?.[fk]?.type ?? docType(wb).type })); }
+              }}
+              onForget={() => { setFormat(formatKey(coe!), null); const wb = sheets && parseWorkbook(sheets); if (wb?.lines.length) { setCoe(wb); setMeta((m) => ({ ...m, type: docType(wb).type })); } }} />}
             {!useCoe && <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
               <h3 style={{ margin: 0, fontSize: '14px' }}>Match columns <span class="muted" style={{ fontWeight: 400 }}>· header: {(file.rows[head] ?? []).filter(Boolean).slice(0, 4).join(', ')}</span></h3>
               <div class="form-2" style={{ gap: '10px' }}>
@@ -184,6 +202,8 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
         <button class="btn" onClick={close}>Cancel</button>
         <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => {
           void checkpoint(`Before importing ${report.name}`);
+          // A document type chosen by hand is remembered for the next file of the same format.
+          if (useCoe && meta.type !== docType(coe!).type) setFormat(formatKey(coe!), { type: meta.type });
           upsertReport(p.id, report);
           // An approved budget baseline (DoA annex) stays authoritative; reports only set the budget when there is none.
           const eb = useCoe && !p.approvedBudget ? coe!.totals.eligible?.budget : undefined;
@@ -229,14 +249,27 @@ export function RiskForm({ projectId, id, close }: { projectId: string; id?: str
   );
 }
 
-function CoeSummary({ wb, onManual, fillIds, saveIds, setSaveIds }: { wb: CoeWorkbook; onManual: () => void; fillIds: boolean; saveIds: boolean; setSaveIds: (v: boolean) => void }) {
-  const m = wb.meta, e = wb.totals.eligible;
+const ROLES: [Role | 'unread', string][] = [['budget', 'Budget'], ['actual', 'Actual expenditure (spent)'], ['sc', 'Spent + committed'], ['planned', 'Planned expenditure'], ['proposal', 'Budget proposal (calculated)'], ['rounded', 'Budget proposal (rounded)'], ['secured', 'Secured funding — not spending'], ['ignore', 'Not used']];
+
+function CoeSummary({ wb, onManual, fillIds, saveIds, setSaveIds, onRole, onForget, remembered }: { wb: CoeWorkbook; onManual: () => void; fillIds: boolean; saveIds: boolean; setSaveIds: (v: boolean) => void; onRole: (key: string, role: Role) => void; onForget: () => void; remembered: boolean }) {
+  const m = wb.meta, e = wb.totals.eligible, dt = docType(wb);
   const openPO = wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5);
   return (
     <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span class="badge good">Recognised</span><b style={{ fontSize: '14px' }}>Council of Europe financial report workbook</b>
         <button class="btn ghost" style={{ marginLeft: 'auto', height: '26px' }} onClick={onManual}>Map columns manually</button></div>
       {m.title && <div style={{ fontSize: '13.5px' }}>{m.title}</div>}
+      <div class="doc-kind" style={{ fontSize: '13px' }}><span class={`badge ${dt.sure ? 'good' : 'warning'}`}>{dt.sure ? 'Read as' : 'Probably'}</span> <b>{dt.label}</b> <span class="muted">— {dt.why.join(', ')}</span></div>
+      {(m.blocks?.length ?? 0) > 0 && <div class="blocks" style={{ display: 'grid', gap: '6px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)' }}>Columns read as <span class="muted" style={{ fontWeight: 400 }}>· {m.grid} · correct a block and it is remembered for files of this format</span>
+          {remembered && <button class="btn ghost" style={{ height: '22px', marginLeft: '6px', fontSize: '12px' }} onClick={onForget}>Forget corrections</button>}</div>
+        {m.blocks!.map((b) => <label style={{ display: 'grid', gridTemplateColumns: '1fr 230px', gap: '8px', alignItems: 'center', fontSize: '13px' }}>
+          <span>{b.label} <span class="muted num" style={{ fontSize: '11px' }}>col {colName(b.col)}{b.byHand ? ' · set by hand' : ''}</span></span>
+          <select aria-label={`Read ${b.label} as`} value={b.role} onChange={(ev) => onRole(b.key, (ev.target as HTMLSelectElement).value as Role)}>
+            {b.role === 'unread' && <option value="unread">— not read —</option>}
+            {ROLES.map(([v, l]) => <option value={v}>{l}</option>)}
+          </select></label>)}
+      </div>}
       <dl class="dl" style={{ gridTemplateColumns: '130px 1fr', fontSize: '13px' }}>
         {m.contract && <><dt>Contract</dt><dd class="num">{m.contract}</dd></>}
         {(m.jp || m.bh) && <><dt>JP / BH</dt><dd class="num">{m.jp ?? '—'} / {m.bh ?? '—'}</dd></>}
@@ -255,3 +288,6 @@ function CoeSummary({ wb, onManual, fillIds, saveIds, setSaveIds }: { wb: CoeWor
     </section>
   );
 }
+
+/** Excel column letters (0 → A, 26 → AA). */
+const colName = (i: number): string => (i >= 26 ? colName(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + (i % 26));

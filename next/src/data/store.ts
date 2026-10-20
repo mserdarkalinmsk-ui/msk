@@ -358,6 +358,12 @@ export function setBrand(brand: Ledger['brand'] | null) {
   const L = draft(state.ledger); if (brand) L.brand = brand; else delete L.brand;
   commit(L, brand ? 'Name and logo saved' : 'Name and logo removed');
 }
+/** Remembers how a file format is read (block roles, document type); null forgets it. */
+export function setFormat(key: string, f: { roles?: Record<string, string>; type?: string } | null) {
+  const L = draft(state.ledger), m = { ...(L.formats ?? {}) };
+  if (f) m[key] = { ...m[key], ...f, at: new Date().toISOString() }; else delete m[key];
+  L.formats = m; commit(L, f ? 'File format remembered' : 'File format forgotten');
+}
 /** Sets by hand the service-provider kind of a purchase order ('' = back to automatic, 'none' = leave it out). */
 export function setPoKind(key: string, kind: string) {
   const L = draft(state.ledger), m = { ...(L.poKinds ?? {}) };
