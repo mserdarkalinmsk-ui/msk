@@ -1,3 +1,4 @@
+import { CrossDocsCard } from '../ui/CrossDocsCard';
 import { ForecastDialog } from '../ui/ForecastDialog';
 import { ForecastEditor } from './ForecastEditor';
 import { auditSheets } from '../domain/audit';
@@ -119,6 +120,7 @@ function Summary({ p }: { p: Project }) {
       <Attention flags={flags} pid={p.id} />
       {p.datesTbc && <StatusWords p={p} />}
       <ForecastCard p={p} />
+      <CrossDocsCard p={p} />
       <section class="card span-8">
         <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report · click a month for its breakdown</p></div></div>
         <div class="card-b"><Chart height={300} label="Project spend over time" onAxisClick={(x) => {

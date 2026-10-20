@@ -29,7 +29,7 @@ function build(lines: WbLine[], names?: Map<string, string>) {
 }
 
 /** Financial statement in the layout of the official report: hierarchy, two-level headers, subtotals and totals. */
-export function Statement({ lines, totals, elapsed, title, layout, names }: { names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
+export function Statement({ lines, totals, elapsed, title, layout, names, source }: { /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
   const [mode, setMode] = useState<'full' | 'compact'>('compact');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [hideEmpty, setHideEmpty] = useState(true);
@@ -78,6 +78,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names }: { na
               const rateUp = l?.budget.rate && l.actual.rate && l.actual.units ? l.actual.rate / l.budget.rate - 1 : 0;
               // Compare the proposal only with the budget of the lines (projects) that made one.
               const d = r.sum.pr ? r.sum.pr - r.sum.pb : 0, parent = !l;
+              const src = source && l?.row ? `From ${source}, row ${l.row}` : undefined;
               return (
                 <tr class={`d${Math.min(r.depth, 3)} ${parent ? 'grp' : ''} ${over ? 'over' : ''}`}>
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
@@ -86,10 +87,10 @@ export function Statement({ lines, totals, elapsed, title, layout, names }: { na
                   </td>
                   {full_ && <td class="muted">{l?.unit}</td>}
                   {full_ && <><td class="r num">{n0(l?.budget.units)}</td><td class="r num">{n0(l?.budget.rate)}</td></>}
-                  <td class="r num">{money(r.sum.b)}</td>
+                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.b)}</td>
                   {full_ && <><td class="r num">{n0(l?.actual.units)}</td><td class={`r num ${rateUp > 0.15 ? 'warn' : ''}`} title={rateUp ? `${rateUp > 0 ? '+' : ''}${Math.round(rateUp * 100)}% vs budget rate` : ''}>{n0(l?.actual.rate)}</td></>}
-                  <td class="r num">{money(r.sum.a)}</td>
-                  <td class="r num">{money(r.sum.sc)}</td>
+                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.a)}</td>
+                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.sc)}</td>
                   <td class="usedc"><div class="minibar"><span style={{ width: `${Math.min(100, u * 100)}%`, background: over ? 'var(--critical)' : 'var(--c1)' }} /><i style={{ left: `${elapsed * 100}%` }} /></div><span class="num">{r.sum.b ? pct(u) : ''}</span></td>
                   {hasPlan && <td class="r num">{money(r.sum.pl)}</td>}
                   {hasProp && <><td class="r num">{money(r.sum.pr)}</td><td class={`r num ${d > 0.5 ? 'up' : d < -0.5 ? 'down' : ''}`}>{Math.abs(d) < 0.5 ? '–' : `${d > 0 ? '+' : '−'}${Math.abs(d).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td></>}
