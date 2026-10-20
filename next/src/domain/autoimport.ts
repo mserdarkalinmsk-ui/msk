@@ -116,7 +116,9 @@ export const reportDate = (wb: Workbook) => wb.meta.periodTo || wb.meta.asAt || 
 /** A reporting period built from a financial report workbook; a report with the same date is replaced. */
 export function reportFrom(wb: Workbook, fileName: string, p: Project): { report: ReportingPeriod; replaces?: string } {
   const date = reportDate(wb) || new Date().toISOString().slice(0, 10);
-  const existing = (p.reportingPeriods ?? []).find((r) => r.date === date && r.snapshot?.workbook);
+  // The same file loaded again (same date, or the same file name) replaces its earlier reading.
+  const key = (n?: string) => (n ?? '').toLowerCase().replace(/^[0-9a-f]{8}-/, '').replace(/\s*\(\d+\)(?=\.[a-z]+$)/, '');
+  const existing = (p.reportingPeriods ?? []).find((r) => r.snapshot?.workbook && (r.date === date || (key(r.fileName) && key(r.fileName) === key(fileName))));
   return {
     replaces: existing?.id,
     report: {
