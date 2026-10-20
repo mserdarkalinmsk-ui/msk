@@ -16,10 +16,9 @@ export const byPeriodThenImport = (a: ReportingPeriod, b: ReportingPeriod) => {
 
 /** When each report was loaded (reports kept from before the stamp have none). */
 export const loadedAt = (r: ReportingPeriod) => r.snapshot?.workbook?.importedAt ?? r.registeredAt ?? '';
-/** The order in which reports were loaded: the last one loaded is the latest report. Without stamps, by period. */
+/** Order of reports: by period (the screens and the charts agree on it); within a month the last one loaded wins. */
 export const byUpload = (a: ReportingPeriod, b: ReportingPeriod) => {
-  const ia = loadedAt(a), ib = loadedAt(b);
-  return ia && ib ? ia.localeCompare(ib) || a.date.localeCompare(b.date) : byPeriodThenImport(a, b);
+  void loadedAt; return byPeriodThenImport(a, b);
 };
 
 export function latestReport(p: Project): ReportingPeriod | undefined {
