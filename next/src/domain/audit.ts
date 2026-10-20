@@ -1,4 +1,4 @@
-import { byPeriodThenImport, latestReport, lineExposure, lines, n } from './calc';
+import { byPeriodThenImport, byUpload, latestReport, lineExposure, lines, n } from './calc';
 import type { Project } from './types';
 import { health } from './health';
 import type { SheetSpec } from '../ui/xlsxwrite';
@@ -9,7 +9,7 @@ import type { SheetSpec } from '../ui/xlsxwrite';
  */
 export function auditSheets(p: Project, today: Date): SheetSpec[] {
   const L = lines(p), rep = latestReport(p);
-  const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byPeriodThenImport).at(-1)?.snapshot?.workbook;
+  const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byUpload).at(-1)?.snapshot?.workbook;
   const pos = wb?.pos ?? [];
   const forLine = (code: string) => pos.filter((x) => x.line === code || x.line.startsWith(code + '.'));
   const leaf = L.filter((l) => !L.some((o) => o !== l && o.code.startsWith(l.code + '.')));

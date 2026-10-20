@@ -14,8 +14,16 @@ export const byPeriodThenImport = (a: ReportingPeriod, b: ReportingPeriod) => {
   return a.date.slice(0, 7).localeCompare(b.date.slice(0, 7)) || ia.localeCompare(ib) || a.date.localeCompare(b.date);
 };
 
+/** When each report was loaded (reports kept from before the stamp have none). */
+export const loadedAt = (r: ReportingPeriod) => r.snapshot?.workbook?.importedAt ?? r.registeredAt ?? '';
+/** The order in which reports were loaded: the last one loaded is the latest report. Without stamps, by period. */
+export const byUpload = (a: ReportingPeriod, b: ReportingPeriod) => {
+  const ia = loadedAt(a), ib = loadedAt(b);
+  return ia && ib ? ia.localeCompare(ib) || a.date.localeCompare(b.date) : byPeriodThenImport(a, b);
+};
+
 export function latestReport(p: Project): ReportingPeriod | undefined {
-  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length).sort(byPeriodThenImport);
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length).sort(byUpload);
   return R.filter((r) => !budgetOnly(r)).at(-1) ?? (p.approvedBudget ? undefined : R.at(-1));
 }
 /** A budget saved as a report (no spending at all): not a report of spending, so never the latest one. */
