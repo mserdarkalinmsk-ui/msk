@@ -256,10 +256,12 @@ export function budgetNotes(doc: Doc): Record<string, BudgetNote> {
     const hi = T.findIndex((r) => r.some((c) => /justification|clarification/i.test(c ?? '')));
     if (hi < 0 || hi > 6) continue;
     const h = T[hi].map((c) => clean(c ?? '').toLowerCase());
-    const ci = h.findIndex((x) => x.includes('clarification')), ji = h.findIndex((x) => x.includes('justification')), ui = h.findIndex((x) => x === 'unit');
+    // Revision workbooks repeat the pair per version (All Years | Notification 4 | Addendum 1): the latest filled one wins.
+    const CI = h.flatMap((x, i) => (x.includes('clarification') ? [i] : [])), JI = h.flatMap((x, i) => (x.includes('justification') ? [i] : [])), ui = h.findIndex((x) => x === 'unit');
     for (const r of T.slice(hi + 1)) {
       const m = clean(r[0] ?? '').match(/^(\d{1,2}(?:\.\d{1,2}){0,4})\.?\s+(.+)$/); if (!m) continue;
-      const clarification = ci >= 0 ? clean(r[ci] ?? '') : '', justification = ji >= 0 ? clean(r[ji] ?? '') : '';
+      const k = [...CI.keys()].reverse().find((i) => clean(r[CI[i]] ?? '') || clean(r[JI[i]] ?? '')) ?? 0;
+      const clarification = CI.length ? clean(r[CI[k]] ?? '') : '', justification = JI.length ? clean(r[JI[k]] ?? '') : '';
       if (!clarification && !justification) continue;
       out[m[1]] = { description: m[2], unit: ui >= 0 ? clean(r[ui] ?? '') || undefined : undefined, clarification, justification };
     }

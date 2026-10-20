@@ -731,3 +731,6 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fn-letter .fn-meta th { text-align: left; width: 130px; vertical-align: top; } .fn-letter .fn-no { width: 48px; } .fn-letter .fn-salute { width: 220px; display: inline-block; }
 .fn-letter .fn-addr { width: 60%; } .fn-letter .fn-line { margin: 6px 0; } .fn-letter .fn-ann { font-size: 11px; } .fn-letter .fn-ann tr.fn-h td { font-weight: 700; background: var(--bg-2, #f2f2f2); }
 .fn-letter .fn-ann tr.fn-sub td { font-weight: 700; } .fn-letter .fn-ann tr.fn-ch td { background: color-mix(in srgb, var(--warn) 10%, transparent); } .fn-letter .fn-annex { margin-top: 24px; }
+.bv-tl { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; } .bv-tl li { display: grid; gap: 2px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 180px; font-size: 13px; position: relative; }
+.bv-tl li:not(:last-child)::after { content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); color: var(--ink-3); } .bv-tl li.now { border-color: var(--c1); box-shadow: 0 0 0 1px var(--c1) inset; }
+.bv-tl input[type=date] { font-size: 12px; padding: 1px 4px; } .bv tr.bv-over td { background: color-mix(in srgb, var(--critical) 8%, transparent); }

@@ -1,3 +1,4 @@
+import { BudgetVersions } from '../ui/BudgetVersions';
 import { exportOk } from '../ui/exportGate';
 import { CrossDocsCard } from '../ui/CrossDocsCard';
 import { ForecastDialog } from '../ui/ForecastDialog';
@@ -104,7 +105,7 @@ export function ProjectPage({ id }: { id: string }) {
       {tab === 'Annual plan' && <AnnualPlanCard p={p} />}
       {tab === 'Scenario' && <><ScenarioCompare p={p} /><div style={{ marginTop: '16px' }} /><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
       {tab === 'Forecast' && <ForecastEditor p={p} />}
-      {tab === 'Revision' && <div class="grid g-12"><Revision p={p} /></div>}
+      {tab === 'Revision' && <div class="grid g-12"><BudgetVersions p={p} /><Revision p={p} /></div>}
       {tab === 'Closure' && <Closure p={p} />}
       {tab === 'History' && <History project={p.code} />}
     </>
