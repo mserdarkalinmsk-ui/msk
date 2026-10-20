@@ -1,3 +1,4 @@
+import { takeStamp } from './stamp';
 import { saveFile } from './save';
 import { pngData, zip } from './xlsxwrite';
 
@@ -64,6 +65,7 @@ const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/mai
 
 /** Saves an element (e.g. the report studio document) as an editable Word document; `logos` (PNG data URLs) go in the page header, first left, second right. */
 export function downloadDocx(name: string, el: HTMLElement, title: string, logos: (string | undefined)[] = []) {
+  const stamp = takeStamp();
   const body = blocks(el), L = pngs(logos);
   const header = L.length ? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${NS}><w:p><w:pPr>${L.length === 1 ? '<w:jc w:val="center"/>' : '<w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs>'}</w:pPr>${L.map((x, i) => (i ? '<w:r><w:tab/></w:r>' : '') + pic(i, x.w, x.h)).join('')}</w:p></w:hdr>` : '';
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:lang w:val="en-GB"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
@@ -79,7 +81,7 @@ export function downloadDocx(name: string, el: HTMLElement, title: string, logos
     { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>' },
     { name: 'word/_rels/document.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${header ? '<Relationship Id="rHdr" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' : ''}</Relationships>` },
     ...(header ? [{ name: 'word/header1.xml', data: header }, { name: 'word/_rels/header1.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${L.map((_, i) => `<Relationship Id="rLogo${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo${i + 1}.png"/>`).join('')}</Relationships>` }, ...L.map((x, i) => ({ name: `word/media/logo${i + 1}.png`, data: x.bytes }))] : []),
-    { name: 'docProps/core.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${esc(title)}</dc:title></cp:coreProperties>` },
+    { name: 'docProps/core.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${esc(title)}</dc:title>${stamp ? `<dc:description>${esc(stamp)}</dc:description>` : ''}</cp:coreProperties>` },
     { name: 'word/styles.xml', data: styles },
     { name: 'word/document.xml', data: doc },
   ]);

@@ -11,7 +11,7 @@ import type { Project } from './types';
 /** The records behind a finding, shown as a table, and the project tab where they can be looked at. */
 export interface Detail { title: string; cols: string[]; rows: (string | number)[][]; num?: number[] }
 export type Tab = 'Summary' | 'Financial report' | 'Budget lines' | 'Reports' | 'Staff';
-export interface Integrity { level: 'warn' | 'bad'; text: string; where: string; tab?: Tab; detail?: Detail }
+export interface Integrity { level: 'info' | 'warn' | 'bad'; text: string; where: string; tab?: Tab; detail?: Detail }
 const eur = (v: number) => `€${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const n2 = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z]/g, '');
 
@@ -47,12 +47,17 @@ export function integrity(p: Project, today: Date): Integrity[] {
   for (let i = 1; i < R.length; i++) {
     const a = R[i - 1].snapshot!.lines.reduce((s, l) => s + n(l.actual), 0), b = R[i].snapshot!.lines.reduce((s, l) => s + n(l.actual), 0);
     const prev = (code: string) => R[i - 1].snapshot!.lines.find((x) => x.code === code);
-    const lower = R[i].snapshot!.lines.filter((l) => { const o = prev(l.code); return o && n(l.actual) < n(o.actual) - 1; });
-    const det = (lim: number): Detail => ({ title: `Spent by line: ${R[i - 1].name} (${R[i - 1].date}) → ${R[i].name} (${R[i].date})`, cols: ['Line', 'Description', 'Before', 'After', 'Change'], num: [2, 3, 4],
-      rows: lower.filter((l) => n(prev(l.code)!.actual) - n(l.actual) > lim).map((l) => [l.code, l.description ?? '', n(prev(l.code)!.actual), n(l.actual), n(l.actual) - n(prev(l.code)!.actual)]) });
-    if (b < a - 1) add('warn', `Spent goes down from ${eur(a)} (${R[i - 1].date}) to ${eur(b)} (${R[i].date}) — a correction, or a report of another project`, 'Reports', 'Reports', det(1));
-    const down = lower.filter((l) => n(prev(l.code)!.actual) - n(l.actual) > 1000);
-    if (b >= a - 1 && down.length) add('warn', `${R[i].date}: spent lower than in the previous report on ${down.slice(0, 4).map((l) => l.code).join(', ')}${down.length > 4 ? '…' : ''} — entries moved between lines`, 'Reports', 'Reports', det(1000));
+    const ch = R[i].snapshot!.lines.map((l) => ({ l, d: n(l.actual) - n(prev(l.code)?.actual) })).filter((x) => Math.abs(x.d) > 1);
+    const down = ch.filter((x) => x.d < 0), up = ch.filter((x) => x.d > 0);
+    if (!down.length) continue;
+    const out_ = -down.reduce((s, x) => s + x.d, 0), in_ = up.reduce((s, x) => s + x.d, 0);
+    const det: Detail = { title: `Spent by line: ${R[i - 1].name} (${R[i - 1].date}) → ${R[i].name} (${R[i].date})`, cols: ['Line', 'Description', 'Before', 'After', 'Change'], num: [2, 3, 4],
+      rows: [...down, ...up.sort((a, b) => b.d - a.d)].map(({ l, d }) => [l.code, l.description ?? '', n(prev(l.code)?.actual), n(l.actual), d]) };
+    const codes = (X: typeof ch) => `${X.slice(0, 4).map((x) => x.l.code).join(', ')}${X.length > 4 ? '…' : ''}`;
+    if (b < a - 1) add('warn', `Spent goes down from ${eur(a)} (${R[i - 1].date}) to ${eur(b)} (${R[i].date}) — a correction, or a report of another project`, 'Reports', 'Reports', det);
+    // Lines lower than before while others rose by at least as much: entries moved between lines (reclassification).
+    else if (out_ <= in_ + 1) { if (out_ > 1000) add('info', `${R[i].date}: ${eur(out_)} reclassified from ${codes(down)} to other lines (${codes(up)}) — spent did not go down in total`, 'Reports', 'Reports', det); }
+    else add('warn', `${R[i].date}: spent lower than in the previous report on ${codes(down)} by ${eur(out_)}, only ${eur(in_)} rose elsewhere — ${eur(out_ - in_)} not explained by a move between lines`, 'Reports', 'Reports', det);
   }
 
   // The same person under two names (same surname, first names one letter apart) on different lines.

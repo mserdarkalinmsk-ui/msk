@@ -1,3 +1,4 @@
+import { exportOk } from '../ui/exportGate';
 import { ending } from '../domain/cash';
 import { useState } from 'preact/hooks';
 import { filtered, set, useStore } from '../data/store';
@@ -38,8 +39,8 @@ export function Studio() {
   const end = R.find((r) => r.id === to) ?? R.at(-1), start = R.find((r) => r.id === from) ?? R[R.indexOf(end!) - 1];
   const toggle = (k: Sec) => { const n = { ...on, [k]: !on[k] }; setOn(n); try { localStorage.setItem('pl-studio-s', JSON.stringify(n)); } catch { /* */ } };
   const D = build(p, end, start);
-  const docx = () => { const el = document.querySelector('.studio-doc') as HTMLElement | null; if (el) void downloadDocx(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.docx`, el, `${p.code} progress report`); };
-  const xlsx = () => download(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.xlsx`, D.sheets.filter((x) => on[x.sec]).map(({ sec: _, ...x }) => x));
+  const docx = () => { const el = document.querySelector('.studio-doc') as HTMLElement | null; if (el && exportOk(p, 'the report')) void downloadDocx(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.docx`, el, `${p.code} progress report`); };
+  const xlsx = () => exportOk(p, 'the report') && download(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.xlsx`, D.sheets.filter((x) => on[x.sec]).map(({ sec: _, ...x }) => x));
   return (
     <div class="studio">
       <aside class="card studio-c no-print">

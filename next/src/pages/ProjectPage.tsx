@@ -1,3 +1,4 @@
+import { exportOk } from '../ui/exportGate';
 import { CrossDocsCard } from '../ui/CrossDocsCard';
 import { ForecastDialog } from '../ui/ForecastDialog';
 import { ForecastEditor } from './ForecastEditor';
@@ -66,10 +67,10 @@ export function ProjectPage({ id }: { id: string }) {
           <button class="btn" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
-          <button class="btn" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
+          <button class="btn" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => exportOk(p, 'the Excel') && download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
           <button class="btn" title="Forecast request in the CoE templates: choose JP or VC and the template (revision with payment, 12-month, revision and extension, extension with details). Load it back through Import report." onClick={() => setFc(true)}>⤓ Forecast Excel</button>
-          <button class="btn" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
-          <button class="btn" onClick={() => print()}>⎙ PDF</button>
+          <button class="btn" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => exportOk(p, 'the audit pack') && download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
+          <button class="btn" onClick={() => exportOk(p, 'the PDF') && print()}>⎙ PDF</button>
           <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>
       </div>

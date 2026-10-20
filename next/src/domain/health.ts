@@ -73,7 +73,7 @@ export function health(p: Project, today: Date): Health {
   const D = p.documents ?? [], dupD = D.filter((d, i) => D.some((x, k) => k < i && sameDoc(x.name, d.name)));
   if (dupD.length) add('warn', `${dupD.length} document${dupD.length > 1 ? 's' : ''} uploaded twice (${dupD.map((d) => d.name).slice(0, 2).join(', ')})`, 'dedupe-docs');
 
-  for (const x of integrity(p, today)) add(x.level, `${x.where}: ${x.text}`, 'reports', x.tab, x.detail);
+  for (const x of integrity(p, today)) add(x.level === 'info' ? 'ok' : x.level, `${x.where}: ${x.text}`, 'reports', x.tab, x.detail);
 
   const level: Level = F.some((f) => f.level === 'bad') ? 'bad' : F.some((f) => f.level === 'warn') ? 'warn' : 'ok';
   return { p, level, findings: F.sort((a, b) => ['bad', 'warn', 'ok'].indexOf(a.level) - ['bad', 'warn', 'ok'].indexOf(b.level)) };
