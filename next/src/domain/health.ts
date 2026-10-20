@@ -31,8 +31,6 @@ export function health(p: Project, today: Date): Health {
   if (!last) add('warn', 'No financial report loaded yet', 'report');
   else {
     const age = (today.getTime() - parseDate(last.date).getTime()) / 864e5;
-    const later = R.filter((r) => r !== last && r.snapshot?.lines?.length && r.date > last.date).sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (later) add('warn', `The last report loaded (${last.name}, ${last.date}) covers an earlier period than ${later.name} (${later.date}) — it is used as the latest; delete it if it was loaded by mistake`, 'reports', 'Reports');
     if (age > 120) add('warn', `Latest report is ${Math.round(age / 30)} months old (${last.date})`, 'report');
     if (wb && isExtraction(last.snapshot)) {
       // A system extraction has no totals block: check that every entry landed on a line instead.

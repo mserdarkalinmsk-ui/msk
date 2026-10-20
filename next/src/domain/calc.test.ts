@@ -169,9 +169,13 @@ describe('forecast rate', () => {
 import { latestReport as _latest } from './calc';
 describe('latest report', () => {
   const rep = (id: string, date: string, at?: string) => ({ id, name: id, type: 'Interim Financial Report', date, registeredAt: at, snapshot: { lines: [{ code: '1.1', approved: 1, actual: 1 }] } });
-  it('is the last one loaded, whatever its period', () => {
+  it('is the one of the latest period, even when an older one is loaded after it', () => {
     const p = { reportingPeriods: [rep('a', '2026-09-30', '2026-10-01T10:00:00Z'), rep('b', '2026-06-30', '2026-10-05T10:00:00Z')] } as unknown as Project;
-    expect(_latest(p)?.id).toBe('b');
+    expect(_latest(p)?.id).toBe('a');
+  });
+  it('within one month, the last one loaded', () => {
+    const p = { reportingPeriods: [rep('a', '2026-09-30', '2026-10-05T10:00:00Z'), rep('b', '2026-09-15', '2026-10-01T10:00:00Z')] } as unknown as Project;
+    expect(_latest(p)?.id).toBe('a');
   });
   it('falls back to the period when the reports have no load time', () => {
     const p = { reportingPeriods: [rep('a', '2026-09-30'), rep('b', '2026-06-30')] } as unknown as Project;
