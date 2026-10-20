@@ -358,6 +358,11 @@ export function setBrand(brand: Ledger['brand'] | null) {
   const L = draft(state.ledger); if (brand) L.brand = brand; else delete L.brand;
   commit(L, brand ? 'Name and logo saved' : 'Name and logo removed');
 }
+/** Records the close of a month (replaces an earlier close of the same month). */
+export function saveClose(rec: import('../domain/close').CloseRecord) {
+  const L = draft(state.ledger); L.closes = [rec, ...(L.closes ?? []).filter((c) => c.month !== rec.month)].slice(0, 36);
+  commit(L, `Month ${rec.month} closed`);
+}
 /** Remembers how a file format is read (block roles, document type); null forgets it. */
 export function setFormat(key: string, f: { roles?: Record<string, string>; type?: string } | null) {
   const L = draft(state.ledger), m = { ...(L.formats ?? {}) };
