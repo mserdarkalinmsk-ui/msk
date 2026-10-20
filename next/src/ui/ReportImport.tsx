@@ -1,6 +1,7 @@
 import { FORMAT, REPORT_TYPES } from '../domain/terms';
 import { useEffect, useState } from 'preact/hooks';
-import { checkpoint, get, setFormat, upsertReport, upsertRisk, useStore } from '../data/store';
+import { checkpoint, deleteReport, get, isAdmin, setFormat, upsertReport, upsertRisk, useStore } from '../data/store';
+import { budgetOnly } from '../domain/calc';
 import { docType, formatKey } from '../domain/doctype';
 import { checkReport, compareReports, reportsByDate, reportTotals } from '../domain/calc';
 import type { BudgetLine, Project, ReportingPeriod, Risk } from '../domain/types';
@@ -73,6 +74,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const [manual, setManual] = useState(false);
   const [saveIds, setSaveIds] = useState(true);
   const [bulk, setBulk] = useState<File[] | null>(null);
+  const [replace, setReplace] = useState(true);
   const [sheets, setSheets] = useState<{ name: string; R: string[][] }[] | null>(null);
   const formats = useStore((s) => s.ledger.formats);
   useEffect(() => { if (pending) { const f = pending; pending = null; open(f); } }, []);
@@ -141,6 +143,9 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   const asBudget = useCoe && meta.type === 'Latest Approved Budget' && !coe!.lines.some((l) => (l.actual.cost ?? 0) !== 0);
   if (asBudget && p.approvedBudget) checks.unshift({ level: 'warning', text: `Replaces the approved budget ${full(p.approvedBudget.total)} (${p.approvedBudget.source}) with ${full(coe!.totals.eligible?.budget ?? lines.reduce((a, l) => a + (l.approved ?? 0), 0))} from this file` });
   const prev = reportsByDate(p).filter((r) => r.date <= report.date).at(-1);
+  // Reports that would stay ahead of this one (a later month), and earlier copies of the same file: offered for replacement.
+  const fileKey = (n?: string) => (n ?? '').toLowerCase().replace(/^[0-9a-f]{8}-/, '').replace(/\s*\(\d+\)(?=\.[a-z]+$)/, '');
+  const ahead = file && !asBudget ? (p.reportingPeriods ?? []).filter((r) => r.snapshot?.lines?.length && !budgetOnly(r) && (r.date.slice(0, 7) > report.date.slice(0, 7) || (fileKey(r.fileName) && fileKey(r.fileName) === fileKey(file.name)))) : [];
   const t = reportTotals(report);
   const delta = prev ? compareReports(prev, report) : [];
 
@@ -186,6 +191,12 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
                 ))}
               </div>
             </section>}
+            {ahead.length > 0 && <section class="card card-b ri-ahead">
+              <b>{ahead.length === 1 ? 'Another report would stay the latest' : `${ahead.length} other reports would stay ahead of this one`}</b>
+              <ul>{ahead.map((r) => <li>{r.name} · {date(r.date)}{r.fileName ? ` · ${r.fileName}` : ''}{fileKey(r.fileName) === fileKey(file.name) ? ' — an earlier copy of this file' : ' — a later month'}</li>)}</ul>
+              <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px' }}><input type="checkbox" checked={replace} onChange={() => setReplace(!replace)} />Replace {ahead.length === 1 ? 'it' : 'them'} with this file (they go to the trash; the admin password is asked)</label>
+              {!replace && <span class="muted" style={{ fontSize: '12px' }}>Kept: the screens keep showing {ahead.at(-1)!.name}, not this file.</span>}
+            </section>}
             <section class="card">
               <div class="card-h"><div><h2>Preview</h2><p>{lines.length} lines{staff?.records.length ? ` · ${staff.records.filter((r) => r.name).length} staff records${staff.records.some((r) => r.review) ? ` (${staff.records.filter((r) => r.review).length} to review)` : ''}` : ''} · approved {short(t.approved)} · spent {short(t.actual)}{prev ? ` (${t.actual >= reportTotals(prev).actual ? '+' : '−'}${short(Math.abs(t.actual - reportTotals(prev).actual))} since ${prev.name})` : ''}</p></div></div>
               {checks.length > 0 && <ul class="att" style={{ marginTop: '10px' }}>{checks.slice(0, 12).map((c) => <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : 'warning'}`}>{c.level}</span><div class="d" style={{ color: 'var(--ink)' }}>{c.text}</div><span /></li>)}</ul>}
@@ -205,6 +216,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
         <button class="btn" onClick={close}>Cancel</button>
         <button class="btn primary" disabled={!file || errors.length > 0} onClick={() => {
           void checkpoint(`Before importing ${report.name}`);
+          if (replace && ahead.length) { if (!isAdmin()) return; for (const r of ahead) deleteReport(p.id, r.id); }
           // A budget (proposal or approved, no spending) becomes the project's approved budget, not a report: as a report it
           // would be the latest one and show nothing spent.
           if (asBudget) {
