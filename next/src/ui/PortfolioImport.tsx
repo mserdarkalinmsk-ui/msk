@@ -1,7 +1,8 @@
+import { mergeReports, receiptText } from '../domain/merge_reports';
 import { useEffect, useState } from 'preact/hooks';
-import { get, updateProject } from '../data/store';
-import { idConflicts, reportDate, reportFrom } from '../domain/autoimport';
-import type { Project, ReportingPeriod } from '../domain/types';
+import { get, toast, updateProject } from '../data/store';
+import { idConflicts, reportDate } from '../domain/autoimport';
+import type { Project } from '../domain/types';
 import type { Workbook } from '../domain/workbook';
 import { date, full } from './format';
 import { readCoe } from './ReportImport';
@@ -37,16 +38,13 @@ export function PortfolioImport({ files, close }: { files: File[]; close: () => 
   const ok = rows?.filter((r) => r.p && r.wb) ?? [];
   const apply = () => {
     const by = new Map<string, Row[]>(); for (const r of ok) by.set(r.p!.id, [...(by.get(r.p!.id) ?? []), r]);
+    const msgs: string[] = [];
     for (const [id, R0] of by) {
       const p = get().ledger.projects.find((x) => x.id === id)!;
-      const R: ReportingPeriod[] = [...(p.reportingPeriods ?? [])];
-      for (const r of R0.sort((a, b) => a.date.localeCompare(b.date))) {
-        const { report } = reportFrom(r.wb!, r.file.name, { ...p, reportingPeriods: R });
-        const i = R.findIndex((x) => x.id === report.id); if (i >= 0) R[i] = report; else R.push(report);
-      }
-      R.sort((a, b) => a.date.localeCompare(b.date));
-      updateProject(id, { reportingPeriods: R });
+      const { patch, receipt } = mergeReports(p, R0.map((r) => ({ wb: r.wb!, fileName: r.file.name })));
+      updateProject(id, patch); msgs.push(receiptText(receipt));
     }
+    if (msgs.length) toast(msgs.length > 3 ? `${msgs.length} projects updated — ${msgs.slice(0, 2).join(' · ')}…` : msgs.join(' · '));
     close();
   };
   return (
