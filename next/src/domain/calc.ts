@@ -15,11 +15,11 @@ export const byPeriodThenImport = (a: ReportingPeriod, b: ReportingPeriod) => {
 };
 
 export function latestReport(p: Project): ReportingPeriod | undefined {
-  return [...(p.reportingPeriods ?? [])]
-    .filter((r) => r.snapshot?.lines?.length)
-    .sort(byPeriodThenImport)
-    .at(-1);
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length).sort(byPeriodThenImport);
+  return R.filter((r) => !budgetOnly(r)).at(-1) ?? (p.approvedBudget ? undefined : R.at(-1));
 }
+/** A budget saved as a report (no spending at all): not a report of spending, so never the latest one. */
+export const budgetOnly = (r: ReportingPeriod) => /approved budget/i.test(r.type ?? '') && !r.snapshot!.lines.some((l) => n(l.actual) !== 0 || n(l.spentCommitted) !== 0);
 
 // Every screen asks for the same project's lines many times per render: remember them per project object,
 // re-reading when its reports or approved budget change (edits replace these, so a stale read cannot survive).
