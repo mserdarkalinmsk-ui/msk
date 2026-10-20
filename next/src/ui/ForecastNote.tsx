@@ -1,3 +1,4 @@
+import { exportOk } from './exportGate';
 import { useRef, useState } from 'preact/hooks';
 import { setBrand, updateProject, useStore } from '../data/store';
 import { computePlan, effective, type ForecastDraft } from '../domain/forecastPlan';
@@ -29,15 +30,16 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
   const base = forecastFileName(p, country, TODAY, opt, 'donor').replace(/\.xlsx$/, '').replace('Revised Budget proposal', 'Revision note');
   const logos = [brand?.logo, brand?.logo2];
   const pick = async (k: 'logo' | 'logo2', f?: File) => { if (!f) return; if (!/^image\//.test(f.type)) return setErr('Choose an image (PNG, JPG or SVG)'); setErr(''); setBrand({ ...(brand ?? {}), [k]: await shrink(f) }); };
-  const word = () => { if (doc.current) void downloadDocx(`${base}.docx`, doc.current, `Revision note — ${p.name}`, logos); };
+  const word = () => { if (doc.current && exportOk(p, 'the revision note')) void downloadDocx(`${base}.docx`, doc.current, `Revision note — ${p.name}`, logos); };
   const pdf = () => {
+    if (!exportOk(p, 'the revision note')) return;
     const w = window.open('', '_blank'); if (!w || !doc.current) return setErr('Allow pop-ups to print the PDF');
     const shown = logos.filter(Boolean), head = shown.map((u, i) => `<img src="${u}" style="height:15mm;${i ? 'margin-left:auto' : shown.length > 1 ? 'margin-right:auto' : ''}">`).join('');
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${base}</title><style>@page{size:A4;margin:16mm}body{font:10.5pt Calibri,Arial,sans-serif;color:#1f2937}h1{font-size:17pt;margin:0 0 4mm}h2{font-size:12.5pt;color:#1d4e89;border-bottom:1px solid #c9ced6;padding-bottom:1mm;margin:6mm 0 2mm}table{border-collapse:collapse;width:100%;margin:2mm 0 3mm}th,td{border:1px solid #c9ced6;padding:1.2mm 2mm;text-align:left;vertical-align:top}th{background:#e8eef6}.r{text-align:right;white-space:nowrap}.hd{display:flex;align-items:center;justify-content:center;margin-bottom:6mm}.no-print{display:none}p{margin:1.5mm 0}</style>${end('head')}<body><div class="hd">${head}</div>${doc.current.innerHTML.replace(/<textarea[^>]*>([\s\S]*?)<\/textarea>/g, '<p>$1</p>')}${end('body')}${end('html')}`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
   const [rk, setRk] = useState<'interim' | 'final'>(() => (p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim')), [withOrig, setWithOrig] = useState(!!opt.change);
-  const ifr = () => download(forecastFileName(p, country, TODAY, opt).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${rk === 'final' ? 'Final' : 'Interim'} financial report-$1`),
+  const ifr = () => exportOk(p, 'the financial report') && download(forecastFileName(p, country, TODAY, opt).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${rk === 'final' ? 'Final' : 'Interim'} financial report-$1`),
     [ifrSheet(p, TODAY, opt, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind: rk, withOriginal: rk === 'final' && withOrig })]);
   const just = (code: string) => E.just?.[code] ?? '';
   return (

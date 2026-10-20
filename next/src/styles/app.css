@@ -339,6 +339,7 @@ table.stmt { width: 100%; border-collapse: separate; border-spacing: 0; font-siz
 .stmt tr.over td:not(.pin) { color: var(--critical); }
 .stmt td.warn { color: var(--warn); font-weight: 700; } .stmt td.up { color: var(--serious); } .stmt td.down { color: var(--good); }
 .stmt td.src { cursor: help; } .stmt td.src:hover { text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; }
+.btn.selfcheck { background: var(--critical); color: #fff; border-color: var(--critical); font-weight: 700; }
 .hl-dlg { width: min(860px, calc(100vw - 32px)); } .hl-dlg tr.hl-same td:first-child { color: transparent; } .hl-l .hl-show { font-weight: 600; }
 .xdocs tr.xd-bad td { background: color-mix(in srgb, var(--warn) 8%, transparent); } .xdocs .xd-ok { color: var(--good); font-weight: 700; }
 .stmt .tw { display: inline-block; width: 16px; border: 0; background: none; padding: 0; cursor: pointer; color: var(--ink-3); font-size: 11px; }

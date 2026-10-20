@@ -1,3 +1,4 @@
+import { SelfCheck } from './ui/SelfCheck';
 import { WeekDigest } from './ui/WeekDigest';
 import { render } from 'preact';
 import './styles/tokens.css';
@@ -51,6 +52,7 @@ function App() {
   const crumb = head === 'project' ? <a class="crumb-link" href="#/projects" onClick={(e) => { e.preventDefault(); go('projects'); }}>Projects /</a> : null;
   const nAlerts = useStore((s) => (s.ready ? urgent(s.ledger.projects) : 0));
   const actions = (<>
+    <SelfCheck />
     <button class="btn ghost bell" title="Alert centre" aria-label={`${nAlerts} urgent alerts`} onClick={() => go('reports/alerts')}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4" /></svg>
       {nAlerts > 0 && <span class="bell-n">{nAlerts}</span>}

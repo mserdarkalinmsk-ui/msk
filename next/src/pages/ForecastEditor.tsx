@@ -1,3 +1,4 @@
+import { exportOk } from '../ui/exportGate';
 import { useState } from 'preact/hooks';
 import { toast, updateProject, useStore } from '../data/store';
 import { autoLine, autofillStaff, balanceOn, computePlan, effective, resolvedLines, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
@@ -33,7 +34,7 @@ export function ForecastEditor({ p }: { p: Project }) {
   const twelve = d.opt.kind === 'twelve';
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
   const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (R.decision === 'addendum' ? 'addendum' : 'notification')) : undefined, balance: plug ?? undefined };
-  const xlsx = (mode: ForecastMode) => download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, E), mode));
+  const xlsx = (mode: ForecastMode) => exportOk(p, 'the forecast') && download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, E), mode));
   // Units that look like a rate typed in the wrong box: more months than the period has for a monthly line, or far more
   // than the budget has left.
   const odd = (l: (typeof R.lines)[number], b: BlockId): string | null => {

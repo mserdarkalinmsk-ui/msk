@@ -37,7 +37,7 @@ export function HealthPage() {
       <div class="hl-grid">{H.map((h) => (
         <section class="card hl" style={{ borderTopColor: C[h.level] }}>
           <div class="hl-h"><button class="linkish" onClick={() => go(`project/${h.p.id}`)}><b>{h.p.bh ? `BH ${h.p.bh}` : h.p.code}</b> <span class="muted">{h.p.name}</span></button><span class="hl-pill" style={{ background: C[h.level] }}>{W[h.level]}</span></div>
-          <ul class="hl-l">{h.findings.map((f) => <li class={`hl-${f.level}`}><i style={{ background: C[f.level] }}>{ICON[f.level]}</i><span>{f.text}</span>{f.level !== 'ok' && f.detail?.rows.length ? <button class="btn ghost hl-show" onClick={() => setOpen({ p: h.p, f })}>Show {f.detail.rows.length} →</button>
+          <ul class="hl-l">{h.findings.map((f) => <li class={`hl-${f.level}`}><i style={{ background: C[f.level] }}>{ICON[f.level]}</i><span>{f.text}</span>{f.detail?.rows.length ? <button class="btn ghost hl-show" onClick={() => setOpen({ p: h.p, f })}>Show {f.detail.rows.length} →</button>
             : f.level !== 'ok' && f.fix && <button class="btn ghost" onClick={() => act(h.p.id, f)}>{label(f)} →</button>}</li>)}</ul>
         </section>))}</div>
       {open && <FindingDialog p={open.p} f={open.f} tab={tabOf(open.f)} close={() => setOpen(null)} goTab={goTab} />}
