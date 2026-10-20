@@ -9,9 +9,17 @@ import { shrink } from './Appearance';
 import { downloadDocx } from './docxwrite';
 import { date, full } from './format';
 import { download, pngData } from './xlsxwrite';
+import { NotificationLetter } from './NotificationLetter';
 
 // Closing tags built at run time: a literal one in the bundle would be taken for the page's own by the single-file build.
 const end = (t: string) => `<${String.fromCharCode(47)}${t}>`;
+/** The document as HTML with the typed text in place of the form fields (innerHTML does not carry their values). */
+function printable(el: HTMLElement) {
+  const c = el.cloneNode(true) as HTMLElement, src = el.querySelectorAll('textarea, input');
+  c.querySelectorAll('textarea, input').forEach((f, i) => { const v = (src[i] as HTMLInputElement).value, s = document.createElement(f.tagName === 'TEXTAREA' ? 'div' : 'span'); s.textContent = v; if (f.tagName === 'TEXTAREA') s.style.whiteSpace = 'pre-wrap'; f.replaceWith(s); });
+  c.querySelectorAll('.no-print').forEach((x) => x.remove());
+  return c.innerHTML;
+}
 const pc = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v * 100).toFixed(2)}%`;
 
 /**
@@ -23,11 +31,12 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
   const country = countries.find((c) => c.id === p.country)?.name ?? '';
   const E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), per = forecastPeriod(p, TODAY, opt);
   const doc = useRef<HTMLDivElement>(null), [err, setErr] = useState('');
+  const [dk, setDk] = useState<'letter' | 'note'>(() => (R.decision === 'notification' || opt.change === 'notification' ? 'letter' : 'note'));
   const save = (x: Partial<ForecastDraft>) => updateProject(p.id, { forecastDraft: { ...d, ...x, updatedAt: new Date().toISOString() } });
   const heads = R.heads.filter((h) => h.baseline || h.rounded), moved = heads.filter((h) => Math.abs(h.rounded - h.baseline) >= 0.005);
   const what = opt.change ? `${opt.change === 'addendum' ? 'Addendum' : 'Notification'} n°${opt.changeNo ?? '…'}` : FORECAST_KINDS[opt.kind].label;
   const id = [p.jp && `JP ${p.jp}`, p.pmm && `VC ${p.pmm}`, p.bh && `BH ${p.bh}`].filter(Boolean).join(' · ') || p.code;
-  const base = forecastFileName(p, country, TODAY, opt, 'donor').replace(/\.xlsx$/, '').replace('Revised Budget proposal', 'Revision note');
+  const base = forecastFileName(p, country, TODAY, opt, 'donor').replace(/\.xlsx$/, '').replace('Revised Budget proposal', dk === 'letter' ? 'Notification letter' : 'Revision note');
   const logos = [brand?.logo, brand?.logo2];
   const pick = async (k: 'logo' | 'logo2', f?: File) => { if (!f) return; if (!/^image\//.test(f.type)) return setErr('Choose an image (PNG, JPG or SVG)'); setErr(''); setBrand({ ...(brand ?? {}), [k]: await shrink(f) }); };
   const word = () => { if (doc.current && exportOk(p, 'the revision note')) void downloadDocx(`${base}.docx`, doc.current, `Revision note — ${p.name}`, logos); };
@@ -35,7 +44,7 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
     if (!exportOk(p, 'the revision note')) return;
     const w = window.open('', '_blank'); if (!w || !doc.current) return setErr('Allow pop-ups to print the PDF');
     const shown = logos.filter(Boolean), head = shown.map((u, i) => `<img src="${u}" style="height:15mm;${i ? 'margin-left:auto' : shown.length > 1 ? 'margin-right:auto' : ''}">`).join('');
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${base}</title><style>@page{size:A4;margin:16mm}body{font:10.5pt Calibri,Arial,sans-serif;color:#1f2937}h1{font-size:17pt;margin:0 0 4mm}h2{font-size:12.5pt;color:#1d4e89;border-bottom:1px solid #c9ced6;padding-bottom:1mm;margin:6mm 0 2mm}table{border-collapse:collapse;width:100%;margin:2mm 0 3mm}th,td{border:1px solid #c9ced6;padding:1.2mm 2mm;text-align:left;vertical-align:top}th{background:#e8eef6}.r{text-align:right;white-space:nowrap}.hd{display:flex;align-items:center;justify-content:center;margin-bottom:6mm}.no-print{display:none}p{margin:1.5mm 0}</style>${end('head')}<body><div class="hd">${head}</div>${doc.current.innerHTML.replace(/<textarea[^>]*>([\s\S]*?)<\/textarea>/g, '<p>$1</p>')}${end('body')}${end('html')}`);
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${base}</title><style>@page{size:A4;margin:16mm}body{font:10.5pt Calibri,Arial,sans-serif;color:#1f2937}h1{font-size:17pt;margin:0 0 4mm}h2{font-size:12.5pt;color:#1d4e89;border-bottom:1px solid #c9ced6;padding-bottom:1mm;margin:6mm 0 2mm}table{border-collapse:collapse;width:100%;margin:2mm 0 3mm}th,td{border:1px solid #c9ced6;padding:1.2mm 2mm;text-align:left;vertical-align:top}th{background:#e8eef6}.r{text-align:right;white-space:nowrap}.hd{display:flex;align-items:center;justify-content:center;margin-bottom:6mm}.no-print{display:none}p{margin:1.5mm 0}</style>${end('head')}<body><div class="hd">${head}</div>${printable(doc.current)}${end('body')}${end('html')}`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
   const [rk, setRk] = useState<'interim' | 'final'>(() => (p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim')), [withOrig, setWithOrig] = useState(!!opt.change);
@@ -69,7 +78,8 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
             <button class="btn" onClick={ifr}>⤓ {rk === 'interim' ? 'Interim' : 'Final'} financial report</button>
           </div>
 
-          <div class="fn-doc" ref={doc}>
+          <div class="seg fn-dk" style={{ justifySelf: 'start' }}><button aria-pressed={dk === 'letter'} onClick={() => setDk('letter')}>Notification letter</button><button aria-pressed={dk === 'note'} onClick={() => setDk('note')}>Revision note</button></div>
+          {dk === 'letter' ? <div class="fn-doc fn-letter" ref={doc}><NotificationLetter p={p} E={E} R={R} opt={opt} save={save} /></div> : <div class="fn-doc" ref={doc}>
             <h1>Budget revision — {what}</h1>
             <table><tbody>
               <tr><th>Project</th><td>{p.name}</td></tr>
@@ -108,7 +118,7 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
               <tbody><tr><td><input class="fn-sig" placeholder="name, title" value={E.sign?.by ?? ''} onChange={(e) => save({ sign: { ...E.sign, by: (e.target as HTMLInputElement).value } })} /></td>
                 <td><input class="fn-sig" placeholder="name, title" value={E.sign?.ok ?? ''} onChange={(e) => save({ sign: { ...E.sign, ok: (e.target as HTMLInputElement).value } })} /></td></tr>
                 <tr><td>Date / signature:</td><td>Date / signature:</td></tr></tbody></table>
-          </div>
+          </div>}
         </div>
         <div class="fe-dl" style={{ position: 'sticky', bottom: 0 }}>
           <span class="muted">{base}</span>

@@ -728,3 +728,6 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .mc-gen { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; } .mc-gen li { margin-bottom: 4px; }
 .mc-hist { margin-top: 14px; }
 .mc-step .drop { display: block; position: relative; text-align: center; padding: 22px; }
+.fn-letter .fn-meta th { text-align: left; width: 130px; vertical-align: top; } .fn-letter .fn-no { width: 48px; } .fn-letter .fn-salute { width: 220px; display: inline-block; }
+.fn-letter .fn-addr { width: 60%; } .fn-letter .fn-line { margin: 6px 0; } .fn-letter .fn-ann { font-size: 11px; } .fn-letter .fn-ann tr.fn-h td { font-weight: 700; background: var(--bg-2, #f2f2f2); }
+.fn-letter .fn-ann tr.fn-sub td { font-weight: 700; } .fn-letter .fn-ann tr.fn-ch td { background: color-mix(in srgb, var(--warn) 10%, transparent); } .fn-letter .fn-annex { margin-top: 24px; }
