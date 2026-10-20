@@ -1,4 +1,5 @@
 import { lineExposure, lines, n, reportsByDate } from './calc';
+import { crossDocs } from './crossdocs';
 import { roster } from './staff';
 import type { Project } from './types';
 
@@ -51,5 +52,9 @@ export function integrity(p: Project, today: Date): Integrity[] {
     if (Math.abs(x.length - y.length) <= 1 && [...x].filter((c, j) => c !== y[j]).length <= 1) pairs.push(`${a.display} / ${b.display}`);
   }
   if (pairs.length) add('warn', `Possibly the same person under two names: ${pairs.slice(0, 3).join('; ')}`, 'Staff');
+
+  // The same figure in the contract, the approved budget, the project card and the latest report.
+  const X = crossDocs(p).rows.filter((x) => !x.ok);
+  if (X.length) add('warn', `${X.map((x) => x.label).slice(0, 4).join(', ')}${X.length > 4 ? '…' : ''} differ between documents — see "Documents agree?" on the project summary`, 'Documents');
   return out;
 }
