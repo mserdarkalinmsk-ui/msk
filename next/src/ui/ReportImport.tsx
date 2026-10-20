@@ -244,6 +244,7 @@ function CoeSummary({ wb, onManual, fillIds, saveIds, setSaveIds }: { wb: CoeWor
         {m.asAt && <><dt>Actuals as at</dt><dd>{date(m.asAt)}</dd></>}
         {m.plannedFrom && <><dt>Forecast period</dt><dd>{date(m.plannedFrom)} → {date(m.plannedTo!)}</dd></>}
         {e && <><dt>Total eligible</dt><dd class="num">budget {full(e.budget)} · actual {full(e.actual)} · S&C {full(e.sc)}{e.planned != null ? ` · next 12 m ${full(e.planned)}` : ''}</dd></>}
+        {m.secured && <><dt>Secured funding</dt><dd><span class="num">{full(Object.values(m.secured).reduce((a, v) => a + v, 0))}</span> <span class="muted">— budget proposal: funding already secured, not spending (spent stays 0)</span></dd></>}
         <dt>Also read</dt><dd>{[wb.situation.length && 'budget situation', wb.pos.length && `${wb.pos.length} POs (${openPO.length} open)`, wb.monthly.length && `${wb.monthly.length} months of postings`, wb.movements.length && `${wb.movements.filter((x) => x.funding).length} funding movements`, wb.staff.length && `${wb.staff.filter((x) => x.name).length} staff records`].filter(Boolean).join(' · ')}</dd>
         <dt>Sheets</dt><dd class="muted" style={{ fontSize: '12px' }}>{wb.sheets.join(', ')}</dd>
       </dl>
