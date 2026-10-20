@@ -1,7 +1,8 @@
+import { mergeReports, receiptText } from '../domain/merge_reports';
 import { useEffect, useState } from 'preact/hooks';
-import { checkpoint, updateProject } from '../data/store';
-import { idConflicts, reportDate, reportFrom } from '../domain/autoimport';
-import type { Project, ReportingPeriod } from '../domain/types';
+import { checkpoint, toast, updateProject } from '../data/store';
+import { idConflicts, reportDate } from '../domain/autoimport';
+import type { Project } from '../domain/types';
 import type { Workbook } from '../domain/workbook';
 import { date, full } from './format';
 import { readCoe } from './ReportImport';
@@ -36,17 +37,10 @@ export function BulkReports({ p, files, close }: { p: Project; files: File[]; cl
   }, []);
   const good = rows.filter((r) => r.status === 'ok' || r.status === 'replace');
   const apply = () => {
-    const R: ReportingPeriod[] = [...(p.reportingPeriods ?? [])];
     void checkpoint(`Before importing ${good.length} reports`);
-    let q: Project = { ...p };
-    for (const r of good) {
-      const { report } = reportFrom(r.wb!, r.file.name, { ...q, reportingPeriods: R });
-      const i = R.findIndex((x) => x.id === report.id); if (i >= 0) R[i] = report; else R.push(report);
-      const m = r.wb!.meta; q = { ...q, bh: q.bh || m.bh, contractNo: q.contractNo || m.contract, jp: q.jp || m.jp };
-    }
-    R.sort((a, b) => a.date.localeCompare(b.date));
-    const last = good.at(-1)?.wb?.totals.eligible?.budget;
-    updateProject(p.id, { reportingPeriods: R, bh: q.bh, contractNo: q.contractNo, jp: q.jp, ...(!p.approvedBudget && last ? { budget: Math.round(last * 100) / 100 } : {}) });
+    const { patch, receipt } = mergeReports(p, good.map((r) => ({ wb: r.wb!, fileName: r.file.name })));
+    updateProject(p.id, patch);
+    toast(receiptText(receipt));
     close();
   };
   const tone = { ok: 'good', replace: 'warning', duplicate: 'neutral', other: 'critical', unreadable: 'critical' } as const;

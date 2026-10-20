@@ -1,11 +1,12 @@
+import { mergeReports, receiptText } from '../domain/merge_reports';
 import { readOfficeFile } from './officeImport';
 import { useEffect, useState } from 'preact/hooks';
-import { checkpoint, get, go, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
+import { checkpoint, get, go, toast, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
 import { applyFindings, mergeFindings } from '../domain/applydocs';
-import { reportDate, reportFrom } from '../domain/autoimport';
+import { reportDate } from '../domain/autoimport';
 import { readCheck } from '../domain/intake';
 import { analyse, type DocFindings } from '../domain/documents';
-import type { Project, ReportingPeriod } from '../domain/types';
+import type { Project } from '../domain/types';
 import type { Workbook } from '../domain/workbook';
 import { readDocument } from './docread';
 import { date, full } from './format';
@@ -100,6 +101,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
     void checkpoint(`Before importing ${(rows ?? []).length} file${(rows ?? []).length === 1 ? '' : 's'}`);
     // Office budgets first (oldest first, so a raw export can borrow line budgets from a forecast of the same import).
     for (const r of (rows ?? []).filter((x) => x.kind === 'office').sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))) upsertOfficeReport(r.office!);
+    const msgs: string[] = [];
     for (const pid of new Set(ok.map((r) => r.pid))) {
       let p = get().ledger.projects.find((x) => x.id === pid)!;
       const D = ok.filter((r) => r.pid === pid && r.F);
@@ -110,12 +112,11 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       }
       const W = ok.filter((r) => r.pid === pid && r.wb).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
       if (W.length) {
-        const R: ReportingPeriod[] = [...(p.reportingPeriods ?? [])];
-        for (const r of W) { const { report } = reportFrom(r.wb!, r.file.name, { ...p, reportingPeriods: R }); const i = R.findIndex((x) => x.id === report.id); if (i >= 0) R[i] = report; else R.push(report); }
-        R.sort((a, b) => a.date.localeCompare(b.date));
-        updateProject(pid, { reportingPeriods: R });
+        const { patch, receipt } = mergeReports(p, W.map((r) => ({ wb: r.wb!, fileName: r.file.name })));
+        updateProject(pid, patch); msgs.push(receiptText(receipt));
       }
     }
+    if (msgs.length) toast(msgs.length > 3 ? `${msgs.length} projects updated — ${msgs.slice(0, 2).join(' · ')}…` : msgs.join(' · '));
     markSeen([...ok, ...(rows ?? []).filter((x) => x.kind === 'office')].map((r) => r.file));
     close();
     if (nOff && !ok.length) go('offices');

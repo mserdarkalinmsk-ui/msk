@@ -10,8 +10,8 @@ import { date, full, short } from './format';
 import { readXlsx, type Workbook } from './xlsx';
 import { extractStaff } from '../domain/staff';
 import { BulkReports } from './BulkReports';
-import { parseWorkbook, toBudgetLines, type Role, type Workbook as CoeWorkbook } from '../domain/workbook';
-import { ADMIN_LINE } from '../domain/terms';
+import { budgetFromWorkbook, isBudgetFile } from '../domain/merge_reports';
+import { parseWorkbook, type Role, type Workbook as CoeWorkbook } from '../domain/workbook';
 import { updateProject } from '../data/store';
 import { readCheck, snapshotOf } from '../domain/intake';
 
@@ -140,7 +140,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
   idWarn.forEach((t) => checks.unshift({ level: 'warning', text: t }));
   idErr.forEach((t) => checks.unshift({ level: 'error', text: `${t} — this report belongs to another project` }));
   const errors = checks.filter((c) => c.level === 'error');
-  const asBudget = useCoe && meta.type === 'Latest Approved Budget' && !coe!.lines.some((l) => (l.actual.cost ?? 0) !== 0);
+  const asBudget = useCoe && meta.type === 'Latest Approved Budget' && isBudgetFile(coe!);
   if (asBudget && p.approvedBudget) checks.unshift({ level: 'warning', text: `Replaces the approved budget ${full(p.approvedBudget.total)} (${p.approvedBudget.source}) with ${full(coe!.totals.eligible?.budget ?? lines.reduce((a, l) => a + (l.approved ?? 0), 0))} from this file` });
   const prev = reportsByDate(p).filter((r) => r.date <= report.date).at(-1);
   // Reports that would stay ahead of this one (a later month), and earlier copies of the same file: offered for replacement.
@@ -220,11 +220,8 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
           // A budget (proposal or approved, no spending) becomes the project's approved budget, not a report: as a report it
           // would be the latest one and show nothing spent.
           if (asBudget) {
-            const L = toBudgetLines(coe!).map(({ code, description, unit, approved, approvedUnits, unitRate }) => ({ code, description, unit, approved, approvedUnits, unitRate }));
-            const T = coe!.totals, admin = T.admin?.budget ?? L.find((l) => l.code === ADMIN_LINE)?.approved ?? 0, cont = T.contingency?.budget ?? 0;
-            const direct = T.direct?.budget ?? L.filter((l) => l.code !== ADMIN_LINE && l.code !== '8').reduce((a, l) => a + (l.approved ?? 0), 0);
-            const total = Math.round((T.eligible?.budget ?? direct + admin + cont) * 100) / 100;
-            updateProject(p.id, { approvedBudget: { lines: L, direct, admin, contingency: cont, total, source: file!.name, linesSum: direct, importedAt: new Date().toISOString() }, budget: total,
+            const ab = budgetFromWorkbook(coe!, file!.name);
+            updateProject(p.id, { approvedBudget: ab, budget: ab.total,
               ...(fillIds && saveIds ? { bh: p.bh || coe!.meta.bh, contractNo: p.contractNo || coe!.meta.contract, jp: p.jp || coe!.meta.jp } : {}) });
             if (useCoe && meta.type !== docType(coe!).type) setFormat(formatKey(coe!), { type: meta.type });
             close(); return;
