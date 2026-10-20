@@ -15,6 +15,20 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
   if (c.dates) { if (k.start) q.start = k.start; if (k.end) q.end = k.end; if (k.start && k.end) delete q.datesTbc; }
   if (c.approved && F.budget && (!q.approvedBudget || budgetRank(F.budget.source) >= budgetRank(q.approvedBudget.source))) { q.approvedBudget = { ...F.budget, importedAt: new Date().toISOString() }; q.budget = Math.round(F.budget.total * 100) / 100; }
   else if (c.budget && k.total && !q.approvedBudget) q.budget = k.total;
+  // Versions from a revision workbook: a later file adds its newer versions; the last one is the approved budget.
+  if (c.approved && F.versions?.length) {
+    const V = [...(q.budgetVersions ?? [])];
+    for (const v of F.versions) { const i = V.findIndex((x) => x.label === v.label); if (i >= 0) V[i] = v; else V.push(v); }
+    const rank = (v: { kind: string; no?: number }) => (v.kind === 'original' ? 0 : 1);
+    q.budgetVersions = V.map((v, i) => ({ v, i })).sort((a, b) => rank(a.v) - rank(b.v) || a.i - b.i).map((x) => x.v);
+    const last = F.versions.at(-1)!;
+    q.approvedBudget = { ...last.budget, importedAt: new Date().toISOString() }; q.budget = Math.round(last.budget.total * 100) / 100;
+  }
+  if (F.letters?.length) {
+    const L = [...(q.budgetLetters ?? [])];
+    for (const l of F.letters) { const i = L.findIndex((x) => x.kind === l.kind && x.no === l.no && (l.no != null || x.file === l.file)); if (i >= 0) L[i] = { ...L[i], ...Object.fromEntries(Object.entries(l).filter(([, v]) => v != null)) }; else L.push(l); }
+    q.budgetLetters = L;
+  }
   if (c.contract) { if (k.jp && !q.jp) q.jp = k.jp; if (k.bh && !q.bh) q.bh = k.bh; }
   if (c.plan && F.acts.length) q.doa = { start: k.start ?? q.doa?.start ?? q.start, months: k.months ?? F.planMonths ?? q.doa?.months ?? 36, acts: F.acts.map((a) => ({ ...a, status: q.doa?.acts.find((x) => x.code === a.code)?.status ?? '' })) };
   if (c.risks && F.risks.length) {
@@ -35,13 +49,15 @@ export function applyFindings(p: Project, F: DocFindings, c: DocChoices, docs: {
 export function mergeFindings(all: DocFindings[]): DocFindings {
   const out: DocFindings = { contract: {}, acts: [], risks: [], indicators: [], summary: [] };
   for (const f of all) {
+    if (f.letter) out.letters = [...(out.letters ?? []), f.letter];
     for (const [key, v] of Object.entries(f.contract)) if ((out.contract as Record<string, unknown>)[key] == null) (out.contract as Record<string, unknown>)[key] = v;
     if (f.acts.length > out.acts.length) { out.acts = f.acts; out.planMonths = f.planMonths; }
     if (f.assumptions && f.assumptions.length > (out.assumptions?.length ?? 0)) out.assumptions = f.assumptions;
     for (const r of f.risks) if (!out.risks.some((x) => x.title.toLowerCase() === r.title.toLowerCase())) out.risks.push(r);
     if (f.indicators.length > out.indicators.length) out.indicators = f.indicators;
     if (f.notes) out.notes = { ...(out.notes ?? {}), ...f.notes };
-    if (f.budget && (!out.budget || f.budget.lines.length > out.budget.lines.length)) out.budget = f.budget;
+    if (f.versions && f.versions.length > (out.versions?.length ?? 0)) { out.versions = f.versions; out.budget = f.budget; }
+    else if (!out.versions && f.budget && (!out.budget || f.budget.lines.length > out.budget.lines.length)) out.budget = f.budget;
   }
   return out;
 }

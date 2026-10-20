@@ -12,7 +12,7 @@ import { costFactor, type InflationSettings } from './salaryProjection';
  */
 export type BlockId = 'p' | 'r' | 'e';
 export interface PlanCell { u?: number; r?: number }
-export interface ForecastDraft { /** keep the total fixed: the remainder goes to this line (default on, 5.7) */ auto?: { on?: boolean; line?: string }; /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[]; /** revision note: justification per heading, and who prepares / approves */ just?: Record<string, string>; sign?: { by?: string; ok?: string } }
+export interface ForecastDraft { /** keep the total fixed: the remainder goes to this line (default on, 5.7) */ auto?: { on?: boolean; line?: string }; /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[]; /** revision note: justification per heading, and who prepares / approves */ just?: Record<string, string>; sign?: { by?: string; ok?: string }; /** notification letter: reference and the text per changed line */ letter?: { ref?: string; no?: string; lines?: Record<string, string> } }
 
 export const isStaffLine = (code: string) => /^1\.[12]\.1\.\d+$/.test(code);
 export const isChargeBack = (code: string) => code === '4.2' || code === '4.4';

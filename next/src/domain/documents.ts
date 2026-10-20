@@ -1,3 +1,5 @@
+import { letterFacts, letterLabel } from './letters';
+import { budgetVersions } from './budgetVersions';
 import { ADMIN_LINE } from './terms';
 /**
  * Project documents (contract, Description of Action, action plan, logframe…) in any format are
@@ -19,7 +21,7 @@ export interface ContractFacts {
   number?: string; title?: string; total?: number; euMax?: number; euShare?: number; start?: string; end?: string; months?: number;
   repMonths?: number; progDays?: number; finalMonths?: number; prefinancing?: number; /** first pre-financing payment (EUR) */ firstPayment?: number; /** further payment possible once this % of the money received is used */ payThreshold?: number; /** number of payments (pre-financing instalments) */ instalments?: number; flexPct?: number; contingencyPct?: number; jp?: string; bh?: string;
 }
-export interface DocFindings { contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; notes?: Record<string, BudgetNote>; assumptions?: string[]; summary: string[] }
+export interface DocFindings { /** a notification / addendum letter */ letter?: import('./letters').Letter | null; /** letters of several documents (merged) */ letters?: import('./letters').Letter[]; /** budget versions laid side by side in a revision workbook, oldest first */ versions?: import('./budgetVersions').BudgetVersion[]; contract: ContractFacts; acts: Activity[]; planMonths?: number; risks: Risk[]; indicators: Indicator[]; budget?: ApprovedBudget | null; notes?: Record<string, BudgetNote>; assumptions?: string[]; summary: string[] }
 
 /* ---------- helpers ---------- */
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -173,16 +175,20 @@ export function analyse(doc: Doc): DocFindings {
   const NR = narrativeRisks(doc);
   const R0 = gRisk.length > tRisk.length ? gRisk : tRisk;
   const R = NR.risks.length > R0.length ? NR.risks : R0, I = gInd.length > tInd.length ? gInd : tInd;
-  const contract = contractFacts(doc), budget = approvedBudget(doc), notes = { ...budgetNotes(doc), ...(doc.notes ?? {}) };
+  // A revision workbook (original + notifications / addenda side by side): the last version is the budget in force.
+  const versions = doc.kind === 'xlsx' ? budgetVersions(doc.tables, doc.name) : [];
+  const letter = letterFacts(doc);
+  const contract = contractFacts(doc), budget = versions.length > 1 ? versions.at(-1)!.budget : approvedBudget(doc), notes = { ...budgetNotes(doc), ...(doc.notes ?? {}) };
   const nn = Object.keys(notes).length;
   const summary = [
     nn && `justification for ${nn} budget lines`,
-    budget && `approved budget €${budget.total.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${budget.lines.length} lines)`,
+    versions.length > 1 && `${versions.length} budget versions (${versions.map((v) => v.label).join(' → ')})`,
+    budget && `${versions.length > 1 ? 'budget in force' : 'approved budget'} €${budget.total.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${budget.lines.length} lines)`,
     Object.keys(contract).length && `${Object.keys(contract).length} contract facts`,
     plan && `${plan.acts.length} activities over ${plan.months} months`,
     R.length && `${R.length} risks`, NR.assumptions.length && `${NR.assumptions.length} assumptions`, I.length && `${I.length} indicators`,
   ].filter(Boolean) as string[];
-  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, assumptions: NR.assumptions, summary };
+  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, assumptions: NR.assumptions, summary: letter ? [`${letterLabel(letter)}${letter.date ? ` of ${letter.date}` : ''}${letter.outcome ? ` · ${letter.outcome}` : ''}${letter.scanned ? ' · scanned letter (no text)' : ''}`, ...summary] : summary, letter, ...(versions.length > 1 ? { versions } : {}) };
 }
 
 /* ---------- approved budget (CoE "Budget for all years" template, DoA annex) ---------- */

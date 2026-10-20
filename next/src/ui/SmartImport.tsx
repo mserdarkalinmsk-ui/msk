@@ -47,7 +47,7 @@ function guessProject(text: string, P: Project[]): { p?: Project; why: string } 
   return { why: '' };
 }
 
-const kindOf = (F: DocFindings): Kind => (F.budget ? 'budget' : F.acts.length ? 'plan' : F.contract.number || F.contract.total || F.contract.start ? 'contract' : F.indicators.length || F.risks.length ? 'logframe' : 'other');
+const kindOf = (F: DocFindings): Kind => (F.budget ? 'budget' : F.letter ? 'contract' : F.acts.length ? 'plan' : F.contract.number || F.contract.total || F.contract.start ? 'contract' : F.indicators.length || F.risks.length ? 'logframe' : 'other');
 
 /** A folder of mixed files: each is recognised (report, budget, DoA, contract, logframe) and sent to its project. */
 export function SmartImport({ files, close }: { files: File[]; close: () => void }) {

@@ -12,7 +12,7 @@ function runs(el: Node, bold = false, sz?: number): string {
   if (el.nodeType !== 1) return '';
   const e = el as HTMLElement;
   if (e.classList.contains('no-print') || e.classList.contains('print-only') || e.tagName === 'BUTTON') return '';
-  if (e.tagName === 'TEXTAREA' || e.tagName === 'INPUT') return run((e as HTMLTextAreaElement).value, bold, sz);
+  if (e.tagName === 'TEXTAREA' || e.tagName === 'INPUT') return (e as HTMLTextAreaElement).value.split('\n').map((x) => run(x, bold, sz)).join('<w:r><w:br/></w:r>');
   if (e.tagName === 'SELECT') return run((e as HTMLSelectElement).selectedOptions[0]?.text ?? '', bold, sz);
   if (e.tagName === 'BR') return '<w:r><w:br/></w:r>';
   const b = bold || /^(B|STRONG|TH)$/.test(e.tagName);
@@ -23,10 +23,13 @@ const BLOCK = /^(H1|H2|H3|H4|P|UL|OL|TABLE|DIV|SECTION|ARTICLE|HEADER|FOOTER|LI|
 
 function table(t: HTMLTableElement): string {
   const rows = [...t.rows];
-  const n = Math.max(...rows.map((r) => r.cells.length), 1), w = Math.floor(9600 / n);
-  return `<w:tbl><w:tblPr><w:tblStyle w:val="Grid"/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>${['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map((k) => `<w:${k} w:val="single" w:sz="4" w:color="C9CED6"/>`).join('')}</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${Array.from({ length: n }, () => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows.map((r) => {
+  const n = Math.max(...rows.map((r) => r.cells.length), 1);
+  // Column widths follow the longest text of each column (cells spanning columns left out), so amounts do not wrap.
+  const len = Array.from({ length: n }, (_, i) => Math.min(42, Math.max(6, ...(rows.filter((r) => r.cells.length === n && r.parentElement?.tagName !== 'THEAD').length ? rows.filter((r) => r.cells.length === n && r.parentElement?.tagName !== 'THEAD') : rows.filter((r) => r.cells.length === n)).map((r) => (r.cells[i]?.textContent ?? '').trim().length + 1))));
+  const tot = len.reduce((a, x) => a + x, 0), W = len.map((x) => Math.floor((9600 * x) / tot));
+  return `<w:tbl><w:tblPr><w:tblStyle w:val="Grid"/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>${['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map((k) => `<w:${k} w:val="single" w:sz="4" w:color="C9CED6"/>`).join('')}</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${W.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows.map((r) => {
     const head = r.parentElement?.tagName === 'THEAD' || r.parentElement?.tagName === 'TFOOT';
-    return `<w:tr>${head ? '<w:trPr><w:tblHeader/></w:trPr>' : ''}${[...r.cells].map((c) => `<w:tc><w:tcPr>${c.colSpan > 1 ? `<w:gridSpan w:val="${c.colSpan}"/>` : ''}${head ? '<w:shd w:val="clear" w:color="auto" w:fill="E8EEF6"/>' : ''}</w:tcPr>${para(runs(c, head, 17), undefined, `<w:spacing w:before="20" w:after="20"/>${/\br\b/.test(c.className) ? '<w:jc w:val="right"/>' : ''}`)}</w:tc>`).join('')}</w:tr>`;
+    return `<w:tr>${head ? '<w:trPr><w:tblHeader/></w:trPr>' : ''}${[...r.cells].map((c, k, C) => { const at = C.slice(0, k).reduce((a, x) => a + x.colSpan, 0), cw = W.slice(at, at + c.colSpan).reduce((a, x) => a + x, 0); return `<w:tc><w:tcPr><w:tcW w:w="${cw}" w:type="dxa"/>${c.colSpan > 1 ? `<w:gridSpan w:val="${c.colSpan}"/>` : ''}${head ? '<w:shd w:val="clear" w:color="auto" w:fill="E8EEF6"/>' : ''}</w:tcPr>${para(runs(c, head, 17), undefined, `<w:spacing w:before="20" w:after="20"/>${/\br\b/.test(c.className) ? '<w:jc w:val="right"/>' : ''}`)}</w:tc>`; }).join('')}</w:tr>`;
   }).join('')}</w:tbl>${para('')}`;
 }
 
