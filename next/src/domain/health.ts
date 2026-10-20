@@ -6,10 +6,10 @@ import { sameDoc } from './applydocs';
 import { isExtraction } from './extraction';
 import { readCheck } from './intake';
 import type { Workbook } from './workbook';
-import { integrity } from './integrity';
+import { integrity, type Detail, type Tab } from './integrity';
 
 export type Level = 'ok' | 'warn' | 'bad';
-export interface Finding { level: Level; text: string; fix?: 'report' | 'documents' | 'edit' | 'reports' | AutoFix }
+export interface Finding { level: Level; text: string; fix?: 'report' | 'documents' | 'edit' | 'reports' | AutoFix; /** project tab to open, and the records behind the finding */ tab?: import('./integrity').Tab; detail?: import('./integrity').Detail }
 /** Fixes that are safe to apply in one click. */
 export type AutoFix = 'use-approved' | 'dedupe-docs' | 'dedupe-reports';
 export interface Health { p: Project; level: Level; findings: Finding[] }
@@ -20,7 +20,7 @@ const eur = (v: number) => `€${v.toLocaleString('en-GB', { minimumFractionDigi
 /** Consistency checks per project: report totals, template recognition, budgets, duplicates and freshness. */
 export function health(p: Project, today: Date): Health {
   const F: Finding[] = [];
-  const add = (level: Level, text: string, fix?: Finding['fix']) => F.push({ level, text, fix });
+  const add = (level: Level, text: string, fix?: Finding['fix'], tab?: Tab, detail?: Detail) => F.push({ level, text, fix, tab, detail });
   const R = reportsByDate(p), last = latestReport(p), wb = last?.snapshot?.workbook;
 
   if (p.datesTbc) add('warn', 'Start and end dates not confirmed (set-up)', 'documents');
@@ -34,7 +34,7 @@ export function health(p: Project, today: Date): Health {
     if (age > 120) add('warn', `Latest report is ${Math.round(age / 30)} months old (${last.date})`, 'report');
     if (wb && isExtraction(last.snapshot)) {
       // A system extraction has no totals block: check that every entry landed on a line instead.
-      for (const c of readCheck(wb as unknown as Workbook, p, last.snapshot!.lines).checks) add(c.level === 'ok' ? 'ok' : c.level === 'error' ? 'bad' : 'warn', `System extraction: ${c.text}`, c.level === 'ok' ? undefined : 'reports');
+      for (const c of readCheck(wb as unknown as Workbook, p, last.snapshot!.lines).checks) add(c.level === 'ok' ? 'ok' : c.level === 'error' ? 'bad' : 'warn', `System extraction: ${c.text}`, c.level === 'ok' ? undefined : 'reports', 'Budget lines');
     } else if (wb) {
       const lay = wb.meta?.layout ?? {}, T = wb.totals ?? {};
       if (!lay.direct || !T.direct) add('bad', 'Direct-cost total row not recognised — re-upload the report', 'report');
@@ -64,7 +64,7 @@ export function health(p: Project, today: Date): Health {
     if (ab.contingency && ab.admin && Math.abs(ab.contingency - ab.admin) < 1) add('bad', 'Approved budget has the 7% admin also counted as contingency — re-upload the budget document', 'documents');
     if (Math.abs(ab.total - p.budget) > 1) add(pctDiff(ab.total, p.budget) > 0.01 ? 'bad' : 'warn', `Approved budget total ${eur(ab.total)} (${ab.source}) differs from the project budget ${eur(p.budget)}`, 'use-approved');
     const H = headings(p);
-    if (H.rows.some((r) => r.status === 'breach')) add('warn', `Heading change above the ${Math.round(H.flex * 100)}% flexibility: ${H.rows.filter((r) => r.status === 'breach').map((r) => r.label).join(', ')}`, 'reports');
+    if (H.rows.some((r) => r.status === 'breach')) add('warn', `Heading change above the ${Math.round(H.flex * 100)}% flexibility: ${H.rows.filter((r) => r.status === 'breach').map((r) => r.label).join(', ')}`, 'reports', 'Budget lines');
   }
 
   const months = R.filter((r) => r.snapshot?.lines?.length).map((r) => r.date.slice(0, 7));
@@ -73,7 +73,7 @@ export function health(p: Project, today: Date): Health {
   const D = p.documents ?? [], dupD = D.filter((d, i) => D.some((x, k) => k < i && sameDoc(x.name, d.name)));
   if (dupD.length) add('warn', `${dupD.length} document${dupD.length > 1 ? 's' : ''} uploaded twice (${dupD.map((d) => d.name).slice(0, 2).join(', ')})`, 'dedupe-docs');
 
-  for (const x of integrity(p, today)) add(x.level, `${x.where}: ${x.text}`, 'reports');
+  for (const x of integrity(p, today)) add(x.level, `${x.where}: ${x.text}`, 'reports', x.tab, x.detail);
 
   const level: Level = F.some((f) => f.level === 'bad') ? 'bad' : F.some((f) => f.level === 'warn') ? 'warn' : 'ok';
   return { p, level, findings: F.sort((a, b) => ['bad', 'warn', 'ok'].indexOf(a.level) - ['bad', 'warn', 'ok'].indexOf(b.level)) };

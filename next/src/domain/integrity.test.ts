@@ -21,4 +21,12 @@ describe('integrity checks', () => {
     expect(t).toMatch(/Spent goes down/);
     expect(t).toMatch(/same person under two names: Arzu Burcu TUNER \/ Arzu Bursu TUNER|same person under two names: Arzu Bursu TUNER \/ Arzu Burcu TUNER/);
   });
+  it('each finding carries its records and the tab to open', () => {
+    const I = integrity(p, new Date('2026-10-01'));
+    const multi = I.find((x) => /more than one budget line/.test(x.text))!;
+    expect(multi.tab).toBe('Financial report');
+    expect(multi.detail?.rows).toEqual([['900002', 'S', '', '5.7', 1000], ['900002', 'S', '', '5.8', 1000]]);
+    expect(I.find((x) => /Spent goes down/.test(x.text))?.detail?.rows[0]).toEqual(['5.7', '5.7', 40000, 30000, -10000]);
+    expect(I.find((x) => /two names/.test(x.text))?.tab).toBe('Staff');
+  });
 });
