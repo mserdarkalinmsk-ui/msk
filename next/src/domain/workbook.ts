@@ -19,6 +19,7 @@ export interface WbMeta {
   title?: string; contract?: string; jp?: string; bh?: string; periodFrom?: string; periodTo?: string; asAt?: string;
   plannedFrom?: string; plannedTo?: string;
   /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
+  /** Budget proposal with a secured-funding block (VC): what is already funded, by line code. Not spending. */ secured?: Record<string, number>;
 }
 export interface SituationRow { ccm: string; article: string; description: string; budget: number; da: number; po: number; invoice: number; actual: number; available: number; balance: number }
 export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string }
@@ -74,7 +75,7 @@ function table(sheets: Sheet[], must: string[]) {
 const cell = (r: string[], i: number) => (i >= 0 ? String(r[i] ?? '').trim() : '');
 
 /* ---------- financial report grid (REPORT and/or Forecast) ---------- */
-type Group = 'budget' | 'actual' | 'sc' | 'planned' | 'planned2' | 'proposal' | 'rounded';
+type Group = 'budget' | 'actual' | 'sc' | 'planned' | 'planned2' | 'proposal' | 'rounded' | 'secured';
 function groupOf(label: string): Group | null {
   const t = n2(label);
   if (t.startsWith('budgetforallyears')) return 'budget';
@@ -83,6 +84,8 @@ function groupOf(label: string): Group | null {
   if (t.startsWith('plannedexpenditure')) return 'planned';
   if (t.startsWith('budgetproposalcalc')) return 'proposal';
   if (t.startsWith('budgetproposalround')) return 'rounded';
+  // Voluntary-contribution proposals: the part of the budget already funded ("Secured budget (500K)") is money pledged, not spent.
+  if (/secured|funded|fundingavailable|availablefunding|pledged/.test(t)) return 'secured';
   return null;
 }
 
@@ -106,7 +109,8 @@ function readGrid(sh: Sheet) {
     starts.set(g.g, g.g === 'sc' ? g.at : u);
   }
   if (!starts.has('budget') && unitsCols.length) starts.set('budget', unitsCols[0]);
-  if (!starts.has('actual') && unitsCols.length > 1) starts.set('actual', unitsCols[1]);
+  // The second block is the actual one only when nothing names it otherwise (a secured-funding block is not spending).
+  if (!starts.has('actual') && unitsCols.length > 1 && ![...starts.values()].includes(unitsCols[1])) starts.set('actual', unitsCols[1]);
   const trip = (r: string[], g: Group): Triple | undefined => {
     const s = starts.get(g); if (s == null) return undefined;
     return { units: num(r[s]), rate: num(r[s + 1]), cost: num(r[s + 2]) };
@@ -140,7 +144,8 @@ function readGrid(sh: Sheet) {
     }
     const m = a.match(/^(\d+(?:\.\d+)*)\.?\s+(.+)$/);
     if (!m || /^sub-?total/i.test(a)) continue;
-    const b = trip(r, 'budget')!, ac = trip(r, 'actual')!;
+    const b = trip(r, 'budget')!, ac = trip(r, 'actual') ?? { units: null, rate: null, cost: null };
+    const se = trip(r, 'secured')?.cost; if (se) meta.secured = { ...meta.secured, [m[1]]: se };
     lines.push({
       code: m[1], description: m[2].trim(), unit: String(r[1] ?? '').trim(), level: m[1].split('.').length, leaf: true,
       budget: b, actual: ac, sc: starts.has('sc') ? num(r[starts.get('sc')!]) : null,
