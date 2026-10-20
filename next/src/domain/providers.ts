@@ -1,4 +1,4 @@
-import { byPeriodThenImport, lineExposure, lines, n } from './calc';
+import { byUpload, lineExposure, lines, n } from './calc';
 import type { Project } from './types';
 import type { PO } from './workbook';
 
@@ -81,7 +81,7 @@ export interface ProviderPO extends PO { p: Project; kind: Kind | null; auto: Ki
  */
 export function providerPOs(P: Project[], set: Record<string, string> = {}, all = false): ProviderPO[] {
   const out = P.flatMap((p) => {
-    const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byPeriodThenImport).at(-1)?.snapshot?.workbook;
+    const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byUpload).at(-1)?.snapshot?.workbook;
     if (!wb?.pos?.length) return [];
     const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
     return wb.pos.flatMap((x) => {

@@ -1,4 +1,4 @@
-import { byPeriodThenImport, lineExposure, n } from './calc';
+import { byUpload, lineExposure, n } from './calc';
 import type { BudgetLine, Project } from './types';
 
 /**
@@ -75,7 +75,7 @@ export function budgetCheck(p: Project, medians = new Map<string, { median: numb
     }
   }
   // Reports: every report against the approved budget, the latest one in detail
-  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length).sort(byPeriodThenImport);
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length).sort(byUpload);
   const byCode = new Map(base.map((l) => [l.code, l]));
   R.forEach((r, i) => {
     const W = `Report ${r.name}`, L = r.snapshot!.lines, latest = i === R.length - 1;
