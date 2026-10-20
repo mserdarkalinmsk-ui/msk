@@ -4,7 +4,7 @@ import { roster } from './staff';
 import type { Project } from './types';
 
 /**
- * Cross-checks between the pieces of data of a project: the same purchase order on two budget lines, purchase orders
+ * Cross-checks between the pieces of data of a project: purchase orders
  * above what the line reports, spent above spent + committed, a report whose total goes down from the previous one,
  * reversals left negative, and the same person under two names. Each finding says where to look.
  */
@@ -22,12 +22,7 @@ export function integrity(p: Project, today: Date): Integrity[] {
 
   // Purchase orders of the latest report workbook.
   const pos = last?.snapshot?.workbook?.pos ?? [];
-  const byPo = new Map<string, Set<string>>();
-  for (const x of pos) if (x.po) byPo.set(x.po, (byPo.get(x.po) ?? new Set()).add(x.line));
-  const multi = [...byPo].filter(([, s]) => s.size > 1);
-  if (multi.length) add('warn', `${multi.length} purchase order${multi.length > 1 ? 's' : ''} on more than one budget line (${multi.slice(0, 3).map(([po, s]) => `${po}: ${[...s].join(' / ')}`).join('; ')}${multi.length > 3 ? '…' : ''}) — check the split is intended`, 'Purchase orders', 'Financial report',
-    { title: `Purchase orders on more than one budget line · ${last!.name}`, cols: ['PO', 'Supplier', 'Description', 'Line', 'Spent + committed'], num: [4],
-      rows: multi.flatMap(([po]) => pos.filter((x) => x.po === po).map((x) => [po, x.supplier, x.description || x.nature, x.line, x.sc || x.amount])) });
+  // A purchase order split over several lines is normal (event management, interpretation): not flagged.
   if (pos.length) {
     const over = leaf.map((l) => ({ l, po: pos.filter((x) => x.line === l.code).reduce((a, x) => a + (x.sc || x.amount), 0) })).filter((x) => x.po > lineExposure(x.l) + 1);
     if (over.length) add('warn', `Purchase orders above the reported spent + committed on ${over.slice(0, 4).map((x) => `${x.l.code} (${eur(x.po - lineExposure(x.l))} more)`).join(', ')}${over.length > 4 ? '…' : ''} — an order may be on the wrong line or not yet in the report`, 'Purchase orders', 'Budget lines',
