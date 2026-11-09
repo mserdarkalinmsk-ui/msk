@@ -44,13 +44,13 @@ export function presets(today: Date): { key: string; label: string; from: string
 
 /* ---------- entries that look wrong ---------- */
 
-export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near';
+export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over';
 export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number }[] }
 
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
   'po-over': 'Invoiced above the PO', 'outside-dates': 'Outside the project dates', unposted: 'Not posted', 'other-bh': 'Mentions another budget head',
-  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility', 'head-near': 'Heading close to the addendum threshold',
+  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification',
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -59,7 +59,7 @@ const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDi
 const unitWord = (u: string) => u.toLowerCase().replace(/^per\s+/, '').replace(/[^a-z ]/g, '').replace(/s\b/g, '').trim();
 const dmy = (s: string) => { const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
 
-export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[]; /** spent + committed by line, to compare with the approved budget */ sc?: Map<string, number> }
+export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[]; /** spent + committed by line, to compare with the approved budget */ sc?: Map<string, number>; /** units budgeted and used by line */ units?: { code: string; description: string; unit: string; budget: number; used: number }[]; /** share of the project time gone, 0–1 */ elapsed?: number }
 
 /**
  * Entries worth a second look. Each rule is stated so a finance officer can check it in the source file:
@@ -169,6 +169,17 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
     const nr = C.heads.filter((h) => h.status === 'near-flex');
     if (nr.length) out.push({ kind: 'head-near', level: 'warning', title: KIND_LABEL['head-near'], text: `${nr.length} heading${nr.length > 1 ? 's are' : ' is'} 20–25% above budget — still a notification, but close to needing an addendum.`,
       amount: r2(nr.reduce((a, h) => a + h.diff, 0)), rows: nr.map((h) => ({ date: '', doc: `Heading ${h.h}`, line: h.h, description: `Budget ${eur(h.budget)} · spent + committed ${eur(h.sc)} · +${(h.pct * 100).toFixed(1)}% · ${eur(h.budget * 1.25 - h.sc)} left before 25%`, amount: r2(h.diff) })) });
+  }
+
+  // 12. units above the budgeted number (now, or at the current pace) → notification
+  if (o.units?.length) {
+    const el = o.elapsed ?? 0;
+    const now = o.units.filter((u) => u.budget > 0 && u.used > u.budget + 1e-6);
+    const soon = o.units.filter((u) => u.budget > 0 && u.used <= u.budget && el > 0.05 && u.used / el > u.budget * 1.0001);
+    if (now.length) out.push({ kind: 'units-over', level: 'warning', title: KIND_LABEL['units-over'], text: `${now.length} line${now.length > 1 ? 's use' : ' uses'} more units than budgeted — the change in units is reported by notification (and by addendum if the heading goes beyond 25%).`,
+      amount: 0, rows: now.map((u) => ({ date: '', doc: `${+u.used.toFixed(2)} of ${u.budget} ${u.unit}`, line: u.code, description: `${u.description} — +${((u.used / u.budget - 1) * 100).toFixed(1)}% units`, amount: 0 })) });
+    if (soon.length) out.push({ kind: 'units-over', level: 'info', title: 'Units heading above the budget', text: `${soon.length} line${soon.length > 1 ? 's' : ''} will pass the budgeted units before the end at the current pace — a notification will be needed.`,
+      amount: 0, rows: soon.map((u) => ({ date: '', doc: `${+u.used.toFixed(2)} of ${u.budget} ${u.unit}`, line: u.code, description: `${u.description} — about ${Math.round(u.used / el)} by the end`, amount: 0 })) });
   }
 
   const rank = { error: 0, warning: 1, info: 2 } as const;

@@ -115,6 +115,8 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
                     {parent ? <button class="tw" aria-expanded={!closed.has(r.code)} onClick={() => toggle(r.code)}>{closed.has(r.code) ? '▸' : '▾'}</button> : <span class="tw" />}
                     <span class="num cd">{r.code}</span> {r.label}
+                    {l && uu != null && (() => { const pj = elapsed > 0.05 ? (l.actual.units ?? 0) / elapsed / (l.budget.units ?? 1) : uu; const now = uu > 1.0001;
+                      return (now || pj > 1.0001) && <span class={`chg chg-not${now ? ' now' : ''}`} title={`${now ? `${n0(l.actual.units)} ${l.unit || 'units'} used of ${n0(l.budget.units)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * (l.budget.units ?? 0))} ${l.unit || 'units'} by the end, of ${n0(l.budget.units)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span>; })()}
                     {r.depth === 0 && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : c.kind === 'near' ? 'Near addendum' : 'Notification'}</span>; })()}
                   </td>
                   {full_ && <td class="muted">{l?.unit}</td>}
