@@ -735,3 +735,41 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .bv-tl li:not(:last-child)::after { content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); color: var(--ink-3); } .bv-tl li.now { border-color: var(--c1); box-shadow: 0 0 0 1px var(--c1) inset; }
 .bv-tl input[type=date] { font-size: 12px; padding: 1px 4px; } .bv tr.bv-over td { background: color-mix(in srgb, var(--critical) 8%, transparent); }
 .ri-ahead { border-left: 4px solid var(--warn); display: grid; gap: 6px; font-size: 13px; } .ri-ahead ul { margin: 0; padding-left: 18px; }
+
+/* ---------- postings by date & entry checks ---------- */
+.ledger { padding: 0 16px 16px; display: grid; gap: 12px; }
+.ledger .range-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ledger .range-bar label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+.ledger .range-bar input[type=date] { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
+.ledger .grow { flex: 1; }
+.ledger .seg.wrap { flex-wrap: wrap; }
+.ledger .range-sum { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.ledger .range-sum > div:not(.months) { display: grid; gap: 2px; }
+.ledger .range-sum span { font-size: 12px; color: var(--ink-2); }
+.ledger .range-sum b { font-size: 17px; }
+.ledger .months { display: flex; gap: 3px; align-items: flex-end; margin-left: auto; min-height: 50px; }
+.ledger .months > span { display: grid; justify-items: center; gap: 2px; }
+.ledger .months i { width: 12px; background: var(--c1); border-radius: 2px 2px 0 0; }
+.ledger .months em { font-size: 9px; font-style: normal; color: var(--ink-2); }
+.ledger table.range-lines { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ledger .range-lines th, .ledger .range-lines td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.ledger .range-lines th { font-weight: 600; color: var(--ink-2); font-size: 12px; }
+.ledger .range-lines .r { text-align: right; white-space: nowrap; }
+.ledger .range-lines tr.click { cursor: pointer; }
+.ledger .range-lines tr.click:hover td { background: color-mix(in srgb, var(--c1) 8%, transparent); }
+.ledger .range-lines tr.click td:first-child { color: var(--c1); text-decoration: underline; text-underline-offset: 2px; }
+.ledger .range-lines tr.on td { background: color-mix(in srgb, var(--c1) 14%, transparent); }
+.ledger .range-lines tfoot td { border-top: 2px solid var(--line); }
+.ledger .range-h { display: flex; gap: 10px; align-items: center; }
+.ledger .range-h h3 { margin: 0; font-size: 14px; }
+.ledger ul.findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ledger .findings li { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.ledger .findings li.error { border-left: 4px solid var(--serious); }
+.ledger .findings li.warning { border-left: 4px solid var(--warn); }
+.ledger .f-h { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: auto minmax(140px, auto) 1fr auto auto; gap: 12px; align-items: baseline; padding: 10px 12px; }
+.ledger .f-h:hover { background: color-mix(in srgb, var(--c1) 6%, transparent); }
+.ledger .f-h:focus-visible { outline: 2px solid var(--c1); outline-offset: -2px; }
+.ledger .f-t { font-size: 13px; color: var(--ink-2); }
+.ledger .f-n { color: var(--c1); font-weight: 600; white-space: nowrap; }
+@media (max-width: 720px) { .ledger .f-h { grid-template-columns: auto 1fr; } .ledger .f-t { grid-column: 1 / -1; } .ledger .months { margin-left: 0; } }
+.ledger .f-rows { max-height: 420px; overflow: auto; }

@@ -34,6 +34,8 @@ export interface ReadOptions { roles?: Record<string, Role> }
 export interface SituationRow { ccm: string; article: string; description: string; budget: number; da: number; po: number; invoice: number; actual: number; available: number; balance: number }
 export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string }
 export interface Movement { article: string; period: string; date: string; amount: number; description: string; funding: boolean }
+/** One dated posting: an invoice on a purchase order (by GL date) or a direct GL entry. Together they make up "spent". */
+export interface Entry { date: string; period: string; src: 'invoice' | 'gl'; doc: string; po: string; line: string; account: string; description: string; detail: string; supplier: string; amount: number; posted: boolean; units?: number | null; unitType?: string }
 export interface MonthPoint { month: string; invoices: number; gl: number }
 export interface Check { ok: boolean; level: 'error' | 'warning' | 'info'; text: string }
 
@@ -45,6 +47,7 @@ export interface Workbook {
   pos: PO[];
   monthly: MonthPoint[];
   movements: Movement[];
+  /** Dated postings (invoices + GL) — absent on reports saved before they were kept. */ entries?: Entry[];
   staff: StaffRecord[]; staffGroups: Record<string, StaffGroup>;
   sheets: string[];
   checks: Check[];
@@ -272,8 +275,31 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     }
   }
 
+  /* dated postings: invoices on POs (line, supplier from the PO) + direct GL entries */
+  const entries: Entry[] = [];
+  const poBy = new Map<string, { line: string; supplier: string; description: string; detail: string }>();
+  if (pt) { const C = { po: pt.col('ponumber'), na: pt.col('nature'), line: pt.col('reportingline'), sup: pt.col('supplier'), d: pt.col('descriptionpo'), dl: pt.col('descriptionpoline') };
+    for (const r of pt.rows) { const po = cell(r, C.po); if (!po) continue; const x = { line: cell(r, C.line), supplier: cell(r, C.sup), description: cell(r, C.d), detail: cell(r, C.dl) };
+      if (!poBy.has(po + '|' + cell(r, C.na))) poBy.set(po + '|' + cell(r, C.na), x); if (!poBy.has(po)) poBy.set(po, x); } }
+  if (inv) {
+    const C = { dg: inv.col('dategl'), pe: inv.col('period'), no: inv.col('invoiceno'), d: inv.col('description'), am: inv.col('montantengage', 'montantligne'), po: inv.col('numeropo'), na: inv.col('nature'), pf: inv.col('postedflag') };
+    for (const r of inv.rows) {
+      const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
+      const po = cell(r, C.po), x = poBy.get(po + '|' + cell(r, C.na)) ?? poBy.get(po);
+      entries.push({ date: toDay(r[C.dg]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'invoice', doc: no, po, line: x?.line ?? '', account: cell(r, C.na), description: x?.description || cell(r, C.d), detail: cell(r, C.d), supplier: x?.supplier ?? '', amount, posted: !/^n/i.test(cell(r, C.pf)) });
+    }
+  }
+  if (gl) {
+    const C = { line: gl.col('reportingline'), no: gl.col('glnumber'), d: gl.col('description'), dl: gl.col('linedescription'), am: gl.col('spent'), pe: gl.col('period'), ad: gl.col('accountingdate'), na: gl.col('nature'), pf: gl.col('postingflag'), u: gl.col('nbreofunits'), ut: gl.col('unittype') };
+    for (const r of gl.rows) {
+      const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
+      entries.push({ date: toDay(r[C.ad]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'gl', doc: no, po: '', line: cell(r, C.line), account: cell(r, C.na), description: cell(r, C.d), detail: cell(r, C.dl), supplier: '', amount, posted: !/^n/i.test(cell(r, C.pf)), units: num(r[C.u]), unitType: cell(r, C.ut) });
+    }
+  }
+  entries.sort((a, b) => a.date.localeCompare(b.date));
+
   const { records: staff, groups: staffGroups } = extractStaff(sheets);
-  const wb: Workbook = { meta, lines, totals, situation, pos, monthly, movements, staff, staffGroups, sheets: sheets.map((s) => s.name), checks: [] };
+  const wb: Workbook = { meta, lines, totals, situation, pos, monthly, movements, ...(entries.length ? { entries } : {}), staff, staffGroups, sheets: sheets.map((s) => s.name), checks: [] };
   wb.checks = [...reconcile(wb), ...(meta.extraction ? [] : arithmetic(wb))];
   if (meta.extraction) {
     wb.checks = wb.checks.filter((c) => c.level !== 'error');

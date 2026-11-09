@@ -1,0 +1,96 @@
+import { useMemo, useState } from 'preact/hooks';
+import { findErrors, presets, spendBetween, type Finding } from '../domain/ledger';
+import { budgetRefs, organisedSheets } from '../domain/organised';
+import type { Project } from '../domain/types';
+import type { Entry, WorkbookSummary } from '../domain/workbook';
+import { TODAY } from '../today';
+import { DataTable, type Column } from '../ui/DataTable';
+import { exportOk } from '../ui/exportGate';
+import { date, full, month } from '../ui/format';
+import { download } from '../ui/xlsxwrite';
+
+const SRC = { invoice: 'Invoice', gl: 'GL' } as const;
+
+/** Dated postings of a system extraction: spending between any two dates, entries to check, and the tidy workbook. */
+export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; mode: 'range' | 'checks' }) {
+  const E = wb.entries ?? [];
+  const P = presets(TODAY);
+  const [from, setFrom] = useState(P.find((x) => x.key === 'y')!.from), [to, setTo] = useState(P.find((x) => x.key === 'y')!.to);
+  const [line, setLine] = useState('');
+  const leaf = wb.lines.filter((l) => l.leaf);
+  const R = useMemo(() => spendBetween(E, from, to, budgetRefs(wb.lines)), [E, from, to, wb.lines]);
+  const F = useMemo(() => findErrors(E, { budget: budgetRefs(leaf), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos }), [E, wb, p.start, p.end]);
+  const name = new Map(wb.lines.map((l) => [l.code, l.description]));
+  const save = (ranged: boolean) => {
+    if (!exportOk(p, 'the organised report')) return;
+    const tag = ranged ? `${from || 'start'}_${to || 'today'}` : (wb.meta.situationDate ?? TODAY.toISOString().slice(0, 10));
+    download(`${p.code}-organised-report-${tag}.xlsx`, organisedSheets(p, wb, { ...(ranged ? { from, to } : {}), findings: F }));
+  };
+  if (!E.length) return (
+    <div class="empty-inline" style={{ padding: '20px' }}>
+      <p>This report was saved before dated postings were kept, or the file has no invoice / GL sheets. Import the system extraction again (Factures a date, Ecriture GL) to see spending by date and the entry checks.</p>
+    </div>
+  );
+
+  if (mode === 'checks') return <Checks F={F} onSave={() => save(false)} />;
+
+  const rows = line ? R.rows.filter((e) => (e.line || '—') === line) : R.rows;
+  const cols: Column<Entry>[] = [
+    { key: 'dt', label: 'Date', width: 96, pin: true, value: (e) => e.date, render: (e) => <span class="num">{date(e.date)}</span> },
+    { key: 'src', label: 'Type', width: 70, value: (e) => SRC[e.src] },
+    { key: 'doc', label: 'Document', width: 170, value: (e) => e.doc },
+    { key: 'po', label: 'PO', width: 80, value: (e) => e.po },
+    { key: 'line', label: 'Line', width: 70, value: (e) => e.line, render: (e) => <span class="num">{e.line || '—'}</span> },
+    { key: 'sup', label: 'Supplier', width: 190, value: (e) => e.supplier },
+    { key: 'd', label: 'Description', width: 300, value: (e) => e.description },
+    { key: 'a', label: 'Amount', width: 120, align: 'r', sum: true, format: full, value: (e) => e.amount },
+  ];
+  return (
+    <div class="ledger">
+      <div class="range-bar">
+        <div class="seg wrap">{P.map((x) => <button aria-pressed={from === x.from && to === x.to} onClick={() => { setFrom(x.from); setTo(x.to); }}>{x.label}</button>)}</div>
+        <label>From <input type="date" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} /></label>
+        <label>To <input type="date" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} /></label>
+        <span class="grow" />
+        <button class="btn" onClick={() => save(true)}>⬇ Excel for this range</button>
+        <button class="btn primary" onClick={() => save(false)}>⬇ Organised report (Excel)</button>
+      </div>
+      <div class="range-sum">
+        <div><span>Spent in range</span><b class="num">{full(R.total)}</b></div>
+        <div><span>Postings</span><b class="num">{R.n}</b></div>
+        <div><span>Invoices on POs</span><b class="num">{full(R.lines.reduce((a, l) => a + l.invoices, 0))}</b></div>
+        <div><span>GL entries</span><b class="num">{full(R.lines.reduce((a, l) => a + l.gl, 0))}</b></div>
+        <div class="months">{R.months.map((m) => <span title={full(m.amount)}><i style={{ height: `${Math.max(2, (Math.abs(m.amount) / Math.max(1, ...R.months.map((x) => Math.abs(x.amount)))) * 36)}px` }} /><em>{month(m.month + '-01').split(' ')[0]}</em></span>)}</div>
+      </div>
+      <table class="range-lines">
+        <thead><tr><th>Line</th><th>Description</th><th class="r">Invoices</th><th class="r">GL</th><th class="r">Total</th><th class="r">Entries</th></tr></thead>
+        <tbody>{R.lines.map((l) => (
+          <tr class={`click${line === (l.line || '—') ? ' on' : ''}`} onClick={() => setLine(line === (l.line || '—') ? '' : l.line || '—')} title="Show the postings of this line">
+            <td class="num">{l.line || '—'}</td><td>{l.description || name.get(l.line) || ''}</td><td class="num r">{full(l.invoices)}</td><td class="num r">{full(l.gl)}</td><td class="num r"><b>{full(l.amount)}</b></td><td class="num r">{l.n}</td>
+          </tr>))}</tbody>
+        <tfoot><tr><td colSpan={4}><b>Total</b></td><td class="num r"><b>{full(R.total)}</b></td><td class="num r">{R.n}</td></tr></tfoot>
+      </table>
+      <div class="range-h"><h3>{line ? `Postings on line ${line}` : 'All postings in range'} · {rows.length}</h3>{line && <button class="btn sm" onClick={() => setLine('')}>Show all lines</button>}</div>
+      <DataTable rows={rows} columns={cols} rowKey={(e) => e.src + e.doc + e.line + e.amount + e.date + e.description} title={`${p.code}-postings-${from || 'start'}-${to || 'today'}`} storageKey="pl-cols-ledger" maxHeight={480} />
+    </div>
+  );
+}
+
+function Checks({ F, onSave }: { F: Finding[]; onSave: () => void }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const n = F.filter((f) => f.level !== 'info').length;
+  return (
+    <div class="ledger">
+      <div class="range-bar"><p class="muted" style={{ margin: 0 }}>{n ? `${n} kinds of entry to check` : 'No entry needs a second look'} · each rule can be checked line by line in the source file. Purchase orders split over several lines are not flagged.</p><span class="grow" /><button class="btn primary" onClick={onSave}>⬇ Organised report (Excel)</button></div>
+      <ul class="findings">{F.map((f, i) => (
+        <li class={f.level}>
+          <button class="f-h" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+            <span class={`badge ${f.level === 'error' ? 'serious' : f.level === 'warning' ? 'warning' : 'info'}`}>{f.level === 'error' ? 'Error' : f.level === 'warning' ? 'Check' : 'Note'}</span>
+            <b>{f.title}</b><span class="f-t">{f.text}</span><span class="num f-a">{full(f.amount)}</span><span class="f-n">{f.rows.length} ▾</span>
+          </button>
+          {open === i && <div class="f-rows"><table class="range-lines"><thead><tr><th>Date</th><th>Document</th><th>Line</th><th>Description</th><th class="r">Amount</th></tr></thead>
+            <tbody>{f.rows.map((r) => <tr><td class="num">{r.date ? date(r.date) : '—'}</td><td>{r.doc}</td><td class="num">{r.line || '—'}</td><td>{r.description}</td><td class="num r">{full(r.amount)}</td></tr>)}</tbody></table></div>}
+        </li>))}</ul>
+    </div>
+  );
+}
