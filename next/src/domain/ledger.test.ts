@@ -69,3 +69,18 @@ describe('dated ledger of a system extraction', () => {
     expect((tot[4] as { v: number }).v).toBe(17000);
   });
 });
+
+describe('against the approved budget', () => {
+  it('compares lines and headings, with the 25% flexibility', async () => {
+    const { compareBudget, findErrors } = await import('./ledger');
+    const wb = parseWorkbook(sheets);
+    const B = [{ code: '1.1.1', description: 'Expert', approved: 30000 }, { code: '5.5.2', description: 'Interp', approved: 2000 }, { code: '5.7', description: 'Events', approved: 8000 }];
+    const sc = new Map([['1.1.1', 30600], ['5.5.2', 1480], ['5.7', 12000]]);
+    const C = compareBudget(wb.entries!, B, sc, '2026-02-01', '2026-02-28');
+    expect(C.lines.map((l) => [l.code, l.inRange, l.status])).toEqual([['1.1.1', 0, 'over'], ['5.5.2', 0, 'ok'], ['5.7', 12000, 'over']]);
+    expect(C.heads.map((h) => [h.h, h.status])).toEqual([['1', 'within-flex'], ['5', 'over-flex']]);
+    const F = findErrors(wb.entries!, { budget: B, sc });
+    expect(F[0]).toMatchObject({ kind: 'head-over', level: 'error' });
+    expect(F.find((f) => f.kind === 'line-over')!.rows).toHaveLength(2);
+  });
+});

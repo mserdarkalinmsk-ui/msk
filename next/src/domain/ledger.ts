@@ -44,13 +44,13 @@ export function presets(today: Date): { key: string; label: string; from: string
 
 /* ---------- entries that look wrong ---------- */
 
-export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond';
+export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over';
 export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number }[] }
 
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
   'po-over': 'Invoiced above the PO', 'outside-dates': 'Outside the project dates', unposted: 'Not posted', 'other-bh': 'Mentions another budget head',
-  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end',
+  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility',
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -59,7 +59,7 @@ const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDi
 const unitWord = (u: string) => u.toLowerCase().replace(/^per\s+/, '').replace(/[^a-z ]/g, '').replace(/s\b/g, '').trim();
 const dmy = (s: string) => { const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
 
-export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[] }
+export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[]; /** spent + committed by line, to compare with the approved budget */ sc?: Map<string, number> }
 
 /**
  * Entries worth a second look. Each rule is stated so a finance officer can check it in the source file:
@@ -157,6 +157,45 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
       rows: P.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: p.description, amount: p.balance })) });
   }
 
+  // 11. against the approved budget
+  if (o.sc && budget.some((b) => b.approved)) {
+    const C = compareBudget(entries, budget, o.sc, '', '');
+    const over = C.lines.filter((l) => l.status === 'over');
+    if (over.length) out.push({ kind: 'line-over', level: 'warning', title: KIND_LABEL['line-over'], text: `${over.length} line${over.length > 1 ? 's are' : ' is'} spent + committed above the approved amount (${eur(over.reduce((a, l) => a + l.sc - l.budget, 0))} in all). Within a heading this is covered by the flexibility; check the heading totals.`,
+      amount: r2(over.reduce((a, l) => a + l.sc - l.budget, 0)), rows: over.map((l) => ({ date: '', doc: `Budget ${eur(l.budget)}`, line: l.code, description: `${l.description} — ${eur(l.sc)} spent + committed (${Math.round(l.used * 100)}%)`, amount: r2(l.sc - l.budget) })) });
+    const hv = C.heads.filter((h) => h.status === 'over-flex');
+    if (hv.length) out.push({ kind: 'head-over', level: 'error', title: KIND_LABEL['head-over'], text: `${hv.length} heading${hv.length > 1 ? 's exceed' : ' exceeds'} its budget by more than 25% — a budget revision (addendum) is needed before these costs are eligible.`,
+      amount: r2(hv.reduce((a, h) => a + h.diff, 0)), rows: hv.map((h) => ({ date: '', doc: `Heading ${h.h}`, line: h.h, description: `Budget ${eur(h.budget)} · spent + committed ${eur(h.sc)} · +${Math.round(h.pct * 100)}%`, amount: r2(h.diff) })) });
+  }
+
   const rank = { error: 0, warning: 1, info: 2 } as const;
   return out.sort((a, b) => rank[a.level] - rank[b.level] || Math.abs(b.amount) - Math.abs(a.amount));
+}
+
+/* ---------- against the approved budget ---------- */
+
+export interface CompareLine { code: string; description: string; budget: number; inRange: number; toDate: number; sc: number; available: number; used: number; status: 'over' | 'high' | 'ok' | 'unbudgeted' }
+export interface CompareHead { h: string; budget: number; toDate: number; sc: number; diff: number; pct: number; status: 'over-flex' | 'within-flex' | 'ok' }
+export const FLEX = 0.25;
+
+/**
+ * Each budget line against the approved budget: spent in the range, spent up to its end, spent + committed today,
+ * what is left and the share used. Headings are compared with the 25% flexibility: above budget but within 25% can
+ * be absorbed from other headings; beyond 25% needs a budget revision.
+ */
+export function compareBudget(entries: Entry[], budget: BudgetRef[], sc: Map<string, number>, from: string, to: string): { lines: CompareLine[]; heads: CompareHead[] } {
+  const B = budget.filter((b) => b.code !== '10');
+  const of = (code: string, E: Entry[]) => E.filter((e) => e.line === code || e.line.startsWith(code + '.')).reduce((a, e) => a + e.amount, 0);
+  const R = entries.filter((e) => inRange(e.date, from, to)), U = entries.filter((e) => !to || e.date <= to);
+  const lines: CompareLine[] = B.map((b) => {
+    const s = sc.get(b.code) ?? of(b.code, entries), budget = b.approved ?? 0, used = budget ? s / budget : 0;
+    return { code: b.code, description: b.description ?? '', budget, inRange: of(b.code, R), toDate: of(b.code, U), sc: s, available: budget - s, used,
+      status: !budget && s ? 'unbudgeted' : s > budget + 0.5 ? 'over' : used >= 0.9 ? 'high' : 'ok' };
+  });
+  const hs = [...new Set(lines.map((l) => l.code.split('.')[0]))];
+  const heads = hs.map((h) => {
+    const L = lines.filter((l) => l.code.split('.')[0] === h), budget = L.reduce((a, l) => a + l.budget, 0), s = L.reduce((a, l) => a + l.sc, 0), diff = s - budget, pct = budget ? diff / budget : 0;
+    return { h, budget, toDate: L.reduce((a, l) => a + l.toDate, 0), sc: s, diff, pct, status: diff > 0.5 ? (pct > FLEX ? 'over-flex' : 'within-flex') : 'ok' } as CompareHead;
+  });
+  return { lines, heads };
 }
