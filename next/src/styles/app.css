@@ -789,3 +789,16 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .stmt tbody tr:not(.grp):hover td { background: var(--surface-hover); }
 @media (max-width: 900px) { .stmt-kpi { grid-template-columns: repeat(2, 1fr); } .stmt-kpi .wide { grid-column: 1 / -1; } }
 @media print { .stmt-scroll { max-height: none; overflow: visible; } .stmt th, .stmt td { position: static !important; } }
+/* statement risk colours */
+.stmt tr.rk-over:not(.grp) td.pin { box-shadow: inset 3px 0 0 var(--critical), 1px 0 0 var(--line); }
+.stmt tr.rk-fast:not(.grp) td.pin { box-shadow: inset 3px 0 0 var(--warn), 1px 0 0 var(--line); }
+.stmt tr.rk-over:not(.grp) td { background: color-mix(in srgb, var(--critical) 7%, var(--surface)) !important; }
+.stmt tr.rk-fast:not(.grp) td { background: color-mix(in srgb, var(--warn) 8%, var(--surface)) !important; }
+.stmt .chip { display: inline-block; min-width: 44px; padding: 1px 7px; border-radius: 10px; font-family: var(--mono); font-size: 11.5px; font-weight: 600; text-align: center; }
+.stmt .chip.c-ok { background: var(--good-soft); color: var(--good); } .stmt .chip.c-fast { background: var(--warn-soft); color: var(--warn); } .stmt .chip.c-over { background: var(--critical-soft); color: var(--critical); }
+.stmt .rk-tag { margin-left: 8px; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 8px; white-space: nowrap; }
+.stmt .rk-tag.t-over { background: var(--critical-soft); color: var(--critical); } .stmt .rk-tag.t-fast { background: var(--warn-soft); color: var(--warn); } .stmt .rk-tag.t-slow { background: var(--surface-2); color: var(--ink-2); }
+.stmt .usedc { min-width: 220px; }
+.lg.slow { background: var(--ink-3); } .lg.ok { background: var(--good); }
+.stmt td.cm { color: var(--ink-2); } .stmt td.cm.has { color: var(--c2); font-weight: 600; }
+.stmt .usedc .minibar { position: relative; } .stmt .usedc .minibar span { position: absolute; top: 0; bottom: 0; }
