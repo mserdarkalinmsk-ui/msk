@@ -1,4 +1,5 @@
 import { ADMIN_LINE, FORMAT } from './terms';
+import { HEADINGS as HEADING_NAMES } from './calc';
 import type { BudgetLine, Project } from './types';
 import type { WbLine, Workbook } from './workbook';
 
@@ -46,9 +47,12 @@ export function enrichExtraction<W extends Pick<Workbook, 'lines' | 'totals'>>(w
   const leafCodes = [...new Set([...baseCodes, ...got.keys()])].filter((c) => c !== ADMIN_LINE);
   const codes = [...new Set([...leafCodes, ...leafCodes.flatMap((c) => c.split('.').slice(0, -1).map((_, i, a) => a.slice(0, i + 1).join('.')))])];
   const isLeaf = (c: string) => !codes.some((o) => o !== c && o.startsWith(c + '.'));
+  // Heading names: the budget's own, else those of any full report already loaded (REPORT sheet lists every heading).
+  const seen = new Map<string, string>();
+  for (const r of p.reportingPeriods ?? []) for (const l of r.snapshot?.workbook?.lines ?? []) if (l.description?.trim() && !seen.has(l.code)) seen.set(l.code, l.description.trim());
   const lines: WbLine[] = codes.map((code) => {
     const b = base.find((l) => l.code === code), e = got.get(code);
-    return { code, description: b?.description || e?.description || p.approvedBudget?.names?.[code] || '', unit: b?.unit ?? '', level: code.split('.').length, leaf: isLeaf(code),
+    return { code, description: b?.description || e?.description || p.approvedBudget?.names?.[code] || seen.get(code) || (code.split('.').length === 1 ? HEADING_NAMES[code] ?? '' : ''), unit: b?.unit ?? '', level: code.split('.').length, leaf: isLeaf(code),
       budget: { units: b?.approvedUnits ?? null, rate: b?.unitRate ?? null, cost: b?.approved ?? null }, actual: e?.actual ?? { units: null, rate: null, cost: 0 }, sc: e?.sc ?? 0 };
   }).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
   const leafs = lines.filter((l) => l.leaf), sum = (f: (l: WbLine) => number) => leafs.reduce((a, l) => a + f(l), 0);

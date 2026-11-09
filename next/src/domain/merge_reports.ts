@@ -18,7 +18,8 @@ export function budgetFromWorkbook(wb: Workbook, source: string): ApprovedBudget
   const T = wb.totals, admin = T.admin?.budget ?? L.find((l) => l.code === ADMIN_LINE)?.approved ?? 0, cont = T.contingency?.budget ?? 0;
   const direct = T.direct?.budget ?? L.filter((l) => l.code !== ADMIN_LINE && l.code !== '8').reduce((a, l) => a + (l.approved ?? 0), 0);
   const total = Math.round((T.eligible?.budget ?? direct + admin + cont) * 100) / 100;
-  return { lines: L, direct, admin, contingency: cont, total, source, linesSum: direct, importedAt: new Date().toISOString() };
+  const names = Object.fromEntries(wb.lines.filter((l) => l.description?.trim()).map((l) => [l.code, l.description.trim()]));
+  return { lines: L, names, direct, admin, contingency: cont, total, source, linesSum: direct, importedAt: new Date().toISOString() };
 }
 
 export const isBudgetFile = (wb: Workbook) => docType(wb).kind === 'proposal';
