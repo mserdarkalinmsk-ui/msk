@@ -77,7 +77,7 @@ export interface OrganisedOptions { from?: string; to?: string; findings?: Findi
 export function organisedSheets(p: Project, wb: WorkbookSummary, o: OrganisedOptions = {}): SheetSpec[] {
   const lines = wb.lines, E = wb.entries ?? [], name = new Map(lines.map((l) => [l.code, l.description]));
   const m = wb.meta, T = wb.totals.eligible ?? wb.totals.direct;
-  const F = o.findings ?? findErrors(E, { budget: budgetRefs(lines.filter((l) => l.leaf)), start: p.start, end: p.end, bh: m.bh ?? p.bh, pos: wb.pos, sc: new Map(lines.filter((l) => l.leaf).map((l) => [l.code, l.sc ?? 0])) });
+  const F = o.findings ?? findErrors(E, { budget: budgetRefs(lines.filter((l) => l.leaf)), start: p.start, end: p.end, bh: m.bh ?? p.bh, pos: wb.pos, asAt: wb.meta.situationDate, sc: new Map(lines.filter((l) => l.leaf).map((l) => [l.code, l.sc ?? 0])) });
   const ranged = !!(o.from || o.to);
   const R = ranged ? spendBetween(E, o.from ?? '', o.to ?? '', budgetRefs(lines)) : null;
   const sheets: SheetSpec[] = [];
