@@ -44,13 +44,13 @@ export function presets(today: Date): { key: string; label: string; from: string
 
 /* ---------- entries that look wrong ---------- */
 
-export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over';
+export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near';
 export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number }[] }
 
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
   'po-over': 'Invoiced above the PO', 'outside-dates': 'Outside the project dates', unposted: 'Not posted', 'other-bh': 'Mentions another budget head',
-  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility',
+  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility', 'head-near': 'Heading close to the addendum threshold',
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -166,6 +166,9 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
     const hv = C.heads.filter((h) => h.status === 'over-flex');
     if (hv.length) out.push({ kind: 'head-over', level: 'error', title: KIND_LABEL['head-over'], text: `${hv.length} heading${hv.length > 1 ? 's exceed' : ' exceeds'} its budget by more than 25% — a budget revision (addendum) is needed before these costs are eligible.`,
       amount: r2(hv.reduce((a, h) => a + h.diff, 0)), rows: hv.map((h) => ({ date: '', doc: `Heading ${h.h}`, line: h.h, description: `Budget ${eur(h.budget)} · spent + committed ${eur(h.sc)} · +${Math.round(h.pct * 100)}%`, amount: r2(h.diff) })) });
+    const nr = C.heads.filter((h) => h.status === 'near-flex');
+    if (nr.length) out.push({ kind: 'head-near', level: 'warning', title: KIND_LABEL['head-near'], text: `${nr.length} heading${nr.length > 1 ? 's are' : ' is'} 20–25% above budget — still a notification, but close to needing an addendum.`,
+      amount: r2(nr.reduce((a, h) => a + h.diff, 0)), rows: nr.map((h) => ({ date: '', doc: `Heading ${h.h}`, line: h.h, description: `Budget ${eur(h.budget)} · spent + committed ${eur(h.sc)} · +${(h.pct * 100).toFixed(1)}% · ${eur(h.budget * 1.25 - h.sc)} left before 25%`, amount: r2(h.diff) })) });
   }
 
   const rank = { error: 0, warning: 1, info: 2 } as const;
@@ -175,7 +178,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
 /* ---------- against the approved budget ---------- */
 
 export interface CompareLine { code: string; description: string; budget: number; inRange: number; toDate: number; sc: number; available: number; used: number; status: 'over' | 'high' | 'ok' | 'unbudgeted' }
-export interface CompareHead { h: string; budget: number; toDate: number; sc: number; diff: number; pct: number; status: 'over-flex' | 'within-flex' | 'ok' }
+export interface CompareHead { h: string; budget: number; toDate: number; sc: number; diff: number; pct: number; status: 'over-flex' | 'near-flex' | 'within-flex' | 'ok' }
 export const FLEX = 0.25;
 
 /**
@@ -195,7 +198,7 @@ export function compareBudget(entries: Entry[], budget: BudgetRef[], sc: Map<str
   const hs = [...new Set(lines.map((l) => l.code.split('.')[0]))];
   const heads = hs.map((h) => {
     const L = lines.filter((l) => l.code.split('.')[0] === h), budget = L.reduce((a, l) => a + l.budget, 0), s = L.reduce((a, l) => a + l.sc, 0), diff = s - budget, pct = budget ? diff / budget : 0;
-    return { h, budget, toDate: L.reduce((a, l) => a + l.toDate, 0), sc: s, diff, pct, status: diff > 0.5 ? (pct > FLEX ? 'over-flex' : 'within-flex') : 'ok' } as CompareHead;
+    return { h, budget, toDate: L.reduce((a, l) => a + l.toDate, 0), sc: s, diff, pct, status: diff > 0.5 ? (pct > FLEX ? 'over-flex' : pct > 0.2 ? 'near-flex' : 'within-flex') : 'ok' } as CompareHead;
   });
   return { lines, heads };
 }
