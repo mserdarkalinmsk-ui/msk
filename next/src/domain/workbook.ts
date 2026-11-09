@@ -212,12 +212,16 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   if (!lines.length) {
     const co = table(sheets, ['reportingline', 'spentcomeur']);
     if (co) {
-      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source') };
+      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source'), d: co.col('description') };
       const by = new Map<string, { a: number; sc: number; u: number }>(); let un = 0;
       for (const r of co.rows) {
         if (!cell(r, C.src) || /^total/i.test(cell(r, C.src))) continue;
         const code = cell(r, C.line);
-        if (!/^\d+(\.\d+)*$/.test(code) || code === '0') { un += z(r[C.sc]); continue; }
+        if (!/^\d+(\.\d+)*$/.test(code) || code === '0') {
+          // The levy taken on each donor tranche (7%) is the administrative costs: it belongs to the totals, on line 10.
+          if (/tranche|prelev|levy/i.test(cell(r, C.d))) { const x = by.get('10') ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); by.set('10', x); continue; }
+          un += z(r[C.sc]); continue;
+        }
         const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += z(r[C.u]); by.set(code, x);
       }
       if (by.size) {
@@ -293,7 +297,8 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     const C = { line: gl.col('reportingline'), no: gl.col('glnumber'), d: gl.col('description'), dl: gl.col('linedescription'), am: gl.col('spent'), pe: gl.col('period'), ad: gl.col('accountingdate'), na: gl.col('nature'), pf: gl.col('postingflag'), u: gl.col('nbreofunits'), ut: gl.col('unittype') };
     for (const r of gl.rows) {
       const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
-      entries.push({ date: toDay(r[C.ad]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'gl', doc: no, po: '', line: cell(r, C.line), account: cell(r, C.na), description: cell(r, C.d), detail: cell(r, C.dl), supplier: '', amount, posted: !/^n/i.test(cell(r, C.pf)), units: num(r[C.u]), unitType: cell(r, C.ut) });
+      const ln = cell(r, C.line), levy = (!ln || ln === '0') && /tranche|prelev|levy/i.test(cell(r, C.d));
+      entries.push({ date: toDay(r[C.ad]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'gl', doc: no, po: '', line: levy ? '10' : ln, account: cell(r, C.na), description: cell(r, C.d), detail: cell(r, C.dl), supplier: '', amount, posted: !/^n/i.test(cell(r, C.pf)), units: num(r[C.u]), unitType: cell(r, C.ut) });
     }
   }
   entries.sort((a, b) => a.date.localeCompare(b.date));

@@ -18,7 +18,7 @@ export function spendBetween(entries: Entry[], from: string, to: string, budget:
   const L = new Map<string, RangeLine>(), M = new Map<string, number>();
   for (const e of rows) {
     const k = e.line && e.line !== '0' ? e.line : '';
-    const x = L.get(k) ?? { line: k, description: k ? name.get(k) ?? '' : 'No reporting line', amount: 0, n: 0, invoices: 0, gl: 0 };
+    const x = L.get(k) ?? { line: k, description: k ? name.get(k) || (k === '10' ? 'Administrative costs (levy on tranches)' : '') : 'No reporting line', amount: 0, n: 0, invoices: 0, gl: 0 };
     x.amount += e.amount; x.n++; x[e.src === 'invoice' ? 'invoices' : 'gl'] += e.amount; L.set(k, x);
     M.set(e.date.slice(0, 7), (M.get(e.date.slice(0, 7)) ?? 0) + e.amount);
   }
@@ -85,7 +85,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   // 2. line not in the budget
   if (codes.length) {
     const by = new Map<string, Entry[]>();
-    for (const e of entries) if (e.line && e.line !== '0' && !known(e.line)) by.set(e.line, [...(by.get(e.line) ?? []), e]);
+    for (const e of entries) if (e.line && e.line !== '0' && e.line !== '10' && !known(e.line)) by.set(e.line, [...(by.get(e.line) ?? []), e]);
     for (const [l, E] of by) push('not-in-budget', 'error', `Line ${l} is not in the approved budget — ${E.length} entries, ${eur(E.reduce((a, e) => a + e.amount, 0))}. A typing error in the reporting line (or a budget revision not loaded).`, E);
   }
 

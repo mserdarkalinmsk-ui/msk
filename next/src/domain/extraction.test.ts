@@ -20,12 +20,12 @@ const sheets = [
 describe('system extraction', () => {
   it('sums entries per reporting line and lays them on the approved budget', () => {
     const wb = parseWorkbook(sheets);
-    expect(wb.meta).toMatchObject({ bh: '5260', extraction: true, situationDate: '2026-09-21', unallocated: 70 });
+    expect(wb.meta).toMatchObject({ bh: '5260', extraction: true, situationDate: '2026-09-21' });
     const p = { id: 'p', code: 'P', name: 'P', country: 'tr', start: '2026-01-01', end: '2028-01-01', budget: 5000, bh: '5260',
       approvedBudget: { lines: [{ code: '1.1.1', description: 'Manager', approved: 3000 }, { code: '2.1', description: 'Travel', approved: 1000 }, { code: '10', description: 'Administrative costs', approved: 280 }] } } as unknown as Project;
     const L = reportFrom(wb, 'x.xlsx', p).report.snapshot!.lines;
     expect(L.map((l) => [l.code, l.description, l.approved, l.actual, l.spentCommitted])).toEqual([
-      ['1.1.1', 'Manager', 3000, 250, 1050], ['2.1', 'Travel', 1000, 0, 0], ['5.7', 'Line 5.7 (not in the approved budget)', 0, 300, 300], ['10', 'Administrative costs', 280, 0, 0]]);
+      ['1.1.1', 'Manager', 3000, 250, 1050], ['2.1', 'Travel', 1000, 0, 0], ['5.7', 'Line 5.7 (not in the approved budget)', 0, 300, 300], ['10', 'Administrative costs', 280, 70, 70]]);
   });
 
   it('reads an extraction saved by any import screen against the budget, and keeps every euro', () => {

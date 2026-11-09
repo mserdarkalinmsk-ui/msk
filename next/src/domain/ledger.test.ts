@@ -57,7 +57,7 @@ describe('dated ledger of a system extraction', () => {
     expect(k('unposted')).toHaveLength(1);
     expect(k('other-bh')[0].rows).toHaveLength(1);
     expect(k('contract-beyond')[0].rows[0].doc).toBe('PO 900003');
-    expect(F.find((f) => f.kind === 'no-line')).toMatchObject({ level: 'info', title: 'Levies on tranches', amount: 700 });
+    expect(wb.entries!.find((e) => e.doc === '1')!.line).toBe('10');
     expect(F[0].level).toBe('error');
   });
   it('lays the extraction out as a tidy workbook, with the chosen range', () => {
