@@ -40,6 +40,16 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
   const full_ = mode === 'full';
   const toggle = (c: string) => setClosed((s) => { const n = new Set(s); n.has(c) ? n.delete(c) : n.add(c); return n; });
   const used = (r: Row) => (r.sum.b ? r.sum.sc / r.sum.b : 0);
+  /** over: above budget · fast: used well ahead of time (or units / rate) · slow: far behind time · ok */
+  const risk = (r: Row, u: number, uu: number | null, rateUp: number): 'over' | 'fast' | 'slow' | 'ok' => {
+    if (!r.sum.b) return r.sum.sc > 0.5 ? 'over' : 'ok';
+    if (u > 1.0001 || (uu != null && uu > 1.0001)) return 'over';
+    if (u - elapsed > 0.15 || (uu != null && uu - elapsed > 0.15) || rateUp > 0.15) return 'fast';
+    if (elapsed > 0.25 && elapsed - u > 0.3) return 'slow';
+    return 'ok';
+  };
+  const RC = { over: 'var(--critical)', fast: 'var(--warn)', slow: 'var(--ink-3)', ok: 'var(--good)' } as const;
+  const RL = { over: 'Over budget', fast: 'Ahead of time', slow: 'Behind time', ok: 'On track' } as const;
   const exportCsv = () => downloadCSV(`${title}.csv`, [
     { key: 'c', label: 'Code', width: 0, value: (r: Row) => r.code }, { key: 'd', label: 'Description', width: 0, value: (r) => r.label },
     { key: 'u', label: 'Unit', width: 0, value: (r) => r.leaf?.unit ?? '' },
@@ -51,7 +61,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
   // Sticky offsets from the rows actually shown, so a report without admin/total rows leaves no gap.
   const T = (k: 'direct' | 'admin' | 'eligible', label: string, cls: string) => totals[k] && (
     <tr class={cls} style={{ ['--sb' as string]: `${(present.length - 1 - present.indexOf(k)) * 33}px` }}><td class="tl" colSpan={full_ ? 4 : 1}>{label}</td>
-      <td class="r">{money(totals[k]!.budget)}</td>{full_ && <><td /><td /></>}<td class="r">{money(totals[k]!.actual)}</td><td class="r">{money(totals[k]!.sc - totals[k]!.actual)}</td><td class="r">{money(totals[k]!.sc)}</td><td class={`r ${totals[k]!.budget && totals[k]!.budget - totals[k]!.sc < -0.5 ? 'neg' : ''}`}>{totals[k]!.budget ? signed(totals[k]!.budget - totals[k]!.sc) : '–'}</td>
+      <td class="r">{money(totals[k]!.budget)}</td>{full_ && <><td /><td /><td /></>}<td class="r">{money(totals[k]!.actual)}</td><td class="r">{money(totals[k]!.sc - totals[k]!.actual)}</td><td class="r">{money(totals[k]!.sc)}</td><td class={`r ${totals[k]!.budget && totals[k]!.budget - totals[k]!.sc < -0.5 ? 'neg' : ''}`}>{totals[k]!.budget ? signed(totals[k]!.budget - totals[k]!.sc) : '–'}</td>
       <td class="r">{pct(totals[k]!.budget ? totals[k]!.sc / totals[k]!.budget : 0)}</td>
       {hasPlan && <td class="r">{money(totals[k]!.planned)}</td>}{hasProp && <><td class="r">{money(totals[k]!.rounded ?? totals[k]!.proposal)}</td><td class="r">{(totals[k]!.rounded ?? totals[k]!.proposal) ? money(v(totals[k]!.rounded ?? totals[k]!.proposal) - (totals[k]!.proposalBase ?? totals[k]!.budget)) : '–'}</td></>}</tr>
   );
@@ -78,19 +88,21 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
         <table class="stmt">
           <thead>
             <tr class="g"><th rowSpan={2} class="pin">Line</th>{full_ && <th rowSpan={2}>Unit</th>}
-              <th colSpan={full_ ? 3 : 1} class="gb">Budget for all years</th><th colSpan={full_ ? 3 : 1} class="ga">Actual expenditure</th><th rowSpan={2} class="r">Committed</th><th rowSpan={2} class="r">Spent +<br />committed</th><th rowSpan={2} class="r">Available</th><th rowSpan={2}>Used</th>
+              <th colSpan={full_ ? 3 : 1} class="gb">Budget for all years</th><th colSpan={full_ ? 4 : 1} class="ga">Actual expenditure</th><th rowSpan={2} class="r">Committed</th><th rowSpan={2} class="r">Spent +<br />committed</th><th rowSpan={2} class="r">Available</th><th rowSpan={2}>Used</th>
               {hasPlan && <th rowSpan={2} class="r gp">Planned<br />12 months</th>}{hasProp && <th colSpan={2} class="gp">Budget proposal</th>}</tr>
-            <tr class="s">{full_ && <><th class="r">Units</th><th class="r">Rate</th></>}<th class="r">€</th>{full_ && <><th class="r">Units</th><th class="r">Rate</th></>}<th class="r">€</th>{hasProp && <><th class="r">€</th><th class="r">vs budget</th></>}</tr>
+            <tr class="s">{full_ && <><th class="r">Units</th><th class="r">Rate</th></>}<th class="r">€</th>{full_ && <><th class="r">Units</th><th class="r">Units used</th><th class="r">Rate</th></>}<th class="r">€</th>{hasProp && <><th class="r">€</th><th class="r">vs budget</th></>}</tr>
           </thead>
           <tbody>
             {visible.map((r) => {
               const l = r.leaf, u = used(r), over = r.sum.b > 0 && r.sum.sc > r.sum.b;
               const rateUp = l?.budget.rate && l.actual.rate && l.actual.units ? l.actual.rate / l.budget.rate - 1 : 0;
+              const uu = l?.budget.units && l.actual.units != null ? l.actual.units / l.budget.units : null;
+              const rk = risk(r, u, uu, rateUp);
               // Compare the proposal only with the budget of the lines (projects) that made one.
               const d = r.sum.pr ? r.sum.pr - r.sum.pb : 0, parent = !l;
               const src = source && l?.row ? `From ${source}, row ${l.row}` : undefined;
               return (
-                <tr class={`d${Math.min(r.depth, 3)} ${parent ? 'grp' : ''} ${over ? 'over' : ''}`}>
+                <tr class={`d${Math.min(r.depth, 3)} ${parent ? 'grp' : ''} ${over ? 'over' : ''} rk-${rk}`}>
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
                     {parent ? <button class="tw" aria-expanded={!closed.has(r.code)} onClick={() => toggle(r.code)}>{closed.has(r.code) ? '▸' : '▾'}</button> : <span class="tw" />}
                     <span class="num cd">{r.code}</span> {r.label}
@@ -98,12 +110,12 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                   {full_ && <td class="muted">{l?.unit}</td>}
                   {full_ && <><td class="r num">{n0(l?.budget.units)}</td><td class="r num">{n0(l?.budget.rate)}</td></>}
                   <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.b)}</td>
-                  {full_ && <><td class="r num">{n0(l?.actual.units)}</td><td class={`r num ${rateUp > 0.15 ? 'warn' : ''}`} title={rateUp ? `${rateUp > 0 ? '+' : ''}${Math.round(rateUp * 100)}% vs budget rate` : ''}>{n0(l?.actual.rate)}</td></>}
+                  {full_ && <><td class="r num">{n0(l?.actual.units)}</td><td class="r uu">{uu != null ? <span class={`chip ${uu > 1.0001 ? 'c-over' : uu - elapsed > 0.15 ? 'c-fast' : 'c-ok'}`} title={`${n0(l!.actual.units)} of ${n0(l!.budget.units)} ${l!.unit || 'units'} used · ${pct(elapsed)} of time`}>{pct(uu)}</span> : ''}</td><td class={`r num ${rateUp > 0.15 ? 'warn' : ''}`} title={rateUp ? `${rateUp > 0 ? '+' : ''}${Math.round(rateUp * 100)}% vs budget rate` : ''}>{n0(l?.actual.rate)}</td></>}
                   <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.a)}</td>
-                  <td class="r num muted">{money(r.sum.sc - r.sum.a)}</td>
+                  <td class={`r num cm ${r.sum.sc - r.sum.a > 0.5 ? 'has' : ''}`}>{money(r.sum.sc - r.sum.a)}</td>
                   <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.sc)}</td>
                   <td class={`r num ${r.sum.b - r.sum.sc < -0.5 ? 'neg' : ''}`}>{r.sum.b ? signed(r.sum.b - r.sum.sc) : '–'}</td>
-                  <td class="usedc"><div class="minibar"><span style={{ width: `${Math.min(100, u * 100)}%`, background: over ? 'var(--critical)' : 'var(--c1)' }} /><i style={{ left: `${elapsed * 100}%` }} /></div><span class="num">{r.sum.b ? pct(u) : ''}</span></td>
+                  <td class="usedc" title={`${RL[rk]} — ${pct(u)} used at ${pct(elapsed)} of time${uu != null ? ` · ${pct(uu)} of units` : ''}${rateUp > 0.15 ? ` · rate +${Math.round(rateUp * 100)}%` : ''}`}><div class="minibar"><span style={{ width: `${Math.min(100, (r.sum.b ? r.sum.a / r.sum.b : 0) * 100)}%`, background: RC[rk] }} /><span style={{ left: `${Math.min(100, (r.sum.b ? r.sum.a / r.sum.b : 0) * 100)}%`, width: `${Math.max(0, Math.min(100, u * 100) - Math.min(100, (r.sum.b ? r.sum.a / r.sum.b : 0) * 100))}%`, background: RC[rk], opacity: .4 }} /><i style={{ left: `${elapsed * 100}%` }} /></div><span class="num">{r.sum.b ? pct(u) : ''}</span>{l && rk !== 'ok' && <span class={`rk-tag t-${rk}`}>{RL[rk]}</span>}</td>
                   {hasPlan && <td class="r num">{money(r.sum.pl)}</td>}
                   {hasProp && <><td class="r num">{money(r.sum.pr)}</td><td class={`r num ${d > 0.5 ? 'up' : d < -0.5 ? 'down' : ''}`}>{Math.abs(d) < 0.5 ? '–' : `${d > 0 ? '+' : '−'}${Math.abs(d).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td></>}
                 </tr>
@@ -117,7 +129,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
           </tfoot>
         </table>
       </div>
-      <div class="stmt-legend muted"><span><i class="lg over" />spent + committed above budget</span><span><i class="lg warn" />actual unit rate &gt; 15% above budget rate</span><span>│ tick = time elapsed</span></div>
+      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
     </div>
   );
 }
