@@ -212,7 +212,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   if (!lines.length) {
     const co = table(sheets, ['reportingline', 'spentcomeur']);
     if (co) {
-      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source'), d: co.col('description') };
+      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source'), d: co.col('description'), ut: co.col('unittype') };
       const by = new Map<string, { a: number; sc: number; u: number }>(); let un = 0;
       for (const r of co.rows) {
         if (!cell(r, C.src) || /^total/i.test(cell(r, C.src))) continue;
@@ -222,7 +222,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
           if (/tranche|prelev|levy/i.test(cell(r, C.d))) { const x = by.get('10') ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); by.set('10', x); continue; }
           un += z(r[C.sc]); continue;
         }
-        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += z(r[C.u]); by.set(code, x);
+        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate); by.set(code, x);
       }
       if (by.size) {
         meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un;
@@ -312,6 +312,21 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     if (meta.unallocated) wb.checks.push({ ok: false, level: 'warning', text: `${eur(meta.unallocated)} posted without a reporting line (e.g. levies on a tranche) — not in the line totals.` });
   }
   return wb;
+}
+
+/**
+ * Units of a posting that are actually used, not just ordered. A staff PO "from 01/01/2026 to 31/12/2026" orders
+ * 12 months: by the situation date only the months gone are used. Any other PO counts its units in proportion
+ * to what is spent of what is ordered (an open PO for 10 days with half invoiced = 5 days).
+ */
+export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string): number {
+  if (!units) return 0;
+  const m = description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
+  if (m && /month/i.test(unitType) && asAt) {
+    const f = Date.parse(dmy(m[1])), t = Date.parse(dmy(m[2])), a = Date.parse(asAt) + 86_400_000;
+    if (t > f) return Math.round(units * Math.max(0, Math.min(1, (Math.min(a, t + 86_400_000) - f) / (t + 86_400_000 - f))) * 100) / 100;
+  }
+  return sc > 0 && spent < sc ? Math.round(units * Math.max(0, spent / sc) * 100) / 100 : units;
 }
 
 /* ---------- cross-checks ---------- */

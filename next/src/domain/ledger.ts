@@ -44,13 +44,13 @@ export function presets(today: Date): { key: string; label: string; from: string
 
 /* ---------- entries that look wrong ---------- */
 
-export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over';
+export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over' | 'staff-short';
 export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number }[] }
 
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
   'po-over': 'Invoiced above the PO', 'outside-dates': 'Outside the project dates', unposted: 'Not posted', 'other-bh': 'Mentions another budget head',
-  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification',
+  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the 25% flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification', 'staff-short': 'Staff PO does not cover the remaining months',
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -59,7 +59,7 @@ const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDi
 const unitWord = (u: string) => u.toLowerCase().replace(/^per\s+/, '').replace(/[^a-z ]/g, '').replace(/s\b/g, '').trim();
 const dmy = (s: string) => { const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
 
-export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[]; /** spent + committed by line, to compare with the approved budget */ sc?: Map<string, number>; /** units budgeted and used by line */ units?: { code: string; description: string; unit: string; budget: number; used: number }[]; /** share of the project time gone, 0–1 */ elapsed?: number }
+export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[]; /** spent + committed by line, to compare with the approved budget */ sc?: Map<string, number>; /** units budgeted and used by line */ units?: { code: string; description: string; unit: string; budget: number; used: number }[]; /** share of the project time gone, 0–1 */ elapsed?: number; /** situation date of the extraction */ asAt?: string }
 
 /**
  * Entries worth a second look. Each rule is stated so a finance officer can check it in the source file:
@@ -169,6 +169,28 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
     const nr = C.heads.filter((h) => h.status === 'near-flex');
     if (nr.length) out.push({ kind: 'head-near', level: 'warning', title: KIND_LABEL['head-near'], text: `${nr.length} heading${nr.length > 1 ? 's are' : ' is'} 20–25% above budget — still a notification, but close to needing an addendum.`,
       amount: r2(nr.reduce((a, h) => a + h.diff, 0)), rows: nr.map((h) => ({ date: '', doc: `Heading ${h.h}`, line: h.h, description: `Budget ${eur(h.budget)} · spent + committed ${eur(h.sc)} · +${(h.pct * 100).toFixed(1)}% · ${eur(h.budget * 1.25 - h.sc)} left before 25%`, amount: r2(h.diff) })) });
+  }
+
+  // 12b. open staff POs whose balance does not cover the months left of the contract period
+  if (o.asAt && o.pos?.length) {
+    const a = Date.parse(o.asAt), MO = 30.4375 * 86_400_000, short: { p: PO; need: number; left: number }[] = [];
+    for (const p of o.pos) {
+      const m = p.description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
+      if (!m || !/open/i.test(p.status) || !/month/i.test(p.unitType)) continue;
+      const f = Date.parse(dmy(m[1])), t = Date.parse(dmy(m[2])) + 86_400_000;
+      if (!(t > a && a > f)) continue;
+      // Months already paid = months with an invoice on this PO; the cost of a month = their average.
+      const paid = new Map<string, number>();
+      for (const e of entries) if (e.src === 'invoice' && e.po === p.po) paid.set(e.date.slice(0, 7), (paid.get(e.date.slice(0, 7)) ?? 0) + e.amount);
+      const last = [...paid.keys()].sort().at(-1);
+      const per = paid.size ? [...paid.values()].reduce((x, v) => x + v, 0) / paid.size : p.spent / Math.max(1, (a - f) / MO);
+      const from = last ? Date.parse(last + '-01') + 32 * 86_400_000 : a;
+      const left = Math.max(0, Math.round((t - Date.UTC(new Date(from).getUTCFullYear(), new Date(from).getUTCMonth(), 1)) / MO)), need = per * left;
+      if (!left) continue;
+      if (need - p.balance > 100) short.push({ p, need, left });
+    }
+    if (short.length) out.push({ kind: 'staff-short', level: 'warning', title: KIND_LABEL['staff-short'], text: `${short.length} staff PO${short.length > 1 ? 's' : ''} still running have less left than the months to come at the current monthly cost — about ${eur(short.reduce((x, s) => x + s.need - s.p.balance, 0))} is not committed yet. Committed (and spent + committed) are understated until the PO is topped up.`,
+      amount: r2(short.reduce((x, s) => x + s.need - s.p.balance, 0)), rows: short.map((s) => ({ date: s.p.date, doc: `PO ${s.p.po}`, line: s.p.line, description: `${s.p.description} — ${s.left} month${s.left > 1 ? 's' : ''} still to pay ≈ ${eur(s.need)}, PO balance ${eur(s.p.balance)}`, amount: r2(s.need - s.p.balance) })) });
   }
 
   // 12. units above the budgeted number (now, or at the current pace) → notification
