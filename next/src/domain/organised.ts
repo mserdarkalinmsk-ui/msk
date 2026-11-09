@@ -103,7 +103,7 @@ export function organisedSheets(p: Project, wb: WorkbookSummary, o: OrganisedOpt
   const leafs = lines.filter((l) => l.leaf);
   if (leafs.some((l) => l.budget.cost)) {
     const C = compareBudget(E, budgetRefs(leafs), new Map(leafs.map((l) => [l.code, l.sc ?? 0])), o.from ?? '', o.to ?? '');
-    const st = (x: string) => ({ over: 'Over budget', high: '90%+ used', ok: 'OK', unbudgeted: 'Not budgeted', 'over-flex': 'Addendum (beyond 25%)', 'within-flex': 'Notification (within 25%)' } as Record<string, string>)[x];
+    const st = (x: string) => ({ over: 'Over budget', high: '90%+ used', ok: 'OK', unbudgeted: 'Not budgeted', 'over-flex': 'Addendum (beyond 25%)', 'within-flex': 'Notification (within 25%)', 'near-flex': 'Near addendum (20–25%)' } as Record<string, string>)[x];
     sheets.push({ name: 'Budget vs actual', widths: [10, 46, 15, 15, 15, 15, 15, 9, 26], rows: [
       [{ v: 'Against the approved budget', st: 'title' }], [],
       [H('Heading'), H(''), H('Approved budget'), H('Spent + committed'), H('Difference'), H('%'), H('Status')],

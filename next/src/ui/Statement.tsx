@@ -54,8 +54,8 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
     const proj = elapsed > 0.05 ? Math.max(r.sum.sc, r.sum.a / elapsed) : r.sum.sc;
     const now = r.sum.sc > r.sum.b + 0.5, val = now ? r.sum.sc : proj, d = val / r.sum.b - 1;
     if (d <= 0.0001) return null;
-    const kind: 'add' | 'not' = d > 0.25 ? 'add' : 'not';
-    return { kind, now, why: `${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${money(val)} on a budget of ${money(r.sum.b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? 'beyond the 25% flexibility: a budget revision (addendum) is needed' : 'within the 25% flexibility: a notification letter is enough'}.` };
+    const kind: 'add' | 'near' | 'not' = d > 0.25 ? 'add' : d > 0.2 ? 'near' : 'not';
+    return { kind, now, why: `${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${money(val)} on a budget of ${money(r.sum.b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? 'beyond the 25% flexibility: a budget revision (addendum) is needed' : kind === 'near' ? `within 25% but only ${(25 - d * 100).toFixed(1)} points from the addendum threshold (${money(r.sum.b * 1.25)}) — notification now, watch closely` : 'within the 25% flexibility: a notification letter is enough'}.` };
   };
   const RC = { over: 'var(--critical)', fast: 'var(--warn)', slow: 'var(--ink-3)', ok: 'var(--good)' } as const;
   const RL = { over: 'Over budget', fast: 'Ahead of time', slow: 'Behind time', ok: 'On track' } as const;
@@ -115,7 +115,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
                     {parent ? <button class="tw" aria-expanded={!closed.has(r.code)} onClick={() => toggle(r.code)}>{closed.has(r.code) ? '▸' : '▾'}</button> : <span class="tw" />}
                     <span class="num cd">{r.code}</span> {r.label}
-                    {r.depth === 0 && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : 'Notification'}</span>; })()}
+                    {r.depth === 0 && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : c.kind === 'near' ? 'Near addendum' : 'Notification'}</span>; })()}
                   </td>
                   {full_ && <td class="muted">{l?.unit}</td>}
                   {full_ && <><td class="r num">{n0(l?.budget.units)}</td><td class="r num">{n0(l?.budget.rate)}</td></>}
@@ -139,7 +139,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
           </tfoot>
         </table>
       </div>
-      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-add now">Addendum</b> heading above budget (≤ / &gt; 25%) · “Risk:” = projected at the current pace</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
+      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> heading above budget (≤20% / 20–25% / &gt;25%) · “Risk:” = projected at the current pace</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
     </div>
   );
 }

@@ -805,3 +805,4 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .chg { margin-left: 10px; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 9px; border: 1px dashed; white-space: nowrap; cursor: help; font-family: var(--font); }
 .chg-not { color: var(--warn); border-color: var(--warn); } .chg-add { color: var(--critical); border-color: var(--critical); }
 .chg.now { border-style: solid; } .chg-not.now { background: var(--warn-soft); } .chg-add.now { background: var(--critical-soft); }
+.chg-near { color: var(--serious); border-color: var(--serious); } .chg-near.now { background: var(--serious-soft); }
