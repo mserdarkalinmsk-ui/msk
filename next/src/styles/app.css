@@ -28,7 +28,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .top h1 { font-size: var(--fs-lg); font-weight: 650; margin: 0; letter-spacing: -.01em; white-space: nowrap; }
 .top .crumb { color: var(--ink-3); font-weight: 500; }
 .top .grow { flex: 1; }
-.page { padding: var(--s5) var(--s6) var(--s7); max-width: 1480px; }
+.page { padding: var(--s5) var(--s6) var(--s7); max-width: 1800px; margin-inline: auto; width: 100%; box-sizing: border-box; }
+@media (min-width: 2300px) { .page { max-width: 2200px; } }
 .menu-btn { display: none; }
 
 @media (max-width: 900px) {
