@@ -53,7 +53,7 @@ export function enrichExtraction<W extends Pick<Workbook, 'lines' | 'totals'>>(w
   const lines: WbLine[] = codes.map((code) => {
     const b = base.find((l) => l.code === code), e = got.get(code);
     return { code, description: b?.description || e?.description || p.approvedBudget?.names?.[code] || seen.get(code) || (code.split('.').length === 1 ? HEADING_NAMES[code] ?? '' : ''), unit: b?.unit ?? '', level: code.split('.').length, leaf: isLeaf(code),
-      budget: { units: b?.approvedUnits ?? null, rate: b?.unitRate ?? null, cost: b?.approved ?? null }, actual: e?.actual ?? { units: null, rate: null, cost: 0 }, sc: e?.sc ?? 0 };
+      budget: { units: b?.approvedUnits ?? null, rate: b?.unitRate ?? null, cost: b?.approved ?? null }, actual: e ? { ...e.actual, rate: e.actual.rate ?? (e.actual.units && e.actual.cost ? Math.round(e.actual.cost / e.actual.units * 100) / 100 : null) } : { units: null, rate: null, cost: 0 }, sc: e?.sc ?? 0 };
   }).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
   const leafs = lines.filter((l) => l.leaf), sum = (f: (l: WbLine) => number) => leafs.reduce((a, l) => a + f(l), 0);
   const direct = { budget: sum((l) => l.budget.cost ?? 0), actual: sum((l) => l.actual.cost ?? 0), sc: sum((l) => l.sc ?? 0) };
