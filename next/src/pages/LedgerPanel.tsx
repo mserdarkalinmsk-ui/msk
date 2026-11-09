@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { findErrors, presets, spendBetween, type Finding } from '../domain/ledger';
+import { compareBudget, findErrors, presets, spendBetween, type Finding } from '../domain/ledger';
 import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
 import type { Entry, WorkbookSummary } from '../domain/workbook';
@@ -12,14 +12,17 @@ import { download } from '../ui/xlsxwrite';
 const SRC = { invoice: 'Invoice', gl: 'GL' } as const;
 
 /** Dated postings of a system extraction: spending between any two dates, entries to check, and the tidy workbook. */
-export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; mode: 'range' | 'checks' }) {
+export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; mode: 'range' | 'checks' | 'budget' }) {
   const E = wb.entries ?? [];
   const P = presets(TODAY);
   const [from, setFrom] = useState(P.find((x) => x.key === 'y')!.from), [to, setTo] = useState(P.find((x) => x.key === 'y')!.to);
   const [line, setLine] = useState('');
   const leaf = wb.lines.filter((l) => l.leaf);
   const R = useMemo(() => spendBetween(E, from, to, budgetRefs(wb.lines)), [E, from, to, wb.lines]);
-  const F = useMemo(() => findErrors(E, { budget: budgetRefs(leaf), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos }), [E, wb, p.start, p.end]);
+  const sc = useMemo(() => new Map(leaf.map((l) => [l.code, l.sc ?? 0])), [wb]);
+  const F = useMemo(() => findErrors(E, { budget: budgetRefs(leaf), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos, sc }), [E, wb, p.start, p.end]);
+  const C = useMemo(() => compareBudget(E, budgetRefs(leaf), sc, from, to), [E, wb, from, to]);
+  const hasBudget = leaf.some((l) => l.budget.cost);
   const name = new Map(wb.lines.map((l) => [l.code, l.description]));
   const save = (ranged: boolean) => {
     if (!exportOk(p, 'the organised report')) return;
@@ -32,6 +35,7 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
     </div>
   );
 
+  if (mode === 'budget') return <BudgetCompare C={C} from={from} to={to} hasBudget={hasBudget} />;
   if (mode === 'checks') return <Checks F={F} onSave={() => save(false)} />;
 
   const rows = line ? R.rows.filter((e) => (e.line || '—') === line) : R.rows;
@@ -91,6 +95,25 @@ function Checks({ F, onSave }: { F: Finding[]; onSave: () => void }) {
           {open === i && <div class="f-rows"><table class="range-lines"><thead><tr><th>Date</th><th>Document</th><th>Line</th><th>Description</th><th class="r">Amount</th></tr></thead>
             <tbody>{f.rows.map((r) => <tr><td class="num">{r.date ? date(r.date) : '—'}</td><td>{r.doc}</td><td class="num">{r.line || '—'}</td><td>{r.description}</td><td class="num r">{full(r.amount)}</td></tr>)}</tbody></table></div>}
         </li>))}</ul>
+    </div>
+  );
+}
+
+const HEAD: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment and supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other', '8': 'Contingency reserve' };
+function BudgetCompare({ C, from, to, hasBudget }: { C: ReturnType<typeof compareBudget>; from: string; to: string; hasBudget: boolean }) {
+  if (!hasBudget) return <div class="empty-inline" style={{ padding: '20px' }}><p>No approved budget on file for this project. Add the approved budget (Add documents) and every line is compared here.</p></div>;
+  const badge = (st: string) => st === 'over' || st === 'over-flex' ? <span class="badge serious">{st === 'over' ? 'Over budget' : 'Beyond 25% — revision needed'}</span> : st === 'within-flex' ? <span class="badge warning">Over, within 25%</span> : st === 'high' ? <span class="badge warning">90%+ used</span> : st === 'unbudgeted' ? <span class="badge serious">Not budgeted</span> : <span class="badge good">OK</span>;
+  const bar = (u: number) => <div class="minibar" style={{ width: '90px', display: 'inline-block', verticalAlign: 'middle' }}><span style={{ width: `${Math.min(100, u * 100)}%`, background: u > 1 ? 'var(--serious)' : u >= .9 ? 'var(--warn)' : undefined }} /></div>;
+  const T = C.lines.reduce((a, l) => ({ b: a.b + l.budget, r: a.r + l.inRange, t: a.t + l.toDate, s: a.s + l.sc }), { b: 0, r: 0, t: 0, s: 0 });
+  return (
+    <div class="ledger">
+      <h3 style={{ margin: '4px 0 0' }}>By heading — 25% flexibility</h3>
+      <table class="range-lines"><thead><tr><th>Heading</th><th class="r">Approved budget</th><th class="r">Spent + committed</th><th class="r">Difference</th><th class="r">%</th><th>Status</th></tr></thead>
+        <tbody>{C.heads.map((h) => <tr><td>{h.h}. {HEAD[h.h] ?? ''}</td><td class="num r">{full(h.budget)}</td><td class="num r">{full(h.sc)}</td><td class="num r">{h.diff > 0 ? '+' : '−'}{full(Math.abs(h.diff))}</td><td class="num r">{h.budget ? `${h.pct > 0 ? '+' : ''}${(h.pct * 100).toFixed(1)}%` : '—'}</td><td>{badge(h.status)}</td></tr>)}</tbody></table>
+      <h3 style={{ margin: '8px 0 0' }}>By line{from || to ? ` · range ${from ? date(from) : 'start'} → ${to ? date(to) : 'today'}` : ''}</h3>
+      <table class="range-lines"><thead><tr><th>Line</th><th>Description</th><th class="r">Approved budget</th><th class="r">Spent in range</th><th class="r">Spent to range end</th><th class="r">Spent + committed</th><th class="r">Available</th><th>Used</th><th>Status</th></tr></thead>
+        <tbody>{C.lines.map((l) => <tr><td class="num">{l.code}</td><td>{l.description}</td><td class="num r">{full(l.budget)}</td><td class="num r">{full(l.inRange)}</td><td class="num r">{full(l.toDate)}</td><td class="num r">{full(l.sc)}</td><td class="num r">{l.available < 0 ? '−' : ''}{full(Math.abs(l.available))}</td><td class="num">{bar(l.used)} {Math.round(l.used * 100)}%</td><td>{badge(l.status)}</td></tr>)}</tbody>
+        <tfoot><tr><td colSpan={2}><b>Total direct costs</b></td><td class="num r"><b>{full(T.b)}</b></td><td class="num r"><b>{full(T.r)}</b></td><td class="num r"><b>{full(T.t)}</b></td><td class="num r"><b>{full(T.s)}</b></td><td class="num r"><b>{full(T.b - T.s)}</b></td><td class="num">{T.b ? Math.round(T.s / T.b * 100) : 0}%</td><td /></tr></tfoot></table>
     </div>
   );
 }

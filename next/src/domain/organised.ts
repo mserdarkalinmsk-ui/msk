@@ -1,5 +1,5 @@
 import type { SheetSpec, XCell } from '../ui/xlsxwrite';
-import { findErrors, KIND_LABEL, spendBetween, type BudgetRef, type Finding } from './ledger';
+import { compareBudget, findErrors, KIND_LABEL, spendBetween, type BudgetRef, type Finding } from './ledger';
 import type { Project } from './types';
 import type { Entry, WbLine, WorkbookSummary } from './workbook';
 
@@ -77,7 +77,7 @@ export interface OrganisedOptions { from?: string; to?: string; findings?: Findi
 export function organisedSheets(p: Project, wb: WorkbookSummary, o: OrganisedOptions = {}): SheetSpec[] {
   const lines = wb.lines, E = wb.entries ?? [], name = new Map(lines.map((l) => [l.code, l.description]));
   const m = wb.meta, T = wb.totals.eligible ?? wb.totals.direct;
-  const F = o.findings ?? findErrors(E, { budget: budgetRefs(lines.filter((l) => l.leaf)), start: p.start, end: p.end, bh: m.bh ?? p.bh, pos: wb.pos });
+  const F = o.findings ?? findErrors(E, { budget: budgetRefs(lines.filter((l) => l.leaf)), start: p.start, end: p.end, bh: m.bh ?? p.bh, pos: wb.pos, sc: new Map(lines.filter((l) => l.leaf).map((l) => [l.code, l.sc ?? 0])) });
   const ranged = !!(o.from || o.to);
   const R = ranged ? spendBetween(E, o.from ?? '', o.to ?? '', budgetRefs(lines)) : null;
   const sheets: SheetSpec[] = [];
@@ -100,6 +100,19 @@ export function organisedSheets(p: Project, wb: WorkbookSummary, o: OrganisedOpt
     LEDGER_HEAD, ...ledgerRows(R.rows, name),
   ], freeze: 3 });
   sheets.push(statement(lines, wb));
+  const leafs = lines.filter((l) => l.leaf);
+  if (leafs.some((l) => l.budget.cost)) {
+    const C = compareBudget(E, budgetRefs(leafs), new Map(leafs.map((l) => [l.code, l.sc ?? 0])), o.from ?? '', o.to ?? '');
+    const st = (x: string) => ({ over: 'Over budget', high: '90%+ used', ok: 'OK', unbudgeted: 'Not budgeted', 'over-flex': 'Beyond 25% — revision needed', 'within-flex': 'Over, within 25%' } as Record<string, string>)[x];
+    sheets.push({ name: 'Budget vs actual', widths: [10, 46, 15, 15, 15, 15, 15, 9, 26], rows: [
+      [{ v: 'Against the approved budget', st: 'title' }], [],
+      [H('Heading'), H(''), H('Approved budget'), H('Spent + committed'), H('Difference'), H('%'), H('Status')],
+      ...C.heads.map((h) => [h.h, '', M(h.budget), M(h.sc), M(h.diff), h.budget ? { v: r2(h.pct), st: 'rPct' } as XCell : null, st(h.status)]), [],
+      [H('Line'), H('Description'), H('Approved budget'), H(ranged ? 'Spent in range' : 'Spent'), H('Spent to range end'), H('Spent + committed'), H('Available'), H('Used %'), H('Status')],
+      ...C.lines.map((l) => [l.code, l.description, M(l.budget), M(l.inRange), M(l.toDate), M(l.sc), M(l.available), l.budget ? { v: r2(l.used), st: 'rPct' } as XCell : null, st(l.status)]),
+      [B('Total direct costs'), '', MB(C.lines.reduce((a, l) => a + l.budget, 0)), MB(C.lines.reduce((a, l) => a + l.inRange, 0)), MB(C.lines.reduce((a, l) => a + l.toDate, 0)), MB(C.lines.reduce((a, l) => a + l.sc, 0)), MB(C.lines.reduce((a, l) => a + l.available, 0)), null, ''],
+    ], freeze: 0 });
+  }
   sheets.push({ name: 'Postings', rows: [LEDGER_HEAD, ...ledgerRows(E, name)], widths: [11, 8, 13, 30, 9, 9, 30, 30, 50, 40, 11, 14] });
   if (E.length) sheets.push(byMonth(E, lines));
   if (wb.pos.length) sheets.push({ name: 'Purchase orders', widths: [9, 9, 50, 30, 30, 14, 11, 14, 14, 14, 14], rows: [
