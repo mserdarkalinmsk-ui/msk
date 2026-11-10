@@ -807,3 +807,22 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .chg.now { border-style: solid; } .chg-not.now { background: var(--warn-soft); } .chg-add.now { background: var(--critical-soft); }
 .chg-near { color: var(--serious); border-color: var(--serious); } .chg-near.now { background: var(--serious-soft); }
 .wb-strip .pack { display: inline-flex; gap: 6px; align-items: center; } .wb-strip .pack select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); }
+/* Work Plan follow-up */
+.wp-edit{display:flex;gap:12px;flex-wrap:wrap;padding:0 20px 12px}
+.wp-edit label,.wp-notes label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.wp-edit input{padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit}
+.wp-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:0 20px 14px}
+.wp-kpi .k{border:1px solid var(--border);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden;background:var(--surface)}
+.wp-kpi .k span{display:block;font-size:12px;color:var(--muted)}.wp-kpi .k b{font-size:20px}
+.wp-kpi .k i{position:absolute;left:0;bottom:0;height:4px;background:var(--c1)}
+.wp-kpi .k.good i{background:var(--good)}.wp-kpi .k.warning i{background:var(--warning)}.wp-kpi .k.serious i{background:var(--critical)}.wp-kpi .k.serious b{color:var(--critical)}
+.wp-t{width:calc(100% - 40px);margin:0 20px;border-collapse:collapse;font-size:13px}
+.wp-t th,.wp-t td{border:1px solid var(--border);padding:7px 10px;text-align:left}.wp-t td.num{text-align:right;white-space:nowrap}
+.wp-t thead th{text-align:center;font-size:14px;background:color-mix(in srgb,var(--c1) 10%,transparent)}
+.wp-t tr.y th{background:color-mix(in srgb,#f5c400 18%,transparent)}.wp-t tr.b th{background:color-mix(in srgb,var(--c1) 12%,transparent)}
+.wp-t tr.g th{background:color-mix(in srgb,var(--good) 10%,transparent);font-weight:500}
+.wp-t tr.serious td{color:var(--critical);font-weight:600}.wp-t tr.good td:last-child{color:var(--good);font-weight:600}.wp-t tr.warning td:last-child{color:var(--warning);font-weight:600}
+.wp-k{display:inline-block;min-width:20px;font-weight:700;color:var(--c1)}
+.wp-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;padding:14px 20px 0}
+.wp-notes textarea{padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;resize:vertical}
+.wp-acts{padding:14px 0 0}.wp-acts summary{cursor:pointer;padding:0 20px 8px;font-weight:600;color:var(--c1)}
