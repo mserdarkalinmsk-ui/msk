@@ -41,13 +41,29 @@ Private Function CopyRaw(wb As Workbook) As Boolean
     If ws Is Nothing Then Exit Function
     CopyFrom ws, hdr, RAW_CONSO
     Set ws = SheetWith(wb, Array("ponumber", "descriptionpo"), hdr)
-    If Not ws Is Nothing Then CopyFrom ws, hdr, RAW_PO Else Fresh RAW_PO, True
+    If Not ws Is Nothing Then
+        CopyFrom ws, hdr, RAW_PO
+    Else
+        Call Fresh(RAW_PO, True)
+    End If
     Set ws = SheetWith(wb, Array("invoiceno", "montantligne"), hdr)
-    If Not ws Is Nothing Then CopyFrom ws, hdr, RAW_INV Else Fresh RAW_INV, True
+    If Not ws Is Nothing Then
+        CopyFrom ws, hdr, RAW_INV
+    Else
+        Call Fresh(RAW_INV, True)
+    End If
     Set ws = SheetWith(wb, Array("glnumber", "reportingline"), hdr)
-    If Not ws Is Nothing Then CopyFrom ws, hdr, RAW_GL Else Fresh RAW_GL, True
+    If Not ws Is Nothing Then
+        CopyFrom ws, hdr, RAW_GL
+    Else
+        Call Fresh(RAW_GL, True)
+    End If
     Set ws = SheetWith(wb, Array("ccm", "article", "depensesreelles"), hdr)
-    If Not ws Is Nothing Then CopyFrom ws, hdr, RAW_SIT Else Fresh RAW_SIT, True
+    If Not ws Is Nothing Then
+        CopyFrom ws, hdr, RAW_SIT
+    Else
+        Call Fresh(RAW_SIT, True)
+    End If
     CopyRaw = True
 End Function
 
