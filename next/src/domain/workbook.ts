@@ -19,7 +19,7 @@ export interface WbTotals { budget: number; actual: number; sc: number; planned?
 export interface WbMeta {
   title?: string; contract?: string; jp?: string; bh?: string; periodFrom?: string; periodTo?: string; asAt?: string;
   plannedFrom?: string; plannedTo?: string;
-  /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
+  /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** levy actually taken on donor tranches (7%), shown apart: the report's line 10 is 7% of the direct costs */ levyTaken?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
   /** Budget proposal with a secured-funding block (VC): what is already funded, by line code. Not spending. */ secured?: Record<string, number>;
   /** Sheet of the line grid and how each block of columns was read (key = normalised heading, for remembered corrections). */
   grid?: string; blocks?: Block[];
@@ -212,17 +212,19 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   if (!lines.length) {
     const co = table(sheets, ['reportingline', 'spentcomeur']);
     if (co) {
-      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source'), d: co.col('description'), ut: co.col('unittype') };
+      const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source'), d: co.col('description'), ut: co.col('unittype'), doc: co.col('docnumber') };
+      // Months with an invoice on each PO: a staff line counts the months paid, as the report does.
+      const paidMonths = new Map<string, number>(); { const it = table(sheets, ['invoiceno', 'montantligne']); if (it) { const S = new Map<string, Set<string>>(); const po = it.col('numeropo'), pe = it.col('period'), dg = it.col('dategl'); for (const r of it.rows) { const k = cell(r, po); if (!k) continue; const m = periodMonth(cell(r, pe)) || toDay(r[dg]).slice(0, 7); if (!m) continue; S.set(k, (S.get(k) ?? new Set()).add(m)); } for (const [k, v] of S) paidMonths.set(k, v.size); } }
       const by = new Map<string, { a: number; sc: number; u: number }>(); let un = 0;
       for (const r of co.rows) {
         if (!cell(r, C.src) || /^total/i.test(cell(r, C.src))) continue;
         const code = cell(r, C.line);
         if (!/^\d+(\.\d+)*$/.test(code) || code === '0') {
-          // The levy taken on each donor tranche (7%) is the administrative costs: it belongs to the totals, on line 10.
-          if (/tranche|prelev|levy/i.test(cell(r, C.d))) { const x = by.get('10') ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); by.set('10', x); continue; }
+          // The levy taken on each donor tranche is cash, not the report's administrative costs (7% of direct costs).
+          if (/tranche|prelev|levy/i.test(cell(r, C.d))) { meta.levyTaken = (meta.levyTaken ?? 0) + z(r[C.sp]); continue; }
           un += z(r[C.sc]); continue;
         }
-        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate); by.set(code, x);
+        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
       }
       if (by.size) {
         meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un;
@@ -231,7 +233,9 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
           budget: { units: null, rate: null, cost: null }, actual: { units: x.u || null, rate: null, cost: x.a }, sc: x.sc }));
         // Totals block as in a report: direct lines, administrative costs (line 10, the levy on tranches) and eligible.
         const d = { budget: 0, actual: lines.reduce((a, l) => a + (l.actual.cost ?? 0), 0), sc: lines.reduce((a, l) => a + (l.sc ?? 0), 0) };
-        Object.assign(totals, { direct: d, ...(ad ? { admin: { budget: 0, actual: ad.a, sc: ad.sc }, eligible: { budget: 0, actual: d.actual + ad.a, sc: d.sc + ad.sc } } : {}) });
+        // Administrative costs as in the report: 7% of the direct costs, spent and spent + committed (note 3 of the report).
+        const A = ad ? { a: ad.a, sc: ad.sc } : { a: Math.round(d.actual * ADMIN_RATE * 100) / 100, sc: Math.round(d.sc * ADMIN_RATE * 100) / 100 };
+        Object.assign(totals, { direct: d, admin: { budget: 0, actual: A.a, sc: A.sc }, eligible: { budget: 0, actual: d.actual + A.a, sc: d.sc + A.sc } });
       }
     }
   }
@@ -309,6 +313,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   if (meta.extraction) {
     wb.checks = wb.checks.filter((c) => c.level !== 'error');
     wb.checks.unshift({ ok: true, level: 'info', text: `System extraction: ${lines.length} reporting lines summed from the posted entries; budgets, descriptions and administrative costs come from the project's approved budget or last full report.` });
+    if (meta.levyTaken) wb.checks.push({ ok: true, level: 'info', text: `${eur(meta.levyTaken)} levy taken on donor tranches; the report's administrative costs are 7% of the direct costs.` });
     if (meta.unallocated) wb.checks.push({ ok: false, level: 'warning', text: `${eur(meta.unallocated)} posted without a reporting line (e.g. levies on a tranche) — not in the line totals.` });
   }
   return wb;
@@ -316,18 +321,21 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
 
 /**
  * Units of a posting that are actually used, not just ordered. A staff PO "from 01/01/2026 to 31/12/2026" orders
- * 12 months: by the situation date only the months gone are used. Any other PO counts its units in proportion
- * to what is spent of what is ordered (an open PO for 10 days with half invoiced = 5 days).
+ * 12 months: the report counts the months paid (months with an invoice), else the months gone by the situation
+ * date. Any other PO counts the units ordered, as the report does.
  */
-export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string): number {
+export function usedUnits(units: number, _spent: number, _sc: number, description: string, unitType: string, asAt?: string, paid?: number): number {
   if (!units) return 0;
+  if (paid != null && /month/i.test(unitType) && /from\s+\d/i.test(description)) return Math.min(units, paid);
   const m = description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
   if (m && /month/i.test(unitType) && asAt) {
     const f = Date.parse(dmy(m[1])), t = Date.parse(dmy(m[2])), a = Date.parse(asAt) + 86_400_000;
     if (t > f) return Math.round(units * Math.max(0, Math.min(1, (Math.min(a, t + 86_400_000) - f) / (t + 86_400_000 - f))) * 100) / 100;
   }
-  return sc > 0 && spent < sc ? Math.round(units * Math.max(0, spent / sc) * 100) / 100 : units;
+  return units; // other POs: the report counts the units ordered
 }
+
+export const ADMIN_RATE = 0.07;
 
 /* ---------- cross-checks ---------- */
 const close = (a: number, b: number, tol = 1) => Math.abs(a - b) <= tol;
