@@ -270,6 +270,10 @@ Public Sub BuildPortfolio()
         Next r
     End If
     ws.Columns("AB:AK").Hidden = True
+    On Error Resume Next
+    Call BuildHome
+    ws.Activate
+    On Error GoTo 0
     ws.Range("A1").Select
     With ws.PageSetup
         .Orientation = xlLandscape: .Zoom = False: .FitToPagesWide = 1: .FitToPagesTall = False
