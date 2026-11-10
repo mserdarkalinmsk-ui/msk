@@ -47,10 +47,10 @@ Public Sub Setup()
     End If
     ' Raw sheets
     For Each items In Array(RAW_CONSO, RAW_PO, RAW_INV, RAW_GL, RAW_SIT)
-        If Not SheetExists(CStr(items)) Then Fresh CStr(items), True
+        If Not SheetExists(CStr(items)) Then Call Fresh(CStr(items), True)
     Next items
     For Each items In Array(SH_REPORT, SH_PIVOT, SH_DFP, SH_ANALYSIS, SH_CHECKS, SH_BYDATE, SH_POSTINGS)
-        If Not SheetExists(CStr(items)) Then Fresh CStr(items)
+        If Not SheetExists(CStr(items)) Then Call Fresh(CStr(items))
     Next items
     ' Control
     Set ws = Fresh(SH_CONTROL)

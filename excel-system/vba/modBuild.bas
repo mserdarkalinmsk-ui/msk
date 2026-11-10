@@ -119,7 +119,7 @@ Public Sub BuildDataForPivot()
 End Sub
 
 ' Reporting lines found in data for pivot, sorted (levies on line "0" first).
-Public Function LineCodes() As String()
+Public Function LineCodes() As Variant
     Dim ws As Worksheet, r As Long, d As Object, a() As String, i As Long, k As Variant
     Set ws = Sh(SH_DFP)
     Set d = CreateObject("Scripting.Dictionary")
@@ -134,7 +134,7 @@ Public Function LineCodes() As String()
 End Function
 
 Public Sub BuildPivot()
-    Dim ws As Worksheet, codes() As String, i As Long, r As Long, D As String
+    Dim ws As Worksheet, codes As Variant, i As Long, r As Long, D As String
     Set ws = Fresh(SH_PIVOT)
     D = "'" & SH_DFP & "'!"
     ws.Range("A1:E1").Value = Array("Row Labels", "Sum of NBRE_OF_UNITS", "Sum of SPENT_EUR", "Sum of SPENT_COM_EUR", "Units used (spent share)")
@@ -399,7 +399,7 @@ Public Sub BuildPostings()
 End Sub
 
 Public Sub BuildByDate()
-    Dim ws As Worksheet, codes() As String, i As Long, r As Long, P As String, keepFrom As Variant, keepTo As Variant
+    Dim ws As Worksheet, codes As Variant, i As Long, r As Long, P As String, keepFrom As Variant, keepTo As Variant
     On Error Resume Next
     keepFrom = Sh(SH_BYDATE).Range("B3").Value: keepTo = Sh(SH_BYDATE).Range("B4").Value
     On Error GoTo 0
