@@ -324,7 +324,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
  * 12 months: the report counts the months paid (months with an invoice), else the months gone by the situation
  * date. Any other PO counts the units in proportion to what is spent: committed units are not used yet.
  */
-export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string, paid?: number): number {
+export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string, paid?: number, official = false): number {
   if (!units) return 0;
   // A PO with nothing spent yet is only a commitment: its units are not used (the report counts them as 0).
   if (Math.abs(spent) < 0.005) return 0;
@@ -335,6 +335,8 @@ export function usedUnits(units: number, spent: number, sc: number, description:
     if (t > f) return Math.round(units * Math.max(0, Math.min(1, (Math.min(a, t + 86_400_000) - f) / (t + 86_400_000 - f))) * 100) / 100;
   }
   // Other POs: only the spent share counts — 45 days ordered, 760 of 8,550 invoiced = 4 days used; the rest is committed.
+  // The official report (data for pivot) counts every unit of a PO once something is spent on it.
+  if (official) return units;
   return sc > spent + 0.005 && sc > 0 ? Math.round(units * Math.max(0, spent / sc) * 100) / 100 : units;
 }
 
