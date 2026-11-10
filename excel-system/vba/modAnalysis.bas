@@ -29,7 +29,7 @@ End Function
 Public Sub BuildAnalysis()
     Dim ws As Worksheet, bud As Worksheet, r As Long, br As Long, code As String, el As Double
     Dim b As Double, bu As Double, brt As Double, sp As Double, sc As Double, uu As Double, used As Double, uPct As Double, rt As Double
-    Dim stt As String, col As Long, top As String, heads As Object, k As Variant, h() As Double
+    Dim stt As String, col As Long, top As String, heads As Object, k As Variant, h As Variant
     Set bud = Sh(SH_BUDGET): Set ws = Fresh(SH_ANALYSIS)
     el = TimeGone()
     ws.Range("A1").Value = "Against the approved budget": ws.Range("A1").Font.Bold = True: ws.Range("A1").Font.Size = 13
@@ -42,7 +42,7 @@ Public Sub BuildAnalysis()
         If code <> "" And Trim$(CStr(bud.Cells(br, 3).Value)) <> "" Then
             top = Split(code, ".")(0)
             If Not heads.Exists(top) Then heads.Add top, Array(0#, 0#, 0#)
-            h = ToD(heads(top))
+            h = heads(top)
             h(0) = h(0) + Num(bud.Cells(br, 6).Value): h(1) = h(1) + PivotVal(code, 3): h(2) = h(2) + PivotVal(code, 4)
             heads(top) = h
         End If
@@ -51,7 +51,7 @@ Public Sub BuildAnalysis()
     HeadStyle ws.Range("A4:H4")
     r = 5
     For Each k In heads.keys
-        h = ToD(heads(k))
+        h = heads(k)
         ws.Cells(r, 1).NumberFormat = "@": ws.Cells(r, 1).Value = k: ws.Cells(r, 2).Value = HeadingName(CStr(k))
         ws.Cells(r, 3).Value = h(0): ws.Cells(r, 4).Value = h(1): ws.Cells(r, 5).Value = h(2): ws.Cells(r, 6).Value = h(2) - h(0)
         If h(0) > 0 Then ws.Cells(r, 7).Value = h(2) / h(0) - 1
@@ -136,12 +136,6 @@ Private Function Band(d As Double) As String
     Else
         Band = "Notification (within 25%)"
     End If
-End Function
-
-Private Function ToD(v As Variant) As Double()
-    Dim a(0 To 2) As Double, i As Long
-    For i = 0 To 2: a(i) = v(i): Next i
-    ToD = a
 End Function
 
 ' ------------------------------------------------------------------ Checks

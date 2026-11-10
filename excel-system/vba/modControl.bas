@@ -86,18 +86,18 @@ Public Sub Setup()
     MsgBox "Ready. Fill the Settings sheet, load the approved budget, then load an extraction.", vbInformation
 End Sub
 
-Private Sub Button(ws As Worksheet, caption As String, macro As String, top As Double)
+Public Sub Button(ws As Worksheet, caption As String, macro As String, top As Double)
     Dim b As Shape
-    Set b = ws.Shapes.AddShape(msoShapeRoundedRectangle, ws.Range("B1").Left, top, 430, 34)
+    Set b = ws.Shapes.AddShape(5, ws.Range("B1").Left, top, 430, 34)
     b.Fill.ForeColor.RGB = RGB(31, 78, 137)
-    b.Line.Visible = msoFalse
+    b.Line.Visible = 0
     With b.TextFrame2.TextRange
         .Text = caption
-        .Font.Size = 12: .Font.Bold = msoTrue
+        .Font.Size = 12: .Font.Bold = -1
         .Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
     End With
-    b.TextFrame2.VerticalAnchor = msoAnchorMiddle
-    b.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+    b.TextFrame2.VerticalAnchor = 3
+    b.TextFrame2.TextRange.ParagraphFormat.Alignment = 2
     b.OnAction = macro
 End Sub
 
@@ -115,4 +115,16 @@ Public Sub ExportReport()
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True
     MsgBox "Saved: " & CStr(f), vbInformation
+End Sub
+
+' Buttons of the Control sheet (when the workbook was prepared outside Excel, it has none yet).
+Public Sub EnsureButtons()
+    Dim ws As Worksheet, y As Double
+    Set ws = Sh(SH_CONTROL)
+    If ws.Shapes.Count > 0 Then Exit Sub
+    y = 70
+    Button ws, "1. Load approved budget (from a REPORT)", "LoadBudget", y: y = y + 44
+    Button ws, "2. Load extraction and analyse", "LoadExtraction", y: y = y + 44
+    Button ws, "Refresh (after editing data for pivot, Budget or Settings)", "Refresh", y: y = y + 44
+    Button ws, "Export report workbook (REPORT + pivot + data for pivot)", "ExportReport", y
 End Sub
