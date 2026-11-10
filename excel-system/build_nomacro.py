@@ -54,7 +54,7 @@ def page(ws, title, subtitle_formula, width=26):
     ws['B2'] = subtitle_formula; ws['B2'].font = Font(name=F, size=10, color='C8D6EB')
     ws.row_dimensions[1].height = 34; ws.row_dimensions[2].height = 18; ws.row_dimensions[3].height = 6
 
-def tile(ws, r, c, w, label, value_formula, ctx_formula, accent=NAVY, fmt=None):
+def tile(ws, r, c, w, label, value_formula, ctx_formula, accent=NAVY, fmt=None, bar=None):
     for rr in range(r, r + 4):
         for cc in range(c, c + w):
             ws.cell(rr, cc).fill = fill(CARD)
@@ -67,6 +67,10 @@ def tile(ws, r, c, w, label, value_formula, ctx_formula, accent=NAVY, fmt=None):
     x = ws.cell(r + 2, c, ctx_formula); x.font = Font(name=F, size=8, color=MUTED)
     ws.merge_cells(start_row=r + 2, start_column=c, end_row=r + 2, end_column=c + w - 1)
     ws.row_dimensions[r + 1].height = 28
+    if bar:
+        # text progress bar: 20 blocks of the share, the time tick shown as a different block
+        b = ws.cell(r + 3, c, bar); b.font = Font(name='Consolas', size=9, color=accent)
+        ws.merge_cells(start_row=r + 3, start_column=c, end_row=r + 3, end_column=c + w - 1)
 
 def head_row(ws, r, cols):
     for c, text in cols:
@@ -82,7 +86,74 @@ def status_rules(ws, rng, first_cell):
     ws.conditional_formatting.add(rng, FormulaRule(formula=[f'{first_cell}="Behind time"'], fill=fill('EBEBEB'), font=Font(color='6E7580')))
     ws.conditional_formatting.add(rng, FormulaRule(formula=[f'OR({first_cell}="On track",{first_cell}="Within budget")'], fill=fill('C6EFCE'), font=Font(color='006100')))
 
-def build(out, settings_list):
+def polish(wb, port, proj, ana, chk, pst, byd):
+    from openpyxl.chart.axis import ChartLines
+    from openpyxl.chart.shapes import GraphicalProperties
+    from openpyxl.drawing.line import LineProperties
+    from openpyxl.chart import DoughnutChart
+    from openpyxl.formatting.rule import IconSetRule
+    nav = ['Home', 'Portfolio', 'Project', 'REPORT', 'Analysis', 'Checks', 'By date', 'Postings']
+    tabs = {'Home': NAVY, 'Portfolio': NAVY, 'Project': BLUE, 'REPORT': '595959', 'Analysis': BLUE, 'Checks': RED, 'By date': TEAL,
+            'Postings': TEAL, 'Model': 'BFBFBF', 'Setup query': 'BFBFBF'}
+    for ws in wb.worksheets:
+        ws.sheet_properties.tabColor = tabs.get(ws.title, 'BFBFBF')
+        ws.sheet_view.zoomScale = 90
+        if ws.title in ('Model', 'Setup query'):
+            continue
+        ws.sheet_view.showRowColHeaders = False
+        if ws.title == 'REPORT':
+            continue
+        # navigation bar under the header band
+        ws.row_dimensions[4].height = 22
+        col = 2
+        for n in nav:
+            c = ws.cell(4, col, n)
+            c.hyperlink = f"#'{n}'!A1"
+            on = n == ws.title
+            c.font = Font(name=F, size=9, bold=True, color='FFFFFF' if on else NAVY)
+            c.fill = fill(NAVY if on else 'E3ECF8')
+            c.alignment = Alignment(horizontal='center', vertical='center')
+            c.border = Border(left=Side(style='thick', color=PAGE), right=Side(style='thick', color=PAGE))
+            col += 1
+    # gridlines and fonts of every chart
+    grid = ChartLines(spPr=GraphicalProperties(ln=LineProperties(solidFill='E5E7EB')))
+    for ws in wb.worksheets:
+        for ch in ws._charts:
+            try:
+                ch.y_axis.majorGridlines = grid
+                ch.x_axis.majorGridlines = None
+                ch.y_axis.delete = False; ch.x_axis.delete = False
+            except Exception:
+                pass
+            ch.style = 2
+            if type(ch).__name__ == 'BarChart':
+                ch.y_axis.scaling.min = 0
+            ch.visible_cells_only = False
+    # project: two doughnut gauges, used and time
+    for i, (lab, src) in enumerate([('Used (spent + committed)', 'N4'), ('Time elapsed', 'N5')]):
+        r = 11 + i * 3
+        proj.cell(r, 38, lab); proj.cell(r + 1, 38, 'value'); proj.cell(r + 2, 38, 'rest')
+        proj.cell(r + 1, 39, '=MIN(1,MAX(0,N(' + look('"PB|"&SelBH', src) + ')))')
+        proj.cell(r + 2, 39, f'=1-AM{r + 1}')
+        d = DoughnutChart(holeSize=70); d.title = lab
+        d.add_data(Reference(proj, min_col=39, min_row=r + 1, max_row=r + 2)); d.set_categories(Reference(proj, min_col=38, min_row=r + 1, max_row=r + 2))
+        from openpyxl.chart.series import DataPoint
+        pt0 = DataPoint(idx=0); pt0.graphicalProperties.solidFill = BLUE if i == 0 else ORANGE
+        pt1 = DataPoint(idx=1); pt1.graphicalProperties.solidFill = 'E5E7EB'
+        d.series[0].dPt = [pt0, pt1]; d.legend = None; d.height = 4.6; d.width = 5.4
+        d.visible_cells_only = False
+        proj.add_chart(d, ('V' if i == 0 else 'Y') + '11')
+    for c in (38, 39): proj.column_dimensions[L(c)].hidden = True
+    # portfolio table: pace arrows, budget bars
+    port.conditional_formatting.add('P12:P26', IconSetRule('3Arrows', 'num', [-1000, -15, 15], showValue=True, reverse=True))
+    port.conditional_formatting.add('H12:H26', DataBarRule(start_type='num', start_value=0, end_type='max', color='BFD3EE'))
+    # banded rows and frozen headers
+    for ws, first, last, cols in [(ana, 6, 185, 'B{r}:P{r}'), (chk, 6, 305, 'B{r}:H{r}'), (pst, 6, 1505, 'B{r}:I{r}'), (byd, 9, 188, 'B{r}:E{r}')]:
+        rng = cols.format(r=first).split(':')[0] + ':' + cols.format(r=last).split(':')[1]
+        ws.conditional_formatting.add(rng, FormulaRule(formula=[f'AND(MOD(ROW(),2)=0,$B{first}<>"")'], fill=fill('F7F9FC')))
+        ws.freeze_panes = f'A{first}'
+
+def build(out, settings_list, model_rows=None):
     wb = Workbook()
     home = wb.active; home.title = 'Home'
     port = wb.create_sheet('Portfolio'); proj = wb.create_sheet('Project'); rep = wb.create_sheet('REPORT')
@@ -161,8 +232,10 @@ def build(out, settings_list):
     tot = lambda col: f'SUMIFS(Model!${MC[col]}:${MC[col]},Model!$A:$A,"P|*")'
     tile(port, 5, 2, 3, 'Projects', '=COUNTIF(Model!$A:$A,"P|*")', '="budget heads"')
     tile(port, 5, 6, 3, 'Total budget', f'={tot("N1")}', '="total eligible costs"', NAVY, '#,##0')
-    tile(port, 5, 10, 3, 'Spent', f'={tot("N2")}', f'=TEXT(IFERROR({tot("N2")}/{tot("N1")},0),"0%")&" of budget"', BLUE, '#,##0')
-    tile(port, 5, 14, 3, 'Spent + committed', f'={tot("N3")}', f'=TEXT(IFERROR({tot("N3")}/{tot("N1")},0),"0%")&" used"', BLUE, '#,##0')
+    tile(port, 5, 10, 3, 'Spent', f'={tot("N2")}', f'=TEXT(IFERROR({tot("N2")}/{tot("N1")},0),"0%")&" of budget"', BLUE, '#,##0',
+         bar=f'=REPT("\u2588",ROUND(MIN(1,IFERROR({tot("N2")}/{tot("N1")},0))*20,0))&REPT("\u2591",20-ROUND(MIN(1,IFERROR({tot("N2")}/{tot("N1")},0))*20,0))')
+    tile(port, 5, 14, 3, 'Spent + committed', f'={tot("N3")}', f'=TEXT(IFERROR({tot("N3")}/{tot("N1")},0),"0%")&" used"', BLUE, '#,##0',
+         bar=f'=REPT("\u2588",ROUND(MIN(1,IFERROR({tot("N3")}/{tot("N1")},0))*20,0))&REPT("\u2591",20-ROUND(MIN(1,IFERROR({tot("N3")}/{tot("N1")},0))*20,0))')
     tile(port, 5, 18, 3, 'Available', f'={tot("N12")}', '="not yet spent or committed"', GREEN, '#,##0')
     tile(port, 5, 22, 3, 'Flags', f'={tot("N7")}&" / "&{tot("N8")}', '="errors / to check"', RED)
     r0 = 11
@@ -193,7 +266,7 @@ def build(out, settings_list):
     for k in range(1, N + 1):
         rr = r0 + k
         pk = lambda col, blank: look('"P|%d"' % k, col, blank)
-        port.cell(rr, 29, '=' + pk("Code", "NA()"))
+        port.cell(rr, 29, '=' + pk("Code", '""'))
         port.cell(rr, 30, '=' + pk("N2", "NA()"))
         port.cell(rr, 31, '=' + pk("N3", "NA()") + '-' + pk("N2", "0"))
         port.cell(rr, 32, '=' + pk("N1", "NA()"))
@@ -216,20 +289,19 @@ def build(out, settings_list):
     port.add_chart(ch3, f'N{r0 + N + 3}')
     # monthly spending of the portfolio (36 months from the first posting)
     mr = r0 + N + 23
-    port.cell(mr, 2, 'Spending by month').font = Font(name=F, size=12, bold=True)
     port.cell(mr + 1, 29, 'Month'); port.cell(mr + 1, 30, 'Spent in the month'); port.cell(mr + 1, 31, 'Cumulative')
     for m in range(36):
         rr = mr + 2 + m
         port.cell(rr, 29, f'=IFERROR(EDATE(DATE(YEAR(_xlfn.MINIFS(Model!$Y:$Y,Model!$B:$B,"T")),MONTH(_xlfn.MINIFS(Model!$Y:$Y,Model!$B:$B,"T")),1),{m}),"")').number_format = 'mmm yy'
-        port.cell(rr, 30, f'=IF(AC{rr}="",NA(),SUMIFS(Model!$I:$I,Model!$B:$B,"T",Model!$J:$J,0,Model!$Y:$Y,">="&AC{rr},Model!$Y:$Y,"<="&EOMONTH(AC{rr},0)))')
-        port.cell(rr, 31, f'=IF(AC{rr}="",NA(),SUM(AD${mr + 2}:AD{rr}))')
+        port.cell(rr, 30, f'=IF(OR(AC{rr}="",AC{rr}>_xlfn.MAXIFS(Model!$Y:$Y,Model!$B:$B,"T")),NA(),SUMIFS(Model!$I:$I,Model!$B:$B,"T",Model!$J:$J,0,Model!$Y:$Y,">="&AC{rr},Model!$Y:$Y,"<="&EOMONTH(AC{rr},0)))')
+        port.cell(rr, 31, f'=IF(ISNA(AD{rr}),NA(),SUM(AD${mr + 2}:AD{rr}))')
     mc = BarChart(); mc.title = 'Spending of the portfolio by month (invoices and GL postings)'
     mc.add_data(Reference(port, min_col=30, min_row=mr + 1, max_row=mr + 37), titles_from_data=True)
     mc.set_categories(Reference(port, min_col=29, min_row=mr + 2, max_row=mr + 37)); mc.series[0].graphicalProperties.solidFill = BLUE
     lc = LineChart(); lc.add_data(Reference(port, min_col=31, min_row=mr + 1, max_row=mr + 37), titles_from_data=True)
     lc.y_axis.axId = 200; lc.y_axis.crosses = 'max'; lc.series[0].graphicalProperties.line.solidFill = ORANGE; lc.series[0].graphicalProperties.line.width = 28000
     mc += lc; mc.height = 8; mc.width = 34; mc.legend.position = 't'; mc.x_axis.number_format = 'mmm yy'
-    port.add_chart(mc, f'B{mr + 1}')
+    port.add_chart(mc, f'B{mr}')
     # heat map
     hr = mr + 19
     port.cell(hr, 2, 'Headings against the 25% flexibility').font = Font(name=F, size=12, bold=True)
@@ -244,7 +316,7 @@ def build(out, settings_list):
             c0 = 6 + h * 3
             key = '"H|"&' + look('"P|%d"' % k, "BH") + '&"|%d"' % (h + 1)
             x = port.cell(rr, c0, f'=IFERROR({look(key, "N3", "NA()")}/{look(key, "N1", "NA()")},"")'); x.number_format = '0%'; x.alignment = Alignment(horizontal='center')
-            port.cell(rr, 50 + h, '=' + look(key, 'T1'))  # status (hidden)
+            port.cell(rr, 50 + h, '=T(' + look(key, 'T1') + ')')  # status (hidden)
             port.merge_cells(start_row=rr, start_column=c0, end_row=rr, end_column=c0 + 2)
             rng = f'{L(c0)}{rr}:{L(c0 + 2)}{rr}'
             status_rules(port, rng, f'${L(50 + h)}{rr}')
@@ -253,14 +325,17 @@ def build(out, settings_list):
     # ------------------------------------------------------------ Project
     page(proj, '=' + P('Label'), '="BH "&SelBH&" - situation "&TEXT(' + P('D1') + ',"dd/mm/yyyy")&" - pick another project on the Home sheet"')
     tile(proj, 5, 2, 3, 'Budget', '=' + P('N1'), '="total eligible costs"', NAVY, '#,##0')
-    tile(proj, 5, 6, 3, 'Spent', '=' + P('N2'), f'=TEXT(IFERROR({P("N2")}/{P("N1")},0),"0%")&" of budget"', BLUE, '#,##0')
+    tile(proj, 5, 6, 3, 'Spent', '=' + P('N2'), f'=TEXT(IFERROR({P("N2")}/{P("N1")},0),"0%")&" of budget"', BLUE, '#,##0',
+         bar=f'=REPT("\u2588",ROUND(MIN(1,IFERROR({P("N2")}/{P("N1")},0))*20,0))&REPT("\u2591",20-ROUND(MIN(1,IFERROR({P("N2")}/{P("N1")},0))*20,0))')
     tile(proj, 5, 10, 3, 'Committed', f'={P("N3")}-{P("N2")}', '="not yet spent"', LIGHT, '#,##0')
-    tile(proj, 5, 14, 3, 'Used vs time', f'=TEXT({P("N4")},"0%")&" / "&TEXT({P("N5")},"0%")', '="spent + committed / time elapsed"', BLUE)
+    tile(proj, 5, 14, 3, 'Used vs time', f'=TEXT({P("N4")},"0%")&" / "&TEXT({P("N5")},"0%")', '="spent + committed / time elapsed"', BLUE,
+         bar=f'=REPT("\u2588",ROUND(MIN(1,N({P("N4")}))*20,0))&REPT("\u2591",20-ROUND(MIN(1,N({P("N4")}))*20,0))')
     tile(proj, 5, 18, 3, 'Available', '=' + P('N12'), '="not yet spent or committed"', GREEN, '#,##0')
     tile(proj, 5, 22, 3, 'Flags', f'={P("N7")}&" / "&{P("N8")}', '="errors / to check"', RED)
     t = 11
     proj.cell(t - 1, 2, 'Headings').font = Font(name=F, size=12, bold=True)
-    head_row(proj, t, [(2, 'Heading'), (6, 'Budget'), (8, 'Spent'), (10, 'Spent + committed'), (12, 'Used'), (13, 'Status (now / at the current pace)')])
+    head_row(proj, t, [(2, 'Heading'), (6, 'Budget'), (8, 'Spent'), (10, 'Spent + committed'), (12, 'Used'), (13, 'Status - now, or at the current pace')])
+    proj.merge_cells(start_row=t, start_column=13, end_row=t, end_column=20)
     for h in range(1, 7):
         rr = t + h; key = f'"H|"&SelBH&"|{h}"'
         proj.cell(rr, 2, f'=IF({look(key, "Label")}="","",{h}&" "&{look(key, "Label")})')
@@ -269,20 +344,18 @@ def build(out, settings_list):
             x = proj.cell(rr, c, '=' + look(key, col)); x.number_format = EUR0
             proj.merge_cells(start_row=rr, start_column=c, end_row=rr, end_column=c + 1)
         x = proj.cell(rr, 12, f'=IFERROR(J{rr}/F{rr},"")'); x.number_format = '0%'
-        proj.cell(rr, 13, '=' + look(key, 'T1'))
+        proj.cell(rr, 13, '=T(' + look(key, 'T1') + ')')
         proj.merge_cells(start_row=rr, start_column=13, end_row=rr, end_column=20)
-        proj.cell(rr, 29, f'={h}'); proj.cell(rr, 30, f'=IFERROR(H{rr}*1,NA())'); proj.cell(rr, 31, f'=IFERROR(J{rr}-H{rr},NA())'); proj.cell(rr, 32, f'=IFERROR(F{rr}*1,NA())')
+        proj.cell(rr, 29, f'=IF(B{rr}="","{h}",LEFT(B{rr},22))'); proj.cell(rr, 30, f'=IFERROR(F{rr}*1,NA())'); proj.cell(rr, 31, f'=IFERROR(H{rr}*1,NA())'); proj.cell(rr, 32, f'=IFERROR(J{rr}*1,NA())')
         for c in range(2, 13): proj.cell(rr, c).fill = fill(CARD)
     status_rules(proj, f'M{t + 1}:T{t + 6}', f'$M{t + 1}')
-    for c, h in zip(range(29, 33), ['Heading', 'Spent', 'Committed', 'Budget']): proj.cell(t, c, h)
+    for c, h in zip(range(29, 33), ['Heading', 'Budget', 'Spent', 'Spent + committed']): proj.cell(t, c, h)
     for c in range(29, 33): proj.column_dimensions[L(c)].hidden = True
-    hc = BarChart(); hc.type = 'col'; hc.grouping = 'stacked'; hc.overlap = 100; hc.title = 'Headings: spent and committed against the budget'
-    hc.add_data(Reference(proj, min_col=30, max_col=31, min_row=t, max_row=t + 6), titles_from_data=True)
+    hc = BarChart(); hc.type = 'col'; hc.title = 'Headings: budget, spent and spent + committed'
+    hc.add_data(Reference(proj, min_col=30, max_col=32, min_row=t, max_row=t + 6), titles_from_data=True)
     hc.set_categories(Reference(proj, min_col=29, min_row=t + 1, max_row=t + 6))
-    hc.series[0].graphicalProperties.solidFill = BLUE; hc.series[1].graphicalProperties.solidFill = LIGHT
-    hl = LineChart(); hl.add_data(Reference(proj, min_col=32, min_row=t, max_row=t + 6), titles_from_data=True)
-    hl.series[0].graphicalProperties.line.noFill = True; hl.series[0].marker.symbol = 'dash'; hl.series[0].marker.size = 20
-    hc += hl; hc.height = 8.5; hc.width = 17; hc.legend.position = 't'
+    hc.series[0].graphicalProperties.solidFill = 'C9CED6'; hc.series[1].graphicalProperties.solidFill = BLUE; hc.series[2].graphicalProperties.solidFill = LIGHT
+    hc.gapWidth = 60; hc.height = 8.5; hc.width = 17; hc.legend.position = 't'
     proj.add_chart(hc, f'B{t + 9}')
     # monthly spending of the project, cumulative against a straight plan
     for m in range(48):
@@ -458,8 +531,17 @@ def build(out, settings_list):
             if fmt: x.number_format = fmt
 
     # ------------------------------------------------------------ Model (loaded by the query) and Setup query
-    model['A1'] = 'Load the Model query here (Close & Load To... > Table > Existing worksheet: =Model!$A$1). This sheet is then replaced by the query table.'
-    model['A1'].font = Font(name=F, italic=True, color=MUTED)
+    if model_rows:
+        cols = ['Key', 'Rec', 'BH', 'Seq', 'Kind', 'Code', 'Label', 'Unit'] + [f'N{i}' for i in range(1, 13)] + ['T1', 'T2', 'T3', 'T4', 'D1', 'D2', 'D3']
+        model.append(cols)
+        for row in model_rows:
+            vals = [dt.datetime.fromisoformat(v) if isinstance(v, str) and len(v) == 10 and v[4] == '-' and v[7] == '-' and i >= 24 else v for i, v in enumerate(row)]
+            model.append(vals)
+        for r in model.iter_rows(min_row=2, min_col=25, max_col=27):
+            for c in r: c.number_format = 'dd/mm/yyyy'
+    else:
+      model['A1'] = 'Load the Model query here (Close & Load To... > Table > Existing worksheet: =Model!$A$1). This sheet is then replaced by the query table.'
+      model['A1'].font = Font(name=F, italic=True, color=MUTED)
     model.sheet_state = 'visible'
     setup.sheet_view.showGridLines = False
     setup.column_dimensions['A'].width = 150
@@ -478,6 +560,15 @@ def build(out, settings_list):
     for i, line in enumerate(code):
         c = setup.cell(12 + i, 1, line if line.strip() else ' ')
         c.font = Font(name='Consolas', size=9); c.number_format = '@'
+    polish(wb, port, proj, ana, chk, pst, byd)
+    for ws, area in [(port, 'A1:Y110'), (proj, 'A1:AB75')]:
+        ws.print_area = area; ws.sheet_properties.pageSetUpPr.fitToPage = True
+        ws.page_setup.fitToWidth = 1; ws.page_setup.fitToHeight = 1; ws.page_setup.orientation = 'landscape'
+    if os.environ.get('PREVIEW'):
+        for ws in wb.worksheets:
+            if ws.title != os.environ['PREVIEW'] and ws.title != 'Model': ws.sheet_state = 'hidden'
+        wb['Model'].sheet_state = 'hidden'
+        wb.active = wb.sheetnames.index(os.environ['PREVIEW'])
     wb.save(out)
     print('written', out)
 
@@ -485,4 +576,5 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     out = args[0]
     settings = [json.load(open(args[i + 1])) for i, a in enumerate(args) if a == '--settings']
-    build(out, settings)
+    model_rows = json.load(open(args[args.index('--model') + 1])) if '--model' in args else None
+    build(out, settings, model_rows)
