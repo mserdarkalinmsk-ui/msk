@@ -105,13 +105,47 @@ def dir_stream(modules):
     d += rec(0x0010, b'')
     return bytes(d)
 
+def ovba_encrypt(pid: str, data: bytes, seed: int = None) -> str:
+    """MS-OVBA 2.4.3.2 data encryption (CMG / DPB / GC of the PROJECT stream)."""
+    import random
+    seed = random.randrange(256) if seed is None else seed
+    projkey = sum(pid.encode(CP)) & 0xFF
+    out = [seed, seed ^ 2, seed ^ projkey]
+    unenc1, enc1, enc2 = projkey, out[2], out[1]
+    def push(b):
+        nonlocal unenc1, enc1, enc2
+        e = b ^ ((enc2 + unenc1) & 0xFF)
+        out.append(e); enc2, enc1, unenc1 = enc1, e, b
+    for _ in range((seed & 6) // 2): push(random.randrange(256))
+    for b in struct.pack('<I', len(data)) + data: push(b)
+    return ''.join('%02X' % b for b in out)
+
+def ovba_decrypt(hexs: str, pid: str) -> bytes:
+    d = bytes.fromhex(hexs)
+    seed, venc, pkenc = d[0], d[1], d[2]
+    assert seed ^ venc == 2
+    projkey = seed ^ pkenc
+    assert projkey == sum(pid.encode(CP)) & 0xFF
+    unenc1, enc1, enc2 = projkey, pkenc, venc
+    plain = []
+    for e in d[3:]:
+        b = e ^ ((enc2 + unenc1) & 0xFF)
+        plain.append(b); enc2, enc1, unenc1 = enc1, e, b
+    ign = (seed & 6) // 2
+    rest = bytes(plain[ign:])
+    n = struct.unpack('<I', rest[:4])[0]
+    return rest[4:4 + n]
+
 def project_stream(modules):
     pid = '{' + str(uuid.uuid4()).upper() + '}'
+    # Not protected (state 0), no password (one null byte), visible (0xFF).
+    cmg, dpb, gc = ovba_encrypt(pid, struct.pack('<I', 0)), ovba_encrypt(pid, b'\x00'), ovba_encrypt(pid, b'\xff')
+    assert ovba_decrypt(cmg, pid) == struct.pack('<I', 0) and ovba_decrypt(dpb, pid) == b'\x00' and ovba_decrypt(gc, pid) == b'\xff'
     lines = [f'ID="{pid}"']
     for m in modules:
         lines.append(f'Document={m["name"]}/&H00000000' if m['doc'] else f'Module={m["name"]}')
     lines += ['Name="VBAProject"', 'HelpContextID="0"', 'VersionCompatible32="393222000"',
-              'CMG="0705D8E3D8EDDBF1DBF1DBF1DBF1"', 'DPB="0E0CD1ECDFF4E7F5E7F5E7"', 'GC="1517CAF1D6F9D7F9D706"', '',
+              f'CMG="{cmg}"', f'DPB="{dpb}"', f'GC="{gc}"', '',
               '[Host Extender Info]', '&H00000001={3832D640-CF90-11CF-8E43-00A0C911005A};VBE;&H00000000', '',
               '[Workspace]']
     lines += [f'{m["name"]}=0, 0, 0, 0, C' for m in modules]
@@ -302,13 +336,14 @@ def build_content(out_xlsx, projects):
     c = sh['Control']; c.sheet_view.showGridLines = False
     c['B2'] = 'JP Financial Report - extraction to report'; c['B2'].font = Font(size=18, bold=True)
     c['B3'] = 'Load the extraction exported from the financial system: it is read, laid out as data for pivot -> pivot -> REPORT, and analysed at once.'
-    c['B19'] = 'Sheets'; c['B19'].font = Font(bold=True)
-    for i, (n, d) in enumerate([('REPORT', 'Official interim/final financial report - linked to pivot by formulas'), ('pivot', 'Units, spent and spent + committed by reporting line'),
+    c['B25'] = 'Sheets'; c['B25'].font = Font(bold=True)
+    c['B4'] = 'If no buttons appear below: enable macros (yellow bar: Enable Content), then Alt+F8 > RefreshAll.'; c['B4'].font = Font(italic=True, color='808080')
+    for i, (n, d) in enumerate([('Portfolio', 'Every project: tiles, charts, heading heat map'), ('Project dashboard', 'The selected project - pick it there'), ('Projects', 'The project register (one row per budget head)'), ('REPORT', 'Official interim/final financial report - linked to pivot by formulas'), ('pivot', 'Units, spent and spent + committed by reporting line'),
                                 ('data for pivot', 'Every PO line and GL entry; NBRE_OF_UNITS can be corrected by hand'), ('Analysis', 'Lines and headings against the approved budget: notification / addendum, units, rates'),
                                 ('Checks', 'Entries that look posted in error'), ('By date', 'Spending between two dates (type the dates)'), ('Postings', 'Every dated invoice and GL entry'),
                                 ('Budget', 'Approved budget'), ('Settings', 'Project title, dates, signatories')]):
-        cell = c.cell(20 + i, 2, n); cell.hyperlink = f"#'{n}'!A1"; cell.font = Font(color='1F4E89', underline='single')
-        c.cell(20 + i, 3, d)
+        cell = c.cell(26 + i, 2, n); cell.hyperlink = f"#'{n}'!A1"; cell.font = Font(color='1F4E89', underline='single')
+        c.cell(26 + i, 3, d)
     c.column_dimensions['A'].width = 3; c.column_dimensions['B'].width = 22; c.column_dimensions['C'].width = 90
     # Settings
     s = sh['Settings']; s.append(['Setting', 'Value', 'Note'])
