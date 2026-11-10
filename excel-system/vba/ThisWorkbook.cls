@@ -12,6 +12,13 @@ Option Explicit
 Private Sub Workbook_Open()
     On Error Resume Next
     EnsureButtons
+    ' Prepared outside Excel: the register is filled but nothing is analysed yet.
+    If SheetExists("Projects") And CStr(Sh("Portfolio").Range("B1").Value) = "" Then
+        If Sh("Projects").Cells(2, 1).Value <> "" Then
+            Call RefreshAll
+            Exit Sub
+        End If
+    End If
     If CStr(Sh(RAW_CONSO).Range("A1").Value) <> "" And CStr(Sh(SH_PIVOT).Range("A1").Value) = "" Then
         Busy True
         BuildAll

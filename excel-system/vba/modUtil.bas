@@ -242,3 +242,8 @@ End Sub
 
 Public Const FMT_EUR As String = "#,##0.00;-#,##0.00;""-"""
 Public Const FMT_PCT As String = "0.0%"
+
+' Format$ wrapper (used by the dashboard module, which also uses the .Format property of charts).
+Public Function Fmt(v As Variant, f As String) As String
+    Fmt = Format$(v, f)
+End Function

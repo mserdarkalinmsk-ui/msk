@@ -1,5 +1,12 @@
 # JP Financial Report — Excel (VBA) sistemi
 
+> **Hazır dosya:** `JP-Financial-Report-template.xlsm` — makrolar içinde, kurulum gerekmez. Aç → *İçeriği Etkinleştir*.
+>
+> **Çok proje:** "Load extraction(s)" ile 10 dökümü birden seç; her biri BH numarasından kendi projesine gider.
+> "Load approved budget(s)" ile REPORT dosyalarını birden seç; bütçeler de BH'den projesine gider.
+> **Portfolio** sayfası tüm projeleri (KPI kartları, grafikler, başlık ısı haritası), **Project dashboard** seçilen projeyi gösterir.
+> Çalışma sayfaları (REPORT, pivot, data for pivot, Analysis, Checks, By date, Postings, Budget, Settings) her zaman seçili projeyi gösterir.
+
 Sistemden çekilen **ham döküm** (Situation Budgétaire, Purchase Orders, Factures a date, Ecriture GL, Consolidation…) seçildiği anda:
 
 1. **data for pivot** → **pivot** → **REPORT** zincirini kurar (resmi interim/final financial report, formüllerle bağlı),
