@@ -322,9 +322,9 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
 /**
  * Units of a posting that are actually used, not just ordered. A staff PO "from 01/01/2026 to 31/12/2026" orders
  * 12 months: the report counts the months paid (months with an invoice), else the months gone by the situation
- * date. Any other PO counts the units ordered, as the report does.
+ * date. Any other PO counts the units in proportion to what is spent: committed units are not used yet.
  */
-export function usedUnits(units: number, spent: number, _sc: number, description: string, unitType: string, asAt?: string, paid?: number): number {
+export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string, paid?: number): number {
   if (!units) return 0;
   // A PO with nothing spent yet is only a commitment: its units are not used (the report counts them as 0).
   if (Math.abs(spent) < 0.005) return 0;
@@ -334,7 +334,8 @@ export function usedUnits(units: number, spent: number, _sc: number, description
     const f = Date.parse(dmy(m[1])), t = Date.parse(dmy(m[2])), a = Date.parse(asAt) + 86_400_000;
     if (t > f) return Math.round(units * Math.max(0, Math.min(1, (Math.min(a, t + 86_400_000) - f) / (t + 86_400_000 - f))) * 100) / 100;
   }
-  return units; // other POs: the report counts the units ordered
+  // Other POs: only the spent share counts — 45 days ordered, 760 of 8,550 invoiced = 4 days used; the rest is committed.
+  return sc > spent + 0.005 && sc > 0 ? Math.round(units * Math.max(0, spent / sc) * 100) / 100 : units;
 }
 
 export const ADMIN_RATE = 0.07;
