@@ -4,3 +4,4 @@ test-results/
 playwright-report/
 *.log
 .DS_Store
+excel-system/JP3220-*.xlsm
