@@ -2,7 +2,8 @@ import { ADMIN_LINE } from '../domain/terms';
 import { enrichExtraction } from '../domain/extraction';
 import { useState } from 'preact/hooks';
 import { set, useStore } from '../data/store';
-import { forecastFileName, ifrSheet } from '../domain/forecastTemplate';
+import { forecastFileName } from '../domain/forecastTemplate';
+import { reportPack, type PackExtra } from '../domain/reportPack';
 import { exportOk } from '../ui/exportGate';
 import { download, pngData } from '../ui/xlsxwrite';
 import { byPeriodThenImport, elapsed, lines } from '../domain/calc';
@@ -25,6 +26,7 @@ export function latestWorkbook(p: Project) {
 
 export function FinancialReport({ p }: { p: Project }) {
   const rep = latestWorkbook(p);
+  const [extra, setExtra] = useState<PackExtra>('none');
   const brand = useStore((s) => s.ledger.brand), countryName = useStore((s) => s.ledger.countries).find((c) => c.id === p.country)?.name ?? '';
   const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget'>('lines');
   if (!rep) return (
@@ -53,7 +55,17 @@ export function FinancialReport({ p }: { p: Project }) {
         <div><span>Report period</span><b>{m.periodFrom ? `${date(m.periodFrom)} → ${date(m.periodTo!)}` : '—'}</b></div>
         <div><span>Actuals as at</span><b>{m.asAt ? date(m.asAt) : date(rep.date)}</b></div>
         <div><span>Source</span><b title={wb.sheets.join(', ')}>{wb.fileName ?? rep.fileName ?? '—'}</b></div>
-        {wb.meta.extraction && <button class="btn primary" title="The official interim financial report (REPORT sheet) built from this extraction: units, rates, spent, spent and committed, 7% administrative costs, footnotes and signatures" onClick={() => { if (!exportOk(p, 'the financial report')) return; const kind = p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim'; download(forecastFileName(p, countryName, TODAY).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${kind === 'final' ? 'Final' : 'Interim'} financial report-$1`), [ifrSheet(p, TODAY, undefined, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind })]); }}>⬇ Official financial report</button>}
+        {wb.meta.extraction && <span class="pack">
+          <select aria-label="Add to the report workbook" value={extra} onChange={(e) => setExtra((e.target as HTMLSelectElement).value as PackExtra)}>
+            <option value="none">Report only</option><option value="twelve">+ 12-month forecast</option><option value="notification">+ Budget revision — notification</option><option value="addendum">+ Budget revision — addendum</option>
+          </select>
+          <button class="btn primary" title="REPORT, pivot and data for pivot built from this extraction (units used: spent share only), linked by formulas; optionally the forecast or the budget revision" onClick={() => {
+            if (!exportOk(p, 'the financial report')) return;
+            const kind = p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim';
+            const no = extra === 'notification' || extra === 'addendum' ? prompt(`${extra === 'addendum' ? 'Addendum' : 'Notification'} number`, '') ?? undefined : undefined;
+            const name = forecastFileName(p, countryName, TODAY).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${kind === 'final' ? 'Final' : 'Interim'} financial report${extra === 'none' ? '' : extra === 'twelve' ? ' and forecast' : ` and ${extra} ${no ?? ''}`.trimEnd()}-$1`);
+            download(name, reportPack(p, wb, TODAY, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind }, extra, no));
+          }}>⬇ Report workbook</button></span>}
         <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import newer workbook</button>
       </div>
 

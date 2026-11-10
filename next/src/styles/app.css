@@ -806,3 +806,4 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .chg-not { color: var(--warn); border-color: var(--warn); } .chg-add { color: var(--critical); border-color: var(--critical); }
 .chg.now { border-style: solid; } .chg-not.now { background: var(--warn-soft); } .chg-add.now { background: var(--critical-soft); }
 .chg-near { color: var(--serious); border-color: var(--serious); } .chg-near.now { background: var(--serious-soft); }
+.wb-strip .pack { display: inline-flex; gap: 6px; align-items: center; } .wb-strip .pack select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); }
