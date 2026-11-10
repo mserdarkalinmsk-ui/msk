@@ -6,3 +6,4 @@ playwright-report/
 .DS_Store
 excel-system/JP3220-*.xlsm
 excel-system/JP-Portfolio-*.xlsm
+excel-system/*-BH5235.xlsx

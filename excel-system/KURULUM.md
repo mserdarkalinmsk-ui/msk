@@ -1,3 +1,17 @@
+# Makrosuz sürüm (VBA engelliyse) — `JP-Financial-Reports-NoMacro.xlsx`
+
+Kurum politikası imzasız makroları kapattığında bu sürüm kullanılır: **Power Query + formüller + koşullu biçim + Excel grafikleri**, makro yok.
+
+1. Ham dökümleri bir klasöre (örn. `C:\JP Reports\Extractions`), resmi REPORT dosyalarını başka bir klasöre (`C:\JP Reports\Budgets`) koy.
+2. **Home** sayfasında iki klasör yolunu yaz; **Project settings** tablosuna her BH için başlangıç/bitiş tarihi, rapor tipi, imzaları gir.
+3. **Setup query** sayfasındaki adımlar (bir kez): Model sayfasını temizle → kodu kopyala → Veri > Veri Al > Boş Sorgu > Gelişmiş Düzenleyici > yapıştır → adı `Model` → Kapat ve Yükle… > Tablo > Var olan çalışma sayfası `=Model!$A$1`.
+4. Her ay: yeni dökümü klasöre at → **Veri > Tümünü Yenile**.
+5. Home'da BH seç: Project, REPORT, Analysis, Checks, By date, Postings o projeyi gösterir; Portfolio hepsini.
+
+Kaynak: `powerquery/Model.pq` (Data, Budget, Report bölümleri ayrı dosyalarda), `build_nomacro.py`.
+
+---
+
 # JP Financial Report — Excel (VBA) sistemi
 
 > **Hazır dosya:** `JP-Financial-Report-template.xlsm` — makrolar içinde, kurulum gerekmez. Aç → *İçeriği Etkinleştir*.
