@@ -60,13 +60,18 @@ Public Sub Setup()
     ws.Range("B3").Value = "Load the extraction exported from the financial system: it is read, laid out as data for pivot -> pivot -> REPORT, and analysed at once."
     ws.Range("B3").Font.Color = RGB(90, 90, 90)
     y = 70
-    Button ws, "1. Load approved budget (from a REPORT)", "LoadBudget", y: y = y + 44
-    Button ws, "2. Load extraction and analyse", "LoadExtraction", y: y = y + 44
-    Button ws, "Refresh (after editing data for pivot, Budget or Settings)", "Refresh", y: y = y + 44
-    Button ws, "Export report workbook (REPORT + pivot + data for pivot)", "ExportReport", y: y = y + 44
-    ws.Range("B19").Value = "Sheets"
-    ws.Range("B19").Font.Bold = True
+    Button ws, "1. Load approved budget(s) - from REPORT files", "LoadBudget", y: y = y + 40
+    Button ws, "2. Load extraction(s) and analyse", "LoadExtractions", y: y = y + 40
+    Button ws, "Refresh all projects", "RefreshAll", y: y = y + 40
+    Button ws, "Portfolio dashboard", "GoPortfolio", y: y = y + 40
+    Button ws, "Project dashboard", "GoProject", y: y = y + 40
+    Button ws, "Export report workbook of the selected project", "ExportReport", y
+    ws.Range("B25").Value = "Sheets (the working sheets show the project selected on the Project dashboard)"
+    ws.Range("B25").Font.Bold = True
     items = Array( _
+        Array(SH_PORTFOLIO, "Every project: tiles, charts, heading heat map"), _
+        Array(SH_PROJECTDASH, "The selected project: tiles, charts, lines that need attention - pick the project here"), _
+        Array(SH_PROJECTS, "The project register (one row per budget head)"), _
         Array(SH_REPORT, "Official interim/final financial report - linked to pivot by formulas"), _
         Array(SH_PIVOT, "Units, spent and spent + committed by reporting line"), _
         Array(SH_DFP, "Every PO line and GL entry; NBRE_OF_UNITS can be corrected by hand"), _
@@ -77,8 +82,8 @@ Public Sub Setup()
         Array(SH_BUDGET, "Approved budget"), _
         Array(SH_SETTINGS, "Project title, dates, signatories"))
     For i = 0 To UBound(items)
-        ws.Hyperlinks.Add Anchor:=ws.Cells(20 + i, 2), Address:="", SubAddress:="'" & items(i)(0) & "'!A1", TextToDisplay:=CStr(items(i)(0))
-        ws.Cells(20 + i, 3).Value = items(i)(1)
+        ws.Hyperlinks.Add Anchor:=ws.Cells(26 + i, 2), Address:="", SubAddress:="'" & items(i)(0) & "'!A1", TextToDisplay:=CStr(items(i)(0))
+        ws.Cells(26 + i, 3).Value = items(i)(1)
     Next i
     ws.Columns("A").ColumnWidth = 3: ws.Columns("B").ColumnWidth = 22: ws.Columns("C").ColumnWidth = 90
     ws.Activate
@@ -123,8 +128,20 @@ Public Sub EnsureButtons()
     Set ws = Sh(SH_CONTROL)
     If ws.Shapes.Count > 0 Then Exit Sub
     y = 70
-    Button ws, "1. Load approved budget (from a REPORT)", "LoadBudget", y: y = y + 44
-    Button ws, "2. Load extraction and analyse", "LoadExtraction", y: y = y + 44
-    Button ws, "Refresh (after editing data for pivot, Budget or Settings)", "Refresh", y: y = y + 44
-    Button ws, "Export report workbook (REPORT + pivot + data for pivot)", "ExportReport", y
+    Button ws, "1. Load approved budget(s) - from REPORT files", "LoadBudget", y: y = y + 40
+    Button ws, "2. Load extraction(s) and analyse", "LoadExtractions", y: y = y + 40
+    Button ws, "Refresh all projects", "RefreshAll", y: y = y + 40
+    Button ws, "Portfolio dashboard", "GoPortfolio", y: y = y + 40
+    Button ws, "Project dashboard", "GoProject", y: y = y + 40
+    Button ws, "Export report workbook of the selected project", "ExportReport", y
+End Sub
+
+Public Sub GoPortfolio()
+    If Not SheetExists(SH_PORTFOLIO) Then Call BuildPortfolio
+    Sh(SH_PORTFOLIO).Activate
+End Sub
+
+Public Sub GoProject()
+    Call BuildProjectDashboard
+    Sh(SH_PROJECTDASH).Activate
 End Sub

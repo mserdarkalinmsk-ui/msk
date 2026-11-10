@@ -258,13 +258,13 @@ def load_modules(sheet_codes):
     mods.append({'name': 'ThisWorkbook', 'doc': True, 'src': tw})
     for c in sheet_codes:
         mods.append({'name': c, 'doc': True, 'src': doc_module(c, '0{00020820-0000-0000-C000-000000000046}')})
-    for f in ['modUtil', 'modImport', 'modBuild', 'modAnalysis', 'modControl']:
+    for f in ['modUtil', 'modImport', 'modBuild', 'modAnalysis', 'modControl', 'modPortfolio', 'modDash']:
         mods.append({'name': f, 'doc': False, 'src': open(os.path.join(VBA_DIR, f + '.bas'), 'rb').read()})
     return mods
 
 # ------------------------------------------------------------------ workbook content
-SHEETS = ['Control', 'Settings', 'Budget', 'REPORT', 'pivot', 'data for pivot', 'Analysis', 'Checks', 'By date', 'Postings',
-          'raw_Conso', 'raw_PO', 'raw_Inv', 'raw_GL', 'raw_Situation']
+SHEETS = ['Control', 'Portfolio', 'Project dashboard', 'Projects', 'Settings', 'Budget', 'REPORT', 'pivot', 'data for pivot', 'Analysis', 'Checks', 'By date', 'Postings',
+          'raw_Conso', 'raw_PO', 'raw_Inv', 'raw_GL', 'raw_Situation', 'Monthly', 'Heads']
 SETTINGS = [('Project title', '', 'As on the first line of the report'), ('Contract', '', 'e.g. Contract n°700001964'),
             ('JP number', '', 'e.g. 3220'), ('Budget head (BH)', '', 'Filled from the extraction'),
             ('Project start', '', 'dd/mm/yyyy'), ('Project end', '', 'dd/mm/yyyy'),
@@ -289,13 +289,14 @@ def find(wb, keys):
                 break
     return best
 
-def build_content(out_xlsx, budget=None, extraction=None, settings=None):
+def build_content(out_xlsx, projects):
+    budget, extraction, settings = projects[0] if projects else (None, None, None)
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment
     wb = openpyxl.Workbook(); wb.remove(wb.active)
     sh = {n: wb.create_sheet(n) for n in SHEETS}
     for n in SHEETS:
-        if n.startswith('raw_'): sh[n].sheet_state = 'hidden'
+        if n.startswith('raw_') or n in ('Monthly', 'Heads'): sh[n].sheet_state = 'hidden'
     head = PatternFill('solid', fgColor='D9D9D9'); yel = PatternFill('solid', fgColor='FFF2CC')
     # Control
     c = sh['Control']; c.sheet_view.showGridLines = False
@@ -339,16 +340,52 @@ def build_content(out_xlsx, budget=None, extraction=None, settings=None):
             b.cell(b.max_row, 1).number_format = '@'
     for ws_ in (s, b):
         for cell in ws_[1]: cell.font = Font(bold=True); cell.fill = head
-    # Extraction -> raw sheets (header on row 1, values)
-    if extraction:
-        src = openpyxl.load_workbook(extraction, data_only=True)
-        for target, keys in [('raw_Conso', ['source', 'reportingline', 'spentcomeur']), ('raw_PO', ['ponumber', 'descriptionpo']),
-                             ('raw_Inv', ['invoiceno', 'montantligne']), ('raw_GL', ['glnumber', 'reportingline']), ('raw_Situation', ['ccm', 'article', 'depensesreelles'])]:
-            f = find(src, keys)
-            if not f: continue
-            ws, r = f
-            for row in ws.iter_rows(min_row=r, values_only=True):
-                sh[target].append(list(row))
+    # Register, monthly and heads sheets
+    reg = sh['Projects']
+    reg.append(["BH", "Code", "Project title", "Contract", "JP", "Start", "End", "Report type", "Admin rate", "Signatory 1",
+                "Signatory 2", "Source file", "Situation date", "Budget", "Spent", "Spent + committed", "Used %", "Time %", "Pace (points)",
+                "Errors", "To check", "Worst heading", "Units above budget", "Loaded on", "Available"])
+    for cell in reg[1]: cell.font = Font(bold=True); cell.fill = head
+    sh['Monthly'].append(['BH', 'Month', 'Spent']); sh['Heads'].append(['BH', 'Heading', 'Name', 'Budget', 'Spent + committed', '% vs budget', 'Status'])
+    RAW = [('Conso', ['source', 'reportingline', 'spentcomeur']), ('PO', ['ponumber', 'descriptionpo']),
+           ('Inv', ['invoiceno', 'montantligne']), ('GL', ['glnumber', 'reportingline']), ('Situation', ['ccm', 'article', 'depensesreelles'])]
+    for k, (bud_f, ext_f, sett) in enumerate(projects):
+        sett = dict(sett or {})
+        bh = str(sett.get('Budget head (BH)', '')).strip()
+        src = openpyxl.load_workbook(ext_f, data_only=True) if ext_f else None
+        if src and not bh:
+            for ws in src.worksheets:
+                for row in ws.iter_rows(min_row=1, max_row=12, values_only=True):
+                    m = re.search(r'BH=(\d+)', str(row[0] or ''))
+                    if m: bh = m.group(1); break
+                if bh: break
+        if not bh: continue
+        if src:
+            for part, keys in RAW:
+                f = find(src, keys)
+                x = wb.create_sheet(f'x_{bh}_{part}'); x.sheet_state = 'hidden'
+                if not f: continue
+                ws, r = f
+                for row in ws.iter_rows(min_row=r, values_only=True):
+                    x.append(list(row))
+                    if k == 0: sh['raw_' + part].append(list(row))
+        if bud_f:
+            xb = wb.create_sheet(f'x_{bh}_Budget'); xb.sheet_state = 'hidden'
+            xb.append(['Code', 'Description', 'Unit', '# of units', 'Unit rate', 'Cost'])
+            bsrc = openpyxl.load_workbook(bud_f, data_only=True)
+            bws = bsrc['REPORT'] if 'REPORT' in bsrc.sheetnames else bsrc.worksheets[0]
+            for row in bws.iter_rows(values_only=True):
+                a = str(row[0] or '').strip()
+                m = re.match(r'^(\d+(?:\.\d+)*)\s+(.*)$', a, re.S)
+                if not m or a.startswith('Sub-total') or int(m.group(1).split('.')[0]) > 6: continue
+                num = lambda v: v if isinstance(v, (int, float)) else None
+                xb.append([m.group(1), m.group(2).split('\n')[0].strip(), row[1] or None, num(row[2]), num(row[3]), num(row[4])])
+                xb.cell(xb.max_row, 1).number_format = '@'
+        d = lambda key: (dt.datetime.strptime(sett[key][:10], '%Y-%m-%d') if isinstance(sett.get(key), str) and re.match(r'\d{4}-', sett.get(key, '')) else sett.get(key))
+        reg.append([bh, sett.get('Code', 'JP' + str(sett.get('JP number', '')) if sett.get('JP number') else 'BH' + bh), sett.get('Project title', ''), sett.get('Contract', ''),
+                    sett.get('JP number', ''), d('Project start'), d('Project end'), sett.get('Report type', 'Interim'), sett.get('Administrative costs rate', 0.07),
+                    sett.get('Signatory 1', ''), sett.get('Signatory 2', ''), sett.get('Source file', os.path.basename(ext_f or '')), d('Situation date')])
+        reg.cell(reg.max_row, 1).number_format = '@'
     wb.save(out_xlsx)
 
 def package(xlsx_path, out_path, vba_bin, sheet_codes):
@@ -387,16 +424,27 @@ def package(xlsx_path, out_path, vba_bin, sheet_codes):
     zout.close()
 
 def main():
+    """OUT.xlsm [--project BUDGET.xlsx EXTRACTION.xlsx SETTINGS.json]... (or the single-project --budget/--extraction/--settings)"""
     args = sys.argv[1:]
     out = args[0]
+    projects = []
+    i = 1
+    while i < len(args):
+        if args[i] == '--project':
+            projects.append((args[i + 1] or None, args[i + 2] or None, json.load(open(args[i + 3])) if args[i + 3] else None)); i += 4
+        else:
+            i += 1
     opt = lambda k: args[args.index(k) + 1] if k in args else None
-    settings = json.load(open(opt('--settings'))) if opt('--settings') else None
+    if not projects and (opt('--budget') or opt('--extraction')):
+        projects.append((opt('--budget'), opt('--extraction'), json.load(open(opt('--settings'))) if opt('--settings') else None))
     tmp = out + '.tmp.xlsx'
-    build_content(tmp, opt('--budget'), opt('--extraction'), settings)
-    codes = [f'Sheet{i + 1}' for i in range(len(SHEETS))]
+    build_content(tmp, projects)
+    import openpyxl
+    names = openpyxl.load_workbook(tmp).sheetnames
+    codes = [f'Sheet{i + 1}' for i in range(len(names))]
     package(tmp, out, vba_project(load_modules(codes)), codes)
     os.remove(tmp)
-    print('written', out)
+    print('written', out, len(names), 'sheets')
 
 if __name__ == '__main__':
     main()
