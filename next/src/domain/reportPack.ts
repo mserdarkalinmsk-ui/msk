@@ -5,8 +5,9 @@ import { usedUnits, type WorkbookSummary } from './workbook';
 
 /**
  * A raw system extraction laid out as the finance team's report workbook:
- *  - "data for pivot": every PO line and GL entry with its reporting line; NBRE_OF_UNITS holds the units used
- *    (spent share of a PO, months paid on a staff PO, 0 for a PO with nothing spent), the ordered units kept beside it;
+ *  - "data for pivot": every PO line and GL entry with its reporting line; NBRE_OF_UNITS follows the official report
+ *    (months paid on a staff PO, 0 for a PO with nothing spent, else the units ordered), the ordered units kept beside it.
+ *    The app's own analysis counts only the spent share of a PO; the official report does not;
  *  - "pivot": units, spent and spent + committed by reporting line (SUMIF formulas over "data for pivot");
  *  - "REPORT": the official interim/final financial report, its actual columns linked to "pivot" and its sub-totals
  *    and totals as formulas, so a unit corrected in "data for pivot" flows through to the report;
@@ -23,7 +24,7 @@ export function dataForPivot(wb: WorkbookSummary): { rows: (string | number | XC
   for (const e of E) if (e.src === 'invoice' && e.po) paid.set(e.po, (paid.get(e.po) ?? new Set()).add(e.period || e.date.slice(0, 7)));
   const rows: (string | number | XCell | null)[][] = [HEAD.map((h) => ({ v: h, st: 'head' }))];
   for (const p of wb.pos) {
-    const u = p.units ?? 0, used = usedUnits(u, p.spent, p.sc, p.description, p.unitType, asAt, paid.get(p.po)?.size);
+    const u = p.units ?? 0, used = usedUnits(u, p.spent, p.sc, p.description, p.unitType, asAt, paid.get(p.po)?.size, true);
     rows.push(['1-PURCHASE ORDERS', p.line, p.unitType, N(used), N(u), p.po, p.description, p.nature, p.supplier, N(p.amount), N(p.spent), N(p.sc - p.spent), N(p.sc), p.status, p.date]);
   }
   for (const e of E) if (e.src === 'gl')
@@ -37,7 +38,7 @@ function pivot(wb: WorkbookSummary, n: number): SheetSpec {
   const D = `'data for pivot'!`, rng = (c: string) => `${D}$${c}$2:$${c}$${n}`;
   const sum = (code: string, k: 'u' | 's' | 'c') => {
     let t = 0;
-    for (const p of wb.pos) if (p.line === code) t += k === 'u' ? usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, new Set((wb.entries ?? []).filter((e) => e.src === 'invoice' && e.po === p.po).map((e) => e.period || e.date.slice(0, 7))).size) : k === 's' ? p.spent : p.sc;
+    for (const p of wb.pos) if (p.line === code) t += k === 'u' ? usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, new Set((wb.entries ?? []).filter((e) => e.src === 'invoice' && e.po === p.po).map((e) => e.period || e.date.slice(0, 7))).size, true) : k === 's' ? p.spent : p.sc;
     for (const e of wb.entries ?? []) if (e.src === 'gl' && (e.line === '10' ? '0' : e.line) === code) t += k === 'u' ? e.units ?? 0 : e.amount;
     return r2(t);
   };
@@ -52,7 +53,7 @@ function pivot(wb: WorkbookSummary, n: number): SheetSpec {
 }
 
 /** The REPORT sheet with its actual columns linked to "pivot" and the sub-totals and totals as formulas. */
-function linkedReport(p: Project, today: Date, look: ReportLook): SheetSpec {
+function linkedReport(p: Project, today: Date, look: ReportLook, units: Map<string, number>): SheetSpec {
   const s = ifrSheet(p, today, undefined, look), final = look.kind === 'final';
   const txt = (c: unknown) => String(c && typeof c === 'object' ? (c as XCell).v ?? '' : c ?? '');
   const L = (c: number) => String.fromCharCode(65 + c);
@@ -70,6 +71,9 @@ function linkedReport(p: Project, today: Date, look: ReportLook): SheetSpec {
       if (has) {
         set(row, A.u, look_(2)); set(row, A.sp, look_(3)); if (!final) set(row, A.sc, look_(4));
         set(row, A.rate, `IF(${L(A.u)}${R}=0,0,${L(A.sp)}${R}/${L(A.u)}${R})`);
+        // Shown values as the official report counts units (the formulas give the same once recalculated).
+        const u = units.get(code) ?? 0, sp = Number((row[A.sp] as XCell).v) || 0;
+        (row[A.u] as XCell).v = u; (row[A.rate] as XCell).v = u ? sp / u : 0;
       }
       block.push(R);
     } else if (/^Sub-total/.test(label)) {
@@ -88,7 +92,10 @@ export type PackExtra = 'none' | 'twelve' | 'notification' | 'addendum';
 
 export function reportPack(p: Project, wb: WorkbookSummary, today: Date, look: ReportLook, extra: PackExtra = 'none', changeNo?: string): SheetSpec[] {
   const d = dataForPivot(wb);
-  const sheets: SheetSpec[] = [linkedReport(p, today, look), pivot(wb, d.n), { name: 'data for pivot', rows: d.rows, widths: [18, 12, 14, 12, 12, 11, 50, 30, 30, 13, 13, 13, 13, 14, 11] }];
+  const units = new Map<string, number>();
+  for (const r of d.rows.slice(1)) { const c = String(r[1] ?? ''), v = (r[3] as XCell)?.v; units.set(c, (units.get(c) ?? 0) + (typeof v === 'number' ? v : 0)); }
+  for (const [k, v] of units) units.set(k, r2(v));
+  const sheets: SheetSpec[] = [linkedReport(p, today, look, units), pivot(wb, d.n), { name: 'data for pivot', rows: d.rows, widths: [18, 12, 14, 12, 12, 11, 50, 30, 30, 13, 13, 13, 13, 14, 11] }];
   if (extra !== 'none') {
     const o: ForecastOptions = { ...defaultOptions(p), ...(extra === 'twelve' ? { kind: 'twelve' as const } : { kind: 'revision' as const, change: extra, changeNo }) };
     sheets.push(...forecastSheets(p, today, o));
