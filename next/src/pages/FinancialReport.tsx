@@ -16,6 +16,7 @@ import { date, full, month, pct, short } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { Statement } from '../ui/Statement';
 import { LedgerPanel } from './LedgerPanel';
+import { WorkPlanView } from '../ui/WorkPlan';
 
 const HEADINGS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment & supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other' };
 
@@ -28,7 +29,7 @@ export function FinancialReport({ p }: { p: Project }) {
   const rep = latestWorkbook(p);
   const [extra, setExtra] = useState<PackExtra>('none');
   const brand = useStore((s) => s.ledger.brand), countryName = useStore((s) => s.ledger.countries).find((c) => c.id === p.country)?.name ?? '';
-  const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget'>('lines');
+  const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp'>('lines');
   if (!rep) return (
     <div class="card empty-page"><div><h2>No financial report workbook yet</h2>
       <p>Import the Council of Europe report workbook (REPORT / Forecast / Purchase Orders / Situation Budgétaire…) and everything in it is analysed here.</p>
@@ -140,8 +141,8 @@ export function FinancialReport({ p }: { p: Project }) {
 
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px', alignItems: 'center' }}>
-            <div><h2>{view === 'budget' ? 'Against the approved budget' : view === 'range' ? 'Spending by date' : view === 'checks' ? 'Entries to check' : view === 'lines' ? 'Financial statement' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
-              <p>{view === 'budget' ? 'Each line and heading against the approved budget, with the 25% flexibility between headings' : view === 'range' ? 'Every invoice and GL entry between two dates, by budget line' : view === 'checks' ? 'Postings that look entered in error — wrong line, duplicate, above the PO, outside the project' : view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
+            <div><h2>{view === 'wp' ? 'Work Plan follow-up' : view === 'budget' ? 'Against the approved budget' : view === 'range' ? 'Spending by date' : view === 'checks' ? 'Entries to check' : view === 'lines' ? 'Financial statement' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
+              <p>{view === 'wp' ? 'Quarterly Work Plan against the activity budget (total less 7% administrative, staff and office costs)' : view === 'budget' ? 'Each line and heading against the approved budget, with the 25% flexibility between headings' : view === 'range' ? 'Every invoice and GL entry between two dates, by budget line' : view === 'checks' ? 'Postings that look entered in error — wrong line, duplicate, above the PO, outside the project' : view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
             <div class="tools"><div class="seg">
               <button aria-pressed={view === 'lines'} onClick={() => setView('lines')}>Statement</button>
               <button aria-pressed={view === 'rates'} onClick={() => setView('rates')}>Units & rates</button>
@@ -149,11 +150,13 @@ export function FinancialReport({ p }: { p: Project }) {
               {wb.entries?.length ? <button aria-pressed={view === 'range'} onClick={() => setView('range')}>By date</button> : null}
               {wb.entries?.length ? <button aria-pressed={view === 'budget'} onClick={() => setView('budget')}>vs approved budget</button> : null}
               {wb.entries?.length ? <button aria-pressed={view === 'checks'} onClick={() => setView('checks')}>Entry checks</button> : null}
+              <button aria-pressed={view === 'wp'} onClick={() => setView('wp')}>Work Plan</button>
             </div></div>
           </div>
           {view === 'lines' && <Statement source={[wb.fileName ?? rep.fileName, wb.meta.grid].filter(Boolean).join(', ') || undefined} layout={(wb.meta as { layout?: Record<string, string> }).layout} lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
+          {view === 'wp' && <WorkPlanView p={p} wb={wb} />}
           {(view === 'range' || view === 'checks' || view === 'budget') && <LedgerPanel p={p} wb={wb} mode={view} />}
         </section>
       </div>

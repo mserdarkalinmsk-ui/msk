@@ -46,6 +46,8 @@ export interface Project {
   budgetVersions?: import('./budgetVersions').BudgetVersion[];
   /** Notification and addendum letters on file (date entered by hand for scanned ones). */
   budgetLetters?: import('./letters').Letter[];
+  /** Quarterly Work Plans entered from what the project team sends (domain/workplan). */
+  workPlans?: import('./workplan').WorkPlan[];
 }
 
 export interface AuditEntry { at: string; message: string; project?: string }
