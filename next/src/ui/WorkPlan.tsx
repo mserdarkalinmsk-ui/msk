@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { updateProject } from '../data/store';
-import { followUp, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { byLine, carriedFrom, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -45,7 +45,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       <div class="tools" style={{ padding: '0 20px 12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div class="seg">{plans.map((x) => <button aria-pressed={x.id === wp.id} onClick={() => setSel(x.id)}>WP {x.no}</button>)}</div>
         {picker}<button class="btn" onClick={add}>+ Next Work Plan</button>
-        <button class="btn primary" onClick={() => { if (exportOk(p, 'the Work Plan follow-up')) download(`${p.bh ?? p.code}-WP${wp.no}-follow-up.xlsx`, [wpSheet(p, f)]); }}>⬇ WP follow-up</button>
+        <button class="btn primary" onClick={() => { if (exportOk(p, 'the Work Plan follow-up')) download(`${p.bh ?? p.code}-WP${wp.no}-follow-up.xlsx`, [wpSheet(p, f), ...wpExtraSheets(wp, plans, wb)]); }}>⬇ WP follow-up</button>
         <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && prompt('Admin password') === 'MSK') { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
       </div>
       {msg && <p class="muted" style={{ padding: '0 20px 8px' }}>{msg}</p>}
@@ -81,9 +81,8 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
           <Row label="Remaining months with WP" a={String(f.remainingMonths)} cls="b" />
         </tbody>
       </table>
-      {wp.acts?.length ? <details class="wp-acts" open><summary>Activities in WP {wp.no} · {wp.acts.length} · {full(wp.acts.reduce((t, a) => t + a.amount, 0))}{wp.file ? ` · ${wp.file}` : ''}</summary>
-        <table class="wp-t"><thead><tr><th>Ref.</th><th>Activity ID</th><th>Activity</th><th>Budget lines</th><th class="num">Estimated</th></tr></thead>
-          <tbody>{wp.acts.map((a) => <tr><td>{a.ref}</td><td class="num">{a.id}</td><td>{a.name}</td><td class="muted">{a.lines.filter((l) => l.amount).map((l) => l.line).join(', ')}</td><td class="num">{full(a.amount)}</td></tr>)}</tbody></table></details> : null}
+      <WpCompare plans={plans} wb={wb} sel={wp.id} onPick={setSel} />
+      {wp.acts?.length ? <WpDetail wp={wp} plans={plans} wb={wb} /> : null}
       <div class="wp-notes">
         <label class="n1">FOMA notes<textarea rows={3} value={wp.notes ?? ''} onChange={(e) => upd({ notes: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Project Teams — comments<textarea rows={3} value={wp.teams ?? ''} onChange={(e) => upd({ teams: (e.target as HTMLTextAreaElement).value })} /></label>
@@ -92,6 +91,43 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except heading 1 (staff costs), heading 4 (local office) and 10 (administrative costs). D sums the invoices and GL entries dated within the previous WP; E adds the open balance of POs raised in those dates.</p>
     </div>
   );
+}
+
+function WpCompare({ plans, wb, sel, onPick }: { plans: WP[]; wb: WorkbookSummary; sel: string; onPick: (id: string) => void }) {
+  const H = history(plans, wb);
+  if (H.length < 2) return null;
+  const max = Math.max(...H.map((h) => Math.max(h.wp.planned, h.sc ?? 0)), 1);
+  const done = H.filter((h) => h.spentPct != null && h.wp.to < (wb.meta.situationDate || wb.meta.asAt || '9'));
+  const avg = done.length ? done.reduce((s, h) => s + (h.spentPct ?? 0), 0) / done.length : null;
+  return (
+    <div class="wp-sec"><h3>Comparison with previous Work Plans{avg != null ? <span class="muted"> · average delivery (spent / planned) of closed WPs {pct(avg)}</span> : null}</h3>
+      <div class="wp-bars">{H.map((h) => <button class={`wp-bar ${h.wp.id === sel ? 'on' : ''}`} onClick={() => onPick(h.wp.id)} title={`WP ${h.wp.no}: planned ${full(h.wp.planned)} · spent ${h.spent == null ? '—' : full(h.spent)} · spent & committed ${h.sc == null ? '—' : full(h.sc)}`}>
+        <div class="cols"><i class="pl" style={{ height: `${(h.wp.planned / max) * 100}%` }} /><i class="sc" style={{ height: `${((h.sc ?? 0) / max) * 100}%` }} /><i class="sp" style={{ height: `${((h.spent ?? 0) / max) * 100}%` }} /></div>
+        <b>WP {h.wp.no}</b><span class={tone(h.spentPct, 0.8, 0.5)}>{h.spentPct == null ? '—' : pct(h.spentPct)}</span></button>)}</div>
+      <div class="tools legend" style={{ padding: '4px 0 8px' }}><span><i style={{ background: 'var(--c3, #9aa4b2)' }} />Planned</span><span><i style={{ background: 'var(--c1)', opacity: .4 }} />Spent & committed</span><span><i style={{ background: 'var(--c1)' }} />Spent</span></div>
+      <table class="wp-t"><thead><tr><th>WP</th><th>Period</th><th class="num">Planned</th><th class="num">Spent in period</th><th class="num">%</th><th class="num">Spent & committed</th><th class="num">%</th><th class="num">Change vs previous plan</th><th class="num">Activities · carried over</th></tr></thead>
+        <tbody>{H.map((h, i) => { const d = i ? h.wp.planned - H[i - 1].wp.planned : null; return (
+          <tr class={h.wp.id === sel ? 'sel' : ''}><td><b>WP {h.wp.no}</b></td><td>{h.wp.from ? `${date(h.wp.from)} – ${date(h.wp.to)}` : '—'}</td><td class="num">{full(h.wp.planned)}</td>
+            <td class="num">{h.spent == null ? '—' : full(h.spent)}</td><td class={`num ${tone(h.spentPct, 0.8, 0.5)}`}>{h.spentPct == null ? '—' : pct(h.spentPct)}</td>
+            <td class="num">{h.sc == null ? '—' : full(h.sc)}</td><td class={`num ${tone(h.scPct, 0.8, 0.5)}`}>{h.scPct == null ? '—' : pct(h.scPct)}</td>
+            <td class="num">{d == null ? '' : `${d >= 0 ? '+' : ''}${full(d)}`}</td><td class="num">{h.acts ? `${h.acts} · ${h.carried}` : '—'}</td></tr>); })}</tbody></table>
+    </div>);
+}
+
+function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
+  const carried = carriedFrom(plans, wp), L = byLine(wp, wb);
+  const over = L.filter((l) => l.after < 0);
+  return (
+    <>
+      <details class="wp-sec" open><summary>Activities in WP {wp.no} · {wp.acts!.length} · {full(wp.acts!.reduce((t, a) => t + a.amount, 0))}{carried.size ? ` · ${carried.size} carried over from earlier WPs` : ''}{wp.file ? ` · ${wp.file}` : ''}</summary>
+        <table class="wp-t"><thead><tr><th>Ref.</th><th>Activity ID</th><th>Activity</th><th>Budget lines</th><th class="num">Estimated</th><th>Earlier WPs</th></tr></thead>
+          <tbody>{[...wp.acts!].sort((a, b) => b.amount - a.amount).map((a) => { const c = carried.get(a.id); return (
+            <tr class={c ? 'warning' : ''}><td>{a.ref}</td><td class="num">{a.id}</td><td>{a.name}</td><td class="muted">{a.lines.filter((l) => l.amount).map((l) => `${l.line} ${full(l.amount)}`).join(' · ')}</td><td class="num">{full(a.amount)}</td>
+              <td>{c ? <span class="badge warning">Also in WP {c.join(', ')}</span> : <span class="muted">new</span>}</td></tr>); })}</tbody></table></details>
+      <details class="wp-sec" open><summary>By budget line · {L.length} lines{over.length ? ` · ${over.length} above what is left` : ''}</summary>
+        <table class="wp-t"><thead><tr><th>Line</th><th>Description</th><th class="num">Budget</th><th class="num">Spent & committed</th><th class="num">Left</th><th class="num">WP {wp.no} plan</th><th class="num">Left after WP</th></tr></thead>
+          <tbody>{L.map((l) => <tr class={l.after < 0 ? 'serious' : ''}><td class="num">{l.line}</td><td>{l.description}</td><td class="num">{full(l.budget)}</td><td class="num">{full(l.sc)}</td><td class="num">{full(l.left)}</td><td class="num">{full(l.planned)}</td><td class="num">{full(l.after)}</td></tr>)}</tbody></table></details>
+    </>);
 }
 
 export function wpSheet(p: Project, f: WpFollowUp): SheetSpec {
@@ -125,4 +161,19 @@ export function wpSheet(p: Project, f: WpFollowUp): SheetSpec {
     [L('Head of Operations - Comments:'), { v: wp.hoo ?? '', st: 'wrap' }],
   ];
   return { name: `WP ${wp.no}`, rows, widths: [70, 18, 14, 10], freeze: 0, portrait: true, onePage: true };
+}
+
+function wpExtraSheets(wp: WP, plans: WP[], wb: WorkbookSummary): SheetSpec[] {
+  const H = (v: string): XCell => ({ v, st: 'head' }), M = (v: number | null): XCell => ({ v: v ?? '', st: 'money' }), P = (v: number | null): XCell => ({ v: v ?? '', st: 'rPct' });
+  const hist = history(plans, wb), carried = carriedFrom(plans, wp), out: SheetSpec[] = [];
+  out.push({ name: 'WP comparison', widths: [8, 26, 14, 16, 8, 18, 8, 12, 12], rows: [
+    ['WP', 'Period', 'Planned', 'Spent in period', '%', 'Spent & committed', '%', 'Activities', 'Carried over'].map(H),
+    ...hist.map((h) => [`WP ${h.wp.no}`, h.wp.from ? `${date(h.wp.from)} - ${date(h.wp.to)}` : '', M(h.wp.planned), M(h.spent), P(h.spentPct), M(h.sc), P(h.scPct), h.acts, h.carried])] });
+  if (wp.acts?.length) {
+    out.push({ name: `WP ${wp.no} activities`, widths: [10, 12, 60, 14, 16], rows: [['Ref.', 'Activity ID', 'Activity', 'Estimated', 'Earlier WPs'].map(H),
+      ...wp.acts.map((a) => [a.ref, a.id, a.name, M(a.amount), carried.get(a.id)?.map((n) => `WP ${n}`).join(', ') ?? ''])] });
+    out.push({ name: `WP ${wp.no} by line`, widths: [10, 50, 14, 18, 14, 14, 16], rows: [['Line', 'Description', 'Budget', 'Spent & committed', 'Left', `WP ${wp.no} plan`, 'Left after WP'].map(H),
+      ...byLine(wp, wb).map((l) => [l.line, l.description, M(l.budget), M(l.sc), M(l.left), M(l.planned), M(l.after)])] });
+  }
+  return out;
 }

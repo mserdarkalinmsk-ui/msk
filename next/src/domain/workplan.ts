@@ -89,3 +89,38 @@ export function readWorkPlan(rows: string[][]): { from: string; to: string; bh: 
   for (const a of acts) if (!a.amount) a.amount = a.lines.reduce((s, l) => s + l.amount, 0);
   return { from: dmy(f ?? ''), to: dmy(t ?? ''), bh, planned: r2(grand || acts.reduce((s, a) => s + a.amount, 0)), acts };
 }
+
+/** Each Work Plan against what was posted in its own dates: activity spent (invoices + GL) and the open balance of POs raised then. */
+export interface WpHistoryRow { wp: WorkPlan; spent: number | null; sc: number | null; spentPct: number | null; scPct: number | null; acts: number; carried: number }
+export function history(plans: WorkPlan[], wb: WorkbookSummary): WpHistoryRow[] {
+  const sorted = [...plans].sort((a, b) => a.no - b.no);
+  return sorted.map((wp, i) => {
+    let spent: number | null = null, sc: number | null = null;
+    if (wb.entries?.length && wp.from && wp.to) {
+      const inR = (d: string) => d >= wp.from && d <= wp.to;
+      spent = wb.entries.filter((e) => inR(e.date) && isActivity(e.line)).reduce((s, e) => s + e.amount, 0);
+      sc = spent + wb.pos.filter((x) => inR(x.date) && isActivity(x.line)).reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0);
+    }
+    const before = new Set(sorted.slice(0, i).flatMap((w) => (w.acts ?? []).map((a) => a.id)));
+    return { wp, spent: spent == null ? null : r2(spent), sc: sc == null ? null : r2(sc), spentPct: spent == null || !wp.planned ? null : spent / wp.planned, scPct: sc == null || !wp.planned ? null : sc / wp.planned, acts: wp.acts?.length ?? 0, carried: (wp.acts ?? []).filter((a) => before.has(a.id)).length };
+  });
+}
+
+/** Earlier Work Plans that already held the same activity ID (carried over, not yet delivered). */
+export function carriedFrom(plans: WorkPlan[], wp: WorkPlan): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  for (const w of plans) if (w.no < wp.no) for (const a of w.acts ?? []) if (a.amount && (wp.acts ?? []).some((x) => x.id === a.id)) out.set(a.id, [...(out.get(a.id) ?? []), w.no]);
+  return out;
+}
+
+/** This Work Plan's estimates by budget line, against what is left on that line (budget − spent & committed) in the report. */
+export interface WpLine { line: string; description: string; planned: number; budget: number; sc: number; left: number; after: number }
+export function byLine(wp: WorkPlan, wb: WorkbookSummary): WpLine[] {
+  const M = new Map<string, number>();
+  for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) M.set(l.line, (M.get(l.line) ?? 0) + l.amount);
+  return [...M].map(([line, planned]) => {
+    const L = wb.lines.find((x) => x.code === line);
+    const budget = L?.budget.cost ?? 0, sc = L?.sc ?? 0;
+    return { line, description: L?.description ?? '', planned: r2(planned), budget: r2(budget), sc: r2(sc), left: r2(budget - sc), after: r2(budget - sc - planned) };
+  }).sort((a, b) => a.line.localeCompare(b.line, undefined, { numeric: true }));
+}
