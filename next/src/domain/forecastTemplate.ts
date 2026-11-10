@@ -45,7 +45,7 @@ export function defaultOptions(p: Project): ForecastOptions {
 }
 
 export function forecastPeriod(p: Project, today: Date, o: ForecastOptions = defaultOptions(p)) {
-  const r = latestReport(p), asAt = (r?.snapshot?.workbook?.meta.asAt || r?.date || today.toISOString()).slice(0, 10);
+  const r = latestReport(p), asAt = (r?.snapshot?.workbook?.meta.asAt || r?.snapshot?.workbook?.meta.situationDate || r?.date || today.toISOString()).slice(0, 10);
   const from = addDays(asAt, 1);
   const months = Number((p.contract as { repMonths?: number } | undefined)?.repMonths) || 12;
   const to12 = addMonths(from, months) > p.end ? p.end : addMonths(from, months);
@@ -465,6 +465,13 @@ export function ifrSheet(p: Project, today: Date, o: ForecastOptions = defaultOp
       const t = blank(); t[0] = { v: '9. Total eligible costs (7 + 8)', st: 'rSubL' };
       for (let c = 2; c < W; c++) { const k = keep[orig ? c - 3 : c]; if (k == null || (orig && c < 5)) continue; const x = r11[k] as XCell; t[c] = x && typeof x === 'object' ? { v: x.v, st: 'rSubN' } : { st: 'rSubN' }; }
       rows.push(t); continue;
+    }
+    // As in the official report: the footnotes are dated as at the report date; a line with nothing spent shows "-".
+    if (/^\((1|2)\)/.test(label)) row[0] = { v: label.replace(/as of \d{2}\/\d{2}\/\d{4}/, `as of ${dmy(per.asAt)}`), st: (row[0] as XCell)?.st ?? 'rNote' };
+    if (txt(src[1]) && i > 3) {
+      const a0 = orig ? 8 : 5, cells = final ? [a0, a0 + 1, a0 + 2] : [a0, a0 + 1, a0 + 2, a0 + 3];
+      const vals = cells.map((c) => (row[c] as XCell)?.v);
+      if (vals.some((v) => typeof v === 'number') && vals.every((v) => !v)) for (const c of cells) row[c] = { v: '-', st: (row[c] as XCell)?.st ?? 'rNum' };
     }
     rows.push(row);
   }

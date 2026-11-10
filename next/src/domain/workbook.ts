@@ -324,8 +324,10 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
  * 12 months: the report counts the months paid (months with an invoice), else the months gone by the situation
  * date. Any other PO counts the units ordered, as the report does.
  */
-export function usedUnits(units: number, _spent: number, _sc: number, description: string, unitType: string, asAt?: string, paid?: number): number {
+export function usedUnits(units: number, spent: number, _sc: number, description: string, unitType: string, asAt?: string, paid?: number): number {
   if (!units) return 0;
+  // A PO with nothing spent yet is only a commitment: its units are not used (the report counts them as 0).
+  if (Math.abs(spent) < 0.005) return 0;
   if (paid != null && /month/i.test(unitType) && /from\s+\d/i.test(description)) return Math.min(units, paid);
   const m = description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
   if (m && /month/i.test(unitType) && asAt) {
