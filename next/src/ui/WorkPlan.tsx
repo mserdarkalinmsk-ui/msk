@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { updateProject } from '../data/store';
-import { byLine, carriedFrom, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { byLine, carriedFrom, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -23,12 +23,12 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
     if (!got) { setMsg(`${file.name}: no WorkPlan table found (title "Work plan for project … from … to …" and the Estimated budget column).`); return; }
     const same = plans.find((w) => w.from === got.from);
     const base = same ?? nextPlan(plans, TODAY);
-    const w: WP = { ...base, from: got.from || base.from, to: got.to || base.to, planned: got.planned, acts: got.acts, file: file.name };
+    const w: WP = { ...base, from: got.from || base.from, to: got.to || base.to, planned: got.planned, acts: got.acts, file: file.name, snap: base.snap ?? snapshot(wb) };
     save(same ? plans.map((y) => (y.id === w.id ? w : y)) : [...plans, w]); setSel(w.id);
     setMsg(`${file.name}: WP ${w.no} · ${got.acts.length} activities · ${full(got.planned)}${got.bh && p.bh && !p.bh.includes(got.bh.replace(/\D/g, '')) ? ` · budget head ${got.bh} differs from ${p.bh}` : ''}`);
   };
   const picker = <label class="btn">⬆ Import WorkPlan file<input type="file" accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) void importFile(f); (e.target as HTMLInputElement).value = ''; }} /></label>;
-  const add = () => { const w = nextPlan(plans, TODAY); save([...plans, w]); setSel(w.id); };
+  const add = () => { const w = { ...nextPlan(plans, TODAY), snap: snapshot(wb) }; save([...plans, w]); setSel(w.id); };
   if (!plans.length) return (
     <div class="empty-page" style={{ padding: '32px' }}><div><h2>No Work Plan yet</h2>
       <p>Add the quarterly Work Plan the project team sent: its dates and planned activity expenditure. Budgets and spending come from this report.</p>
@@ -81,6 +81,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
           <Row label="Remaining months with WP" a={String(f.remainingMonths)} cls="b" />
         </tbody>
       </table>
+      <WpRollover wp={wp} wb={wb} onLock={() => upd({ snap: snapshot(wb) })} />
       <WpCompare plans={plans} wb={wb} sel={wp.id} onPick={setSel} />
       {wp.acts?.length ? <WpDetail wp={wp} plans={plans} wb={wb} /> : null}
       <div class="wp-notes">
@@ -91,6 +92,35 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except heading 1 (staff costs), heading 4 (local office) and 10 (administrative costs). D sums the invoices and GL entries dated within the previous WP; E adds the open balance of POs raised in those dates.</p>
     </div>
   );
+}
+
+const KIND = { spent: ['Fully spent', 'good'], partly: ['Partly spent', 'warning'], open: ['Not spent yet', 'serious'], released: ['Released / cancelled', 'neutral'] } as const;
+function WpRollover({ wp, wb, onLock }: { wp: WP; wb: WorkbookSummary; onLock: () => void }) {
+  const [show, setShow] = useState<'all' | 'spent' | 'partly' | 'open' | 'released' | 'new'>('all');
+  const asAt = wb.meta.situationDate || wb.meta.asAt || '';
+  if (!wp.snap) return <div class="wp-sec"><p class="muted">No report is locked to WP {wp.no}. <button class="btn" onClick={onLock}>Lock to the current report ({asAt ? date(asAt) : 'latest'})</button> — the next report then shows what became of today's commitments.</p></div>;
+  const R = rollover(wp.snap, wb), same = R.from === R.to;
+  const share = (v: number) => (R.open ? pct(v / R.open) : '—');
+  const rows = show === 'new' ? [] : R.rows.filter((r) => show === 'all' || r.kind === show);
+  return (
+    <div class="wp-sec"><h3>Commitments since WP {wp.no} was prepared <span class="muted">· report of {wp.snap.asAt ? date(wp.snap.asAt) : '—'} → {R.to ? date(R.to) : '—'}</span>
+      <button class="btn ghost" style={{ marginLeft: '8px' }} title="Replace the locked report with the one loaded now" onClick={() => { if (confirm(`Lock WP ${wp.no} to the report of ${asAt ? date(asAt) : 'now'}?`)) onLock(); }}>Re-lock</button></h3>
+      {same ? <p class="muted">Locked to the report loaded now. Import the next report (e.g. when preparing WP {wp.no + 1}) and this shows how much of the {full(R.open)} committed was spent, is still open or was released.</p> : <>
+        <div class="wp-kpi" style={{ padding: '0 0 10px' }}>
+          <div class="k"><span>Committed when WP {wp.no} was prepared</span><b>{full(R.open)}</b><i style={{ width: '100%', opacity: .3 }} /></div>
+          <div class="k good"><span>Spent since</span><b>{full(R.spentSince)}</b><span>{share(R.spentSince)}</span><i style={{ width: `${R.open ? (R.spentSince / R.open) * 100 : 0}%` }} /></div>
+          <div class={`k ${R.stillOpen > 0.5 ? 'serious' : ''}`}><span>Still not spent</span><b>{full(R.stillOpen)}</b><span>{share(R.stillOpen)}</span><i style={{ width: `${R.open ? (R.stillOpen / R.open) * 100 : 0}%` }} /></div>
+          <div class="k"><span>Released / cancelled</span><b>{full(R.released)}</b><span>{share(R.released)}</span><i style={{ width: `${R.open ? (R.released / R.open) * 100 : 0}%`, background: 'var(--muted)' }} /></div>
+          <div class="k"><span>New POs since · activity spent growth</span><b>{R.newPos.length} · {full(R.spentGrowth)}</b><span>S&C growth {full(R.scGrowth)}</span></div>
+        </div>
+        <div class="seg" style={{ marginBottom: '8px' }}>{(['all', 'spent', 'partly', 'open', 'released', 'new'] as const).map((k) => <button aria-pressed={show === k} onClick={() => setShow(k)}>{k === 'all' ? `All ${R.rows.length}` : k === 'new' ? `New POs ${R.newPos.length}` : `${KIND[k][0]} ${R.rows.filter((r) => r.kind === k).length}`}</button>)}</div>
+        {show === 'new'
+          ? <table class="wp-t"><thead><tr><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th class="num">Spent</th><th class="num">Open</th></tr></thead>
+              <tbody>{R.newPos.map((x) => <tr><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description}</td><td>{x.supplier}</td><td class="num">{full(x.spent)}</td><td class="num">{full(x.open)}</td></tr>)}</tbody></table>
+          : <table class="wp-t"><thead><tr><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th class="num">Committed then</th><th class="num">Spent since</th><th class="num">Still open</th><th class="num">Released</th><th>Status</th></tr></thead>
+              <tbody>{rows.map((r) => <tr><td class="num">{r.po}</td><td class="num">{r.line}</td><td>{r.description}</td><td>{r.supplier}</td><td class="num">{full(r.open)}</td><td class="num">{full(r.spentSince)}</td><td class="num">{full(r.stillOpen)}</td><td class="num">{full(r.released)}</td><td><span class={`badge ${KIND[r.kind][1]}`}>{KIND[r.kind][0]}</span></td></tr>)}</tbody></table>}
+      </>}
+    </div>);
 }
 
 function WpCompare({ plans, wb, sel, onPick }: { plans: WP[]; wb: WorkbookSummary; sel: string; onPick: (id: string) => void }) {
@@ -175,5 +205,13 @@ function wpExtraSheets(wp: WP, plans: WP[], wb: WorkbookSummary): SheetSpec[] {
     out.push({ name: `WP ${wp.no} by line`, widths: [10, 50, 14, 18, 14, 14, 16], rows: [['Line', 'Description', 'Budget', 'Spent & committed', 'Left', `WP ${wp.no} plan`, 'Left after WP'].map(H),
       ...byLine(wp, wb).map((l) => [l.line, l.description, M(l.budget), M(l.sc), M(l.left), M(l.planned), M(l.after)])] });
   }
+  if (wp.snap) { const R = rollover(wp.snap, wb);
+    out.push({ name: `WP ${wp.no} commitments`, widths: [12, 8, 50, 30, 15, 15, 15, 15, 20], rows: [
+      [{ v: `Commitments open when WP ${wp.no} was prepared (report ${wp.snap.asAt ? date(wp.snap.asAt) : ''}) and what became of them by ${R.to ? date(R.to) : ''}`, st: 'title' }], [],
+      ['PO', 'Line', 'Description', 'Supplier', 'Committed then', 'Spent since', 'Still open', 'Released', 'Status'].map(H),
+      ...R.rows.map((r) => [r.po, r.line, r.description, r.supplier, M(r.open), M(r.spentSince), M(r.stillOpen), M(r.released), KIND[r.kind][0]]),
+      [{ v: 'Total', st: 'bold' }, '', '', '', M(R.open), M(R.spentSince), M(R.stillOpen), M(R.released), ''],
+      [], [{ v: 'New POs since', st: 'bold' }],
+      ...R.newPos.map((x) => [x.po, x.line, x.description, x.supplier, '', M(x.spent), M(x.open), '', 'New'])] }); }
   return out;
 }

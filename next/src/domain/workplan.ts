@@ -3,7 +3,10 @@ import type { WorkbookSummary } from './workbook';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
 export interface WpActivity { ref: string; id: string; name: string; amount: number; lines: { line: string; text: string; amount: number }[] }
-export interface WorkPlan { id: string; no: number; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string }
+export interface WorkPlan { id: string; no: number; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap }
+
+/** Activity spending and commitments frozen at the report the WP was prepared on. */
+export interface WpSnap { asAt: string; file?: string; spent: number; sc: number; pos: { po: string; line: string; description: string; supplier: string; spent: number; sc: number }[] }
 
 /** Headings left out of the activity budget: 1 staff costs, 4 local office (and 10 administrative costs). */
 const NOT_ACTIVITY = new Set(['1', '4', '10', '0']);
@@ -123,4 +126,31 @@ export function byLine(wp: WorkPlan, wb: WorkbookSummary): WpLine[] {
     const budget = L?.budget.cost ?? 0, sc = L?.sc ?? 0;
     return { line, description: L?.description ?? '', planned: r2(planned), budget: r2(budget), sc: r2(sc), left: r2(budget - sc), after: r2(budget - sc - planned) };
   }).sort((a, b) => a.line.localeCompare(b.line, undefined, { numeric: true }));
+}
+
+export function snapshot(wb: WorkbookSummary): WpSnap {
+  const act = wb.lines.filter((l) => l.leaf && isActivity(l.code));
+  return { asAt: wb.meta.situationDate || wb.meta.asAt || '', file: wb.fileName, spent: r2(act.reduce((s, l) => s + (l.actual.cost ?? 0), 0)), sc: r2(act.reduce((s, l) => s + (l.sc ?? 0), 0)),
+    pos: wb.pos.filter((x) => isActivity(x.line)).map((x) => ({ po: x.po, line: x.line, description: x.description, supplier: x.supplier, spent: r2(x.spent), sc: r2(x.sc) })) };
+}
+
+/** What became of the commitments open when a WP was prepared, in a later report: spent since, still open, released (cancelled / reduced). */
+export type RollKind = 'spent' | 'partly' | 'open' | 'released';
+export interface RollRow { po: string; line: string; description: string; supplier: string; open: number; spentSince: number; stillOpen: number; released: number; kind: RollKind }
+export interface Rollover { from: string; to: string; open: number; spentSince: number; stillOpen: number; released: number; rows: RollRow[]; newPos: { po: string; line: string; description: string; supplier: string; spent: number; open: number }[]; spentGrowth: number; scGrowth: number }
+export function rollover(snap: WpSnap, wb: WorkbookSummary): Rollover {
+  const now = new Map(wb.pos.map((x) => [x.po + '|' + x.line, x]));
+  const rows: RollRow[] = [];
+  for (const s of snap.pos) {
+    const open = s.sc - s.spent; if (open <= 0.5) continue;
+    const x = now.get(s.po + '|' + s.line);
+    const spentSince = Math.min(open, Math.max(0, (x?.spent ?? s.spent) - s.spent)), stillOpen = x ? Math.max(0, Math.min(open - spentSince, x.sc - x.spent)) : 0;
+    const released = Math.max(0, open - spentSince - stillOpen);
+    const kind: RollKind = spentSince >= open - 0.5 ? 'spent' : released > 0.5 && spentSince < 0.5 && stillOpen < 0.5 ? 'released' : spentSince > 0.5 ? 'partly' : stillOpen > 0.5 ? 'open' : 'released';
+    rows.push({ po: s.po, line: s.line, description: s.description, supplier: s.supplier, open: r2(open), spentSince: r2(spentSince), stillOpen: r2(stillOpen), released: r2(released), kind });
+  }
+  const had = new Set(snap.pos.map((s) => s.po + '|' + s.line));
+  const newPos = wb.pos.filter((x) => isActivity(x.line) && !had.has(x.po + '|' + x.line)).map((x) => ({ po: x.po, line: x.line, description: x.description, supplier: x.supplier, spent: r2(x.spent), open: r2(Math.max(0, x.sc - x.spent)) }));
+  const t = (k: keyof RollRow) => r2(rows.reduce((a, r) => a + (r[k] as number), 0)), cur = snapshot(wb);
+  return { from: snap.asAt, to: cur.asAt, open: t('open'), spentSince: t('spentSince'), stillOpen: t('stillOpen'), released: t('released'), rows: rows.sort((a, b) => b.open - a.open), newPos: newPos.sort((a, b) => b.spent + b.open - a.spent - a.open), spentGrowth: r2(cur.spent - snap.spent), scGrowth: r2(cur.sc - snap.sc) };
 }
