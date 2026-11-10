@@ -55,38 +55,7 @@ Public Sub Setup()
     ' Control
     Set ws = Fresh(SH_CONTROL)
     ws.Move Before:=ThisWorkbook.Worksheets(1)
-    ws.Activate: ActiveWindow.DisplayGridlines = False
-    ws.Range("B2").Value = "JP Financial Report - extraction to report": ws.Range("B2").Font.Size = 18: ws.Range("B2").Font.Bold = True
-    ws.Range("B3").Value = "Load the extraction exported from the financial system: it is read, laid out as data for pivot -> pivot -> REPORT, and analysed at once."
-    ws.Range("B3").Font.Color = RGB(90, 90, 90)
-    y = 70
-    Button ws, "1. Load approved budget(s) - from REPORT files", "LoadBudget", y: y = y + 40
-    Button ws, "2. Load extraction(s) and analyse", "LoadExtractions", y: y = y + 40
-    Button ws, "Refresh all projects", "RefreshAll", y: y = y + 40
-    Button ws, "Portfolio dashboard", "GoPortfolio", y: y = y + 40
-    Button ws, "Project dashboard", "GoProject", y: y = y + 40
-    Button ws, "Export report workbook of the selected project", "ExportReport", y
-    ws.Range("B25").Value = "Sheets (the working sheets show the project selected on the Project dashboard)"
-    ws.Range("B25").Font.Bold = True
-    items = Array( _
-        Array(SH_PORTFOLIO, "Every project: tiles, charts, heading heat map"), _
-        Array(SH_PROJECTDASH, "The selected project: tiles, charts, lines that need attention - pick the project here"), _
-        Array(SH_PROJECTS, "The project register (one row per budget head)"), _
-        Array(SH_REPORT, "Official interim/final financial report - linked to pivot by formulas"), _
-        Array(SH_PIVOT, "Units, spent and spent + committed by reporting line"), _
-        Array(SH_DFP, "Every PO line and GL entry; NBRE_OF_UNITS can be corrected by hand"), _
-        Array(SH_ANALYSIS, "Lines and headings against the approved budget: notification / addendum, units, rates"), _
-        Array(SH_CHECKS, "Entries that look posted in error"), _
-        Array(SH_BYDATE, "Spending between two dates (type the dates)"), _
-        Array(SH_POSTINGS, "Every dated invoice and GL entry"), _
-        Array(SH_BUDGET, "Approved budget"), _
-        Array(SH_SETTINGS, "Project title, dates, signatories"))
-    For i = 0 To UBound(items)
-        ws.Hyperlinks.Add Anchor:=ws.Cells(26 + i, 2), Address:="", SubAddress:="'" & items(i)(0) & "'!A1", TextToDisplay:=CStr(items(i)(0))
-        ws.Cells(26 + i, 3).Value = items(i)(1)
-    Next i
-    ws.Columns("A").ColumnWidth = 3: ws.Columns("B").ColumnWidth = 22: ws.Columns("C").ColumnWidth = 90
-    ws.Activate
+    Call BuildHome
     Application.ScreenUpdating = True
     MsgBox "Ready. Fill the Settings sheet, load the approved budget, then load an extraction.", vbInformation
 End Sub
@@ -122,26 +91,152 @@ Public Sub ExportReport()
     MsgBox "Saved: " & CStr(f), vbInformation
 End Sub
 
-' Buttons of the Control sheet (when the workbook was prepared outside Excel, it has none yet).
+' Home screen: always redrawn on open and after each load, so it shows the current state.
 Public Sub EnsureButtons()
-    Dim ws As Worksheet, y As Double
+    Call BuildHome
+End Sub
+
+Private Sub Card(ws As Worksheet, x As Double, y As Double, w As Double, h As Double, title As String, desc As String, macro As String, accent As Long, Optional icon As String = "")
+    Dim c As Shape, bar As Shape, t As String, n As Long
+    Set c = ws.Shapes.AddShape(5, x, y, w, h)
+    c.Name = "card_" & macro
+    c.Adjustments.Item(1) = 0.08
+    c.Fill.ForeColor.RGB = RGB(255, 255, 255)
+    c.Line.ForeColor.RGB = RGB(225, 228, 234): c.Line.Weight = 0.75
+    c.Shadow.Visible = -1: c.Shadow.ForeColor.RGB = RGB(31, 78, 137): c.Shadow.Transparency = 0.88: c.Shadow.Blur = 10: c.Shadow.OffsetX = 0: c.Shadow.OffsetY = 3
+    t = IIf(icon <> "", icon & "   ", "") & title & vbLf & desc
+    With c.TextFrame2
+        .MarginLeft = 22: .MarginRight = 12: .MarginTop = 10: .MarginBottom = 10
+        .VerticalAnchor = 3: .WordWrap = -1
+        .TextRange.Text = t
+        .TextRange.ParagraphFormat.Alignment = 1
+        .TextRange.Font.Name = "Segoe UI"
+        .TextRange.Font.Size = 9: .TextRange.Font.Fill.ForeColor.RGB = RGB(110, 117, 128)
+        n = Len(IIf(icon <> "", icon & "   ", "") & title)
+        .TextRange.Characters(1, n).Font.Size = 13
+        .TextRange.Characters(1, n).Font.Bold = -1
+        .TextRange.Characters(1, n).Font.Fill.ForeColor.RGB = RGB(31, 41, 55)
+    End With
+    c.OnAction = macro
+    Set bar = ws.Shapes.AddShape(1, x, y + 8, 5, h - 16)
+    bar.Name = "bar_" & macro
+    bar.Fill.ForeColor.RGB = accent: bar.Line.Visible = 0
+    bar.OnAction = macro
+End Sub
+
+Private Sub Pill(ws As Worksheet, x As Double, y As Double, w As Double, caption As String, target As String)
+    Dim p As Shape
+    Set p = ws.Shapes.AddShape(5, x, y, w, 24)
+    p.Name = "go_" & target
+    p.Adjustments.Item(1) = 0.5
+    p.Fill.ForeColor.RGB = RGB(234, 241, 250): p.Line.Visible = 0
+    With p.TextFrame2
+        .MarginLeft = 4: .MarginRight = 4: .MarginTop = 0: .MarginBottom = 0: .VerticalAnchor = 3
+        .TextRange.Text = caption
+        .TextRange.ParagraphFormat.Alignment = 2
+        .TextRange.Font.Name = "Segoe UI": .TextRange.Font.Size = 9: .TextRange.Font.Bold = -1
+        .TextRange.Font.Fill.ForeColor.RGB = RGB(31, 78, 137)
+    End With
+    p.OnAction = "GoSheet"
+End Sub
+
+' Pill buttons: the shape name carries the sheet to open.
+Public Sub GoSheet()
+    Dim n As String
+    n = Mid$(CStr(Application.Caller), 4)
+    If n = SH_PORTFOLIO Then
+        Call GoPortfolio
+    ElseIf n = SH_PROJECTDASH Then
+        Call GoProject
+    ElseIf SheetExists(n) Then
+        Sh(n).Activate
+    End If
+End Sub
+
+Public Sub BuildHome()
+    Dim ws As Worksheet, shp As Shape, x As Double, y As Double, w As Double, h As Double, i As Long
+    Dim rg As Worksheet, n As Long, te As Long, tc As Long, last As Variant, asat As Variant, r As Long
     Set ws = Sh(SH_CONTROL)
-    If ws.Shapes.Count > 0 Then Exit Sub
-    y = 70
-    Button ws, "1. Load approved budget(s) - from REPORT files", "LoadBudget", y: y = y + 40
-    Button ws, "2. Load extraction(s) and analyse", "LoadExtractions", y: y = y + 40
-    Button ws, "Refresh all projects", "RefreshAll", y: y = y + 40
-    Button ws, "Portfolio dashboard", "GoPortfolio", y: y = y + 40
-    Button ws, "Project dashboard", "GoProject", y: y = y + 40
-    Button ws, "Export report workbook of the selected project", "ExportReport", y
-End Sub
-
-Public Sub GoPortfolio()
-    If Not SheetExists(SH_PORTFOLIO) Then Call BuildPortfolio
-    Sh(SH_PORTFOLIO).Activate
-End Sub
-
-Public Sub GoProject()
-    Call BuildProjectDashboard
-    Sh(SH_PROJECTDASH).Activate
+    For Each shp In ws.Shapes: shp.Delete: Next shp
+    ws.Cells.Clear
+    ws.Cells.Interior.Color = RGB(244, 246, 250)
+    ws.Cells.Font.Name = "Segoe UI": ws.Cells.Font.Size = 10
+    ws.Columns("A:Z").ColumnWidth = 9: ws.Rows("1:60").RowHeight = 15
+    ws.Activate: ActiveWindow.DisplayGridlines = False: ActiveWindow.DisplayHeadings = False
+    ' Header band
+    Dim band As Shape
+    Set band = ws.Shapes.AddShape(1, 0, 0, 1400, 92)
+    band.Name = "band": band.Fill.ForeColor.RGB = RGB(22, 54, 99): band.Line.Visible = 0
+    band.Fill.TwoColorGradient 2, 1: band.Fill.ForeColor.RGB = RGB(31, 78, 137): band.Fill.BackColor.RGB = RGB(16, 42, 80)
+    With band.TextFrame2
+        .MarginLeft = 34: .VerticalAnchor = 3
+        .TextRange.Text = "JP Financial Reports" & vbLf & "From the system extraction to the official report, the analysis and the portfolio - in one workbook"
+        .TextRange.Font.Name = "Segoe UI": .TextRange.Font.Size = 10: .TextRange.Font.Fill.ForeColor.RGB = RGB(200, 214, 235)
+        .TextRange.ParagraphFormat.Alignment = 1
+        .TextRange.Characters(1, 20).Font.Size = 24: .TextRange.Characters(1, 20).Font.Bold = -1
+        .TextRange.Characters(1, 20).Font.Fill.ForeColor.RGB = RGB(255, 255, 255)
+    End With
+    band.OnAction = ""
+    ' Action cards (2 x 3)
+    x = 30: y = 116: w = 300: h = 74
+    Call Card(ws, x, y, w, h, "Load approved budgets", "From official REPORT files - several at once; each goes to its project by BH", "LoadBudget", RGB(0, 150, 136), "1")
+    Call Card(ws, x + w + 18, y, w, h, "Load extractions", "System extractions - several at once; read, laid out and analysed", "LoadExtractions", RGB(42, 120, 214), "2")
+    Call Card(ws, x, y + h + 16, w, h, "Refresh all projects", "Re-analyse every project after a change in Budget, Settings or data for pivot", "RefreshAll", RGB(124, 77, 255))
+    Call Card(ws, x + w + 18, y + h + 16, w, h, "Export the report", "REPORT + pivot + data for pivot of the selected project, linked by formulas", "ExportReport", RGB(235, 123, 52))
+    Call Card(ws, x, y + 2 * (h + 16), w, h, "Portfolio dashboard", "Every project: tiles, charts, heading heat map", "GoPortfolio", RGB(31, 78, 137))
+    Call Card(ws, x + w + 18, y + 2 * (h + 16), w, h, "Project dashboard", "Pick a project: tiles, charts, lines that need attention", "GoProject", RGB(31, 78, 137))
+    ' Status panel
+    Set rg = Reg()
+    n = rg.Cells(rg.Rows.Count, 1).End(xlUp).Row - 1
+    For r = 2 To n + 1
+        te = te + Num(rg.Cells(r, 20).Value): tc = tc + Num(rg.Cells(r, 21).Value)
+        If IsDate(rg.Cells(r, 24).Value) Then If IsEmpty(last) Or rg.Cells(r, 24).Value > last Then last = rg.Cells(r, 24).Value
+        If IsDate(rg.Cells(r, 13).Value) Then If IsEmpty(asat) Or rg.Cells(r, 13).Value > asat Then asat = rg.Cells(r, 13).Value
+    Next r
+    Dim st As Shape, sx As Double
+    sx = x + 2 * w + 40
+    Set st = ws.Shapes.AddShape(5, sx, y, 330, 3 * h + 32)
+    st.Name = "status": st.Adjustments.Item(1) = 0.04
+    st.Fill.ForeColor.RGB = RGB(255, 255, 255): st.Line.ForeColor.RGB = RGB(225, 228, 234)
+    st.Shadow.Visible = -1: st.Shadow.Transparency = 0.9: st.Shadow.Blur = 10: st.Shadow.OffsetY = 3
+    Dim txt As String
+    txt = "STATUS" & vbLf & vbLf & _
+          n & " project(s)" & vbLf & _
+          "Latest situation: " & IIf(IsEmpty(asat), "-", Fmt(asat, "dd/mm/yyyy")) & vbLf & _
+          "Last loaded: " & IIf(IsEmpty(last), "-", Fmt(last, "dd/mm/yyyy hh:nn")) & vbLf & _
+          "Errors: " & te & "    To check: " & tc & vbLf & vbLf
+    For r = 2 To Application.Min(n + 1, 9)
+        txt = txt & Left$(CStr(rg.Cells(r, 2).Value) & Space(10), 10) & "  " & Fmt(Num(rg.Cells(r, 17).Value), "0%") & " used  -  " & IIf(CStr(rg.Cells(r, 22).Value) = "", "-", Left$(CStr(rg.Cells(r, 22).Value), 28)) & vbLf
+    Next r
+    If n > 8 Then txt = txt & "... and " & n - 8 & " more (Portfolio)"
+    If n = 0 Then txt = txt & "Start with 1 and 2."
+    With st.TextFrame2
+        .MarginLeft = 20: .MarginRight = 16: .MarginTop = 16: .VerticalAnchor = 1: .WordWrap = -1
+        .TextRange.Text = txt
+        .TextRange.Font.Name = "Segoe UI": .TextRange.Font.Size = 9.5: .TextRange.Font.Fill.ForeColor.RGB = RGB(55, 65, 81)
+        .TextRange.ParagraphFormat.Alignment = 1
+        .TextRange.Characters(1, 6).Font.Size = 9: .TextRange.Characters(1, 6).Font.Bold = -1
+        .TextRange.Characters(1, 6).Font.Fill.ForeColor.RGB = RGB(110, 117, 128)
+        .TextRange.Characters(9, Len(CStr(n)) + 11).Font.Size = 18: .TextRange.Characters(9, Len(CStr(n)) + 11).Font.Bold = -1
+        .TextRange.Characters(9, Len(CStr(n)) + 11).Font.Fill.ForeColor.RGB = RGB(31, 41, 55)
+    End With
+    ' Navigation pills
+    Dim lab As Shape, tg As Variant, px As Double
+    Set lab = ws.Shapes.AddTextbox(1, x, y + 3 * (h + 16) + 14, 200, 18)
+    lab.Name = "navlabel": lab.Line.Visible = 0: lab.Fill.Visible = 0
+    lab.TextFrame2.TextRange.Text = "GO TO": lab.TextFrame2.TextRange.Font.Size = 8: lab.TextFrame2.TextRange.Font.Bold = -1
+    lab.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(110, 117, 128): lab.TextFrame2.MarginLeft = 0
+    px = x
+    For Each tg In Array(SH_PORTFOLIO, SH_PROJECTDASH, SH_PROJECTS, SH_REPORT, SH_PIVOT, SH_DFP, SH_ANALYSIS, SH_CHECKS, SH_BYDATE, SH_POSTINGS, SH_BUDGET, SH_SETTINGS)
+        Call Pill(ws, px, y + 3 * (h + 16) + 34, 7 * Len(CStr(tg)) + 26, CStr(tg), CStr(tg))
+        px = px + 7 * Len(CStr(tg)) + 34
+    Next tg
+    ' Footer
+    Dim ft As Shape
+    Set ft = ws.Shapes.AddTextbox(1, x, y + 3 * (h + 16) + 74, 960, 40)
+    ft.Name = "footer": ft.Line.Visible = 0: ft.Fill.Visible = 0: ft.TextFrame2.MarginLeft = 0
+    ft.TextFrame2.TextRange.Text = "Units in the official report: months paid on staff POs, 0 for a PO with nothing spent, else the units ordered (correct them in data for pivot). " & _
+        "The analysis counts only the spent share of a PO. Administrative costs = 7% of the direct costs. Headings: notification within 25%, addendum beyond."
+    ft.TextFrame2.TextRange.Font.Size = 8: ft.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(140, 146, 156): ft.TextFrame2.WordWrap = -1
+    ws.Range("A1").Select
 End Sub
