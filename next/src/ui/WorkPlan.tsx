@@ -209,36 +209,42 @@ function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary 
 }
 
 export function wpSheet(p: Project, f: WpFollowUp): SheetSpec {
-  const d = (s: string) => (s ? date(s) : ''), M = (v: number | null): XCell => ({ v: v == null ? '' : v, st: 'money' }), P = (v: number | null): XCell => ({ v: v == null ? '' : v, st: 'rPct' });
-  const L = (v: string): XCell => ({ v, st: 'bold' }), wp = f.wp, pr = f.prev;
-  const rows: (string | number | XCell | null)[][] = [
-    [{ v: `${p.bh ? `${p.bh} - ` : ''}${p.name}`, st: 'title' }],
-    [{ v: `WP No:${wp.no} - ${d(wp.from)} / ${d(wp.to)}`, st: 'title' }],
-    [],
-    [L('Total Project Budget'), M(f.total)],
-    [L('Total Eligible Budget (Exc. 7% administrative cost)'), M(f.eligible)],
-    [L('Total Activity Budget (Exc. Staff Salaries & Office Costs)'), M(f.activity)],
-    [L('Total Project Duration'), d(f.start), d(f.end), f.duration],
-    [],
-    [L(`WP No:${wp.no} - Activity Planned Expenditure`), M(wp.planned)],
-    [],
-    [L(`Total time elapsed until ${pr ? `WP No:${pr.no}` : 'this WP'}`), d(f.elapsedFrom), d(f.elapsedTo), f.elapsed],
-    [L(`A - Total Activity Spent Amount (by Fin. Rep. Date: ${d(f.asAt)})`), M(f.spent), P(f.activity ? f.spent / f.activity : 0)],
-    [L(`B - Total Activity Spent & Committed Amount (by Fin. Rep. Date: ${d(f.asAt)})`), M(f.sc), P(f.activity ? f.sc / f.activity : 0)],
-    ...(pr ? [
-      [L(`C - Previous WP No:${pr.no} Planned Amount (${d(pr.from)} / ${d(pr.to)})`), M(pr.planned)],
-      [L(`D - Previous WP No:${pr.no} Activity Spent Amount (${d(pr.from)} / ${d(pr.to)})`), M(f.prevSpent), P(r(f.prevSpent, pr.planned))],
-      [L(`E - Previous WP No:${pr.no} Activity Spent & Committed Amount (${d(pr.from)} / ${d(pr.to)})`), M(f.prevSc), P(r(f.prevSc, pr.planned))],
-    ] : []),
-    [],
-    [L('Remaining budget with WP :'), M(f.remaining), P(f.activity ? f.remaining / f.activity : 0)],
-    [L('Remaining month with WP'), f.remainingMonths],
-    [],
-    [L('FOMA NOTES:'), { v: wp.notes ?? '', st: 'wrap' }],
-    [L('Project Teams - Comments:'), { v: wp.teams ?? '', st: 'wrap' }],
-    [L('Head of Operations - Comments:'), { v: wp.hoo ?? '', st: 'wrap' }],
-  ];
-  return { name: `WP ${wp.no}`, rows, widths: [70, 18, 14, 10], freeze: 0, portrait: true, onePage: true };
+  const d = (x: string) => (x ? new Date(x + 'T00:00:00Z').toLocaleDateString('tr-TR') : ''), wp = f.wp, pr = f.prev;
+  const c = (v: XCell['v'], st: XCell['st'], fx?: string): XCell => ({ v, st, ...(fx ? { f: fx } : {}) });
+  const rows: (XCell | string | null)[][] = [], merges: string[] = [], heights: Record<number, number> = {};
+  const add = (r: (XCell | string | null)[], h?: number, m: string[] = []) => { rows.push(r); const n = rows.length; if (h) heights[n] = h; for (const x of m) merges.push(x.replace(/#/g, String(n))); return n; };
+  const t = `${p.bh ? `${p.bh} - ` : ''}${p.name}`;
+  add([c(t, 'wTitle'), null, null, null], 30, ['A#:D#']);
+  add([c(`WP No:${wp.no} - ${d(wp.from)} / ${d(wp.to)}`, 'wRed'), null, null, null], 34, ['A#:D#']);
+  const rT = add([c('Total Project Budget', 'wY'), c(f.total, 'wYn'), c(null, 'wYn'), c(null, 'wYn')], 26, ['B#:D#']);
+  const rE = add([c('Total Eligible Budget (Exc. 7% administrative cost)', 'wY'), c(f.eligible, 'wYn', `B${rT}/1.07`), c(null, 'wYn'), c(null, 'wYn')], 26, ['B#:D#']);
+  const ded = f.eligible - f.activity;
+  const rA = add([c('Total Activity Budget (Exc. Staff Salaries & Office Costs)', 'wY'), c(f.activity, 'wYn', `B${rE}-${ded.toFixed(2)}`), c(null, 'wYn'), c(null, 'wYn')], 26, ['B#:D#']);
+  add([c('Total Project Duration', 'wY'), c(d(f.start), 'wYc'), c(d(f.end), 'wYc'), c(f.duration, 'wYc')], 26);
+  const rP = add([c(`WP No:${wp.no} - Activity Planned Expenditure`, 'wB'), c(wp.planned, 'wBn'), c(null, 'wBn'), c(null, 'wBn')], 26, ['B#:D#']);
+  add([c(`Total time elapsed until WP No:${wp.no}`, 'wG'), c(d(f.start), 'wGc'), c(d(f.elapsedTo), 'wGc'), c(f.elapsed, 'wGc')], 26);
+  const rd = `(by Fin. Rep. Date: ${d(f.asAt)})`;
+  add([c(`A - Total Activity Spent Amount ${rd}`, 'wG'), c(f.spent, 'wGn'), c(f.activity ? f.spent / f.activity : 0, 'wGp', `IF(B${rA}=0,0,B#/B${rA})`), c(null, 'wGp')], 26, ['C#:D#']);
+  rows.at(-1)![2] = c(f.activity ? f.spent / f.activity : 0, 'wGp', `IF(B${rA}=0,0,B${rows.length}/B${rA})`);
+  const rB = add([c(`B - Total Activity Spent & Committed Amount ${rd}`, 'wG'), c(f.sc, 'wGn'), null, c(null, 'wGp')], 26, ['C#:D#']);
+  rows[rB - 1][2] = c(f.activity ? f.sc / f.activity : 0, 'wGp', `IF(B${rA}=0,0,B${rB}/B${rA})`);
+  if (pr) {
+    const per = `(${d(pr.from)} / ${d(pr.to)})`;
+    const rC = add([c(`C – Previous WP No:${pr.no} Planned Amount ${per}`, 'wG'), c(pr.planned, 'wGn'), c(null, 'wGn'), c(null, 'wGn')], 26, ['B#:D#']);
+    for (const [k, v, lab] of [['D', f.prevSpent, 'Activity Spent Amount'], ['E', f.prevSc, 'Activity Spent & Committed Amount']] as const) {
+      const n = add([c(`${k} – Previous WP No:${pr.no} ${lab} ${per}`, 'wG'), c(v ?? 0, 'wGn'), c(null, 'wGn'), null], 30, ['B#:C#']);
+      rows[n - 1][3] = c(pr.planned ? (v ?? 0) / pr.planned : 0, 'wGp', `IF(B${rC}=0,0,B${n}/B${rC})`);
+    }
+  } else add([c("Please note that this is the project's first WP.", 'wG'), c('', 'wGc'), c('', 'wGc'), c('', 'wGc')], 22, ['B#:D#']);
+  add([]);
+  const rR = add([c('Remaining budget with WP :', 'wYc'), c(f.remaining, 'wYn', `B${rA}-B${rP}-B${rB}`), null, null], 22);
+  rows[rR - 1][2] = c(f.activity ? f.remaining / f.activity : 0, 'wPr', `IF(B${rA}=0,0,B${rR}/B${rA})`);
+  add([c('Remaining month with WP', 'wYc'), c(f.remainingMonths, 'wYc'), null, null], 22);
+  const box = (head: string, text: string | undefined, st: XCell['st'], h: number) => { const n = add([c(`${head}${text ? `\n\n${text}` : ''}`, st), c(null, st), c(null, st), c(null, st)], h, ['A#:D#']); return n; };
+  box(`FOMA NOTES: (Checked on ${d(f.asAt) || d(new Date().toISOString().slice(0, 10))})`, wp.notes, 'wNote', Math.max(90, 15 * ((wp.notes ?? '').split('\n').length + Math.ceil((wp.notes ?? '').length / 110) + 2)));
+  box('Project Teams -  Comments:', wp.teams, 'wNoteP', Math.max(80, 15 * (Math.ceil((wp.teams ?? '').length / 110) + 3)));
+  box('Head of Operations -  Comments:', wp.hoo, 'wNoteG', Math.max(80, 15 * (Math.ceil((wp.hoo ?? '').length / 110) + 3)));
+  return { name: `WP ${wp.no}`, rows: rows as SheetSpec['rows'], widths: [78, 20, 20, 14], merges, heights, freeze: 0, portrait: true, onePage: true };
 }
 
 function wpExtraSheets(wp: WP, plans: WP[], wb: WorkbookSummary): SheetSpec[] {
