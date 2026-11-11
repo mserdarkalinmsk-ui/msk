@@ -52,9 +52,8 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <button class="btn" title="Follow-up table, activities not carried out and the notes as an editable Word document" onClick={() => {
           if (!exportOk(p, 'the Work Plan follow-up') || !box.current) return;
           const d = document.createElement('div'), esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
-          const main = box.current.querySelector('table.wp-t'), prevT = box.current.querySelector('.wp-prev table'), prevH = box.current.querySelector('.wp-prev summary')?.textContent ?? '';
-          const note = (h: string, t?: string) => `<h3>${esc(h)}</h3>${(t ?? '').split('\n').map((x) => `<p>${esc(x)}</p>`).join('') || '<p></p>'}`;
-          d.innerHTML = `<h1>${esc(`${p.bh ? `${p.bh} - ` : ''}${p.name}`)}</h1><h2>${esc(`WP No:${wp.no} - ${date(wp.from)} / ${date(wp.to)}`)}</h2>${main?.outerHTML ?? ''}${prevT ? `<h2>${esc(prevH)}</h2>${prevT.outerHTML}` : ''}${note('FOMA notes', wp.notes)}${note('Project Teams - Comments', wp.teams)}${note('Head of Operations - Comments', wp.hoo)}`;
+          const prevT = box.current.querySelector('.wp-prev table'), prevH = box.current.querySelector('.wp-prev summary')?.textContent ?? '';
+          d.innerHTML = wpWordTable(p, f) + (prevT ? `<h2>${esc(prevH)}</h2>${prevT.outerHTML}` : '');
           downloadDocx(`${p.bh ?? p.code}-WP${wp.no}-follow-up.docx`, d, `WP ${wp.no} follow-up`, [brand?.logo, brand?.logo2]);
         }}>⬇ Word</button>
         <button class="btn" onClick={() => window.print()}>🖨 Print</button>
@@ -300,4 +299,40 @@ function wpExtraSheets(wp: WP, plans: WP[], wb: WorkbookSummary): SheetSpec[] {
       [], [{ v: 'New POs since', st: 'bold' }],
       ...R.newPos.map((x) => [x.po, x.line, x.description, x.supplier, '', M(x.spent), M(x.open), '', 'New'])] }); }
   return out;
+}
+
+/** The follow-up in the FOMA table layout as an HTML table for the Word export (fills and alignment read by docxwrite). */
+function wpWordTable(p: Project, f: WpFollowUp): string {
+  const e = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+  const d = (x: string) => (x ? new Date(x + 'T00:00:00Z').toLocaleDateString('tr-TR') : ''), m = (v: number | null) => (v == null ? '—' : full(v)), wp = f.wp, pr = f.prev;
+  const Y = 'FFFF00', B = 'DDEBF7', G = 'C6E0B4';
+  const td = (t: string, fill: string, o: { span?: number; c?: boolean; b?: boolean; color?: string; sz?: number; top?: boolean } = {}) =>
+    `<td${o.span ? ` colspan="${o.span}"` : ''} class="${o.c ? 'c' : ''}"${fill ? ` data-fill="${fill}"` : ''}${o.color ? ` data-color="${o.color}" data-sz="${o.sz ?? 22}"` : ''}${o.top ? ' data-top="1"' : ''}>${o.b === false ? e(t) : `<b>${e(t)}</b>`}</td>`;
+  const tr = (...c: string[]) => `<tr>${c.join('')}</tr>`;
+  const lab = (t: string, fill: string) => td(t, fill);
+  const pc = (a: number | null, b: number) => (a == null || !b ? '' : pct(a / b, 1));
+  const rd = `(by Fin. Rep. Date: ${d(f.asAt)})`, rows: string[] = [
+    tr(td(`${p.bh ? `${p.bh} - ` : ''}${p.name}`, '', { span: 4, c: true, color: '0563C1', sz: 22 })),
+    tr(td(`WP No:${wp.no} - ${d(wp.from)} / ${d(wp.to)}`, '', { span: 4, c: true, color: 'FF0000', sz: 32 })),
+    tr(lab('Total Project Budget', Y), td(m(f.total), Y, { span: 3, c: true })),
+    tr(lab('Total Eligible Budget (Exc. 7% administrative cost)', Y), td(m(f.eligible), Y, { span: 3, c: true })),
+    tr(lab('Total Activity Budget (Exc. Staff Salaries & Office Costs)', Y), td(m(f.activity), Y, { span: 3, c: true })),
+    tr(lab('Total Project Duration', Y), td(d(f.start), Y, { c: true }), td(d(f.end), Y, { c: true }), td(String(f.duration), Y, { c: true })),
+    tr(lab(`WP No:${wp.no} - Activity Planned Expenditure`, B), td(m(wp.planned), B, { span: 3, c: true })),
+    tr(lab(`Total time elapsed until WP No:${wp.no}`, G), td(d(f.start), G, { c: true }), td(d(f.elapsedTo), G, { c: true }), td(String(f.elapsed), G, { c: true })),
+    tr(lab(`A - Total Activity Spent Amount ${rd}`, G), td(m(f.spent), G, { c: true }), td(pc(f.spent, f.activity), G, { span: 2, c: true })),
+    tr(lab(`B - Total Activity Spent & Committed Amount ${rd}`, G), td(m(f.sc), G, { c: true }), td(pc(f.sc, f.activity), G, { span: 2, c: true })),
+  ];
+  if (pr) {
+    const per = `(${d(pr.from)} / ${d(pr.to)})`;
+    rows.push(tr(lab(`C – Previous WP No:${pr.no} Planned Amount ${per}`, G), td(m(pr.planned), G, { span: 3, c: true })),
+      tr(lab(`D – Previous WP No:${pr.no} Activity Spent Amount ${per}`, G), td(m(f.prevSpent), G, { span: 2, c: true }), td(pc(f.prevSpent, pr.planned), G, { c: true })),
+      tr(lab(`E – Previous WP No:${pr.no} Activity Spent & Committed Amount ${per}`, G), td(m(f.prevSc), G, { span: 2, c: true }), td(pc(f.prevSc, pr.planned), G, { c: true })));
+  } else rows.push(tr(td("Please note that this is the project's first WP.", G, { span: 4 })));
+  rows.push(tr(td('Remaining budget with WP :', Y, { c: true }), td(m(f.remaining), Y, { c: true }), td(pc(f.remaining, f.activity), '', { c: true, color: 'FF0000', sz: 20 }), td('', '')),
+    tr(td('Remaining month with WP', Y, { c: true }), td(String(f.remainingMonths), Y, { c: true }), td('', ''), td('', '')),
+    tr(td(`FOMA NOTES: (Checked on ${d(f.asAt)})\n${wp.notes ?? ''}\n`, Y, { span: 4, top: true })),
+    tr(td(`Project Teams -  Comments:\n${wp.teams ?? ''}\n`, 'E2EFDA', { span: 4, top: true })),
+    tr(td(`Head of Operations -  Comments:\n${wp.hoo ?? ''}\n`, 'A9D08E', { span: 4, top: true })));
+  return `<table>${rows.join('')}</table>`;
 }
