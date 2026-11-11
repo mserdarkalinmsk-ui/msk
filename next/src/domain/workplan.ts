@@ -1,4 +1,5 @@
 import type { Project } from './types';
+import { STANDARD_LINES } from './forecastTemplate';
 import type { WorkbookSummary } from './workbook';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
@@ -122,14 +123,14 @@ export function carriedFrom(plans: WorkPlan[], wp: WorkPlan): Map<string, number
 }
 
 /** This Work Plan's estimates by budget line, against what is left on that line (budget − spent & committed) in the report. */
-export interface WpLine { line: string; description: string; planned: number; budget: number; sc: number; left: number; after: number }
+export interface WpLine { line: string; description: string; /** the line has no budget in the report */ unbudgeted: boolean; planned: number; budget: number; sc: number; left: number; after: number }
 export function byLine(wp: WorkPlan, wb: WorkbookSummary): WpLine[] {
   const M = new Map<string, number>();
   for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) M.set(l.line, (M.get(l.line) ?? 0) + l.amount);
   return [...M].map(([line, planned]) => {
     const L = wb.lines.find((x) => x.code === line);
     const budget = L?.budget.cost ?? 0, sc = L?.sc ?? 0;
-    return { line, description: L?.description ?? '', planned: r2(planned), budget: r2(budget), sc: r2(sc), left: r2(budget - sc), after: r2(budget - sc - planned) };
+    return { line, description: L?.description || STANDARD_LINES.find((x) => x[0] === line)?.[1] || '', unbudgeted: !budget, planned: r2(planned), budget: r2(budget), sc: r2(sc), left: r2(budget - sc), after: r2(budget - sc - planned) };
   }).sort((a, b) => a.line.localeCompare(b.line, undefined, { numeric: true }));
 }
 

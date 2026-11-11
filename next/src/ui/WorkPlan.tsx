@@ -194,17 +194,17 @@ function WpCompare({ plans, wb, sel, onPick }: { plans: WP[]; wb: WorkbookSummar
 
 function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
   const carried = carriedFrom(plans, wp), L = byLine(wp, wb);
-  const over = L.filter((l) => l.after < 0);
+  const over = L.filter((l) => l.after < 0), unb = L.filter((l) => l.unbudgeted);
   return (
     <>
       <details class="wp-sec" open><summary>Activities in WP {wp.no} · {wp.acts!.length} · {full(wp.acts!.reduce((t, a) => t + a.amount, 0))}{carried.size ? ` · ${carried.size} carried over from earlier WPs` : ''}{wp.file ? ` · ${wp.file}` : ''}</summary>
         <table class="wp-t"><thead><tr><th>Ref.</th><th>Activity ID</th><th>Activity</th><th>Budget lines</th><th class="num">Estimated</th><th>Earlier WPs</th></tr></thead>
           <tbody>{[...wp.acts!].sort((a, b) => b.amount - a.amount).map((a) => { const c = carried.get(a.id); return (
-            <tr class={c ? 'warning' : ''}><td>{a.ref}</td><td class="num">{a.id}</td><td>{a.name}</td><td class="muted">{a.lines.filter((l) => l.amount).map((l) => `${l.line} ${full(l.amount)}`).join(' · ')}</td><td class="num">{full(a.amount)}</td>
+            <tr class={c ? 'warning' : ''}><td>{a.ref}</td><td class="num">{a.id}</td><td>{a.name}</td><td><div class="wp-chips">{a.lines.filter((l) => l.amount).map((l) => <span title={l.text}><b>{l.line}</b> {full(l.amount)}</span>)}</div></td><td class="num">{full(a.amount)}</td>
               <td>{c ? <span class="badge warning">Also in WP {c.join(', ')}</span> : <span class="muted">new</span>}</td></tr>); })}</tbody></table></details>
-      <details class="wp-sec" open><summary>By budget line · {L.length} lines{over.length ? ` · ${over.length} above what is left` : ''}</summary>
+      <details class="wp-sec" open><summary>By budget line · {L.length} lines{over.length ? ` · ${over.length} above what is left` : ''}{unb.length ? ` · ${unb.length} not in the budget (check the line codes or the budget loaded)` : ''}</summary>
         <table class="wp-t"><thead><tr><th>Line</th><th>Description</th><th class="num">Budget</th><th class="num">Spent & committed</th><th class="num">Left</th><th class="num">WP {wp.no} plan</th><th class="num">Left after WP</th></tr></thead>
-          <tbody>{L.map((l) => <tr class={l.after < 0 ? 'serious' : ''}><td class="num">{l.line}</td><td>{l.description}</td><td class="num">{full(l.budget)}</td><td class="num">{full(l.sc)}</td><td class="num">{full(l.left)}</td><td class="num">{full(l.planned)}</td><td class="num">{full(l.after)}</td></tr>)}</tbody></table></details>
+          <tbody>{L.map((l) => <tr class={l.after < 0 ? 'serious' : ''}><td class="num">{l.line}</td><td>{l.description}{l.unbudgeted && <span class="badge warning" style={{ marginLeft: '6px' }}>not in the budget</span>}</td><td class="num">{full(l.budget)}</td><td class="num">{full(l.sc)}</td><td class="num">{full(l.left)}</td><td class="num">{full(l.planned)}</td><td class="num">{full(l.after)}</td></tr>)}</tbody></table></details>
     </>);
 }
 
