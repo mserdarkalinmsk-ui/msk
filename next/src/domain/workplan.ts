@@ -3,7 +3,7 @@ import type { WorkbookSummary } from './workbook';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
 export interface WpActivity { ref: string; id: string; name: string; amount: number; lines: { line: string; text: string; amount: number }[] }
-export interface WorkPlan { id: string; no: number; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap }
+export interface WorkPlan { id: string; no: number; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap; /** figures recorded in the follow-up table for this WP's own period (D and E of the next WP's sheet) */ rec?: { spent?: number; sc?: number } }
 
 /** Activity spending and commitments frozen at the report the WP was prepared on. */
 export interface WpSnap { asAt: string; file?: string; spent: number; sc: number; pos: { po: string; line: string; description: string; supplier: string; spent: number; sc: number }[] }
@@ -51,6 +51,7 @@ export function followUp(p: Project, wb: WorkbookSummary, wp: WorkPlan, plans: W
     prevSpent = wb.entries.filter((e) => inR(e.date) && isActivity(e.line)).reduce((s, e) => s + e.amount, 0);
     prevSc = prevSpent + wb.pos.filter((x) => inR(x.date) && isActivity(x.line)).reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0);
   }
+  if (prev?.rec) { if (prevSpent == null && prev.rec.spent != null) prevSpent = prev.rec.spent; if (prevSc == null && prev.rec.sc != null) prevSc = prev.rec.sc; }
   const elapsedTo = dayBefore(wp.from);
   const asAt = wb.meta.situationDate || wb.meta.asAt || '';
   return {
@@ -102,8 +103,8 @@ export interface WpHistoryRow { wp: WorkPlan; spent: number | null; sc: number |
 export function history(plans: WorkPlan[], wb: WorkbookSummary): WpHistoryRow[] {
   const sorted = [...plans].sort((a, b) => a.no - b.no);
   return sorted.map((wp, i) => {
-    let spent: number | null = null, sc: number | null = null;
-    if (wb.entries?.length && wp.from && wp.to) {
+    let spent: number | null = wp.rec?.spent ?? null, sc: number | null = wp.rec?.sc ?? null;
+    if (spent == null && wb.entries?.length && wp.from && wp.to) {
       const inR = (d: string) => d >= wp.from && d <= wp.to;
       spent = wb.entries.filter((e) => inR(e.date) && isActivity(e.line)).reduce((s, e) => s + e.amount, 0);
       sc = spent + wb.pos.filter((x) => inR(x.date) && isActivity(x.line)).reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0);
@@ -157,4 +158,63 @@ export function rollover(snap: WpSnap, wb: WorkbookSummary): Rollover {
   const newPos = wb.pos.filter((x) => isActivity(x.line) && !had.has(x.po + '|' + x.line)).map((x) => ({ po: x.po, line: x.line, description: x.description, supplier: x.supplier, spent: r2(x.spent), open: r2(Math.max(0, x.sc - x.spent)) }));
   const t = (k: keyof RollRow) => r2(rows.reduce((a, r) => a + (r[k] as number), 0)), cur = snapshot(wb);
   return { from: snap.asAt, to: cur.asAt, open: t('open'), spentSince: t('spentSince'), stillOpen: t('stillOpen'), released: t('released'), rows: rows.sort((a, b) => b.open - a.open), newPos: newPos.sort((a, b) => b.spent + b.open - a.spent - a.open), spentGrowth: r2(cur.spent - snap.spent), scGrowth: r2(cur.sc - snap.sc) };
+}
+
+/** One sheet of the FOMA follow-up table (2026 layout): "WP No:n - dd.mm.yyyy / dd.mm.yyyy", planned, C/D/E of the previous WP, notes. */
+export interface TableSheet { sheet: string; title: string; no: number; from: string; to: string; planned: number; deduct: number | null; total: number | null;
+  prev?: { no: number; from: string; to: string; planned: number; spent: number | null; sc: number | null }; notes: string; teams: string; hoo: string }
+const dot = (t: string) => { const m = /(\d{1,2})[./](\d{1,2})[./](\d{4})/.exec(t); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
+const two = (t: string) => { const m = /(\d{1,2}[./]\d{1,2}[./]\d{4})\s*[\/–-]\s*(\d{1,2}[./]\d{1,2}[./]\d{4})/.exec(t); return m ? [dot(m[1]), dot(m[2])] : ['', '']; };
+export function readTableSheet(sheet: string, rows: string[][]): TableSheet | null {
+  const cell = (re: RegExp) => rows.find((r) => r.some((c) => re.test(c ?? '')));
+  const val = (r?: string[]) => { if (!r) return null; const i = r.findIndex((c) => /[a-z]/i.test(c ?? '')); const v = r.slice(i + 1).find((c) => c != null && c !== '' && Number.isFinite(amt(c)) && /\d/.test(c)); return v == null ? null : amt(v); };
+  const all = rows.flat().filter(Boolean).join('\n');
+  const head = /WP\s*No\s*:?\s*(\d+)\s*-\s*([\d.\/]+\s*\/\s*[\d.\/]+)/i.exec(all);
+  const plannedRow = cell(/Activity Planned Expenditure/i);
+  if (!head || !plannedRow) return null;
+  const [from, to] = two(head[2]);
+  if (!from) return null;
+  const elig = val(cell(/Total Eligible Budget/i)), act = val(cell(/Total Activity Budget/i));
+  const C = cell(/^\s*C\s*[–-]\s*Previous WP/i), D = cell(/^\s*D\s*[–-]\s*Previous WP/i), E = cell(/^\s*E\s*[–-]\s*Previous WP/i);
+  const first = /first WP/i.test(all);
+  let prev: TableSheet['prev'];
+  if (C && !first) {
+    const lab = C.find((c) => /Previous WP/i.test(c ?? '')) ?? '', [pf, pt] = two(lab), pn = Number(/WP\s*No\s*:?\s*(\d+)/i.exec(lab)?.[1] ?? 0);
+    const num = (r?: string[]) => { if (!r) return null; const i = r.findIndex((c) => /Previous WP/i.test(c ?? '')); const v = r.slice(i + 1).find((c) => /\d/.test(c ?? '') && !/%/.test(c ?? '')); return v == null ? null : amt(v); };
+    if (pn) prev = { no: pn, from: pf, to: pt, planned: num(C) ?? 0, spent: num(D), sc: num(E) };
+  }
+  const text = (re: RegExp) => { const c = rows.flat().find((x) => re.test(x ?? '')) ?? ''; return c.replace(re, '').replace(/^[\s:-]+/, '').trim(); };
+  return { sheet, title: (rows[0]?.find(Boolean) ?? '').split('\n')[0].trim(), no: Number(head[1]), from, to, planned: val(plannedRow) ?? 0,
+    deduct: elig != null && act != null ? r2(elig - act) : null, total: val(cell(/Total Project Budget/i)), prev,
+    notes: text(/^FOMA NOTES:?/i), teams: text(/^Project Teams\s*-\s*Comments:?/i), hoo: text(/^Head of Operations\s*-\s*Comments:?/i) };
+}
+
+/** Which project a sheet belongs to: BH number in the sheet name or title, else the project code number in the title. */
+export function matchProject<T extends { bh?: string; code: string; name: string }>(ps: T[], t: TableSheet): T | undefined {
+  const digits = (x?: string) => (x ?? '').replace(/\D/g, '');
+  const bh = /BH\s*(\d{4})/i.exec(t.sheet + ' ' + t.title)?.[1] ?? /^(\d{4})\b/.exec(t.sheet.trim())?.[1];
+  if (bh) { const p = ps.find((x) => digits(x.bh) === bh || digits(x.bh).endsWith(bh)); if (p) return p; }
+  const code = /^(?:BH\s*\d{4}\s*-\s*)?(\d{4})\b/i.exec(t.title)?.[1];
+  return code ? ps.find((x) => digits(x.code) === code || x.code.includes(code) || x.name.startsWith(code)) : undefined;
+}
+
+/** Merges the sheets of one project into its Work Plans: each sheet's WP, and its previous WP (planned, D and E) when missing. */
+export function mergeTable(plans: WorkPlan[], sheets: TableSheet[]): WorkPlan[] {
+  const out = [...plans];
+  const id = () => Math.random().toString(36).slice(2, 10);
+  const put = (no: number, patch: Partial<WorkPlan>, keep: boolean) => {
+    // the period identifies a WP (sheets sometimes repeat a number); the number only when no dates are given
+    let i = patch.from ? out.findIndex((w) => w.from === patch.from) : -1;
+    if (i < 0) i = out.findIndex((w) => w.no === no && (!patch.from || !w.from || w.from === patch.from));
+    if (i < 0 && out.some((w) => w.no === no)) no = Math.max(...out.map((w) => w.no)) + 1;
+    if (i < 0) out.push({ id: id(), no, from: '', to: '', planned: 0, ...patch });
+    else out[i] = keep ? { ...patch, ...out[i], rec: { ...patch.rec, ...out[i].rec } } : { ...out[i], ...patch };
+  };
+  for (const t of [...sheets].sort((a, b) => a.no - b.no)) {
+    put(t.no, { from: t.from, to: t.to, planned: t.planned, notes: t.notes || undefined, teams: t.teams || undefined, hoo: t.hoo || undefined }, false);
+    if (t.prev) put(t.prev.no, { from: t.prev.from, to: t.prev.to, planned: t.prev.planned, rec: { ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) } }, true);
+  }
+  // recorded D/E always come from the later sheet
+  for (const t of sheets) if (t.prev) { const w = out.find((x) => (t.prev!.from && x.from === t.prev!.from)) ?? out.find((x) => x.no === t.prev!.no); if (!w) continue; w.rec = { ...w.rec, ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) }; }
+  return out.sort((a, b) => a.no - b.no);
 }

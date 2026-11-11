@@ -849,3 +849,7 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .wp-fig{display:flex;flex-direction:column;justify-content:center;gap:2px;font-size:12px;color:var(--muted);border-left:3px solid var(--c1);padding-left:12px}
 .wp-fig b{font-size:20px;color:var(--text)}.wp-fig.serious{border-color:var(--critical)}.wp-fig.serious b{color:var(--critical)}
 @media print{.wp .tools,.wp-edit,.wp-bar,.wp-sec .seg,button{display:none!important}.wp-hero,.wp-t{break-inside:avoid}}
+.wp-mini{position:relative;height:6px;border-radius:3px;background:var(--border);margin:2px 0 3px;min-width:110px}
+.wp-mini i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--c1)}.wp-mini i.good{background:var(--good)}.wp-mini i.warning{background:var(--warning)}.wp-mini i.serious{background:var(--critical)}
+.wp-mini b{position:absolute;top:-3px;width:2px;height:12px;background:var(--text)}
+span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);font-weight:600}span.serious{color:var(--critical);font-weight:600}
