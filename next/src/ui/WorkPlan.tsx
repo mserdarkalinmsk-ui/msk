@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { updateProject } from '../data/store';
-import { byLine, carriedFrom, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -80,6 +80,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       </table>
       <WpRollover wp={wp} wb={wb} onLock={() => upd({ snap: snapshot(wb) })} />
       <WpCompare plans={plans} wb={wb} sel={wp.id} onPick={setSel} />
+      <WpPrevActs wp={wp} plans={plans} />
       {wp.acts?.length ? <WpDetail wp={wp} plans={plans} wb={wb} /> : null}
       <div class="wp-notes">
         <label class="n1"><span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>FOMA notes<button type="button" class="btn ghost" style={{ padding: '2px 8px', fontSize: '12px' }} title="Draft the note from the figures, carried-over activities and lines above what is left" onClick={() => { const t = fomaDraft(f, wp, plans, wb); if (!wp.notes || confirm('Replace the FOMA notes with a draft from the figures?')) upd({ notes: t }); }}>✎ Draft from figures</button></span><textarea rows={3} value={wp.notes ?? ''} onChange={(e) => upd({ notes: (e.target as HTMLTextAreaElement).value })} /></label>
@@ -136,6 +137,8 @@ export function fomaDraft(f: WpFollowUp, wp: WP, plans: WP[], wb: WorkbookSummar
   const out: string[] = [], carried = carriedFrom(plans, wp), lines = byLine(wp, wb).filter((l) => l.after < 0);
   if (f.prev) out.push(`Previous WP No:${f.prev.no} (${date(f.prev.from)} / ${date(f.prev.to)}): ${f.prevSpent == null ? '—' : full(f.prevSpent)} spent of ${full(f.prev.planned)} planned${f.prevSpent != null && f.prev.planned ? ` (${pct(f.prevSpent / f.prev.planned)})` : ''}; spent & committed ${f.prevSc == null ? '—' : full(f.prevSc)}.`);
   if (carried.size) { const A = (wp.acts ?? []).filter((a) => carried.has(a.id)); out.push(`${A.length} activit${A.length === 1 ? 'y' : 'ies'} (${A.map((a) => a.id).join(', ')}), approximately ${full(A.reduce((s, a) => s + a.amount, 0))}, ${A.length === 1 ? 'was' : 'were'} included in the earlier Work Plan(s) and transferred to WP No:${wp.no}.`); }
+  { const { prev, rows } = previousActivities(plans, wp); const nd = rows.filter((r) => r.fate !== 'done' && r.fate !== 'carried');
+    if (prev && nd.length) out.push(`${nd.length} activit${nd.length === 1 ? 'y' : 'ies'} planned in WP No:${prev.no} (${nd.map((r) => `${r.a.id}${r.fate === 'cancelled' ? ' cancelled' : r.fate === 'postponed' ? ' postponed' : ''}`).join(', ')}), approximately ${full(nd.reduce((t, r) => t + r.a.amount, 0))}, ${nd.length === 1 ? 'is' : 'are'} not included in WP No:${wp.no}; the project team is requested to confirm ${nd.length === 1 ? 'its' : 'their'} status.`); }
   if (wp.snap) { const R = rollover(wp.snap, wb); if (R.from !== R.to && R.open) out.push(`Of ${full(R.open)} committed when WP No:${wp.no} was prepared, ${full(R.spentSince)} has been spent, ${full(R.stillOpen)} is still open and ${full(R.released)} was released.`); }
   for (const l of lines) out.push(`Line ${l.line}${l.description ? ` (${l.description})` : ''}: WP plan ${full(l.planned)} exceeds the ${full(l.left)} left on the line by ${full(-l.after)}.`);
   out.push(`Remaining activity budget after this WP: ${full(f.remaining)} (${f.activity ? pct(f.remaining / f.activity) : '—'}) for ${f.remainingMonths} months.`);
@@ -190,6 +193,20 @@ function WpCompare({ plans, wb, sel, onPick }: { plans: WP[]; wb: WorkbookSummar
             <td class="num">{h.sc == null ? '—' : full(h.sc)}</td><td class={`num ${tone(h.scPct, 0.8, 0.5)}`}>{h.scPct == null ? '—' : pct(h.scPct)}</td>
             <td class="num">{d == null ? '' : `${d >= 0 ? '+' : ''}${full(d)}`}</td><td class="num">{h.acts ? `${h.acts} · ${h.carried}` : '—'}</td></tr>); })}</tbody></table>
     </div>);
+}
+
+const FATE = { carried: ['Not done — carried into this WP', 'serious'], postponed: ['Postponed / modified', 'warning'], cancelled: ['Cancelled', 'neutral'], unknown: ['Not in this WP — check', 'warning'], done: ['Done', 'good'] } as const;
+function WpPrevActs({ wp, plans }: { wp: WP; plans: WP[] }) {
+  const { prev, rows } = previousActivities(plans, wp);
+  if (!prev) return null;
+  if (!rows.length) return <div class="wp-sec"><p class="muted">Import the WorkPlan file of WP {prev.no} to see which of its planned activities were not carried out.</p></div>;
+  const notDone = rows.filter((r) => r.fate !== 'done'), amt = (k: string) => rows.filter((r) => r.fate === k).reduce((s, r) => s + r.a.amount, 0);
+  return (
+    <details class="wp-sec" open><summary>Planned in WP {prev.no} — {notDone.length} of {rows.length} activities not shown as done · carried {full(amt('carried'))} · postponed {full(amt('postponed'))} · cancelled {full(amt('cancelled'))} · to check {full(amt('unknown'))}</summary>
+      <table class="wp-t"><thead><tr><th>Activity ID</th><th>Activity</th><th class="num">Planned in WP {prev.no}</th><th class="num">In WP {wp.no}</th><th>What happened</th><th>Status noted</th></tr></thead>
+        <tbody>{rows.map((r) => <tr><td class="num">{r.a.id}</td><td>{r.a.name}</td><td class="num">{full(r.a.amount)}</td><td class="num">{r.now ? full(r.now.amount) : '—'}</td>
+          <td><span class={`badge ${FATE[r.fate][1]}`}>{FATE[r.fate][0]}</span></td><td class="muted" style={{ fontSize: '12px', maxWidth: '360px' }}>{r.note}</td></tr>)}</tbody></table>
+      <p class="muted" style={{ fontSize: '12px' }}>"Not in this WP — check": planned in WP {prev.no}, not repeated in WP {wp.no} and no status given — confirm with the project team whether it was carried out.</p></details>);
 }
 
 function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
@@ -259,6 +276,9 @@ function wpExtraSheets(wp: WP, plans: WP[], wb: WorkbookSummary): SheetSpec[] {
     out.push({ name: `WP ${wp.no} by line`, widths: [10, 50, 14, 18, 14, 14, 16], rows: [['Line', 'Description', 'Budget', 'Spent & committed', 'Left', `WP ${wp.no} plan`, 'Left after WP'].map(H),
       ...byLine(wp, wb).map((l) => [l.line, l.description, M(l.budget), M(l.sc), M(l.left), M(l.planned), M(l.after)])] });
   }
+  { const { prev, rows } = previousActivities(plans, wp);
+    if (prev && rows.length) out.push({ name: `WP ${prev.no} not done`, widths: [12, 60, 16, 16, 30, 60], rows: [['Activity ID', 'Activity', `Planned in WP ${prev.no}`, `In WP ${wp.no}`, 'What happened', 'Status noted'].map(H),
+      ...rows.map((r) => [r.a.id, r.a.name, M(r.a.amount), M(r.now?.amount ?? null), FATE[r.fate][0], r.note])] }); }
   if (wp.snap) { const R = rollover(wp.snap, wb);
     out.push({ name: `WP ${wp.no} commitments`, widths: [12, 8, 50, 30, 15, 15, 15, 15, 20], rows: [
       [{ v: `Commitments open when WP ${wp.no} was prepared (report ${wp.snap.asAt ? date(wp.snap.asAt) : ''}) and what became of them by ${R.to ? date(R.to) : ''}`, st: 'title' }], [],

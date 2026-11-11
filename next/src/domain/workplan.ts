@@ -3,7 +3,7 @@ import { STANDARD_LINES } from './forecastTemplate';
 import type { WorkbookSummary } from './workbook';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
-export interface WpActivity { ref: string; id: string; name: string; amount: number; lines: { line: string; text: string; amount: number }[] }
+export interface WpActivity { ref: string; id: string; name: string; amount: number; /** status column of the WorkPlan file (done / postponed / cancelled …) */ status?: string; lines: { line: string; text: string; amount: number }[] }
 export interface WorkPlan { id: string; no: number; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap; /** figures recorded in the follow-up table for this WP's own period (D and E of the next WP's sheet) */ rec?: { spent?: number; sc?: number } }
 
 /** Activity spending and commitments frozen at the report the WP was prepared on. */
@@ -84,13 +84,13 @@ export function readWorkPlan(rows: string[][]): { from: string; to: string; bh: 
   if (!title || hi < 0) return null;
   const [, f, t] = /from\s+(\S+)\s+to\s+(\S+)/i.exec(title) ?? [];
   const H = rows[hi], col = (re: RegExp) => H.findIndex((c) => re.test(c ?? ''));
-  const cRef = col(/logframe/i), cId = col(/activity id/i), cName = col(/activity name/i), cLine = col(/budget line/i), cPo = col(/^po/i), cAmt = col(/estimated budget/i);
+  const cRef = col(/logframe/i), cId = col(/activity id/i), cName = col(/activity name/i), cLine = col(/budget line/i), cPo = col(/^po/i), cAmt = col(/estimated budget/i), cSt = col(/^status/i);
   const bhRow = rows.slice(0, hi).find((r) => r.some((c) => /budget head/i.test(c ?? '')));
   const bh = (bhRow?.slice(bhRow.findIndex((c) => /budget head/i.test(c ?? '')) + 1).find((c) => /\d/.test(c ?? '')) ?? '').trim();
   const acts: WpActivity[] = []; let grand = 0, cur: WpActivity | undefined;
   for (const r of rows.slice(hi + 1)) {
     if (/grand total/i.test(r[0] ?? '')) { grand = amt(r[cAmt]); break; }
-    if (r[cId] && /\d/.test(r[cId])) { cur = { ref: r[cRef] ?? '', id: String(r[cId]).trim(), name: (r[cName] ?? '').trim(), amount: 0, lines: [] }; acts.push(cur); }
+    if (r[cId] && /\d/.test(r[cId])) { cur = { ref: r[cRef] ?? '', id: String(r[cId]).trim(), name: (r[cName] ?? '').trim(), amount: 0, lines: [], ...(cSt >= 0 && r[cSt]?.trim() ? { status: r[cSt].trim() } : {}) }; acts.push(cur); }
     if (!cur) continue;
     if (/total activity/i.test(r[cPo] ?? '')) { cur.amount = amt(r[cAmt]) || cur.lines.reduce((s, l) => s + l.amount, 0); continue; }
     if (r[cLine] && /^\d/.test(r[cLine])) cur.lines.push({ line: r[cLine].trim(), text: r[cPo] ?? '', amount: amt(r[cAmt]) });
@@ -218,4 +218,19 @@ export function mergeTable(plans: WorkPlan[], sheets: TableSheet[]): WorkPlan[] 
   // recorded D/E always come from the later sheet
   for (const t of sheets) if (t.prev) { const w = out.find((x) => (t.prev!.from && x.from === t.prev!.from)) ?? out.find((x) => x.no === t.prev!.no); if (!w) continue; w.rec = { ...w.rec, ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) }; }
   return out.sort((a, b) => a.no - b.no);
+}
+
+/** The previous WP's activities and what became of them: carried into this WP (not done), marked done/cancelled in a WorkPlan file, or not mentioned again. */
+export type ActFate = 'carried' | 'done' | 'cancelled' | 'postponed' | 'unknown';
+export interface PrevAct { a: WpActivity; fate: ActFate; note: string; now?: WpActivity }
+export function previousActivities(plans: WorkPlan[], wp: WorkPlan): { prev?: WorkPlan; rows: PrevAct[] } {
+  const prev = plans.filter((x) => x.no < wp.no).sort((a, b) => b.no - a.no)[0];
+  if (!prev?.acts?.length) return { prev, rows: [] };
+  const later = plans.filter((x) => x.no > prev.no).flatMap((x) => x.acts ?? []);
+  const rows = prev.acts.map((a): PrevAct => {
+    const now = (wp.acts ?? []).find((x) => x.id === a.id), st = [now?.status, ...later.filter((x) => x.id === a.id).map((x) => x.status), a.status].find(Boolean) ?? '';
+    const fate: ActFate = /cancel|iptal/i.test(st) ? 'cancelled' : now ? 'carried' : /postpon|ertelen|modif/i.test(st) ? 'postponed' : /\bdone\b|complet|tamam|implemented|held|organi[sz]ed/i.test(st) ? 'done' : 'unknown';
+    return { a, fate, note: st, now };
+  });
+  return { prev, rows: rows.sort((x, y) => ['carried', 'postponed', 'cancelled', 'unknown', 'done'].indexOf(x.fate) - ['carried', 'postponed', 'cancelled', 'unknown', 'done'].indexOf(y.fate) || y.a.amount - x.a.amount) };
 }
