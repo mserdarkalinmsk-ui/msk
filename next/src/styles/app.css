@@ -853,3 +853,11 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .wp-mini i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--c1)}.wp-mini i.good{background:var(--good)}.wp-mini i.warning{background:var(--warning)}.wp-mini i.serious{background:var(--critical)}
 .wp-mini b{position:absolute;top:-3px;width:2px;height:12px;background:var(--text)}
 span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);font-weight:600}span.serious{color:var(--critical);font-weight:600}
+/* Work Plan polish */
+.wp-t th{font-family:inherit;font-weight:600}.wp-t thead th{font-size:12px;letter-spacing:.02em;vertical-align:bottom}
+.wp-t th.num{text-align:right}.wp-t tbody tr:hover td{background:color-mix(in srgb,var(--c1) 4%,transparent)}
+.wp-chips{display:flex;flex-wrap:wrap;gap:4px}.wp-chips span{font-size:11px;padding:2px 6px;border-radius:10px;background:color-mix(in srgb,var(--c1) 8%,transparent);white-space:nowrap}
+.wp-chips b{color:var(--c1)}.wp-mini{width:100%;max-width:180px}
+.wp-notes label{font-weight:600;color:var(--text)}.wp-notes textarea{min-height:90px;font-weight:400}
+.wp-edit{align-items:flex-end}.wp-edit input{min-width:150px}
+.wp-hero-b .wp-ring b{font-size:12px}
