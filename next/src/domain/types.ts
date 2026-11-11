@@ -48,6 +48,8 @@ export interface Project {
   budgetLetters?: import('./letters').Letter[];
   /** Quarterly Work Plans entered from what the project team sends (domain/workplan). */
   workPlans?: import('./workplan').WorkPlan[];
+  /** Staff salaries + office costs deducted from the eligible budget for the Work Plan follow-up, when typed by hand. */
+  wpDeduct?: number;
 }
 
 export interface AuditEntry { at: string; message: string; project?: string }
