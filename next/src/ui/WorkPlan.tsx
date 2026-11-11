@@ -53,6 +53,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <label>WP No <input type="number" min={1} value={wp.no} onChange={(e) => upd({ no: Number((e.target as HTMLInputElement).value) || 1 })} /></label>
         <label>From <input type="date" value={wp.from} onChange={(e) => upd({ from: (e.target as HTMLInputElement).value })} /></label>
         <label>To <input type="date" value={wp.to} onChange={(e) => upd({ to: (e.target as HTMLInputElement).value })} /></label>
+        <label title="Leave empty to use the budget: staff salaries (1.1.1 local team, 1.2.1 HQ team) + heading 4 local office">Staff salaries + office costs (€) <input type="number" step="0.01" placeholder={(f.staff + f.office).toFixed(2)} value={p.wpDeduct ?? ''} onChange={(e) => { const v = (e.target as HTMLInputElement).value; updateProject(p.id, { wpDeduct: v === '' ? undefined : Number(v) }); }} /></label>
         <label>Planned activity expenditure (€) <input type="number" step="0.01" value={wp.planned || ''} onChange={(e) => upd({ planned: Number((e.target as HTMLInputElement).value) || 0 })} /></label>
       </div>
       <div class="wp-kpi">
@@ -66,7 +67,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <tbody>
           <Row label="Total Project Budget" a={full(f.total)} cls="y" />
           <Row label="Total Eligible Budget (excl. 7% administrative costs)" a={full(f.eligible)} cls="y" />
-          <Row label="Total Activity Budget (excl. staff salaries & office costs)" a={full(f.activity)} b={`staff ${full(f.staff)}`} c={`office ${full(f.office)}`} cls="y" />
+          <Row label="Total Activity Budget (excl. staff salaries & office costs)" a={full(f.activity)} b={f.manual ? `deducted ${full(f.eligible - f.activity)} (typed)` : `staff salaries ${full(f.staff)}`} c={f.manual ? `budget: ${full(f.staff + f.office)}` : `office ${full(f.office)}`} cls="y" />
           <Row label="Total Project Duration" a={date(f.start)} b={date(f.end)} c={`${f.duration} months`} cls="y" />
           <Row label={`WP No:${wp.no} — Activity Planned Expenditure`} a={full(wp.planned)} cls="b" />
           <Row label={`Total time elapsed until ${f.prev ? `WP No:${f.prev.no}` : 'this WP'}`} a={date(f.elapsedFrom)} b={f.elapsedTo ? date(f.elapsedTo) : ''} c={`${f.elapsed} months`} cls="g" />
@@ -89,7 +90,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <label>Project Teams — comments<textarea rows={3} value={wp.teams ?? ''} onChange={(e) => upd({ teams: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Head of Operations — comments<textarea rows={3} value={wp.hoo ?? ''} onChange={(e) => upd({ hoo: (e.target as HTMLTextAreaElement).value })} /></label>
       </div>
-      <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except heading 1 (staff costs), heading 4 (local office) and 10 (administrative costs). D sums the invoices and GL entries dated within the previous WP; E adds the open balance of POs raised in those dates.</p>
+      <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except staff salaries (1.1.1 local team, 1.2.1 HQ team), heading 4 (local office) and 10 (administrative costs); consultants and per diems count as activity. D sums the invoices and GL entries dated within the previous WP; E adds the open balance of POs raised in those dates.</p>
     </div>
   );
 }

@@ -9,15 +9,18 @@ export interface WorkPlan { id: string; no: number; from: string; to: string; pl
 export interface WpSnap { asAt: string; file?: string; spent: number; sc: number; pos: { po: string; line: string; description: string; supplier: string; spent: number; sc: number }[] }
 
 /** Headings left out of the activity budget: 1 staff costs, 4 local office (and 10 administrative costs). */
-const NOT_ACTIVITY = new Set(['1', '4', '10', '0']);
-export const isActivity = (code: string) => !!code && !NOT_ACTIVITY.has(code.split('.')[0]);
+/** Staff salaries: the project team posts, 1.1.1 local team and 1.2.1 HQ team. Consultants (1.1.2/3, 1.2.2/3) and per diems (1.3) are activity costs. */
+export const isSalary = (code: string) => /^1\.[12]\.1(\.|$)/.test(code);
+/** Office costs: heading 4 (local office). */
+export const isOffice = (code: string) => code.split('.')[0] === '4';
+export const isActivity = (code: string) => !!code && !isSalary(code) && !isOffice(code) && !['10', '0'].includes(code.split('.')[0]) && code !== '1' && code !== '1.1' && code !== '1.2';
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 /** Months as the follow-up table counts them: ROUNDDOWN((to − from) / 30). */
 export const months = (from: string, to: string) => (!from || !to ? 0 : Math.max(0, Math.floor((Date.parse(to) - Date.parse(from)) / 86400000 / 30)));
 
 export interface WpFollowUp {
-  wp: WorkPlan; prev?: WorkPlan;
+  wp: WorkPlan; prev?: WorkPlan; /** deduction typed by hand (follow-up table's own figure) instead of the budget's */ manual: boolean;
   total: number; eligible: number; staff: number; office: number; activity: number;
   start: string; end: string; duration: number;
   elapsedFrom: string; elapsedTo: string; elapsed: number;
@@ -35,9 +38,10 @@ export interface WpFollowUp {
  */
 export function followUp(p: Project, wb: WorkbookSummary, wp: WorkPlan, plans: WorkPlan[]): WpFollowUp {
   const leaf = wb.lines.filter((l) => l.leaf);
-  const head = (h: string) => leaf.filter((l) => l.code.split('.')[0] === h).reduce((s, l) => s + (l.budget.cost ?? 0), 0);
+  const sumB = (f: (c: string) => boolean) => leaf.filter((l) => f(l.code)).reduce((s, l) => s + (l.budget.cost ?? 0), 0);
   const total = wb.totals.eligible?.budget || p.approvedBudget?.total || p.budget;
-  const eligible = total / 1.07, staff = head('1'), office = head('4'), activity = eligible - staff - office;
+  const eligible = total / 1.07, staff = sumB(isSalary), office = sumB(isOffice);
+  const activity = p.wpDeduct != null ? eligible - p.wpDeduct : eligible - staff - office;
   const act = leaf.filter((l) => isActivity(l.code));
   const spent = act.reduce((s, l) => s + (l.actual.cost ?? 0), 0), sc = act.reduce((s, l) => s + (l.sc ?? 0), 0);
   const prev = plans.filter((x) => x.no < wp.no).sort((a, b) => b.no - a.no)[0];
@@ -50,7 +54,7 @@ export function followUp(p: Project, wb: WorkbookSummary, wp: WorkPlan, plans: W
   const elapsedTo = dayBefore(wp.from);
   const asAt = wb.meta.situationDate || wb.meta.asAt || '';
   return {
-    wp, prev, total: r2(total), eligible: r2(eligible), staff: r2(staff), office: r2(office), activity: r2(activity),
+    wp, prev, manual: p.wpDeduct != null, total: r2(total), eligible: r2(eligible), staff: r2(staff), office: r2(office), activity: r2(activity),
     start: p.start, end: p.end, duration: months(p.start, p.end),
     elapsedFrom: p.start, elapsedTo, elapsed: months(p.start, wp.from),
     asAt, spent: r2(spent), sc: r2(sc), prevSpent: prevSpent == null ? null : r2(prevSpent), prevSc: prevSc == null ? null : r2(prevSc),
