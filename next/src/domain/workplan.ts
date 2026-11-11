@@ -4,7 +4,7 @@ import type { WorkbookSummary } from './workbook';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
 export interface WpActivity { ref: string; id: string; name: string; amount: number; /** status column of the WorkPlan file (done / postponed / cancelled …) */ status?: string; lines: { line: string; text: string; amount: number }[] }
-export interface WorkPlan { id: string; no: number; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap; /** figures recorded in the follow-up table for this WP's own period (D and E of the next WP's sheet) */ rec?: { spent?: number; sc?: number } }
+export interface WorkPlan { id: string; no: number; /** name used by older follow-up sheets (e.g. Q3-2024) when the WP had no number */ label?: string; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap; /** figures recorded in the follow-up table for this WP's own period (D and E of the next WP's sheet) */ rec?: { spent?: number; sc?: number } }
 
 /** Activity spending and commitments frozen at the report the WP was prepared on. */
 export interface WpSnap { asAt: string; file?: string; spent: number; sc: number; pos: { po: string; line: string; description: string; supplier: string; spent: number; sc: number }[] }
@@ -162,11 +162,14 @@ export function rollover(snap: WpSnap, wb: WorkbookSummary): Rollover {
 }
 
 /** One sheet of the FOMA follow-up table (2026 layout): "WP No:n - dd.mm.yyyy / dd.mm.yyyy", planned, C/D/E of the previous WP, notes. */
-export interface TableSheet { sheet: string; title: string; no: number; from: string; to: string; planned: number; deduct: number | null; total: number | null;
-  prev?: { no: number; from: string; to: string; planned: number; spent: number | null; sc: number | null }; notes: string; teams: string; hoo: string }
+export interface TableSheet { sheet: string; title: string; no: number; label?: string; from: string; to: string; planned: number; deduct: number | null; total: number | null;
+  prev?: { no: number; label?: string; from: string; to: string; planned: number; spent: number | null; sc: number | null }; notes: string; teams: string; hoo: string }
 const dot = (t: string) => { const m = /(\d{1,2})[./](\d{1,2})[./](\d{4})/.exec(t); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
 const two = (t: string) => { const m = /(\d{1,2}[./]\d{1,2}[./]\d{4})\s*[\/–-]\s*(\d{1,2}[./]\d{1,2}[./]\d{4})/.exec(t); return m ? [dot(m[1]), dot(m[2])] : ['', '']; };
 export function readTableSheet(sheet: string, rows: string[][]): TableSheet | null {
+  const n = readNewSheet(sheet, rows); return n ?? readOldSheet(sheet, rows);
+}
+function readNewSheet(sheet: string, rows: string[][]): TableSheet | null {
   const cell = (re: RegExp) => rows.find((r) => r.some((c) => re.test(c ?? '')));
   const val = (r?: string[]) => { if (!r) return null; const i = r.findIndex((c) => /[a-z]/i.test(c ?? '')); const v = r.slice(i + 1).find((c) => c != null && c !== '' && Number.isFinite(amt(c)) && /\d/.test(c)); return v == null ? null : amt(v); };
   const all = rows.flat().filter(Boolean).join('\n');
@@ -206,19 +209,27 @@ export function mergeTable(plans: WorkPlan[], sheets: TableSheet[]): WorkPlan[] 
   const put = (no: number, patch: Partial<WorkPlan>, keep: boolean) => {
     // the period identifies a WP (sheets sometimes repeat a number); the number only when no dates are given
     let i = patch.from ? out.findIndex((w) => w.from === patch.from) : -1;
-    if (i < 0) i = out.findIndex((w) => w.no === no && (!patch.from || !w.from || w.from === patch.from));
-    if (i < 0 && out.some((w) => w.no === no)) no = Math.max(...out.map((w) => w.no)) + 1;
+    if (i < 0 && no > 0) i = out.findIndex((w) => w.no === no && (!patch.from || !w.from || w.from === patch.from));
+    if (i < 0 && no > 0 && out.some((w) => w.no === no)) no = Math.max(...out.map((w) => w.no)) + 1;
+    if (i < 0 && no <= 0) no = 0;
     if (i < 0) out.push({ id: id(), no, from: '', to: '', planned: 0, ...patch });
     else out[i] = keep ? { ...patch, ...out[i], rec: { ...patch.rec, ...out[i].rec } } : { ...out[i], ...patch };
   };
-  for (const t of [...sheets].sort((a, b) => a.no - b.no)) {
-    put(t.no, { from: t.from, to: t.to, planned: t.planned, notes: t.notes || undefined, teams: t.teams || undefined, hoo: t.hoo || undefined }, false);
-    if (t.prev) put(t.prev.no, { from: t.prev.from, to: t.prev.to, planned: t.prev.planned, rec: { ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) } }, true);
+  for (const t of [...sheets].sort((a, b) => a.no - b.no || a.from.localeCompare(b.from))) {
+    put(t.no, { ...(t.label ? { label: t.label } : {}), from: t.from, to: t.to, planned: t.planned, notes: t.notes || undefined, teams: t.teams || undefined, hoo: t.hoo || undefined }, false);
+    if (t.prev) put(t.prev.no, { ...(t.prev.label ? { label: t.prev.label } : {}), from: t.prev.from, to: t.prev.to, planned: t.prev.planned, rec: { ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) } }, true);
   }
   // recorded D/E always come from the later sheet
-  for (const t of sheets) if (t.prev) { const w = out.find((x) => (t.prev!.from && x.from === t.prev!.from)) ?? out.find((x) => x.no === t.prev!.no); if (!w) continue; w.rec = { ...w.rec, ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) }; }
+  for (const t of sheets) if (t.prev) { const w = out.find((x) => (t.prev!.from && x.from === t.prev!.from)) ?? (t.prev.no > 0 ? out.find((x) => x.no === t.prev!.no) : undefined); if (!w) continue; w.rec = { ...w.rec, ...(t.prev.spent != null ? { spent: t.prev.spent } : {}), ...(t.prev.sc != null ? { sc: t.prev.sc } : {}) }; }
+  // WPs without a number (older sheets) go before the numbered ones, in date order
+  const un = out.filter((w) => w.no <= 0).sort((a, b) => a.from.localeCompare(b.from)), num = out.filter((w) => w.no > 0);
+  const firstNumbered = num.length ? Math.min(...num.map((w) => w.no)) : 1;
+  const numberedFrom = num.length ? num.reduce((a, w) => (w.no === firstNumbered ? w.from : a), '') : '9999';
+  un.forEach((w, i) => { w.no = firstNumbered - un.length + i; if (w.from > numberedFrom) w.no = Math.max(...out.map((x) => x.no)) + 1; });
   return out.sort((a, b) => a.no - b.no);
 }
+/** How a WP is named on screen: its number, or the quarter label of an older sheet. */
+export const wpName = (w: WorkPlan) => (w.label && w.no <= 0 ? `WP ${w.label}` : `WP ${w.no}`);
 
 /** The previous WP's activities and what became of them: carried into this WP (not done), marked done/cancelled in a WorkPlan file, or not mentioned again. */
 export type ActFate = 'carried' | 'done' | 'cancelled' | 'postponed' | 'unknown';
@@ -233,4 +244,30 @@ export function previousActivities(plans: WorkPlan[], wp: WorkPlan): { prev?: Wo
     return { a, fate, note: st, now };
   });
   return { prev, rows: rows.sort((x, y) => ['carried', 'postponed', 'cancelled', 'unknown', 'done'].indexOf(x.fate) - ['carried', 'postponed', 'cancelled', 'unknown', 'done'].indexOf(y.fate) || y.a.amount - x.a.amount) };
+}
+
+/** Excel serial day or dd/mm/yyyy text → YYYY-MM-DD. */
+const xdate = (v: string | undefined) => { const t = (v ?? '').trim(); if (/^\d{5}(\.\d+)?$/.test(t)) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 86400000).toISOString().slice(0, 10); return dot(t); };
+const quarter = (from: string) => (from ? `Q${Math.floor((+from.slice(5, 7) - 1) / 3) + 1}-${from.slice(0, 4)}` : '');
+
+/** 2023–2025 layout: "C- Current WP amount", "Period of WP" (dates in the next cells), "B – … WP Amount" and "B'' – Spending amount according to WP" for the previous plan. No WP numbers. */
+function readOldSheet(sheet: string, rows0: string[][]): TableSheet | null {
+  const rows = rows0.map((r) => r.slice(0, 9));
+  const find = (re: RegExp) => rows.find((r) => re.test(r[0] ?? '') || re.test(r[1] ?? ''));
+  const val = (r?: string[]) => { if (!r) return null; const v = r.slice(2).find((c) => /^-?[\d.,]+$/.test((c ?? '').trim())); return v == null ? null : amt(v); };
+  const cur = find(/Current WP amount/i);
+  if (!cur) return null;
+  let [from, to] = two(cur[0] ?? '');
+  const per = find(/^Period of WP/i);
+  if (!from && per) { const ds = per.slice(1).map(xdate).filter(Boolean); if (ds.length >= 2) [from, to] = ds; else [from, to] = two(per.slice(1).join(' ')); }
+  if (!from) return null;
+  const label = per?.find((c) => /^Q\d/i.test((c ?? '').trim()))?.trim() || quarter(from);
+  const bAmt = rows.find((r) => /^B\s*[–-]/.test(r[0] ?? '') && /WP Amount/i.test(r[0] ?? '')), bSp = find(/^B''/);
+  let prev: TableSheet['prev'];
+  if (bAmt) { const [pf, pt] = two(bAmt[0]); const q = /(Q\d)\s*-\s*(\d{4})|(\d{4})\s*-\s*(Q\d)/i.exec(bAmt[0]); const pl = q ? `${(q[1] ?? q[4]).toUpperCase()}-${q[2] ?? q[3]}` : quarter(pf);
+    if (pf) prev = { no: 0, label: pl, from: pf, to: pt, planned: val(bAmt) ?? 0, spent: val(bSp) == null ? null : r2(val(bSp)!), sc: null }; }
+  const text = (re: RegExp) => { const c = rows.flat().find((x) => re.test(x ?? '')) ?? ''; return c.replace(re, '').replace(/^[\s:-]+/, '').trim(); };
+  const tot = val(find(/^Total Budget/i));
+  return { sheet, title: (rows[0]?.find(Boolean) ?? '').split('\n')[0].trim(), no: 0, label, from, to, planned: val(cur) ?? 0, deduct: null, total: tot, prev,
+    notes: text(/^FOMA (NOTES|Comments)[^:]*:?/i), teams: text(/^Project Teams?\s*-\s*Comments:?/i), hoo: text(/^Head of Operation'?s?\s*-?\s*'?s?\s*Comments:?/i) };
 }

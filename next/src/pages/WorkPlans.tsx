@@ -3,10 +3,10 @@ import { filtered, get, go, updateProject, useStore } from '../data/store';
 import { enrichExtraction } from '../domain/extraction';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
-import { carriedFrom, followUp, matchProject, mergeTable, readTableSheet, type TableSheet } from '../domain/workplan';
+import { wpName, carriedFrom, followUp, matchProject, mergeTable, readTableSheet, type TableSheet } from '../domain/workplan';
 import { TODAY } from '../today';
 import { date, full, pct, short } from '../ui/format';
-import { verdict } from '../ui/WorkPlan';
+import { verdict, wpSheet } from '../ui/WorkPlan';
 import { readXlsx } from '../ui/xlsx';
 import { download } from '../ui/xlsxwrite';
 import { latestWorkbook } from './FinancialReport';
@@ -65,11 +65,16 @@ export function WorkPlans() {
         <div class="card-h"><div><h2>Work Plan follow-up — all projects</h2><p>Current Work Plan of each project, the delivery of the previous one and whether the plan keeps pace with the activity budget left · click a row to open the project</p></div>
           <div class="tools" style={{ display: 'flex', gap: '8px' }}>
             <label class="btn">⬆ Import follow-up table<input type="file" accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) void load(f); (e.target as HTMLInputElement).value = ''; }} /></label>
-            <button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
-        {prev && <div class="wp-sec" style={{ paddingBottom: '12px' }}><h3>{prev.file}: {prev.items.length} sheets in the 2026 layout · {prev.items.filter((i) => i.p).length} matched to a project</h3>
+            <button class="btn" onClick={xlsx}>⤓ Excel</button>
+            <button class="btn primary" title="Every project's current follow-up in the FOMA table layout, one sheet per project" onClick={() => {
+              if (!R.length) return;
+              const used = new Set<string>();
+              download(`WP-follow-up-all-projects-${today}.xlsx`, R.map((r) => { const sh = wpSheet(r.p, r.f); let n = `${r.p.bh ? `BH${r.p.bh.replace(/\D/g, '')}` : r.p.code} - ${wpName(r.wp)}`.slice(0, 31).replace(/[\\/?*:[\]]/g, '-'); while (used.has(n)) n = n.slice(0, 29) + Math.random().toString(36).slice(2, 4); used.add(n); return { ...sh, name: n }; }));
+            }}>⬇ All follow-ups</button></div></div>
+        {prev && <div class="wp-sec" style={{ paddingBottom: '12px' }}><h3>{prev.file}: {prev.items.length} WP sheets (2023–2026 layouts) · {prev.items.filter((i) => i.p).length} matched to a project</h3>
           <table class="wp-t"><thead><tr><th>Sheet</th><th>WP</th><th>Period</th><th class="num">Planned</th><th>Previous WP (C · D · E)</th><th>Project</th></tr></thead>
-            <tbody>{prev.items.map((i) => <tr class={i.p ? '' : 'warning'}><td>{i.t.sheet}</td><td>WP {i.t.no}</td><td>{date(i.t.from)} – {date(i.t.to)}</td><td class="num">{full(i.t.planned)}</td>
-              <td class="muted">{i.t.prev ? `WP ${i.t.prev.no}: ${full(i.t.prev.planned)} · ${i.t.prev.spent == null ? '—' : full(i.t.prev.spent)} · ${i.t.prev.sc == null ? '—' : full(i.t.prev.sc)}` : 'first WP'}</td>
+            <tbody>{prev.items.map((i) => <tr class={i.p ? '' : 'warning'}><td>{i.t.sheet}</td><td>{i.t.no ? `WP ${i.t.no}` : `WP ${i.t.label}`}</td><td>{date(i.t.from)} – {date(i.t.to)}</td><td class="num">{full(i.t.planned)}</td>
+              <td class="muted">{i.t.prev ? `${i.t.prev.no ? `WP ${i.t.prev.no}` : i.t.prev.label}: ${full(i.t.prev.planned)} · ${i.t.prev.spent == null ? '—' : full(i.t.prev.spent)} · ${i.t.prev.sc == null ? '—' : full(i.t.prev.sc)}` : 'first WP'}</td>
               <td>{i.p ? `${i.p.bh ? `${i.p.bh} · ` : ''}${i.p.name}` : <span class="badge warning">no project found</span>}</td></tr>)}</tbody></table>
           <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}><button class="btn primary" disabled={!prev.items.some((i) => i.p)} onClick={apply}>Add to the projects</button><button class="btn ghost" onClick={() => setPrev(null)}>Cancel</button>
             <span class="muted" style={{ fontSize: '12px', alignSelf: 'center' }}>Existing Work Plans with the same period are updated; D and E become the recorded delivery of the previous WP; the table's staff + office deduction is kept when the project has none.</span></div></div>}
@@ -77,7 +82,7 @@ export function WorkPlans() {
           <thead><tr><th>Project</th><th>WP</th><th class="num">Planned</th><th>Previous WP delivered</th><th>Activity used vs time</th><th class="num">Left after WP</th><th class="num">Carried</th><th>Status</th></tr></thead>
           <tbody>{R.map((r) => <tr class="click" style={{ cursor: 'pointer', borderLeft: `4px solid var(--${r.V.level === 'serious' ? 'critical' : r.V.level})` }} onClick={() => go(`project/${r.p.id}`)}>
             <td><b>{r.p.bh ? `${r.p.bh} · ` : ''}</b>{r.p.name}{!r.hasReport && <div class="muted" style={{ fontSize: '11px' }}>no report loaded — figures from the follow-up table</div>}</td>
-            <td>WP {r.wp.no}<div class="muted" style={{ fontSize: '11px' }}>{r.wp.from ? `${date(r.wp.from)} – ${date(r.wp.to)}` : ''}</div></td>
+            <td>{wpName(r.wp)}<div class="muted" style={{ fontSize: '11px' }}>{r.wp.from ? `${date(r.wp.from)} – ${date(r.wp.to)}` : ''}</div></td>
             <td class="num">{full(r.wp.planned)}</td>
             <td><div class="wp-mini"><i class={tone(r.dPct)} style={{ width: `${Math.min(100, (r.dPct ?? 0) * 100)}%` }} /></div><span class={tone(r.dPct)}>{r.dPct == null ? '—' : pct(r.dPct)}</span><span class="muted"> spent · {r.ePct == null ? '—' : pct(r.ePct)} S&C</span></td>
             <td>{r.hasReport ? <><div class="wp-mini two"><i style={{ width: `${Math.min(100, r.V.used * 100)}%` }} /><b style={{ left: `${Math.min(100, r.V.timeUsed * 100)}%` }} /></div><span class="muted">{pct(r.V.used)} used · {pct(r.V.timeUsed)} time</span></> : <span class="muted">—</span>}</td>
