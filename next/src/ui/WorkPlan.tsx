@@ -46,6 +46,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <div class="seg">{plans.map((x) => <button aria-pressed={x.id === wp.id} onClick={() => setSel(x.id)}>WP {x.no}</button>)}</div>
         {picker}<button class="btn" onClick={add}>+ Next Work Plan</button>
         <button class="btn primary" onClick={() => { if (exportOk(p, 'the Work Plan follow-up')) download(`${p.bh ?? p.code}-WP${wp.no}-follow-up.xlsx`, [wpSheet(p, f), ...wpExtraSheets(wp, plans, wb)]); }}>⬇ WP follow-up</button>
+        <button class="btn" onClick={() => window.print()}>🖨 Print</button>
         <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && prompt('Admin password') === 'MSK') { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
       </div>
       {msg && <p class="muted" style={{ padding: '0 20px 8px' }}>{msg}</p>}
@@ -56,12 +57,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <label title="Leave empty to use the budget: staff salaries (1.1.1 local team, 1.2.1 HQ team) + heading 4 local office">Staff salaries + office costs (€) <input type="number" step="0.01" placeholder={(f.staff + f.office).toFixed(2)} value={p.wpDeduct ?? ''} onChange={(e) => { const v = (e.target as HTMLInputElement).value; updateProject(p.id, { wpDeduct: v === '' ? undefined : Number(v) }); }} /></label>
         <label>Planned activity expenditure (€) <input type="number" step="0.01" value={wp.planned || ''} onChange={(e) => upd({ planned: Number((e.target as HTMLInputElement).value) || 0 })} /></label>
       </div>
-      <div class="wp-kpi">
-        <div class={`k ${tone(r(f.sc, f.activity), 0, 0)}`}><span>Activity spent & committed</span><b>{pct(r(f.sc, f.activity) ?? 0, 1)}</b><i style={{ width: `${Math.min(100, (r(f.sc, f.activity) ?? 0) * 100)}%` }} /></div>
-        <div class={`k ${tone(dPct, 0.8, 0.5)}`}><span>Previous WP delivered (spent)</span><b>{dPct == null ? '—' : pct(dPct)}</b><i style={{ width: `${Math.min(100, (dPct ?? 0) * 100)}%` }} /></div>
-        <div class={`k ${tone(ePct, 0.8, 0.5)}`}><span>Previous WP spent & committed</span><b>{ePct == null ? '—' : pct(ePct)}</b><i style={{ width: `${Math.min(100, (ePct ?? 0) * 100)}%` }} /></div>
-        <div class={`k ${f.remaining < 0 ? 'serious' : ''}`}><span>Remaining after this WP · {f.remainingMonths} months</span><b>{full(f.remaining)}</b><i style={{ width: `${Math.max(0, Math.min(100, (remPct ?? 0) * 100))}%` }} /></div>
-      </div>
+      <WpHero p={p} f={f} dPct={dPct} ePct={ePct} remPct={remPct} />
       <table class="wp-t">
         <thead><tr><th colSpan={4}>{p.bh ? `${p.bh} — ` : ''}{p.name}<br /><b>WP No:{wp.no} — {date(wp.from)} / {date(wp.to)}</b></th></tr></thead>
         <tbody>
@@ -86,13 +82,64 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       <WpCompare plans={plans} wb={wb} sel={wp.id} onPick={setSel} />
       {wp.acts?.length ? <WpDetail wp={wp} plans={plans} wb={wb} /> : null}
       <div class="wp-notes">
-        <label class="n1">FOMA notes<textarea rows={3} value={wp.notes ?? ''} onChange={(e) => upd({ notes: (e.target as HTMLTextAreaElement).value })} /></label>
+        <label class="n1"><span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>FOMA notes<button type="button" class="btn ghost" style={{ padding: '2px 8px', fontSize: '12px' }} title="Draft the note from the figures, carried-over activities and lines above what is left" onClick={() => { const t = fomaDraft(f, wp, plans, wb); if (!wp.notes || confirm('Replace the FOMA notes with a draft from the figures?')) upd({ notes: t }); }}>✎ Draft from figures</button></span><textarea rows={3} value={wp.notes ?? ''} onChange={(e) => upd({ notes: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Project Teams — comments<textarea rows={3} value={wp.teams ?? ''} onChange={(e) => upd({ teams: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Head of Operations — comments<textarea rows={3} value={wp.hoo ?? ''} onChange={(e) => upd({ hoo: (e.target as HTMLTextAreaElement).value })} /></label>
       </div>
       <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except staff salaries (1.1.1 local team, 1.2.1 HQ team), heading 4 (local office) and 10 (administrative costs); consultants and per diems count as activity. D sums the invoices and GL entries dated within the previous WP; E adds the open balance of POs raised in those dates.</p>
     </div>
   );
+}
+
+/** Verdict on the WP: delivery of the previous plan, and whether this plan keeps pace with what is left. */
+export function verdict(f: WpFollowUp, dPct: number | null) {
+  const need = f.remainingMonths > 0 ? (f.activity - f.sc) / (f.remainingMonths + Math.max(1, (Date.parse(f.wp.to) - Date.parse(f.wp.from)) / 86400000 / 30)) : 0;
+  const wpMonth = f.wp.planned / Math.max(1, Math.round((Date.parse(f.wp.to) - Date.parse(f.wp.from)) / 86400000 / 30));
+  const timeUsed = f.duration ? f.elapsed / f.duration : 0, used = f.activity ? f.sc / f.activity : 0;
+  const flags: string[] = [];
+  if (f.remaining < 0) flags.push('plan exceeds the activity budget left');
+  if (dPct != null && dPct < 0.5) flags.push(`previous WP delivered only ${pct(dPct)}`);
+  if (used + 0.15 < timeUsed) flags.push(`${pct(used)} of the activity budget used against ${pct(timeUsed)} of time`);
+  if (need > 0 && wpMonth < need * 0.6) flags.push(`plan per month (${full(wpMonth)}) is well below the pace needed to use the budget (${full(need)})`);
+  const level = f.remaining < 0 || flags.length >= 2 ? 'serious' : flags.length ? 'warning' : 'good';
+  return { level, label: level === 'good' ? 'On track' : level === 'warning' ? 'Watch' : 'At risk', flags, need, wpMonth, timeUsed, used } as const;
+}
+
+function Ring({ v, label, sub, color }: { v: number; label: string; sub?: string; color: string }) {
+  const R = 34, C = 2 * Math.PI * R, x = Math.max(0, Math.min(1, v));
+  return <div class="wp-ring"><svg viewBox="0 0 84 84" width="84" height="84" role="img" aria-label={`${label} ${pct(v)}`}><circle cx="42" cy="42" r={R} fill="none" stroke="var(--border)" stroke-width="8" /><circle cx="42" cy="42" r={R} fill="none" stroke={color} stroke-width="8" stroke-linecap="round" stroke-dasharray={`${C * x} ${C}`} transform="rotate(-90 42 42)" /><text x="42" y="47" text-anchor="middle" font-size="16" font-weight="700" fill="currentColor">{pct(v)}</text></svg><b>{label}</b>{sub && <span>{sub}</span>}</div>;
+}
+
+function WpHero({ p, f, dPct, ePct, remPct }: { p: Project; f: WpFollowUp; dPct: number | null; ePct: number | null; remPct: number | null }) {
+  const V = verdict(f, dPct), c = (t: string) => (t === 'good' ? 'var(--good)' : t === 'warning' ? 'var(--warning)' : t === 'serious' ? 'var(--critical)' : 'var(--c1)');
+  return (
+    <div class="wp-hero">
+      <div class="wp-hero-h">
+        <div><span class="eyebrow">{p.bh ? `${p.bh} · ` : ''}Work Plan follow-up</span><h3>{p.name}</h3>
+          <div class="wp-period">WP No:{f.wp.no} <b>{f.wp.from ? date(f.wp.from) : '—'} → {f.wp.to ? date(f.wp.to) : '—'}</b> · report of {f.asAt ? date(f.asAt) : '—'}</div></div>
+        <div class={`wp-verdict ${V.level}`}><b>{V.label}</b>{V.flags.length ? <ul>{V.flags.map((x) => <li>{x}</li>)}</ul> : <span>Previous plan delivered and this plan keeps pace with the budget left.</span>}</div>
+      </div>
+      <div class="wp-hero-b">
+        <Ring v={V.used} label="Activity budget used" sub={`S&C ${full(f.sc)} of ${full(f.activity)}`} color={V.used + 0.15 < V.timeUsed ? c('warning') : c('')} />
+        <Ring v={V.timeUsed} label="Time elapsed" sub={`${f.elapsed} of ${f.duration} months`} color="var(--muted)" />
+        <Ring v={dPct ?? 0} label={f.prev ? `WP ${f.prev.no} delivered` : 'Previous WP'} sub={f.prev ? `spent ${f.prevSpent == null ? '—' : full(f.prevSpent)} of ${full(f.prev.planned)}` : 'first Work Plan'} color={c(tone(dPct, 0.8, 0.5) || 'x')} />
+        <Ring v={ePct ?? 0} label={f.prev ? `WP ${f.prev.no} spent & committed` : '—'} sub={f.prev && f.prevSc != null ? full(f.prevSc) : ''} color={c(tone(ePct, 0.8, 0.5) || 'x')} />
+        <div class="wp-fig"><span>This WP plans</span><b>{full(f.wp.planned)}</b><span>{full(V.wpMonth)} / month</span>
+          <span>Needed pace {V.need ? `${full(V.need)} / month` : '—'}</span></div>
+        <div class={`wp-fig ${f.remaining < 0 ? 'serious' : ''}`}><span>Left after this WP</span><b>{full(f.remaining)}</b><span>{remPct == null ? '' : pct(remPct)} of activity budget · {f.remainingMonths} months</span></div>
+      </div>
+    </div>);
+}
+
+/** A first draft of the FOMA note from the figures, for the finance officer to check and complete. */
+export function fomaDraft(f: WpFollowUp, wp: WP, plans: WP[], wb: WorkbookSummary): string {
+  const out: string[] = [], carried = carriedFrom(plans, wp), lines = byLine(wp, wb).filter((l) => l.after < 0);
+  if (f.prev) out.push(`Previous WP No:${f.prev.no} (${date(f.prev.from)} / ${date(f.prev.to)}): ${f.prevSpent == null ? '—' : full(f.prevSpent)} spent of ${full(f.prev.planned)} planned${f.prevSpent != null && f.prev.planned ? ` (${pct(f.prevSpent / f.prev.planned)})` : ''}; spent & committed ${f.prevSc == null ? '—' : full(f.prevSc)}.`);
+  if (carried.size) { const A = (wp.acts ?? []).filter((a) => carried.has(a.id)); out.push(`${A.length} activit${A.length === 1 ? 'y' : 'ies'} (${A.map((a) => a.id).join(', ')}), approximately ${full(A.reduce((s, a) => s + a.amount, 0))}, ${A.length === 1 ? 'was' : 'were'} included in the earlier Work Plan(s) and transferred to WP No:${wp.no}.`); }
+  if (wp.snap) { const R = rollover(wp.snap, wb); if (R.from !== R.to && R.open) out.push(`Of ${full(R.open)} committed when WP No:${wp.no} was prepared, ${full(R.spentSince)} has been spent, ${full(R.stillOpen)} is still open and ${full(R.released)} was released.`); }
+  for (const l of lines) out.push(`Line ${l.line}${l.description ? ` (${l.description})` : ''}: WP plan ${full(l.planned)} exceeds the ${full(l.left)} left on the line by ${full(-l.after)}.`);
+  out.push(`Remaining activity budget after this WP: ${full(f.remaining)} (${f.activity ? pct(f.remaining / f.activity) : '—'}) for ${f.remainingMonths} months.`);
+  return out.join('\n\n');
 }
 
 const KIND = { spent: ['Fully spent', 'good'], partly: ['Partly spent', 'warning'], open: ['Not spent yet', 'serious'], released: ['Released / cancelled', 'neutral'] } as const;
