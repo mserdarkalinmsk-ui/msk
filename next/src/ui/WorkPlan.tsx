@@ -1,4 +1,6 @@
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
+import { downloadDocx } from './docxwrite';
+import { useStore } from '../data/store';
 import { updateProject } from '../data/store';
 import { byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
@@ -17,6 +19,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
   const [sel, setSel] = useState<string>(plans.at(-1)?.id ?? '');
   const save = (list: WP[]) => updateProject(p.id, { workPlans: list });
   const [msg, setMsg] = useState('');
+  const box = useRef<HTMLDivElement>(null), brand = useStore((x) => x.ledger.brand);
   const importFile = async (file: File) => {
     const x = await readXlsx(await file.arrayBuffer());
     const got = x.sheets.map((n) => readWorkPlan(x.read(n))).find(Boolean);
@@ -39,13 +42,21 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
   const upd = (patch: Partial<WP>) => save(plans.map((x) => (x.id === wp.id ? { ...x, ...patch } : x)));
   const dPct = r(f.prevSpent, f.prev?.planned ?? 0), ePct = r(f.prevSc, f.prev?.planned ?? 0), remPct = r(f.remaining, f.activity);
   const Row = ({ k, label, a, b, c, cls }: { k?: string; label: string; a?: string; b?: string; c?: string; cls?: string }) =>
-    <tr class={cls}><th>{k && <span class="wp-k">{k}</span>}{label}</th><td class="num">{a ?? ''}</td><td class="num">{b ?? ''}</td><td class="num">{c ?? ''}</td></tr>;
+    <tr class={cls}><th>{k && <span class="wp-k">{k} – </span>}{label}</th><td class="num">{a ?? ''}</td><td class="num">{b ?? ''}</td><td class="num">{c ?? ''}</td></tr>;
   return (
-    <div class="wp">
+    <div class="wp" ref={box}>
       <div class="tools" style={{ padding: '0 20px 12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div class="seg">{plans.map((x) => <button aria-pressed={x.id === wp.id} onClick={() => setSel(x.id)}>WP {x.no}</button>)}</div>
         {picker}<button class="btn" onClick={add}>+ Next Work Plan</button>
         <button class="btn primary" onClick={() => { if (exportOk(p, 'the Work Plan follow-up')) download(`${p.bh ?? p.code}-WP${wp.no}-follow-up.xlsx`, [wpSheet(p, f), ...wpExtraSheets(wp, plans, wb)]); }}>⬇ WP follow-up</button>
+        <button class="btn" title="Follow-up table, activities not carried out and the notes as an editable Word document" onClick={() => {
+          if (!exportOk(p, 'the Work Plan follow-up') || !box.current) return;
+          const d = document.createElement('div'), esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
+          const main = box.current.querySelector('table.wp-t'), prevT = box.current.querySelector('.wp-prev table'), prevH = box.current.querySelector('.wp-prev summary')?.textContent ?? '';
+          const note = (h: string, t?: string) => `<h3>${esc(h)}</h3>${(t ?? '').split('\n').map((x) => `<p>${esc(x)}</p>`).join('') || '<p></p>'}`;
+          d.innerHTML = `<h1>${esc(`${p.bh ? `${p.bh} - ` : ''}${p.name}`)}</h1><h2>${esc(`WP No:${wp.no} - ${date(wp.from)} / ${date(wp.to)}`)}</h2>${main?.outerHTML ?? ''}${prevT ? `<h2>${esc(prevH)}</h2>${prevT.outerHTML}` : ''}${note('FOMA notes', wp.notes)}${note('Project Teams - Comments', wp.teams)}${note('Head of Operations - Comments', wp.hoo)}`;
+          downloadDocx(`${p.bh ?? p.code}-WP${wp.no}-follow-up.docx`, d, `WP ${wp.no} follow-up`, [brand?.logo, brand?.logo2]);
+        }}>⬇ Word</button>
         <button class="btn" onClick={() => window.print()}>🖨 Print</button>
         <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && prompt('Admin password') === 'MSK') { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
       </div>
@@ -202,11 +213,12 @@ function WpPrevActs({ wp, plans }: { wp: WP; plans: WP[] }) {
   if (!rows.length) return <div class="wp-sec"><p class="muted">Import the WorkPlan file of WP {prev.no} to see which of its planned activities were not carried out.</p></div>;
   const notDone = rows.filter((r) => r.fate !== 'done'), amt = (k: string) => rows.filter((r) => r.fate === k).reduce((s, r) => s + r.a.amount, 0);
   return (
-    <details class="wp-sec" open><summary>Planned in WP {prev.no} — {notDone.length} of {rows.length} activities not shown as done · carried {full(amt('carried'))} · postponed {full(amt('postponed'))} · cancelled {full(amt('cancelled'))} · to check {full(amt('unknown'))}</summary>
+    <details class="wp-sec wp-prev" open><summary>Planned in WP {prev.no} — {notDone.length} of {rows.length} activities not shown as done · carried {full(amt('carried'))} · postponed {full(amt('postponed'))} · cancelled {full(amt('cancelled'))} · to check {full(amt('unknown'))}</summary>
       <table class="wp-t"><thead><tr><th>Activity ID</th><th>Activity</th><th class="num">Planned in WP {prev.no}</th><th class="num">In WP {wp.no}</th><th>What happened</th><th>Status noted</th></tr></thead>
         <tbody>{rows.map((r) => <tr><td class="num">{r.a.id}</td><td>{r.a.name}</td><td class="num">{full(r.a.amount)}</td><td class="num">{r.now ? full(r.now.amount) : '—'}</td>
           <td><span class={`badge ${FATE[r.fate][1]}`}>{FATE[r.fate][0]}</span></td><td class="muted" style={{ fontSize: '12px', maxWidth: '360px' }}>{r.note}</td></tr>)}</tbody></table>
-      <p class="muted" style={{ fontSize: '12px' }}>"Not in this WP — check": planned in WP {prev.no}, not repeated in WP {wp.no} and no status given — confirm with the project team whether it was carried out.</p></details>);
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}><button class="btn" onClick={() => download(`WP${prev.no}-activities-not-done.xlsx`, [{ name: `WP ${prev.no} not done`, widths: [12, 60, 16, 16, 30, 60], rows: [['Activity ID', 'Activity', `Planned in WP ${prev.no}`, `In WP ${wp.no}`, 'What happened', 'Status noted'].map((v) => ({ v, st: 'head' as const })), ...rows.map((r) => [r.a.id, r.a.name, { v: r.a.amount, st: 'money' as const }, { v: r.now?.amount ?? '', st: 'money' as const }, FATE[r.fate][0], r.note])] }])}>⬇ This list (Excel)</button>
+      <p class="muted" style={{ fontSize: '12px', margin: 0 }}>"Not in this WP — check": planned in WP {prev.no}, not repeated in WP {wp.no} and no status given — confirm with the project team whether it was carried out.</p></div></details>);
 }
 
 function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
