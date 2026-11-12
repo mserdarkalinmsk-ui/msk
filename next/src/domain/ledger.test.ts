@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseWorkbook } from './workbook';
-import { findErrors, spendBetween } from './ledger';
+import { findErrors, spendBetween, spendByYear } from './ledger';
 import { organisedSheets } from './organised';
 import type { Project } from './types';
 
@@ -45,6 +45,17 @@ describe('dated ledger of a system extraction', () => {
     expect(R.lines.map((l) => [l.line, l.description, l.amount])).toEqual([['1.1.1', 'Expert', 5000], ['5.7', 'Events', 12000]]);
     expect(R.months).toEqual([{ month: '2026-02', amount: 12000 }, { month: '2026-03', amount: 5000 }]);
     expect(spendBetween(wb.entries!, '', '').total).toBe(wb.entries!.reduce((a, e) => a + e.amount, 0));
+  });
+  it('splits each line\'s spending by year with units: months on staff POs, spent share elsewhere', () => {
+    const Y = spendByYear(wb.entries!, wb);
+    expect(Y.years).toEqual(['2026', '2027']);
+    const staff = Y.lines.find((l) => l.code === '1.1.1')!;
+    expect(staff.years['2026'].amount).toBe(5400);
+    expect(staff.years['2027'].amount).toBe(200);
+    expect(staff.amount).toBe(5600);
+    const ev = Y.lines.find((l) => l.code === '5.7')!;
+    expect(ev.years['2026'].units).toBe(1.2);
+    expect(Y.lines.reduce((a, l) => a + l.amount, 0)).toBe(wb.entries!.filter((e) => e.line && e.line !== '0' && e.line !== '10').reduce((a, e) => a + e.amount, 0));
   });
   it('finds the entries that look entered in error, and does not flag split POs', () => {
     const F = findErrors(wb.entries!, { budget, start: '2026-01-01', end: '2027-06-30', bh: '5260', pos: wb.pos });

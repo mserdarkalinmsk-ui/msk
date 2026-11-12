@@ -900,3 +900,8 @@ span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);fo
 .rev-callout{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:12px 16px;border-radius:12px;border:1px solid;margin:4px 0 8px;font-size:13px}
 .rev-callout.serious{border-color:var(--critical);background:color-mix(in srgb,var(--critical) 7%,transparent)}.rev-callout.warning{border-color:var(--warning);background:color-mix(in srgb,var(--warning) 8%,transparent)}
 .rev-callout ul{margin:6px 0 0;padding-left:18px}.rev-actions{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.yr-table th.c{text-align:center}.yr-table th,.yr-table td{white-space:nowrap}.yr-table td:nth-child(2){white-space:normal;min-width:220px}
+.yr-table .yr-b{background:color-mix(in srgb,#f5c400 10%,transparent)}.yr-table .yr-t{background:color-mix(in srgb,var(--c1) 7%,transparent)}
+.yr-table .yr-n,.yr-table .yr-u{color:var(--muted)}.yr-table tr.yr-h td{background:color-mix(in srgb,var(--c1) 12%,transparent);padding-top:8px}
+.yr-table tr.yr-sub td{border-top:1px solid var(--border);background:color-mix(in srgb,var(--text) 4%,transparent)}.yr-table tr.yr-tot td{border-top:2px solid var(--text);font-size:14px}
+.yr-table tr.yr-over td{color:var(--critical)}.yr-table td.neg{color:var(--critical);font-weight:600}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { go } from '../data/store';
-import { compareBudget, findErrors, presets, spendBetween, type Finding } from '../domain/ledger';
+import { compareBudget, findErrors, presets, spendBetween, spendByYear, type Finding } from '../domain/ledger';
 import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
 import type { Entry, WorkbookSummary } from '../domain/workbook';
@@ -19,6 +19,7 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
   const P = presets(TODAY);
   const [from, setFrom] = useState(P.find((x) => x.key === 'y')!.from), [to, setTo] = useState(P.find((x) => x.key === 'y')!.to);
   const [line, setLine] = useState('');
+  const [byYear, setByYear] = useState(false);
   const leaf = wb.lines.filter((l) => l.leaf);
   const R = useMemo(() => spendBetween(E, from, to, budgetRefs(wb.lines)), [E, from, to, wb.lines]);
   const sc = useMemo(() => new Map(leaf.map((l) => [l.code, l.sc ?? 0])), [wb]);
@@ -51,9 +52,12 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
     { key: 'd', label: 'Description', width: 300, value: (e) => e.description },
     { key: 'a', label: 'Amount', width: 120, align: 'r', sum: true, format: full, value: (e) => e.amount },
   ];
+  const toggle = <div class="seg"><button aria-pressed={!byYear} onClick={() => setByYear(false)}>Date range</button><button aria-pressed={byYear} onClick={() => setByYear(true)}>By year</button></div>;
+  if (byYear) return <div class="ledger"><div class="range-bar">{toggle}</div><YearTable p={p} wb={wb} E={E} /></div>;
   return (
     <div class="ledger">
       <div class="range-bar">
+        {toggle}
         <div class="seg wrap">{P.map((x) => <button aria-pressed={from === x.from && to === x.to} onClick={() => { setFrom(x.from); setTo(x.to); }}>{x.label}</button>)}</div>
         <label>From <input type="date" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} /></label>
         <label>To <input type="date" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} /></label>
@@ -133,4 +137,47 @@ function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof com
         <tfoot><tr><td colSpan={2}><b>Total direct costs</b></td><td class="num r"><b>{full(T.b)}</b></td><td class="num r"><b>{full(T.r)}</b></td><td class="num r"><b>{full(T.t)}</b></td><td class="num r"><b>{full(T.s)}</b></td><td class="num r"><b>{full(T.b - T.s)}</b></td><td class="num">{T.b ? Math.round(T.s / T.b * 100) : 0}%</td><td /></tr></tfoot></table>
     </div>
   );
+}
+
+const HEADS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment and supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other', '8': 'Contingency reserve', '10': 'Administrative costs' };
+/** Each line's spending year by year with units, the budget first and the totals last. */
+function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }) {
+  const Y = useMemo(() => spendByYear(E, wb), [E, wb]);
+  const asAt = wb.meta.situationDate || wb.meta.asAt || TODAY.toISOString().slice(0, 10);
+  const years = [...new Set([...Y.years, ...(p.start ? [p.start.slice(0, 4)] : [])])].filter((y) => y <= asAt.slice(0, 4)).sort();
+  const yl = (y: string) => (y === asAt.slice(0, 4) && asAt.slice(5) !== '12-31' ? `${y} (to ${date(asAt)})` : p.start && y === p.start.slice(0, 4) && p.start.slice(5) !== '01-01' ? `${y} (from ${date(p.start)})` : y);
+  const u = (v: number | null | undefined) => (v == null ? '' : v.toLocaleString('en-GB', { maximumFractionDigits: 2 }));
+  const heads = [...new Set(Y.lines.map((l) => l.code.split('.')[0]))];
+  const sum = (L: typeof Y.lines, f: (l: (typeof Y.lines)[number]) => number) => L.reduce((a, l) => a + f(l), 0);
+  const all = Y.lines;
+  const row = (l: (typeof Y.lines)[number]) => { const left = l.budget.cost - l.amount, used = l.budget.cost ? l.amount / l.budget.cost : 0; return (
+    <tr class={left < -0.5 ? 'yr-over' : ''}><td class="num">{l.code}</td><td>{l.description}</td><td class="yr-u">{l.unit}</td>
+      <td class="num r yr-b">{u(l.budget.units)}</td><td class="num r yr-b">{l.budget.rate == null ? '' : full(l.budget.rate)}</td><td class="num r yr-b"><b>{full(l.budget.cost)}</b></td>
+      {years.map((y) => <><td class="num r yr-n">{u(l.years[y]?.units)}</td><td class="num r">{l.years[y] ? full(l.years[y].amount) : '—'}</td></>)}
+      <td class="num r yr-t">{u(l.units)}</td><td class="num r yr-t"><b>{full(l.amount)}</b></td><td class="num r yr-t">{l.budget.units ? u(l.budget.units - l.units) : ''}</td><td class={`num r yr-t ${left < -0.5 ? 'neg' : ''}`}>{full(left)}</td>
+      <td class="yr-t"><div class="minibar" style={{ width: '70px', display: 'inline-block', verticalAlign: 'middle' }}><span style={{ width: `${Math.min(100, used * 100)}%`, background: used > 1 ? 'var(--serious)' : used >= .9 ? 'var(--warn)' : undefined }} /></div> {Math.round(used * 100)}%</td></tr>); };
+  const tot = (L: typeof Y.lines, label: string, cls: string) => { const b = sum(L, (l) => l.budget.cost), a = sum(L, (l) => l.amount); return (
+    <tr class={cls}><td colSpan={5}><b>{label}</b></td><td class="num r yr-b"><b>{full(b)}</b></td>{years.map((y) => <><td /><td class="num r"><b>{full(sum(L, (l) => l.years[y]?.amount ?? 0))}</b></td></>)}<td /><td class="num r yr-t"><b>{full(a)}</b></td><td /><td class="num r yr-t"><b>{full(b - a)}</b></td><td class="yr-t">{b ? `${Math.round((a / b) * 100)}%` : ''}</td></tr>); };
+  const xlsx = () => {
+    const H = (v: string) => ({ v, st: 'head' as const });
+    const h1 = [H('Line'), H('Description'), H('Unit'), H('Budget'), H(''), H(''), ...years.flatMap((y) => [H(yl(y)), H('')]), H('Total spent'), H(''), H('Remaining'), H(''), H('% used')];
+    const h2 = [H(''), H(''), H(''), H('# units'), H('Unit rate'), H('Amount'), ...years.flatMap(() => [H('# units'), H('Amount')]), H('# units'), H('Amount'), H('# units'), H('Amount'), H('')];
+    const n = 6 + years.length * 2, merges = ['D1:F1', ...years.map((_, i) => `${String.fromCharCode(71 + i * 2)}1:${String.fromCharCode(72 + i * 2)}1`), `${String.fromCharCode(65 + n)}1:${String.fromCharCode(66 + n)}1`, `${String.fromCharCode(67 + n)}1:${String.fromCharCode(68 + n)}1`];
+    const rows: unknown[][] = [h1, h2];
+    for (const h of heads) { const L = all.filter((l) => l.code.split('.')[0] === h); rows.push([{ v: `${h}. ${HEADS[h] ?? ''}`, st: 'bold' }]);
+      for (const l of L) rows.push([l.code, l.description, l.unit, l.budget.units ?? '', l.budget.rate ?? '', l.budget.cost, ...years.flatMap((y) => [l.years[y]?.units ?? '', l.years[y]?.amount ?? 0]), l.units, l.amount, l.budget.units ? l.budget.units - l.units : '', l.budget.cost - l.amount, l.budget.cost ? l.amount / l.budget.cost : '']);
+      rows.push([{ v: `Sub-total ${h}`, st: 'bold' }, '', '', '', '', sum(L, (l) => l.budget.cost), ...years.flatMap((y) => ['', sum(L, (l) => l.years[y]?.amount ?? 0)]), '', sum(L, (l) => l.amount), '', sum(L, (l) => l.budget.cost - l.amount), '']); }
+    rows.push([{ v: 'Total', st: 'bold' }, '', '', '', '', sum(all, (l) => l.budget.cost), ...years.flatMap((y) => ['', sum(all, (l) => l.years[y]?.amount ?? 0)]), '', sum(all, (l) => l.amount), '', sum(all, (l) => l.budget.cost - l.amount), '']);
+    download(`${p.bh ?? p.code}-spending-by-year-${asAt}.xlsx`, [{ name: 'By year', rows: rows as never, freeze: 2, merges, money: [4, 5, ...years.map((_, i) => 7 + i * 2), n + 1, n + 3], widths: [9, 46, 12, 9, 11, 14, ...years.flatMap(() => [9, 14]), 9, 14, 9, 14, 8] }]);
+  };
+  return (
+    <>
+      <div class="range-sum"><div><span>Budget</span><b class="num">{full(sum(all, (l) => l.budget.cost))}</b></div>{years.map((y) => <div><span>{yl(y)}</span><b class="num">{full(sum(all, (l) => l.years[y]?.amount ?? 0))}</b></div>)}<div><span>Total spent</span><b class="num">{full(sum(all, (l) => l.amount))}</b></div><span class="grow" style={{ flex: 1 }} /><button class="btn primary" onClick={xlsx}>⬇ Excel</button></div>
+      <div class="table-wrap"><table class="range-lines yr-table">
+        <thead><tr><th rowSpan={2}>Line</th><th rowSpan={2}>Description</th><th rowSpan={2}>Unit</th><th colSpan={3} class="c yr-b">Budget</th>{years.map((y) => <th colSpan={2} class="c">{yl(y)}</th>)}<th colSpan={2} class="c yr-t">Total spent</th><th colSpan={2} class="c yr-t">Remaining</th><th rowSpan={2} class="yr-t">Used</th></tr>
+          <tr><th class="r yr-b"># units</th><th class="r yr-b">Unit rate</th><th class="r yr-b">Amount</th>{years.map(() => <><th class="r"># units</th><th class="r">Amount</th></>)}<th class="r yr-t"># units</th><th class="r yr-t">Amount</th><th class="r yr-t"># units</th><th class="r yr-t">Amount</th></tr></thead>
+        <tbody>{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h"><td colSpan={8 + years.length * 2 + 3}><b>{h}. {HEADS[h] ?? ''}</b></td></tr>{L.map(row)}{tot(L, `Sub-total ${h}`, 'yr-sub')}</>; })}</tbody>
+        <tfoot>{tot(all, 'Total', 'yr-tot')}</tfoot></table></div>
+      <p class="muted" style={{ fontSize: '12px' }}>Units: months invoiced on staff POs, the spent share of the ordered units on other POs, the units of GL entries. Committed amounts are not included.</p>
+    </>);
 }
