@@ -3,7 +3,7 @@ import { STANDARD_LINES } from './forecastTemplate';
 import type { WorkbookSummary } from './workbook';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
-export interface WpActivity { ref: string; id: string; name: string; amount: number; /** status column of the WorkPlan file (done / postponed / cancelled …) */ status?: string; lines: { line: string; text: string; amount: number }[] }
+export interface WpActivity { ref: string; id: string; name: string; amount: number; /** status column of the WorkPlan file (done / postponed / cancelled …) */ status?: string; start?: string; end?: string; lines: { line: string; text: string; amount: number }[] }
 export interface WorkPlan { id: string; no: number; /** name used by older follow-up sheets (e.g. Q3-2024) when the WP had no number */ label?: string; from: string; to: string; planned: number; notes?: string; teams?: string; hoo?: string; /** activities read from the project's WorkPlan workbook */ acts?: WpActivity[]; file?: string; /** the report as it stood when the WP was prepared */ snap?: WpSnap; /** figures recorded in the follow-up table for this WP's own period (D and E of the next WP's sheet) */ rec?: { spent?: number; sc?: number } }
 
 /** Activity spending and commitments frozen at the report the WP was prepared on. */
@@ -84,13 +84,13 @@ export function readWorkPlan(rows: string[][]): { from: string; to: string; bh: 
   if (!title || hi < 0) return null;
   const [, f, t] = /from\s+(\S+)\s+to\s+(\S+)/i.exec(title) ?? [];
   const H = rows[hi], col = (re: RegExp) => H.findIndex((c) => re.test(c ?? ''));
-  const cRef = col(/logframe/i), cId = col(/activity id/i), cName = col(/activity name/i), cLine = col(/budget line/i), cPo = col(/^po/i), cAmt = col(/estimated budget/i), cSt = col(/^status/i);
+  const cRef = col(/logframe/i), cId = col(/activity id/i), cName = col(/activity name/i), cLine = col(/budget line/i), cPo = col(/^po/i), cAmt = col(/estimated budget/i), cSt = col(/^status/i), cS = col(/^start/i), cE = col(/^end/i);
   const bhRow = rows.slice(0, hi).find((r) => r.some((c) => /budget head/i.test(c ?? '')));
   const bh = (bhRow?.slice(bhRow.findIndex((c) => /budget head/i.test(c ?? '')) + 1).find((c) => /\d/.test(c ?? '')) ?? '').trim();
   const acts: WpActivity[] = []; let grand = 0, cur: WpActivity | undefined;
   for (const r of rows.slice(hi + 1)) {
     if (/grand total/i.test(r[0] ?? '')) { grand = amt(r[cAmt]); break; }
-    if (r[cId] && /\d/.test(r[cId])) { cur = { ref: r[cRef] ?? '', id: String(r[cId]).trim(), name: (r[cName] ?? '').trim(), amount: 0, lines: [], ...(cSt >= 0 && r[cSt]?.trim() ? { status: r[cSt].trim() } : {}) }; acts.push(cur); }
+    if (r[cId] && /\d/.test(r[cId])) { cur = { ref: r[cRef] ?? '', id: String(r[cId]).trim(), name: (r[cName] ?? '').trim(), amount: 0, lines: [], ...(cSt >= 0 && r[cSt]?.trim() ? { status: r[cSt].trim() } : {}), ...(cS >= 0 && r[cS]?.trim() ? { start: r[cS].trim() } : {}), ...(cE >= 0 && r[cE]?.trim() ? { end: r[cE].trim() } : {}) }; acts.push(cur); }
     if (!cur) continue;
     if (/total activity/i.test(r[cPo] ?? '')) { cur.amount = amt(r[cAmt]) || cur.lines.reduce((s, l) => s + l.amount, 0); continue; }
     if (r[cLine] && /^\d/.test(r[cLine])) cur.lines.push({ line: r[cLine].trim(), text: r[cPo] ?? '', amount: amt(r[cAmt]) });
@@ -270,4 +270,52 @@ function readOldSheet(sheet: string, rows0: string[][]): TableSheet | null {
   const tot = val(find(/^Total Budget/i));
   return { sheet, title: (rows[0]?.find(Boolean) ?? '').split('\n')[0].trim(), no: 0, label, from, to, planned: val(cur) ?? 0, deduct: null, total: tot, prev,
     notes: text(/^FOMA (NOTES|Comments)[^:]*:?/i), teams: text(/^Project Teams?\s*-\s*Comments:?/i), hoo: text(/^Head of Operation'?s?\s*-?\s*'?s?\s*Comments:?/i) };
+}
+
+/** Checks of a WorkPlan file against itself and the budget: line codes, unit rates, quantity × rate against the amount, dates. */
+export interface WpCheck { level: 'error' | 'warning'; act?: string; line?: string; text: string }
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const TR = ['oca', 'şub', 'mar', 'nis', 'may', 'haz', 'tem', 'ağu', 'eyl', 'eki', 'kas', 'ara'];
+const monthOf = (t: string) => { const x = t.toLowerCase().trim(); const d = dmy(x); if (d) return +d.slice(5, 7); let i = MONTHS.findIndex((m) => x.startsWith(m)); if (i < 0) i = TR.findIndex((m) => x.startsWith(m)); return i < 0 ? 0 : i + 1; };
+export function wpChecks(wp: WorkPlan, wb: WorkbookSummary): WpCheck[] {
+  const out: WpCheck[] = [];
+  const leaf = new Map(wb.lines.filter((l) => l.leaf).map((l) => [l.code, l]));
+  const fm = wp.from ? +wp.from.slice(5, 7) : 0, tm = wp.to ? +wp.to.slice(5, 7) : 0, wrap = fm > tm;
+  const inWp = (m: number) => !m || !fm || (wrap ? m >= fm || m <= tm : m >= fm && m <= tm);
+  for (const a of wp.acts ?? []) {
+    for (const l of a.lines) {
+      if (!l.amount) continue;
+      const L = leaf.get(l.line);
+      if (wb.lines.length && !L) out.push({ level: 'error', act: a.id, line: l.line, text: `line ${l.line} is not a budget line of the project (${full2(l.amount)})` });
+      const m = /([\d.,]+)\s*\*\s*([\d.,]+)/.exec(l.text);
+      if (m) {
+        const q = amt(m[1]), rate = amt(m[2]);
+        if (q && rate && Math.abs(q * rate - l.amount) > 0.5) out.push({ level: 'error', act: a.id, line: l.line, text: `${l.line}: ${m[1]} × ${m[2]} = ${full2(q * rate)} but the amount is ${full2(l.amount)}` });
+        const br = L?.budget.rate;
+        if (br && rate && Math.abs(rate - br) > 0.01 && rate > br) out.push({ level: 'warning', act: a.id, line: l.line, text: `${l.line}: unit rate ${full2(rate)} is above the budgeted ${full2(br)}` });
+      }
+      if (L && L.budget.cost != null && L.sc != null && l.amount > (L.budget.cost - L.sc) + 0.5) out.push({ level: 'warning', act: a.id, line: l.line, text: `${l.line}: ${full2(l.amount)} planned but only ${full2(L.budget.cost - L.sc)} left on the line` });
+    }
+    const sm = a.start ? monthOf(a.start) : 0, em = a.end ? monthOf(a.end) : 0;
+    if (!inWp(sm) || !inWp(em)) out.push({ level: 'warning', act: a.id, text: `dates ${a.start ?? ''} – ${a.end ?? ''} fall outside the WP period` });
+    const sum = r2(a.lines.reduce((s, l) => s + l.amount, 0));
+    if (a.lines.length && Math.abs(sum - a.amount) > 0.5) out.push({ level: 'error', act: a.id, text: `activity total ${full2(a.amount)} differs from the sum of its lines ${full2(sum)}` });
+  }
+  const ids = new Map<string, number>(); for (const a of wp.acts ?? []) ids.set(a.id, (ids.get(a.id) ?? 0) + 1);
+  for (const [id, n] of ids) if (n > 1) out.push({ level: 'warning', act: id, text: `activity ${id} appears ${n} times` });
+  return out;
+}
+const full2 = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** The WP's plan by line against the purchase orders raised since the WP started (activity id in the PO text when given). */
+export interface PoMatch { line: string; planned: number; raised: number; pos: { po: string; description: string; supplier: string; amount: number; date: string }[]; acts: string[] }
+export function poMatch(wp: WorkPlan, wb: WorkbookSummary): PoMatch[] {
+  const M = new Map<string, PoMatch>();
+  for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) { const x = M.get(l.line) ?? { line: l.line, planned: 0, raised: 0, pos: [], acts: [] }; x.planned += l.amount; if (!x.acts.includes(a.id)) x.acts.push(a.id); M.set(l.line, x); }
+  for (const p of wb.pos) {
+    if (!wp.from || p.date < wp.from || (wp.to && p.date > wp.to)) continue;
+    const x = M.get(p.line); if (!x) continue;
+    x.raised += p.sc; x.pos.push({ po: p.po, description: p.description, supplier: p.supplier, amount: r2(p.sc), date: p.date });
+  }
+  return [...M.values()].map((x) => ({ ...x, planned: r2(x.planned), raised: r2(x.raised) })).sort((a, b) => a.line.localeCompare(b.line, undefined, { numeric: true }));
 }

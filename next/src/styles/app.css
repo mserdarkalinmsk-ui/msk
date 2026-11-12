@@ -896,3 +896,4 @@ span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);fo
 .qa-tile.serious{background:linear-gradient(180deg,color-mix(in srgb,var(--critical) 7%,var(--surface)),var(--surface))}.qa-tile.serious .flag{background:var(--critical)}.qa-tile.serious b{color:var(--critical)}
 .qa-tile.warning{background:linear-gradient(180deg,color-mix(in srgb,var(--warning) 8%,var(--surface)),var(--surface))}.qa-tile.warning .flag{background:var(--warning)}
 .qa-tile.good b{color:var(--good)}
+.wp-checks{list-style:none;margin:0;padding:0;display:grid;gap:4px}.wp-checks li{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:6px 8px;border-radius:8px;background:color-mix(in srgb,var(--warning) 6%,transparent)}.wp-checks li.error{background:color-mix(in srgb,var(--critical) 7%,transparent)}
