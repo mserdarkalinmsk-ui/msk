@@ -1,3 +1,4 @@
+import { MyDesk } from './MyDesk';
 import { staffCount, staffSplit } from '../domain/staff';
 import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
@@ -65,6 +66,7 @@ export function Overview() {
   return (
     <>
       <Filters />
+      <MyDesk />
       <section class="hero" aria-label="Key figures">
         <div class="kpi">
           <span class="label">Total budget</span>
