@@ -152,6 +152,8 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   const sum = (L: typeof Y.lines, f: (l: (typeof Y.lines)[number]) => number) => L.reduce((a, l) => a + f(l), 0);
   const all = Y.lines;
   const [showU, setShowU] = useState(true);
+  const [shut, setShut] = useState<string[]>([]);
+  const YC = ['#9db4e8', '#5b86e5', '#2c5fd0', '#1b3f99', '#132c6b', '#0b1c45'];
   const unitShort = (t: string) => { const x = t.toLowerCase(); return /month/.test(x) ? 'mo' : /diem/.test(x) ? 'per diem' : /day/.test(x) ? 'days' : /flight|trip/.test(x) ? 'trips' : /event/.test(x) ? 'events' : /word/.test(x) ? '×250 w' : /item/.test(x) ? 'items' : x.replace(/^per\s+/, ''); };
   const nu = (v: number | null | undefined, unit: string) => (v == null || !showU ? null : <small class="yr-sub-u">{u(Math.round(v * 10) / 10)} {unitShort(unit)}</small>);
   const cell = (amount: number | null | undefined, units: number | null | undefined, unit: string, cls = '') => <td class={`num r ${cls}`}>{amount ? <><span>{full(amount)}</span>{nu(units, unit)}</> : <span class="yr-nil">—</span>}</td>;
@@ -179,9 +181,14 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   return (
     <>
       <div class="range-sum"><div><span>Budget</span><b class="num">{full(sum(all, (l) => l.budget.cost))}</b></div>{years.map((y) => <div><span>{yl(y)}</span><b class="num">{full(sum(all, (l) => l.years[y]?.amount ?? 0))}</b></div>)}<div><span>Total spent</span><b class="num">{full(sum(all, (l) => l.amount))}</b></div><span class="grow" style={{ flex: 1 }} /><label class="muted" style={{ fontSize: '13px', display: 'flex', gap: '6px', alignItems: 'center' }}><input type="checkbox" checked={showU} onChange={(e) => setShowU((e.target as HTMLInputElement).checked)} /> Show units</label><button class="btn primary" onClick={xlsx}>⬇ Excel</button></div>
+      <div class="yr-cards">{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h), b = sum(L, (l) => l.budget.cost), a = sum(L, (l) => l.amount), over = a > b + 0.5;
+        return <button class={`yr-card ${over ? 'over' : ''}`} onClick={() => setShut(heads.filter((x) => x !== h))} title="Show only this heading">
+          <span class="t">{h}. {HEADS[h] ?? ''}</span><b>{b ? `${Math.round((a / b) * 100)}%` : 'no budget'}</b><small>{short(a)} of {short(b)}</small>
+          <div class="yr-stack">{years.map((y, i) => { const v = sum(L, (l) => l.years[y]?.amount ?? 0); return v > 0 ? <span title={`${yl(y)}: ${full(v)}`} style={{ width: `${(v / Math.max(a, b, 1)) * 100}%`, background: YC[Math.min(i, YC.length - 1)] }} /> : null; })}</div></button>; })}
+        <div class="yr-legend">{years.map((y, i) => <span><i style={{ background: YC[Math.min(i, YC.length - 1)] }} />{y}</span>)}{shut.length ? <button class="btn ghost" onClick={() => setShut([])}>Show all headings</button> : null}</div></div>
       <div class="table-wrap yr-wrap"><table class="yr-table">
         <thead><tr><th>Line</th><th>Description</th><th class="r yr-b">Approved budget</th>{years.map((y) => <th class="r">{yl(y)}</th>)}<th class="r yr-t">Total spent</th><th class="r yr-t">Remaining</th><th class="yr-t">Used</th></tr></thead>
-        <tbody>{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h"><td colSpan={6 + years.length}>{h}. {HEADS[h] ?? ''}</td></tr>{L.map(row)}{tot(L, `Sub-total ${h}. ${HEADS[h] ?? ''}`, 'yr-subt')}</>; })}</tbody>
+        <tbody>{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h" onClick={() => setShut(shut.includes(h) ? shut.filter((x) => x !== h) : [...shut, h])} style={{ cursor: 'pointer' }}><td colSpan={6 + years.length}><span class="yr-tw">{shut.includes(h) ? '▸' : '▾'}</span>{h}. {HEADS[h] ?? ''} <span class="yr-hn">{L.length} line{L.length > 1 ? 's' : ''}</span></td></tr>{shut.includes(h) ? null : L.map(row)}{tot(L, `Sub-total ${h}. ${HEADS[h] ?? ''}`, 'yr-subt')}</>; })}</tbody>
         <tfoot>{tot(all, 'Total direct costs', 'yr-tot')}</tfoot></table></div>
       <p class="muted" style={{ fontSize: '12px' }}>Amounts are spent (invoices + GL entries) by posting date; commitments are not included. Units under each amount: months paid on staff POs, the spent share of the ordered units on other POs (so they can be fractional), the units of GL entries.</p>
     </>);
