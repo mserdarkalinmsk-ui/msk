@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
+import { go } from '../data/store';
 import { compareBudget, findErrors, presets, spendBetween, type Finding } from '../domain/ledger';
 import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
@@ -36,7 +37,7 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
     </div>
   );
 
-  if (mode === 'budget') return <BudgetCompare C={C} from={from} to={to} hasBudget={hasBudget} />;
+  if (mode === 'budget') return <BudgetCompare C={C} from={from} to={to} hasBudget={hasBudget} p={p} />;
   if (mode === 'checks') return <Checks F={F} onSave={() => save(false)} />;
 
   const rows = line ? R.rows.filter((e) => (e.line || '—') === line) : R.rows;
@@ -101,13 +102,28 @@ function Checks({ F, onSave }: { F: Finding[]; onSave: () => void }) {
 }
 
 const HEAD: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment and supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other', '8': 'Contingency reserve' };
-function BudgetCompare({ C, from, to, hasBudget }: { C: ReturnType<typeof compareBudget>; from: string; to: string; hasBudget: boolean }) {
+function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof compareBudget>; from: string; to: string; hasBudget: boolean; p: Project }) {
   if (!hasBudget) return <div class="empty-inline" style={{ padding: '20px' }}><p>No approved budget on file for this project. Add the approved budget (Add documents) and every line is compared here.</p></div>;
   const badge = (st: string) => st === 'over' || st === 'over-flex' ? <span class="badge serious">{st === 'over' ? 'Over budget' : 'Addendum (beyond 25%)'}</span> : st === 'near-flex' ? <span class="badge serious">Near addendum (20–25%)</span> : st === 'within-flex' ? <span class="badge warning">Notification (within 25%)</span> : st === 'high' ? <span class="badge warning">90%+ used</span> : st === 'unbudgeted' ? <span class="badge serious">Not budgeted</span> : <span class="badge good">OK</span>;
   const bar = (u: number) => <div class="minibar" style={{ width: '90px', display: 'inline-block', verticalAlign: 'middle' }}><span style={{ width: `${Math.min(100, u * 100)}%`, background: u > 1 ? 'var(--serious)' : u >= .9 ? 'var(--warn)' : undefined }} /></div>;
   const T = C.lines.reduce((a, l) => ({ b: a.b + l.budget, r: a.r + l.inRange, t: a.t + l.toDate, s: a.s + l.sc }), { b: 0, r: 0, t: 0, s: 0 });
+  const over = C.heads.filter((h) => h.diff > 0.5), spare = C.heads.filter((h) => h.diff < -0.5).sort((a, b) => a.diff - b.diff);
+  const need = over.reduce((a, h) => a + h.diff, 0), addendum = C.heads.some((h) => h.status === 'over-flex' || h.status === 'near-flex');
+  // transfers: cover each heading above its budget from the headings with the most unused budget
+  const moves: { from: string; to: string; amount: number }[] = [];
+  { const left = spare.map((h) => ({ h: h.h, v: -h.diff })); for (const o of over) { let n = o.diff; for (const l of left) { if (n <= 0.005) break; const m = Math.min(n, l.v); if (m > 0.005) { moves.push({ from: l.h, to: o.h, amount: Math.round(m * 100) / 100 }); l.v -= m; n -= m; } } } }
+  const proposal = () => download(`${p.bh ?? p.code}-budget-revision-proposal.xlsx`, [{ name: 'Revision proposal', money: [2, 3, 4, 5], rows: [
+    [{ v: `${p.bh ? `${p.bh} - ` : ''}${p.name} — budget revision proposal (${addendum ? 'addendum' : 'notification'})`, st: 'title' }], [],
+    ['Heading', 'Name', 'Approved', 'Spent + committed', 'Change', 'Revised', '% change', 'Route'].map((v) => ({ v, st: 'head' as const })),
+    ...C.heads.map((h) => { const ch = moves.filter((m) => m.to === h.h).reduce((a, m) => a + m.amount, 0) - moves.filter((m) => m.from === h.h).reduce((a, m) => a + m.amount, 0); return [h.h, HEAD[h.h] ?? '', h.budget, h.sc, ch, h.budget + ch, h.budget ? ch / h.budget : 0, Math.abs(h.budget ? ch / h.budget : 0) > 0.25 ? 'Addendum' : ch ? 'Notification' : '']; }),
+    [], [{ v: 'Transfers', st: 'bold' }], ['From heading', '', 'To heading', 'Amount'].map((v) => ({ v, st: 'head' as const })), ...moves.map((m) => [`${m.from}. ${HEAD[m.from] ?? ''}`, '', `${m.to}. ${HEAD[m.to] ?? ''}`, m.amount])] }]);
   return (
     <div class="ledger">
+      {over.length ? <div class={`rev-callout ${addendum ? 'serious' : 'warning'}`}>
+        <div><b>{addendum ? 'Addendum needed' : 'Notification needed'}</b> — {over.length} heading{over.length > 1 ? 's' : ''} above the approved budget by {full(need)}{spare.length ? `; ${full(Math.min(need, -spare.reduce((a, h) => a + h.diff, 0)))} can come from ${spare.map((h) => `${h.h}. ${HEAD[h.h] ?? ''}`).join(', ')}` : ''}.
+          {moves.length ? <ul>{moves.map((m) => <li>{full(m.amount)} from {m.from}. {HEAD[m.from] ?? ''} → {m.to}. {HEAD[m.to] ?? ''}</li>)}</ul> : null}</div>
+        <div class="rev-actions"><button class="btn primary" onClick={proposal}>⬇ Revision proposal</button><button class="btn" title="Forecast and budget revision in the CoE template, with the notification letter" onClick={() => go(`project/${p.id}/forecast`)}>Prepare the {addendum ? 'addendum' : 'notification'} →</button></div>
+      </div> : null}
       <h3 style={{ margin: '4px 0 0' }}>By heading — 25% flexibility</h3>
       <table class="range-lines"><thead><tr><th>Heading</th><th class="r">Approved budget</th><th class="r">Spent + committed</th><th class="r">Difference</th><th class="r">%</th><th>Status</th></tr></thead>
         <tbody>{C.heads.map((h) => <tr><td>{h.h}. {HEAD[h.h] ?? ''}</td><td class="num r">{full(h.budget)}</td><td class="num r">{full(h.sc)}</td><td class="num r">{h.diff > 0 ? '+' : '−'}{full(Math.abs(h.diff))}</td><td class="num r">{h.budget ? `${h.pct > 0 ? '+' : ''}${(h.pct * 100).toFixed(1)}%` : '—'}</td><td>{badge(h.status)}</td></tr>)}</tbody></table>

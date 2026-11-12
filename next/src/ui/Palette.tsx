@@ -5,6 +5,7 @@ import { lines } from '../domain/calc';
 import { roster } from '../domain/staff';
 import { TODAY } from '../today';
 import { short } from './format';
+import type { Project } from '../domain/types';
 
 interface Cmd { group: string; label: string; hint?: string; run: () => void }
 
@@ -37,7 +38,7 @@ export function Palette() {
     { group: 'Actions', label: 'Theme: dark', run: () => setTheme('dark') },
     { group: 'Actions', label: 'Theme: follow system', run: () => setTheme('auto') },
     ...ROUTES.map((r) => ({ group: 'Go to', label: r.label, run: () => go(r.id) })),
-    ...[['pack', 'Monthly pack'], ['compare', 'Expenditure monitoring'], ['studio', 'Project report'], ['alerts', 'Alerts'], ['changes', 'Month comparison'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results'], ['history', 'Change history'], ['health', 'Data health'], ['commit', 'Commitments (open POs)'], ['units', 'Unit costs benchmark'], ['closure', 'Closure tracker'], ['annual', 'Annual cash plan'], ['deck', 'Presentation']].map(([k, l]) => ({ group: 'Reports', label: l, run: () => go(`reports/${k}`) })),
+    ...[['wp', 'Work Plans'], ['staffpo', 'Staff POs'], ['pack', 'Monthly pack'], ['compare', 'Expenditure monitoring'], ['studio', 'Project report'], ['alerts', 'Alerts'], ['changes', 'Month comparison'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results'], ['history', 'Change history'], ['health', 'Data health'], ['commit', 'Commitments (open POs)'], ['units', 'Unit costs benchmark'], ['closure', 'Closure tracker'], ['annual', 'Annual cash plan'], ['deck', 'Presentation']].map(([k, l]) => ({ group: 'Reports', label: l, run: () => go(`reports/${k}`) })),
     ...countries.map((c) => ({ group: 'Filter by country', label: c.name, run: () => { set((s) => ({ filters: { ...s.filters, country: c.id } })); } })),
     ...projects.map((p) => ({ group: 'Projects', label: `${p.code} — ${p.name}${p.bh ? ` · BH ${p.bh}` : ''}${p.pmm ? ` · PMM ${p.pmm}` : ''}${p.mae ? ` · MAE ${p.mae}` : ''}`, run: () => go(`project/${p.id}`) })),
     ...projects.map((p) => ({ group: 'Import report', label: `Import report for ${p.code}`, run: () => set({ drawer: { kind: 'report', projectId: p.id } }) })),
@@ -45,7 +46,12 @@ export function Palette() {
   // Deep results: budget lines and people, searched only once something is typed.
   const deep: Cmd[] = useMemo(() => {
     const tab = (id: string, t: string) => () => { go(`project/${id}`); setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: t })), 60); };
+    const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+    const SCREENS: [string, string][] = [['wp', 'Work Plan'], ['statement', 'Financial statement'], ['checks', 'Entry checks'], ['budget', 'vs approved budget'], ['bydate', 'Spending by date'], ['pos', 'Open POs'], ['staff', 'Staff'], ['docs', 'Documents'], ['forecast', 'Forecast & revision'], ['reports', 'Reports']];
     return [
+      ...projects.flatMap((p) => SCREENS.map(([k, t]) => ({ group: 'Project screens', label: `${lab(p)} · ${p.code} ${p.name} — ${t}`, run: () => go(`project/${p.id}/${k}`) }))),
+      ...projects.flatMap((p) => (p.workPlans ?? []).map((w) => ({ group: 'Work Plans', label: `${lab(p)} · ${w.label && w.no <= 0 ? `WP ${w.label}` : `WP ${w.no}`} ${w.from} – ${w.to}`, hint: short(w.planned), run: () => go(`project/${p.id}/wp`) }))),
+      ...projects.flatMap((p) => { const w = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).at(-1)?.snapshot?.workbook; return (w?.pos ?? []).map((o) => ({ group: 'Purchase orders', label: `${lab(p)} · PO ${o.po} ${o.line} ${o.description} ${o.supplier}`, hint: short(o.sc), run: () => go(`project/${p.id}/pos`) })); }),
       ...projects.flatMap((p) => lines(p).map((l) => ({ group: 'Budget lines', label: `${p.bh ? `BH ${p.bh}` : p.code} · ${l.code} ${l.description ?? ''}`, hint: short(l.approved ?? 0), run: tab(p.id, 'Budget lines') }))),
       ...projects.flatMap((p) => roster(p, TODAY).map((a) => ({ group: 'Staff', label: `${a.display} — ${a.position} · ${p.bh ? `BH ${p.bh}` : p.code}`, hint: a.status, run: tab(p.id, 'People') }))),
     ];

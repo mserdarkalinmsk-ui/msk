@@ -17,6 +17,7 @@ import { axisMoney, axisX, axisY } from './Overview';
 import { Statement } from '../ui/Statement';
 import { LedgerPanel } from './LedgerPanel';
 import { WorkPlanView } from '../ui/WorkPlan';
+import { reportDiff, type PoChange } from '../domain/reportDiff';
 
 const HEADINGS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment & supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other' };
 
@@ -25,17 +26,19 @@ export function latestWorkbook(p: Project) {
   return R.at(-1);
 }
 
-export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' }) {
+export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' | 'diff' }) {
   const rep = latestWorkbook(p);
   const [extra, setExtra] = useState<PackExtra>('none');
   const brand = useStore((s) => s.ledger.brand), countryName = useStore((s) => s.ledger.countries).find((c) => c.id === p.country)?.name ?? '';
-  const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp'>(v0 ?? 'lines');
+  const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' | 'diff'>(v0 ?? 'lines');
   if (!rep) return (
     <div class="card empty-page"><div><h2>No financial report workbook yet</h2>
       <p>Import the Council of Europe report workbook (REPORT / Forecast / Purchase Orders / Situation Budgétaire…) and everything in it is analysed here.</p>
       <button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import workbook</button></div></div>
   );
   const wb0 = rep.snapshot!.workbook!, wb = wb0.meta.extraction ? enrichExtraction(wb0, p) : wb0, m = wb.meta, E = wb.totals.eligible;
+  const prevRep = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook && r.id !== rep.id).sort(byPeriodThenImport).at(-1);
+  const prevWb = prevRep ? (prevRep.snapshot!.workbook!.meta.extraction ? enrichExtraction(prevRep.snapshot!.workbook!, p) : prevRep.snapshot!.workbook!) : undefined;
   const leaf = wb.lines.filter((l) => l.leaf);
   const heads = Object.keys(HEADINGS).map((h) => {
     const L = leaf.filter((l) => l.code.split('.')[0] === h);
@@ -141,8 +144,8 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
 
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px', alignItems: 'center' }}>
-            <div><h2>{view === 'wp' ? 'Work Plan follow-up' : view === 'budget' ? 'Against the approved budget' : view === 'range' ? 'Spending by date' : view === 'checks' ? 'Entries to check' : view === 'lines' ? 'Financial statement' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
-              <p>{view === 'wp' ? 'Quarterly Work Plan against the activity budget (total less 7% administrative, staff and office costs)' : view === 'budget' ? 'Each line and heading against the approved budget, with the 25% flexibility between headings' : view === 'range' ? 'Every invoice and GL entry between two dates, by budget line' : view === 'checks' ? 'Postings that look entered in error — wrong line, duplicate, above the PO, outside the project' : view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
+            <div><h2>{view === 'diff' ? 'Since the previous report' : view === 'wp' ? 'Work Plan follow-up' : view === 'budget' ? 'Against the approved budget' : view === 'range' ? 'Spending by date' : view === 'checks' ? 'Entries to check' : view === 'lines' ? 'Financial statement' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
+              <p>{view === 'diff' ? 'New, raised, spent, reduced and closed purchase orders, and the change on each line, between the last two reports' : view === 'wp' ? 'Quarterly Work Plan against the activity budget (total less 7% administrative, staff and office costs)' : view === 'budget' ? 'Each line and heading against the approved budget, with the 25% flexibility between headings' : view === 'range' ? 'Every invoice and GL entry between two dates, by budget line' : view === 'checks' ? 'Postings that look entered in error — wrong line, duplicate, above the PO, outside the project' : view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
             <div class="tools"><div class="seg">
               <button aria-pressed={view === 'lines'} onClick={() => setView('lines')}>Statement</button>
               <button aria-pressed={view === 'rates'} onClick={() => setView('rates')}>Units & rates</button>
@@ -150,6 +153,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
               {wb.entries?.length ? <button aria-pressed={view === 'range'} onClick={() => setView('range')}>By date</button> : null}
               {wb.entries?.length ? <button aria-pressed={view === 'budget'} onClick={() => setView('budget')}>vs approved budget</button> : null}
               {wb.entries?.length ? <button aria-pressed={view === 'checks'} onClick={() => setView('checks')}>Entry checks</button> : null}
+              {prevWb ? <button aria-pressed={view === 'diff'} onClick={() => setView('diff')}>vs previous report</button> : null}
               <button aria-pressed={view === 'wp'} onClick={() => setView('wp')}>Work Plan</button>
             </div></div>
           </div>
@@ -157,6 +161,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
           {view === 'wp' && <WorkPlanView p={p} wb={wb} />}
+          {view === 'diff' && prevWb && <DiffView p={p} a={prevWb} b={wb} />}
           {(view === 'range' || view === 'checks' || view === 'budget') && <LedgerPanel p={p} wb={wb} mode={view} />}
         </section>
       </div>
@@ -241,4 +246,30 @@ function fillTotals(p: Project, T: WorkbookSummary['totals']): WorkbookSummary['
   const admin = T.admin ?? (a ? { budget: a.approved ?? 0, actual: a.actual ?? 0, sc: a.spentCommitted ?? (a.actual ?? 0) } : undefined);
   const eligible = T.eligible ?? (T.direct && admin ? { budget: T.direct.budget + (T.contingency?.budget ?? 0) + admin.budget, actual: T.direct.actual + (T.contingency?.actual ?? 0) + admin.actual, sc: T.direct.sc + (T.contingency?.sc ?? 0) + admin.sc } : undefined);
   return { ...T, admin, eligible };
+}
+
+const KIND: Record<PoChange['kind'], [string, string]> = { new: ['New PO', 'warning'], raised: ['Amount raised', 'warning'], spent: ['Invoiced', 'good'], reduced: ['Reduced', 'neutral'], closed: ['Closed', 'neutral'], gone: ['No longer in the report', 'serious'] };
+function DiffView({ p, a, b }: { p: Project; a: WorkbookSummary; b: WorkbookSummary }) {
+  const D = reportDiff(a, b), [k, setK] = useState<'all' | PoChange['kind']>('all');
+  const rows = D.pos.filter((x) => k === 'all' || x.kind === k), n = (x: PoChange['kind']) => D.pos.filter((y) => y.kind === x).length;
+  const xlsx = () => download(`${p.bh ?? p.code}-changes-${D.from}-to-${D.to}.xlsx`, [
+    { name: 'Purchase orders', money: [4, 5, 6, 7], rows: [['PO', 'Line', 'Description', 'Supplier', 'Spent before', 'Spent now', 'S&C before', 'S&C now', 'Change'], ...D.pos.map((x) => [x.po, x.line, x.description, x.supplier, x.spentBefore, x.spentNow, x.scBefore, x.scNow, KIND[x.kind][0]])] },
+    { name: 'Lines', money: [2, 3], rows: [['Line', 'Description', 'Spent change', 'S&C change'], ...D.lines.map((l) => [l.code, l.description, l.spent, l.sc])] }]);
+  return (
+    <div class="ledger">
+      <div class="wp-kpi" style={{ padding: 0 }}>
+        <div class="k"><span>Period</span><b style={{ fontSize: '15px' }}>{D.from ? date(D.from) : '—'} → {D.to ? date(D.to) : '—'}</b></div>
+        <div class="k"><span>Spent since</span><b>{full(D.spent)}</b></div>
+        <div class="k"><span>Spent + committed change</span><b>{full(D.sc)}</b></div>
+        <div class="k"><span>New POs · closed</span><b>{n('new')} · {n('closed')}</b></div>
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div class="seg">{(['all', 'new', 'raised', 'spent', 'reduced', 'closed', 'gone'] as const).map((x) => <button aria-pressed={k === x} onClick={() => setK(x)}>{x === 'all' ? `All ${D.pos.length}` : `${KIND[x][0]} ${n(x)}`}</button>)}</div>
+        <button class="btn" onClick={xlsx}>⬇ Excel</button></div>
+      <table class="range-lines"><thead><tr><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th class="r">Spent before → now</th><th class="r">S&C before → now</th><th>Change</th></tr></thead>
+        <tbody>{rows.map((x) => <tr><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description}</td><td>{x.supplier}</td><td class="num r">{full(x.spentBefore)} → {full(x.spentNow)}</td><td class="num r">{full(x.scBefore)} → {full(x.scNow)}</td><td><span class={`badge ${KIND[x.kind][1]}`}>{KIND[x.kind][0]}</span></td></tr>)}</tbody></table>
+      <h3 style={{ margin: '8px 0 0' }}>By line</h3>
+      <table class="range-lines"><thead><tr><th>Line</th><th>Description</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
+        <tbody>{D.lines.map((l) => <tr><td class="num">{l.code}</td><td>{l.description}</td><td class="num r">{l.spent > 0 ? '+' : ''}{full(l.spent)}</td><td class="num r">{l.sc > 0 ? '+' : ''}{full(l.sc)}</td></tr>)}</tbody></table>
+    </div>);
 }

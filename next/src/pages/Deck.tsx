@@ -1,3 +1,5 @@
+import { wpRow } from './WorkPlans';
+import { wpName } from '../domain/workplan';
 import { OfficeSummary, officeRows } from './OfficeSummary';
 import { ProviderBrief } from './Providers';
 import { providerSummary } from '../domain/providers';
@@ -80,7 +82,8 @@ export function Deck() {
   const PP = pages ? [...P].sort((a, b) => money(b).budget - money(a).budget) : [];
   // Slides: cover, summary, finance, spending, headings, countries, status, results (donor), risks, staff, offices (management),
   // milestones, next steps, one page per project (optional), annex.
-  const of = 12 + (mg ? 0 : 1) + xo + PP.length;
+  const WPR = mg ? P.map(wpRow).filter((x): x is NonNullable<ReturnType<typeof wpRow>> => !!x) : [];
+  const of = 12 + (mg ? 0 : 1) + xo + PP.length + (WPR.length ? 1 : 0);
   deckCtx.n = 1; deckCtx.of = of; deckCtx.notes = notes; deckCtx.aud = aud;
   const gapPp = Math.round((perf - 1) * 100), behind = M.filter((x) => x.now === 'red' || x.now === 'amber');
   const topH = [...H].sort((a, b) => b.approved - a.approved)[0];
@@ -177,6 +180,11 @@ export function Deck() {
           : <p class="sl-empty">No financial reports with budget lines yet.</p>}
         <p class="sl-note">The black tick on each bar marks time elapsed: a bar well short of it is a heading behind schedule.</p>
       </Slide>
+
+      {WPR.length ? <Slide title="Work Plans" msg={`${WPR.filter((r) => r.V.level === 'serious').length} of ${WPR.length} Work Plans at risk`} scope={scope} sub="Current quarter: plan, delivery of the previous Work Plan and pace against the activity budget left">
+        <table class="mini sl-t"><thead><tr><th>Project</th><th>Work Plan</th><th class="r">Planned</th><th class="r">Previous delivered</th><th class="r">Left after WP</th><th>Status</th></tr></thead>
+          <tbody>{WPR.map((r) => <tr><td>{r.p.bh ? `${r.p.bh} · ` : ''}{r.p.name}</td><td>{wpName(r.wp)}</td><td class="r num">{short(r.wp.planned)}</td><td class="r num">{r.dPct == null ? '—' : pct(r.dPct)}</td><td class="r num">{r.hasReport ? short(r.f.remaining) : '—'}</td><td><span class={`badge ${r.V.level}`}>{r.V.label}</span></td></tr>)}</tbody></table>
+      </Slide> : null}
 
       <Slide n={6} of={of} scope={scope} title="Where the money goes" msg={MS.where} notes={NS.where} sub="Budget and spending by country">
         <div class="sl-two">
