@@ -2,7 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import { downloadDocx } from './docxwrite';
 import { useStore } from '../data/store';
 import { updateProject } from '../data/store';
-import { wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -150,6 +150,8 @@ export function fomaDraft(f: WpFollowUp, wp: WP, plans: WP[], wb: WorkbookSummar
   { const { prev, rows } = previousActivities(plans, wp); const nd = rows.filter((r) => r.fate !== 'done' && r.fate !== 'carried');
     if (prev && nd.length) out.push(`${nd.length} activit${nd.length === 1 ? 'y' : 'ies'} planned in WP No:${prev.no} (${nd.map((r) => `${r.a.id}${r.fate === 'cancelled' ? ' cancelled' : r.fate === 'postponed' ? ' postponed' : ''}`).join(', ')}), approximately ${full(nd.reduce((t, r) => t + r.a.amount, 0))}, ${nd.length === 1 ? 'is' : 'are'} not included in WP No:${wp.no}; the project team is requested to confirm ${nd.length === 1 ? 'its' : 'their'} status.`); }
   if (wp.snap) { const R = rollover(wp.snap, wb); if (R.from !== R.to && R.open) out.push(`Of ${full(R.open)} committed when WP No:${wp.no} was prepared, ${full(R.spentSince)} has been spent, ${full(R.stillOpen)} is still open and ${full(R.released)} was released.`); }
+  { const C = wpChecks(wp, wb).filter((c) => c.level === 'error'); if (C.length) out.push(`WorkPlan file to correct: ${C.map((c) => `${c.act ? `activity ${c.act}, ` : ''}${c.text}`).join('; ')}.`); }
+  { const started = wp.from && wp.from <= (wb.meta.situationDate || wb.meta.asAt || ''); const no = poMatch(wp, wb).filter((x) => x.raised < 0.5); if (started && no.length) out.push(`No purchase order raised yet on line${no.length > 1 ? 's' : ''} ${no.map((x) => x.line).join(', ')} (${full(no.reduce((t, x) => t + x.planned, 0))} planned).`); }
   for (const l of lines) out.push(`Line ${l.line}${l.description ? ` (${l.description})` : ''}: WP plan ${full(l.planned)} exceeds the ${full(l.left)} left on the line by ${full(-l.after)}.`);
   out.push(`Remaining activity budget after this WP: ${full(f.remaining)} (${f.activity ? pct(f.remaining / f.activity) : '—'}) for ${f.remainingMonths} months.`);
   return out.join('\n\n');
@@ -221,10 +223,18 @@ function WpPrevActs({ wp, plans }: { wp: WP; plans: WP[] }) {
 }
 
 function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
-  const carried = carriedFrom(plans, wp), L = byLine(wp, wb);
+  const carried = carriedFrom(plans, wp), L = byLine(wp, wb), C = wpChecks(wp, wb), PM = poMatch(wp, wb);
+  const noPo = PM.filter((x) => x.raised < 0.5), started = wp.from && wp.from <= (wb.meta.situationDate || wb.meta.asAt || '');
   const over = L.filter((l) => l.after < 0), unb = L.filter((l) => l.unbudgeted);
   return (
     <>
+      <details class="wp-sec" open><summary>Checks of the WorkPlan file · {C.length ? `${C.filter((c) => c.level === 'error').length} errors · ${C.filter((c) => c.level === 'warning').length} warnings` : 'no problem found'}</summary>
+        {C.length ? <ul class="wp-checks">{C.map((c) => <li class={c.level}><span class={`badge ${c.level === 'error' ? 'serious' : 'warning'}`}>{c.level}</span>{c.act && <b class="num">{c.act}</b>}<span>{c.text}</span></li>)}</ul>
+          : <p class="desk-ok" style={{ padding: '4px 0' }}>✓ Line codes, unit rates, quantity × rate, activity totals and dates all agree</p>}</details>
+      {started ? <details class="wp-sec" open><summary>Plan against purchase orders raised since {date(wp.from)} · {noPo.length} of {PM.length} lines with no PO yet · {full(PM.reduce((t, x) => t + x.raised, 0))} raised of {full(PM.reduce((t, x) => t + x.planned, 0))}</summary>
+        <table class="wp-t"><thead><tr><th>Line</th><th>Activities</th><th class="num">Planned</th><th class="num">POs raised</th><th class="num">%</th><th>Purchase orders</th></tr></thead>
+          <tbody>{PM.map((x) => { const r_ = x.planned ? x.raised / x.planned : 0; return <tr class={x.raised < 0.5 ? 'warning' : ''}><td class="num">{x.line}</td><td class="muted" style={{ fontSize: '12px' }}>{x.acts.join(', ')}</td><td class="num">{full(x.planned)}</td><td class="num">{full(x.raised)}</td>
+            <td class={`num ${r_ >= 0.8 ? 'good' : r_ < 0.3 ? 'serious' : 'warning'}`}>{pct(r_)}</td><td style={{ fontSize: '12px' }}>{x.pos.length ? x.pos.map((o) => <div title={`${o.description} · ${o.supplier}`}>{o.po} · {full(o.amount)} · {date(o.date)}</div>) : <span class="badge warning">no PO yet</span>}</td></tr>; })}</tbody></table></details> : null}
       <details class="wp-sec" open><summary>Activities in WP {wp.no} · {wp.acts!.length} · {full(wp.acts!.reduce((t, a) => t + a.amount, 0))}{carried.size ? ` · ${carried.size} carried over from earlier WPs` : ''}{wp.file ? ` · ${wp.file}` : ''}</summary>
         <table class="wp-t"><thead><tr><th>Ref.</th><th>Activity ID</th><th>Activity</th><th>Budget lines</th><th class="num">Estimated</th><th>Earlier WPs</th></tr></thead>
           <tbody>{[...wp.acts!].sort((a, b) => b.amount - a.amount).map((a) => { const c = carried.get(a.id); return (
@@ -290,6 +300,8 @@ function wpExtraSheets(wp: WP, plans: WP[], wb: WorkbookSummary): SheetSpec[] {
   { const { prev, rows } = previousActivities(plans, wp);
     if (prev && rows.length) out.push({ name: `WP ${prev.no} not done`, widths: [12, 60, 16, 16, 30, 60], rows: [['Activity ID', 'Activity', `Planned in WP ${prev.no}`, `In WP ${wp.no}`, 'What happened', 'Status noted'].map(H),
       ...rows.map((r) => [r.a.id, r.a.name, M(r.a.amount), M(r.now?.amount ?? null), FATE[r.fate][0], r.note])] }); }
+  { const C = wpChecks(wp, wb); if (C.length) out.push({ name: `WP ${wp.no} file checks`, widths: [10, 12, 10, 90], rows: [['Level', 'Activity', 'Line', 'Finding'].map(H), ...C.map((c) => [c.level, c.act ?? '', c.line ?? '', c.text])] }); }
+  { const PM = poMatch(wp, wb); if (PM.length) out.push({ name: `WP ${wp.no} vs POs`, widths: [10, 30, 15, 15, 60], rows: [['Line', 'Activities', 'Planned', 'POs raised', 'Purchase orders'].map(H), ...PM.map((x) => [x.line, x.acts.join(', '), M(x.planned), M(x.raised), x.pos.map((o) => `${o.po} ${o.amount.toFixed(2)}`).join('; ') || 'no PO yet'])] }); }
   if (wp.snap) { const R = rollover(wp.snap, wb);
     out.push({ name: `WP ${wp.no} commitments`, widths: [12, 8, 50, 30, 15, 15, 15, 15, 20], rows: [
       [{ v: `Commitments open when WP ${wp.no} was prepared (report ${wp.snap.asAt ? date(wp.snap.asAt) : ''}) and what became of them by ${R.to ? date(R.to) : ''}`, st: 'title' }], [],
