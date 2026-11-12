@@ -21,7 +21,10 @@ import { StaffBoard } from './People';
 import { StaffPlanCard } from './StaffPlan';
 import { AnnualPlanCard } from './AnnualPlan';
 import { StaffReport } from './StaffReport';
-import { FinancialReport } from './FinancialReport';
+import { FinancialReport, latestWorkbook } from './FinancialReport';
+import { WorkPlanView } from '../ui/WorkPlan';
+import { enrichExtraction } from '../domain/extraction';
+import { QuickAccess } from './MyDesk';
 import { roster, staffCount, staffSplit } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
 import { Cockpit, IdentityCard } from './Cockpit';
@@ -32,22 +35,32 @@ import { download } from '../ui/xlsxwrite';
 import { ProjectForesight } from './Depletion';
 import { Plan, Risks, ResultsDocs } from './ProjectTabs';
 
-const TABS = ['Summary', 'Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
+const TABS = ['Summary', 'Work Plan', 'Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
 /** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
 const GROUPS: { label: string; tabs: Tab[] }[] = [
   { label: 'Summary', tabs: ['Summary'] },
   { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
+  { label: 'Work Plan', tabs: ['Work Plan'] },
   { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
   { label: 'Staff', tabs: ['Staff'] },
   { label: 'Documents', tabs: ['Results & documents', 'History'] },
 ];
 const LABEL: Partial<Record<Tab, string>> = { 'Results & documents': 'Documents' };
 
-export function ProjectPage({ id }: { id: string }) {
+/** Short addresses for the tabs: #/project/<id>/<slug> (from the home page cards and the search). */
+export const SLUG: Record<string, { tab: Tab; view?: 'lines' | 'checks' | 'budget' | 'range' | 'pos' | 'rates' }> = {
+  summary: { tab: 'Summary' }, wp: { tab: 'Work Plan' }, finance: { tab: 'Financial report' }, statement: { tab: 'Financial report', view: 'lines' }, checks: { tab: 'Financial report', view: 'checks' },
+  budget: { tab: 'Financial report', view: 'budget' }, bydate: { tab: 'Financial report', view: 'range' }, pos: { tab: 'Financial report', view: 'pos' }, lines: { tab: 'Budget lines' }, staff: { tab: 'Staff' },
+  docs: { tab: 'Results & documents' }, revision: { tab: 'Revision' }, forecast: { tab: 'Forecast' }, reports: { tab: 'Reports' }, risks: { tab: 'Risks' },
+};
+export const openProject = (id: string, slug = 'summary') => go(`project/${id}/${slug}`);
+
+export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
   const countries = useStore((s) => s.ledger.countries);
-  const [tab, setTab] = useState<Tab>('Summary');
+  const [tab, setTab] = useState<Tab>(SLUG[sub ?? '']?.tab ?? 'Summary');
+  useEffect(() => { const x = SLUG[sub ?? '']; if (x) { setTab(x.tab); scrollTo({ top: 0 }); } }, [sub]);
   const [fc, setFc] = useState(false);
   useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2><p>It may have been deleted.</p><button class="btn" onClick={() => go('projects')}>All projects</button></div></div>;
@@ -93,7 +106,8 @@ export function ProjectPage({ id }: { id: string }) {
       {(() => { const g = GROUPS.find((x) => x.tabs.includes(tab))!; return g.tabs.length > 1 && (
         <div class="subtabs" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{LABEL[t] ?? t}{counts[t] != null && <span class="tab-n">{counts[t]}</span>}</button>)}</div>); })()}
       {tab === 'Summary' && <Summary p={p} />}
-      {tab === 'Financial report' && <FinancialReport p={p} />}
+      {tab === 'Financial report' && <FinancialReport p={p} view={SLUG[sub ?? '']?.view} key={sub} />}
+      {tab === 'Work Plan' && <WorkPlanTab p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
       {tab === 'Reports' && <Reports p={p} />}
       {tab === 'Staff' && (roster(p, TODAY).length ? <><StaffBoard people={roster(p, TODAY)} /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffPlanCard p={p} /><StaffReport projects={[p]} /></div></> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
@@ -118,6 +132,7 @@ function Summary({ p }: { p: Project }) {
   const flags = alerts([p], TODAY);
   return (
     <div class="grid g-12">
+      <QuickAccess p={p} />
       <Cockpit p={p} />
       <Attention flags={flags} pid={p.id} />
       {p.datesTbc && <StatusWords p={p} />}
@@ -306,4 +321,10 @@ function Attention({ flags, pid }: { flags: ReturnType<typeof alerts>; pid: stri
       {rows.length > 0 && <ul class="attn-g">{rows.map((g) => <li class={`sev-${g.sev}`} tabIndex={0} role="button" onClick={() => set({ drawer: { kind: 'alert', projectId: pid, alertKind: g.kind, ids: g.ids } })} onKeyDown={(e) => e.key === 'Enter' && set({ drawer: { kind: 'alert', projectId: pid, alertKind: g.kind, ids: g.ids } })}><span class={`badge ${g.sev}`}>{g.sev}</span><div><b>{g.title}</b><small>{g.detail}</small></div></li>)}</ul>}
     </section>
   );
+}
+
+function WorkPlanTab({ p }: { p: Project }) {
+  const rep = latestWorkbook(p), wb0 = rep?.snapshot?.workbook;
+  if (!wb0) return <div class="card empty-page"><div><h2>Load a financial report first</h2><p>The Work Plan follow-up takes the budgets and spending from the latest report workbook or system extraction.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button></div></div>;
+  return <section class="card" style={{ paddingTop: '16px' }}><WorkPlanView p={p} wb={wb0.meta.extraction ? enrichExtraction(wb0, p) : wb0} /></section>;
 }

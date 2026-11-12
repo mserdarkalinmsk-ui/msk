@@ -25,11 +25,11 @@ export function latestWorkbook(p: Project) {
   return R.at(-1);
 }
 
-export function FinancialReport({ p }: { p: Project }) {
+export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' }) {
   const rep = latestWorkbook(p);
   const [extra, setExtra] = useState<PackExtra>('none');
   const brand = useStore((s) => s.ledger.brand), countryName = useStore((s) => s.ledger.countries).find((c) => c.id === p.country)?.name ?? '';
-  const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp'>('lines');
+  const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp'>(v0 ?? 'lines');
   if (!rep) return (
     <div class="card empty-page"><div><h2>No financial report workbook yet</h2>
       <p>Import the Council of Europe report workbook (REPORT / Forecast / Purchase Orders / Situation Budgétaire…) and everything in it is analysed here.</p>

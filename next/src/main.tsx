@@ -63,7 +63,7 @@ function App() {
   return (
     <>
       <Shell title={title} crumb={crumb} actions={actions}>
-        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'offices' ? <Offices /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports key={route} /> : head === 'project' ? <ProjectPage id={arg} key={arg} /> : head === 'guide' ? <Guide /> : <Placeholder id={head} />}
+        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'offices' ? <Offices /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports key={route} /> : head === 'project' ? <ProjectPage id={arg} key={arg} sub={route.split('/')[2]} /> : head === 'guide' ? <Guide /> : <Placeholder id={head} />}
       </Shell>
       <Drawer />
       <Palette />

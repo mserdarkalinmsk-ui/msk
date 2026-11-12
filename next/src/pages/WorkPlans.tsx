@@ -14,7 +14,7 @@ import { latestWorkbook } from './FinancialReport';
 const EMPTY: WorkbookSummary = { meta: {}, lines: [], totals: {}, situation: [], pos: [], monthly: [], movements: [], sheets: [], checks: [] };
 const today = TODAY.toISOString().slice(0, 10);
 
-function row(p: Project) {
+export function wpRow(p: Project) {
   const plans = [...(p.workPlans ?? [])].sort((a, b) => a.no - b.no);
   if (!plans.length) return null;
   const wp = plans.find((w) => w.from <= today && today <= w.to) ?? plans.at(-1)!;
@@ -29,7 +29,7 @@ function row(p: Project) {
 export function WorkPlans() {
   const s = useStore((x) => x);
   const P = filtered(s);
-  const R = P.map(row).filter((x): x is NonNullable<ReturnType<typeof row>> => !!x).sort((a, b) => ['serious', 'warning', 'good'].indexOf(a.V.level) - ['serious', 'warning', 'good'].indexOf(b.V.level));
+  const R = P.map(wpRow).filter((x): x is NonNullable<ReturnType<typeof wpRow>> => !!x).sort((a, b) => ['serious', 'warning', 'good'].indexOf(a.V.level) - ['serious', 'warning', 'good'].indexOf(b.V.level));
   const none = P.filter((p) => !p.workPlans?.length);
   const [prev, setPrev] = useState<{ file: string; items: { t: TableSheet; p?: Project }[] } | null>(null);
   const closed = R.filter((r) => r.dPct != null), avg = closed.length ? closed.reduce((a, r) => a + r.dPct!, 0) / closed.length : null;
