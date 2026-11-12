@@ -24,7 +24,6 @@ import { StaffReport } from './StaffReport';
 import { FinancialReport, latestWorkbook } from './FinancialReport';
 import { WorkPlanView } from '../ui/WorkPlan';
 import { enrichExtraction } from '../domain/extraction';
-import { QuickAccess } from './MyDesk';
 import { roster, staffCount, staffSplit } from '../domain/staff';
 import { Indicators, Justification } from './Logframe';
 import { Cockpit, IdentityCard } from './Cockpit';
@@ -132,7 +131,6 @@ function Summary({ p }: { p: Project }) {
   const flags = alerts([p], TODAY);
   return (
     <div class="grid g-12">
-      <QuickAccess p={p} />
       <Cockpit p={p} />
       <Attention flags={flags} pid={p.id} />
       {p.datesTbc && <StatusWords p={p} />}
