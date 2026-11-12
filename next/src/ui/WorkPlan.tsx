@@ -224,12 +224,13 @@ function WpPrevActs({ wp, plans }: { wp: WP; plans: WP[] }) {
 
 function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
   const carried = carriedFrom(plans, wp), L = byLine(wp, wb), C = wpChecks(wp, wb), PM = poMatch(wp, wb);
+  const [showAll, setShowAll] = useState(false);
   const noPo = PM.filter((x) => x.raised < 0.5), started = wp.from && wp.from <= (wb.meta.situationDate || wb.meta.asAt || '');
   const over = L.filter((l) => l.after < 0), unb = L.filter((l) => l.unbudgeted);
   return (
     <>
       <details class="wp-sec" open><summary>Checks of the WorkPlan file · {C.length ? `${C.filter((c) => c.level === 'error').length} errors · ${C.filter((c) => c.level === 'warning').length} warnings` : 'no problem found'}</summary>
-        {C.length ? <ul class="wp-checks">{C.map((c) => <li class={c.level}><span class={`badge ${c.level === 'error' ? 'serious' : 'warning'}`}>{c.level}</span>{c.act && <b class="num">{c.act}</b>}<span>{c.text}</span></li>)}</ul>
+        {C.length ? <ul class="wp-checks">{C.slice(0, showAll ? C.length : 12).map((c) => <li class={c.level}><span class={`badge ${c.level === 'error' ? 'serious' : 'warning'}`}>{c.level}</span>{c.act && <b class="num">{c.act}</b>}{!c.act && c.line && <b class="num">{c.line}</b>}<span>{c.text}</span></li>)}{C.length > 12 && <li style={{ background: 'none' }}><button class="btn ghost" onClick={() => setShowAll(!showAll)}>{showAll ? 'Show fewer' : `Show all ${C.length}`}</button></li>}</ul>
           : <p class="desk-ok" style={{ padding: '4px 0' }}>✓ Line codes, unit rates, quantity × rate, activity totals and dates all agree</p>}</details>
       {started ? <details class="wp-sec" open><summary>Plan against purchase orders raised since {date(wp.from)} · {noPo.length} of {PM.length} lines with no PO yet · {full(PM.reduce((t, x) => t + x.raised, 0))} raised of {full(PM.reduce((t, x) => t + x.planned, 0))}</summary>
         <table class="wp-t"><thead><tr><th>Line</th><th>Activities</th><th class="num">Planned</th><th class="num">POs raised</th><th class="num">%</th><th>Purchase orders</th></tr></thead>

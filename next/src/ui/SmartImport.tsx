@@ -12,10 +12,14 @@ import { readDocument } from './docread';
 import { date, full } from './format';
 import { matchProject } from './PortfolioImport';
 import { readCoe } from './ReportImport';
+import { readXlsx } from './xlsx';
+import { matchProject as matchWpProject, mergeTable, nextPlan, readTableSheet, readWorkPlan, snapshot, type TableSheet } from '../domain/workplan';
+import { TODAY } from '../today';
 
-type Kind = 'office' | 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 'other' | 'error';
-interface Row { file: File; kind: Kind; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string; force?: boolean }
+type Kind = 'workplan' | 'wptable' | 'office' | 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 'other' | 'error';
+interface Row { file: File; kind: Kind; wpf?: NonNullable<ReturnType<typeof readWorkPlan>>; tbl?: TableSheet[]; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string; force?: boolean }
 const KIND: Record<Kind, { label: string; color: string }> = {
+  workplan: { label: 'Work Plan', color: '#5b6cf0' }, wptable: { label: 'WP follow-up table', color: '#16a394' },
   office: { label: 'Office budget', color: '#0e7490' },
   report: { label: 'Financial report', color: 'var(--c1)' }, budget: { label: 'Approved budget', color: 'var(--good)' }, plan: { label: 'DoA / action plan', color: 'var(--c7)' },
   contract: { label: 'Contract', color: 'var(--warn)' }, logframe: { label: 'Logframe / risks', color: 'var(--c3)' }, other: { label: 'Not recognised', color: '#8b8d98' }, error: { label: 'Unreadable', color: 'var(--critical)' },
@@ -67,7 +71,15 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       for (const f of fresh) {
         let r: Row | null = null;
         try {
-        const off = await readOfficeFile(f).catch(() => null);
+        if (/\.xls[xm]$/i.test(f.name)) {
+          const x = await readXlsx(await f.arrayBuffer()).catch(() => null);
+          const wpf = x ? x.sheets.map((n) => readWorkPlan(x.read(n))).find(Boolean) : null;
+          if (wpf) { const bh = wpf.bh.replace(/\D/g, ''), hits = P.filter((p) => (p.bh ?? '').replace(/\D/g, '') === bh); const g = bh && hits.length === 1 ? { p: hits[0], why: `budget head ${bh}` } : guessProject(f.name, P);
+            r = { file: f, kind: 'workplan', wpf, pid: g.p?.id ?? '', why: g.why, note: `${date(wpf.from)} → ${date(wpf.to)} · ${wpf.acts.length} activities · ${full(wpf.planned)}` }; }
+          else if (x) { const T = x.sheets.map((n) => readTableSheet(n, x.read(n))).filter((t): t is TableSheet => !!t);
+            if (T.length >= 2) { const m = T.filter((t) => matchWpProject(P, t)).length; r = { file: f, kind: 'wptable', tbl: T, pid: '*', why: 'each sheet to its project', note: `${T.length} Work Plan sheets · ${m} matched to a project` }; } }
+        }
+        const off = r ? null : await readOfficeFile(f).catch(() => null);
         if (off) r = { file: f, kind: 'office', office: off, date: off.date, pid: '', why: '', note: `${off.office} · situation ${date(off.date)} · ordinary budget ${full(off.lines.reduce((a, l) => a + l.ob.budget, 0) || off.situation?.budget || 0)}${off.hasPlan ? ' · with forecast' : ' · system export'}` };
         if (!r && /\.xls[xm]$/i.test(f.name)) {
           const wb = await readCoe(f).catch(() => null);
@@ -102,7 +114,9 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
     // Office budgets first (oldest first, so a raw export can borrow line budgets from a forecast of the same import).
     for (const r of (rows ?? []).filter((x) => x.kind === 'office').sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))) upsertOfficeReport(r.office!);
     const msgs: string[] = [];
-    for (const pid of new Set(ok.map((r) => r.pid))) {
+    // Work Plan files and follow-up tables after the reports, so a new WP is locked to the newest report.
+    const wpRows = ok.filter((r) => r.kind === 'workplan' || r.kind === 'wptable');
+    for (const pid of new Set(ok.filter((r) => !wpRows.includes(r)).map((r) => r.pid))) {
       let p = get().ledger.projects.find((x) => x.id === pid)!;
       const D = ok.filter((r) => r.pid === pid && r.F);
       if (D.length) {
@@ -115,6 +129,20 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
         const { patch, receipt } = mergeReports(p, W.map((r) => ({ wb: r.wb!, fileName: r.file.name })));
         updateProject(pid, patch); msgs.push(receiptText(receipt));
       }
+    }
+    for (const r of wpRows) {
+      if (r.kind === 'wptable') {
+        const by = new Map<string, TableSheet[]>();
+        for (const t of r.tbl!) { const p = matchWpProject(get().ledger.projects, t); if (p) by.set(p.id, [...(by.get(p.id) ?? []), t]); }
+        for (const [id, T] of by) { const p = get().ledger.projects.find((x) => x.id === id)!, last = [...T].sort((a, b) => b.no - a.no)[0]; updateProject(id, { workPlans: mergeTable(p.workPlans ?? [], T), ...(p.wpDeduct == null && last.deduct != null ? { wpDeduct: last.deduct } : {}) }); }
+        msgs.push(`Work Plans of ${by.size} projects from ${r.file.name}`); continue;
+      }
+      const p = get().ledger.projects.find((x) => x.id === r.pid)!, w = r.wpf!, plans = p.workPlans ?? [];
+      const same = plans.find((x) => x.from === w.from), base = same ?? nextPlan(plans, TODAY);
+      const wb0 = [...(p.reportingPeriods ?? [])].filter((x) => x.snapshot?.workbook).at(-1)?.snapshot?.workbook;
+      const wp = { ...base, from: w.from || base.from, to: w.to || base.to, planned: w.planned, acts: w.acts, file: r.file.name, snap: base.snap ?? (wb0 ? snapshot(wb0) : undefined) };
+      updateProject(p.id, { workPlans: same ? plans.map((x) => (x.id === wp.id ? wp : x)) : [...plans, wp] });
+      msgs.push(`${p.bh ? `BH ${p.bh}` : p.code}: WP ${wp.no} · ${full(w.planned)}`);
     }
     if (msgs.length) toast(msgs.length > 3 ? `${msgs.length} projects updated — ${msgs.slice(0, 2).join(' · ')}…` : msgs.join(' · '));
     markSeen([...ok, ...(rows ?? []).filter((x) => x.kind === 'office')].map((r) => r.file));
@@ -137,7 +165,8 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
               {(() => { const c = chk(r); return c && <div class="si-chk">{c.checks.map((x) => <div class={`badge ${x.level === 'ok' ? 'good' : x.level === 'error' ? 'critical' : 'warning'}`} style={{ whiteSpace: 'normal', textAlign: 'left', marginTop: '4px' }}>{x.level === 'ok' ? '✓' : '!'} {x.text}</div>)}
                 {c.blocking && <label style={{ display: 'block', marginTop: '4px', fontSize: '12px' }}><input type="checkbox" checked={!!r.force} onChange={(e) => setRows((R) => R!.map((y, k) => (k === i ? { ...y, force: (e.target as HTMLInputElement).checked } : y)))} /> Import anyway</label>}</div>; })()}
               {r.kind === 'office' && <div class="si-p"><span class="badge good">goes to Offices · {r.office!.office}</span></div>}
-              {r.kind !== 'error' && r.kind !== 'other' && r.kind !== 'office' && <div class="si-p"><select class="select" value={r.pid} onChange={(e) => setPid(i, (e.target as HTMLSelectElement).value)} aria-label="Project">
+              {r.kind === 'wptable' && <div class="si-p"><span class="badge good">each sheet goes to its project</span></div>}
+              {r.kind !== 'error' && r.kind !== 'other' && r.kind !== 'office' && r.kind !== 'wptable' && <div class="si-p"><select class="select" value={r.pid} onChange={(e) => setPid(i, (e.target as HTMLSelectElement).value)} aria-label="Project">
                 <option value="">— choose project —</option>{P.map((p) => <option value={p.id}>{lab(p)}</option>)}</select>
                 {r.pid ? <span class="badge good">{r.why === 'chosen' ? 'chosen' : `matched by ${r.why}`}</span> : <span class="badge warning">no match — choose</span>}</div>}
             </li>))}</ul>

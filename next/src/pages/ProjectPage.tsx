@@ -48,9 +48,9 @@ const GROUPS: { label: string; tabs: Tab[] }[] = [
 const LABEL: Partial<Record<Tab, string>> = { 'Results & documents': 'Documents' };
 
 /** Short addresses for the tabs: #/project/<id>/<slug> (from the home page cards and the search). */
-export const SLUG: Record<string, { tab: Tab; view?: 'lines' | 'checks' | 'budget' | 'range' | 'pos' | 'rates' }> = {
+export const SLUG: Record<string, { tab: Tab; view?: 'lines' | 'checks' | 'budget' | 'range' | 'pos' | 'rates' | 'diff' }> = {
   summary: { tab: 'Summary' }, wp: { tab: 'Work Plan' }, finance: { tab: 'Financial report' }, statement: { tab: 'Financial report', view: 'lines' }, checks: { tab: 'Financial report', view: 'checks' },
-  budget: { tab: 'Financial report', view: 'budget' }, bydate: { tab: 'Financial report', view: 'range' }, pos: { tab: 'Financial report', view: 'pos' }, lines: { tab: 'Budget lines' }, staff: { tab: 'Staff' },
+  budget: { tab: 'Financial report', view: 'budget' }, bydate: { tab: 'Financial report', view: 'range' }, pos: { tab: 'Financial report', view: 'pos' }, diff: { tab: 'Financial report', view: 'diff' }, lines: { tab: 'Budget lines' }, staff: { tab: 'Staff' },
   docs: { tab: 'Results & documents' }, revision: { tab: 'Revision' }, forecast: { tab: 'Forecast' }, reports: { tab: 'Reports' }, risks: { tab: 'Risks' },
 };
 export const openProject = (id: string, slug = 'summary') => go(`project/${id}/${slug}`);

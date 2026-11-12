@@ -278,7 +278,7 @@ const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', '
 const TR = ['oca', 'şub', 'mar', 'nis', 'may', 'haz', 'tem', 'ağu', 'eyl', 'eki', 'kas', 'ara'];
 const monthOf = (t: string) => { const x = t.toLowerCase().trim(); const d = dmy(x); if (d) return +d.slice(5, 7); let i = MONTHS.findIndex((m) => x.startsWith(m)); if (i < 0) i = TR.findIndex((m) => x.startsWith(m)); return i < 0 ? 0 : i + 1; };
 export function wpChecks(wp: WorkPlan, wb: WorkbookSummary): WpCheck[] {
-  const out: WpCheck[] = [];
+  const out: WpCheck[] = [], missing = new Map<string, { amount: number; acts: Set<string> }>();
   const leaf = new Map(wb.lines.filter((l) => l.leaf).map((l) => [l.code, l]));
   const fm = wp.from ? +wp.from.slice(5, 7) : 0, tm = wp.to ? +wp.to.slice(5, 7) : 0, wrap = fm > tm;
   const inWp = (m: number) => !m || !fm || (wrap ? m >= fm || m <= tm : m >= fm && m <= tm);
@@ -286,13 +286,13 @@ export function wpChecks(wp: WorkPlan, wb: WorkbookSummary): WpCheck[] {
     for (const l of a.lines) {
       if (!l.amount) continue;
       const L = leaf.get(l.line);
-      if (wb.lines.length && !L) out.push({ level: 'error', act: a.id, line: l.line, text: `line ${l.line} is not a budget line of the project (${full2(l.amount)})` });
+      if (wb.lines.length && !L) { const o = missing.get(l.line) ?? { amount: 0, acts: new Set<string>() }; o.amount += l.amount; o.acts.add(a.id); missing.set(l.line, o); }
       const m = /([\d.,]+)\s*\*\s*([\d.,]+)/.exec(l.text);
       if (m) {
         const q = amt(m[1]), rate = amt(m[2]);
         if (q && rate && Math.abs(q * rate - l.amount) > 0.5) out.push({ level: 'error', act: a.id, line: l.line, text: `${l.line}: ${m[1]} × ${m[2]} = ${full2(q * rate)} but the amount is ${full2(l.amount)}` });
         const br = L?.budget.rate;
-        if (br && rate && Math.abs(rate - br) > 0.01 && rate > br) out.push({ level: 'warning', act: a.id, line: l.line, text: `${l.line}: unit rate ${full2(rate)} is above the budgeted ${full2(br)}` });
+        if (br && rate && Math.abs(rate - br) > 0.01 && rate > br && !out.some((c) => c.line === l.line && /unit rate/.test(c.text) && c.text.includes(full2(rate)))) out.push({ level: 'warning', act: a.id, line: l.line, text: `${l.line}: unit rate ${full2(rate)} is above the budgeted ${full2(br)}` });
       }
       if (L && L.budget.cost != null && L.sc != null && l.amount > (L.budget.cost - L.sc) + 0.5) out.push({ level: 'warning', act: a.id, line: l.line, text: `${l.line}: ${full2(l.amount)} planned but only ${full2(L.budget.cost - L.sc)} left on the line` });
     }
@@ -301,6 +301,7 @@ export function wpChecks(wp: WorkPlan, wb: WorkbookSummary): WpCheck[] {
     const sum = r2(a.lines.reduce((s, l) => s + l.amount, 0));
     if (a.lines.length && Math.abs(sum - a.amount) > 0.5) out.push({ level: 'error', act: a.id, text: `activity total ${full2(a.amount)} differs from the sum of its lines ${full2(sum)}` });
   }
+  for (const [line, o] of missing) out.unshift({ level: 'error', line, text: `line ${line} is not a budget line of the project — ${full2(o.amount)} planned in ${o.acts.size} activit${o.acts.size > 1 ? 'ies' : 'y'} (${[...o.acts].join(', ')})` });
   const ids = new Map<string, number>(); for (const a of wp.acts ?? []) ids.set(a.id, (ids.get(a.id) ?? 0) + 1);
   for (const [id, n] of ids) if (n > 1) out.push({ level: 'warning', act: id, text: `activity ${id} appears ${n} times` });
   return out;
