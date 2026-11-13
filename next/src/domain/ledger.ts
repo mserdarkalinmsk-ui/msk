@@ -241,25 +241,33 @@ export function compareBudget(entries: Entry[], budget: BudgetRef[], sc: Map<str
 }
 
 /** Spending of each budget line year by year (the current year to the extraction date), with units, against the budget. */
-export interface YearLine { code: string; description: string; unit: string; budget: { units: number | null; rate: number | null; cost: number }; years: Record<string, { units: number; amount: number }>; units: number; amount: number }
+export interface YearLine { code: string; description: string; unit: string; budget: { units: number | null; rate: number | null; cost: number }; years: Record<string, { units: number; amount: number; /** open balance of the POs raised in the year */ committed: number }>; units: number; amount: number; committed: number }
 export function spendByYear(entries: Entry[], wb: { lines: { code: string; description: string; unit: string; leaf: boolean; budget: { units: number | null; rate: number | null; cost: number | null } }[]; pos: PO[] }): { years: string[]; lines: YearLine[] } {
   const po = new Map(wb.pos.map((p) => [p.po + '|' + p.line, p]));
   const L = new Map<string, YearLine>();
-  for (const l of wb.lines.filter((x) => x.leaf)) L.set(l.code, { code: l.code, description: l.description, unit: l.unit, budget: { units: l.budget.units, rate: l.budget.rate, cost: l.budget.cost ?? 0 }, years: {}, units: 0, amount: 0 });
+  for (const l of wb.lines.filter((x) => x.leaf)) L.set(l.code, { code: l.code, description: l.description, unit: l.unit, budget: { units: l.budget.units, rate: l.budget.rate, cost: l.budget.cost ?? 0 }, years: {}, units: 0, amount: 0, committed: 0 });
   const months = new Map<string, Set<string>>(); // staff PO → year|month already counted
   const years = new Set<string>();
   for (const e of entries) {
     const code = e.line && e.line !== '0' && e.line !== '10' ? e.line : ''; if (!code) continue;
     const y = e.date.slice(0, 4); years.add(y);
-    const x = L.get(code) ?? { code, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0 }; L.set(code, x);
+    const x = L.get(code) ?? { code, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0, committed: 0 }; L.set(code, x);
     let u = 0;
     if (e.src === 'gl') u = e.units ?? 0;
     else { const p = po.get(e.po + '|' + e.line) ?? wb.pos.find((q) => q.po === e.po);
       if (p && /month/i.test(p.unitType) && /from\s+\d/i.test(p.description)) { const k = `${p.po}`, s = months.get(k) ?? new Set(); const m = e.date.slice(0, 7); if (!s.has(m) && e.amount > 0) { s.add(m); u = 1; } months.set(k, s); }
       else if (p && p.units && p.amount) u = p.units * (e.amount / p.amount); }
-    const Y = x.years[y] ?? { units: 0, amount: 0 }; Y.units += u; Y.amount += e.amount; x.years[y] = Y; x.units += u; x.amount += e.amount;
+    const Y = x.years[y] ?? { units: 0, amount: 0, committed: 0 }; Y.units += u; Y.amount += e.amount; x.years[y] = Y; x.units += u; x.amount += e.amount;
+  }
+  // Commitments: what is still open on each PO, in the year the PO was raised.
+  const lastY = [...years].sort().at(-1) ?? '';
+  for (const p of wb.pos) {
+    const open = Math.max(0, p.sc - p.spent); if (open < 0.005 || !p.line || p.line === '0' || p.line === '10') continue;
+    const y = p.date?.slice(0, 4) || lastY; if (!y) continue; years.add(y);
+    const x = L.get(p.line) ?? { code: p.line, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0, committed: 0 }; L.set(p.line, x);
+    const Y = x.years[y] ?? { units: 0, amount: 0, committed: 0 }; Y.committed += open; x.years[y] = Y; x.committed += open;
   }
   const r2 = (v: number) => Math.round(v * 100) / 100;
-  for (const x of L.values()) { x.units = r2(x.units); x.amount = r2(x.amount); for (const y of Object.values(x.years)) { y.units = r2(y.units); y.amount = r2(y.amount); } }
-  return { years: [...years].sort(), lines: [...L.values()].filter((x) => x.budget.cost || x.amount).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })) };
+  for (const x of L.values()) { x.units = r2(x.units); x.amount = r2(x.amount); x.committed = r2(x.committed); for (const y of Object.values(x.years)) { y.units = r2(y.units); y.amount = r2(y.amount); y.committed = r2(y.committed); } }
+  return { years: [...years].sort(), lines: [...L.values()].filter((x) => x.budget.cost || x.amount || x.committed).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })) };
 }

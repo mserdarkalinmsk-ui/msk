@@ -940,3 +940,13 @@ span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);fo
 .hm td{padding:0}.hm-c{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;height:54px;border:0;border-radius:8px;color:var(--ink);font:inherit;cursor:pointer;transition:transform .1s,box-shadow .1s}
 .hm-c:not(:disabled):hover{transform:scale(1.03);box-shadow:0 4px 14px rgb(0 0 0 / .14);position:relative;z-index:1}.hm-c:disabled{cursor:default;border:1px dashed var(--line)}
 .hm-c b{font-size:15px;font-family:var(--mono)}.hm-c small{font-size:10.5px;opacity:.8}.hm-c.dk{color:#fff}.hm-nil{color:var(--ink-3)}
+/* Spending by year — explicit unit / rate / spent / S&C columns */
+.yr-x{font-size:12.5px}.yr-x th,.yr-x td{padding:6px 9px}
+.yr-x thead th{position:sticky;z-index:3}.yr-x tr.yr-g th{top:0;font-size:12px;color:var(--ink);border-bottom:1px solid var(--line)}.yr-x tr.yr-g2 th{top:33px;font-size:11px;font-weight:500}
+.yr-x th.c{text-align:center}.yr-x th small{display:block;font-weight:400;font-size:10.5px;color:var(--ink-3)}
+.yr-x .yr-e{border-right:2px solid var(--line)}
+.yr-x .yr-s1{position:sticky;left:0;z-index:2;background:var(--surface);min-width:64px}.yr-x .yr-s2{position:sticky;left:64px;z-index:2;background:var(--surface);min-width:230px;max-width:300px;box-shadow:2px 0 0 var(--line)}
+.yr-x thead .yr-s1,.yr-x thead .yr-s2{z-index:5}.yr-x tr.yr-h td.yr-s1{background:color-mix(in srgb,var(--ink) 5%,var(--surface));z-index:2}
+.yr-x tfoot .yr-s1,.yr-x tfoot .yr-s2{z-index:4}.yr-x .yr-desc .badge{display:inline-flex;margin-top:3px}.yr-x .yr-desc .yr-sub-u{margin-bottom:1px}
+.yr-x td.yr-n{color:var(--ink-2)}.yr-x tr.yr-over td:first-child{box-shadow:inset 3px 0 0 var(--critical)}
+.yr-x tr.yr-tot td{bottom:0}.yr-x tr.yr-subt td.yr-s2,.yr-x tr.yr-tot td.yr-s2,.yr-x tr.yr-adm td.yr-s2{white-space:nowrap;max-width:none}
