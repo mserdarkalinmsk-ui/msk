@@ -36,7 +36,15 @@ export function extractionLines(wb: Pick<Workbook, 'lines' | 'totals'>, p: Proje
  * budget, units and rate, and the amounts summed from the entries. Re-derived on every read, so a budget added
  * after the extraction fills in the descriptions and budgets.
  */
+/** Results kept per workbook while the project's budget and reports are unchanged (screens ask for the same workbook many times). */
+const CACHE = new WeakMap<object, { ab: unknown; rp: unknown; out: unknown }>();
 export function enrichExtraction<W extends Pick<Workbook, 'lines' | 'totals'>>(wb: W, p: Project): W {
+  const c = CACHE.get(wb);
+  if (c && c.ab === p.approvedBudget && c.rp === p.reportingPeriods) return c.out as W;
+  const out = enrich(wb, p); CACHE.set(wb, { ab: p.approvedBudget, rp: p.reportingPeriods, out });
+  return out;
+}
+function enrich<W extends Pick<Workbook, 'lines' | 'totals'>>(wb: W, p: Project): W {
   const base = p.approvedBudget?.lines ?? [];
   if (!base.length) return wb;
   const got = new Map(wb.lines.map((l) => [l.code, l]));

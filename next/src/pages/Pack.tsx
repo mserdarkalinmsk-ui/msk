@@ -54,7 +54,11 @@ export function narrative(P: Project[], cname: (id: string) => string): Point[] 
   if (added) {
     const best = D[0] && D[0].d > 0.02 ? ` Biggest improvement: ${who(D[0].x)}, ${pts(D[0].d)}.` : '';
     const worst = D.at(-1) && D.at(-1)!.d < -0.02 ? ` Biggest slip: ${who(D.at(-1)!.x)}, ${pts(D.at(-1)!.d)}.` : '';
-    out.push({ label: 'Since last report', tone: 'info', text: `${short(added)} of new spending recorded.${best}${worst}` });
+    // A fall in recorded spending, or a swing of more than 100 points, means two reports that do not cover the same thing.
+    const odd = D.filter((d) => Math.abs(d.d) > 1).map((d) => who(d.x));
+    out.push(added < 0 || odd.length
+      ? { label: 'Since last report', tone: 'warn', text: `${added < 0 ? `Recorded spending is ${short(-added)} lower than in the previous reports` : `${short(added)} of new spending recorded`}${odd.length ? ` — the last two reports of ${names(odd)} do not look comparable (different budget or coverage); check which report is the current one.` : ' — corrections or reversals; check the latest reports.'}` }
+      : { label: 'Since last report', tone: 'info', text: `${short(added)} of new spending recorded.${best}${worst}` });
   }
   const order = ['blue', 'green', 'amber', 'red'];
   const worse = M.filter((x) => x.was && order.indexOf(x.now) > order.indexOf(x.was));
