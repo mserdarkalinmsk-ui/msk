@@ -9,6 +9,8 @@
 <meta property="og:description" content="Bir aşk hikâyesi · 16 Kasım">
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap">
 <link rel="stylesheet" href="css/film.css">
 <link rel="preload" as="image" href="img/album-still.webp">
 <style>
@@ -87,7 +89,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
 <nav class="album-tools" aria-label="Albüm kontrolleri"><button type="button" id="full-view">Tam ekran</button><button type="button" id="share-album">Paylaş</button></nav><div id="tool-status" role="status"></div><canvas id="yagmur"></canvas>
 <div class="bant-ust"></div><div class="bant-alt"></div>
 <div class="jenerik" id="jenerik"><div class="j-ic"><small>16 KASIM 2025'TEN BERİ</small><b>Banu &amp; Serdar</b><i>bir aşk hikâyesi</i></div></div><div class="parilti" id="parilti"></div>
-<button id="ses" aria-label="Ses">🔊</button>
+<button id="ses" type="button" aria-label="Sesi kapat" aria-pressed="false">🔊</button>
 <div class="perde" id="perde"><div class="perde-ic"><small id="perdeNo"></small><b id="perdeAd"></b><i></i></div></div>
 
 <section class="ekran acik" id="e1">
@@ -159,7 +161,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
         <text x="55" y="56" text-anchor="middle" fill="#b3243f" stroke="none" font-size="15" font-weight="600" letter-spacing="1.5" font-family="Jost, sans-serif">BİRLİKTE</text>
         <text x="55" y="72" text-anchor="middle" fill="#b3243f" stroke="none" font-size="7.5" letter-spacing="2" font-family="Jost, sans-serif">HER YERE · ∞</text></g></svg></div>
     </div>
-    <div class="kocan" id="kocan"><div class="kocan-ic"><span>KOÇAN · STUB</span><b>B&amp;S ∞ 1611</b><span>ESB ⇢ ∞</span></div></div>
+    <div class="kocan" id="kocan"><div class="kocan-ic"><span>KOÇAN · STUB</span><b>B&amp;S ∞ 1611</b><span>IST ⇢ ∞</span></div></div>
     <div class="ust" id="kocanNot" style="margin-top:10px">Koçanı aşağı çekip yırt ↓</div>
     <button type="button" class="ileri gizli" data-git="4">Son sayfayı aç →</button>
   </div></div>
@@ -188,7 +190,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
     <div class="asagi">▾</div>
   </div>
   <div class="kart">
-    <div class="sayac" id="sayac">0</div>
+    <div class="sayac" id="sayac" aria-live="off">0</div>
     <div class="alt">GÜNDÜR EVLİYİZ</div>
     <div class="canli" id="canli"></div>
     <div class="cizgi">◆</div>
@@ -197,7 +199,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
     Nice yıllara, nice yolculuklara, birlikte yaşlanacağımız günlere… Seni çok seviyorum.</p>
     <div class="imza">Serdar</div></div>
     <div class="cizgi">◆</div>
-    <div class="ust">İkinci yıl dönümümüze</div>
+    <div class="ust" id="geriBaslik">Yıl dönümümüze</div>
     <div class="geri" id="geri"><div><b>0</b><small>GÜN</small></div><div><b>00</b><small>SAAT</small></div><div><b>00</b><small>DAKİKA</small></div><div><b>00</b><small>SANİYE</small></div></div>
     <div class="cizgi">◆</div>
     <div class="ust" style="margin-bottom:16px">Hikâyemiz</div>
@@ -226,9 +228,9 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
       </div>
       <div class="yd gizli" id="yd">
         <p class="mesaj" style="font-size:1.15rem">İlk yurt dışı gezimiz hangi ülkeyeydi?</p>
-        <input id="ydc" type="text" autocomplete="off" placeholder="Cevabın">
+        <input id="ydc" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" aria-label="İlk yurt dışı gezimizin ülkesi" placeholder="Cevabın">
         <button type="button" id="ydb">Kilidi aç</button>
-        <div class="hata" id="ydh"></div>
+        <div class="hata" id="ydh" role="status"></div>
       </div>
       <div class="kazi-alan gizli" id="kaziAlan">
         <div class="cizgi">◆</div>

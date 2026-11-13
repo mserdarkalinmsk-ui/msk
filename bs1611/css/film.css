@@ -1,5 +1,4 @@
 
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap');
   :root { --zemin: #0e0709; --bordo: #2a0b16; --altin: #d9b77a; --altin2: #f3e2bd; --krem: #f6ecdf; --gul: #c9456e; --soluk: #b9a48f;
     --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif; --sans: "Jost", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   * { box-sizing: border-box; margin: 0; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

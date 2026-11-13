@@ -2,7 +2,7 @@
   const full = document.getElementById("full-view");
   const share = document.getElementById("share-album");
   const status = document.getElementById("tool-status");
-  const url = "https://mserdarkalinmsk-ui.github.io/msk/bs1611/";
+  const url = location.origin + location.pathname;
   let timer;
   function message(text) {
     clearTimeout(timer);
