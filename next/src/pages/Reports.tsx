@@ -14,6 +14,7 @@ import { CashPlan } from './CashPlan';
 import { EndingSoon } from './EndingSoon';
 import { WorkPlans } from './WorkPlans';
 import { StaffPOs } from './StaffPOs';
+import { Heatmap } from './Heatmap';
 import { WhatChanged } from './WhatChanged';
 import { CompareProjects } from './CompareProjects';
 import { BudgetCheck } from './BudgetCheck';
@@ -31,10 +32,10 @@ import { portfolioSheets } from '../domain/exports';
 import { download } from '../ui/xlsxwrite';
 import { get } from '../data/store';
 
-type Tab = 'close' | 'transfer' | 'bcheck' | 'vs' | 'changed' | 'ending' | 'cash' | 'providers' | 'annual' | 'closure' | 'units' | 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'results' | 'calendar' | 'compliance' | 'health' | 'history' | 'checklist' | 'wp' | 'staffpo';
+type Tab = 'close' | 'transfer' | 'bcheck' | 'vs' | 'changed' | 'ending' | 'cash' | 'providers' | 'annual' | 'closure' | 'units' | 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'results' | 'calendar' | 'compliance' | 'health' | 'history' | 'checklist' | 'wp' | 'staffpo' | 'heat';
 const GROUPS: { label: string; tabs: [Tab, string][] }[] = [
   { label: 'Summary', tabs: [['close', 'Monthly close'], ['pack', 'Monthly pack'], ['deck', 'Presentation'], ['studio', 'Project report']] },
-  { label: 'Finance', tabs: [['compare', 'Expenditure monitoring'], ['changes', 'Month comparison'], ['vs', 'Compare projects'], ['transfer', 'Budget changes'], ['commit', 'Commitments'], ['staffpo', 'Staff POs'], ['cash', 'Cash plan'], ['units', 'Unit costs'], ['providers', 'Service providers'], ['annual', 'Annual plan']] },
+  { label: 'Finance', tabs: [['compare', 'Expenditure monitoring'], ['changes', 'Month comparison'], ['vs', 'Compare projects'], ['heat', 'Headings heat map'], ['transfer', 'Budget changes'], ['commit', 'Commitments'], ['staffpo', 'Staff POs'], ['cash', 'Cash plan'], ['units', 'Unit costs'], ['providers', 'Service providers'], ['annual', 'Annual plan']] },
   { label: 'Follow-up', tabs: [['checklist', 'This month'], ['wp', 'Work Plans'], ['changed', 'What changed'], ['ending', 'Ending soon'], ['alerts', 'Alerts'], ['results', 'Results'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results'], ['closure', 'Closure']] },
   { label: 'Data', tabs: [['health', 'Data health'], ['bcheck', 'Budget check'], ['history', 'Change history']] },
 ];
@@ -57,7 +58,7 @@ export function Reports() {
         </span>
       </div>
       <div class="subtabs no-print" role="tablist" aria-label={g.label}>{g.tabs.map(([k, l]) => <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
-      {tab === 'close' ? <MonthlyClose /> : tab === 'transfer' ? <BudgetChanges /> : tab === 'bcheck' ? <BudgetCheck /> : tab === 'vs' ? <CompareProjects /> : tab === 'changed' ? <WhatChanged /> : tab === 'ending' ? <EndingSoon /> : tab === 'wp' ? <WorkPlans /> : tab === 'staffpo' ? <StaffPOs /> : tab === 'cash' ? <CashPlan /> : tab === 'providers' ? <Providers /> : tab === 'annual' ? <AnnualPortfolio projects={P} /> : tab === 'closure' ? <ClosureTracker /> : tab === 'units' ? <UnitCosts /> : tab === 'commit' ? <Commitments /> : tab === 'results' ? <Results /> : tab === 'health' ? <HealthPage /> : tab === 'checklist' ? <Checklist /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
+      {tab === 'close' ? <MonthlyClose /> : tab === 'transfer' ? <BudgetChanges /> : tab === 'bcheck' ? <BudgetCheck /> : tab === 'vs' ? <CompareProjects /> : tab === 'changed' ? <WhatChanged /> : tab === 'ending' ? <EndingSoon /> : tab === 'wp' ? <WorkPlans /> : tab === 'staffpo' ? <StaffPOs /> : tab === 'heat' ? <Heatmap /> : tab === 'cash' ? <CashPlan /> : tab === 'providers' ? <Providers /> : tab === 'annual' ? <AnnualPortfolio projects={P} /> : tab === 'closure' ? <ClosureTracker /> : tab === 'units' ? <UnitCosts /> : tab === 'commit' ? <Commitments /> : tab === 'results' ? <Results /> : tab === 'health' ? <HealthPage /> : tab === 'checklist' ? <Checklist /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }
