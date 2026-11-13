@@ -81,6 +81,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
 @media(max-width:680px){.album-cover{gap:22px;padding:22px 0}.album-photo{width:100%;aspect-ratio:1.2;height:auto;background-size:cover}.print-stack{width:41%;left:49%;top:23%}.mount figcaption{font-size:16px}.photo-nav{bottom:8px;right:8px}.album-footer{margin-top:auto}}
 @media(prefers-reduced-motion:reduce){.print-stack{transition:none}}
 </style>
+<link rel="stylesheet" href="css/book.css">
 </head>
 <body>
 <canvas id="yagmur"></canvas>
@@ -100,7 +101,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
         <div class="dedication">Yalnızca Banu için</div>
         <h1>Banu <i>&amp;</i><br>Serdar<span>.</span></h1>
         <p>Dört bölüm, dört an.<br>Her birini sen açacaksın.</p>
-        <div id="zarf"><button id="basla" type="button">Hikâyemizi aç <span aria-hidden="true">⟶</span></button></div>
+        <div id="zarf"><button id="basla" type="button">Albümü aç <span aria-hidden="true">⟶</span></button></div>
       </div>
       <figure class="album-photo" aria-label="Dört fotoğraflık albüm">
         <div class="print-stack">
@@ -113,7 +114,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
   </div>
 
   <!-- I · İlk buluşma: yıldızlar -->
-  <div class="bolum b-gece" id="b1"><canvas class="gokyuzu" id="gokyuzu"></canvas><div class="kart soru">
+  <div class="bolum b-gece" id="b1"><canvas class="gokyuzu" id="gokyuzu"></canvas><aside class="facing" aria-hidden="true"><figure><img loading="lazy" src="img/kare4.jpg" alt=""><figcaption>Yıldızların altında</figcaption></figure><span>Banu &amp; Serdar</span></aside><div class="kart soru">
     <div class="ust">Bölüm I</div><h1>İlk Buluşma</h1>
     <p id="g-yazi">O gece gökyüzü bizi bekliyordu. Parmağını parlayan yıldızlara sırayla götür.</p>
     <svg id="gok" viewBox="0 0 300 280" aria-label="Yıldızlar">
@@ -126,11 +127,11 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
       <g id="g-toz"></g><g id="g-yildiz"></g>
     </svg>
     <div class="kalp3d gizli" id="kalp3d"><div class="kalp-don" id="kalpDon"></div></div>
-    <button type="button" class="ileri gizli" data-git="2">Devam ▸</button>
+    <button type="button" class="ileri gizli" data-git="2">Sayfayı çevir →</button>
   </div></div>
 
   <!-- II · İlk teklif: yüzük kutusu -->
-  <div class="bolum b-kadife" id="b2"><div class="fon" data-f="2"></div><div class="kart soru">
+  <div class="bolum b-kadife" id="b2"><div class="fon" data-f="2"></div><aside class="facing" aria-hidden="true"><figure><img loading="lazy" src="img/kare3.jpg" alt=""><figcaption>Bir kutu, bir evet</figcaption></figure><span>Banu &amp; Serdar</span></aside><div class="kart soru">
     <div class="ust">Bölüm II</div><h1>İlk Teklif</h1>
     <p id="k-yazi">Kalbim hiç o kadar hızlı atmamıştı. Hisset.</p>
     <div class="kutu-sahne"><svg class="tut-halka" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="iz0"/><circle cx="60" cy="60" r="54" id="tutHalka" pathLength="100"/></svg><div class="kutu-parilti" id="kutuParilti"></div><div class="sahne3d" id="kutu3d"></div><div class="kutu" id="kutu">
@@ -139,11 +140,11 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
     </div></div>
     <div class="anifoto gizli" id="aniFoto2"><img alt=""><span>Ve sen “evet” dedin.</span></div>
     <div class="ust" id="tutNot" style="margin-top:22px">Kutuya basılı tut</div>
-    <button type="button" class="ileri gizli" data-git="3">Devam ▸</button>
+    <button type="button" class="ileri gizli" data-git="3">Sayfayı çevir →</button>
   </div></div>
 
   <!-- III · İlk yolculuk: biniş kartı -->
-  <div class="bolum b-yol" id="b3"><div class="fon" data-f="1"></div><div class="kart soru">
+  <div class="bolum b-yol" id="b3"><div class="fon" data-f="1"></div><aside class="facing" aria-hidden="true"><figure><img loading="lazy" src="img/kare2.jpg" alt=""><figcaption>Yan yana iki koltuk</figcaption></figure><span>Banu &amp; Serdar</span></aside><div class="kart soru">
     <div class="ust">Bölüm III</div><h1>İlk Yolculuk</h1>
     <p id="y-yazi">İlk bavul, ilk pasaport kuyruğu, yan yana iki koltuk.</p>
     <div class="polaroid" id="pol3"><img alt=""><span>İlk yolculuğumuz</span><i class="bant"></i></div>
@@ -160,11 +161,11 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
     </div>
     <div class="kocan" id="kocan"><div class="kocan-ic"><span>KOÇAN · STUB</span><b>B&amp;S ∞ 1611</b><span>ESB ⇢ ∞</span></div></div>
     <div class="ust" id="kocanNot" style="margin-top:10px">Koçanı aşağı çekip yırt ↓</div>
-    <button type="button" class="ileri gizli" data-git="4">Son sahne ▸</button>
+    <button type="button" class="ileri gizli" data-git="4">Son sayfayı aç →</button>
   </div></div>
 
   <!-- IV · Evlilik: tarih kilidi -->
-  <div class="bolum b-kilit" id="b4"><div class="fon" data-f="0"></div><div class="kart soru"><div class="cerceve" id="f1">
+  <div class="bolum b-kilit" id="b4"><div class="fon" data-f="0"></div><aside class="facing" aria-hidden="true"><figure><img loading="lazy" src="img/kare1.jpg" alt=""><figcaption>16 Kasım 2025</figcaption></figure><span>Banu &amp; Serdar</span></aside><div class="kart soru"><div class="cerceve" id="f1">
     <div class="ust">Bölüm IV</div><h1>Evet dediğimiz gün</h1>
     <p>Kasanın şifresi bir tarih. Çarkları parmağınla çevir.</p>
     <div class="kilit">
@@ -173,7 +174,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
       <div class="tek genis" data-i="2"><button type="button" class="ok" data-y="1">▲</button><b></b><small>YIL</small><button type="button" class="ok" data-y="-1">▼</button></div>
     </div>
     <button type="button" id="b1x">Kilidi aç</button>
-    <div class="hata" id="h1"></div>
+    <div class="hata" role="status" id="h1"></div>
   </div></div></div>
 </section>
 
@@ -191,10 +192,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
     <div class="alt">GÜNDÜR EVLİYİZ</div>
     <div class="canli" id="canli"></div>
     <div class="cizgi">◆</div>
-    <p class="mesaj" id="mektup">Bir yıl önce "evet" dediğimiz o günden beri her sabah aynı şeyi düşünüyorum: iyi ki sen.
+    <div class="letter"><p class="mesaj" id="mektup">Bir yıl önce "evet" dediğimiz o günden beri her sabah aynı şeyi düşünüyorum: iyi ki sen.
     Gülüşün evimin ışığı, yanımda olman en büyük şansım.
     Nice yıllara, nice yolculuklara, birlikte yaşlanacağımız günlere… Seni çok seviyorum.</p>
-    <div class="imza">Serdar</div>
+    <div class="imza">Serdar</div></div>
     <div class="cizgi">◆</div>
     <div class="ust">İkinci yıl dönümümüze</div>
     <div class="geri" id="geri"><div><b>0</b><small>GÜN</small></div><div><b>00</b><small>SAAT</small></div><div><b>00</b><small>DAKİKA</small></div><div><b>00</b><small>SANİYE</small></div></div>
@@ -270,7 +271,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
   </div>
 </section>
 
-<script src="js/film.js"></script>
+<script src="js/film.js?v=folio1"></script>
 
 <script src="js/nesne3d.js" defer></script>
 <script src="js/sahne3d.js" defer></script>

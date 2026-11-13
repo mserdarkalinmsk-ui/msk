@@ -1,0 +1,63 @@
+/* The front and reverse sit on a single left-hand hinge. */
+.turn-sheet{position:fixed;inset:0;z-index:45;transform-origin:left center;transform-style:preserve-3d;pointer-events:auto}
+.turn-front,.turn-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.turn-front{background:#37232b;box-shadow:16px 2px 44px #160a1466}
+.turn-front:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#2a171b40,transparent 8%,transparent 82%,#f7e4be55);animation:paper-light .95s ease both}
+.turn-back{display:grid;place-items:center;transform:rotateY(180deg);background:linear-gradient(90deg,#a59982,#f1e3ce 8%,#f7ecdc 72%,#c0b09a);box-shadow:0 12px 70px #21101655}
+.turn-back i{color:#925f50;font:italic 48px var(--serif);border:1px solid #ba9482;padding:36px;border-radius:50%}
+@keyframes paper-light{0%{opacity:0}60%{opacity:1}100%{opacity:.5}}
+body.film .bant-ust,body.film .bant-alt{height:0}
+.facing{display:none}
+.bolum:not(#b0){isolation:isolate}
+.bolum:not(#b0) h1:focus,#hero .baslik:focus{outline:none}
+.ilerle{top:max(20px,env(safe-area-inset-top))}.ilerle i{height:3px;border-radius:5px;background:#93827675}.ilerle i.ok{background:#d4b986}
+#ses{width:44px;height:44px}
+#e2 .letter{padding:clamp(25px,5vw,54px);position:relative;text-align:left;background:linear-gradient(117deg,#e2d2b8,#fbf2e1 13%,#f2e6ce);border-radius:2px;box-shadow:1px 2px #ae9c83,2px 4px #d5c3a6,0 18px 36px #09060955}
+#e2 .letter .mesaj{color:#412c30;text-shadow:none;font:400 clamp(22px,3vw,29px)/1.48 var(--serif)}
+#e2 .letter .imza{color:#794054;text-align:right;font-size:32px}
+@media(min-width:800px){
+.bolum:not(#b0).acik{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;padding:52px max(5vw,32px);gap:0;background-color:#221a21}
+.bolum:not(#b0) .facing{justify-self:end;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(100%,520px);height:clamp(490px,73vh,760px);background:linear-gradient(100deg,#f4e9d7,#eee0c9 84%,#c8b8a0 98%,#95836f);border-radius:6px 0 0 6px;box-shadow:-3px 3px #b3a18a,-5px 6px #ded0b9,-7px 8px #b5a58e,-18px 24px 50px #0006}
+.facing figure{width:72%;padding:9px 9px 16px;background:#fff9ee;transform:rotate(-4deg);box-shadow:2px 5px 12px #49332345}
+.facing img{display:block;width:100%;height:clamp(205px,34vh,335px);object-fit:cover;object-position:center 36%}
+.facing figcaption{font:italic clamp(20px,2vw,31px) var(--serif);color:#55383a;margin-top:12px}
+.facing>span{position:absolute;bottom:6%;font:italic 16px var(--serif);color:#735e50}
+.bolum:not(#b0) .kart{justify-self:start;align-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(100%,520px);min-height:clamp(490px,73vh,760px);margin:0;padding:30px 28px;background:linear-gradient(90deg,#0c090caa,transparent 9%),linear-gradient(140deg,#392a35f5,#201b26f7);box-shadow:3px 3px #b6a691,5px 6px #d0c0a4,7px 8px #a49178,18px 24px 50px #0006;border-radius:0 5px 5px 0}
+#b1 .kart{background:linear-gradient(100deg,#0b0d1be6,#1c2443d9)}
+#b2 .kart{background:linear-gradient(115deg,#2a1924,#4c2c38 50%,#271a22)}
+.kutu-sahne,#b3 .bilet,#b3 .kocan,#b4 .cerceve{width:100%}.bolum .ileri{max-width:310px}
+}
+@media(max-width:799px){
+.bolum:not(#b0) .kart{padding:66px 24px 40px}
+.bolum:not(#b0):before{content:"";display:block;position:absolute;inset:0 auto 0 0;width:10px;background:linear-gradient(90deg,#0a060a9e,transparent);pointer-events:none;z-index:2}
+#b0 .album-cover{flex-grow:1}
+}
+/* Linen cover, inset title plate and photographic endpapers. */
+#b0{background:radial-gradient(ellipse at 12% 5%,#56313d,#291c26 66%);color:#efe4ce}
+#b0 .album-bar,#b0 .album-footer{border-color:#dbc19550;color:#d9c6ae}
+#b0 .wordmark{color:#f3ddbb}
+#b0 .album-cover{max-width:1330px;gap:0;grid-template-columns:.73fr 1.27fr}
+#b0 .album-copy{align-self:center;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:linear-gradient(98deg,#ece0c7,#fbf4e7 12%,#f5ead5 93%,#c8b998);padding:clamp(28px,4vw,74px);border-radius:3px 0 0 3px;box-shadow:-3px 3px #cbbaa0,-5px 6px #ad987e,0 16px 44px #0b060845;min-height:clamp(420px,36vw,580px)}
+#b0 .album-photo{align-self:center;border-radius:0 3px 3px 0;aspect-ratio:auto;height:clamp(420px,36vw,580px);box-shadow:2px 3px #cab89c,4px 6px #ad987e,8px 22px 45px #12090d77}
+#b0 h1{font-size:clamp(74px,8.2vw,130px)}
+#b0 .album-copy:after{content:"";position:absolute;inset:12px;border:1px solid #a2845d55;pointer-events:none}
+#b0 #basla{background:#542335;box-shadow:0 3px 8px #50243426}
+#b3 .bilet{color:#423021}
+#e2 .kupon .on{color:#e3cba5;background:linear-gradient(120deg,#783b4a,#512836 55%,#3e2230);box-shadow:inset 0 0 0 5px #592c3b,inset 0 0 0 6px #ad8663;animation:none}
+#e2 .sec{background:#33232c;border:1px solid #826958;border-radius:4px;box-shadow:none}
+@media(max-width:799px){
+#b0{padding-inline:16px}
+#b0 .album-cover{display:flex;flex-direction:column;max-width:540px;gap:0;padding:22px 0}
+#b0 .album-copy{display:grid;grid-template-columns:1fr auto;align-items:center;min-height:0;width:100%;padding:24px 22px 26px;border-radius:4px 4px 0 0;box-shadow:none}
+#b0 .album-copy:after{inset:8px}
+#b0 .dedication{font-size:16px}
+#b0 h1{font-size:clamp(41px,10vw,70px);line-height:1.06;margin:9px 0 12px;grid-column:1/-1}
+#b0 h1 br{display:none}
+#b0 .album-photo{width:100%;height:auto;aspect-ratio:1.36;border-radius:0 0 4px 4px}
+#b0 p{font-size:13px}#b0 #basla{font-size:13px;padding:12px 15px;gap:8px;margin:0}
+.bolum:not(#b0) .facing{order:0;display:block;align-self:center;width:clamp(100px,28vw,140px);position:relative;z-index:1;margin:60px 0 0;transform:rotate(-4deg)}
+.facing figure{padding:4px 4px 6px;background:#fcf1df;box-shadow:1px 4px 8px #10081188}.facing img{display:block;width:100%;height:clamp(58px,16vw,85px);object-fit:cover;object-position:center 37%}
+.facing figcaption{color:#643c43;font:italic 13px var(--serif);padding-top:3px}.facing>span{display:none}
+.bolum:not(#b0) .kart{margin:auto;padding:22px 22px 40px}
+}
+@media(max-width:365px){#b0 .album-copy{padding:20px 15px}#b0 .album-copy p{font-size:12px}#b0 #basla{padding:10px}}
