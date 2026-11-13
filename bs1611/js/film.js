@@ -9,43 +9,33 @@ let turning = false;
 function turnPage(from, reveal, heading) {
   if (turning) return;
   turning = true;
-  const sheet = document.createElement("div");
-  sheet.className = "turn-sheet";
-  sheet.setAttribute("aria-hidden", "true");
-  document.body.appendChild(sheet);
-  // Mount the actual outgoing page on the hinge so its live visuals remain intact.
-  const parent = from.parentNode;
-  const anchor = document.createComment("page position");
-  parent.insertBefore(anchor, from);
-  const scroll = window.scrollY;
-  const front = document.createElement("div");
-  front.className = "turn-front";
-  front.inert = true;
-  const back = document.createElement("div");
-  back.className = "turn-back";
-  back.innerHTML = "<i>B &amp; S</i>";
-  sheet.append(front,back);
-  front.appendChild(from);
-  front.scrollTop = scroll;
-  reveal();
-  window.scrollTo(0,0);
-  function finish(){
-    from.classList.remove("acik");
-    parent.insertBefore(from,anchor);
-    anchor.remove();
-    sheet.remove();
-    turning = false;
-    const title = document.querySelector(heading);
-    if(title){ title.tabIndex = -1; title.focus({preventScroll:true}); }
+  document.body.classList.add("page-changing");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  async function run() {
+    try {
+      if (!reduced && from.animate) {
+        await from.animate([{opacity:1},{opacity:0}], {
+          duration:180, easing:"ease-out"
+        }).finished;
+      }
+      from.classList.remove("acik");
+      reveal();
+      window.scrollTo(0,0);
+      const title = document.querySelector(heading);
+      const incoming = title && title.closest(".bolum, .ekran");
+      if (!reduced && incoming && incoming.animate) {
+        await incoming.animate([
+          {opacity:0, transform:"translateY(8px)"},
+          {opacity:1, transform:"translateY(0)"}
+        ], {duration:280,easing:"ease-out"}).finished;
+      }
+      if(title){title.tabIndex=-1;title.focus({preventScroll:true});}
+    } finally {
+      document.body.classList.remove("page-changing");
+      turning = false;
+    }
   }
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches || !sheet.animate){finish();return;}
-  const animation = sheet.animate([
-    {transform:"perspective(1800px) rotateY(0deg)",offset:0},
-    {transform:"perspective(1800px) rotateY(-38deg)",offset:.36},
-    {transform:"perspective(1800px) rotateY(-100deg)",offset:.76},
-    {transform:"perspective(1800px) rotateY(-164deg)",offset:1}
-  ], {duration:950,easing:"cubic-bezier(.33,.01,.25,1)",fill:"forwards"});
-  animation.finished.then(finish,finish);
+  run().catch(error => console.error("Page transition failed",error));
 }
 function git(n){
   if(turning) return;
@@ -148,11 +138,11 @@ function svgNokta(svg,e){var p=svg.createSVGPoint(),t=e.touches?e.touches[0]:e;p
  addEventListener("pointerup",function(){surukle=null})})();
 /* III koçanı yırt */
 (function(){var k=$("kocan"),b=$("bilet"),y0=null,dy=0,bitti3=!1;
- function bas(e){if(bitti3)return;e.preventDefault();acSes();y0=(e.touches?e.touches[0]:e).clientY;k.style.transition="none"}
- function hareket(e){if(y0==null)return;e.preventDefault();dy=Math.max(0,(e.touches?e.touches[0]:e).clientY-y0);k.style.transform="translateY("+dy*.9+"px) rotate("+dy*.06+"deg)";k.style.setProperty("--yirt",Math.min(1,dy/90));
+ function bas(e){if(bitti3)return;e.preventDefault();acSes();y0=(e.touches?e.touches[0]:e).clientY;k.style.transition="none";k.setPointerCapture&&k.setPointerCapture(e.pointerId)}
+ function hareket(e){if(y0==null)return;e.preventDefault();dy=Math.max(0,(e.touches?e.touches[0]:e).clientY-y0);k.style.setProperty("--tear-offset",dy*.7+"px");k.style.setProperty("--yirt",Math.min(1,dy/90));
   if(dy>18&&!k._s){k._s=1;gurultu(.25,.12,1800,600,1.2)}if(dy>95){kopar()}}
- function birak(){if(y0==null||bitti3)return;y0=null;k._s=0;k.style.transition="transform .5s cubic-bezier(.3,1.6,.5,1)";k.style.transform="";k.style.setProperty("--yirt",0)}
- function kopar(){bitti3=!0;y0=null;gurultu(.45,.35,2400,400,.9);titre([20,30,60]);k.style.transition="transform 1.3s cubic-bezier(.5,0,.8,.4), opacity 1.3s";k.style.transform="translate(40px,110vh) rotate(38deg)";k.style.opacity=0;
+ function birak(){if(y0==null||bitti3)return;y0=null;k._s=0;k.style.transition="transform .5s cubic-bezier(.3,1.6,.5,1)";k.style.setProperty("--tear-offset","0px");k.style.setProperty("--yirt",0)}
+ function kopar(){bitti3=!0;y0=null;gurultu(.45,.35,2400,400,.9);titre([20,30,60]);k.style.transition="transform 1.3s cubic-bezier(.5,0,.8,.4), opacity 1.3s";k.style.setProperty("--tear-offset","80px");k.style.opacity=0;setTimeout(function(){k.style.visibility="hidden";k.style.transform="";k.style.pointerEvents="none"},1350);
   setTimeout(function(){b.classList.add("damgali");ac&&ses&&(kalpAtis(.9),gurultu(.12,.4,400,200,.5));titre(50)},500);setTimeout(function(){b.classList.add("ucus")},850);
   setTimeout(function(){$("y-yazi").textContent="Sonra dünya, birlikte gezilecek bir yer oldu.";$("kocanNot").classList.add("gizli");bitti(3)},2800)}
  k.addEventListener("pointerdown",bas);addEventListener("pointermove",hareket,{passive:!1});addEventListener("pointerup",birak);addEventListener("pointercancel",birak)})();

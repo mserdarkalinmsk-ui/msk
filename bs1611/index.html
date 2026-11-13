@@ -81,10 +81,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
 @media(max-width:680px){.album-cover{gap:22px;padding:22px 0}.album-photo{width:100%;aspect-ratio:1.2;height:auto;background-size:cover}.print-stack{width:41%;left:49%;top:23%}.mount figcaption{font-size:16px}.photo-nav{bottom:8px;right:8px}.album-footer{margin-top:auto}}
 @media(prefers-reduced-motion:reduce){.print-stack{transition:none}}
 </style>
-<link rel="stylesheet" href="css/book.css">
+<link rel="stylesheet" href="css/book.css?v=fix2">
 </head>
 <body>
-<canvas id="yagmur"></canvas>
+<nav class="album-tools" aria-label="Albüm kontrolleri"><button type="button" id="full-view">Tam ekran</button><button type="button" id="share-album">Paylaş</button></nav><div id="tool-status" role="status"></div><canvas id="yagmur"></canvas>
 <div class="bant-ust"></div><div class="bant-alt"></div>
 <div class="jenerik" id="jenerik"><div class="j-ic"><small>16 KASIM 2025'TEN BERİ</small><b>Banu &amp; Serdar</b><i>bir aşk hikâyesi</i></div></div><div class="parilti" id="parilti"></div>
 <button id="ses" aria-label="Ses">🔊</button>
@@ -271,7 +271,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
   </div>
 </section>
 
-<script src="js/film.js?v=folio1"></script>
+<script src="js/film.js?v=fix2"></script>
 
 <script src="js/nesne3d.js" defer></script>
 <script src="js/sahne3d.js" defer></script>
@@ -312,5 +312,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
   });
 })();
 </script>
+<script src="js/controls.js?v=fix2"></script>
 </body>
 </html>
