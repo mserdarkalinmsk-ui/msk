@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Banu &amp; Serdar</title>
+<meta property="og:title" content="Banu &amp; Serdar">
+<meta property="og:description" content="Bir aşk hikâyesi · 16 Kasım">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="css/film.css">
+<link rel="preload" as="image" href="img/kare4.jpg">
+</head>
+<body>
+<canvas id="yagmur"></canvas>
+<div class="bant-ust"></div><div class="bant-alt"></div>
+<div class="jenerik" id="jenerik"><div class="j-ic"><small>16 KASIM 2025'TEN BERİ</small><b>Banu &amp; Serdar</b><i>bir aşk hikâyesi</i></div></div><div class="parilti" id="parilti"></div>
+<button id="ses" aria-label="Ses">🔊</button>
+<div class="perde" id="perde"><div class="perde-ic"><small id="perdeNo"></small><b id="perdeAd"></b><i></i></div></div>
+
+<section class="ekran acik" id="e1">
+  <div class="ilerle" id="ilerle"><i></i><i></i><i></i><i></i></div>
+
+  <!-- 0 · Kapak -->
+  <div class="bolum b-kapak acik" id="b0"><div class="fon" data-f="3"></div><div class="kart soru"><div class="cerceve">
+    <div class="mono">B<i>&amp;</i>S</div>
+    <div class="ust">Yalnızca Banu için</div>
+    <h1>Hikâyemizin kapısı</h1>
+    <p>Dört bölüm, dört an. Her birini sen açacaksın.</p>
+    <div class="zarf" id="zarf">
+      <div class="zarf-govde"></div><div class="zarf-kapak"></div>
+      <button type="button" class="muhur" id="basla" aria-label="Mührü kır"><span>B&amp;S</span></button>
+    </div>
+    <div class="ust" style="margin-top:14px">Mührü kır · Sesi aç</div>
+  </div></div></div>
+
+  <!-- I · İlk buluşma: yıldızlar -->
+  <div class="bolum b-gece" id="b1"><canvas class="gokyuzu" id="gokyuzu"></canvas><div class="kart soru">
+    <div class="ust">Bölüm I</div><h1>İlk Buluşma</h1>
+    <p id="g-yazi">O gece gökyüzü bizi bekliyordu. Parmağını parlayan yıldızlara sırayla götür.</p>
+    <svg id="gok" viewBox="0 0 300 280" aria-label="Yıldızlar">
+      <path id="g-yol" d="M150 250 L52 150 L84 62 L150 104 L216 62 L248 150 Z" fill="none" stroke="#f3e2bd" stroke-width="1.2" stroke-linejoin="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+      <defs>
+        <clipPath id="kalpKes"><path d="M150 250 L52 150 L84 62 L150 104 L216 62 L248 150 Z"/></clipPath>
+        <filter id="parla" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <image id="kalpFoto" clip-path="url(#kalpKes)" x="40" y="50" width="220" height="210" preserveAspectRatio="xMidYMid slice" opacity="0"/>
+      <g id="g-toz"></g><g id="g-yildiz"></g>
+    </svg>
+    <div class="kalp3d gizli" id="kalp3d"><div class="kalp-don" id="kalpDon"></div></div>
+    <button type="button" class="ileri gizli" data-git="2">Devam ▸</button>
+  </div></div>
+
+  <!-- II · İlk teklif: yüzük kutusu -->
+  <div class="bolum b-kadife" id="b2"><div class="fon" data-f="2"></div><div class="kart soru">
+    <div class="ust">Bölüm II</div><h1>İlk Teklif</h1>
+    <p id="k-yazi">Kalbim hiç o kadar hızlı atmamıştı. Hisset.</p>
+    <div class="kutu-sahne"><svg class="tut-halka" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" class="iz0"/><circle cx="60" cy="60" r="54" id="tutHalka" pathLength="100"/></svg><div class="kutu-parilti" id="kutuParilti"></div><div class="kutu" id="kutu">
+      <div class="kutu-alt"><div class="yastik"></div><div class="yuzuk"><div class="tas"></div><i class="pirilti p1">✦</i><i class="pirilti p2">✦</i><i class="pirilti p3">✦</i></div></div>
+      <div class="kapak" id="kapak"><span>B &amp; S</span></div>
+    </div></div>
+    <div class="anifoto gizli" id="aniFoto2"><img alt=""><span>Ve sen “evet” dedin.</span></div>
+    <div class="ust" id="tutNot" style="margin-top:22px">Kutuya basılı tut</div>
+    <button type="button" class="ileri gizli" data-git="3">Devam ▸</button>
+  </div></div>
+
+  <!-- III · İlk yolculuk: biniş kartı -->
+  <div class="bolum b-yol" id="b3"><div class="fon" data-f="1"></div><div class="kart soru">
+    <div class="ust">Bölüm III</div><h1>İlk Yolculuk</h1>
+    <p id="y-yazi">İlk bavul, ilk pasaport kuyruğu, yan yana iki koltuk.</p>
+    <div class="polaroid" id="pol3"><img alt=""><span>İlk yolculuğumuz</span><i class="bant"></i></div>
+    <div class="bilet" id="bilet">
+      <div class="bilet-ust"><span>BINIŞ KARTI</span><span>B&amp;S 1611</span></div>
+      <div class="rota"><b>IST</b>
+        <svg viewBox="0 0 160 50"><path d="M6 40 Q80 -14 154 40" fill="none" stroke="#8a6a3a" stroke-width="1.2" stroke-dasharray="3 5"/><text id="ucak" font-size="20">✈</text></svg>
+        <b>∞</b></div>
+      <div class="bilet-alt"><div><small>YOLCULAR</small>Banu &amp; Serdar</div><div><small>KOLTUK</small>1A · 1B</div><div><small>SINIF</small>Sonsuz</div></div>
+      <div class="damga" id="damga"><svg viewBox="0 0 110 110"><defs><filter id="murekkep"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.6"/><feComposite in="SourceGraphic" operator="in"/></filter></defs>
+        <g filter="url(#murekkep)" fill="none" stroke="#b3243f"><circle cx="55" cy="55" r="50" stroke-width="3"/><circle cx="55" cy="55" r="44" stroke-width="1"/>
+        <text x="55" y="56" text-anchor="middle" fill="#b3243f" stroke="none" font-size="15" font-weight="600" letter-spacing="1.5" font-family="Jost, sans-serif">BİRLİKTE</text>
+        <text x="55" y="72" text-anchor="middle" fill="#b3243f" stroke="none" font-size="7.5" letter-spacing="2" font-family="Jost, sans-serif">HER YERE · ∞</text></g></svg></div>
+    </div>
+    <div class="kocan" id="kocan"><div class="kocan-ic"><span>KOÇAN · STUB</span><b>B&amp;S ∞ 1611</b><span>ESB ⇢ ∞</span></div></div>
+    <div class="ust" id="kocanNot" style="margin-top:10px;color:#9c6b2f">Koçanı aşağı çekip yırt ↓</div>
+    <button type="button" class="ileri gizli" data-git="4">Son sahne ▸</button>
+  </div></div>
+
+  <!-- IV · Evlilik: tarih kilidi -->
+  <div class="bolum b-kilit" id="b4"><div class="fon" data-f="0"></div><div class="kart soru"><div class="cerceve" id="f1">
+    <div class="ust">Bölüm IV</div><h1>Evet dediğimiz gün</h1>
+    <p>Kasanın şifresi bir tarih. Çarkları parmağınla çevir.</p>
+    <div class="kilit">
+      <div class="tek" data-i="0"><button type="button" class="ok" data-y="1">▲</button><b></b><small>GÜN</small><button type="button" class="ok" data-y="-1">▼</button></div>
+      <div class="tek" data-i="1"><button type="button" class="ok" data-y="1">▲</button><b></b><small>AY</small><button type="button" class="ok" data-y="-1">▼</button></div>
+      <div class="tek genis" data-i="2"><button type="button" class="ok" data-y="1">▲</button><b></b><small>YIL</small><button type="button" class="ok" data-y="-1">▼</button></div>
+    </div>
+    <button type="button" id="b1x">Kilidi aç</button>
+    <div class="hata" id="h1"></div>
+  </div></div></div>
+</section>
+
+<section class="ekran" id="e2">
+  <div class="hero" id="hero">
+    <div class="hero-yazi">
+      <div class="ust">Birinci Yıl Dönümü · 16 Kasım</div>
+      <div class="baslik">Banu <b>&amp;</b> Serdar</div>
+      <div class="altyazi" id="altyazi"></div>
+    </div>
+    <div class="asagi">▾</div>
+  </div>
+  <div class="kart">
+    <div class="sayac" id="sayac">0</div>
+    <div class="alt">GÜNDÜR EVLİYİZ</div>
+    <div class="canli" id="canli"></div>
+    <div class="cizgi">◆</div>
+    <p class="mesaj" id="mektup">Bir yıl önce "evet" dediğimiz o günden beri her sabah aynı şeyi düşünüyorum: iyi ki sen.
+    Gülüşün evimin ışığı, yanımda olman en büyük şansım.
+    Nice yıllara, nice yolculuklara, birlikte yaşlanacağımız günlere… Seni çok seviyorum.</p>
+    <div class="imza">Serdar</div>
+    <div class="cizgi">◆</div>
+    <div class="ust">İkinci yıl dönümümüze</div>
+    <div class="geri" id="geri"><div><b>0</b><small>GÜN</small></div><div><b>00</b><small>SAAT</small></div><div><b>00</b><small>DAKİKA</small></div><div><b>00</b><small>SANİYE</small></div></div>
+    <div class="cizgi">◆</div>
+    <div class="ust" style="margin-bottom:16px">Hikâyemiz</div>
+    <div class="tunel" id="tunel"></div>
+    <div class="cizgi">◆</div>
+    <div class="ust">Süresiz geçerli</div>
+    <h2 class="bol">Sana üç davetiye</h2>
+    <div class="kuponlar">
+      <div class="kupon"><div class="ic"><div class="on">✦<small>DOKUN</small></div><div class="ar">Kahvaltı yatağıma gelir</div></div></div>
+      <div class="kupon"><div class="ic"><div class="on">✦<small>DOKUN</small></div><div class="ar">Filmi sen seçersin, itiraz yok</div></div></div>
+      <div class="kupon"><div class="ic"><div class="on">✦<small>DOKUN</small></div><div class="ar">Sürpriz bir kaçamak; bavul benden</div></div></div>
+    </div>
+    <div class="cizgi">◆</div>
+    <div class="ust">Son bir soru</div>
+    <h2 class="bol" style="font-style:italic;margin-top:8px">Benimle bir kez daha evlenir misin?</h2>
+    <div class="evlen" id="evlen"><button type="button" id="evet">Evet</button><button type="button" id="hayir">Hayır</button></div>
+    <div class="sonuc" id="sonuc"></div>
+    <div class="secim gizli" id="secim">
+      <div class="cizgi">◆</div>
+      <div class="ust">Şimdi sıra sende</div>
+      <h2 class="bol" style="font-style:italic;margin-top:8px">Peki şimdi ne yapmak istersin?</h2>
+      <div class="secenekler">
+        <button type="button" class="sec" data-s="Mum ışığında bir akşam yemeği"><svg class="ikon" viewBox="0 0 40 40"><path d="M20 5c3 4 4 6 4 8a4 4 0 0 1-8 0c0-2 1-4 4-8z"/><path d="M15 19h10v15H15z"/><path d="M10 34h20"/><path d="M20 17v2"/></svg><b>Mum ışığında akşam yemeği</b><small>Masa ayırtıldı sayılır</small></button>
+        <button type="button" class="sec" data-s="Şehirden kaçıp bir hafta sonu"><svg class="ikon" viewBox="0 0 40 40"><path d="M3 32l10-16 6 9 5-7 13 14z"/><circle cx="30" cy="10" r="4"/><path d="M3 36h34"/></svg><b>Şehirden kaçış</b><small>Bir hafta sonu, sadece ikimiz</small></button>
+        <button type="button" class="sec kilitli" id="yurtdisi" data-s="Yurt dışı gezisi"><svg class="ikon" viewBox="0 0 40 40"><path d="M36 6L4 18l11 4 4 11 5-8 8 5z"/><path d="M15 22L36 6"/></svg><b>Yurt dışı gezisi 🔒</b><small>Kilidi açmak için bir soru</small></button>
+      </div>
+      <div class="yd gizli" id="yd">
+        <p class="mesaj" style="font-size:1.15rem">İlk yurt dışı gezimiz hangi ülkeyeydi?</p>
+        <input id="ydc" type="text" autocomplete="off" placeholder="Cevabın">
+        <button type="button" id="ydb">Kilidi aç</button>
+        <div class="hata" id="ydh"></div>
+      </div>
+      <div class="kazi-alan gizli" id="kaziAlan">
+        <div class="cizgi">◆</div>
+        <div class="ust">Bir sürprizim var</div>
+        <h2 class="bol" style="margin-top:8px">Kazı ve gör</h2>
+        <div class="kazi" id="kazi">
+          <div class="bp">
+            <div class="bp-ust"><span>BİNİŞ KARTI · BOARDING PASS</span><span>✈ B&amp;S 2026</span></div>
+            <div class="bp-rota">
+              <div><b>ESB</b><small>ANKARA</small></div>
+              <div class="bp-ok"><svg viewBox="0 0 120 30"><path d="M4 22 Q60 -8 116 22" fill="none" stroke="#9c763c" stroke-width="1.2" stroke-dasharray="3 4"/></svg><span>✈</span></div>
+              <div><b>VIE</b><small>VİYANA</small></div>
+            </div>
+            <div class="bp-alt">
+              <div><small>YOLCU</small>Banu</div><div><small>YOLCU</small>Serdar</div>
+              <div><small>KOLTUK</small>2A · 2B</div><div><small>SINIF</small>Balayı</div>
+            </div>
+            <div class="bp-not">Bavulunu hazırla, Viyana bizi bekliyor.</div>
+          </div>
+          <canvas id="kaziTuval"></canvas>
+        </div>
+        <p class="ipucu" id="kaziNot" style="margin:10px 0 0">Parmağınla kazı</p>
+      </div>
+      <div class="secildi gizli" id="secildi">
+        <div class="sonuc" id="secMetin"></div>
+        <p style="margin-top:6px">Gerisini bana bırak. 💛</p>
+        <a class="gonder" id="gonder" target="_blank" rel="noopener">Serdar'a haber ver</a>
+      </div>
+    </div>
+    <div class="cizgi">◆</div>
+    <div class="ust">Kayıtlı kareler</div>
+    <div id="sahne"><div id="yedek">💞</div></div>
+    <div class="final">
+      <div class="son">SON</div>
+      <div class="kredi"><small>BAŞROLDE</small>Banu &amp; Serdar</div>
+      <div class="kredi"><small>MÜZİK</small>İki kalbin ritmi</div>
+      <div class="kredi"><small>DEVAM FİLMİ</small>Çekimleri sürüyor…</div>
+    </div>
+    <p class="ipucu">Dokun · Sürükle · Hisset</p>
+  </div>
+</section>
+
+<script src="js/film.js"></script>
+
+<script src="js/sahne3d.js" defer></script>
+
+</body>
+</html>
