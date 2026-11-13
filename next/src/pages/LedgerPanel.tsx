@@ -7,6 +7,8 @@ import type { Entry, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
 import { elapsed } from '../domain/calc';
 import { DataTable, type Column } from '../ui/DataTable';
+import { base, Chart } from '../ui/Chart';
+import { axisX, axisY } from './Overview';
 import { exportOk } from '../ui/exportGate';
 import { date, full, month, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
@@ -185,14 +187,25 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   return (
     <>
       <div class="range-sum"><div><span>Budget (incl. 7%)</span><b class="num">{full(sum(all, (l) => l.budget.cost) + (wb.totals.admin?.budget || r2(sum(all, (l) => l.budget.cost) * 0.07)))}</b></div>{years.map((y) => <div><span>{yl(y)}</span><b class="num">{full(r2(sum(all, (l) => l.years[y]?.amount ?? 0) * 1.07))}</b></div>)}<div><span>Total spent (incl. 7%)</span><b class="num">{full(r2(sum(all, (l) => l.amount) * 1.07))}</b></div><span class="grow" style={{ flex: 1 }} /><label class="muted" style={{ fontSize: '13px', display: 'flex', gap: '6px', alignItems: 'center' }}><input type="checkbox" checked={showU} onChange={(e) => setShowU((e.target as HTMLInputElement).checked)} /> Show units</label><button class="btn primary" onClick={xlsx}>⬇ Excel</button></div>
+      <Chart height={260} label="Spending by year and heading" option={(t) => ({
+        ...base(t), grid: { left: 8, right: 16, top: 34, bottom: 8, containLabel: true },
+        legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11 } },
+        tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => full(v) },
+        xAxis: { type: 'category', data: years.map(yl), ...axisX(t) }, yAxis: [{ type: 'value', ...axisY(t) }, { type: 'value', ...axisY(t), splitLine: { show: false } }],
+        series: [
+          ...heads.map((h, i) => ({ name: `${h}. ${HEADS[h] ?? 'Other lines'}`, type: 'bar', stack: 'y', barMaxWidth: 64, itemStyle: { color: t.c[i % t.c.length], borderRadius: 0 }, emphasis: { focus: 'series' }, data: years.map((y) => r2(sum(all.filter((l) => l.code.split('.')[0] === h), (l) => l.years[y]?.amount ?? 0))) })),
+          { name: 'Cumulative spent', type: 'line', yAxisIndex: 1, symbolSize: 7, lineStyle: { width: 2.5, color: t.ink }, itemStyle: { color: t.ink }, data: years.map((_, i) => r2(years.slice(0, i + 1).reduce((a, y) => a + sum(all, (l) => l.years[y]?.amount ?? 0), 0))),
+            markLine: sum(all, (l) => l.budget.cost) ? { symbol: 'none', lineStyle: { color: t.critical, type: 'dashed' }, label: { formatter: 'Direct budget', color: t.critical, fontSize: 11, position: 'insideEndTop' }, data: [{ yAxis: sum(all, (l) => l.budget.cost) }] } : undefined },
+        ],
+      })} />
       <div class="yr-cards">{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h), b = sum(L, (l) => l.budget.cost), a = sum(L, (l) => l.amount), over = a > b + 0.5;
         return <button class={`yr-card ${over ? 'over' : ''}`} onClick={() => setShut(heads.filter((x) => x !== h))} title="Show only this heading">
-          <span class="t">{h}. {HEADS[h] ?? ''}</span><b>{b ? `${Math.round((a / b) * 100)}%` : 'no budget'}</b><small>{short(a)} of {short(b)}</small>
+          <span class="t">{h}. {HEADS[h] ?? 'Other lines'}</span><b>{b ? `${Math.round((a / b) * 100)}%` : 'no budget'}</b><small>{short(a)} of {short(b)}</small>
           <div class="yr-stack">{years.map((y, i) => { const v = sum(L, (l) => l.years[y]?.amount ?? 0); return v > 0 ? <span title={`${yl(y)}: ${full(v)}`} style={{ width: `${(v / Math.max(a, b, 1)) * 100}%`, background: YC[Math.min(i, YC.length - 1)] }} /> : null; })}</div></button>; })}
         <div class="yr-legend">{years.map((y, i) => <span><i style={{ background: YC[Math.min(i, YC.length - 1)] }} />{y}</span>)}{shut.length ? <button class="btn ghost" onClick={() => setShut([])}>Show all headings</button> : null}</div></div>
       <div class="table-wrap yr-wrap"><table class="yr-table">
         <thead><tr><th>Line</th><th>Description</th><th class="r yr-b">Approved budget</th>{years.map((y) => <th class="r">{yl(y)}</th>)}<th class="r yr-t">Total spent</th><th class="r yr-t">Remaining</th><th class="yr-t">Used</th></tr></thead>
-        <tbody>{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h" onClick={() => setShut(shut.includes(h) ? shut.filter((x) => x !== h) : [...shut, h])} style={{ cursor: 'pointer' }}><td colSpan={6 + years.length}><span class="yr-tw">{shut.includes(h) ? '▸' : '▾'}</span>{h}. {HEADS[h] ?? ''} <span class="yr-hn">{L.length} line{L.length > 1 ? 's' : ''}</span></td></tr>{shut.includes(h) ? null : L.map(row)}{tot(L, `Sub-total ${h}. ${HEADS[h] ?? ''}`, 'yr-subt')}</>; })}</tbody>
+        <tbody>{heads.map((h) => { const L = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h" onClick={() => setShut(shut.includes(h) ? shut.filter((x) => x !== h) : [...shut, h])} style={{ cursor: 'pointer' }}><td colSpan={6 + years.length}><span class="yr-tw">{shut.includes(h) ? '▸' : '▾'}</span>{h}. {HEADS[h] ?? 'Other lines'} <span class="yr-hn">{L.length} line{L.length > 1 ? 's' : ''}</span></td></tr>{shut.includes(h) ? null : L.map(row)}{tot(L, `Sub-total ${h}. ${HEADS[h] ?? ''}`, 'yr-subt')}</>; })}</tbody>
         <tfoot>{tot(all, 'Total direct costs', 'yr-subt')}
           {(() => { const db = sum(all, (l) => l.budget.cost), da = sum(all, (l) => l.amount), ab = wb.totals.admin?.budget || r2(db * 0.07), aa = r2(da * 0.07);
             const ay = (y: string) => r2(sum(all, (l) => l.years[y]?.amount ?? 0) * 0.07);

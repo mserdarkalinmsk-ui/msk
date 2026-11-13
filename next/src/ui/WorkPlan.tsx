@@ -127,14 +127,15 @@ function WpHero({ p, f, dPct, ePct, remPct }: { p: Project; f: WpFollowUp; dPct:
     <div class="wp-hero">
       <div class="wp-hero-h">
         <div><span class="eyebrow">{p.bh ? `${p.bh} · ` : ''}Work Plan follow-up</span><h3>{p.name}</h3>
-          <div class="wp-period">WP No:{f.wp.no} <b>{f.wp.from ? date(f.wp.from) : '—'} → {f.wp.to ? date(f.wp.to) : '—'}</b> · report of {f.asAt ? date(f.asAt) : '—'}</div></div>
+          <div class="wp-period">WP No:{f.wp.no} <b>{f.wp.from ? date(f.wp.from) : '—'} → {f.wp.to ? date(f.wp.to) : '—'}</b> {f.asAt ? ` · report of ${date(f.asAt)}` : ''}</div></div>
         <div class={`wp-verdict ${V.level}`}><b>{V.label}</b>{V.flags.length ? <ul>{V.flags.map((x) => <li>{x}</li>)}</ul> : <span>Previous plan delivered and this plan keeps pace with the budget left.</span>}</div>
       </div>
       <div class="wp-hero-b">
         <Ring v={V.used} label="Activity budget used" sub={`S&C ${full(f.sc)} of ${full(f.activity)}`} color={V.used + 0.15 < V.timeUsed ? c('warning') : c('')} />
         <Ring v={V.timeUsed} label="Time elapsed" sub={`${f.elapsed} of ${f.duration} months`} color="var(--muted)" />
-        <Ring v={dPct ?? 0} label={f.prev ? `WP ${f.prev.no} delivered` : 'Previous WP'} sub={f.prev ? `spent ${f.prevSpent == null ? '—' : full(f.prevSpent)} of ${full(f.prev.planned)}` : 'first Work Plan'} color={c(tone(dPct, 0.8, 0.5) || 'x')} />
-        <Ring v={ePct ?? 0} label={f.prev ? `WP ${f.prev.no} spent & committed` : '—'} sub={f.prev && f.prevSc != null ? full(f.prevSc) : ''} color={c(tone(ePct, 0.8, 0.5) || 'x')} />
+        {f.prev ? <><Ring v={dPct ?? 0} label={`${wpName(f.prev)} delivered`} sub={`spent ${f.prevSpent == null ? '—' : full(f.prevSpent)} of ${full(f.prev.planned)}`} color={c(tone(dPct, 0.8, 0.5) || 'x')} />
+          <Ring v={ePct ?? 0} label={`${wpName(f.prev)} spent & committed`} sub={f.prevSc != null ? full(f.prevSc) : ''} color={c(tone(ePct, 0.8, 0.5) || 'x')} /></>
+          : <div class="wp-fig" style={{ borderColor: 'var(--border)' }}><span>Previous Work Plan</span><b style={{ fontSize: '15px' }}>First Work Plan</b><span>delivery appears from the next one</span></div>}
         <div class="wp-fig"><span>This WP plans</span><b>{full(f.wp.planned)}</b><span>{full(V.wpMonth)} / month</span>
           <span>Needed pace {V.need ? `${full(V.need)} / month` : '—'}</span></div>
         <div class={`wp-fig ${f.remaining < 0 ? 'serious' : ''}`}><span>Left after this WP</span><b>{full(f.remaining)}</b><span>{remPct == null ? '' : pct(remPct)} of activity budget · {f.remainingMonths} months</span></div>

@@ -85,13 +85,13 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   // 2. line not in the budget
   if (codes.length) {
     const by = new Map<string, Entry[]>();
-    for (const e of entries) if (e.line && e.line !== '0' && e.line !== '10' && !known(e.line)) by.set(e.line, [...(by.get(e.line) ?? []), e]);
+    for (const e of entries) if (e.line && e.line !== '0' && e.line !== '10' && !known(e.line)) { const a = by.get(e.line); if (a) a.push(e); else by.set(e.line, [e]); }
     for (const [l, E] of by) push('not-in-budget', 'error', `Line ${l} is not in the approved budget — ${E.length} entries, ${eur(E.reduce((a, e) => a + e.amount, 0))}. A typing error in the reporting line (or a budget revision not loaded).`, E);
   }
 
   // 3. account almost always on one heading, here on another
   const acc = new Map<string, Entry[]>();
-  for (const e of entries) if (e.account && e.line && e.line !== '0') acc.set(e.account, [...(acc.get(e.account) ?? []), e]);
+  for (const e of entries) if (e.account && e.line && e.line !== '0') { const a = acc.get(e.account); if (a) a.push(e); else acc.set(e.account, [e]); }
   for (const [a, E] of acc) {
     if (E.length < 5) continue;
     const head = (e: Entry) => e.line.split('.')[0], cnt = new Map<string, number>();
@@ -108,9 +108,12 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   for (const e of entries) {
     if (Math.abs(e.amount) < 100) continue;
     const k = e.src === 'invoice' ? `i|${e.po || e.supplier}|${e.date}|${r2(e.amount)}` : `g|${e.line}|${e.period}|${e.detail}|${e.description}|${r2(e.amount)}`;
-    seen.set(k, [...(seen.get(k) ?? []), e]);
+    { const a = seen.get(k); if (a) a.push(e); else seen.set(k, [e]); }
   }
-  const net = (E: Entry[]) => entries.filter((x) => E.some((e) => e.line === x.line && r2(x.amount) === -r2(e.amount) && (x.doc === e.doc || x.description === e.description))).length;
+  // Reversals: indexed by line and amount, so each duplicate group looks only at its possible counter-entries.
+  const byAmt = new Map<string, Entry[]>();
+  for (const x of entries) { const k = `${x.line}|${r2(x.amount)}`, a = byAmt.get(k); if (a) a.push(x); else byAmt.set(k, [x]); }
+  const net = (E: Entry[]) => { const hit = new Set<Entry>(); for (const e of E) for (const x of byAmt.get(`${e.line}|${-r2(e.amount)}`) ?? []) if (x.doc === e.doc || x.description === e.description) hit.add(x); return hit.size; };
   const dup = [...seen.values()].filter((E) => E.length > 1 && net(E) === 0);
   for (const E of dup) push('duplicate', 'warning', `${E.length} × ${eur(E[0].amount)} — ${E[0].src === 'invoice' ? `same PO ${E[0].po}, same day` : `same line ${E[0].line}, period ${E[0].period}, same description`}, no reversal. Check it was not posted twice.`, E);
 
@@ -174,6 +177,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   // 12b. open staff POs whose balance does not cover the months left of the contract period
   if (o.asAt && o.pos?.length) {
     const a = Date.parse(o.asAt), MO = 30.4375 * 86_400_000, short: { p: PO; need: number; left: number }[] = [];
+    const invByPo = new Map<string, Entry[]>(); for (const e of entries) if (e.src === 'invoice' && e.po) { const x = invByPo.get(e.po); if (x) x.push(e); else invByPo.set(e.po, [e]); }
     for (const p of o.pos) {
       const m = p.description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
       if (!m || !/open/i.test(p.status) || !/month/i.test(p.unitType)) continue;
@@ -181,7 +185,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
       if (!(t > a && a > f)) continue;
       // Months already paid = months with an invoice on this PO; the cost of a month = their average.
       const paid = new Map<string, number>();
-      for (const e of entries) if (e.src === 'invoice' && e.po === p.po) paid.set(e.date.slice(0, 7), (paid.get(e.date.slice(0, 7)) ?? 0) + e.amount);
+      for (const e of invByPo.get(p.po) ?? []) paid.set(e.date.slice(0, 7), (paid.get(e.date.slice(0, 7)) ?? 0) + e.amount);
       const last = [...paid.keys()].sort().at(-1);
       const per = paid.size ? [...paid.values()].reduce((x, v) => x + v, 0) / paid.size : p.spent / Math.max(1, (a - f) / MO);
       const from = last ? Date.parse(last + '-01') + 32 * 86_400_000 : a;

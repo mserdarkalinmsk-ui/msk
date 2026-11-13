@@ -59,7 +59,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
   const countries = useStore((s) => s.ledger.countries);
   const [tab, setTab] = useState<Tab>(SLUG[sub ?? '']?.tab ?? 'Summary');
-  useEffect(() => { const x = SLUG[sub ?? '']; if (x) { setTab(x.tab); scrollTo({ top: 0 }); } }, [sub]);
+  useEffect(() => { const x = SLUG[sub ?? '']; if (x) { setTab(x.tab); setTimeout(() => { const t = document.querySelector('.tabs'); if (x.tab === 'Summary' || !t) scrollTo({ top: 0 }); else scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + scrollY - 72) }); }, 120); } }, [sub]);
   const [fc, setFc] = useState(false);
   useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2><p>It may have been deleted.</p><button class="btn" onClick={() => go('projects')}>All projects</button></div></div>;
