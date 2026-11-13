@@ -6,7 +6,7 @@ function hs(s){s=unescape(encodeURIComponent(s));var x=2166136261;for(var i=0;i<
 function sall(m){var f=$("f1");$("h1").textContent=m;f.classList.remove("sallan");void f.offsetWidth;f.classList.add("sallan")}
 var BAS=[["",""],["I","İlk Buluşma"],["II","İlk Teklif"],["III","İlk Yolculuk"],["IV","Evet Dediğimiz Gün"]];
 function git(n){var pd=$("perde");$("perdeNo").textContent="BÖLÜM "+BAS[n][0];$("perdeAd").textContent=BAS[n][1];pd.classList.add("gor");titre(15);document.body.classList.add("film");
- setTimeout(function(){[].forEach.call(document.querySelectorAll(".bolum"),function(b){b.classList.remove("acik")});$("b"+n).classList.add("acik");$("ilerle").classList.toggle("gor",n>0);[].forEach.call($("ilerle").children,function(e,i){e.className=i<n?"ok":""});scrollTo(0,0)},800);
+ setTimeout(function(){[].forEach.call(document.querySelectorAll(".bolum"),function(b){b.classList.remove("acik")});$("b"+n).classList.add("acik");$("ilerle").classList.toggle("gor",n>0);[].forEach.call($("ilerle").children,function(e,i){e.className=i<n?"ok":""});scrollTo(0,0);window.bolumGecis&&bolumGecis(n)},800);
  setTimeout(function(){pd.classList.remove("gor")},2400)}
 function bitti(n){titre([20,60,40]);var b=$("b"+n).querySelector(".ileri");b&&b.classList.remove("gizli");ding(n)}
 $("basla").addEventListener("click",function(){acSes();titre(30);$("zarf").classList.add("acik");ding(0);muzik();document.body.classList.add("sinema");
@@ -76,21 +76,22 @@ function svgNokta(svg,e){var p=svg.createSVGPoint(),t=e.touches?e.touches[0]:e;p
   var n=P[y+1];if(n&&Math.hypot(p.x-n[0],p.y-n[1])<42){y++;yak(y);if(y===6){bitir()}}}
  function birak(){cizer=!1;canli.style.opacity=0}
  function bitir(){bitti1=!0;cizer=!1;canli.style.opacity=0;$("g-yol").style.strokeDashoffset=0;ac&&arp(ac.currentTime+.2);titre([30,60,30,60,120]);$("g-yazi").textContent="Ve yıldızlar bir kalbe dönüştü.";
-  setTimeout(function(){$("kalp3d").classList.remove("gizli");$("gok").style.opacity=".35"},1500);setTimeout(function(){bitti(1)},2400)}
+  setTimeout(function(){var kk=$("kalp3d");kk.classList.remove("gizli");$("gok").style.opacity=".25";if(window.Nesne3D){try{var K3=Nesne3D.kalp(kk,FOTO[3]);kk.classList.add("uc");var o2=window.bolumGecis;window.bolumGecis=function(n){o2&&o2(n);K3&&(K3.dur(),K3=null)}}catch(e){}}},1500);setTimeout(function(){bitti(1)},2400)}
  svg.addEventListener("pointerdown",bas);addEventListener("pointermove",hareket,{passive:!1});addEventListener("pointerup",birak);addEventListener("pointercancel",birak)})();
 /* II basılı tut: kalp atışı */
-(function(){var k=$("kutu"),h=$("tutHalka"),p=0,tut=!1,acildi=!1,son=0,tb=0,rot=0,surukle=null;
+(function(){var k=$("kutu"),h=$("tutHalka"),p=0,tut=!1,acildi=!1,son=0,tb=0,rot=0,surukle=null,Y3=null;
+ var onceki=window.bolumGecis;window.bolumGecis=function(n){onceki&&onceki(n);if(n===2&&!Y3&&window.Nesne3D){try{Y3=Nesne3D.kutu($("kutu3d"));k.parentNode.classList.add("uc")}catch(e){Y3=null}}if(n!==2&&Y3){Y3.dur();Y3=null}};
  function bas(e){if(acildi)return;e.preventDefault();tut=!0;acSes();$("tutNot").textContent="Bırakma…"}
  function birak(){tut=!1;!acildi&&p<1&&($("tutNot").textContent="Basılı tut")}
  k.addEventListener("pointerdown",bas);["pointerup","pointerleave","pointercancel"].forEach(function(n){k.addEventListener(n,birak)});
- (function d(z){if(!acildi){var dt=Math.min(.05,(z-son)/1e3||0);son=z;p=Math.max(0,Math.min(1,p+(tut?dt/2.6:-dt/1.2)));
+ (function d(z){if(!acildi){var dt=Math.min(.12,(z-son)/1e3||0);son=z;p=Math.max(0,Math.min(1,p+(tut?dt/2.6:-dt/1.2)));
    h.style.strokeDashoffset=100-p*100;k.style.transform="rotateX(-12deg) translate("+(Math.random()-.5)*p*4+"px,"+(Math.random()-.5)*p*3+"px) scale("+(1+p*.06)+")";
-   $("kutuParilti").style.opacity=p*.9;var aral=900-p*620;if(tut&&z-tb>aral){tb=z;kalpAtis(.35+p*.5);titre(25+p*30)}
-   if(p>=1){acildi=!0;ac&&arp(ac.currentTime);gurultu(.5,.25,3000,9000,.6);titre([60,40,120]);k.style.transform="rotateX(-12deg)";k.classList.add("acik","patla");setTimeout(function(){$("kapak").style.display="none"},900);h.parentNode.classList.add("gizli");
+   $("kutuParilti").style.opacity=p*.9;Y3&&Y3.ilerleme(p,tut);var aral=900-p*620;if(tut&&z-tb>aral){tb=z;kalpAtis(.35+p*.5);titre(25+p*30)}
+   if(p>=1){acildi=!0;ac&&arp(ac.currentTime);gurultu(.5,.25,3000,9000,.6);titre([60,40,120]);k.style.transform="rotateX(-12deg)";k.classList.add("acik","patla");Y3&&(Y3.ilerleme(1,!1),Y3.ac());setTimeout(function(){$("kapak").style.display="none"},900);h.parentNode.classList.add("gizli");
     $("tutNot").textContent="Yüzüğü parmağınla çevir";$("k-yazi").textContent="Kalbim hâlâ o an gibi atıyor.";setTimeout(function(){$("aniFoto2").classList.remove("gizli")},1400);bitti(2)}}
   requestAnimationFrame(d)})(0);
  var y=k.querySelector(".yuzuk");k.addEventListener("pointerdown",function(e){acildi&&(surukle=e.clientX)});
- addEventListener("pointermove",function(e){if(surukle==null)return;rot+=(e.clientX-surukle)*1.4;surukle=e.clientX;y.style.transform="rotateY("+rot+"deg)"});
+ addEventListener("pointermove",function(e){if(surukle==null)return;rot+=(e.clientX-surukle)*1.4;Y3&&Y3.don(e.clientX-surukle);surukle=e.clientX;y.style.transform="rotateY("+rot+"deg)"});
  addEventListener("pointerup",function(){surukle=null})})();
 /* III koçanı yırt */
 (function(){var k=$("kocan"),b=$("bilet"),y0=null,dy=0,bitti3=!1;

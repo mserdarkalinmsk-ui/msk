@@ -445,6 +445,15 @@
   #sahne::after { background: linear-gradient(transparent, #000); }
   .sayac { background: linear-gradient(180deg, #fbf3df 10%, #cfae72 60%, #8f6c38 100%); -webkit-background-clip: text; background-clip: text; }
   .son { font-weight: 400; }
+
+  /* gerçek 3D nesneler */
+  .sahne3d { position: absolute; left: -22px; right: -22px; top: -30px; bottom: -40px; pointer-events: none; }
+  .kutu-sahne { height: 300px; }
+  .kutu-sahne.uc .kutu { opacity: 0; width: 240px; height: 200px; }
+  .kutu-sahne.uc .kutu-parilti { top: 50%; mix-blend-mode: screen; }
+  .kutu-sahne.uc .tut-halka { bottom: 10px; width: 280px; height: 280px; margin-left: -140px; }
+  .kalp3d.uc { width: 300px; height: 300px; margin: -150px 0 0 -150px; perspective: none; }
+  .kalp3d.uc .kalp-don { display: none; } .kalp3d.uc::after { display: none; }
   #yagmur { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
   @media (min-width: 431px) { .sayac { font-size: 112px; } }
   @keyframes gir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
