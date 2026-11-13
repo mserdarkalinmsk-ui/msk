@@ -53,6 +53,9 @@ describe('dated ledger of a system extraction', () => {
     expect(staff.years['2026'].amount).toBe(5400);
     expect(staff.years['2027'].amount).toBe(200);
     expect(staff.amount).toBe(5600);
+    // months on a staff PO are capped at the units ordered: 0.25 month ordered counts 0.25, not a whole month
+    const cap = spendByYear([{ ...wb.entries!.find((e) => e.po === '900003')!, date: '2026-03-31' }, { ...wb.entries!.find((e) => e.po === '900003')!, date: '2026-04-30' }], { lines: wb.lines, pos: wb.pos.map((x) => (x.po === '900003' ? { ...x, units: 1.25 } : x)) });
+    expect(cap.lines.find((l) => l.code === '1.1.1')!.units).toBe(1.25);
     const ev = Y.lines.find((l) => l.code === '5.7')!;
     expect(ev.years['2026'].units).toBe(1.2);
     expect(Y.lines.reduce((a, l) => a + l.amount, 0)).toBe(wb.entries!.filter((e) => e.line && e.line !== '0' && e.line !== '10').reduce((a, e) => a + e.amount, 0));

@@ -950,3 +950,4 @@ span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);fo
 .yr-x tfoot .yr-s1,.yr-x tfoot .yr-s2{z-index:4}.yr-x .yr-desc .badge{display:inline-flex;margin-top:3px}.yr-x .yr-desc .yr-sub-u{margin-bottom:1px}
 .yr-x td.yr-n{color:var(--ink-2)}.yr-x tr.yr-over td:first-child{box-shadow:inset 3px 0 0 var(--critical)}
 .yr-x tr.yr-tot td{bottom:0}.yr-x tr.yr-subt td.yr-s2,.yr-x tr.yr-tot td.yr-s2,.yr-x tr.yr-adm td.yr-s2{white-space:nowrap;max-width:none}
+.yr-x .yr-desc .chg{display:inline-block;margin:3px 0 0}.yr-x tr.yr-h .chg{text-transform:none;letter-spacing:0}
