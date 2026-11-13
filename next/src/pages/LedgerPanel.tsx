@@ -150,7 +150,10 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   const asAt = wb.meta.situationDate || wb.meta.asAt || TODAY.toISOString().slice(0, 10);
   const y0 = Math.min(...[...Y.years, ...(p.start ? [p.start.slice(0, 4)] : [])].map(Number)), y1 = Math.max(+asAt.slice(0, 4), ...Y.years.map(Number));
   const years = Number.isFinite(y0) ? Array.from({ length: y1 - y0 + 1 }, (_, i) => String(y0 + i)) : [];
-  const yl = (y: string) => (y === asAt.slice(0, 4) && asAt.slice(5) !== '12-31' ? `${y} (to ${date(asAt)})` : p.start && y === p.start.slice(0, 4) && p.start.slice(5) !== '01-01' ? `${y} (from ${date(p.start)})` : y);
+  // Dates each year column covers: from the project start (first year) to the extraction date (current year).
+  const yr = (y: string) => ({ from: p.start && y === p.start.slice(0, 4) ? p.start : `${y}-01-01`, to: y === asAt.slice(0, 4) ? asAt : p.end && y === p.end.slice(0, 4) && p.end < `${y}-12-31` ? p.end : `${y}-12-31` });
+  const yd = (y: string) => `${date(yr(y).from)} – ${date(yr(y).to)}`;
+  const yl = (y: string) => `${y} (${yd(y)})`;
   const nf = (v: number | null | undefined) => (v == null || !v ? '' : (Math.round(v * 100) / 100).toLocaleString('en-GB', { maximumFractionDigits: 2 }));
   const m = (v: number | null | undefined) => (v == null || Math.abs(v) < 0.005 ? <span class="yr-nil">—</span> : full(v));
   const heads = [...new Set(Y.lines.map((l) => l.code.split('.')[0]))];
@@ -194,12 +197,12 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   };
   return (
     <>
-      <div class="range-sum"><div><span>Budget (incl. 7%)</span><b class="num">{full(db + ab)}</b></div>{years.map((y) => <div><span>{yl(y)} · spent</span><b class="num">{full(r2(sum(all, (l) => ya(l, y)) * 1.07))}</b></div>)}<div><span>Total spent (incl. 7%)</span><b class="num">{full(r2(da * 1.07))}</b></div><div><span>Spent + committed (incl. 7%)</span><b class="num">{full(r2(ds * 1.07))}</b></div><span class="grow" style={{ flex: 1 }} /><button class="btn primary" onClick={xlsx}>⬇ Excel</button></div>
+      <div class="range-sum"><div><span>Budget (incl. 7%)</span><b class="num">{full(db + ab)}</b></div>{years.map((y) => <div><span>{y} · spent<small style={{ display: 'block', fontSize: '10.5px' }}>{yd(y)}</small></span><b class="num">{full(r2(sum(all, (l) => ya(l, y)) * 1.07))}</b></div>)}<div><span>Total spent (incl. 7%)</span><b class="num">{full(r2(da * 1.07))}</b></div><div><span>Spent + committed (incl. 7%)</span><b class="num">{full(r2(ds * 1.07))}</b></div><span class="grow" style={{ flex: 1 }} /><button class="btn primary" onClick={xlsx}>⬇ Excel</button></div>
       <Chart height={260} label="Spending by year and heading" option={(t) => ({
         ...base(t), grid: { left: 8, right: 16, top: 34, bottom: 8, containLabel: true },
         legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11 } },
         tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => full(v) },
-        xAxis: { type: 'category', data: years.map(yl), ...axisX(t) }, yAxis: [{ type: 'value', ...axisY(t) }, { type: 'value', ...axisY(t), splitLine: { show: false } }],
+        xAxis: { type: 'category', data: years.map((y) => `${y}\n${yd(y)}`), ...axisX(t) }, yAxis: [{ type: 'value', ...axisY(t) }, { type: 'value', ...axisY(t), splitLine: { show: false } }],
         series: [
           ...heads.map((h, i) => ({ name: `${h}. ${HEADS[h] ?? 'Other lines'}`, type: 'bar', stack: 'y', barMaxWidth: 64, itemStyle: { color: t.c[i % t.c.length], borderRadius: 0 }, emphasis: { focus: 'series' }, data: years.map((y) => r2(sum(all.filter((l) => l.code.split('.')[0] === h), (l) => ya(l, y)))) })),
           { name: 'Cumulative spent', type: 'line', yAxisIndex: 1, symbolSize: 7, lineStyle: { width: 2.5, color: t.ink }, itemStyle: { color: t.ink }, data: years.map((_, i) => r2(years.slice(0, i + 1).reduce((a, y) => a + sum(all, (l) => ya(l, y)), 0))),
@@ -213,7 +216,7 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
         <div class="yr-legend">{years.map((y, i) => <span><i style={{ background: YC[Math.min(i, YC.length - 1)] }} />{y}</span>)}<span><i style={{ background: 'repeating-linear-gradient(45deg,#9db4e8,#9db4e8 3px,transparent 3px,transparent 6px)' }} />committed</span>{shut.length ? <button class="btn ghost" onClick={() => setShut([])}>Show all headings</button> : null}</div></div>
       <div class="table-wrap yr-wrap"><table class="yr-table yr-x">
         <thead>
-          <tr class="yr-g"><th rowSpan={2} class="yr-s1">Line</th><th rowSpan={2} class="yr-s2">Description</th><th colSpan={3} class="c yr-b yr-e">Approved budget</th>{years.map((y) => <th colSpan={4} class="c yr-e">{yl(y)}</th>)}<th colSpan={4} class="c yr-t yr-e">Total</th><th rowSpan={2} class="r">Remaining<small>budget − S&C</small></th><th rowSpan={2}>Used</th></tr>
+          <tr class="yr-g"><th rowSpan={2} class="yr-s1">Line</th><th rowSpan={2} class="yr-s2">Description</th><th colSpan={3} class="c yr-b yr-e">Approved budget</th>{years.map((y) => <th colSpan={4} class="c yr-e">{y}<small>{yd(y)}{y === asAt.slice(0, 4) && yr(y).to !== `${y}-12-31` ? ' · year not complete' : ''}</small></th>)}<th colSpan={4} class="c yr-t yr-e">Total<small>{years.length ? `${date(yr(years[0]).from)} – ${date(yr(years.at(-1)!).to)}` : ''}</small></th><th rowSpan={2} class="r">Remaining<small>budget − S&C</small></th><th rowSpan={2}>Used</th></tr>
           <tr class="yr-g2"><th class="r yr-b">Units</th><th class="r yr-b">Unit rate</th><th class="r yr-b yr-e">Total</th>{years.map(() => <><th class="r">Units</th><th class="r">Unit rate</th><th class="r">Spent</th><th class="r yr-e">Spent + comm.</th></>)}<th class="r yr-t">Units</th><th class="r yr-t">Unit rate</th><th class="r yr-t">Spent</th><th class="r yr-t yr-e">Spent + comm.</th></tr>
         </thead>
         <tbody>{heads.map((h) => { const X = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h" onClick={() => setShut(shut.includes(h) ? shut.filter((x) => x !== h) : [...shut, h])} style={{ cursor: 'pointer' }}><td colSpan={2} class="yr-s1"><span class="yr-tw">{shut.includes(h) ? '▸' : '▾'}</span>{h}. {HEADS[h] ?? 'Other lines'} <span class="yr-hn">{X.length} line{X.length > 1 ? 's' : ''}</span></td><td colSpan={NC} /></tr>{shut.includes(h) ? null : X.map(row)}{tot(X, `Sub-total ${h}. ${HEADS[h] ?? 'Other lines'}`, 'yr-subt')}</>; })}</tbody>
