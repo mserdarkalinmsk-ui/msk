@@ -10,7 +10,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="css/film.css">
-<link rel="preload" as="image" href="img/kare1.jpg">
+<link rel="preload" as="image" href="img/album-still.webp">
 <style>
 :root{--wine:#542233;--paper:#f6f0e6;--ink:#32272a;--altin:#e1c8a7;--altin2:#fae6cf}
 body::after{display:none}body::before{opacity:.024}
@@ -60,6 +60,26 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
 .mount figcaption{font-size:19px;padding:8px 3px 10px}.album-footer{padding:14px 0;font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){body::before,.fon,.hero-foto{animation-play-state:paused!important}*{scroll-behavior:auto!important}}
+
+.album-cover{width:min(100%,1440px);grid-template-columns:.76fr 1.24fr;gap:4%;padding:clamp(28px,5vh,72px) 0}
+.album-photo{aspect-ratio:1.5;height:auto;min-height:0;width:100%;border-radius:4px;perspective:1000px;background:#98735b url('img/album-still.webp') center/cover;box-shadow:0 22px 46px -24px #4c2c23a8,inset 0 0 0 1px #3c231b30;touch-action:pan-y}
+.album-photo:before{display:none}
+.print-stack{position:absolute;left:51%;top:24%;width:37%;transform-style:preserve-3d;transform:rotateX(var(--rx,6deg)) rotateY(var(--ry,-8deg)) rotateZ(7deg);transition:transform .25s ease-out}
+.print-stack:before,.print-stack:after{content:"";position:absolute;inset:0;background:linear-gradient(125deg,#fffcf1,#d9c8b3);border:1px solid #bfae95;box-shadow:2px 3px 4px #27140755}
+.print-stack:before{transform:translateZ(-4px) rotate(-7deg) translate(-4%,3%)}.print-stack:after{transform:translateZ(-2px) rotate(4deg) translate(2%,2%)}
+.album-photo .mount{position:relative;z-index:1;width:100%;max-width:none;padding:4% 4% 0;background:linear-gradient(130deg,#fff9e9,#f5ead4);transform:translateZ(2px);box-shadow:1px 2px 1px #bdaa92,5px 8px 10px #30180b66,18px 20px 24px #321e1636}
+.album-photo .mount img{width:100%;height:auto;aspect-ratio:1.05;min-height:0;object-position:center 38%;filter:sepia(.08) saturate(.93);pointer-events:none}
+.mount figcaption{padding:6% 2%;font-size:clamp(14px,1.65vw,24px)}.mount figcaption span{font-size:.65em}
+.photo-nav{position:absolute;bottom:12px;right:12px;display:flex;align-items:center;background:#301e1be8;border:1px solid #fff4d959;border-radius:28px;color:#fcf2df;box-shadow:0 3px 10px #38261a33}
+.photo-nav button{width:44px;height:44px;margin:0;padding:0;background:none;border:0;box-shadow:none;color:inherit;font:24px/1 Georgia;border-radius:50%;letter-spacing:0}
+.photo-nav button:hover{background:#ffffff22}.photo-nav output{font:500 10px/1 system-ui;letter-spacing:.12em}
+#b2{background:radial-gradient(ellipse at 50% 46%,#613b42 0,#301d26 44%,#181219 85%)}
+#b2 .fon,#b2::after{display:none}
+#b2 .kutu-sahne:before{content:"";position:absolute;inset:62% 2% -4%;background:radial-gradient(ellipse,#a87d66aa,transparent 66%);pointer-events:none}
+#b2 .sahne3d{z-index:1}#b2 .kutu{z-index:2}
+#b3 .bilet{background:linear-gradient(116deg,#fffaf1,#efdebd);border-top:2px solid #bda078}
+@media(max-width:680px){.album-cover{gap:22px;padding:22px 0}.album-photo{width:100%;aspect-ratio:1.2;height:auto;background-size:cover}.print-stack{width:41%;left:49%;top:23%}.mount figcaption{font-size:16px}.photo-nav{bottom:8px;right:8px}.album-footer{margin-top:auto}}
+@media(prefers-reduced-motion:reduce){.print-stack{transition:none}}
 </style>
 </head>
 <body>
@@ -82,8 +102,11 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
         <p>Dört bölüm, dört an.<br>Her birini sen açacaksın.</p>
         <div id="zarf"><button id="basla" type="button">Hikâyemizi aç <span aria-hidden="true">⟶</span></button></div>
       </div>
-      <figure class="album-photo">
-        <div class="mount"><img src="img/kare1.jpg" alt="Banu ve Serdar yan yana"><figcaption>İyi ki sen.<span>Serdar</span></figcaption></div>
+      <figure class="album-photo" aria-label="Dört fotoğraflık albüm">
+        <div class="print-stack">
+          <div class="mount"><img id="print-photo" src="img/kare1.jpg" alt="Banu ve Serdar yan yana" draggable="false"><figcaption>İyi ki sen.<span>Serdar</span></figcaption></div>
+        </div>
+        <div class="photo-nav"><button type="button" id="prev-photo" aria-label="Önceki fotoğraf">‹</button><output id="photo-count" aria-live="polite" aria-label="Fotoğraf">01 / 04</output><button type="button" id="next-photo" aria-label="Sonraki fotoğraf">›</button></div>
       </figure>
     </main>
     <footer class="album-footer"><span>Birinci yıl dönümümüz</span><i aria-hidden="true">✧</i><span>16 Kasım 2026</span></footer>
@@ -252,5 +275,41 @@ button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4p
 <script src="js/nesne3d.js" defer></script>
 <script src="js/sahne3d.js" defer></script>
 
+<script>
+(() => {
+  const stage = document.querySelector('.album-photo');
+  const stack = stage.querySelector('.print-stack');
+  const photo = document.getElementById('print-photo');
+  const count = document.getElementById('photo-count');
+  const descriptions = ['Banu ve Serdar yan yana', 'Güneş gözlükleriyle bir yolculuk hatırası', 'Güneşte gülümserken', 'Birlikte çekilmiş bir portre'];
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let current = 0;
+  let swipeStart = null;
+  function turn(direction) {
+    current = (current + direction + descriptions.length) % descriptions.length;
+    photo.src = 'img/kare' + (current + 1) + '.jpg';
+    photo.alt = descriptions[current];
+    count.textContent = '0' + (current + 1) + ' / 04';
+    if (!motion.matches) photo.animate([{opacity:.5}, {opacity:1}], {duration:230});
+  }
+  document.getElementById('prev-photo').onclick = () => turn(-1);
+  document.getElementById('next-photo').onclick = () => turn(1);
+  stage.addEventListener('pointermove', event => {
+    if (motion.matches || event.pointerType !== 'mouse') return;
+    const bounds = stage.getBoundingClientRect();
+    stack.style.setProperty('--rx', (8 - 6 * (event.clientY - bounds.top) / bounds.height) + 'deg');
+    stack.style.setProperty('--ry', (-13 + 12 * (event.clientX - bounds.left) / bounds.width) + 'deg');
+  });
+  stage.addEventListener('pointerleave', () => {stack.style.removeProperty('--rx');stack.style.removeProperty('--ry');});
+  stage.addEventListener('pointerdown', e => {swipeStart = e.target.closest('button') ? null : [e.clientX,e.clientY];});
+  stage.addEventListener('pointercancel', () => {swipeStart = null;});
+  stage.addEventListener('pointerup', e => {
+    if (!swipeStart) return;
+    const dx = e.clientX - swipeStart[0], dy = e.clientY - swipeStart[1];
+    swipeStart = null;
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) turn(dx < 0 ? 1 : -1);
+  });
+})();
+</script>
 </body>
 </html>
