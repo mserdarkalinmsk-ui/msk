@@ -247,6 +247,7 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
   const L = new Map<string, YearLine>();
   for (const l of wb.lines.filter((x) => x.leaf)) L.set(l.code, { code: l.code, description: l.description, unit: l.unit, budget: { units: l.budget.units, rate: l.budget.rate, cost: l.budget.cost ?? 0 }, years: {}, units: 0, amount: 0, committed: 0 });
   const months = new Map<string, Set<string>>(); // staff PO → year|month already counted
+  const staffUsed = new Map<string, number>(); // staff PO → units counted so far
   const years = new Set<string>();
   for (const e of entries) {
     const code = e.line && e.line !== '0' && e.line !== '10' ? e.line : ''; if (!code) continue;
@@ -255,7 +256,10 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
     let u = 0;
     if (e.src === 'gl') u = e.units ?? 0;
     else { const p = po.get(e.po + '|' + e.line) ?? wb.pos.find((q) => q.po === e.po);
-      if (p && /month/i.test(p.unitType) && /from\s+\d/i.test(p.description)) { const k = `${p.po}`, s = months.get(k) ?? new Set(); const m = e.date.slice(0, 7); if (!s.has(m) && e.amount > 0) { s.add(m); u = 1; } months.set(k, s); }
+      if (p && /month/i.test(p.unitType) && /from\s+\d/i.test(p.description)) { // A staff PO counts the months paid, never more than the units ordered on it (a PO for 0.25 month counts 0.25) — as the statement does.
+        const k = `${p.po}`, s = months.get(k) ?? new Set(); const m = e.date.slice(0, 7);
+        if (!s.has(m) && e.amount > 0) { s.add(m); const done = staffUsed.get(k) ?? 0; u = p.units ? Math.max(0, Math.min(1, p.units - done)) : 1; staffUsed.set(k, done + u); }
+        months.set(k, s); }
       else if (p && p.units && p.amount) u = p.units * (e.amount / p.amount); }
     const Y = x.years[y] ?? { units: 0, amount: 0, committed: 0 }; Y.units += u; Y.amount += e.amount; x.years[y] = Y; x.units += u; x.amount += e.amount;
   }
