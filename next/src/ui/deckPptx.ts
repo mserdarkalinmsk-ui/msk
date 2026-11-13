@@ -24,6 +24,7 @@ export interface DeckModel {
   catchUp: { p: Project; perf: number; rate: number; need: number }[];
   steps: string[]; pages: Project[];
   MS: Record<string, string>; NS: Record<string, string>;
+  /** Work Plans of the current quarter (management deck). */ wps?: { project: string; wp: string; planned: string; delivered: string; left: string; status: string }[];
 }
 
 const COL: Record<string, string> = { blue: '3B82C4', green: '30A46C', amber: 'F5A524', red: 'E5484D' };
@@ -124,6 +125,11 @@ export async function exportPptx(m: DeckModel) {
         { x: 0.5, y: 1.9, w: 6.6, h: 5.1, barDir: 'bar', chartColors: ['C9D4E3', ACCENT], showLegend: true, legendPos: 'b', valAxisLabelFormatCode: '#,##0', catAxisLabelFontSize: 9, valAxisLabelFontSize: 9 });
       table(s, ['Heading', 'Approved', 'Used'], m.H.map((h) => [cut(h.key, 30), short(h.approved), pct(h.approved ? h.exposure / h.approved : 0)]), { x: 7.4, w: 5.43, colW: [3.03, 1.3, 1.1], right: [1, 2] });
     } else s.addText('No financial reports with budget lines yet.', { x: 0.5, y: 2, w: 12, h: 0.4, fontFace: F, fontSize: 14, color: MUTED, italic: true });
+  }
+
+  // Work Plans — the current plan of each project, the delivery of the previous one and the status
+  if (m.wps?.length) { const s = page('Work Plans', `${m.wps.filter((w) => w.status === 'At risk').length} of ${m.wps.length} Work Plans at risk`, 'Current quarter: plan, delivery of the previous Work Plan and what is left of the activity budget');
+    table(s, ['Project', 'Work Plan', 'Planned', 'Previous delivered', 'Left after WP', 'Status'], m.wps.slice(0, 14).map((w) => [cut(w.project, 52), w.wp, w.planned, w.delivered, w.left, w.status]), { x: 0.5, w: 12.33, colW: [5.33, 1.5, 1.4, 1.5, 1.4, 1.2], right: [2, 3, 4] });
   }
 
   // 6 Countries

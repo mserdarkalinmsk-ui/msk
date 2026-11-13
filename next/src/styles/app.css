@@ -931,3 +931,12 @@ span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);fo
 @media (max-width:620px){.hero,.ph-tiles{grid-template-columns:1fr 1fr!important;gap:8px}.hero>.kpi.lead,.ph-tiles>.kpi:first-child{grid-column:1/-1}.hero>.kpi,.ph-tiles>.kpi{padding:12px!important}.hero>.kpi .value,.ph-tiles>.kpi .value{font-size:22px!important}.hero>.kpi.lead .value{font-size:30px!important}}
 /* Aliases used by the Work Plan, spending-by-year and desk styles */
 :root,.em{--border:var(--line);--text:var(--ink);--muted:var(--ink-3);--warning:var(--warn)}
+/* Headings heat map */
+.hm{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed}
+.hm thead th{font-size:12px;font-weight:600;color:var(--ink-3);text-align:center;padding:4px 6px 8px;vertical-align:bottom}.hm thead th:first-child{text-align:left;width:26%}
+.hm tbody th{text-align:left;font-weight:400;padding:0}
+.hm-p{display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:inherit;padding:6px 8px;border-radius:8px;cursor:pointer}.hm-p:hover{background:var(--surface-2)}
+.hm-p b{font-size:12px;font-family:var(--mono)}.hm-p span{font-size:12.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm td{padding:0}.hm-c{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;height:54px;border:0;border-radius:8px;color:var(--ink);font:inherit;cursor:pointer;transition:transform .1s,box-shadow .1s}
+.hm-c:not(:disabled):hover{transform:scale(1.03);box-shadow:0 4px 14px rgb(0 0 0 / .14);position:relative;z-index:1}.hm-c:disabled{cursor:default;border:1px dashed var(--line)}
+.hm-c b{font-size:15px;font-family:var(--mono)}.hm-c small{font-size:10.5px;opacity:.8}.hm-c.dk{color:#fff}.hm-nil{color:var(--ink-3)}

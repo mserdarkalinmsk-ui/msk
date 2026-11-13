@@ -1,5 +1,7 @@
 import { useRef, useState } from 'preact/hooks';
 import { downloadDocx } from './docxwrite';
+import { base, Chart } from './Chart';
+import { axisX, axisY } from '../pages/Overview';
 import { useStore } from '../data/store';
 import { updateProject } from '../data/store';
 import { poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
@@ -190,15 +192,24 @@ function WpRollover({ wp, wb, onLock }: { wp: WP; wb: WorkbookSummary; onLock: (
 function WpCompare({ plans, wb, sel, onPick }: { plans: WP[]; wb: WorkbookSummary; sel: string; onPick: (id: string) => void }) {
   const H = history(plans, wb);
   if (H.length < 2) return null;
-  const max = Math.max(...H.map((h) => Math.max(h.wp.planned, h.sc ?? 0)), 1);
   const done = H.filter((h) => h.spentPct != null && h.wp.to < (wb.meta.situationDate || wb.meta.asAt || '9'));
   const avg = done.length ? done.reduce((s, h) => s + (h.spentPct ?? 0), 0) / done.length : null;
   return (
     <div class="wp-sec"><h3>Comparison with previous Work Plans{avg != null ? <span class="muted"> · average delivery (spent / planned) of closed WPs {pct(avg)}</span> : null}</h3>
-      <div class="wp-bars">{H.map((h) => <button class={`wp-bar ${h.wp.id === sel ? 'on' : ''}`} onClick={() => onPick(h.wp.id)} title={`${wpName(h.wp)}: planned ${full(h.wp.planned)} · spent ${h.spent == null ? '—' : full(h.spent)} · spent & committed ${h.sc == null ? '—' : full(h.sc)}`}>
-        <div class="cols"><i class="pl" style={{ height: `${(h.wp.planned / max) * 100}%` }} /><i class="sc" style={{ height: `${((h.sc ?? 0) / max) * 100}%` }} /><i class="sp" style={{ height: `${((h.spent ?? 0) / max) * 100}%` }} /></div>
-        <b>{wpName(h.wp)}</b><span class={tone(h.spentPct, 0.8, 0.5)}>{h.spentPct == null ? '—' : pct(h.spentPct)}</span></button>)}</div>
-      <div class="tools legend" style={{ padding: '4px 0 8px' }}><span><i style={{ background: 'var(--c3, #9aa4b2)' }} />Planned</span><span><i style={{ background: 'var(--c1)', opacity: .4 }} />Spent & committed</span><span><i style={{ background: 'var(--c1)' }} />Spent</span></div>
+      <Chart height={280} label="Work Plans: planned against delivered" onClick={(e: { dataIndex?: number }) => { const h = H[e.dataIndex ?? -1]; if (h) onPick(h.wp.id); }} option={(t) => ({
+        ...base(t), grid: { left: 8, right: 8, top: 36, bottom: 8, containLabel: true },
+        legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11 } },
+        tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => (v == null ? '—' : Math.abs(v) <= 5 ? pct(v) : full(v)) },
+        xAxis: { type: 'category', data: H.map((h) => wpName(h.wp)), ...axisX(t) },
+        yAxis: [{ type: 'value', ...axisY(t) }, { type: 'value', min: 0, max: (v: { max: number }) => Math.max(1, Math.ceil(v.max * 10) / 10), axisLabel: { color: t.ink3, fontSize: 11, formatter: (v: number) => `${Math.round(v * 100)}%` }, splitLine: { show: false } }],
+        series: [
+          { name: 'Planned', type: 'bar', barGap: '8%', barMaxWidth: 26, itemStyle: { color: t.ink3, opacity: .38, borderRadius: [4, 4, 0, 0] }, data: H.map((h) => h.wp.planned) },
+          { name: 'Spent & committed', type: 'bar', barMaxWidth: 26, itemStyle: { color: t.c[0], opacity: .45, borderRadius: [4, 4, 0, 0] }, data: H.map((h) => h.sc) },
+          { name: 'Spent', type: 'bar', barMaxWidth: 26, itemStyle: { color: t.c[0], borderRadius: [4, 4, 0, 0] }, data: H.map((h) => h.spent) },
+          { name: 'Delivery (spent ÷ planned)', type: 'line', yAxisIndex: 1, connectNulls: true, symbolSize: 8, lineStyle: { width: 2.5, color: t.ink }, itemStyle: { color: t.ink }, data: H.map((h) => (h.spentPct == null ? null : Math.round(h.spentPct * 1000) / 1000)),
+            markLine: { symbol: 'none', silent: true, lineStyle: { color: t.good, type: 'dashed' }, label: { formatter: 'target 80%', color: t.good, fontSize: 11, position: 'insideEndTop' }, data: [{ yAxis: 0.8 }] } },
+        ],
+      })} />
       <table class="wp-t"><thead><tr><th>WP</th><th>Period</th><th class="num">Planned</th><th class="num">Spent in period</th><th class="num">%</th><th class="num">Spent & committed</th><th class="num">%</th><th class="num">Change vs previous plan</th><th class="num">Activities · carried over</th></tr></thead>
         <tbody>{H.map((h, i) => { const d = i ? h.wp.planned - H[i - 1].wp.planned : null; return (
           <tr class={h.wp.id === sel ? 'sel' : ''}><td><b>{wpName(h.wp)}</b></td><td>{h.wp.from ? `${date(h.wp.from)} – ${date(h.wp.to)}` : '—'}</td><td class="num">{full(h.wp.planned)}</td>
