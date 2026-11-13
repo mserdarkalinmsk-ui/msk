@@ -3,14 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#f5efe5">
 <title>Banu &amp; Serdar</title>
 <meta property="og:title" content="Banu &amp; Serdar">
 <meta property="og:description" content="Bir aşk hikâyesi · 16 Kasım">
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="css/film.css">
-<link rel="preload" as="image" href="img/kare4.jpg">
+<link rel="preload" as="image" href="img/kare1.jpg">
+<style>
+:root{--wine:#542233;--paper:#f6f0e6;--ink:#32272a;--altin:#e1c8a7;--altin2:#fae6cf}
+body::after{display:none}body::before{opacity:.024}
+#b0{background:var(--paper);color:var(--ink);padding:env(safe-area-inset-top) max(6vw,20px) env(safe-area-inset-bottom);text-align:left}
+#b0::after{display:none}
+.album-bar,.album-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;width:min(100%,1280px);margin-inline:auto;flex:none}
+.album-bar{height:80px;border-bottom:1px solid #c8bdae;color:#5b4a47;font:500 11px/1.3 var(--sans);letter-spacing:.17em}
+.wordmark{font:500 28px/1 Georgia,serif;letter-spacing:-.07em;color:var(--wine)}.wordmark i{font-weight:400;font-size:.72em}
+.album-cover{flex:1;display:grid;grid-template-columns:1fr 1fr;align-items:center;width:min(100%,1100px);gap:7%;margin:0 auto;padding:clamp(36px,7vh,88px) 0}
+.album-copy{position:relative;z-index:1}
+.dedication{display:flex;align-items:center;gap:14px;font:italic 21px/1.4 var(--serif);color:var(--wine)}
+.dedication:before{content:"";width:36px;height:1px;background:currentColor}
+#b0 h1{font:400 clamp(82px,9.4vw,154px)/.84 var(--serif);letter-spacing:-.065em;color:var(--ink);text-shadow:none;margin:26px 0}
+#b0 h1 i{color:#935563;font-size:.72em}#b0 h1 span{color:#935563}
+#b0 p{color:#695752;text-shadow:none;font:400 17px/1.5 var(--sans);margin:0;max-width:none}
+#basla{display:inline-flex;align-items:center;justify-content:space-between;gap:30px;width:auto;color:#fff7eb;background:var(--wine);box-shadow:none;padding:16px 23px;border-radius:32px;letter-spacing:.015em;text-transform:none;font:500 15px var(--sans);margin:24px 0 0;transition:background .2s}
+#basla:hover{background:#713047}#basla span{font:22px/1 Georgia}
+.album-photo{position:relative;isolation:isolate;display:grid;place-items:center;margin:0;min-height:440px;height:min(62vh,620px);background:radial-gradient(ellipse at 20% 0%,#804653,#542333 60%,#3c1825);border-radius:48% 48% 3px 3px / 30% 30% 3px 3px}
+.album-photo:before{content:"";position:absolute;inset:10px;border:1px solid #e2bcb04d;border-radius:inherit;pointer-events:none}
+.mount{width:74%;background:#fffbf3;box-shadow:1px 15px 32px #240d1a66;transform:rotate(-5deg);padding:10px 10px 0}
+.mount img{width:100%;height:min(37vh,370px);min-height:215px;display:block;object-fit:cover;object-position:50% 40%}
+.mount figcaption{display:flex;align-items:baseline;justify-content:space-between;padding:11px 5px 14px;font:italic 23px/1 var(--serif);color:var(--wine)}.mount figcaption span{font-size:15px}
+.album-footer{border-top:1px solid #c8bdae;padding:18px 0;color:#695752;font:400 13px/1.3 var(--sans)}.album-footer i{color:#8b6452;font:20px/1 Georgia}
+.bolum:not(#b0) .kart{padding:46px 24px;max-width:490px}
+.bolum:not(#b0) h1,.bol{letter-spacing:-.045em;font-weight:400}
+.bolum:not(#b0) h1{font-size:clamp(40px,5vw,62px);line-height:1.02}
+.bolum:not(#b0) .ust,.hero .ust{letter-spacing:.24em;font-size:11px}
+.bolum:not(#b0) p{font:400 16px/1.55 var(--sans);max-width:330px;color:#fff4ea}
+.bolum .fon{filter:saturate(.75) brightness(.53);animation:none}
+.bolum:not(#b0)::after{background:linear-gradient(180deg,#21121a99,#21121a75 32%,#24121dd9)}
+.b-gece{background:#161420}
+.ileri,#b1x,#evet,#ydb,.b-yol .ileri{border-radius:30px;background:#f0dfca;color:#432330;box-shadow:none;text-shadow:none;letter-spacing:.12em}
+.ileri::after,#b1x::after,#evet::after,#ydb::after{display:none}
+#e2{background:#21161d}#e2 .kart{max-width:610px;padding:44px clamp(22px,5vw,48px)}
+#e2 .mesaj{font-size:clamp(20px,3vw,27px);line-height:1.55}
+#e2 .cizgi{margin:36px auto}.perde,.jenerik{background:#271722}
+button:focus-visible,a:focus-visible{outline:3px solid #ba8954;outline-offset:4px}
+@media(max-width:680px){
+#b0{padding-inline:22px}.album-bar{height:52px}.wordmark{font-size:24px}
+.album-cover{display:flex;flex-direction:column;justify-content:center;gap:24px;padding:24px 0}
+.album-copy{display:grid;grid-template-columns:1fr auto;align-items:end;width:100%}
+.dedication,#b0 h1{grid-column:1/-1}.dedication{font-size:17px}
+#b0 h1{font-size:clamp(46px,12.5vw,80px);line-height:1.05;margin:7px 0 10px}#b0 h1 br{display:none}#b0 h1 i{margin-right:.13em}
+#b0 p{font-size:14px}#basla{margin:0;font-size:13px;padding:13px 16px;gap:12px}
+.album-photo{width:100%;min-height:0;height:clamp(240px,40svh,405px)}
+.mount{width:auto;max-width:79%;padding:7px 7px 0}.mount img{height:clamp(158px,26svh,270px);width:clamp(204px,55vw,308px);min-height:0}
+.mount figcaption{font-size:19px;padding:8px 3px 10px}.album-footer{padding:14px 0;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){body::before,.fon,.hero-foto{animation-play-state:paused!important}*{scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
 <canvas id="yagmur"></canvas>
@@ -23,17 +73,21 @@
   <div class="ilerle" id="ilerle"><i></i><i></i><i></i><i></i></div>
 
   <!-- 0 · Kapak -->
-  <div class="bolum b-kapak acik" id="b0"><div class="fon" data-f="3"></div><div class="kart soru"><div class="cerceve">
-    <div class="mono">B<i>&amp;</i>S</div>
-    <div class="ust">Yalnızca Banu için</div>
-    <h1>Hikâyemizin kapısı</h1>
-    <p>Dört bölüm, dört an. Her birini sen açacaksın.</p>
-    <div class="zarf" id="zarf">
-      <div class="zarf-govde"></div><div class="zarf-kapak"></div>
-      <button type="button" class="muhur" id="basla" aria-label="Mührü kır"><span>B&amp;S</span></button>
-    </div>
-    <div class="ust" style="margin-top:14px">Mührü kır · Sesi aç</div>
-  </div></div></div>
+  <div class="bolum b-kapak acik" id="b0">
+    <header class="album-bar"><span class="wordmark">B <i>&amp;</i> S</span><span>16 KASIM 2025</span></header>
+    <main class="album-cover">
+      <div class="album-copy">
+        <div class="dedication">Yalnızca Banu için</div>
+        <h1>Banu <i>&amp;</i><br>Serdar<span>.</span></h1>
+        <p>Dört bölüm, dört an.<br>Her birini sen açacaksın.</p>
+        <div id="zarf"><button id="basla" type="button">Hikâyemizi aç <span aria-hidden="true">⟶</span></button></div>
+      </div>
+      <figure class="album-photo">
+        <div class="mount"><img src="img/kare1.jpg" alt="Banu ve Serdar yan yana"><figcaption>İyi ki sen.<span>Serdar</span></figcaption></div>
+      </figure>
+    </main>
+    <footer class="album-footer"><span>Birinci yıl dönümümüz</span><i aria-hidden="true">✧</i><span>16 Kasım 2026</span></footer>
+  </div>
 
   <!-- I · İlk buluşma: yıldızlar -->
   <div class="bolum b-gece" id="b1"><canvas class="gokyuzu" id="gokyuzu"></canvas><div class="kart soru">
@@ -71,7 +125,7 @@
     <p id="y-yazi">İlk bavul, ilk pasaport kuyruğu, yan yana iki koltuk.</p>
     <div class="polaroid" id="pol3"><img alt=""><span>İlk yolculuğumuz</span><i class="bant"></i></div>
     <div class="bilet" id="bilet">
-      <div class="bilet-ust"><span>BINIŞ KARTI</span><span>B&amp;S 1611</span></div>
+      <div class="bilet-ust"><span>BİNİŞ KARTI</span><span>B&amp;S 1611</span></div>
       <div class="rota"><b>IST</b>
         <svg viewBox="0 0 160 50"><path d="M6 40 Q80 -14 154 40" fill="none" stroke="#8a6a3a" stroke-width="1.2" stroke-dasharray="3 5"/><text id="ucak" font-size="20">✈</text></svg>
         <b>∞</b></div>
@@ -82,7 +136,7 @@
         <text x="55" y="72" text-anchor="middle" fill="#b3243f" stroke="none" font-size="7.5" letter-spacing="2" font-family="Jost, sans-serif">HER YERE · ∞</text></g></svg></div>
     </div>
     <div class="kocan" id="kocan"><div class="kocan-ic"><span>KOÇAN · STUB</span><b>B&amp;S ∞ 1611</b><span>ESB ⇢ ∞</span></div></div>
-    <div class="ust" id="kocanNot" style="margin-top:10px;color:#9c6b2f">Koçanı aşağı çekip yırt ↓</div>
+    <div class="ust" id="kocanNot" style="margin-top:10px">Koçanı aşağı çekip yırt ↓</div>
     <button type="button" class="ileri gizli" data-git="4">Son sahne ▸</button>
   </div></div>
 
