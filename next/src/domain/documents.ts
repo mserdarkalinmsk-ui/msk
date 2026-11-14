@@ -241,6 +241,7 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   const sum = leaves.reduce((s, l) => s + (l.approved ?? 0), 0);
   if (!direct) direct = sum;
   if (contingency && admin && Math.abs(contingency - admin) < 1) contingency = 0; // the 7% row read twice, not a reserve
+  if (contingency && !admin && Math.abs(contingency - direct * 0.07) < 1) { admin = contingency; contingency = 0; } // the 7% row under the number 8 (VC templates)
   if (!admin && total > direct) admin = Math.round((total - direct - contingency) * 100) / 100;
   const out = [...leaves];
   if (contingency) out.push({ code: '8', description: 'Contingency reserve', approved: contingency });
@@ -350,4 +351,15 @@ export function narrativeRisks(doc: Doc): { risks: Risk[]; assumptions: string[]
   });
   const assumptions = listAfter(P, /assumptions (?:are|include)[^:]*:\s*$/i);
   return { risks, assumptions, mitigation };
+}
+
+/**
+ * A budget read before the rule above kept the 7% administrative costs as a "contingency reserve" (line 8) when the
+ * template numbers them 8: moves it back to line 10, so it is not counted as a direct cost and 7% added again.
+ */
+export function fixBudgetAdmin<P extends { approvedBudget?: ApprovedBudget }>(p: P): P {
+  const b = p.approvedBudget;
+  if (!b || b.admin || !b.contingency || Math.abs(b.contingency - b.direct * 0.07) >= 1) return p;
+  const lines = b.lines.map((l) => (l.code === '8' ? { ...l, code: ADMIN_LINE, description: 'Administrative costs', unit: '7%' } : l));
+  return { ...p, approvedBudget: { ...b, lines, admin: b.contingency, contingency: 0 } };
 }

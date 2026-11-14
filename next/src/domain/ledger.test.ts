@@ -118,3 +118,15 @@ describe('units used, not just ordered', () => {
     expect(usedUnits(17, 0, 2720, 'Consultancy', 'Per day')).toBe(0);
   });
 });
+
+import { unitFamily } from './ledger';
+describe('units written differently', () => {
+  it('count as the same unit', () => {
+    expect(unitFamily('per return flight')).toBe(unitFamily('Per Travel'));
+    expect(unitFamily('per trip')).toBe(unitFamily('Per Travel'));
+    expect(unitFamily('per personday')).toBe(unitFamily('Per person per day'));
+    expect(unitFamily('per diem')).toBe(unitFamily('Per Day'));
+    expect(unitFamily('per item')).toBe(unitFamily('Per unit'));
+    expect(unitFamily('per event')).not.toBe(unitFamily('Per contract'));
+  });
+});

@@ -58,6 +58,15 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 const row = (e: Entry) => ({ date: e.date, doc: e.src === 'invoice' ? `${e.doc}${e.po ? ` (PO ${e.po})` : ''}` : `GL ${e.doc}`, line: e.line, description: [e.description, e.detail !== e.description ? e.detail : ''].filter(Boolean).join(' · '), amount: e.amount });
 const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const unitWord = (u: string) => u.toLowerCase().replace(/^per\s+/, '').replace(/[^a-z ]/g, '').replace(/s\b/g, '').trim();
+/** Units written differently but counted the same way ("per return flight" and "Per Travel", "per personday" and "Per Day"). */
+export function unitFamily(u: string): string {
+  const w = unitWord(u).replace(/\s+/g, ' ');
+  if (/travel|trip|flight|journey|ticket/.test(w)) return 'travel';
+  if (/diem|day|night/.test(w)) return 'day';
+  if (/^(item|unit|piece|pc)$/.test(w)) return 'item';
+  if (/month/.test(w)) return 'month';
+  return w;
+}
 const dmy = (s: string) => { const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
 
 /**
@@ -154,7 +163,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   // 9. PO unit differs from the budget line unit
   if (budget.length && o.pos?.length) {
     const unit = new Map(budget.filter((b) => b.unit).map((b) => [b.code, unitWord(b.unit!)]));
-    const bad = o.pos.filter((p) => p.unitType && unit.get(p.line) && unitWord(p.unitType) && !unitWord(p.unitType).includes(unit.get(p.line)!) && !unit.get(p.line)!.includes(unitWord(p.unitType)));
+    const bad = o.pos.filter((p) => p.unitType && unit.get(p.line) && unitWord(p.unitType) && !unitWord(p.unitType).includes(unit.get(p.line)!) && !unit.get(p.line)!.includes(unitWord(p.unitType)) && unitFamily(p.unitType) !== unitFamily(unit.get(p.line)!));
     const by = new Map<string, PO[]>(); for (const p of bad) by.set(p.line, [...(by.get(p.line) ?? []), p]);
     for (const [l, P] of by) out.push({ kind: 'unit-mismatch', level: 'info', title: KIND_LABEL['unit-mismatch'], text: `Line ${l} is budgeted per ${unit.get(l)}; ${P.length} PO${P.length > 1 ? 's' : ''} use "${[...new Set(P.map((p) => p.unitType))].join('", "')}" — unit counts on this line will not compare with the budget.`, amount: r2(P.reduce((a, p) => a + p.sc, 0)),
       rows: P.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.description} · ${p.units ?? ''} ${p.unitType}`, amount: p.sc })) });

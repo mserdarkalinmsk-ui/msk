@@ -27,6 +27,9 @@ export function latestWorkbook(p: Project) {
   return R.at(-1);
 }
 
+/** Checks stored by earlier versions said "match" even when the two figures differed. */
+const checkText = (c: { level: string; text: string }) => { const m = c.level !== 'info' && c.text.match(/^Open PO balances match PO commitments in the accounts \(€([\d,.]+) vs €([\d,.]+)\)$/); if (!m) return c.text; const a = +m[1].replace(/,/g, ''), b = +m[2].replace(/,/g, ''); return `Open PO balances differ from the PO commitments in the accounts by €${Math.abs(b - a).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (€${m[1]} on the open POs vs €${m[2]} in the budget situation) — a PO closed or raised after the extraction, or a balance on a PO marked closed`; };
+
 export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' | 'diff' }) {
   const rep = latestWorkbook(p);
   const [extra, setExtra] = useState<PackExtra>('none');
@@ -50,7 +53,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
   const funding = wb.movements.filter((x) => x.funding);
   const received = funding.reduce((s, x) => s + x.amount, 0);
   const el = elapsed(p, TODAY);
-  const warn = wb.checks.filter((c) => c.level !== 'info');
+  const warn = wb.checks.filter((c) => c.level !== 'info' && !(wb.meta.levyTaken && /^Administrative costs are 7% of direct costs/.test(c.text)));
   const after = E ? E.actual + (E.sc - E.actual) + (E.planned ?? 0) : 0;
   return (
     <>
@@ -106,8 +109,8 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
         <section class="card span-5">
           <div class="card-h"><div><h2>Checks</h2><p>{warn.length ? `${warn.length} items to review` : 'Everything reconciles'} · computed from the workbook</p></div></div>
           <ul class="att" style={{ marginTop: '12px', maxHeight: '340px', overflow: 'auto' }}>
-            {[...wb.checks].sort((a, b) => Number(a.level === 'info') - Number(b.level === 'info')).map((c) => (
-              <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : c.level === 'warning' ? 'warning' : 'good'}`}>{c.level === 'info' ? 'ok' : c.level}</span><div class="d" style={{ color: 'var(--ink)', whiteSpace: 'normal' }}>{c.text}</div><span /></li>
+            {[...wb.checks, ...(wb.meta.levyTaken && !wb.checks.some((c) => /levy taken/.test(c.text)) ? [{ ok: true, level: 'info' as const, text: `${full(wb.meta.levyTaken)} levy taken on donor tranches (posted on line 10); the report's administrative costs are 7% of the direct costs.` }] : [])].filter((c) => !/\(€0\.00 vs €0\.00\)/.test(c.text) && !(wb.meta.levyTaken && /^Administrative costs are 7% of direct costs/.test(c.text))).sort((a, b) => Number(a.level === 'info') - Number(b.level === 'info')).map((c) => (
+              <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : c.level === 'warning' ? 'warning' : 'good'}`}>{c.level === 'info' ? 'ok' : c.level}</span><div class="d" style={{ color: 'var(--ink)', whiteSpace: 'normal' }}>{checkText(c)}</div><span /></li>
             ))}
           </ul>
         </section>

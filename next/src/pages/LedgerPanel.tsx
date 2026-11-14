@@ -99,7 +99,7 @@ function Checks({ F, onSave }: { F: Finding[]; onSave: () => void }) {
         <li class={f.level}>
           <button class="f-h" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
             <span class={`badge ${f.level === 'error' ? 'serious' : f.level === 'warning' ? 'warning' : 'info'}`}>{f.level === 'error' ? 'Error' : f.level === 'warning' ? 'Check' : 'Note'}</span>
-            <b>{f.title}</b><span class="f-t">{f.text}</span><span class="num f-a">{full(f.amount)}</span><span class="f-n">{f.rows.length} ▾</span>
+            <b>{f.title}</b><span class="f-t">{f.text}</span><span class="num f-a">{Math.abs(f.amount) < 0.005 && f.rows.every((r) => !r.amount) ? "" : full(f.amount)}</span><span class="f-n">{f.rows.length} ▾</span>
           </button>
           {open === i && <div class="f-rows"><table class="range-lines"><thead><tr><th>Date</th><th>Document</th><th>Line</th><th>Description</th><th class="r">Amount</th></tr></thead>
             <tbody>{f.rows.map((r) => <tr><td class="num">{r.date ? date(r.date) : '—'}</td><td>{r.doc}</td><td class="num">{r.line || '—'}</td><td>{r.description}</td><td class="num r">{full(r.amount)}</td></tr>)}</tbody></table></div>}

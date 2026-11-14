@@ -1,6 +1,9 @@
 import { nearOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { oneOff } from '../domain/ledger';
+import { STANDARD_LINES } from '../domain/forecastTemplate';
+/** Group rows the template leaves unnamed. */
+const GROUP_NAME: Record<string, string> = { '5.5': 'Translation, interpretation' };
 import type { WbLine, WbTotals } from '../domain/workbook';
 import { downloadCSV } from './DataTable';
 import { pct } from './format';
@@ -16,7 +19,7 @@ interface Row { code: string; label: string; depth: number; leaf?: WbLine; sum: 
 function build(lines: WbLine[], names?: Map<string, string>) {
   const leaf = lines.filter((l) => l.leaf);
   const all = new Map<string, Row>();
-  const label = (code: string) => lines.find((l) => l.code === code)?.description || names?.get(code) || lines.find((l) => l.code === `${code}.0`)?.description.replace(/\s*\(not broken down\)$/, '') || (code.split('.').length === 1 ? HEAD[code] ?? '' : '');
+  const label = (code: string) => lines.find((l) => l.code === code)?.description || names?.get(code) || lines.find((l) => l.code === `${code}.0`)?.description.replace(/\s*\(not broken down\)$/, '') || STANDARD_LINES.find((x) => x[0] === code)?.[1] || GROUP_NAME[code] || (code.split('.').length === 1 ? HEAD[code] ?? '' : '');
   for (const l of leaf) {
     const parts = l.code.split('.');
     for (let i = 1; i <= parts.length; i++) {
@@ -121,7 +124,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
                     {parent ? <button class="tw" aria-expanded={!closed.has(r.code)} onClick={() => toggle(r.code)}>{closed.has(r.code) ? '▸' : '▾'}</button> : <span class="tw" />}
                     <span class="num cd">{r.code}</span> {r.label}
-                    {l && uu != null && (() => { const pj = elapsed > 0.05 && !oneOff(l.description, l.unit) ? (l.actual.units ?? 0) / elapsed / (l.budget.units ?? 1) : uu; const now = uu > 1.0001;
+                    {l && uu != null && (() => { const pj = elapsed > 0.05 && !headTag && !oneOff(l.description, l.unit) ? (l.actual.units ?? 0) / elapsed / (l.budget.units ?? 1) : uu; const now = uu > 1.0001;
                       return (now || pj > 1.0001) && <span class={`chg chg-not${now ? ' now' : ''}`} title={`${now ? `${n0(l.actual.units)} ${l.unit || 'units'} used of ${n0(l.budget.units)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * (l.budget.units ?? 0))} ${l.unit || 'units'} by the end, of ${n0(l.budget.units)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span>; })()}
                     {r.depth === 0 && headTag && (() => { const c = headTag(r.code); return c && <span class={`chg chg-${c.kind} now`} title={c.why}>{c.label}</span>; })()}
                     {r.depth === 0 && !headTag && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : c.kind === 'near' ? 'Near addendum' : 'Notification'}</span>; })()}

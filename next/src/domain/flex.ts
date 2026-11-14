@@ -2,10 +2,16 @@ import type { Project } from './types';
 
 export type Programme = 'JP' | 'VC';
 
-/** Joint Programme (EU–CoE) or Voluntary Contribution: chosen on the project, else read from the funding source. */
-export function programmeOf(p: Pick<Project, 'programme' | 'funding'>): Programme {
+/**
+ * Joint Programme (EU–CoE) or Voluntary Contribution: chosen on the project, else read from the funding source —
+ * "VC"/"voluntary" or a donor other than the EU (Sweden, Norway …) is a VC; the EU, or a JP number, is a JP.
+ */
+export function programmeOf(p: Pick<Project, 'programme' | 'funding'> & { jp?: string }): Programme {
   if (p.programme) return p.programme;
-  return /\bvcs?\b|voluntary/i.test(p.funding ?? '') ? 'VC' : 'JP';
+  const f = (p.funding ?? '').trim();
+  if (/\bvcs?\b|voluntary/i.test(f)) return 'VC';
+  if (/\beu\b|european union|joint programme|\bjp\b/i.test(f) || p.jp) return 'JP';
+  return f ? 'VC' : 'JP';
 }
 
 /**

@@ -1,3 +1,4 @@
+import { normalizeProject } from '../domain/normalize';
 import { useEffect, useState } from 'preact/hooks';
 import real from './seed.json';
 import demo from './demo.json';
@@ -8,7 +9,6 @@ const seed = DEMO ? demo : real;
 import type { Country, Ledger, Project, ReportingPeriod, Risk, TrashItem } from '../domain/types';
 import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
-import { EXTRACTION, extractionLines, isExtraction } from '../domain/extraction';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -44,7 +44,7 @@ const ownProject = (L: Ledger, id?: string) => { const i = L.projects.findIndex(
 const ownOffice = (L: Ledger, id: string) => { const i = (L.offices ?? []).findIndex((o) => o.id === id); return i < 0 ? undefined : (L.offices![i] = clone(L.offices![i])); };
 
 let state: State = {
-  ledger: clone((EMBED ? EMBED.ledger ?? { countries: [], projects: [] } : seed) as unknown as Ledger),
+  ledger: ((l: Ledger) => ({ ...l, projects: l.projects.map(normalizeProject) }))(clone((EMBED ? EMBED.ledger ?? { countries: [], projects: [] } : seed) as unknown as Ledger)),
   route: (location.hash.slice(2) || 'overview'),
   filters: { country: '', sector: '', q: '' },
   drawer: null,
@@ -188,7 +188,7 @@ export async function unlock(pw: string): Promise<boolean> {
   const { open: openSealed } = await import('../ui/crypto');
   const t = await openSealed(EMBED.enc, pw); if (t == null) return false;
   EMBED.ledger = JSON.parse(t) as Ledger;
-  state = { ...state, ledger: clone(EMBED.ledger) };
+  state = { ...state, ledger: ((l: Ledger) => ({ ...l, projects: l.projects.map(normalizeProject) }))(clone(EMBED.ledger)) };
   set({ locked: false, ready: false });
   await load();
   return true;
@@ -206,7 +206,7 @@ export async function load() {
       // Never fall back to the start data when stored data has a problem — that silently lost work before.
       if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
       prevSaved = l;
-      l.projects = l.projects.map(relayExtractions);
+      l.projects = l.projects.map(normalizeProject);
       state = { ...state, ledger: EMBED ? l : mergeSeed(validateLedger(l).length ? repair(l) : l) };
       // Move the older single record to the split form once; it is kept as that day's restore point.
       if (legacy) { void write(state.ledger).then(() => open()).then((d) => d?.transaction(STORE, 'readwrite').objectStore(STORE).delete(KEY)); }
@@ -271,13 +271,9 @@ export function undo() {
   const prev = history.pop(); if (!prev) return;
   set({ ledger: prev }); persist(prev); toast('Change undone');
 }
-/** System extractions keep their lines laid on the project's current approved budget (it may arrive later). */
-function relayExtractions(p: Project): Project {
-  if (!p.reportingPeriods?.some((r) => isExtraction(r.snapshot))) return p;
-  return { ...p, reportingPeriods: p.reportingPeriods.map((r) => (isExtraction(r.snapshot) ? { ...r, snapshot: { ...r.snapshot!, format: EXTRACTION, lines: extractionLines(r.snapshot!.workbook!, p) } } : r)) };
-}
+
 export function upsertProject(p0: Project) {
-  const p = relayExtractions(p0);
+  const p = normalizeProject(p0);
   const L = draft(state.ledger);
   const i = L.projects.findIndex((x) => x.id === p.id);
   if (i >= 0) L.projects[i] = p; else L.projects.push(p);

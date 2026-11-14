@@ -219,9 +219,9 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
       for (const r of co.rows) {
         if (!cell(r, C.src) || /^total/i.test(cell(r, C.src))) continue;
         const code = cell(r, C.line);
+        // The levy taken on each donor tranche is cash, not the report's administrative costs (7% of direct costs) — even when posted on line 10.
+        if ((code === '10' || !/^\d+(\.\d+)*$/.test(code) || code === '0') && /tranche|prelev|levy/i.test(cell(r, C.d))) { meta.levyTaken = (meta.levyTaken ?? 0) + z(r[C.sp]); continue; }
         if (!/^\d+(\.\d+)*$/.test(code) || code === '0') {
-          // The levy taken on each donor tranche is cash, not the report's administrative costs (7% of direct costs).
-          if (/tranche|prelev|levy/i.test(cell(r, C.d))) { meta.levyTaken = (meta.levyTaken ?? 0) + z(r[C.sp]); continue; }
           un += z(r[C.sc]); continue;
         }
         const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
@@ -286,14 +286,17 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   /* dated postings: invoices on POs (line, supplier from the PO) + direct GL entries */
   const entries: Entry[] = [];
   const poBy = new Map<string, { line: string; supplier: string; description: string; detail: string }>();
-  if (pt) { const C = { po: pt.col('ponumber'), na: pt.col('nature'), line: pt.col('reportingline'), sup: pt.col('supplier'), d: pt.col('descriptionpo'), dl: pt.col('descriptionpoline') };
+  // A PO split over several budget lines: each invoice goes to the line it names ("5.7-Framework …"), else to the line of the same amount.
+  const poAll = new Map<string, PoLineRef[]>();
+  if (pt) { const C = { po: pt.col('ponumber'), na: pt.col('nature'), line: pt.col('reportingline'), sup: pt.col('supplier'), d: pt.col('descriptionpo'), dl: pt.col('descriptionpoline'), amt: pt.col('poamountineur') };
     for (const r of pt.rows) { const po = cell(r, C.po); if (!po) continue; const x = { line: cell(r, C.line), supplier: cell(r, C.sup), description: cell(r, C.d), detail: cell(r, C.dl) };
-      if (!poBy.has(po + '|' + cell(r, C.na))) poBy.set(po + '|' + cell(r, C.na), x); if (!poBy.has(po)) poBy.set(po, x); } }
+      if (!poBy.has(po + '|' + cell(r, C.na))) poBy.set(po + '|' + cell(r, C.na), x); if (!poBy.has(po)) poBy.set(po, x);
+      const all = poAll.get(po) ?? []; all.push({ ...x, nature: cell(r, C.na), amount: z(r[C.amt]) }); poAll.set(po, all); } }
   if (inv) {
     const C = { dg: inv.col('dategl'), pe: inv.col('period'), no: inv.col('invoiceno'), d: inv.col('description'), am: inv.col('montantengage', 'montantligne'), po: inv.col('numeropo'), na: inv.col('nature'), pf: inv.col('postedflag') };
     for (const r of inv.rows) {
       const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
-      const po = cell(r, C.po), x = poBy.get(po + '|' + cell(r, C.na)) ?? poBy.get(po);
+      const po = cell(r, C.po), x = poBy.get(po + '|' + cell(r, C.na)) ?? pickPoLine(poAll.get(po), cell(r, C.d), num(r[C.am]) ?? 0) ?? poBy.get(po);
       entries.push({ date: toDay(r[C.dg]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'invoice', doc: no, po, line: x?.line ?? '', account: cell(r, C.na), description: x?.description || cell(r, C.d), detail: cell(r, C.d), supplier: x?.supplier ?? '', amount, posted: !/^n/i.test(cell(r, C.pf)) });
     }
   }
@@ -353,8 +356,8 @@ export function reconcile(wb: Workbook): Check[] {
   const d = wb.totals.direct;
   if (d) {
     const b = sum((l) => l.budget.cost), a = sum((l) => l.actual.cost);
-    C.push({ ok: close(b, d.budget), level: close(b, d.budget) ? 'info' : 'error', text: `Budget lines add up to the direct-cost total (${eur(b)} vs ${eur(d.budget)})` });
-    C.push({ ok: close(a, d.actual), level: close(a, d.actual) ? 'info' : 'error', text: `Actual lines add up to the direct-cost total (${eur(a)} vs ${eur(d.actual)})` });
+    if (b || d.budget) C.push({ ok: close(b, d.budget), level: close(b, d.budget) ? 'info' : 'error', text: `Budget lines add up to the direct-cost total (${eur(b)} vs ${eur(d.budget)})` });
+    if (a || d.actual) C.push({ ok: close(a, d.actual), level: close(a, d.actual) ? 'info' : 'error', text: `Actual lines add up to the direct-cost total (${eur(a)} vs ${eur(d.actual)})` });
   }
   // Template analysis: which totals rows exist and under which number, and whether they add up.
   const lay = wb.meta.layout ?? {}, T = wb.totals;
@@ -389,7 +392,7 @@ export function reconcile(wb: Workbook): Check[] {
   if (wb.pos.length && wb.situation.length) {
     const openBal = wb.pos.filter((p) => /open/i.test(p.status)).reduce((s, p) => s + p.balance, 0);
     const sbPo = wb.situation.reduce((s, r) => s + r.po, 0);
-    C.push({ ok: close(openBal, sbPo, 5), level: close(openBal, sbPo, 5) ? 'info' : 'warning', text: `Open PO balances match PO commitments in the accounts (${eur(openBal)} vs ${eur(sbPo)})` });
+    C.push({ ok: close(openBal, sbPo, 5), level: close(openBal, sbPo, 5) ? 'info' : 'warning', text: close(openBal, sbPo, 5) ? `Open PO balances match PO commitments in the accounts (${eur(openBal)} vs ${eur(sbPo)})` : `Open PO balances differ from the PO commitments in the accounts by ${eur(Math.abs(sbPo - openBal))} (${eur(openBal)} on the open POs vs ${eur(sbPo)} in the budget situation) — a PO closed or raised after the extraction, or a balance on a PO marked closed` });
   }
   return C;
 }
@@ -448,4 +451,43 @@ export function arithmetic(wb: Workbook): Check[] {
   for (const t of issues.slice(0, 8)) out.push({ ok: false, level: 'warning', text: t });
   if (issues.length > 8) out.push({ ok: false, level: 'warning', text: `…and ${issues.length - 8} more` });
   return out;
+}
+
+type PoLineRef = { line: string; supplier: string; description: string; detail: string; nature: string; amount: number };
+/** The line of a split PO an invoice belongs to: the code its text starts with, the PO line text it repeats, or a single line of the same amount. */
+export function pickPoLine<T extends { line: string; nature?: string; detail?: string; amount?: number }>(L: T[] | undefined, text: string, amount: number): T | undefined {
+  if (!L?.length) return undefined;
+  if (new Set(L.map((x) => x.line)).size < 2) return L[0];
+  const code = text.match(/^\s*(\d+(?:\.\d+)*)\s*[-–]/)?.[1];
+  const byCode = code ? L.find((x) => x.line === code) : undefined; if (byCode) return byCode;
+  const t = text.trim().toLowerCase();
+  const byText = t ? L.filter((x) => [x.nature, x.detail].some((v) => v && v.trim().toLowerCase() === t)) : [];
+  if (byText.length === 1) return byText[0];
+  const byAmt = L.filter((x) => x.amount != null && Math.abs(x.amount - amount) < 0.01);
+  return byAmt.length === 1 ? byAmt[0] : undefined;
+}
+
+/** Entries stored before split POs were handled: each invoice moved to the line of the PO it names. */
+export function relineEntries<W extends { pos?: PO[]; entries?: Entry[] }>(wb: W): W {
+  if (!wb.entries?.length || !wb.pos?.length) return wb;
+  const by = new Map<string, PO[]>(); for (const p of wb.pos) { const a = by.get(p.po) ?? []; a.push(p); by.set(p.po, a); }
+  let changed = false;
+  const entries = wb.entries.map((e) => {
+    if (e.src !== 'invoice' || !e.po) return e;
+    const L = by.get(e.po); if (!L || new Set(L.map((x) => x.line)).size < 2) return e;
+    const x = pickPoLine(L, e.detail, e.amount);
+    if (!x || x.line === e.line) return e;
+    changed = true; return { ...e, line: x.line };
+  });
+  return changed ? { ...wb, entries } : wb;
+}
+
+/** Extractions read before the levy rule: a levy on a tranche posted on line 10 was taken as the administrative costs. */
+export function fixLevy<W extends { meta: Workbook['meta']; totals: Workbook['totals']; entries?: Entry[] }>(wb: W): W {
+  const T = wb.totals, d = T.direct; if (!wb.meta.extraction || !d || !T.admin || !wb.entries?.length) return wb;
+  const levy = wb.entries.filter((e) => e.line === '10' && /tranche|prelev|levy/i.test(e.description + ' ' + e.detail));
+  const L = levy.reduce((a, e) => a + e.amount, 0);
+  if (!levy.length || Math.abs(L - T.admin.actual) > 0.5) return wb;
+  const A = { a: Math.round(d.actual * ADMIN_RATE * 100) / 100, sc: Math.round(d.sc * ADMIN_RATE * 100) / 100 };
+  return { ...wb, meta: { ...wb.meta, levyTaken: L }, totals: { ...T, admin: { budget: T.admin.budget, actual: A.a, sc: A.sc }, eligible: { budget: T.eligible?.budget ?? 0, actual: d.actual + A.a, sc: d.sc + A.sc } } };
 }

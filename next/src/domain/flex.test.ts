@@ -12,6 +12,10 @@ describe('heading flexibility by programme', () => {
     expect(flexOf(P({ funding: 'VC Norway' }))).toBe(0.15);
     expect(flexOf(P({ funding: 'Voluntary contribution' }))).toBe(0.15);
     expect(programmeOf(P({ funding: 'VC', programme: 'JP' }))).toBe('JP');
+    expect(programmeOf(P({ funding: 'Sweden' }))).toBe('VC');
+    expect(programmeOf(P({ funding: 'EU' }))).toBe('JP');
+    expect(programmeOf(P({ funding: '', jp: '3653' }))).toBe('JP');
+    expect(programmeOf(P({}))).toBe('JP');
   });
   it('lets the contract figure win', () => expect(flexOf(P({ programme: 'VC', contract: { flexPct: 20 } }))).toBe(0.2));
   it('an 18% overrun is a notification in a JP and an addendum in a VC', () => {

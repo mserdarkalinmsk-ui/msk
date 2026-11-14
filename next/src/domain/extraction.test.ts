@@ -40,3 +40,28 @@ describe('system extraction', () => {
     expect(L.filter((l) => l.code !== '10').reduce((a, l) => a + (l.actual ?? 0), 0)).toBe(entries);
   });
 });
+
+import { pickPoLine, relineEntries } from './workbook';
+describe('invoices of a PO split over several budget lines', () => {
+  const L = [{ line: '2.2', nature: '2.2-Framework agreement', amount: 27.92 }, { line: '5.7', nature: '5.7-Framework agreement', amount: 14334.63 }];
+  it('go to the line the invoice names', () => expect(pickPoLine(L, '5.7-Framework agreement', 14334.63)?.line).toBe('5.7'));
+  it('else to the single line of the same amount', () => expect(pickPoLine(L, 'Invoice 12', 27.92)?.line).toBe('2.2'));
+  it('stay unresolved when nothing tells them apart', () => expect(pickPoLine(L, 'Invoice 12', 50)).toBeUndefined());
+  it('are moved in stored workbooks', () => {
+    const e = { date: '2026-07-22', period: 'JUL-26', src: 'invoice' as const, doc: '1', po: '9', line: '2.2', account: '6185', description: '', detail: '5.7-Framework agreement', supplier: '', amount: 100, posted: true };
+    const pos = L.map((x) => ({ po: '9', line: x.line, description: '', nature: x.nature, supplier: '', amount: x.amount, spent: 0, balance: 0, sc: 0, status: '', date: '', units: null, unitType: '' }));
+    expect(relineEntries({ pos, entries: [e] }).entries![0].line).toBe('5.7');
+  });
+});
+
+import { fixLevy } from './workbook';
+describe('levy on a donor tranche posted on line 10', () => {
+  it('is not the administrative costs: those stay 7% of the direct costs', () => {
+    const wb = { meta: { extraction: true }, totals: { direct: { budget: 0, actual: 1000, sc: 1500 }, admin: { budget: 0, actual: 200, sc: 200 }, eligible: { budget: 0, actual: 1200, sc: 1700 } },
+      entries: [{ date: '2025-12-19', period: 'DEC-25', src: 'gl' as const, doc: '1', po: '', line: '10', account: '6810', description: 'PRELEV 7% CONTRIB', detail: '', supplier: '', amount: 200, posted: true }] };
+    const f = fixLevy(wb as never) as typeof wb & { meta: { levyTaken?: number } };
+    expect(f.totals.admin).toMatchObject({ actual: 70, sc: 105 });
+    expect(f.totals.eligible).toMatchObject({ actual: 1070, sc: 1605 });
+    expect(f.meta.levyTaken).toBe(200);
+  });
+});
