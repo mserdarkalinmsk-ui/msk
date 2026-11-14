@@ -1,5 +1,7 @@
+import { importReview, STAGE_LABEL } from '../domain/importReview';
+import { flexOf } from '../domain/flex';
 import { FORMAT, REPORT_TYPES } from '../domain/terms';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { checkpoint, deleteReport, get, isAdmin, setFormat, upsertReport, upsertRisk, useStore } from '../data/store';
 import { budgetOnly } from '../domain/calc';
 import { docType, formatKey } from '../domain/doctype';
@@ -197,6 +199,7 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
               <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px' }}><input type="checkbox" checked={replace} onChange={() => setReplace(!replace)} />Replace {ahead.length === 1 ? 'it' : 'them'} with this file (they go to the trash; the admin password is asked)</label>
               {!replace && <span class="muted" style={{ fontSize: '12px' }}>Kept: the screens keep showing {ahead.at(-1)!.name}, not this file.</span>}
             </section>}
+            {!asBudget && lines.length > 0 && <ImportReviewCard p={p} report={report} replaced={replace ? ahead.map((r) => r.id) : []} />}
             <section class="card">
               <div class="card-h"><div><h2>Preview</h2><p>{lines.length} lines{staff?.records.length ? ` · ${staff.records.filter((r) => r.name).length} staff records${staff.records.some((r) => r.review) ? ` (${staff.records.filter((r) => r.review).length} to review)` : ''}` : ''} · approved {short(t.approved)} · spent {short(t.actual)}{prev ? ` (${t.actual >= reportTotals(prev).actual ? '+' : '−'}${short(Math.abs(t.actual - reportTotals(prev).actual))} since ${prev.name})` : ''}</p></div></div>
               {checks.length > 0 && <ul class="att" style={{ marginTop: '10px' }}>{checks.slice(0, 12).map((c) => <li style={{ cursor: 'default' }}><span class={`badge ${c.level === 'error' ? 'critical' : 'warning'}`}>{c.level}</span><div class="d" style={{ color: 'var(--ink)' }}>{c.text}</div><span /></li>)}</ul>}
@@ -239,6 +242,30 @@ export function ReportImport({ projectId, close }: { projectId: string; close: (
         </button>
       </div>
     </>
+  );
+}
+
+/** What saving this report changes, and what does not add up — before it is saved. */
+function ImportReviewCard({ p, report, replaced }: { p: Project; report: ReportingPeriod; replaced: string[] }) {
+  const R = useMemo(() => { try { return importReview(p, report, replaced); } catch { return null; } }, [p, report.snapshot?.workbook ?? report.snapshot?.lines.length, report.date, replaced.join()]);
+  if (!R) return null;
+  const fx = flexOf(p), d = (a: number, b: number) => { const x = b - a; return <span class={x < -0.5 ? 'irv-dn' : x > 0.5 ? 'irv-up' : 'muted'}>{Math.abs(x) < 0.5 ? 'no change' : `${x > 0 ? '+' : '−'}${full(Math.abs(x))}`}</span>; };
+  const ok = !R.issues.length;
+  return (
+    <section class={`card irv ${ok ? 'irv-ok' : 'irv-warn'}`} aria-label="Check after import">
+      <div class="card-h"><div><h2>{ok ? '✓ Figures agree' : `${R.issues.length} thing${R.issues.length > 1 ? 's' : ''} to look at`} <span class="muted" style={{ fontWeight: 400, fontSize: '13px' }}>· what saving this report changes</span></h2>
+        <p>Checked against the project as it is now and across every screen (project card, budget lines, headings, statement)</p></div></div>
+      <div class="card-b irv-b">
+        <div class="irv-k"><span>Spent</span><b class="num">{full(R.after.spent)}</b><small>{d(R.before.spent, R.after.spent)} · was {full(R.before.spent)}</small></div>
+        <div class="irv-k"><span>Spent + committed</span><b class="num">{full(R.after.sc)}</b><small>{d(R.before.sc, R.after.sc)} · was {full(R.before.sc)}</small></div>
+        {R.staffShort > 0 && <div class="irv-k"><span>Staff POs short</span><b class="num" style={{ color: 'var(--serious)' }}>{R.staffShort}</b><small>do not cover the months left</small></div>}
+      </div>
+      {(R.heads.length > 0 || R.fixed.length > 0 || R.issues.length > 0) && <ul class="irv-l">
+        {R.issues.map((x) => <li><span class={`badge ${x.level === 'error' ? 'critical' : 'warning'}`}>{x.level === 'error' ? 'does not agree' : 'check'}</span>{x.text}</li>)}
+        {R.heads.map((h) => <li><span class={`badge ${h.to === 'addendum' ? 'critical' : h.to === 'ok' ? 'good' : 'warning'}`}>heading</span><b>{h.code}. {h.label}</b>&nbsp;moves from {STAGE_LABEL(h.from, fx)} to <b>&nbsp;{STAGE_LABEL(h.to, fx)}</b>&nbsp;({h.pct > 0 ? '+' : ''}{(h.pct * 100).toFixed(1)}% against the agreement)</li>)}
+        {R.fixed.map((t) => <li><span class="badge good">corrected</span>{t}</li>)}
+      </ul>}
+    </section>
   );
 }
 

@@ -1,6 +1,7 @@
 import { OfficeSummary } from './OfficeSummary';
 import { ProviderBrief } from './Providers';
-import { filtered, go, useStore } from '../data/store';
+import { filtered, get, go, useStore } from '../data/store';
+import { monthSummaryDocx } from './MonthSummary';
 import { deadlines, elapsed, money, parseDate, portfolioSeries, totals } from '../domain/calc';
 import { Chart } from '../ui/Chart';
 import { endMarks, spendOption } from './Overview';
@@ -90,7 +91,7 @@ export function MonthlyPack() {
     <article class="pack">
       <header class="pack-h">
         <div><div class="muted pack-k">Monthly management pack · {scope}</div><h2>{month(TODAY.getTime())}</h2></div>
-        <button class="btn primary no-print" onClick={() => print()}>⎙ Print / save as PDF</button>
+        <span class="no-print" style={{ display: 'flex', gap: '8px' }}><button class="btn" title="For the Head of Operations: the portfolio at a glance, then each project's figures, actions, Work Plan and FOMA notes (Word)" onClick={() => monthSummaryDocx(P, get().ledger)}>⬇ Summary (Word)</button><button class="btn primary" onClick={() => print()}>⎙ Print / save as PDF</button></span>
       </header>
       <section class="pack-s pack-sum">
         <h3>Summary</h3>

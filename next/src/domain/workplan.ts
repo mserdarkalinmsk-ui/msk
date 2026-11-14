@@ -226,6 +226,9 @@ export function mergeTable(plans: WorkPlan[], sheets: TableSheet[]): WorkPlan[] 
   const firstNumbered = num.length ? Math.min(...num.map((w) => w.no)) : 1;
   const numberedFrom = num.length ? num.reduce((a, w) => (w.no === firstNumbered ? w.from : a), '') : '9999';
   un.forEach((w, i) => { w.no = firstNumbered - un.length + i; if (w.from > numberedFrom) w.no = Math.max(...out.map((x) => x.no)) + 1; });
+  // Work Plans follow each other: numbers go in date order (a WP typed by hand before the table came keeps its place).
+  const dated = out.filter((w) => w.no > 0 && w.from).sort((a, b) => a.from.localeCompare(b.from));
+  if (dated.some((w, i) => i && w.no <= dated[i - 1].no)) { const first = Math.min(...dated.map((w) => w.no)); dated.forEach((w, i) => { w.no = first + i; }); }
   return out.sort((a, b) => a.no - b.no);
 }
 /** How a WP is named on screen: its number, or the quarter label of an older sheet. */
@@ -319,4 +322,24 @@ export function poMatch(wp: WorkPlan, wb: WorkbookSummary): PoMatch[] {
     x.raised += p.sc; x.pos.push({ po: p.po, description: p.description, supplier: p.supplier, amount: r2(p.sc), date: p.date });
   }
   return [...M.values()].map((x) => ({ ...x, planned: r2(x.planned), raised: r2(x.raised) })).sort((a, b) => a.line.localeCompare(b.line, undefined, { numeric: true }));
+}
+
+/**
+ * Things in a follow-up table that look typed wrong: the same planned amount and period in two projects' sheets
+ * (a sheet copied and not updated), a WP planned differently in its own sheet and in the next sheet's "previous WP",
+ * two sheets of one project for the same period with different amounts, a sheet titled with another WP number than its period.
+ */
+export function tableChecks(items: { t: TableSheet; p?: { id: string; bh?: string; code: string } }[]): { sheet: string; text: string }[] {
+  const out: { sheet: string; text: string }[] = [], M = items.filter((i) => i.p), lab = (p: { bh?: string; code: string }) => (p.bh ? `BH${p.bh}` : p.code);
+  const eq = (a: number, b: number) => Math.abs(a - b) < 0.5;
+  for (const a of M) for (const b of M) if (a.p!.id < b.p!.id && a.t.planned && eq(a.t.planned, b.t.planned) && a.t.from.slice(0, 7) === b.t.from.slice(0, 7))
+    out.push({ sheet: a.t.sheet, text: `"${a.t.sheet}" (${lab(a.p!)}) and "${b.t.sheet}" (${lab(b.p!)}) plan exactly ${a.t.planned.toLocaleString('en-GB')} for the same quarter — one sheet may have been copied and not updated` });
+  const by = new Map<string, typeof M>(); for (const i of M) by.set(i.p!.id, [...(by.get(i.p!.id) ?? []), i]);
+  for (const L of by.values()) {
+    for (const i of L) if (i.t.prev?.from) { const own = L.find((x) => x.t.from === i.t.prev!.from); if (own && i.t.prev.planned && !eq(own.t.planned, i.t.prev.planned)) out.push({ sheet: i.t.sheet, text: `"${own.t.sheet}" plans ${own.t.planned.toLocaleString('en-GB')}, but "${i.t.sheet}" gives that Work Plan as ${i.t.prev.planned.toLocaleString('en-GB')}` }); }
+    for (const a of L) for (const b of L) if (a.t.sheet < b.t.sheet && a.t.from && a.t.from === b.t.from && !eq(a.t.planned, b.t.planned)) out.push({ sheet: b.t.sheet, text: `"${a.t.sheet}" and "${b.t.sheet}" are both for the period from ${a.t.from} with different amounts (${a.t.planned.toLocaleString('en-GB')} / ${b.t.planned.toLocaleString('en-GB')}) — the later sheet is kept` });
+    const nums = L.filter((i) => i.t.no > 0).sort((a, b) => a.t.from.localeCompare(b.t.from));
+    for (let k = 1; k < nums.length; k++) if (nums[k].t.no <= nums[k - 1].t.no) out.push({ sheet: nums[k].t.sheet, text: `"${nums[k].t.sheet}" is titled WP ${nums[k].t.no}, like the sheet before it — numbered by its period instead` });
+  }
+  return out;
 }

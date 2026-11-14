@@ -46,7 +46,9 @@ export function presets(today: Date): { key: string; label: string; from: string
 /* ---------- entries that look wrong ---------- */
 
 export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over' | 'staff-short';
-export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number }[] }
+/** A staff PO that will not last until its contract end: what is paid a month, the months left and what is missing. */
+export interface StaffShort { po: string; line: string; person: string; to: string; months: number; perMonth: number; need: number; balance: number; ordered: number; spent: number; shortfall: number }
+export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number; staff?: StaffShort }[] }
 
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
@@ -192,7 +194,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
 
   // 12b. open staff POs whose balance does not cover the months left of the contract period
   if (o.asAt && o.pos?.length) {
-    const a = Date.parse(o.asAt), MO = 30.4375 * 86_400_000, short: { p: PO; need: number; left: number }[] = [];
+    const a = Date.parse(o.asAt), MO = 30.4375 * 86_400_000, short: { p: PO; need: number; left: number; per: number; to: string }[] = [];
     const invByPo = new Map<string, Entry[]>(); for (const e of entries) if (e.src === 'invoice' && e.po) { const x = invByPo.get(e.po); if (x) x.push(e); else invByPo.set(e.po, [e]); }
     for (const p of o.pos) {
       const m = p.description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
@@ -207,10 +209,11 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
       const from = last ? Date.parse(last + '-01') + 32 * 86_400_000 : a;
       const left = Math.max(0, Math.round((t - Date.UTC(new Date(from).getUTCFullYear(), new Date(from).getUTCMonth(), 1)) / MO)), need = per * left;
       if (!left) continue;
-      if (need - p.balance > 100) short.push({ p, need, left });
+      if (need - p.balance > 100) short.push({ p, need, left, per, to: dmy(m[2]) });
     }
     if (short.length) out.push({ kind: 'staff-short', level: 'warning', title: KIND_LABEL['staff-short'], text: `${short.length} staff PO${short.length > 1 ? 's' : ''} still running have less left than the months to come at the current monthly cost — about ${eur(short.reduce((x, s) => x + s.need - s.p.balance, 0))} is not committed yet. Committed (and spent + committed) are understated until the PO is topped up.`,
-      amount: r2(short.reduce((x, s) => x + s.need - s.p.balance, 0)), rows: short.map((s) => ({ date: s.p.date, doc: `PO ${s.p.po}`, line: s.p.line, description: `${s.p.description} — ${s.left} month${s.left > 1 ? 's' : ''} still to pay ≈ ${eur(s.need)}, PO balance ${eur(s.p.balance)}`, amount: r2(s.need - s.p.balance) })) });
+      amount: r2(short.reduce((x, s) => x + s.need - s.p.balance, 0)), rows: short.map((s) => ({ date: s.p.date, doc: `PO ${s.p.po}`, line: s.p.line, description: `${s.p.description} — ${s.left} month${s.left > 1 ? 's' : ''} still to pay ≈ ${eur(s.need)}, PO balance ${eur(s.p.balance)}`, amount: r2(s.need - s.p.balance),
+        staff: { po: s.p.po, line: s.p.line, person: s.p.description.split(/\s+-\s+/)[0].trim(), to: s.to, months: s.left, perMonth: r2(s.per), need: r2(s.need), balance: r2(s.p.balance), ordered: r2(s.p.amount), spent: r2(s.p.spent), shortfall: r2(s.need - s.p.balance) } })) });
   }
 
   // 12. units above the budgeted number (now, or at the current pace) → notification
@@ -218,7 +221,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
     const el = o.elapsed ?? 0;
     const now = o.units.filter((u) => u.budget > 0 && u.used > u.budget + 1e-6);
     const soon = o.units.filter((u) => u.budget > 0 && u.used <= u.budget && el > 0.05 && !oneOff(u.description, u.unit) && u.used / el > u.budget * 1.0001);
-    if (now.length) out.push({ kind: 'units-over', level: 'warning', title: KIND_LABEL['units-over'], text: `${now.length} line${now.length > 1 ? 's use' : ' uses'} more units than budgeted — the change in units is reported by notification (and by addendum if the heading goes beyond 25%).`,
+    if (now.length) out.push({ kind: 'units-over', level: 'warning', title: KIND_LABEL['units-over'], text: `${now.length} line${now.length > 1 ? 's use' : ' uses'} more units than budgeted — the change in units is reported by notification (and by addendum if the heading goes beyond ${pctOf(o.flex ?? FLEX)}%).`,
       amount: 0, rows: now.map((u) => ({ date: '', doc: `${+u.used.toFixed(2)} of ${u.budget} ${u.unit}`, line: u.code, description: `${u.description} — +${((u.used / u.budget - 1) * 100).toFixed(1)}% units`, amount: 0 })) });
     if (soon.length) out.push({ kind: 'units-over', level: 'info', title: 'Units heading above the budget', text: `${soon.length} line${soon.length > 1 ? 's' : ''} will pass the budgeted units before the end at the current pace — a notification will be needed.`,
       amount: 0, rows: soon.map((u) => ({ date: '', doc: `${+u.used.toFixed(2)} of ${u.budget} ${u.unit}`, line: u.code, description: `${u.description} — about ${Math.round(u.used / el)} by the end`, amount: 0 })) });

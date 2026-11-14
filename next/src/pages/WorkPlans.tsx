@@ -3,7 +3,7 @@ import { filtered, get, go, updateProject, useStore } from '../data/store';
 import { enrichExtraction } from '../domain/extraction';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
-import { wpName, carriedFrom, followUp, matchProject, mergeTable, readTableSheet, type TableSheet } from '../domain/workplan';
+import { wpName, carriedFrom, followUp, matchProject, mergeTable, readTableSheet, tableChecks, type TableSheet } from '../domain/workplan';
 import { TODAY } from '../today';
 import { date, full, pct, short } from '../ui/format';
 import { verdict, wpSheet } from '../ui/WorkPlan';
@@ -82,6 +82,7 @@ export function WorkPlans() {
               download(`WP-follow-up-all-projects-${today}.xlsx`, R.map((r) => { const sh = wpSheet(r.p, r.f); let n = `${r.p.bh ? `BH${r.p.bh.replace(/\D/g, '')}` : r.p.code} - ${wpName(r.wp)}`.slice(0, 31).replace(/[\\/?*:[\]]/g, '-'); while (used.has(n)) n = n.slice(0, 29) + Math.random().toString(36).slice(2, 4); used.add(n); return { ...sh, name: n }; }));
             }}>⬇ All follow-ups</button></div></div>
         {prev && <div class="wp-sec" style={{ paddingBottom: '12px' }}><h3>{prev.file}: {prev.items.length} WP sheets (2023–2026 layouts) · {prev.items.filter((i) => i.p).length} matched to a project</h3>
+          {(() => { const C = tableChecks(prev.items); return C.length ? <ul class="irv-l" style={{ padding: '4px 0 12px' }}>{C.map((c) => <li><span class="badge warning">check the table</span>{c.text}</li>)}</ul> : null; })()}
           <table class="wp-t"><thead><tr><th>Sheet</th><th>WP</th><th>Period</th><th class="num">Planned</th><th>Previous WP (C · D · E)</th><th>Project</th></tr></thead>
             <tbody>{prev.items.map((i) => <tr class={i.p ? '' : 'warning'}><td>{i.t.sheet}</td><td>{i.t.no ? `WP ${i.t.no}` : `WP ${i.t.label}`}</td><td>{date(i.t.from)} – {date(i.t.to)}</td><td class="num">{full(i.t.planned)}</td>
               <td class="muted">{i.t.prev ? `${i.t.prev.no ? `WP ${i.t.prev.no}` : i.t.prev.label}: ${full(i.t.prev.planned)} · ${i.t.prev.spent == null ? '—' : full(i.t.prev.spent)} · ${i.t.prev.sc == null ? '—' : full(i.t.prev.sc)}` : 'first WP'}</td>

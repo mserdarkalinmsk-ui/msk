@@ -65,3 +65,13 @@ describe('levy on a donor tranche posted on line 10', () => {
     expect(f.meta.levyTaken).toBe(200);
   });
 });
+
+describe('petty cash spread over several lines', () => {
+  it('is shared out as the PO lines record their spending', () => {
+    const pos = [{ line: '2.2', spent: 22.6 }, { line: '5.7', spent: 44.21 }].map((x) => ({ po: '8', line: x.line, description: 'Petty cash', nature: 'Petty cash multiple BLs', supplier: '', amount: 0, spent: x.spent, balance: 0, sc: 0, status: 'OPEN', date: '', units: null, unitType: '' }));
+    const e = (amount: number) => ({ date: '2026-03-19', period: 'MAR-26', src: 'invoice' as const, doc: String(amount), po: '8', line: '2.2', account: '6187', description: '', detail: 'Petty cash advance request', supplier: '', amount, posted: true });
+    const R = relineEntries({ pos, entries: [e(40.62), e(26.19)] }).entries!;
+    const by = (l: string) => Math.round(R.filter((x) => x.line === l).reduce((a, x) => a + x.amount, 0) * 100) / 100;
+    expect(by('2.2')).toBe(22.6); expect(by('5.7')).toBe(44.21);
+  });
+});

@@ -471,13 +471,25 @@ export function pickPoLine<T extends { line: string; nature?: string; detail?: s
 export function relineEntries<W extends { pos?: PO[]; entries?: Entry[] }>(wb: W): W {
   if (!wb.entries?.length || !wb.pos?.length) return wb;
   const by = new Map<string, PO[]>(); for (const p of wb.pos) { const a = by.get(p.po) ?? []; a.push(p); by.set(p.po, a); }
+  // A PO whose invoices already sit on its lines as the PO records the spending is left as it is.
+  const cur = new Map<string, Map<string, number>>(); for (const e of wb.entries) if (e.src === 'invoice' && e.po) { const m = cur.get(e.po) ?? new Map<string, number>(); m.set(e.line, (m.get(e.line) ?? 0) + e.amount); cur.set(e.po, m); }
+  for (const [po, L] of [...by]) { if (new Set(L.map((x) => x.line)).size < 2) continue; const m = cur.get(po); if (!m) continue; const sp = new Map<string, number>(); for (const x of L) sp.set(x.line, (sp.get(x.line) ?? 0) + x.spent);
+    if ([...new Set([...sp.keys(), ...m.keys()])].every((l) => Math.abs((sp.get(l) ?? 0) - (m.get(l) ?? 0)) <= 1)) by.delete(po); }
   let changed = false;
-  const entries = wb.entries.map((e) => {
-    if (e.src !== 'invoice' || !e.po) return e;
-    const L = by.get(e.po); if (!L || new Set(L.map((x) => x.line)).size < 2) return e;
+  // Invoices nothing ties to one line (petty cash over several lines): shared out as the PO lines record their spending,
+  // when that spending adds up to the invoices.
+  const loose = new Map<string, number>();
+  for (const e of wb.entries) if (e.src === 'invoice' && e.po) { const L = by.get(e.po); if (L && new Set(L.map((x) => x.line)).size > 1 && !pickPoLine(L, e.detail, e.amount)) loose.set(e.po, (loose.get(e.po) ?? 0) + e.amount); }
+  const share = new Map<string, { line: string; f: number }[]>();
+  for (const [po, tot] of loose) { const L = by.get(po)!, inv = wb.entries.filter((e) => e.src === 'invoice' && e.po === po).reduce((a, e) => a + e.amount, 0), sp = L.reduce((a, x) => a + x.spent, 0);
+    if (sp > 0 && Math.abs(sp - inv) <= 1 && tot) { const m = new Map<string, number>(); for (const x of L) m.set(x.line, (m.get(x.line) ?? 0) + x.spent); share.set(po, [...m].filter(([, v]) => v).map(([line, v]) => ({ line, f: v / sp }))); } }
+  const entries = wb.entries.flatMap((e) => {
+    if (e.src !== 'invoice' || !e.po) return [e];
+    const L = by.get(e.po); if (!L || new Set(L.map((x) => x.line)).size < 2) return [e];
     const x = pickPoLine(L, e.detail, e.amount);
-    if (!x || x.line === e.line) return e;
-    changed = true; return { ...e, line: x.line };
+    if (!x) { const S = share.get(e.po); if (!S) return [e]; changed = true; let left = e.amount; return S.map((s, i) => { const a = i === S.length - 1 ? Math.round(left * 100) / 100 : Math.round(e.amount * s.f * 100) / 100; left -= a; return { ...e, line: s.line, amount: a }; }); }
+    if (x.line === e.line) return [e];
+    changed = true; return [{ ...e, line: x.line }];
   });
   return changed ? { ...wb, entries } : wb;
 }
