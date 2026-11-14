@@ -59,6 +59,12 @@ const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDi
 const unitWord = (u: string) => u.toLowerCase().replace(/^per\s+/, '').replace(/[^a-z ]/g, '').replace(/s\b/g, '').trim();
 const dmy = (s: string) => { const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
 
+/**
+ * One-off lines — grants: a single contract paid in instalments, with no further spending expected beyond what is committed.
+ * They are left out of "at the current pace" projections (a grant paid early would otherwise look like an overspend to come).
+ */
+export const oneOff = (description: string, unit = '') => /\bgrants?\b|sub-?grant|\bhibe/i.test(`${description} ${unit}`);
+
 export interface FindOptions { budget?: BudgetRef[]; start?: string; end?: string; bh?: string; pos?: PO[]; /** spent + committed by line, to compare with the approved budget */ sc?: Map<string, number>; /** units budgeted and used by line */ units?: { code: string; description: string; unit: string; budget: number; used: number }[]; /** share of the project time gone, 0–1 */ elapsed?: number; /** situation date of the extraction */ asAt?: string }
 
 /**
@@ -201,7 +207,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   if (o.units?.length) {
     const el = o.elapsed ?? 0;
     const now = o.units.filter((u) => u.budget > 0 && u.used > u.budget + 1e-6);
-    const soon = o.units.filter((u) => u.budget > 0 && u.used <= u.budget && el > 0.05 && u.used / el > u.budget * 1.0001);
+    const soon = o.units.filter((u) => u.budget > 0 && u.used <= u.budget && el > 0.05 && !oneOff(u.description, u.unit) && u.used / el > u.budget * 1.0001);
     if (now.length) out.push({ kind: 'units-over', level: 'warning', title: KIND_LABEL['units-over'], text: `${now.length} line${now.length > 1 ? 's use' : ' uses'} more units than budgeted — the change in units is reported by notification (and by addendum if the heading goes beyond 25%).`,
       amount: 0, rows: now.map((u) => ({ date: '', doc: `${+u.used.toFixed(2)} of ${u.budget} ${u.unit}`, line: u.code, description: `${u.description} — +${((u.used / u.budget - 1) * 100).toFixed(1)}% units`, amount: 0 })) });
     if (soon.length) out.push({ kind: 'units-over', level: 'info', title: 'Units heading above the budget', text: `${soon.length} line${soon.length > 1 ? 's' : ''} will pass the budgeted units before the end at the current pace — a notification will be needed.`,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { go } from '../data/store';
-import { compareBudget, findErrors, presets, spendBetween, spendByYear, type Finding } from '../domain/ledger';
+import { compareBudget, findErrors, oneOff, presets, spendBetween, spendByYear, type Finding } from '../domain/ledger';
 import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
 import type { Entry, WorkbookSummary } from '../domain/workbook';
@@ -164,11 +164,12 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   const ya = (l: L, y: string) => l.years[y]?.amount ?? 0, ysc = (l: L, y: string) => (l.years[y]?.amount ?? 0) + (l.years[y]?.committed ?? 0);
   const el = elapsed(p, TODAY);
   /** Units above the budgeted number (now, or at the current pace by the end) are reported to the donor by notification — as on the statement. */
-  const unitTag = (l: L) => { const bu = l.budget.units; if (!bu || !l.units) return null; const uu = l.units / bu, pj = el > 0.05 ? l.units / el / bu : uu, now = uu > 1.0001;
+  const unitTag = (l: L) => { const bu = l.budget.units; if (!bu || !l.units) return null; const uu = l.units / bu, pj = el > 0.05 && !oneOff(l.description, l.unit) ? l.units / el / bu : uu, now = uu > 1.0001;
     return now || pj > 1.0001 ? <span class={`chg chg-not${now ? ' now' : ''}`} style={{ marginLeft: 0 }} title={`${now ? `${nf(l.units)} ${l.unit || 'units'} used of ${nf(bu)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * bu)} ${l.unit || 'units'} by the end, of ${nf(bu)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span> : null; };
   /** A heading above its budget needs a notification (within 25%) or an addendum (beyond); at the current pace = projected to the end. */
-  const headTag = (X: L[]) => { const b = sum(X, (l) => l.budget.cost), a = sum(X, (l) => l.amount), sc = sum(X, (l) => l.amount + l.committed); if (!b) return null;
-    const proj = el > 0.05 ? Math.max(sc, a / el) : sc, now = sc > b + 0.5, val = now ? sc : proj, d = val / b - 1; if (d <= 0.0001) return null;
+  const headTag = (X: L[]) => { const b = sum(X, (l) => l.budget.cost), sc = sum(X, (l) => l.amount + l.committed); if (!b) return null;
+    const ap = sum(X.filter((l) => !oneOff(l.description, l.unit)), (l) => l.amount), one = sum(X.filter((l) => oneOff(l.description, l.unit)), (l) => l.amount + l.committed);
+    const proj = el > 0.05 ? Math.max(sc, ap / el + one) : sc, now = sc > b + 0.5, val = now ? sc : proj, d = val / b - 1; if (d <= 0.0001) return null;
     const kind = d > 0.25 ? 'add' : d > 0.2 ? 'near' : 'not';
     return <span class={`chg chg-${kind}${now ? ' now' : ''}`} title={`${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${full(val)} on a budget of ${full(b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? 'beyond the 25% flexibility: an addendum is needed' : kind === 'near' ? `within 25% but close to the addendum threshold (${full(b * 1.25)})` : 'within the 25% flexibility: notification'}.`}>{now ? '' : 'Risk: '}{kind === 'add' ? 'Addendum' : kind === 'near' ? 'Near addendum' : 'Notification'}</span>; };
   const NC = 3 + years.length * 4 + 4 + 2; // numeric columns after Line and Description

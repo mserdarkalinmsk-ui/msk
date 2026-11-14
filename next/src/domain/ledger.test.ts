@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseWorkbook } from './workbook';
-import { findErrors, spendBetween, spendByYear } from './ledger';
+import { findErrors, oneOff, spendBetween, spendByYear } from './ledger';
 import { organisedSheets } from './organised';
 import type { Project } from './types';
 
@@ -59,6 +59,13 @@ describe('dated ledger of a system extraction', () => {
     const ev = Y.lines.find((l) => l.code === '5.7')!;
     expect(ev.years['2026'].units).toBe(1.2);
     expect(Y.lines.reduce((a, l) => a + l.amount, 0)).toBe(wb.entries!.filter((e) => e.line && e.line !== '0' && e.line !== '10').reduce((a, e) => a + e.amount, 0));
+  });
+  it('leaves grants out of the pace projections: a grant paid early is not a risk of more units', () => {
+    expect(oneOff('Grants to civil society organisations', 'Per grant')).toBe(true);
+    expect(oneOff('Interpretation', 'Per day')).toBe(false);
+    const U = (description: string, unit: string) => findErrors([], { elapsed: 0.25, units: [{ code: '6.1', description, unit, budget: 10, used: 6 }] });
+    expect(U('Interpretation', 'Per day').some((f) => f.kind === 'units-over')).toBe(true);
+    expect(U('Grants', 'Per grant').some((f) => f.kind === 'units-over')).toBe(false);
   });
   it('finds the entries that look entered in error, and does not flag split POs', () => {
     const F = findErrors(wb.entries!, { budget, start: '2026-01-01', end: '2027-06-30', bh: '5260', pos: wb.pos });

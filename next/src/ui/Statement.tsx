@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { oneOff } from '../domain/ledger';
 import type { WbLine, WbTotals } from '../domain/workbook';
 import { downloadCSV } from './DataTable';
 import { pct } from './format';
@@ -9,7 +10,7 @@ const n0 = (x: number | null | undefined) => (x == null || x === 0 ? '' : Math.a
 const signed = (x: number) => (Math.abs(x) < 0.005 ? '–' : `${x < 0 ? '−' : ''}${Math.abs(x).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 const money = (x: number | null | undefined) => (x == null || Math.abs(x) < 0.005 ? '–' : x.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
-interface Row { code: string; label: string; depth: number; leaf?: WbLine; sum: { b: number; a: number; sc: number; pl: number; pr: number; pb: number } }
+interface Row { code: string; label: string; depth: number; leaf?: WbLine; sum: { b: number; a: number; sc: number; pl: number; pr: number; pb: number; /** spent on lines that run over time (grants left out) and spent + committed of the one-off lines */ ap: number; one: number } }
 
 function build(lines: WbLine[], names?: Map<string, string>) {
   const leaf = lines.filter((l) => l.leaf);
@@ -19,8 +20,9 @@ function build(lines: WbLine[], names?: Map<string, string>) {
     const parts = l.code.split('.');
     for (let i = 1; i <= parts.length; i++) {
       const code = parts.slice(0, i).join('.');
-      const r = all.get(code) ?? { code, label: label(code), depth: i - 1, sum: { b: 0, a: 0, sc: 0, pl: 0, pr: 0, pb: 0 } };
+      const r = all.get(code) ?? { code, label: label(code), depth: i - 1, sum: { b: 0, a: 0, sc: 0, pl: 0, pr: 0, pb: 0, ap: 0, one: 0 } };
       if (i === parts.length) r.leaf = l;
+      if (oneOff(l.description, l.unit)) r.sum.one += v(l.sc ?? l.actual.cost); else r.sum.ap += v(l.actual.cost);
       r.sum.b += v(l.budget.cost); r.sum.a += v(l.actual.cost); r.sum.sc += v(l.sc ?? l.actual.cost); r.sum.pl += v(l.planned?.cost); r.sum.pr += v(l.rounded?.cost ?? l.proposal?.cost); r.sum.pb += l.proposalBase ?? ((l.rounded ?? l.proposal)?.cost != null ? v(l.budget.cost) : 0);
       all.set(code, r);
     }
@@ -44,6 +46,8 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
   const risk = (r: Row, u: number, uu: number | null, rateUp: number): 'over' | 'fast' | 'slow' | 'ok' => {
     if (!r.sum.b) return r.sum.sc > 0.5 ? 'over' : 'ok';
     if (u > 1.0001 || (uu != null && uu > 1.0001)) return 'over';
+    // A grant is one contract paid in instalments: being paid early or late says nothing about the pace.
+    if (r.leaf && oneOff(r.leaf.description, r.leaf.unit)) return 'ok';
     if (u - elapsed > 0.15 || (uu != null && uu - elapsed > 0.15) || rateUp > 0.15) return 'fast';
     if (elapsed > 0.25 && elapsed - u > 0.3) return 'slow';
     return 'ok';
@@ -51,7 +55,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
   /** A heading above its budget needs a notification (within 25%) or an addendum (beyond); at the current pace = projected to the end. */
   const change = (r: Row) => {
     if (!r.sum.b || /^(8|10)$/.test(r.code)) return null;
-    const proj = elapsed > 0.05 ? Math.max(r.sum.sc, r.sum.a / elapsed) : r.sum.sc;
+    const proj = elapsed > 0.05 ? Math.max(r.sum.sc, r.sum.ap / elapsed + r.sum.one) : r.sum.sc;
     const now = r.sum.sc > r.sum.b + 0.5, val = now ? r.sum.sc : proj, d = val / r.sum.b - 1;
     if (d <= 0.0001) return null;
     const kind: 'add' | 'near' | 'not' = d > 0.25 ? 'add' : d > 0.2 ? 'near' : 'not';
@@ -115,7 +119,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
                     {parent ? <button class="tw" aria-expanded={!closed.has(r.code)} onClick={() => toggle(r.code)}>{closed.has(r.code) ? '▸' : '▾'}</button> : <span class="tw" />}
                     <span class="num cd">{r.code}</span> {r.label}
-                    {l && uu != null && (() => { const pj = elapsed > 0.05 ? (l.actual.units ?? 0) / elapsed / (l.budget.units ?? 1) : uu; const now = uu > 1.0001;
+                    {l && uu != null && (() => { const pj = elapsed > 0.05 && !oneOff(l.description, l.unit) ? (l.actual.units ?? 0) / elapsed / (l.budget.units ?? 1) : uu; const now = uu > 1.0001;
                       return (now || pj > 1.0001) && <span class={`chg chg-not${now ? ' now' : ''}`} title={`${now ? `${n0(l.actual.units)} ${l.unit || 'units'} used of ${n0(l.budget.units)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * (l.budget.units ?? 0))} ${l.unit || 'units'} by the end, of ${n0(l.budget.units)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span>; })()}
                     {r.depth === 0 && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : c.kind === 'near' ? 'Near addendum' : 'Notification'}</span>; })()}
                   </td>
