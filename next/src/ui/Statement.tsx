@@ -33,7 +33,7 @@ function build(lines: WbLine[], names?: Map<string, string>) {
 }
 
 /** Financial statement in the layout of the official report: hierarchy, two-level headers, subtotals and totals. */
-export function Statement({ lines, totals, elapsed, title, layout, names, source, flex = 0.25 }: { /** heading flexibility: 0.25 Joint Programme, 0.15 Voluntary Contribution */ flex?: number; /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
+export function Statement({ lines, totals, elapsed, title, layout, names, source, flex = 0.25, headTag }: { /** several projects summed: the tag of a heading comes from each project against its own flexibility */ headTag?: (code: string) => { kind: 'add' | 'near' | 'not'; label: string; why: string } | null; /** heading flexibility: 0.25 Joint Programme, 0.15 Voluntary Contribution */ flex?: number; /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
   const [mode, setMode] = useState<'full' | 'compact'>('compact');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [hideEmpty, setHideEmpty] = useState(true);
@@ -123,7 +123,8 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                     <span class="num cd">{r.code}</span> {r.label}
                     {l && uu != null && (() => { const pj = elapsed > 0.05 && !oneOff(l.description, l.unit) ? (l.actual.units ?? 0) / elapsed / (l.budget.units ?? 1) : uu; const now = uu > 1.0001;
                       return (now || pj > 1.0001) && <span class={`chg chg-not${now ? ' now' : ''}`} title={`${now ? `${n0(l.actual.units)} ${l.unit || 'units'} used of ${n0(l.budget.units)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * (l.budget.units ?? 0))} ${l.unit || 'units'} by the end, of ${n0(l.budget.units)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span>; })()}
-                    {r.depth === 0 && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : c.kind === 'near' ? 'Near addendum' : 'Notification'}</span>; })()}
+                    {r.depth === 0 && headTag && (() => { const c = headTag(r.code); return c && <span class={`chg chg-${c.kind} now`} title={c.why}>{c.label}</span>; })()}
+                    {r.depth === 0 && !headTag && (() => { const c = change(r); return c && <span class={`chg chg-${c.kind}${c.now ? ' now' : ''}`} title={c.why}>{c.now ? '' : 'Risk: '}{c.kind === 'add' ? 'Addendum' : c.kind === 'near' ? 'Near addendum' : 'Notification'}</span>; })()}
                   </td>
                   {full_ && <td class="muted">{l?.unit}</td>}
                   {full_ && <><td class="r num">{n0(l?.budget.units)}</td><td class="r num">{n0(l?.budget.rate)}</td></>}
@@ -147,7 +148,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
           </tfoot>
         </table>
       </div>
-      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> heading above budget (≤{pctOf(nearOf(flex))}% / {pctOf(nearOf(flex))}–{FX}% / &gt;{FX}%) · “Risk:” = projected at the current pace</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
+      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> {headTag ? 'projects with the heading above budget, each against its own flexibility (25% Joint Programme, 15% Voluntary Contribution) — hover for the projects' : <>heading above budget (≤{pctOf(nearOf(flex))}% / {pctOf(nearOf(flex))}–{FX}% / &gt;{FX}%) · “Risk:” = projected at the current pace</>}</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { flexOf } from '../domain/flex';
 import { useMemo, useState } from 'preact/hooks';
 import { go, set, useStore } from '../data/store';
 import { progress } from '../domain/logframe';
@@ -152,7 +153,7 @@ export function ForecastCard({ p }: { p: Project }) {
 /* ---------------- project: budget revision scenario ---------------- */
 export function Scenario({ p }: { p: Project }) {
   const [d, setD] = useState<Record<string, number>>({});
-  const [limit, setLimit] = useState(Number((p as { flexPct?: number }).flexPct) || 25); // heading flexibility (25% unless the project sets its own)
+  const [limit, setLimit] = useState(Math.round(flexOf(p) * 100)); // heading flexibility of the project
   const S = scenario(p, d, limit / 100);
   if (!S.rows.length) return <div class="card empty-page"><div><h2>No budget lines yet</h2><p>Import a financial report to model a budget revision.</p></div></div>;
   const balance = () => {

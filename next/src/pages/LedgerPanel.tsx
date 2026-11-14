@@ -132,7 +132,7 @@ function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof com
           {moves.length ? <ul>{moves.map((m) => <li>{full(m.amount)} from {m.from}. {HEAD[m.from] ?? ''} → {m.to}. {HEAD[m.to] ?? ''}</li>)}</ul> : null}</div>
         <div class="rev-actions"><button class="btn primary" onClick={proposal}>⬇ Revision proposal</button><button class="btn" title="Forecast and budget revision in the CoE template, with the notification letter" onClick={() => go(`project/${p.id}/forecast`)}>Prepare the {addendum ? 'addendum' : 'notification'} →</button></div>
       </div> : null}
-      <h3 style={{ margin: '4px 0 0' }}>By heading — 25% flexibility</h3>
+      <h3 style={{ margin: '4px 0 0' }}>By heading — {FX}% flexibility</h3>
       <table class="range-lines"><thead><tr><th>Heading</th><th class="r">Approved budget</th><th class="r">Spent + committed</th><th class="r">Difference</th><th class="r">%</th><th>Status</th></tr></thead>
         <tbody>{C.heads.map((h) => <tr><td>{h.h}. {HEAD[h.h] ?? ''}</td><td class="num r">{full(h.budget)}</td><td class="num r">{full(h.sc)}</td><td class="num r">{h.diff > 0 ? '+' : '−'}{full(Math.abs(h.diff))}</td><td class="num r">{h.budget ? `${h.pct > 0 ? '+' : ''}${(h.pct * 100).toFixed(1)}%` : '—'}</td><td>{badge(h.status)}</td></tr>)}</tbody></table>
       <h3 style={{ margin: '8px 0 0' }}>By line{from || to ? ` · range ${from ? date(from) : 'start'} → ${to ? date(to) : 'today'}` : ''}</h3>

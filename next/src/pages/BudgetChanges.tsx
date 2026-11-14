@@ -1,3 +1,4 @@
+import { programmeOf } from '../domain/flex';
 import { FlexPanel } from '../ui/Visuals';
 import { useState } from 'preact/hooks';
 import { filtered, upsertProject, useStore } from '../data/store';
@@ -59,7 +60,7 @@ export function BudgetChanges() {
       </section>
       <FlexPanel p={p} />
       <section class="card" style={{ marginTop: '16px' }}>
-        <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Budget changes</h2><p>EU–CoE Contribution Agreement: within one heading free · between headings notified while each heading stays within {Math.round(A.flex * 100)}% of the amount originally entered (cumulative) · beyond, new headings, admin costs or the total need an addendum · contingency needs prior approval</p></div>
+        <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Budget changes</h2><p>{programmeOf(p) === 'VC' ? 'Voluntary Contribution' : 'EU–CoE Contribution Agreement'}: within one heading free · between headings notified while each heading stays within {Math.round(A.flex * 100)}% of the amount originally entered (cumulative) · beyond, new headings, admin costs or the total need an addendum · contingency needs prior approval</p></div>
           <select class="sp-sel" style={{ marginLeft: 'auto' }} value={p.id} onChange={(e) => setPid((e.target as HTMLSelectElement).value)}>{P.map((x) => <option value={x.id}>{lab(x)} · {x.name.slice(0, 50)}</option>)}</select></div>
         <div class="card-b table-scroll"><table class="mini bt-h"><thead><tr><th>Heading</th><th class="r">Agreement</th><th class="r">Now</th><th class="r">After planned transfers</th><th style={{ width: '24%' }}>Change against the agreement (limit ±{Math.round(A.flex * 100)}%)</th><th class="r">Can still receive</th><th class="r">Can still give</th></tr></thead>
           <tbody>{A.heads.map((h) => { const x = Number.isFinite(h.change) ? Math.max(-1.6, Math.min(1.6, h.change / A.flex)) : 1.6;

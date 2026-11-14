@@ -12,7 +12,7 @@ const HS = ['1', '2', '3', '4', '5', '6'];
 type Cell = { budget: number; sc: number; spent: number; used: number; over: number; status: 'none' | 'ok' | 'high' | 'notification' | 'near' | 'addendum' };
 const LABEL: Record<Cell['status'], string> = { none: 'No budget', ok: 'Within budget', high: '90%+ used', notification: 'Notification (within the flexibility)', near: 'Near the addendum threshold', addendum: 'Addendum (beyond the flexibility)' };
 
-function cells(p: Project): Record<string, Cell> {
+export function cells(p: Project): Record<string, Cell> {
   const fx = flexOf(p);
   const out: Record<string, Cell> = {};
   for (const h of HS) {

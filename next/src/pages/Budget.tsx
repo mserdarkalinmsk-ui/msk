@@ -1,3 +1,5 @@
+import { cells } from './Heatmap';
+import { flexOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { filtered, go, set, updateLine, useStore } from '../data/store';
 import { byCategory, category, latestReport, parseDate, lineRows, reportsByDate, reportTotals, spendPoints, type LineRow } from '../domain/calc';
@@ -64,7 +66,15 @@ export function Budget() {
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Portfolio financial statement</h2><p>All filtered projects summed by budget line, in the layout of the official report{(() => { const nf = P.filter((p) => lines(p).some((l) => l.forecast != null)).length, np = P.filter((p) => lines(p).some((l) => (l.roundedBudget ?? l.proposedBudget) != null)).length; return nf < P.length || np < P.length ? ` · Planned 12 months from ${nf} of ${P.length} projects, budget proposal from ${np} — “vs budget” compares only those` : ''; })()}</p></div></div>
           {(() => { const S = portfolioStatement(P); const B = P.reduce((s, p) => s + p.budget, 0); const el = B ? P.reduce((s, p) => s + p.budget * elapsedOf(p, TODAY), 0) / B : 0;
-            return <Statement names={S.names} lines={S.lines} totals={S.totals} elapsed={el} title="portfolio-statement" />; })()}
+            const HC = P.map((p) => ({ p, c: cells(p) }));
+            const headTag = (code: string) => {
+              const of = (st: string) => HC.filter((x) => x.c[code]?.status === st).map((x) => `${x.p.bh ?? x.p.code} (+${(x.c[code].over * 100).toFixed(1)}%, limit ${pctOf(flexOf(x.p))}%)`);
+              const add = of('addendum'), near = of('near'), not = of('notification'), n = add.length + near.length + not.length; if (!n) return null;
+              const kind = add.length ? 'add' as const : near.length ? 'near' as const : 'not' as const;
+              return { kind, label: `${kind === 'add' ? 'Addendum' : kind === 'near' ? 'Near addendum' : 'Notification'} · ${kind === 'add' ? add.length : kind === 'near' ? near.length : not.length} project${(kind === 'add' ? add.length : kind === 'near' ? near.length : not.length) > 1 ? 's' : ''}`,
+                why: [add.length && `Addendum: ${add.join(', ')}`, near.length && `Near addendum: ${near.join(', ')}`, not.length && `Notification: ${not.join(', ')}`].filter(Boolean).join(' · ') + ' — spent + committed against the approved heading of each project.' };
+            };
+            return <Statement headTag={headTag} names={S.names} lines={S.lines} totals={S.totals} elapsed={el} title="portfolio-statement" />; })()}
         </section>
         <details class="card span-12 bl-fold" style={{ overflow: 'hidden' }}>
           <summary class="card-h" style={{ paddingBottom: '12px', cursor: 'pointer' }}><div><h2>Budget lines by project{cat && ` · ${cat}`}</h2><p>Hidden by default · open to see or correct every line of every project</p></div></summary>

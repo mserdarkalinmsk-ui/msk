@@ -9,7 +9,7 @@ import { axisX, axisY } from './Overview';
 type View = 'needed' | 'heading' | 'committed' | 'mix' | 'cash' | 'accuracy';
 const VIEWS: Record<View, { tab: string; hint: string }> = {
   needed: { tab: 'Needed / month', hint: 'Spent each month (light: forecast) against what would have to be spent each month to use the budget by the end' },
-  heading: { tab: 'By heading', hint: 'Spent and committed per heading against the budget; the marker is the amount expected at the end — red when a heading would need more than the 25% flexibility' },
+  heading: { tab: 'By heading', hint: 'Spent and committed per heading against the budget; the marker is the amount expected at the end — red when a heading would need more than its flexibility (25% Joint Programme, 15% Voluntary Contribution)' },
   committed: { tab: 'Spent & committed', hint: 'Cumulative spent and the commitments (open orders) on top, at each report' },
   mix: { tab: 'Staff vs activities', hint: 'Cumulative spend by kind — staff (1.1.1 / 1.2.1), charging back (4.2 / 4.4) and activities — with the staff share' },
   cash: { tab: 'Cash', hint: 'Money received from the donor against cumulative spending; the next payment request is due when spending reaches 70% of what was received' },
@@ -104,7 +104,7 @@ function verdict(v: View, P: Project[]): { text: string; tone: 'good' | 'warn' |
   }
   if (v === 'heading') {
     const H = headingBars(P, TODAY).filter((h) => h.stage === 'addendum' || h.stage === 'notify-now');
-    return H.length ? { text: `Beyond the flexibility at the end: ${H.map((h) => `${h.code} ${h.label} (${h.flagged.join(', ')})`).join(' · ')}.`, tone: 'bad' } : { text: 'Every heading stays within the 25% flexibility at the current pace.', tone: 'good' };
+    return H.length ? { text: `Beyond the flexibility at the end: ${H.map((h) => `${h.code} ${h.label} (${h.flagged.join(', ')})`).join(' · ')}.`, tone: 'bad' } : { text: 'Every heading stays within its flexibility at the current pace.', tone: 'good' };
   }
   if (v === 'committed') {
     const x = committedSeries(P, TODAY).at(-1); if (!x) return null;
