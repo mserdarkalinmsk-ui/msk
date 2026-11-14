@@ -1,3 +1,4 @@
+import { useFolder } from './Backup';
 import { BackupBanner, FreshStart } from './Backup';
 import { SharedBanner } from './Share';
 import { READONLY } from '../data/store';
@@ -24,6 +25,14 @@ export const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
 
 /** Two letters for the badge when no logo is set: the first letters of the first two words (Portfolio Ledger → PL, CoE Portfolio → CP). */
 const initials = (t: string) => (t.match(/[A-Za-zÀ-ž0-9]+/g) ?? ['P']).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+
+/** Green: the automatic backup is saving; amber: paused or never turned on. */
+function BackupDot() {
+  const st = useFolder();
+  if (st === undefined) return null;
+  const ok = !!st?.ok;
+  return <i class={`bk-dot ${ok ? 'ok' : 'off'}`} title={ok ? `Automatic backup on — folder “${st!.name}”` : st ? 'Automatic backup paused — open Import / backup' : 'Automatic backup off — open Import / backup to turn it on'} />;
+}
 
 export function Shell({ title, crumb, actions, children }: { title: string; crumb?: ComponentChildren; actions?: ComponentChildren; children: ComponentChildren }) {
   const route = useStore((s) => s.route);
@@ -58,7 +67,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
         </nav>
         <div class="side-foot">
           <small class="muted build" title="Version of this app — compare when something seems missing">Build {__BUILD__} UTC</small>
-          <button class="btn ghost" onClick={() => set({ drawer: { kind: 'import' } })}><Icon d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />Import / backup</button>
+          <button class="btn ghost" onClick={() => set({ drawer: { kind: 'import' } })}><Icon d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />Import / backup<BackupDot /></button>
           <button class="btn ghost" onClick={() => set({ drawer: { kind: 'share' } })}><Icon d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13" />Share a copy</button>
           <button class="btn ghost" onClick={() => set({ drawer: { kind: 'appearance' } })}><Icon d="M12 3a9 9 0 0 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.6 4.6 0 0 0 22 9.8C22 6 17.5 3 12 3zM7 12a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />Appearance</button>
           <button class="btn ghost" onClick={() => setTheme(nextTheme)} aria-label="Change theme">

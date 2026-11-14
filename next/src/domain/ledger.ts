@@ -1,4 +1,4 @@
-import type { Entry, PO } from './workbook';
+import { unitsLookTyped, type Entry, type PO } from './workbook';
 import { nearOf, pctOf } from './flex';
 
 /**
@@ -45,7 +45,7 @@ export function presets(today: Date): { key: string; label: string; from: string
 
 /* ---------- entries that look wrong ---------- */
 
-export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over' | 'staff-short';
+export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over' | 'staff-short' | 'units-typed';
 /** A staff PO that will not last until its contract end: what is paid a month, the months left and what is missing. */
 export interface StaffShort { po: string; line: string; person: string; to: string; months: number; perMonth: number; need: number; balance: number; ordered: number; spent: number; shortfall: number }
 export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number; staff?: StaffShort }[] }
@@ -53,7 +53,7 @@ export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
   'po-over': 'Invoiced above the PO', 'outside-dates': 'Outside the project dates', unposted: 'Not posted', 'other-bh': 'Mentions another budget head',
-  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification', 'staff-short': 'Staff PO does not cover the remaining months',
+  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification', 'staff-short': 'Staff PO does not cover the remaining months', 'units-typed': 'Amount typed as the number of units',
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -160,6 +160,13 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   if (o.bh) {
     const E = entries.filter((e) => { const m = `${e.description} ${e.detail}`.match(/\bBH\s?(\d{4})\b/gi); return m?.some((x) => x.replace(/\D/g, '') !== o.bh); });
     if (E.length) push('other-bh', 'info', `${E.length} entries name a budget head other than ${o.bh} — usually a transfer or a regularisation; check the amount landed on the right project.`, E);
+  }
+
+  // 8b. the amount typed again as the number of units (1,100 units for EUR 1,100): not counted as units
+  if (o.pos?.length) {
+    const T = o.pos.filter((p) => unitsLookTyped(p));
+    if (T.length) out.push({ kind: 'units-typed', level: 'warning', title: KIND_LABEL['units-typed'], text: `${T.length} PO line${T.length > 1 ? 's' : ''} give as many units as euros — the amount was typed in the units field. Their units are left out of the line's units; correct the PO in the system.`,
+      amount: r2(T.reduce((a, p) => a + p.amount, 0)), rows: T.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.description} · ${p.units} ${p.unitType} for ${eur(p.amount)}`, amount: p.amount })) });
   }
 
   // 9. PO unit differs from the budget line unit

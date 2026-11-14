@@ -135,8 +135,9 @@ export function BackupBanner() {
   return (
     <div class="bk-banner no-print" role="status">
       <span class="bk-i">⛁</span>
-      <span><b>{!last ? 'No backup yet' : since >= 25 && days! < 7 ? `${since} changes since your last backup` : `Last backup ${days} days ago`}</b> — your data lives only in this browser. Save a copy to keep it safe.</span>
-      <button class="btn primary" onClick={async () => { await backupNow(); tick((x) => x + 1); }}>Back up now</button>
+      <span><b>{!last ? 'No backup yet' : since >= 25 && days! < 7 ? `${since} changes since your last backup` : `Last backup ${days} days ago`}</b> — your data lives only in this browser. {folderSupported() ? 'Turn on the automatic backup: choose a folder (OneDrive or a shared drive) once, and a copy is saved there after every change.' : 'Save a copy to keep it safe.'}</span>
+      {folderSupported() && <button class="btn primary" onClick={() => void chooseFolder()}>Turn on automatic backup…</button>}
+      <button class={`btn ${folderSupported() ? '' : 'primary'}`} onClick={async () => { await backupNow(); tick((x) => x + 1); }}>Back up now</button>
       <button class="btn ghost" onClick={() => { write(S, new Date(Date.now() + 3 * 86_400_000).toISOString()); tick((x) => x + 1); }}>Later</button>
     </div>
   );

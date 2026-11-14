@@ -224,7 +224,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
         if (!/^\d+(\.\d+)*$/.test(code) || code === '0') {
           un += z(r[C.sc]); continue;
         }
-        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
+        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); if (!unitsLookTyped({ units: z(r[C.u]), amount: Math.abs(z(r[C.sc])), sc: Math.abs(z(r[C.sp])) })) x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
       }
       if (by.size) {
         meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un;
@@ -502,4 +502,20 @@ export function fixLevy<W extends { meta: Workbook['meta']; totals: Workbook['to
   if (!levy.length || Math.abs(L - T.admin.actual) > 0.5) return wb;
   const A = { a: Math.round(d.actual * ADMIN_RATE * 100) / 100, sc: Math.round(d.sc * ADMIN_RATE * 100) / 100 };
   return { ...wb, meta: { ...wb.meta, levyTaken: L }, totals: { ...T, admin: { budget: T.admin.budget, actual: A.a, sc: A.sc }, eligible: { budget: T.eligible?.budget ?? 0, actual: d.actual + A.a, sc: d.sc + A.sc } } };
+}
+
+/** A PO whose number of units is its amount typed again (1,100 units for EUR 1,100): the units are an entry error. */
+export const unitsLookTyped = (po: { units: number | null; amount: number; sc?: number }) => {
+  const u = po.units ?? 0; if (u < 20) return false;
+  return [po.amount, po.sc ?? 0].some((v) => v > 0 && Math.abs(u - v) < 1);
+};
+
+/** Line units without the units of POs where the amount was typed as the number of units. */
+export function fixTypedUnits<W extends { meta: Workbook['meta']; lines: WbLine[]; pos?: PO[] }>(wb: W): W {
+  if (!wb.meta.extraction || !wb.pos?.length) return wb;
+  const bad = new Map<string, number>(); for (const p of wb.pos) if (unitsLookTyped(p)) bad.set(p.line, (bad.get(p.line) ?? 0) + (p.units ?? 0));
+  if (!bad.size) return wb;
+  let changed = false;
+  const lines = wb.lines.map((l) => { const b = bad.get(l.code), u = l.actual.units ?? 0; if (!b || u < b) return l; changed = true; return { ...l, actual: { ...l.actual, units: Math.round((u - b) * 100) / 100 || null } }; });
+  return changed ? { ...wb, lines } : wb;
 }

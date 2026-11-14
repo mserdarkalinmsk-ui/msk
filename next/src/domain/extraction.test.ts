@@ -75,3 +75,13 @@ describe('petty cash spread over several lines', () => {
     expect(by('2.2')).toBe(22.6); expect(by('5.7')).toBe(44.21);
   });
 });
+
+import { fixTypedUnits, unitsLookTyped } from './workbook';
+describe('the amount typed as the number of units', () => {
+  const po = (units: number, amount: number) => ({ po: '1', line: '1.3.2', description: '', nature: '', supplier: '', amount, spent: 0, balance: amount, sc: amount, status: 'OPEN', date: '', units, unitType: 'Per Diem' });
+  it('is recognised', () => { expect(unitsLookTyped(po(1100, 1100))).toBe(true); expect(unitsLookTyped(po(4, 360))).toBe(false); expect(unitsLookTyped(po(121, 332))).toBe(false); });
+  it('is left out of the line units', () => {
+    const wb = { meta: { extraction: true }, lines: [{ code: '1.3.2', description: '', unit: '', level: 3, leaf: true, budget: { units: 86, rate: 195, cost: 16770 }, actual: { units: 1125, rate: null, cost: 2333.5 } }], pos: [po(1100, 1100)] };
+    expect((fixTypedUnits(wb as never) as typeof wb).lines[0].actual.units).toBe(25);
+  });
+});

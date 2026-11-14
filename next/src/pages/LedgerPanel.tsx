@@ -1,6 +1,8 @@
 import { flexOf, nearOf, pctOf } from '../domain/flex';
+import { lineTransfers } from '../domain/transfers';
+import { transferLetterDocx } from '../ui/TransferLetter';
 import { useMemo, useState } from 'preact/hooks';
-import { go } from '../data/store';
+import { get, go } from '../data/store';
 import { compareBudget, findErrors, oneOff, presets, spendBetween, spendByYear, type Finding } from '../domain/ledger';
 import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
@@ -130,7 +132,7 @@ function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof com
       {over.length ? <div class={`rev-callout ${addendum ? 'serious' : 'warning'}`}>
         <div><b>{addendum ? 'Addendum needed' : 'Notification needed'}</b> — {over.length} heading{over.length > 1 ? 's' : ''} above the approved budget by {full(need)}{spare.length ? `; ${full(Math.min(need, -spare.reduce((a, h) => a + h.diff, 0)))} can come from ${spare.map((h) => `${h.h}. ${HEAD[h.h] ?? ''}`).join(', ')}` : ''}.
           {moves.length ? <ul>{moves.map((m) => <li>{full(m.amount)} from {m.from}. {HEAD[m.from] ?? ''} → {m.to}. {HEAD[m.to] ?? ''}</li>)}</ul> : null}</div>
-        <div class="rev-actions"><button class="btn primary" onClick={proposal}>⬇ Revision proposal</button><button class="btn" title="Forecast and budget revision in the CoE template, with the notification letter" onClick={() => go(`project/${p.id}/forecast`)}>Prepare the {addendum ? 'addendum' : 'notification'} →</button></div>
+        <div class="rev-actions">{(() => { const T = lineTransfers(C.lines, fx); return T.moves.length ? <button class="btn primary" title={T.beyond ? `The transfers take a heading beyond ${FX}% — an addendum, not a notification; the letter is still drafted` : 'Every line back within its budget: from the same heading first, then from the lines with the most left (Word)'} onClick={() => transferLetterDocx(p, T, fx, get().ledger)}>⬇ {T.beyond ? 'Draft letter (addendum needed)' : 'Notification letter (Word)'}</button> : null; })()}<button class="btn" onClick={proposal}>⬇ Revision proposal</button><button class="btn" title="Forecast and budget revision in the CoE template, with the notification letter" onClick={() => go(`project/${p.id}/forecast`)}>Prepare the {addendum ? 'addendum' : 'notification'} →</button></div>
       </div> : null}
       <h3 style={{ margin: '4px 0 0' }}>By heading — {FX}% flexibility</h3>
       <table class="range-lines"><thead><tr><th>Heading</th><th class="r">Approved budget</th><th class="r">Spent + committed</th><th class="r">Difference</th><th class="r">%</th><th>Status</th></tr></thead>

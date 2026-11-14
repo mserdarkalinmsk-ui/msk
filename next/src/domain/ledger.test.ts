@@ -130,3 +130,14 @@ describe('units written differently', () => {
     expect(unitFamily('per event')).not.toBe(unitFamily('Per contract'));
   });
 });
+
+import { lineTransfers } from './transfers';
+describe('transfers that bring every line back within its budget', () => {
+  const l = (code: string, budget: number, sc: number) => ({ code, description: '', budget, inRange: 0, toDate: 0, sc, available: budget - sc, used: 0, status: 'ok' as const });
+  it('take from the same heading first, then from the line with the most left', () => {
+    const T = lineTransfers([l('2.1', 2800, 5477.51), l('2.2', 6150, 4034.67), l('5.7', 141595.35, 59580.36), l('1.1.1.3', 70470, 51282.58)], 0.15);
+    expect(T.moves).toEqual([{ from: '2.2', to: '2.1', amount: 2115 }, { from: '5.7', to: '2.1', amount: 563 }]);
+    expect(T.heads.find((h) => h.h === '2')!.change).toBeCloseTo(563 / 8950, 6);
+    expect(T.beyond).toBe(false);
+  });
+});
