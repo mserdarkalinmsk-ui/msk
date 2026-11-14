@@ -3,6 +3,8 @@ import type { TransferPlan } from '../domain/transfers';
 import type { Ledger, Project } from '../domain/types';
 import { TODAY } from '../today';
 import { downloadDocx } from './docxwrite';
+import { decreaseReason, increaseReason } from '../domain/reasons';
+import { latestWorkbook } from '../pages/FinancialReport';
 
 const n2 = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('-', '−');
 const n0 = (v: number) => (Number.isInteger(v) ? v.toLocaleString('en-GB') : n2(v));
@@ -21,10 +23,11 @@ export function transferLetterDocx(p: Project, T: TransferPlan, flex: number, le
   const changed = T.lines.filter((l) => Math.abs(l.after - l.budget) >= 0.005);
   const between = T.heads.some((h) => Math.abs(h.after - h.budget) >= 0.5);
   const agreement = p.contractNo || (p.contract as { number?: string } | undefined)?.number || '';
+  const wb = latestWorkbook(p)?.snapshot?.workbook;
   const fact = (l: TransferPlan['lines'][number]) => l.after > l.budget
-    ? `In the revised budget, the amount of the line has been increased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}: spent and committed on the line reach EUR ${n2(l.sc)}.`
-    : `In the revised budget, the amount of the line has been decreased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}; spent and committed on the line are EUR ${n2(l.sc)}, so the amount transferred is not needed.`;
-  const from = (c: string) => T.moves.filter((m) => m.to === c).map((m) => `EUR ${n2(m.amount)} from line ${m.from}`).join(', ');
+    ? `In the revised budget, the amount of the line is increased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}, in line with the amount spent and committed of EUR ${n2(l.sc)}. ${increaseReason(p, l.code, wb?.lines ?? [], wb?.pos ?? [])}`.trim()
+    : `In the revised budget, the amount of the line is decreased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}. ${decreaseReason(l.budget, l.after, l.sc)}`;
+  const from = (c: string) => { const x = T.moves.filter((m) => m.to === c).map((m) => `EUR ${n2(m.amount)} from line ${m.from}`); return x.length > 1 ? `${x.slice(0, -1).join(', ')} and ${x.at(-1)}` : x[0] ?? ''; };
   const signer = (brand.sign1 ?? '').split('\n').filter(Boolean);
   const shown = T.lines.filter((l) => l.budget || l.after);
   const heads = [...new Set(shown.map((l) => l.code.split('.')[0]))];
@@ -34,7 +37,7 @@ export function transferLetterDocx(p: Project, T: TransferPlan, flex: number, le
   ${(brand.addressee ?? '').split('\n').filter(Boolean).map((x) => `<p>${e(x)}</p>`).join('') || '<p>[Addressee]</p>'}
   <table><tbody><tr><th>Subject</th><td>Minor Change Notification No. ${no} regarding budget revision</td></tr><tr><th>Reference</th><td></td></tr><tr><th>Agreement No</th><td>${e(agreement)}</td></tr><tr><th>Title of Project</th><td>${e(p.name)}</td></tr></tbody></table>
   <p>Dear ${e(brand.salute ?? '')},</p><p>We would like to request approval for the below detailed modifications in the budget:</p>
-  ${changed.map((l) => `<p><b>Line ${e(l.code)}${l.description ? ` ${e(l.description)}` : ''}:</b> ${e(fact(l))}${from(l.code) ? ` The increase comes from ${e(from(l.code))}.` : ''}</p>`).join('')}
+  ${changed.map((l) => `<p><b>Line ${e(l.code)}${l.description ? ` ${e(l.description)}` : ''}:</b> ${e(fact(l))}${from(l.code) ? ` The increase is covered by ${T.moves.filter((m) => m.to === l.code).length > 1 ? 'transfers' : 'a transfer'} of ${e(from(l.code))}.` : ''}</p>`).join('')}
   <p>${between ? `The transfers between budget headings do not exceed ${F}% of the amounts of the headings concerned, and the total eligible costs of the action remain unchanged.` : `All the above-mentioned transfers have been made within the same budget headings, and none of the transfers exceed ${F}%.`} The table in the Annex (revised budget) summarizes the budget changes.</p>
   <p>Yours sincerely,</p><p>${signer.map((x, i) => (i ? e(x) : `<b>${e(x)}</b>`)).join('<br/>')}</p><p><b>Annex:</b> Revised Budget</p>
   <h2>Annex to Notification No. ${no}</h2>

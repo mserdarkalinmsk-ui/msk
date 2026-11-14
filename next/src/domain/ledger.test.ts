@@ -141,3 +141,16 @@ describe('transfers that bring every line back within its budget', () => {
     expect(T.beyond).toBe(false);
   });
 });
+
+import { poPurpose } from './reasons';
+describe('what a purchase order was for', () => {
+  const P = (description: string, nature = '') => poPurpose({ description, nature });
+  it('never names a person', () => {
+    expect(P('OM26_599988- Mrs Redacted Ayse-Gunce - Agent').label).toBe('missions of project staff');
+    expect(P('Redacted,Gizem - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
+  });
+  it('reads events and experts', () => {
+    expect(P('Event Management_Focus Group Meeting_Ankara_8-10 June 2026').label).toBe('the Focus Group Meeting (Ankara, 8-10 June 2026)');
+    expect(P('EXPERT01_SxB_28-30 Apr 2026').label).toBe('the participation of experts in Strasbourg (28-30 Apr 2026)');
+  });
+});
