@@ -1,4 +1,6 @@
-import { HEADINGS } from './calc';
+import { HEADINGS, lineExposure, lines, n } from './calc';
+import { flexOf } from './flex';
+import type { Project } from './types';
 import type { CompareLine } from './ledger';
 
 export interface LineMove { from: string; to: string; amount: number }
@@ -34,4 +36,13 @@ export function lineTransfers(L: CompareLine[], flex: number): TransferPlan {
   const heads = hs.map((h) => { const X = L.filter((l) => head(l.code) === h), b = X.reduce((a, l) => a + l.budget, 0), a = X.reduce((s, l) => s + (after.get(l.code) ?? 0), 0), change = b ? (a - b) / b : 0;
     return { h, label: HEADINGS[h] ?? h, budget: b, after: a, change, beyond: Math.abs(change) > flex + 1e-9 }; });
   return { moves, lines: L.map((l) => ({ code: l.code, description: l.description, budget: l.budget, after: after.get(l.code) ?? l.budget, sc: l.sc })), heads, beyond: heads.some((h) => h.beyond) };
+}
+
+/** The transfers a project needs today, from its latest figures (lines of the report against the budget). */
+export function transfersOf(p: Project): TransferPlan | null {
+  if (!p.approvedBudget?.lines?.length) return null;
+  const L = lines(p), leaf = L.filter((l) => !L.some((x) => x !== l && x.code.startsWith(l.code + '.')) && l.code.split('.')[0] !== '8');
+  const C = leaf.map((l) => { const b = n(l.approved), sc = lineExposure(l); return { code: l.code, description: l.description ?? '', budget: b, inRange: 0, toDate: 0, sc, available: b - sc, used: b ? sc / b : 0, status: 'ok' as const }; });
+  const T = lineTransfers(C, flexOf(p));
+  return T.moves.length ? T : null;
 }

@@ -1,6 +1,8 @@
 import { mergeReports, receiptText } from '../domain/merge_reports';
 import { readOfficeFile } from './officeImport';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { importReview } from '../domain/importReview';
+import { snapshotOf } from '../domain/intake';
 import { checkpoint, get, go, toast, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
 import { applyFindings, mergeFindings } from '../domain/applydocs';
 import { reportDate } from '../domain/autoimport';
@@ -164,6 +166,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
               {r.note && <small class="muted">{r.note.slice(0, 160)}</small>}
               {(() => { const c = chk(r); return c && <div class="si-chk">{c.checks.map((x) => <div class={`badge ${x.level === 'ok' ? 'good' : x.level === 'error' ? 'critical' : 'warning'}`} style={{ whiteSpace: 'normal', textAlign: 'left', marginTop: '4px' }}>{x.level === 'ok' ? '✓' : '!'} {x.text}</div>)}
                 {c.blocking && <label style={{ display: 'block', marginTop: '4px', fontSize: '12px' }}><input type="checkbox" checked={!!r.force} onChange={(e) => setRows((R) => R!.map((y, k) => (k === i ? { ...y, force: (e.target as HTMLInputElement).checked } : y)))} /> Import anyway</label>}</div>; })()}
+              {r.wb && r.pid && <MiniReview p={P.find((x) => x.id === r.pid)!} wb={r.wb} name={r.file.name} date={r.date ?? ''} />}
               {r.kind === 'office' && <div class="si-p"><span class="badge good">goes to Offices · {r.office!.office}</span></div>}
               {r.kind === 'wptable' && <div class="si-p"><span class="badge good">each sheet goes to its project</span></div>}
               {r.kind !== 'error' && r.kind !== 'other' && r.kind !== 'office' && r.kind !== 'wptable' && <div class="si-p"><select class="select" value={r.pid} onChange={(e) => setPid(i, (e.target as HTMLSelectElement).value)} aria-label="Project">
@@ -184,4 +187,18 @@ function markSeen(F: File[]) {
   try { const m = readSeen(), at = new Date().toISOString().slice(0, 10); for (const f of F) m[stamp(f)] = at;
     // Keep the list small: the 3000 most recent.
     const e = Object.entries(m).sort((a, b) => b[1].localeCompare(a[1])).slice(0, 3000); localStorage.setItem('pl-seen-files', JSON.stringify(Object.fromEntries(e))); } catch { /* ignore */ }
+}
+
+/** What this file changes for its project, in one line: spent and S&C, headings changing stage, corrections, issues. */
+function MiniReview({ p, wb, name, date: d }: { p: Project; wb: Workbook; name: string; date: string }) {
+  const R = useMemo(() => { try { return importReview(p, { id: 'si-' + name, name, type: 'Interim report', date: d, snapshot: snapshotOf(wb, p, name) }); } catch { return null; } }, [p, wb]);
+  if (!R) return null;
+  const dS = R.after.spent - R.before.spent, dX = R.after.sc - R.before.sc, f = (v: number) => `${v >= 0 ? '+' : '−'}${full(Math.abs(v))}`;
+  return <div class="si-rv">
+    <span>spent {full(R.after.spent)} <b class={dS < -0.5 ? 'irv-dn' : ''}>{f(dS)}</b></span><span>S&amp;C {full(R.after.sc)} <b class={dX < -0.5 ? 'irv-dn' : ''}>{f(dX)}</b></span>
+    {R.heads.map((h) => <span class={`badge ${h.to === 'addendum' ? 'critical' : h.to === 'ok' ? 'good' : 'warning'}`}>{h.code} {h.label}: {h.to === 'ok' ? 'back within budget' : h.to}</span>)}
+    {R.fixed.length > 0 && <span class="badge good" title={R.fixed.join('\n')}>{R.fixed.length} corrected on reading</span>}
+    {R.issues.map((x) => <span class={`badge ${x.level === 'error' ? 'critical' : 'warning'}`} style={{ whiteSpace: 'normal', textAlign: 'left' }}>{x.text}</span>)}
+    {R.staffShort > 0 && <span class="badge warning">{R.staffShort} staff PO{R.staffShort > 1 ? 's' : ''} short</span>}
+  </div>;
 }

@@ -3,6 +3,13 @@ import { filtered, go, saveClose, set, useStore } from '../data/store';
 import { closeRecord, closeRows, generalDecisions, type CloseRow, type CloseStatus } from '../domain/close';
 import { TODAY } from '../today';
 import { downloadClosePack } from '../ui/closePack';
+import { flexOf } from '../domain/flex';
+import { transfersOf, type TransferPlan } from '../domain/transfers';
+import type { Project } from '../domain/types';
+import { transferLetterDocx } from '../ui/TransferLetter';
+import { NEEDS } from './Gaps';
+import { monthSummaryDocx, projectActions } from './MonthSummary';
+import { staffRequestDocx, staffShortRows } from './StaffPOs';
 import { date, full, short } from '../ui/format';
 
 const ST: Record<CloseStatus, { label: string; badge: string }> = { blocked: { label: 'Blocked', badge: 'critical' }, check: { label: 'To check', badge: 'warning' }, clean: { label: 'Clean', badge: 'good' } };
@@ -53,13 +60,13 @@ export function MonthlyClose() {
                 <td>{r.report ? <>{date(r.report.date)} {!r.report.fresh && <span class="badge warning">old</span>}</> : <span class="badge warning">none</span>}</td>
                 <td class="r num">{full(r.spent)}</td>
                 <td class="r num">{r.since ? <span style={{ color: r.since.spent < 0 ? 'var(--critical)' : undefined }}>{r.since.spent >= 0 ? '+' : '−'}{full(Math.abs(r.since.spent))}</span> : full(r.sc)}</td>
-                <td>{r.decisions.map((d) => <span class={`badge ${d.tone === 'bad' ? 'critical' : 'warning'} mc-d`}>{d.kind}</span>)}</td>
+                <td>{[...new Set(r.decisions.map((d) => d.kind))].map((k) => { const D = r.decisions.filter((d) => d.kind === k); return <span class={`badge ${D.some((d) => d.tone === 'bad') ? 'critical' : 'warning'} mc-d`} title={D.map((d) => d.text).join('\n')}>{k}{D.length > 1 ? ` ×${D.length}` : ''}</span>; })}</td>
                 <td class="r"><span class="mc-more">{open === r.p.id ? '▾' : '▸'}</span></td>
               </tr>
               {open === r.p.id && <tr class="mc-x"><td colSpan={7}>
                 <div class="mc-xg">
                   <div><h3>{r.reasons.length ? 'To look at' : 'Data'}</h3>{r.reasons.length ? <ul>{r.reasons.map((t) => <li>{t}</li>)}</ul> : <p class="muted">All checks pass.</p>}</div>
-                  <div><h3>Decisions and actions</h3>{r.decisions.length ? <ul>{r.decisions.map((d) => <li>{d.text}</li>)}</ul> : <p class="muted">Nothing to decide this month.</p>}</div>
+                  <div><h3>Decisions and actions</h3>{(() => { const A = projectActions(r.p), M = NEEDS.filter((x) => x.ok(r.p) === false).map((x) => x.label); return r.decisions.length || A.length || M.length ? <ul>{r.decisions.map((d) => <li>{d.text}</li>)}{A.filter((a) => !r.decisions.some((d) => d.text === a.text)).map((a) => <li>{a.text}</li>)}{M.length ? <li class="muted">Missing on file: {M.join(', ')}</li> : null}</ul> : <p class="muted">Nothing to decide this month.</p>; })()}</div>
                   <div><h3>Figures</h3><dl class="dl" style={{ gridTemplateColumns: '1fr auto', fontSize: '13px' }}><dt>Budget</dt><dd class="num">{full(r.budget)}</dd><dt>Spent</dt><dd class="num">{full(r.spent)}</dd><dt>Spent + committed</dt><dd class="num">{full(r.sc)}</dd>
                     {r.since && <><dt>Spent {r.since.label}</dt><dd class="num">{short(r.since.spent)}</dd></>}{r.report && <><dt>Report</dt><dd>{r.report.name}</dd></>}</dl></div>
                 </div>
@@ -75,8 +82,10 @@ export function MonthlyClose() {
         </div>
       </section>
 
+      <MonthDocs P={P} />
+
       <section class="card mc-step">
-        <div class="mc-n">3</div>
+        <div class="mc-n">4</div>
         <div style={{ flex: 1 }}><h2>Download the pack and close the month</h2>
           <p class="muted">One ZIP: the close summary (every project, the decisions, the problems) and the workbook of each project that is not blocked, each with its source report in the file properties. Closing records the figures as they stand today — next month shows the changes since.</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
@@ -87,5 +96,27 @@ export function MonthlyClose() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Step 3: the documents the month needs, drafted from the figures — one click each. */
+function MonthDocs({ P }: { P: Project[] }) {
+  const s = useStore((x) => x);
+  const staff = useMemo(() => staffShortRows(P), [P]);
+  const letters = useMemo(() => P.map((p) => ({ p, T: transfersOf(p) })).filter((x): x is { p: Project; T: TransferPlan } => !!x.T), [P]);
+  const wps = P.filter((p) => p.workPlans?.length).length;
+  return (
+    <section class="card mc-step">
+      <div class="mc-n">3</div>
+      <div style={{ flex: 1 }}><h2>Documents of the month</h2>
+        <p class="muted">Drafted from the figures just loaded — the reasons, addressee and signature are yours to complete.</p>
+        <div class="mc-docs">
+          <button class="mc-doc" onClick={() => monthSummaryDocx(P, s.ledger)}><b>Monthly summary</b><span>For the Head of Operations: every project's figures, actions, Work Plan and FOMA notes</span><em>Word</em></button>
+          <button class="mc-doc" disabled={!staff.length} onClick={() => staffRequestDocx(staff, s.ledger)}><b>Staff PO increase request</b><span>{staff.length ? `${staff.length} PO${staff.length > 1 ? 's' : ''} in ${new Set(staff.map((r) => r.p.id)).size} project${new Set(staff.map((r) => r.p.id)).size > 1 ? 's' : ''} · ${full(staff.reduce((a, r) => a + Math.ceil((r.staff?.shortfall ?? r.amount) / 100) * 100, 0))}` : 'every staff PO covers its months'}</span><em>Word</em></button>
+          {letters.map(({ p, T }) => <button class="mc-doc" onClick={() => transferLetterDocx(p, T, flexOf(p), s.ledger)}><b>{T.beyond ? 'Draft letter — addendum needed' : 'Notification letter'} · {p.bh ? `BH ${p.bh}` : p.code}</b><span>{T.moves.length} transfer{T.moves.length > 1 ? 's' : ''} · {full(T.moves.reduce((a, m) => a + m.amount, 0))} · every line back within its budget</span><em>Word</em></button>)}
+          <button class="mc-doc" disabled={!wps} onClick={() => go('reports/wp')}><b>Work Plan follow-up</b><span>{wps} project{wps === 1 ? '' : 's'} with a Work Plan · summary (Word) and the FOMA tables (Excel)</span><em>open →</em></button>
+        </div>
+      </div>
+    </section>
   );
 }
