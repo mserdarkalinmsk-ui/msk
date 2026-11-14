@@ -1,3 +1,4 @@
+import { flexOf, nearOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { filtered, useStore } from '../data/store';
 import { HEADINGS, lineExposure, lines, n } from '../domain/calc';
@@ -9,15 +10,16 @@ import { openProject } from './ProjectPage';
 
 const HS = ['1', '2', '3', '4', '5', '6'];
 type Cell = { budget: number; sc: number; spent: number; used: number; over: number; status: 'none' | 'ok' | 'high' | 'notification' | 'near' | 'addendum' };
-const LABEL: Record<Cell['status'], string> = { none: 'No budget', ok: 'Within budget', high: '90%+ used', notification: 'Notification (within 25%)', near: 'Near addendum (20–25%)', addendum: 'Addendum (beyond 25%)' };
+const LABEL: Record<Cell['status'], string> = { none: 'No budget', ok: 'Within budget', high: '90%+ used', notification: 'Notification (within the flexibility)', near: 'Near the addendum threshold', addendum: 'Addendum (beyond the flexibility)' };
 
 function cells(p: Project): Record<string, Cell> {
+  const fx = flexOf(p);
   const out: Record<string, Cell> = {};
   for (const h of HS) {
     const L = lines(p).filter((l) => l.code.split('.')[0] === h);
     const budget = L.reduce((a, l) => a + n(l.approved), 0), sc = L.reduce((a, l) => a + lineExposure(l), 0), spent = L.reduce((a, l) => a + n(l.actual), 0);
     const used = budget ? sc / budget : 0, over = budget ? (sc - budget) / budget : 0;
-    out[h] = { budget, sc, spent, used, over, status: !budget ? (sc ? 'addendum' : 'none') : over > 0.25 ? 'addendum' : over >= 0.2 ? 'near' : over > 0 ? 'notification' : used >= 0.9 ? 'high' : 'ok' };
+    out[h] = { budget, sc, spent, used, over, status: !budget ? (sc ? 'addendum' : 'none') : over > fx ? 'addendum' : over >= nearOf(fx) ? 'near' : over > 0 ? 'notification' : used >= 0.9 ? 'high' : 'ok' };
   }
   return out;
 }
@@ -40,9 +42,9 @@ export function Heatmap() {
   return (
     <>
       <section class="hero" aria-label="Headings">
-        <div class="kpi lead"><span class="label">Headings beyond the 25% flexibility</span><span class="value" style={{ color: count('addendum') ? 'var(--critical)' : undefined }}>{count('addendum')}</span><span class="ctx">an addendum is needed before more is committed</span></div>
-        <div class="kpi"><span class="label">Near the addendum threshold</span><span class="value" style={{ color: count('near') ? 'var(--serious)' : undefined }}>{count('near')}</span><span class="ctx">20–25% above the heading</span></div>
-        <div class="kpi"><span class="label">Notification</span><span class="value">{count('notification')}</span><span class="ctx">above the heading, within 25%</span></div>
+        <div class="kpi lead"><span class="label">Headings beyond the flexibility</span><span class="value" style={{ color: count('addendum') ? 'var(--critical)' : undefined }}>{count('addendum')}</span><span class="ctx">25% Joint Programmes · 15% Voluntary Contributions — an addendum is needed</span></div>
+        <div class="kpi"><span class="label">Near the addendum threshold</span><span class="value" style={{ color: count('near') ? 'var(--serious)' : undefined }}>{count('near')}</span><span class="ctx">20–25% above the heading (12–15% for VC)</span></div>
+        <div class="kpi"><span class="label">Notification</span><span class="value">{count('notification')}</span><span class="ctx">above the heading, within the flexibility</span></div>
         <div class="kpi"><span class="label">90%+ used</span><span class="value">{count('high')}</span><span class="ctx">of {R.length} projects × {HS.length} headings</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>

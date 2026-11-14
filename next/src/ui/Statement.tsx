@@ -1,3 +1,4 @@
+import { nearOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { oneOff } from '../domain/ledger';
 import type { WbLine, WbTotals } from '../domain/workbook';
@@ -32,7 +33,7 @@ function build(lines: WbLine[], names?: Map<string, string>) {
 }
 
 /** Financial statement in the layout of the official report: hierarchy, two-level headers, subtotals and totals. */
-export function Statement({ lines, totals, elapsed, title, layout, names, source }: { /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
+export function Statement({ lines, totals, elapsed, title, layout, names, source, flex = 0.25 }: { /** heading flexibility: 0.25 Joint Programme, 0.15 Voluntary Contribution */ flex?: number; /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
   const [mode, setMode] = useState<'full' | 'compact'>('compact');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [hideEmpty, setHideEmpty] = useState(true);
@@ -52,14 +53,15 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
     if (elapsed > 0.25 && elapsed - u > 0.3) return 'slow';
     return 'ok';
   };
-  /** A heading above its budget needs a notification (within 25%) or an addendum (beyond); at the current pace = projected to the end. */
+  /** A heading above its budget needs a notification (within the flexibility) or an addendum (beyond); at the current pace = projected to the end. */
+  const FX = pctOf(flex);
   const change = (r: Row) => {
     if (!r.sum.b || /^(8|10)$/.test(r.code)) return null;
     const proj = elapsed > 0.05 ? Math.max(r.sum.sc, r.sum.ap / elapsed + r.sum.one) : r.sum.sc;
     const now = r.sum.sc > r.sum.b + 0.5, val = now ? r.sum.sc : proj, d = val / r.sum.b - 1;
     if (d <= 0.0001) return null;
-    const kind: 'add' | 'near' | 'not' = d > 0.25 ? 'add' : d > 0.2 ? 'near' : 'not';
-    return { kind, now, why: `${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${money(val)} on a budget of ${money(r.sum.b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? 'beyond the 25% flexibility: a budget revision (addendum) is needed' : kind === 'near' ? `within 25% but only ${(25 - d * 100).toFixed(1)} points from the addendum threshold (${money(r.sum.b * 1.25)}) — notification now, watch closely` : 'within the 25% flexibility: a notification letter is enough'}.` };
+    const kind: 'add' | 'near' | 'not' = d > flex ? 'add' : d > nearOf(flex) ? 'near' : 'not';
+    return { kind, now, why: `${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${money(val)} on a budget of ${money(r.sum.b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? `beyond the ${FX}% flexibility: a budget revision (addendum) is needed` : kind === 'near' ? `within ${FX}% but only ${((flex - d) * 100).toFixed(1)} points from the addendum threshold (${money(r.sum.b * (1 + flex))}) — notification now, watch closely` : `within the ${FX}% flexibility: a notification letter is enough`}.` };
   };
   const RC = { over: 'var(--critical)', fast: 'var(--warn)', slow: 'var(--ink-3)', ok: 'var(--good)' } as const;
   const RL = { over: 'Over budget', fast: 'Ahead of time', slow: 'Behind time', ok: 'On track' } as const;
@@ -145,7 +147,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
           </tfoot>
         </table>
       </div>
-      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> heading above budget (≤20% / 20–25% / &gt;25%) · “Risk:” = projected at the current pace</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
+      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> heading above budget (≤{pctOf(nearOf(flex))}% / {pctOf(nearOf(flex))}–{FX}% / &gt;{FX}%) · “Risk:” = projected at the current pace</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
     </div>
   );
 }

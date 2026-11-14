@@ -1,3 +1,4 @@
+import { flexOf, nearOf, pctOf } from '../domain/flex';
 import { useMemo, useState } from 'preact/hooks';
 import { go } from '../data/store';
 import { compareBudget, findErrors, oneOff, presets, spendBetween, spendByYear, type Finding } from '../domain/ledger';
@@ -25,8 +26,8 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
   const leaf = wb.lines.filter((l) => l.leaf);
   const R = useMemo(() => spendBetween(E, from, to, budgetRefs(wb.lines)), [E, from, to, wb.lines]);
   const sc = useMemo(() => new Map(leaf.map((l) => [l.code, l.sc ?? 0])), [wb]);
-  const F = useMemo(() => findErrors(E, { budget: budgetRefs(leaf), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos, sc, asAt: wb.meta.situationDate, elapsed: elapsed(p, TODAY), units: leaf.filter((l) => l.budget.units && l.actual.units != null).map((l) => ({ code: l.code, description: l.description, unit: l.unit, budget: l.budget.units!, used: l.actual.units! })) }), [E, wb, p.start, p.end]);
-  const C = useMemo(() => compareBudget(E, budgetRefs(leaf), sc, from, to), [E, wb, from, to]);
+  const F = useMemo(() => findErrors(E, { flex: flexOf(p), budget: budgetRefs(leaf), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos, sc, asAt: wb.meta.situationDate, elapsed: elapsed(p, TODAY), units: leaf.filter((l) => l.budget.units && l.actual.units != null).map((l) => ({ code: l.code, description: l.description, unit: l.unit, budget: l.budget.units!, used: l.actual.units! })) }), [E, wb, p.start, p.end]);
+  const C = useMemo(() => compareBudget(E, budgetRefs(leaf), sc, from, to, flexOf(p)), [E, wb, from, to, flexOf(p)]);
   const hasBudget = leaf.some((l) => l.budget.cost);
   const name = new Map(wb.lines.map((l) => [l.code, l.description]));
   const save = (ranged: boolean) => {
@@ -110,7 +111,8 @@ function Checks({ F, onSave }: { F: Finding[]; onSave: () => void }) {
 const HEAD: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment and supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other', '8': 'Contingency reserve' };
 function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof compareBudget>; from: string; to: string; hasBudget: boolean; p: Project }) {
   if (!hasBudget) return <div class="empty-inline" style={{ padding: '20px' }}><p>No approved budget on file for this project. Add the approved budget (Add documents) and every line is compared here.</p></div>;
-  const badge = (st: string) => st === 'over' || st === 'over-flex' ? <span class="badge serious">{st === 'over' ? 'Over budget' : 'Addendum (beyond 25%)'}</span> : st === 'near-flex' ? <span class="badge serious">Near addendum (20–25%)</span> : st === 'within-flex' ? <span class="badge warning">Notification (within 25%)</span> : st === 'high' ? <span class="badge warning">90%+ used</span> : st === 'unbudgeted' ? <span class="badge serious">Not budgeted</span> : <span class="badge good">OK</span>;
+  const fx = flexOf(p), FX = pctOf(fx), NR = pctOf(nearOf(fx));
+  const badge = (st: string) => st === 'over' || st === 'over-flex' ? <span class="badge serious">{st === 'over' ? 'Over budget' : `Addendum (beyond ${FX}%)`}</span> : st === 'near-flex' ? <span class="badge serious">Near addendum ({NR}–{FX}%)</span> : st === 'within-flex' ? <span class="badge warning">Notification (within {FX}%)</span> : st === 'high' ? <span class="badge warning">90%+ used</span> : st === 'unbudgeted' ? <span class="badge serious">Not budgeted</span> : <span class="badge good">OK</span>;
   const bar = (u: number) => <div class="minibar" style={{ width: '90px', display: 'inline-block', verticalAlign: 'middle' }}><span style={{ width: `${Math.min(100, u * 100)}%`, background: u > 1 ? 'var(--serious)' : u >= .9 ? 'var(--warn)' : undefined }} /></div>;
   const T = C.lines.reduce((a, l) => ({ b: a.b + l.budget, r: a.r + l.inRange, t: a.t + l.toDate, s: a.s + l.sc }), { b: 0, r: 0, t: 0, s: 0 });
   const over = C.heads.filter((h) => h.diff > 0.5), spare = C.heads.filter((h) => h.diff < -0.5).sort((a, b) => a.diff - b.diff);
@@ -121,7 +123,7 @@ function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof com
   const proposal = () => download(`${p.bh ?? p.code}-budget-revision-proposal.xlsx`, [{ name: 'Revision proposal', money: [2, 3, 4, 5], rows: [
     [{ v: `${p.bh ? `${p.bh} - ` : ''}${p.name} — budget revision proposal (${addendum ? 'addendum' : 'notification'})`, st: 'title' }], [],
     ['Heading', 'Name', 'Approved', 'Spent + committed', 'Change', 'Revised', '% change', 'Route'].map((v) => ({ v, st: 'head' as const })),
-    ...C.heads.map((h) => { const ch = moves.filter((m) => m.to === h.h).reduce((a, m) => a + m.amount, 0) - moves.filter((m) => m.from === h.h).reduce((a, m) => a + m.amount, 0); return [h.h, HEAD[h.h] ?? '', h.budget, h.sc, ch, h.budget + ch, h.budget ? ch / h.budget : 0, Math.abs(h.budget ? ch / h.budget : 0) > 0.25 ? 'Addendum' : ch ? 'Notification' : '']; }),
+    ...C.heads.map((h) => { const ch = moves.filter((m) => m.to === h.h).reduce((a, m) => a + m.amount, 0) - moves.filter((m) => m.from === h.h).reduce((a, m) => a + m.amount, 0); return [h.h, HEAD[h.h] ?? '', h.budget, h.sc, ch, h.budget + ch, h.budget ? ch / h.budget : 0, Math.abs(h.budget ? ch / h.budget : 0) > fx ? 'Addendum' : ch ? 'Notification' : '']; }),
     [], [{ v: 'Transfers', st: 'bold' }], ['From heading', '', 'To heading', 'Amount'].map((v) => ({ v, st: 'head' as const })), ...moves.map((m) => [`${m.from}. ${HEAD[m.from] ?? ''}`, '', `${m.to}. ${HEAD[m.to] ?? ''}`, m.amount])] }]);
   return (
     <div class="ledger">
@@ -166,12 +168,12 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   /** Units above the budgeted number (now, or at the current pace by the end) are reported to the donor by notification — as on the statement. */
   const unitTag = (l: L) => { const bu = l.budget.units; if (!bu || !l.units) return null; const uu = l.units / bu, pj = el > 0.05 && !oneOff(l.description, l.unit) ? l.units / el / bu : uu, now = uu > 1.0001;
     return now || pj > 1.0001 ? <span class={`chg chg-not${now ? ' now' : ''}`} style={{ marginLeft: 0 }} title={`${now ? `${nf(l.units)} ${l.unit || 'units'} used of ${nf(bu)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * bu)} ${l.unit || 'units'} by the end, of ${nf(bu)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span> : null; };
-  /** A heading above its budget needs a notification (within 25%) or an addendum (beyond); at the current pace = projected to the end. */
+  /** A heading above its budget needs a notification (within the flexibility) or an addendum (beyond); at the current pace = projected to the end. */
   const headTag = (X: L[]) => { const b = sum(X, (l) => l.budget.cost), sc = sum(X, (l) => l.amount + l.committed); if (!b) return null;
     const ap = sum(X.filter((l) => !oneOff(l.description, l.unit)), (l) => l.amount), one = sum(X.filter((l) => oneOff(l.description, l.unit)), (l) => l.amount + l.committed);
     const proj = el > 0.05 ? Math.max(sc, ap / el + one) : sc, now = sc > b + 0.5, val = now ? sc : proj, d = val / b - 1; if (d <= 0.0001) return null;
-    const kind = d > 0.25 ? 'add' : d > 0.2 ? 'near' : 'not';
-    return <span class={`chg chg-${kind}${now ? ' now' : ''}`} title={`${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${full(val)} on a budget of ${full(b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? 'beyond the 25% flexibility: an addendum is needed' : kind === 'near' ? `within 25% but close to the addendum threshold (${full(b * 1.25)})` : 'within the 25% flexibility: notification'}.`}>{now ? '' : 'Risk: '}{kind === 'add' ? 'Addendum' : kind === 'near' ? 'Near addendum' : 'Notification'}</span>; };
+    const fx = flexOf(p), FX = pctOf(fx), kind = d > fx ? 'add' : d > nearOf(fx) ? 'near' : 'not';
+    return <span class={`chg chg-${kind}${now ? ' now' : ''}`} title={`${now ? 'Spent + committed' : 'At the current pace the heading reaches'} ${full(val)} on a budget of ${full(b)} (+${(d * 100).toFixed(1)}%) — ${kind === 'add' ? `beyond the ${FX}% flexibility: an addendum is needed` : kind === 'near' ? `within ${FX}% but close to the addendum threshold (${full(b * (1 + fx))})` : `within the ${FX}% flexibility: notification`}.`}>{now ? '' : 'Risk: '}{kind === 'add' ? 'Addendum' : kind === 'near' ? 'Near addendum' : 'Notification'}</span>; };
   const NC = 3 + years.length * 4 + 4 + 2; // numeric columns after Line and Description
   const row = (l: L) => { const sc = l.amount + l.committed, left = l.budget.cost - sc, used = l.budget.cost ? sc / l.budget.cost : sc ? 9 : 0, over = left < -0.5; return (
     <tr class={over ? 'yr-over' : ''}><td class="yr-code yr-s1">{l.code}</td><td class="yr-desc yr-s2">{l.description}{l.unit && <small class="yr-sub-u">{l.unit}</small>}{over && (l.budget.cost ? <span class="badge serious">over by {short(-left)}</span> : <span class="badge warning">not in the budget</span>)}{unitTag(l)}</td>

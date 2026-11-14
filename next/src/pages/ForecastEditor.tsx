@@ -1,3 +1,4 @@
+import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from '../ui/exportGate';
 import { useState } from 'preact/hooks';
 import { toast, updateProject, useStore } from '../data/store';
@@ -138,7 +139,7 @@ export function ForecastEditor({ p }: { p: Project }) {
                         <td>{plug === l.code && b.id === lastB ? <span class="fe-auto" title="Calculated so the direct costs stay equal to the budget">{E.lines[l.code]?.[b.id]?.u ?? 0} <small>auto</small></span> : <input class={`${cls}${odd(l, b.id) ? ' odd' : ''}`} title={odd(l, b.id) ?? ''} inputMode="decimal" value={c?.u ?? ''} onChange={(e) => setCell(l.code, b.id, 'u', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} units`} />}</td>
                         <td><input class={cls} inputMode="decimal" value={c?.r ?? ''} placeholder={(l.defRates?.[b.id] ?? l.defRate) ? String(Math.round((l.defRates?.[b.id] ?? l.defRate)!)) : ''} onChange={(e) => setCell(l.code, b.id, 'r', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} rate`} /></td>
                         <td class="r num">{l.cells[b.id]?.cost ? num(l.cells[b.id]!.cost) : ''}</td></>; })}
-                      {!twelve && <><td class="r num">{l.rounded ? num(l.rounded) : ''}</td><td class={`r num ${l.variation != null && l.variation > 0.25 ? 'warn' : ''}`}>{pc(l.variation)}</td></>}
+                      {!twelve && <><td class="r num">{l.rounded ? num(l.rounded) : ''}</td><td class={`r num ${l.variation != null && l.variation > flexOf(p) ? 'warn' : ''}`}>{pc(l.variation)}</td></>}
                     </tr>))}
                 </>;
               })}
@@ -146,7 +147,7 @@ export function ForecastEditor({ p }: { p: Project }) {
           </table>
         </div>
       </section>
-      <p class="muted" style={{ fontSize: '12px' }}>An empty rate uses the grey one: staff at the latest cost plus the guideline margin, 4.2 / 4.4 at the latest monthly rate, other lines at the budget rate. Saved with the project; the Excel carries what is typed here, and the 25% check is made on the sub-totals against the amounts originally agreed (EU–CoE rules).</p>
+      <p class="muted" style={{ fontSize: '12px' }}>An empty rate uses the grey one: staff at the latest cost plus the guideline margin, 4.2 / 4.4 at the latest monthly rate, other lines at the budget rate. Saved with the project; the Excel carries what is typed here, and the {pctOf(flexOf(p))}% check is made on the sub-totals against the amounts originally agreed (EU–CoE rules).</p>
     </div>
   );
 }

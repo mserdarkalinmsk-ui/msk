@@ -1,3 +1,4 @@
+import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from './exportGate';
 import { useState } from 'preact/hooks';
 import { useStore } from '../data/store';
@@ -18,6 +19,7 @@ export function ForecastDialog({ p, close }: { p: Project; close: () => void }) 
   const up = (x: Partial<ForecastOptions>) => setO((v) => { const n = { ...v, ...x }; if (!FORECAST_KINDS[n.kind].programmes.includes(n.programme)) n.kind = n.programme === 'JP' ? 'payment' : 'revision'; return n; });
   // %25 rule: an addendum when a heading would move beyond the flexibility, otherwise a notification.
   const W = earlyWarnings(p, TODAY), addendum = W.some((w) => w.stage === 'addendum'), worst = W.filter((w) => w.stage !== 'ok').sort((a, b) => b.changeIfCovered - a.changeIfCovered)[0];
+  const FX = pctOf(flexOf(p));
   const suggest: 'addendum' | 'notification' = addendum ? 'addendum' : 'notification';
   const per = forecastPeriod(p, TODAY, o);
   const needsExt = o.kind === 'extension';
@@ -46,8 +48,8 @@ export function ForecastDialog({ p, close }: { p: Project; close: () => void }) 
           </>}
           {o.programme === 'JP' && o.kind !== 'twelve' && <>
             <label class="fc-l">Budget change</label>
-            <div class="seg">{(['notification', 'addendum'] as const).map((x) => <button aria-pressed={(o.change ?? suggest) === x} onClick={() => up({ change: x })}>{x === 'notification' ? 'Notification (≤ 25%)' : 'Addendum (> 25%)'}{x === suggest ? ' · suggested' : ''}</button>)}</div>
-            <small class="muted">{addendum ? `Suggested addendum: at the current plan ${worst?.code} ${worst?.label} would move ${Math.round((worst?.changeIfCovered ?? 0) * 100)}% from the agreement (limit 25% between sub-totals).` : 'Suggested notification: no heading is expected to move beyond 25% between sub-totals. Check the variation column once the plan is filled in.'}</small>
+            <div class="seg">{(['notification', 'addendum'] as const).map((x) => <button aria-pressed={(o.change ?? suggest) === x} onClick={() => up({ change: x })}>{x === 'notification' ? `Notification (≤ ${FX}%)` : `Addendum (> ${FX}%)`}{x === suggest ? ' · suggested' : ''}</button>)}</div>
+            <small class="muted">{addendum ? `Suggested addendum: at the current plan ${worst?.code} ${worst?.label} would move ${Math.round((worst?.changeIfCovered ?? 0) * 100)}% from the agreement (limit ${FX}% between sub-totals).` : `Suggested notification: no heading is expected to move beyond ${FX}% between sub-totals. Check the variation column once the plan is filled in.`}</small>
             <label class="fc-l" for="fc-no">Number (from PMM → Documents → Contract; ask the RFO for notifications)</label>
             <input id="fc-no" value={o.changeNo ?? ''} placeholder="e.g. 2" onInput={(e) => up({ changeNo: (e.target as HTMLInputElement).value || undefined })} />
           </>}

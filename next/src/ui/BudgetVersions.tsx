@@ -1,3 +1,4 @@
+import { flexOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { updateProject } from '../data/store';
 import { againstOriginal, versionSteps } from '../domain/budgetVersions';
@@ -15,7 +16,7 @@ export function BudgetVersions({ p }: { p: Project }) {
   const V = p.budgetVersions ?? [], [step, setStep] = useState(V.length - 2);
   if (V.length < 2) return null;
   const S = versionSteps(V), O = againstOriginal(V);
-  const flex = (Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 25) / 100;
+  const flex = flexOf(p);
   const head = (i: number, h: string) => V[i].budget.lines.filter((l) => l.code.split('.')[0] === h && l.code.includes('.')).reduce((a, l) => a + (l.approved ?? 0), 0);
   const letter = (v: (typeof V)[number]) => (p.budgetLetters ?? []).find((l) => l.kind === v.kind && (v.no == null || l.no == null || l.no === v.no));
   const setDate = (file: string, date: string) => updateProject(p.id, { budgetLetters: (p.budgetLetters ?? []).map((l) => (l.file === file ? { ...l, date: date || undefined } : l)) });

@@ -1,3 +1,4 @@
+import { flexOf, nearOf, pctOf } from './flex';
 import type { SheetSpec, XCell } from '../ui/xlsxwrite';
 import { compareBudget, findErrors, KIND_LABEL, spendBetween, type BudgetRef, type Finding } from './ledger';
 import type { Project } from './types';
@@ -77,7 +78,8 @@ export interface OrganisedOptions { from?: string; to?: string; findings?: Findi
 export function organisedSheets(p: Project, wb: WorkbookSummary, o: OrganisedOptions = {}): SheetSpec[] {
   const lines = wb.lines, E = wb.entries ?? [], name = new Map(lines.map((l) => [l.code, l.description]));
   const m = wb.meta, T = wb.totals.eligible ?? wb.totals.direct;
-  const F = o.findings ?? findErrors(E, { budget: budgetRefs(lines.filter((l) => l.leaf)), start: p.start, end: p.end, bh: m.bh ?? p.bh, pos: wb.pos, asAt: wb.meta.situationDate, sc: new Map(lines.filter((l) => l.leaf).map((l) => [l.code, l.sc ?? 0])) });
+  const fx = flexOf(p);
+  const F = o.findings ?? findErrors(E, { flex: fx, budget: budgetRefs(lines.filter((l) => l.leaf)), start: p.start, end: p.end, bh: m.bh ?? p.bh, pos: wb.pos, asAt: wb.meta.situationDate, sc: new Map(lines.filter((l) => l.leaf).map((l) => [l.code, l.sc ?? 0])) });
   const ranged = !!(o.from || o.to);
   const R = ranged ? spendBetween(E, o.from ?? '', o.to ?? '', budgetRefs(lines)) : null;
   const sheets: SheetSpec[] = [];
@@ -102,8 +104,8 @@ export function organisedSheets(p: Project, wb: WorkbookSummary, o: OrganisedOpt
   sheets.push(statement(lines, wb));
   const leafs = lines.filter((l) => l.leaf);
   if (leafs.some((l) => l.budget.cost)) {
-    const C = compareBudget(E, budgetRefs(leafs), new Map(leafs.map((l) => [l.code, l.sc ?? 0])), o.from ?? '', o.to ?? '');
-    const st = (x: string) => ({ over: 'Over budget', high: '90%+ used', ok: 'OK', unbudgeted: 'Not budgeted', 'over-flex': 'Addendum (beyond 25%)', 'within-flex': 'Notification (within 25%)', 'near-flex': 'Near addendum (20–25%)' } as Record<string, string>)[x];
+    const C = compareBudget(E, budgetRefs(leafs), new Map(leafs.map((l) => [l.code, l.sc ?? 0])), o.from ?? '', o.to ?? '', fx);
+    const st = (x: string) => ({ over: 'Over budget', high: '90%+ used', ok: 'OK', unbudgeted: 'Not budgeted', 'over-flex': `Addendum (beyond ${pctOf(fx)}%)`, 'within-flex': `Notification (within ${pctOf(fx)}%)`, 'near-flex': `Near addendum (${pctOf(nearOf(fx))}–${pctOf(fx)}%)` } as Record<string, string>)[x];
     sheets.push({ name: 'Budget vs actual', widths: [10, 46, 15, 15, 15, 15, 15, 9, 26], rows: [
       [{ v: 'Against the approved budget', st: 'title' }], [],
       [H('Heading'), H(''), H('Approved budget'), H('Spent + committed'), H('Difference'), H('%'), H('Status')],

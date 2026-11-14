@@ -48,6 +48,8 @@ export interface Project {
   budgetLetters?: import('./letters').Letter[];
   /** Quarterly Work Plans entered from what the project team sends (domain/workplan). */
   workPlans?: import('./workplan').WorkPlan[];
+  /** Joint Programme or Voluntary Contribution; sets the heading flexibility (25% / 15%) when the contract gives none. */
+  programme?: 'JP' | 'VC';
   /** Staff salaries + office costs deducted from the eligible budget for the Work Plan follow-up, when typed by hand. */
   wpDeduct?: number;
 }

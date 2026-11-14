@@ -1,3 +1,4 @@
+import { programmeOf } from '../domain/flex';
 
 import { SharePanel } from './Share';
 import { PortfolioImport } from './PortfolioImport';
@@ -168,6 +169,7 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
     budget: project ? String(project.budget) : '', status: project?.status ?? 'Active',
     mae: project?.mae ?? '', pmm: project?.pmm ?? '', bh: project?.bh ?? '', ccm: project?.ccm ?? '', pmmUrl: project?.pmmUrl ?? '',
   });
+  const [prog, setProg] = useState<'' | 'JP' | 'VC'>(project?.programme ?? '');
   const [touched, setTouched] = useState(false);
   const errs = checkDraft(d, projects, editing?.id);
   const ok = !Object.keys(errs).length;
@@ -183,7 +185,7 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
     const id = editing?.id ?? 'p' + Date.now().toString(36);
     upsertProject({
       ...(editing ?? { reportingPeriods: [], riskRegister: [], contractNo: prefill?.contractNo, jp: prefill?.jp }), id,
-      code: d.code.trim(), name: d.name.trim(), country: d.country, sector: d.sector.trim(), funding: d.funding.trim(),
+      code: d.code.trim(), name: d.name.trim(), country: d.country, sector: d.sector.trim(), funding: d.funding.trim(), programme: prog || undefined,
       start: parseDay(d.start)!, end: parseDay(d.end)!, budget: parseAmount(d.budget)!, status: d.status,
       mae: d.mae.trim() || undefined, pmm: d.pmm.trim() || undefined, bh: d.bh.trim() || undefined, ccm: d.ccm.trim() || undefined, pmmUrl: validUrl(d.pmmUrl) ?? undefined,
       // placeholder dates stay flagged until someone actually changes them
@@ -208,6 +210,12 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
           </div>
         </div>
         <div class="form-2">{f('start', 'Start', { type: 'date' })}{f('end', 'End', { type: 'date' })}</div>
+        <div class="field"><label for="f-prog">Programme</label>
+          <select id="f-prog" value={prog} onChange={(e) => setProg((e.target as HTMLSelectElement).value as '' | 'JP' | 'VC')}>
+            <option value="">From the funding source ({programmeOf({ funding: d.funding }) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'})</option><option value="JP">Joint Programme (JP) — addendum beyond 25%</option><option value="VC">Voluntary Contribution (VC) — addendum beyond 15%</option>
+          </select>
+          <span class="muted" style={{ fontSize: '12px' }}>Sets the heading flexibility. A figure in the contract terms replaces it.</span>
+        </div>
         <div class="form-2">{f('funding', 'Funding')}
           <div class="field"><label for="f-status">Status</label>
             <select id="f-status" value={d.status} onChange={(e) => setD({ ...d, status: (e.target as HTMLSelectElement).value })}>{['Active', 'Pipeline', 'Closed'].map((o) => <option>{o}</option>)}</select>

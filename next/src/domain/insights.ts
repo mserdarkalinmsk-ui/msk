@@ -1,3 +1,4 @@
+import { flexOf } from './flex';
 import { earlyWarnings } from './earlywarn';
 import { ADMIN_LINE } from './terms';
 import { HEADINGS, attention, perProject, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
@@ -168,8 +169,8 @@ export interface HeadingRow { code: string; label: string; baseline: number; app
  */
 type Sums = { baseline: number; approved: number; exposure: number };
 export function headings(p: Project): { flex: number; rows: HeadingRow[]; direct: Sums; admin: Sums; contingency: number; total: Sums } {
-  // Heading flexibility: 25% between headings (portfolio rule), unless the project sets its own.
-  const flex = (Number((p as { flexPct?: number }).flexPct) || Number((p.contract as { flexPct?: number } | undefined)?.flexPct) || 25) / 100;
+  // Heading flexibility: the contract's own figure, else 25% (Joint Programme) or 15% (Voluntary Contribution).
+  const flex = flexOf(p);
   const base = p.approvedBudget?.lines ?? [];
   const cur = lines(p);
   const key = (c: string) => c.split('.')[0];

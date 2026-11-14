@@ -1,3 +1,4 @@
+import { flexOf, pctOf } from '../domain/flex';
 import { ADMIN_LINE } from '../domain/terms';
 import { enrichExtraction } from '../domain/extraction';
 import { useState } from 'preact/hooks';
@@ -145,7 +146,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px', alignItems: 'center' }}>
             <div><h2>{view === 'diff' ? 'Since the previous report' : view === 'wp' ? 'Work Plan follow-up' : view === 'budget' ? 'Against the approved budget' : view === 'range' ? 'Spending by date' : view === 'checks' ? 'Entries to check' : view === 'lines' ? 'Financial statement' : view === 'rates' ? 'Units and unit rates' : `Open purchase orders · ${short(openPO.reduce((s, x) => s + x.balance, 0))}`}</h2>
-              <p>{view === 'diff' ? 'New, raised, spent, reduced and closed purchase orders, and the change on each line, between the last two reports' : view === 'wp' ? 'Quarterly Work Plan against the activity budget (total less 7% administrative, staff and office costs)' : view === 'budget' ? 'Each line and heading against the approved budget, with the 25% flexibility between headings' : view === 'range' ? 'Every invoice and GL entry between two dates, by budget line' : view === 'checks' ? 'Postings that look entered in error — wrong line, duplicate, above the PO, outside the project' : view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
+              <p>{view === 'diff' ? 'New, raised, spent, reduced and closed purchase orders, and the change on each line, between the last two reports' : view === 'wp' ? 'Quarterly Work Plan against the activity budget (total less 7% administrative, staff and office costs)' : view === 'budget' ? 'Each line and heading against the approved budget, with the ' + pctOf(flexOf(p)) + '% flexibility between headings' : view === 'range' ? 'Every invoice and GL entry between two dates, by budget line' : view === 'checks' ? 'Postings that look entered in error — wrong line, duplicate, above the PO, outside the project' : view === 'lines' ? 'In the layout of the official report — click a heading to collapse it' : view === 'rates' ? 'Consumption of budgeted units against time, and actual vs budgeted unit rates' : 'Commitments still open, largest balance first'}</p></div>
             <div class="tools"><div class="seg">
               <button aria-pressed={view === 'lines'} onClick={() => setView('lines')}>Statement</button>
               <button aria-pressed={view === 'rates'} onClick={() => setView('rates')}>Units & rates</button>
@@ -157,7 +158,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
               <button aria-pressed={view === 'wp'} onClick={() => setView('wp')}>Work Plan</button>
             </div></div>
           </div>
-          {view === 'lines' && <Statement source={[wb.fileName ?? rep.fileName, wb.meta.grid].filter(Boolean).join(', ') || undefined} layout={(wb.meta as { layout?: Record<string, string> }).layout} lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
+          {view === 'lines' && <Statement flex={flexOf(p)} source={[wb.fileName ?? rep.fileName, wb.meta.grid].filter(Boolean).join(', ') || undefined} layout={(wb.meta as { layout?: Record<string, string> }).layout} lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
           {view === 'wp' && <WorkPlanView p={p} wb={wb} />}

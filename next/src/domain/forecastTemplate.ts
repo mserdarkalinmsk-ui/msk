@@ -41,7 +41,8 @@ const isStaff = (code: string) => /^1\.[12]\.1\./.test(code);
 const isChargeBack = (code: string) => code === '4.2' || code === '4.4';
 
 export function defaultOptions(p: Project): ForecastOptions {
-  return { kind: p.jp ? 'payment' : 'revision', programme: p.jp ? 'JP' : 'VC' };
+  const jp = p.programme ? p.programme === 'JP' : !!p.jp;
+  return { kind: jp ? 'payment' : 'revision', programme: jp ? 'JP' : 'VC' };
 }
 
 export function forecastPeriod(p: Project, today: Date, o: ForecastOptions = defaultOptions(p)) {
