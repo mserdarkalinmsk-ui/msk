@@ -117,7 +117,7 @@ async function page(opts) {
   let pw = 'wrong';
   p.on('dialog', (d) => d.accept(d.type() === 'prompt' ? pw : undefined));
   await p.click('text=+ Country');
-  await p.fill('#c-name', 'Moldova'); await p.fill('#c-iso', 'mda'); check(await p.inputValue('#c-region') === 'Eastern Partnership', 'region filled from the country list'); await p.click('.drawer .btn.primary:has-text("Add country")'); await p.waitForTimeout(250);
+  await p.fill('#c-name', 'Moldova'); await p.fill('#c-iso', 'mda'); await p.waitForFunction(() => (document.querySelector('#c-region'))?.value, null, { timeout: 3000 }).catch(() => {}); check(await p.inputValue('#c-region') === 'Eastern Partnership', 'region filled from the country list'); await p.click('.drawer .btn.primary:has-text("Add country")'); await p.waitForTimeout(250);
   check(await p.locator('.chip:has-text("Moldova")').count() === 1, 'country added and shown as filter');
   await p.click('[aria-label="Remove Republic of Moldova"]'); await p.waitForTimeout(250);
   check(await p.locator('.chip:has-text("Moldova")').count() === 1, 'removal needs the admin password');
@@ -266,6 +266,7 @@ async function page(opts) {
   }
   check(await p.evaluate(() => document.documentElement.dataset.style) === 'pop', 'design direction applied');
   await p.reload(); await p.waitForSelector('.hero');
+  await p.waitForFunction(() => document.documentElement.dataset.style === 'pop', null, { timeout: 3000 }).catch(() => {});
   check(await p.evaluate(() => document.documentElement.dataset.style) === 'pop', 'design direction remembered');
   await p.click('text=Appearance'); await p.click('text=Reset to default'); await p.click('.drawer-f .btn.primary');
   check(errors.length === 0, 'no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));

@@ -1,4 +1,5 @@
-import { HEADINGS } from '../domain/calc';
+import { HEADINGS, lines as linesOf } from '../domain/calc';
+import { averageRate } from '../domain/rates';
 import type { TransferPlan } from '../domain/transfers';
 import type { Ledger, Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -24,9 +25,18 @@ export function transferLetterDocx(p: Project, T: TransferPlan, flex: number, le
   const between = T.heads.some((h) => Math.abs(h.after - h.budget) >= 0.5);
   const agreement = p.contractNo || (p.contract as { number?: string } | undefined)?.number || '';
   const wb = latestWorkbook(p)?.snapshot?.workbook;
+  // A changed line is priced at its average cost so far (spent ÷ units used); a line without enough units keeps its budget rate.
+  const LL = new Map(linesOf(p).map((l) => [l.code, l]));
+  const rateOf = (c: string, changed: boolean) => (changed ? averageRate(LL.get(c)!) : undefined) ?? AB.get(c)?.unitRate ?? 0;
+  const uw = (c: string) => (AB.get(c)?.unit ?? 'unit').replace(/^per\s+/i, '').toLowerCase().trim();
+  const per = (c: string) => (uw(c) === 'diem' ? 'per diem' : `per ${uw(c)}`);
+  const many = (c: string) => { const w = uw(c); return w === 'diem' ? 'per diems' : w.replace(/\//g, '-').replace(/s?$/, 's'); };
+  /** Units and unit value of a changed line in the notification budget: the units its new amount buys at the average cost so far. */
+  const priceOf = (l: TransferPlan['lines'][number]) => { const r = rateOf(l.code, true), u = r ? Math.round((l.after / r) * 100) / 100 : 0; return { u, r: u ? Math.round((l.after / u) * 100) / 100 : r }; };
+  const priced = (l: TransferPlan['lines'][number]) => { const avg = LL.get(l.code) && averageRate(LL.get(l.code)!), x = priceOf(l); return avg && x.u ? ` In the notification budget the line counts ${n0(x.u)} ${many(l.code)} at EUR ${n2(x.r)} ${per(l.code)}, the average cost so far${AB.get(l.code)?.unitRate ? ` (budgeted EUR ${n2(AB.get(l.code)!.unitRate!)})` : ''}.` : ''; };
   const fact = (l: TransferPlan['lines'][number]) => l.after > l.budget
-    ? `In the revised budget, the amount of the line is increased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}, in line with the amount spent and committed of EUR ${n2(l.sc)}. ${increaseReason(p, l.code, wb?.lines ?? [], wb?.pos ?? [])}`.trim()
-    : `In the revised budget, the amount of the line is decreased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}. ${decreaseReason(l.budget, l.after, l.sc)}`;
+    ? `In the revised budget, the amount of the line is increased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}, in line with the amount spent and committed of EUR ${n2(l.sc)}. ${increaseReason(p, l.code, wb?.lines ?? [], wb?.pos ?? [])}${priced(l)}`.trim()
+    : `In the revised budget, the amount of the line is decreased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}. ${decreaseReason(l.budget, l.after, l.sc)}${priced(l)}`;
   const from = (c: string) => { const x = T.moves.filter((m) => m.to === c).map((m) => `EUR ${n2(m.amount)} from line ${m.from}`); return x.length > 1 ? `${x.slice(0, -1).join(', ')} and ${x.at(-1)}` : x[0] ?? ''; };
   const signer = (brand.sign1 ?? '').split('\n').filter(Boolean);
   const shown = T.lines.filter((l) => l.budget || l.after);
@@ -44,8 +54,10 @@ export function transferLetterDocx(p: Project, T: TransferPlan, flex: number, le
   <table><thead><tr><th>Costs</th><th>Unit</th><th># of units</th><th>Unit Value (in EUR)</th><th>Total Cost (in EUR)</th><th># of units</th><th>Unit Value (in EUR)</th><th>Total Cost (in EUR)</th><th>Variation in EUR</th><th>%</th></tr>
   <tr><th></th><th></th><th colspan="3">Budget All Years</th><th colspan="3">Notification Budget</th><th colspan="2">Variation</th></tr></thead><tbody>
   ${heads.map((h) => { const X = shown.filter((l) => l.code.split('.')[0] === h), b = X.reduce((a, l) => a + l.budget, 0), r = X.reduce((a, l) => a + l.after, 0);
-    return `<tr><td colspan="10" data-fill="E8EEF6"><b>${e(h)}. ${e(HEADINGS[h] ?? '')}</b></td></tr>${X.map((l) => { const a = AB.get(l.code), u = a?.approvedUnits ?? 0, dv = l.after - l.budget, fill = Math.abs(dv) >= 0.005 ? ' data-fill="FFF3CD"' : '';
-      return `<tr><td${fill}>${e(l.code)} ${e(l.description)}</td><td>${e(a?.unit ?? '')}</td><td class="r">${u ? n0(u) : ''}</td><td class="r">${u ? n2(l.budget / u) : ''}</td><td class="r">${n2(l.budget)}</td><td class="r">${u ? n0(u) : ''}</td><td class="r">${u ? n2(l.after / u) : ''}</td><td class="r"${fill}>${n2(l.after)}</td><td class="r">${n2(dv)}</td><td class="r">${l.budget ? `${n2((dv / l.budget) * 100)}%` : ''}</td></tr>`; }).join('')}
+    return `<tr><td colspan="10" data-fill="E8EEF6"><b>${e(h)}. ${e(HEADINGS[h] ?? '')}</b></td></tr>${X.map((l) => { const a = AB.get(l.code), u = a?.approvedUnits ?? 0, dv = l.after - l.budget, ch = Math.abs(dv) >= 0.005, fill = ch ? ' data-fill="FFF3CD"' : '';
+      // Unchanged lines keep their units and rate; a changed line takes its average cost so far and the units it buys.
+      const x = ch ? priceOf(l) : { u, r: u ? l.budget / u : 0 }, u1 = x.u, r1s = x.r;
+      return `<tr><td${fill}>${e(l.code)} ${e(l.description)}</td><td>${e(a?.unit ?? '')}</td><td class="r">${u ? n0(u) : ''}</td><td class="r">${u ? n2(l.budget / u) : ''}</td><td class="r">${n2(l.budget)}</td><td class="r"${fill}>${u1 ? n0(u1) : ''}</td><td class="r"${fill}>${u1 ? n2(r1s) : ''}</td><td class="r"${fill}>${n2(l.after)}</td><td class="r">${n2(dv)}</td><td class="r">${l.budget ? `${n2((dv / l.budget) * 100)}%` : ''}</td></tr>`; }).join('')}
     <tr><td colspan="4"><b>Subtotal ${e(HEADINGS[h] ?? h)}</b></td><td class="r"><b>${n2(b)}</b></td><td colspan="2"></td><td class="r"><b>${n2(r)}</b></td><td class="r">${n2(r - b)}</td><td class="r">${b ? `${n2(((r - b) / b) * 100)}%` : ''}</td></tr>`; }).join('')}
   <tr><td colspan="4"><b>7. Subtotal direct eligible costs of the action</b></td><td class="r">${n2(direct)}</td><td colspan="2"></td><td class="r">${n2(direct)}</td><td class="r">0.00</td><td></td></tr>
   <tr><td colspan="4"><b>8. Indirect costs (maximum 7% of 7.)</b></td><td class="r">${n2(admin)}</td><td colspan="2"></td><td class="r">${n2(admin)}</td><td class="r">0.00</td><td></td></tr>

@@ -147,7 +147,7 @@ export function ForecastEditor({ p }: { p: Project }) {
           </table>
         </div>
       </section>
-      <p class="muted" style={{ fontSize: '12px' }}>An empty rate uses the grey one: staff at the latest cost plus the guideline margin, 4.2 / 4.4 at the latest monthly rate, other lines at the budget rate. Saved with the project; the Excel carries what is typed here, and the {pctOf(flexOf(p))}% check is made on the sub-totals against the amounts originally agreed (EU–CoE rules).</p>
+      <p class="muted" style={{ fontSize: '12px' }}>An empty rate uses the grey one: staff at the latest cost plus the guideline margin, 4.2 / 4.4 at the latest monthly rate, other lines at their average cost so far (spent ÷ units used, the budget rate until two units are reported). Saved with the project; the Excel carries what is typed here, and the {pctOf(flexOf(p))}% check is made on the sub-totals against the amounts originally agreed (EU–CoE rules).</p>
     </div>
   );
 }
