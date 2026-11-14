@@ -10,3 +10,13 @@ describe('a Work Plan typed by hand before the follow-up table', () => {
     expect(out.find((w) => w.no === 4)!.id).toBe('a');
   });
 });
+
+import { budgetLineOf } from './workplan';
+describe('a Work Plan line below the budget line', () => {
+  it('counts on the budget line above it', () => {
+    const has = (c: string) => ['5.7', '1.1.3'].includes(c);
+    expect(budgetLineOf('5.7.3', has)).toBe('5.7');
+    expect(budgetLineOf('1.1.3', has)).toBe('1.1.3');
+    expect(budgetLineOf('5.9', has)).toBe('5.9');
+  });
+});

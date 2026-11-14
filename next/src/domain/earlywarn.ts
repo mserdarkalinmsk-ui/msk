@@ -1,3 +1,4 @@
+import { oneOff } from './ledger';
 import { elapsed, HEADINGS, perProject, lineExposure, lines, n, parseDate } from './calc';
 import { headings } from './insights';
 import type { Project } from './types';
@@ -28,7 +29,8 @@ function earlyWarningsOf(p: Project, today: Date): HeadWarn[] {
   const H = headings(p), flex = H.flex, el = elapsed(p, today), L = lines(p);
   const t0 = parseDate(p.start).getTime(), t1 = parseDate(p.end).getTime(), now = today.getTime();
   const monthsGone = Math.max(1, (now - t0) / MONTH); void t1;
-  const actual = (c: string) => L.filter((l) => l.code.split('.')[0] === c).reduce((a, l) => a + n(l.actual), 0);
+  // A grant is one contract paid in instalments: it sets no monthly pace (its open balance is in spent + committed already).
+  const actual = (c: string) => L.filter((l) => l.code.split('.')[0] === c && !oneOff(l.description ?? '', l.unit ?? '')).reduce((a, l) => a + n(l.actual), 0);
   const rows = H.rows.map((h) => {
     const a = actual(h.code);
     // At the end date: spent + committed today, then the report's plan for the heading and the heading's pace after it.

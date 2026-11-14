@@ -38,9 +38,42 @@ export function base(t: Tokens): EChartsCoreOption {
     tooltip: {
       backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, padding: [10, 12], transitionDuration: 0.15, hideDelay: 0,
       textStyle: { color: t.ink, fontSize: 12.5, fontFamily: t.font },
-      extraCssText: 'border-radius:10px;box-shadow:0 10px 30px rgb(0 0 0 / .14);',
+      extraCssText: 'border-radius:12px;box-shadow:0 12px 32px rgb(15 23 42 / .16),0 2px 6px rgb(15 23 42 / .08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);line-height:1.55;',
     },
   };
+}
+
+/* ---------- the finish every chart shares: depth without distorting the values ---------- */
+const HEX = /^#[0-9a-f]{6}$/i;
+const shade = (hex: string, a: string) => (HEX.test(hex) ? hex + a : hex);
+const vGrad = (c: string, top = 'ff', bottom = 'b8') => ({ type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: shade(c, top) }, { offset: 1, color: shade(c, bottom) }] });
+const hGrad = (c: string) => ({ type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: shade(c, 'c4') }, { offset: 1, color: shade(c, 'ff') }] });
+/**
+ * Gradient fills and soft shadows on bars, rounded free-standing bars, smooth lines with a glow, fading areas,
+ * eased animations. Only plain colours are dressed: a colour a chart sets per point (a status, a band) is left as it is.
+ */
+export function polish(o: any): any {
+  if (!o || typeof o !== 'object') return o;
+  const S = Array.isArray(o.series) ? o.series : o.series ? [o.series] : [];
+  const yCat = [o.yAxis].flat().some((a: any) => a?.type === 'category');
+  for (const x of S) {
+    if (!x || x.__plain) continue;
+    const c = typeof x.itemStyle?.color === 'string' ? x.itemStyle.color : typeof x.color === 'string' ? x.color : undefined;
+    if (x.type === 'bar') {
+      x.itemStyle = { ...x.itemStyle };
+      if (c && HEX.test(c)) x.itemStyle.color = yCat ? hGrad(c) : vGrad(c);
+      if (!x.stack && x.itemStyle.borderRadius == null) x.itemStyle.borderRadius = yCat ? [0, 5, 5, 0] : [5, 5, 0, 0];
+      if (x.itemStyle.shadowBlur == null) Object.assign(x.itemStyle, { shadowBlur: 6, shadowColor: 'rgba(15,23,42,.10)', shadowOffsetY: 2 });
+      x.emphasis = { focus: 'series', ...x.emphasis, itemStyle: { shadowBlur: 14, shadowColor: 'rgba(15,23,42,.22)', ...x.emphasis?.itemStyle } };
+    } else if (x.type === 'line') {
+      x.lineStyle = { width: 2.5, cap: 'round', ...x.lineStyle };
+      const lc = typeof x.lineStyle.color === 'string' ? x.lineStyle.color : c;
+      if (lc && HEX.test(lc) && x.lineStyle.shadowBlur == null && x.lineStyle.type !== 'dashed') Object.assign(x.lineStyle, { shadowBlur: 8, shadowColor: shade(lc, '55'), shadowOffsetY: 3 });
+      if (x.areaStyle && lc && HEX.test(lc) && (x.areaStyle.color == null || typeof x.areaStyle.color === 'string')) x.areaStyle = { ...x.areaStyle, color: vGrad(lc, '40', '00'), opacity: 1 };
+      x.emphasis = { focus: 'series', ...x.emphasis, lineStyle: { width: 3.5, ...x.emphasis?.lineStyle } };
+    }
+  }
+  return { animationDuration: 750, animationEasing: 'cubicOut', animationDurationUpdate: 450, animationEasingUpdate: 'cubicInOut', ...o };
 }
 
 const keyOf = (o: unknown) => { try { return JSON.stringify(o, (_, v) => (typeof v === 'function' ? String(v) : v)); } catch { return String(Math.random()); } };
@@ -63,7 +96,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c;
-    const o = optRef.current(tokens()); c.setOption(o, true); lastKey.current = keyOf(o);
+    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o), true);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
     c.getZr().on('click', (ev: any) => {
@@ -77,7 +110,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     const ro = new ResizeObserver(() => { const x = el.current; if (!x || (x.clientWidth === w && x.clientHeight === h)) return; w = x.clientWidth; h = x.clientHeight; c.resize(); });
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(o, true); };
+    const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o), true); };
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
     off = () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
     };
@@ -85,7 +118,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     return () => { dead = true; stopWait?.(); off(); };
   }, []);
   // A parent re-render redraws the chart only when its option really changed.
-  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(o, true); } });
+  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o), true); } });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
   // Leaving the chart hides its tooltip at once (otherwise a faded box can stay behind after switching views).

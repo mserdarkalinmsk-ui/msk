@@ -124,9 +124,16 @@ export function carriedFrom(plans: WorkPlan[], wp: WorkPlan): Map<string, number
 
 /** This Work Plan's estimates by budget line, against what is left on that line (budget − spent & committed) in the report. */
 export interface WpLine { line: string; description: string; /** the line has no budget in the report */ unbudgeted: boolean; planned: number; budget: number; sc: number; left: number; after: number }
+/** The budget line a Work Plan line belongs to: itself, or the nearest line above it (5.7.3 → 5.7 when the budget stops at 5.7). */
+export function budgetLineOf(code: string, has: (c: string) => boolean): string {
+  if (has(code)) return code;
+  const p = code.split('.'); for (let i = p.length - 1; i > 0; i--) { const c = p.slice(0, i).join('.'); if (has(c)) return c; }
+  return code;
+}
 export function byLine(wp: WorkPlan, wb: WorkbookSummary): WpLine[] {
   const M = new Map<string, number>();
-  for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) M.set(l.line, (M.get(l.line) ?? 0) + l.amount);
+  const has = (c: string) => wb.lines.some((x) => x.code === c && x.leaf);
+  for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) { const k = budgetLineOf(l.line, has); M.set(k, (M.get(k) ?? 0) + l.amount); }
   return [...M].map(([line, planned]) => {
     const L = wb.lines.find((x) => x.code === line);
     const budget = L?.budget.cost ?? 0, sc = L?.sc ?? 0;
@@ -288,7 +295,7 @@ export function wpChecks(wp: WorkPlan, wb: WorkbookSummary): WpCheck[] {
   for (const a of wp.acts ?? []) {
     for (const l of a.lines) {
       if (!l.amount) continue;
-      const L = leaf.get(l.line);
+      const L = leaf.get(budgetLineOf(l.line, (c) => leaf.has(c)));
       if (wb.lines.length && !L) { const o = missing.get(l.line) ?? { amount: 0, acts: new Set<string>() }; o.amount += l.amount; o.acts.add(a.id); missing.set(l.line, o); }
       const m = /([\d.,]+)\s*\*\s*([\d.,]+)/.exec(l.text);
       if (m) {
@@ -315,7 +322,8 @@ const full2 = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFraction
 export interface PoMatch { line: string; planned: number; raised: number; pos: { po: string; description: string; supplier: string; amount: number; date: string }[]; acts: string[] }
 export function poMatch(wp: WorkPlan, wb: WorkbookSummary): PoMatch[] {
   const M = new Map<string, PoMatch>();
-  for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) { const x = M.get(l.line) ?? { line: l.line, planned: 0, raised: 0, pos: [], acts: [] }; x.planned += l.amount; if (!x.acts.includes(a.id)) x.acts.push(a.id); M.set(l.line, x); }
+  const has = (c: string) => wb.lines.some((x) => x.code === c && x.leaf);
+  for (const a of wp.acts ?? []) for (const l of a.lines) if (l.amount) { const k = budgetLineOf(l.line, has); const x = M.get(k) ?? { line: k, planned: 0, raised: 0, pos: [], acts: [] }; x.planned += l.amount; if (!x.acts.includes(a.id)) x.acts.push(a.id); M.set(k, x); }
   for (const p of wb.pos) {
     if (!wp.from || p.date < wp.from || (wp.to && p.date > wp.to)) continue;
     const x = M.get(p.line); if (!x) continue;

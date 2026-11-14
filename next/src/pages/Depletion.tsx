@@ -1,3 +1,4 @@
+import { oneOff } from '../domain/ledger';
 import { ADMIN_LINE } from '../domain/terms';
 import { HEADINGS, lineExposure, lines, money, parseDate, reportsByDate } from '../domain/calc';
 import { headings } from '../domain/insights';
@@ -18,14 +19,17 @@ export function depletion(p: Project): { rows: HeadRow[]; asOf: number; monthsLe
   const last = reportsByDate(p).at(-1), asOf = last ? parseDate(last.date).getTime() : TODAY.getTime();
   const s = parseDate(p.start).getTime(), e = parseDate(p.end).getTime();
   const done = Math.max(1, (asOf - s) / MS), monthsLeft = Math.max(0, (e - Math.max(asOf, TODAY.getTime())) / MS);
-  const H = new Map<string, { budget: number; spent: number; exposure: number }>();
+  const H = new Map<string, { budget: number; spent: number; exposure: number; paced: number }>();
   for (const l of leaf) {
     const k = l.code.split('.')[0]; if (!HEADINGS[k] || k === '8') continue;
-    const h = H.get(k) ?? { budget: 0, spent: 0, exposure: 0 };
-    h.budget += l.approved ?? 0; h.spent += l.actual ?? 0; h.exposure += lineExposure(l); H.set(k, h);
+    const h = H.get(k) ?? { budget: 0, spent: 0, exposure: 0, paced: 0 };
+    h.budget += l.approved ?? 0; h.spent += l.actual ?? 0; h.exposure += lineExposure(l);
+    // A grant is one contract: what it has paid says nothing about a monthly pace.
+    if (!oneOff(l.description ?? '', l.unit ?? '')) h.paced += l.actual ?? 0;
+    H.set(k, h);
   }
-  const rows = [...H].sort((a, b) => +a[0] - +b[0]).map(([code, h]) => {
-    const rate = h.spent / done, left = h.budget - h.exposure;
+  const rows = [...H].sort((a, b) => +a[0] - +b[0]).map(([code, { paced, ...h }]) => {
+    const rate = paced / done, left = h.budget - h.exposure;
     // Open commitments are spent first, so only the uncommitted balance is consumed at the monthly rate.
     const endUse = h.budget ? (h.exposure + rate * monthsLeft) / h.budget : 0;
     const runOut = left <= 0 ? asOf : rate > 0 ? Math.max(asOf, TODAY.getTime()) + (left / rate) * MS : null;
