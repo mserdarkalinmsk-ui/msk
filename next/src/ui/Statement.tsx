@@ -36,7 +36,7 @@ function build(lines: WbLine[], names?: Map<string, string>) {
 }
 
 /** Financial statement in the layout of the official report: hierarchy, two-level headers, subtotals and totals. */
-export function Statement({ lines, totals, elapsed, title, layout, names, source, flex = 0.25, headTag }: { /** several projects summed: the tag of a heading comes from each project against its own flexibility */ headTag?: (code: string) => { kind: 'add' | 'near' | 'not'; label: string; why: string } | null; /** heading flexibility: 0.25 Joint Programme, 0.15 Voluntary Contribution */ flex?: number; /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
+export function Statement({ lines, totals, elapsed, title, layout, names, source, flex = 0.25, headTag, onTrace }: { /** makes the amounts of a line clickable: opens where the figure comes from */ onTrace?: (code: string, field: 'approved' | 'actual' | 'committed' | 'exposure' | 'balance') => void; /** several projects summed: the tag of a heading comes from each project against its own flexibility */ headTag?: (code: string) => { kind: 'add' | 'near' | 'not'; label: string; why: string } | null; /** heading flexibility: 0.25 Joint Programme, 0.15 Voluntary Contribution */ flex?: number; /** file and sheet the lines were read from, for the per-cell source */ source?: string; names?: Map<string, string>; layout?: Record<string, string>; lines: WbLine[]; totals: { direct?: WbTotals; admin?: WbTotals; eligible?: WbTotals }; elapsed: number; title: string }) {
   const [mode, setMode] = useState<'full' | 'compact'>('compact');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [hideEmpty, setHideEmpty] = useState(true);
@@ -119,6 +119,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
               // Compare the proposal only with the budget of the lines (projects) that made one.
               const d = r.sum.pr ? r.sum.pr - r.sum.pb : 0, parent = !l;
               const src = source && l?.row ? `From ${source}, row ${l.row}` : undefined;
+              const T = (f: 'approved' | 'actual' | 'committed' | 'exposure' | 'balance', val: number, text: string) => (onTrace && Math.abs(val) >= 0.005 ? <button type="button" class="fig" title="Where this figure comes from" onClick={() => onTrace(r.code, f)}>{text}</button> : text);
               return (
                 <tr class={`d${Math.min(r.depth, 3)} ${parent ? 'grp' : ''} ${over ? 'over' : ''} rk-${rk}`}>
                   <td class="pin" style={{ paddingLeft: `${12 + r.depth * 14}px` }}>
@@ -131,12 +132,12 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
                   </td>
                   {full_ && <td class="muted">{l?.unit}</td>}
                   {full_ && <><td class="r num">{n0(l?.budget.units)}</td><td class="r num">{n0(l?.budget.rate)}</td></>}
-                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.b)}</td>
+                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{T('approved', r.sum.b, money(r.sum.b))}</td>
                   {full_ && <><td class="r num">{n0(l?.actual.units)}</td><td class="r uu">{uu != null ? <span class={`chip ${uu > 1.0001 ? 'c-over' : uu - elapsed > 0.15 ? 'c-fast' : 'c-ok'}`} title={`${n0(l!.actual.units)} of ${n0(l!.budget.units)} ${l!.unit || 'units'} used · ${pct(elapsed)} of time`}>{pct(uu)}</span> : ''}</td><td class={`r num ${rateUp > 0.15 ? 'warn' : ''}`} title={rateUp ? `${rateUp > 0 ? '+' : ''}${Math.round(rateUp * 100)}% vs budget rate` : ''}>{n0(l?.actual.rate)}</td></>}
-                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.a)}</td>
-                  <td class={`r num cm ${r.sum.sc - r.sum.a > 0.5 ? 'has' : ''}`}>{money(r.sum.sc - r.sum.a)}</td>
-                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{money(r.sum.sc)}</td>
-                  <td class={`r num ${r.sum.b - r.sum.sc < -0.5 ? 'neg' : ''}`}>{r.sum.b ? signed(r.sum.b - r.sum.sc) : '–'}</td>
+                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{T('actual', r.sum.a, money(r.sum.a))}</td>
+                  <td class={`r num cm ${r.sum.sc - r.sum.a > 0.5 ? 'has' : ''}`}>{T('committed', r.sum.sc - r.sum.a, money(r.sum.sc - r.sum.a))}</td>
+                  <td class={`r num ${src ? 'src' : ''}`} title={src}>{T('exposure', r.sum.sc, money(r.sum.sc))}</td>
+                  <td class={`r num ${r.sum.b - r.sum.sc < -0.5 ? 'neg' : ''}`}>{r.sum.b ? T('balance', r.sum.b - r.sum.sc, signed(r.sum.b - r.sum.sc)) : '–'}</td>
                   <td class="usedc" title={`${RL[rk]} — ${pct(u)} used at ${pct(elapsed)} of time${uu != null ? ` · ${pct(uu)} of units` : ''}${rateUp > 0.15 ? ` · rate +${Math.round(rateUp * 100)}%` : ''}`}><div class="minibar"><span style={{ width: `${Math.min(100, (r.sum.b ? r.sum.a / r.sum.b : 0) * 100)}%`, background: RC[rk] }} /><span style={{ left: `${Math.min(100, (r.sum.b ? r.sum.a / r.sum.b : 0) * 100)}%`, width: `${Math.max(0, Math.min(100, u * 100) - Math.min(100, (r.sum.b ? r.sum.a / r.sum.b : 0) * 100))}%`, background: RC[rk], opacity: .4 }} /><i style={{ left: `${elapsed * 100}%` }} /></div><span class="num">{r.sum.b ? pct(u) : ''}</span>{l && rk !== 'ok' && <span class={`rk-tag t-${rk}`}>{RL[rk]}</span>}</td>
                   {hasPlan && <td class="r num">{money(r.sum.pl)}</td>}
                   {hasProp && <><td class="r num">{money(r.sum.pr)}</td><td class={`r num ${d > 0.5 ? 'up' : d < -0.5 ? 'down' : ''}`}>{Math.abs(d) < 0.5 ? '–' : `${d > 0 ? '+' : '−'}${Math.abs(d).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td></>}

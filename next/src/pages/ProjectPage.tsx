@@ -1,5 +1,6 @@
 import { BudgetVersions } from '../ui/BudgetVersions';
 import { exportOk } from '../ui/exportGate';
+import { Fig } from '../ui/Trace';
 import { CrossDocsCard } from '../ui/CrossDocsCard';
 import { ForecastDialog } from '../ui/ForecastDialog';
 import { ForecastEditor } from './ForecastEditor';
@@ -88,15 +89,15 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
         </div>
       </div>
       <section class={`hero ph-tiles${tab === "Summary" ? "" : " ph-tiles-tab"}`} aria-label="Project figures">
-        <div class="kpi"><span class="label">Total budget</span><span class="value">{short(m.budget)}</span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span>{pstaff.total > 0 && <span class="ctx kpi-staff click" title="People with a contract running today — open the staff tab" onClick={() => setTab('Staff')}><b>👥 {pstaff.total} {pstaff.positions ? "staff positions" : "staff"}</b><span>{staffSplit(pstaff)}</span></span>}</div>
+        <div class="kpi"><span class="label">Total budget</span><span class="value"><Fig p={p} f="budget">{short(m.budget)}</Fig></span><span class="ctx">{p.approvedBudget ? <>direct {short(p.approvedBudget.direct)} · admin {short(p.approvedBudget.admin)}</> : 'no approved budget on file'}</span>{pstaff.total > 0 && <span class="ctx kpi-staff click" title="People with a contract running today — open the staff tab" onClick={() => setTab('Staff')}><b>👥 {pstaff.total} {pstaff.positions ? "staff positions" : "staff"}</b><span>{staffSplit(pstaff)}</span></span>}</div>
         <div class="kpi lead">
-          <span class="label">Spent to date</span><span class="value">{short(m.spent)}</span>
+          <span class="label">Spent to date</span><span class="value"><Fig p={p} f="spent">{short(m.spent)}</Fig></span>
           <span class="ctx"><b>{pct(m.budget ? m.spent / m.budget : 0)}</b> of {full(m.budget)}</span>
           <div class="meter"><span style={{ width: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%`, background: 'var(--c1)' }} /><i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} /></div>
           <span class="ctx" style={{ fontSize: '11.5px' }}>│ time elapsed {pct(el)}</span>
         </div>
-        <div class="kpi"><span class="label">Pace vs time</span><span class="value">{signedPct(gap)}</span><span class="ctx">{gap < -0.15 ? 'behind schedule' : gap > 0.1 ? 'ahead of schedule' : 'on track'}</span></div>
-        <div class="kpi"><span class="label">Uncommitted balance</span><span class="value" style={{ color: m.remaining < 0 ? 'var(--critical)' : undefined }}>{short(m.remaining)}</span><span class="ctx">after {short(m.committed)} committed</span></div>
+        <div class="kpi"><span class="label">Pace vs time</span><span class="value"><Fig p={p} f="pace">{signedPct(gap)}</Fig></span><span class="ctx">{gap < -0.15 ? 'behind schedule' : gap > 0.1 ? 'ahead of schedule' : 'on track'}</span></div>
+        <div class="kpi"><span class="label">Uncommitted balance</span><span class="value" style={{ color: m.remaining < 0 ? 'var(--critical)' : undefined }}><Fig p={p} f="remaining">{short(m.remaining)}</Fig></span><span class="ctx">after <Fig p={p} f="committed">{short(m.committed)}</Fig> committed</span></div>
         <div class="kpi"><span class="label">Activities</span><span class="value">{plan ? `${plan.done}/${plan.total}` : '—'}</span><span class="ctx">{plan ? <>{plan.late > 0 ? <b style={{ color: 'var(--serious)' }}>{plan.late} overdue</b> : 'none overdue'} · month {plan.month}</> : 'no plan on file'}</span></div>
       </section>
       <div class="tabs" role="tablist">

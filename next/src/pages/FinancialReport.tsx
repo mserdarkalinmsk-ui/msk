@@ -7,7 +7,7 @@ import { forecastFileName } from '../domain/forecastTemplate';
 import { reportPack, type PackExtra } from '../domain/reportPack';
 import { exportOk } from '../ui/exportGate';
 import { download, pngData } from '../ui/xlsxwrite';
-import { byPeriodThenImport, elapsed, lines } from '../domain/calc';
+import { byPeriodThenImport, elapsed, latestReport, lines } from '../domain/calc';
 import type { Project } from '../domain/types';
 import type { WbLine, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -161,7 +161,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
               <button aria-pressed={view === 'wp'} onClick={() => setView('wp')}>Work Plan</button>
             </div></div>
           </div>
-          {view === 'lines' && <Statement flex={flexOf(p)} source={[wb.fileName ?? rep.fileName, wb.meta.grid].filter(Boolean).join(', ') || undefined} layout={(wb.meta as { layout?: Record<string, string> }).layout} lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
+          {view === 'lines' && <Statement onTrace={rep.id === latestReport(p)?.id ? (code, field) => set({ drawer: { kind: 'trace', projectId: p.id, line: code, field } }) : undefined} flex={flexOf(p)} source={[wb.fileName ?? rep.fileName, wb.meta.grid].filter(Boolean).join(', ') || undefined} layout={(wb.meta as { layout?: Record<string, string> }).layout} lines={wb.lines} totals={fillTotals(p, wb.totals)} elapsed={el} title={`${p.code}-financial-statement`} />}
           {view === 'rates' && <RatesTable lines={leaf.filter((l) => l.budget.units)} el={el} />}
           {view === 'pos' && <POTable rows={openPO} />}
           {view === 'wp' && <WorkPlanView p={p} wb={wb} />}

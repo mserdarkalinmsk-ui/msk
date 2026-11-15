@@ -2,7 +2,7 @@ import { applyMerge, lastActivity, planMerge, type MergePlan } from '../domain/m
 import { checkDraft, type Draft } from './Drawer';
 import { readOfficeFile } from './officeImport';
 
-import { backupNow, FolderBackup } from './Backup';
+import { DataSafety, readBackup } from './Backup';
 
 import { useEffect, useState } from 'preact/hooks';
 import { checkpoint, get, go, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
@@ -60,7 +60,7 @@ export function ImportPanel({ close }: { close: () => void }) {
     if (wb) { set({ drawer: { kind: 'smart-import', files: [file] } }); return; }
     const text = await file.text();
     if (/\.json$/i.test(file.name) || text.trim().startsWith('{')) {
-      try { const { ledger: data, from } = migrateBackup(JSON.parse(text)); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
+      try { const raw = await readBackup(text); if (raw == null) return; const { ledger: data, from } = migrateBackup(raw); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
       return;
     }
     let R: string[][];
@@ -95,10 +95,6 @@ export function ImportPanel({ close }: { close: () => void }) {
   const good = parsed.filter((x) => !Object.keys(x.e).length);
   const dupInFile = new Set<string>();
   const importable = good.filter((x) => { const k = x.d.code.toLowerCase(); if (dupInFile.has(k)) return false; dupInFile.add(k); return true; });
-
-  const exportJSON = () => {
-    void backupNow();
-  };
 
   return (
     <>
@@ -159,16 +155,9 @@ export function ImportPanel({ close }: { close: () => void }) {
           </>
         )}
 
-        <section class="card card-b" style={{ display: 'grid', gap: '8px' }}>
-          <h3 style={{ margin: 0, fontSize: '14px' }}>Backup</h3>
-          <p class="muted" style={{ margin: 0, fontSize: '13px' }}>Data is stored in this browser. Export a backup before clearing browser data or moving computers.</p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button class="btn" onClick={exportJSON}>Export JSON backup</button>
-            <button class="btn ghost" onClick={() => { if (confirm('Replace ALL current data with the start data? Export a backup first — this removes your reports and documents (undo is possible right after).')) { resetDemo(); close(); } }}>Reset to start data</button>
-          </div>
-          <FolderBackup />
-        </section>
+        <DataSafety />
         <RestorePoints close={close} />
+        <button class="btn ghost" style={{ justifySelf: 'start' }} onClick={() => { if (confirm('Replace ALL current data with the start data? Back up first — this removes your reports and documents (undo is possible right after).')) { resetDemo(); close(); } }}>Reset to start data</button>
       </div>
       {rows && (
         <div class="drawer-f">

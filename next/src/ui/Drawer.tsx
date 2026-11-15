@@ -22,6 +22,7 @@ import { DocumentsPanel } from './DocumentsPanel';
 import { CountryPanel } from './CountryPanel';
 import { ImportPanel } from './ImportPanel';
 import { X } from './CloseX';
+import { TracePanel } from './Trace';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -46,6 +47,7 @@ export function Drawer() {
         {d.kind === 'risk' && <RiskForm projectId={d.projectId} id={d.id} close={close} />}
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}
+        {d.kind === 'trace' && <TracePanel projectId={d.projectId} figure={d.figure} line={d.line} field={d.field} close={close} />}
         {d.kind === 'smart-import' && <SmartImport files={d.files} close={close} />}
         {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
         {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
