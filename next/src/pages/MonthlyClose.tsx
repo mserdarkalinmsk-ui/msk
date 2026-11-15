@@ -59,7 +59,7 @@ export function MonthlyClose() {
                 <td><span class={`badge ${ST[r.status].badge}`}>{ST[r.status].label}</span>{r.reasons.length > 0 && <span class="muted mc-c"> {r.reasons.length}</span>}</td>
                 <td>{r.report ? <>{date(r.report.date)} {!r.report.fresh && <span class="badge warning">old</span>}</> : <span class="badge warning">none</span>}</td>
                 <td class="r num">{full(r.spent)}</td>
-                <td class="r num">{r.since ? <span style={{ color: r.since.spent < 0 ? 'var(--critical)' : undefined }}>{r.since.spent >= 0 ? '+' : '−'}{full(Math.abs(r.since.spent))}</span> : full(r.sc)}</td>
+                <td class="r num">{r.since ? <span style={{ color: r.since.spent < 0 ? 'var(--critical)' : undefined }}>{r.since.spent > -0.005 ? '+' : ''}{full(r.since.spent)}</span> : full(r.sc)}</td>
                 <td>{[...new Set(r.decisions.map((d) => d.kind))].map((k) => { const D = r.decisions.filter((d) => d.kind === k); return <span class={`badge ${D.some((d) => d.tone === 'bad') ? 'critical' : 'warning'} mc-d`} title={D.map((d) => d.text).join('\n')}>{k}{D.length > 1 ? ` ×${D.length}` : ''}</span>; })}</td>
                 <td class="r"><span class="mc-more">{open === r.p.id ? '▾' : '▸'}</span></td>
               </tr>

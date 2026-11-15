@@ -46,7 +46,7 @@ export function BudgetVersions({ p }: { p: Project }) {
           <table class="mini" style={{ marginTop: '8px' }}>
             <thead><tr><th>Line</th><th>Description</th><th class="r">{s.from}</th><th class="r">{s.to}</th><th class="r">Change</th></tr></thead>
             <tbody>{s.lines.map((l) => <tr><td class="num">{l.code}</td><td>{l.description}</td><td class="r num">{full(l.from)}</td><td class="r num">{full(l.to)}</td>
-              <td class="r num" style={{ color: l.to < l.from ? 'var(--critical)' : 'var(--good)' }}>{l.to >= l.from ? '+' : '−'}{full(Math.abs(l.to - l.from))}</td></tr>)}</tbody>
+              <td class="r num" style={{ color: l.to < l.from ? 'var(--critical)' : 'var(--good)' }}>{l.to - l.from > -0.005 ? '+' : ''}{full(l.to - l.from)}</td></tr>)}</tbody>
           </table>
         </div>
       </div>

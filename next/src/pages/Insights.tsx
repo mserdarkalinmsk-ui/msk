@@ -70,7 +70,7 @@ export function Changes({ projects }: { projects: Project[] }) {
               <td><b class="num">{c.project.code}</b> <span class="muted">{c.project.name}</span></td>
               <td class="num" style={{ whiteSpace: 'nowrap' }}>{c.from ? date(c.from) : '—'} → {c.to ? date(c.to) : '—'}</td>
               <td class="r num">{short(c.spent[0])}</td><td class="r num">{short(c.spent[1])}</td>
-              <td style={{ minWidth: '140px' }}><div class="delta-bar"><span style={{ width: `${Math.abs(d) / max * 100}%`, background: d < 0 ? 'var(--serious)' : 'var(--c1)' }} /><b class="num">{d >= 0 ? '+' : '−'}{short(Math.abs(d)).replace('−', '')}</b></div></td>
+              <td style={{ minWidth: '140px' }}><div class="delta-bar"><span style={{ width: `${Math.abs(d) / max * 100}%`, background: d < 0 ? 'var(--serious)' : 'var(--c1)' }} /><b class="num">{d > -0.5 ? '+' : ''}{short(d)}</b></div></td>
               <td class="r num">{short(c.exposure[1] - c.exposure[0])}</td><td class="r num">{c.lines}</td><td class="muted">{c.note.join(', ')}</td>
             </tr>); })}</tbody>
         </table>

@@ -30,7 +30,7 @@ export function WhatChanged() {
   return (
     <>
       <section class="hero" aria-label="What changed">
-        <div class="kpi lead"><span class="label">Spent since {date(pt.at.slice(0, 10))}</span><span class="value">{short(C.spent)}</span><span class="ctx">spent + committed {C.sc >= 0 ? '+' : '−'}{short(Math.abs(C.sc))} · {C.projects.length} projects changed</span></div>
+        <div class="kpi lead"><span class="label">Spent since {date(pt.at.slice(0, 10))}</span><span class="value">{short(C.spent)}</span><span class="ctx">spent + committed {C.sc > -0.5 ? '+' : ''}{short(C.sc)} · {C.projects.length} projects changed</span></div>
         <div class="kpi"><span class="label">New purchase orders</span><span class="value">{C.newPOs}</span><span class="ctx">{C.projects.reduce((a, c) => a + c.closedPOs.length, 0)} closed</span></div>
         <div class="kpi"><span class="label">New suppliers</span><span class="value">{C.newSuppliers.length}</span><span class="ctx">{C.newSuppliers.slice(0, 3).join(', ') || 'none'}{C.newSuppliers.length > 3 ? '…' : ''}</span></div>
         <div class="kpi"><span class="label">Reports and documents</span><span class="value">{C.projects.reduce((a, c) => a + c.reports.length, 0)}</span><span class="ctx">reports · {C.projects.reduce((a, c) => a + c.documents.length, 0)} documents loaded</span></div>

@@ -30,7 +30,7 @@ export function Offices() {
           <span class="of-c">{cname(c)}</span><b>{x.name}</b>
           <span class="of-k"><span>Budget</span><b class="num">{short(tot)}</b></span>
           <span class="of-k"><span>Used</span><b class="num">{pc(tot ? used / tot : 0)}</b></span>
-          <span class="of-k"><span>After plan</span><b class="num" style={neg(after)}>{after < 0 ? '−' : ''}{short(Math.abs(after))}</b></span>
+          <span class="of-k"><span>After plan</span><b class="num" style={neg(after)}>{short(after)}</b></span>
           <span class="of-mini"><i style={{ width: `${Math.min(1, T.ob.sc / (tot || 1)) * 100}%`, background: FUND.ob.color }} /><i style={{ width: `${Math.min(1, T.ls.sc / (tot || 1)) * 100}%`, background: FUND.ls.color }} /></span>
           <small class="muted">situation {date(r.date)} · {x.reports.length} report{x.reports.length > 1 ? 's' : ''}</small></button>; }); })}</div>);
   if (!o) return <>{Boxes}<div class="card empty-page" style={{ marginTop: '16px' }}><div><h2>No office budget{cf ? ` for ${cname(cf)}` : ''} yet</h2><p>Drop the office's budget workbook (Situation Budgétaire with the report / forecast sheet) into Import. The country is recognised from the office (Bureau ANKARA → Türkiye); each office gets its own box. Office running costs are kept apart from the project figures.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'import' } })}>Import office budget</button></div></div></>;
