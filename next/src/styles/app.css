@@ -995,3 +995,9 @@ span.good{color:var(--good);font-weight:600}span.warning{color:var(--warning);fo
 .mc-doc b { font-size: 13.5px; padding-right: 48px; }
 .mc-doc span { font-size: 12px; color: var(--ink-3); line-height: 1.45; }
 .mc-doc em { position: absolute; top: 12px; right: 12px; font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--c1); background: color-mix(in srgb, var(--c1) 12%, transparent); padding: 2px 7px; border-radius: 999px; }
+
+/* Documents agree: the figures that agree fold under one line. */
+.xd-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 10px; border: 1px dashed var(--line-strong); border-radius: 8px; background: transparent; color: var(--ink-2); font: inherit; font-size: 12.5px; cursor: pointer; }
+.xd-more:hover { color: var(--ink); border-color: var(--accent); background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%); }
+/* End-of-project forecast beside the spend chart: the figures sit at the foot of the card, level with the chart. */
+.fc-card { display: flex; flex-direction: column; } .fc-card > .card-b { flex: 1; display: flex; flex-direction: column; } .fc-card .fc-dl { margin-top: auto; }

@@ -134,8 +134,6 @@ function Summary({ p }: { p: Project }) {
       <Cockpit p={p} />
       <Attention flags={flags} pid={p.id} />
       {p.datesTbc && <StatusWords p={p} />}
-      <ForecastCard p={p} />
-      <CrossDocsCard p={p} />
       <section class="card span-8">
         <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report · click a month for its breakdown</p></div></div>
         <div class="card-b"><Chart height={300} label="Project spend over time" onAxisClick={(x) => {
@@ -154,8 +152,10 @@ function Summary({ p }: { p: Project }) {
           ],
         })} /></div>
       </section>
-      <IdentityCard p={p} />
+      <ForecastCard p={p} />
       <HeadingsCard p={p} />
+      <CrossDocsCard p={p} />
+      <IdentityCard p={p} />
       <ReadinessCard p={p} />
     </div>
   );

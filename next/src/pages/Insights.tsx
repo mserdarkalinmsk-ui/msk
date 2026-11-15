@@ -132,7 +132,7 @@ export function ForecastCard({ p }: { p: Project }) {
   const use = Math.min(1.2, o.utilisation);
   const tone = o.overrun > 1 ? 'critical' : o.utilisation < 0.7 ? 'serious' : o.utilisation < 0.85 ? 'warn' : 'good';
   return (
-    <section class="card span-4">
+    <section class="card span-4 fc-card">
       <div class="card-h"><div><h2>End-of-project forecast</h2><p>{o.basis === 'no data' ? 'Needs at least one report' : o.basis === 'recent rate' ? 'Average since start, adjusted for recent months' : 'Average monthly spend since start'}</p></div></div>
       <div class="card-b fc">
         <div class="fc-big" style={{ color: `var(--${tone})` }}>{pct(o.utilisation)}<small>of budget used</small></div>

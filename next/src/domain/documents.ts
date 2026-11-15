@@ -75,6 +75,8 @@ export function contractFacts(doc: Doc): ContractFacts {
   const pdm = T.match(/progress reports shall be submitted within ([a-z]+|\d+)\s*\(?(\d+)?\)?\s*Days after the period/i); if (pdm) f.progDays = +(pdm[2] || W[pdm[1].toLowerCase()] || pdm[1]);
   const fm = T.match(/final report shall be submitted, at the latest, ([a-z]+|\d+)\s*\(?(\d+)?\)?\s*months after the end of the Implementation Period/i); if (fm) f.finalMonths = +(fm[2] || W[fm[1].toLowerCase()] || fm[1]);
   const rm = pick(/forecast budget for the subsequent (\d+) months/i); if (rm) f.repMonths = +rm;
+  // An end on or before the start is another date of the letter (e.g. a delegation "until" the start), not the end.
+  if (f.start && f.end && f.end <= f.start) delete f.end;
   if (f.start && f.months && !f.end) f.end = addMonths(f.start, f.months);
   const rep = pick(/(?:report|reports)[^.]{0,80}?every\s+(\d{1,2})\s+months/i) ?? pick(/every\s+(\d{1,2})\s+months[^.]{0,60}?report/i); if (rep) f.repMonths = +rep;
   const pd = pick(/within\s+(\d{2,3})\s+days[^.]{0,80}?(?:end of|after)[^.]{0,40}?(?:reporting )?period/i); if (pd) f.progDays = +pd;

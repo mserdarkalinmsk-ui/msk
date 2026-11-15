@@ -1,4 +1,4 @@
-import { HEADINGS, latestReport, n } from './calc';
+import { HEADINGS, latestReport, n, reportsByDate } from './calc';
 import { ADMIN_LINE } from './terms';
 import type { Project } from './types';
 
@@ -18,8 +18,9 @@ const head = (code: string) => code.split('.')[0];
 
 export function crossDocs(p: Project): CrossDocs {
   const c = (p.contract ?? {}) as { total?: number; start?: string; end?: string; number?: string; bh?: string; jp?: string };
-  const ab = p.approvedBudget, r = latestReport(p), wb = r?.snapshot?.workbook, RL = r?.snapshot?.lines ?? [];
-  const T = wb?.totals;
+  const ab = p.approvedBudget, r = reportsByDate(p).filter((x) => x.snapshot?.lines?.length && !x.snapshot.workbook?.meta?.extraction).at(-1) ?? latestReport(p), wb = r?.snapshot?.workbook, RL = wb?.meta?.extraction ? [] : r?.snapshot?.lines ?? [];
+  // Budget figures come from the latest full report: a raw extraction has no budget columns.
+  const T = wb?.meta?.extraction ? undefined : wb?.totals;
   const rows: CrossRow[] = [];
   const add = (key: string, label: string, values: CrossRow['values'], money = true, note?: string) => {
     const v = Object.fromEntries(Object.entries(values).filter(([, x]) => x != null && x !== '' && !(typeof x === 'number' && !Number.isFinite(x)))) as CrossRow['values'];
@@ -46,7 +47,7 @@ export function crossDocs(p: Project): CrossDocs {
     rows.push(row);
   }
   add('start', 'Start date', { contract: c.start, card: p.datesTbc ? undefined : p.start }, false);
-  add('end', 'End date', { contract: c.end, card: p.datesTbc ? undefined : p.end }, false);
+  add('end', 'End date', { contract: c.end && (!c.start || c.end > c.start) ? c.end : undefined, card: p.datesTbc ? undefined : p.end }, false);
   add('contract', 'Contract number', { contract: c.number, card: p.contractNo, report: wb?.meta?.contract }, false);
   add('bh', 'Budget head (BH)', { contract: c.bh, card: p.bh, report: wb?.meta?.bh }, false);
   add('jp', 'Joint programme (JP)', { contract: c.jp, card: p.jp, report: wb?.meta?.jp }, false);

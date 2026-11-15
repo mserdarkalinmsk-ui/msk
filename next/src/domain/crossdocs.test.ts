@@ -31,3 +31,14 @@ describe('documents agree', () => {
     expect(X.rows.filter((r) => !r.ok).map((r) => r.key)).toEqual(['total', 'end', 'bh']);
   });
 });
+
+describe('documents agree with a raw extraction on file', () => {
+  it('compares budgets with the latest full report, not the zero budgets of the extraction', () => {
+    const p = base();
+    p.reportingPeriods!.push({ id: 'e', name: 'Extraction', type: 'Interim', date: '2026-11-09', snapshot: { lines: [{ code: '1.1', approved: 600, actual: 200 }], workbook: { meta: { extraction: true }, totals: { eligible: { budget: 0, actual: 200, sc: 200 }, direct: { budget: 0, actual: 200, sc: 200 } } } } } as never);
+    expect(crossDocs(p).bad).toBe(0);
+  });
+  it('ignores a contract end on or before its start', () => {
+    expect(crossDocs(base({ contract: { total: 1070, start: '2025-01-01', end: '2025-01-01' } } as never)).rows.find((r) => r.key === 'end')?.values.contract).toBeUndefined();
+  });
+});

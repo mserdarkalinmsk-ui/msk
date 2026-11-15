@@ -49,9 +49,11 @@ export function Cockpit({ p }: { p: Project }) {
 /** Project identity card: what the documents say the project is — objectives, outputs, money, contract terms. */
 export function IdentityCard({ p }: { p: Project }) {
   const I = p.indicators ?? [], c = (p.contract ?? {}) as Record<string, number | string | undefined>;
-  const lvl = (re: RegExp) => [...new Set(I.filter((x) => re.test(x.level ?? '')).map((x) => tidy(x.result)).filter(Boolean))];
+  // Template headings left in the logframe ("0 Impact", "1.1 Immediate Outcome", "Output") are not results.
+  const real = (t: string) => !!t && !/^(\d+(\.\d+)*\s*)?(impact|(intermediate|immediate)?\s*outcome|output|result)s?\s*\d*(\.\d+)*$/i.test(t.trim());
+  const lvl = (re: RegExp) => [...new Set(I.filter((x) => re.test(x.level ?? '')).map((x) => tidy(x.result)).filter(real))];
   const goals = [...lvl(/impact/i), ...lvl(/outcome/i)].slice(0, 3);
-  const outputs = [...new Set(I.filter((x) => !/impact|outcome/i.test(x.level ?? '')).map((x) => tidy(x.result)).filter(Boolean))].slice(0, 8);
+  const outputs = [...new Set(I.filter((x) => !/impact|outcome/i.test(x.level ?? '')).map((x) => tidy(x.result)).filter(real))].slice(0, 8);
   const L = p.approvedBudget?.lines ?? [], tot = L.reduce((s, l) => s + (l.approved ?? 0), 0);
   const H = new Map<string, number>(); for (const l of L) { const k = category({ code: l.code, description: l.description ?? '' }); H.set(k, (H.get(k) ?? 0) + (l.approved ?? 0)); }
   const heads = [...H].sort((a, b) => b[1] - a[1]);
