@@ -2,6 +2,7 @@ import { mergeReports, receiptText } from '../domain/merge_reports';
 import { readOfficeFile } from './officeImport';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { importReview } from '../domain/importReview';
+import { ImportChanges } from './ReportImport';
 import { snapshotOf } from '../domain/intake';
 import { checkpoint, get, go, toast, updateProject, upsertOfficeReport, upsertProject } from '../data/store';
 import { applyFindings, mergeFindings } from '../domain/applydocs';
@@ -192,13 +193,16 @@ function markSeen(F: File[]) {
 /** What this file changes for its project, in one line: spent and S&C, headings changing stage, corrections, issues. */
 function MiniReview({ p, wb, name, date: d }: { p: Project; wb: Workbook; name: string; date: string }) {
   const R = useMemo(() => { try { return importReview(p, { id: 'si-' + name, name, type: 'Interim report', date: d, snapshot: snapshotOf(wb, p, name) }); } catch { return null; } }, [p, wb]);
+  const [open, setOpen] = useState(false);
   if (!R) return null;
   const dS = R.after.spent - R.before.spent, dX = R.after.sc - R.before.sc, f = (v: number) => `${v >= 0 ? '+' : '−'}${full(Math.abs(v))}`;
   return <div class="si-rv">
     <span>spent {full(R.after.spent)} <b class={dS < -0.5 ? 'irv-dn' : ''}>{f(dS)}</b></span><span>S&amp;C {full(R.after.sc)} <b class={dX < -0.5 ? 'irv-dn' : ''}>{f(dX)}</b></span>
     {R.heads.map((h) => <span class={`badge ${h.to === 'addendum' ? 'critical' : h.to === 'ok' ? 'good' : 'warning'}`}>{h.code} {h.label}: {h.to === 'ok' ? 'back within budget' : h.to}</span>)}
+    {R.compared && (R.lines.length > 0 || R.pos.length > 0) && <button type="button" class="badge neutral si-chg" aria-expanded={open} onClick={() => setOpen(!open)}>{R.lines.length} line{R.lines.length === 1 ? '' : 's'} change{R.pos.filter((x) => x.kind === 'new').length ? ` · ${R.pos.filter((x) => x.kind === 'new').length} new PO` : ''} {open ? '▾' : '▸'}</button>}
     {R.fixed.length > 0 && <span class="badge good" title={R.fixed.join('\n')}>{R.fixed.length} corrected on reading</span>}
     {R.issues.map((x) => <span class={`badge ${x.level === 'error' ? 'critical' : 'warning'}`} style={{ whiteSpace: 'normal', textAlign: 'left' }}>{x.text}</span>)}
     {R.staffShort > 0 && <span class="badge warning">{R.staffShort} staff PO{R.staffShort > 1 ? 's' : ''} short</span>}
+    {open && <div class="si-chg-b"><ImportChanges R={R} /></div>}
   </div>;
 }

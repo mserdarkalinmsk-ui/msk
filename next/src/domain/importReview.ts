@@ -1,4 +1,6 @@
-import { money } from './calc';
+import { byUpload, lineExposure, lines, money, n } from './calc';
+import { averageRate } from './rates';
+import { reportDiff, type PoChange } from './reportDiff';
 import { flexOf, nearOf, pctOf } from './flex';
 import { headings } from './insights';
 import { findErrors } from './ledger';
@@ -18,7 +20,14 @@ export interface ImportReview {
   issues: { level: 'error' | 'warning'; text: string }[];
   /** new staff POs that will not last until their end */
   staffShort: number;
+  /** budget lines whose figures change with this report, largest change first */
+  lines: LineDelta[];
+  /** purchase orders that are new, raised, reduced, closed or no longer in the file — against the report on file */
+  pos: PoChange[];
+  /** true when there is a report on file to compare with */
+  compared: boolean;
 }
+export interface LineDelta { code: string; label: string; spent: number; dSpent: number; dSc: number; /** average unit cost before and after, when both reports count units */ rate?: { from: number; to: number }; /** the line is new in this report */ fresh?: boolean }
 
 const stage = (over: number, flex: number): Stage => (over > flex ? 'addendum' : over > nearOf(flex) ? 'near' : over > 0.0001 ? 'notification' : 'ok');
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -60,7 +69,18 @@ export function importReview(p: Project, report: ReportingPeriod, replaced: stri
   for (const s of selfCheck([P1])) issues.push({ level: 'error', text: `${s.figure} reads ${eur(r2(s.a.v))} on the ${s.a.label.toLowerCase()} but ${eur(r2(s.b.v))} on the ${s.b.label.toLowerCase()}` });
   let staffShort = 0;
   if (w?.entries?.length && w.pos?.length) staffShort = findErrors(w.entries, { pos: w.pos, asAt: w.meta.situationDate }).find((f) => f.kind === 'staff-short')?.rows.length ?? 0;
-  return { before: { spent: r2(m0.spent), sc: r2(m0.exposure) }, after: { spent: r2(m1.spent), sc: r2(m1.exposure) }, heads, fixed, issues, staffShort };
+  // Line by line: what the screens read now against what they will read once this report is saved.
+  const L0 = new Map(lines(P0).map((l) => [l.code, l])), had = lines(P0).some((l) => l.actual != null || l.spentCommitted != null);
+  const delta: LineDelta[] = [];
+  for (const l of lines(P1)) {
+    const o = L0.get(l.code), dSpent = r2(n(l.actual) - n(o?.actual)), dSc = r2(lineExposure(l) - (o ? lineExposure(o) : 0));
+    const ra = o ? averageRate(o) : undefined, rb = averageRate(l), rate = ra && rb && Math.abs(rb / ra - 1) > 0.005 ? { from: ra, to: rb } : undefined;
+    if (Math.abs(dSpent) > 0.5 || Math.abs(dSc) > 0.5 || rate) delta.push({ code: l.code, label: l.description ?? '', spent: r2(n(l.actual)), dSpent, dSc, rate, fresh: had && !o ? true : undefined });
+  }
+  delta.sort((a, b) => Math.abs(b.dSpent) + Math.abs(b.dSc) - Math.abs(a.dSpent) - Math.abs(a.dSc));
+  const prevWb = [...(P0.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook?.pos?.length).sort(byUpload).at(-1)?.snapshot?.workbook as Workbook | undefined;
+  const pos = prevWb && w?.pos?.length ? reportDiff(prevWb, w).pos : [];
+  return { before: { spent: r2(m0.spent), sc: r2(m0.exposure) }, after: { spent: r2(m1.spent), sc: r2(m1.exposure) }, heads, fixed, issues, staffShort, lines: had ? delta : [], pos, compared: had };
 }
 
 export const STAGE_LABEL = (s: Stage, flex: number) => ({ ok: 'within budget', notification: `notification (within ${pctOf(flex)}%)`, near: `near addendum (${pctOf(nearOf(flex))}–${pctOf(flex)}%)`, addendum: `addendum (beyond ${pctOf(flex)}%)` })[s];

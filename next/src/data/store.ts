@@ -9,6 +9,7 @@ const seed = DEMO ? demo : real;
 import type { Country, Ledger, Project, ReportingPeriod, Risk, TrashItem } from '../domain/types';
 import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
+import { lockOf } from '../domain/close';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -318,12 +319,30 @@ export function setOfficeCountry(officeId: string, country: string) {
   o.country = country; commit(L, `${o.name} → ${country.toUpperCase()}`);
 }
 /** Deleting is for the admin: the password is asked once per browser session. Guards mistakes, not a real lock (the file is offline). */
-export function isAdmin(): boolean {
+export function isAdmin(what = 'delete'): boolean {
   try { if (sessionStorage.getItem('pl-admin') === '1') return true; } catch { /* ignore */ }
-  const ok = typeof prompt === 'function' && prompt('Admin password to delete') === 'MSK';
+  const ok = typeof prompt === 'function' && prompt(`Admin password to ${what}`) === 'MSK';
   if (ok) try { sessionStorage.setItem('pl-admin', '1'); } catch { /* ignore */ }
-  else if (typeof alert === 'function') alert('Only the admin can delete.');
+  else if (typeof alert === 'function') alert(`Only the admin can ${what}.`);
   return ok;
+}
+/**
+ * Period lock: a report that carried the figures of a closed month is changed only by the admin, after a clear
+ * question. Returns true when the change may go ahead (the report is not locked, or the admin confirmed).
+ */
+export function lockOk(pid: string, rid: string, what: string): boolean {
+  const p = state.ledger.projects.find((x) => x.id === pid), r = p?.reportingPeriods?.find((x) => x.id === rid);
+  const c = p && r ? lockOf(state.ledger.closes, pid, r) : undefined;
+  if (!c) return true;
+  const m = new Date(c.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  if (typeof confirm === 'function' && !confirm(`“${r!.name}” carries the figures of ${m}, which is closed.\n\nTo ${what} changes what was closed. Monthly close will show the difference until the month is closed again.\n\nGo ahead?`)) return false;
+  return isAdmin('change a closed month');
+}
+/** Reopens a closed month: its report can be changed again and its figures are no longer watched. */
+export function reopenClose(month: string) {
+  if (!isAdmin('reopen a closed month')) return;
+  const L = draft(state.ledger); L.closes = (L.closes ?? []).map((c) => (c.month === month ? { ...c, reopened: new Date().toISOString() } : c));
+  commit(L, `Month ${month} reopened`);
 }
 /** Every deletion is kept in the trash (last 100) so it can be put back from Data check. */
 function toTrash(L: Ledger, t: Omit<TrashItem, 'id' | 'at'>) {
@@ -431,13 +450,14 @@ function editProject(id: string, f: (p: Project) => void, message: string) {
   const p = ownProject(L, id); if (!p) return;
   L0 = L; f(p); L0 = null; commit(L, message, p.code);
 }
-export const upsertReport = (pid: string, r: ReportingPeriod) => editProject(pid, (p) => {
+export const upsertReport = (pid: string, r: ReportingPeriod) => lockOk(pid, r.id, 'replace it') && editProject(pid, (p) => {
   const R = p.reportingPeriods ?? (p.reportingPeriods = []);
   const i = R.findIndex((x) => x.id === r.id); if (i >= 0) R[i] = r; else R.push(r);
   R.sort((a, b) => a.date.localeCompare(b.date));
 }, `Saved ${r.name}`);
-export const deleteReport = (pid: string, rid: string) => isAdmin() && editProject(pid, (p) => { const r = p.reportingPeriods?.find((x) => x.id === rid); if (r) toTrash(L0!, { kind: 'report', label: `${r.name} (${p.code})`, data: r, pid }); p.reportingPeriods = (p.reportingPeriods ?? []).filter((r) => r.id !== rid); }, 'Report removed');
+export const deleteReport = (pid: string, rid: string) => lockOk(pid, rid, 'delete it') && isAdmin() && editProject(pid, (p) => { const r = p.reportingPeriods?.find((x) => x.id === rid); if (r) toTrash(L0!, { kind: 'report', label: `${r.name} (${p.code})`, data: r, pid }); p.reportingPeriods = (p.reportingPeriods ?? []).filter((r) => r.id !== rid); }, 'Report removed');
 export function updateLine(pid: string, rid: string, code: string, patch: Record<string, number | string | null>) {
+  if (('approved' in patch || 'actual' in patch || 'committed' in patch) && !lockOk(pid, rid, 'correct a figure in it')) return;
   editProject(pid, (p) => {
     const l = p.reportingPeriods?.find((r) => r.id === rid)?.snapshot?.lines.find((x) => x.code === code);
     if (!l) return;

@@ -1048,3 +1048,30 @@ dialog.ask::backdrop { background: rgb(15 15 14 / .45); backdrop-filter: blur(2p
 .tr-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; } .tr-bar i { display: block; height: 100%; border-radius: 3px; background: var(--c1); } .tr-bar i.neg { background: var(--critical); }
 .tr-scroll { overflow-x: auto; } .tr-post td small { display: block; color: var(--ink-3); font-size: 12px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tr-post td { vertical-align: top; }
 .tr-notes { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+
+/* ---------- Import preview: line by line ---------- */
+.irv-c { margin: 0 20px 14px; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.irv-ch { display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; padding: 8px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.irv-scroll { overflow-x: auto; max-height: 320px; overflow-y: auto; }
+.irv-t { width: 100%; } .irv-t th { position: sticky; top: 0; background: var(--surface); z-index: 1; } .irv-t td { white-space: nowrap; }
+.irv-d { display: inline-block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; color: var(--ink-2); }
+.irv-more { margin: 4px 6px 6px; } .irv-none { margin: 0 20px 14px; font-size: 13px; color: var(--ink-3); }
+.si-chg { cursor: pointer; border: 1px solid var(--line-strong); font: inherit; font-size: 12px; } .si-chg:hover { background: var(--surface-hover); }
+.si-chg-b { flex-basis: 100%; } .si-chg-b .irv-c { margin: 6px 0 0; } .si-chg-b .irv-none { margin: 6px 0 0; }
+
+/* ---------- Monthly close: lock and history ---------- */
+.mc-lk { vertical-align: -2px; }
+.mc-drift { padding: 0; overflow: hidden; border-left: 4px solid var(--critical); margin-bottom: 16px; }
+.mc-drift-h { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; background: var(--critical-soft); color: var(--ink); }
+.mc-drift-h > svg { color: var(--critical); width: 20px; height: 20px; flex: none; margin-top: 1px; }
+.mc-drift-h div { display: grid; gap: 2px; } .mc-drift-h span { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.mc-drift table { width: 100%; } .mc-drift td, .mc-drift th { padding-left: 16px; }
+.mc-lock { display: flex; gap: 8px; align-items: baseline; margin: 12px 0 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.mc-lock svg { flex: none; }
+.mc-hist ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.mc-hist li + li { border-top: 1px solid var(--line); } .mc-hist li.on { background: var(--surface-2); }
+.mc-hrow { all: unset; box-sizing: border-box; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%; padding: 9px 12px; cursor: pointer; font-size: 13px; }
+.mc-hrow:hover { background: var(--surface-hover); } .mc-hrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.mc-hrow .badge svg { width: 11px; height: 11px; }
+.mc-hx { padding: 4px 12px 12px; } .mc-hx table { width: 100%; background: var(--surface); border-radius: var(--r-sm); } .mc-hx tr.tot td { border-top: 1px solid var(--line-strong); }
+.rp-lock { margin-left: 8px; font-weight: 500; vertical-align: 1px; }

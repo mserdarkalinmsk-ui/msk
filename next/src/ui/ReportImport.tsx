@@ -1,4 +1,5 @@
-import { importReview, STAGE_LABEL } from '../domain/importReview';
+import { importReview, STAGE_LABEL, type ImportReview } from '../domain/importReview';
+import type { PoChange } from '../domain/reportDiff';
 import { flexOf } from '../domain/flex';
 import { FORMAT, REPORT_TYPES } from '../domain/terms';
 import { useEffect, useMemo, useState } from 'preact/hooks';
@@ -260,12 +261,42 @@ function ImportReviewCard({ p, report, replaced }: { p: Project; report: Reporti
         <div class="irv-k"><span>Spent + committed</span><b class="num">{full(R.after.sc)}</b><small>{d(R.before.sc, R.after.sc)} · was {full(R.before.sc)}</small></div>
         {R.staffShort > 0 && <div class="irv-k"><span>Staff POs short</span><b class="num" style={{ color: 'var(--serious)' }}>{R.staffShort}</b><small>do not cover the months left</small></div>}
       </div>
+      {R.compared && <ImportChanges R={R} />}
       {(R.heads.length > 0 || R.fixed.length > 0 || R.issues.length > 0) && <ul class="irv-l">
         {R.issues.map((x) => <li><span class={`badge ${x.level === 'error' ? 'critical' : 'warning'}`}>{x.level === 'error' ? 'does not agree' : 'check'}</span>{x.text}</li>)}
         {R.heads.map((h) => <li><span class={`badge ${h.to === 'addendum' ? 'critical' : h.to === 'ok' ? 'good' : 'warning'}`}>heading</span><b>{h.code}. {h.label}</b>&nbsp;moves from {STAGE_LABEL(h.from, fx)} to <b>&nbsp;{STAGE_LABEL(h.to, fx)}</b>&nbsp;({h.pct > 0 ? '+' : ''}{(h.pct * 100).toFixed(1)}% against the agreement)</li>)}
         {R.fixed.map((t) => <li><span class="badge good">corrected</span>{t}</li>)}
       </ul>}
     </section>
+  );
+}
+
+const PO_KIND: Record<PoChange['kind'], string> = { new: 'New', raised: 'Raised', spent: 'Invoiced', reduced: 'Reduced', closed: 'Closed', gone: 'No longer in the file' };
+const sgn = (v: number) => (Math.abs(v) < 0.005 ? '–' : `${v > 0 ? '+' : '−'}${full(Math.abs(v)).replace('−', '')}`);
+/** Line by line and order by order: what is different from the report on file. */
+export function ImportChanges({ R }: { R: ImportReview }) {
+  const [tab, setTab] = useState<'lines' | 'pos'>('lines'), [all, setAll] = useState(false);
+  const rates = R.lines.filter((l) => l.rate).length, by = (k: PoChange['kind']) => R.pos.filter((x) => x.kind === k);
+  if (!R.lines.length && !R.pos.length) return <p class="irv-none">No budget line and no purchase order changes against the report on file.</p>;
+  const L = all ? R.lines : R.lines.slice(0, 8), P = all ? R.pos : R.pos.slice(0, 8);
+  return (
+    <div class="irv-c">
+      <div class="irv-ch">
+        <div class="seg"><button aria-pressed={tab === 'lines'} onClick={() => { setTab('lines'); setAll(false); }}>Budget lines · {R.lines.length}</button><button aria-pressed={tab === 'pos'} disabled={!R.pos.length} onClick={() => { setTab('pos'); setAll(false); }}>Purchase orders · {R.pos.length}</button></div>
+        <span class="muted">{tab === 'lines' ? `${rates ? `${rates} unit cost${rates > 1 ? 's' : ''} change · ` : ''}against the report on file` : (['new', 'raised', 'closed', 'reduced', 'gone'] as const).filter((k) => by(k).length).map((k) => `${by(k).length} ${PO_KIND[k].toLowerCase()}`).join(' · ')}</span>
+      </div>
+      <div class="irv-scroll">{tab === 'lines' ? (
+        <table class="mini irv-t"><thead><tr><th>Line</th><th class="r">Spent after</th><th class="r">Spent</th><th class="r">Spent + committed</th><th class="r">Unit cost</th></tr></thead>
+          <tbody>{L.map((l) => <tr><td><span class="num">{l.code}</span> <span class="irv-d" title={l.label}>{l.label}</span>{l.fresh && <span class="badge info">new line</span>}</td><td class="r num">{full(l.spent)}</td>
+            <td class={`r num ${l.dSpent < -0.5 ? 'irv-dn' : l.dSpent > 0.5 ? 'irv-up' : 'muted'}`}>{sgn(l.dSpent)}</td><td class={`r num ${l.dSc < -0.5 ? 'irv-dn' : l.dSc > 0.5 ? 'irv-up' : 'muted'}`}>{sgn(l.dSc)}</td>
+            <td class="r num">{l.rate ? <span title="Average unit cost: spent ÷ units used">{l.rate.from.toFixed(2)} → <b>{l.rate.to.toFixed(2)}</b></span> : <span class="muted">–</span>}</td></tr>)}</tbody></table>
+      ) : (
+        <table class="mini irv-t"><thead><tr><th>Purchase order</th><th>Line</th><th>Change</th><th class="r">Spent + committed</th><th class="r">Was</th></tr></thead>
+          <tbody>{P.map((x) => <tr><td><span class="num">{x.po}</span> <span class="irv-d" title={`${x.supplier} · ${x.description}`}>{x.supplier || x.description}</span></td><td class="num">{x.line}</td>
+            <td><span class={`badge ${x.kind === 'new' || x.kind === 'raised' ? 'info' : x.kind === 'gone' ? 'warning' : 'neutral'}`}>{PO_KIND[x.kind]}</span></td><td class="r num">{full(x.scNow)}</td><td class="r num muted">{x.kind === 'new' ? '–' : full(x.scBefore)}</td></tr>)}</tbody></table>
+      )}</div>
+      {(tab === 'lines' ? R.lines.length : R.pos.length) > 8 && <button class="btn ghost irv-more" onClick={() => setAll(!all)}>{all ? 'Show fewer' : `Show all ${tab === 'lines' ? R.lines.length : R.pos.length}`}</button>}
+    </div>
   );
 }
 

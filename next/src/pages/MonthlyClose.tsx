@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
-import { filtered, go, saveClose, set, useStore } from '../data/store';
-import { closeRecord, closeRows, generalDecisions, type CloseRow, type CloseStatus } from '../domain/close';
+import { filtered, go, reopenClose, saveClose, set, useStore } from '../data/store';
+import { closeDrift, closeRecord, closeRows, generalDecisions, type CloseRecord, type CloseRow, type CloseStatus } from '../domain/close';
 import { TODAY } from '../today';
 import { downloadClosePack } from '../ui/closePack';
 import { flexOf } from '../domain/flex';
@@ -27,14 +27,23 @@ export function MonthlyClose() {
   const drop = (F: File[]) => F.length && set({ drawer: { kind: 'smart-import', files: F } });
   const shown = rows.filter((r) => filter === 'all' || r.status === filter);
   const nDec = rows.reduce((a, r) => a + r.decisions.length, 0) + general.length;
+  const drift = useMemo(() => closeDrift(s.ledger.projects, closes), [s.ledger.projects, closes]);
+  const locked = !!done && !done.reopened;
   const pack = async () => { setBusy(true); try { await downloadClosePack(rows, general, month, TODAY); } finally { setBusy(false); } };
   return (
     <div class="mc">
       <section class="hero" aria-label="Monthly close">
-        <div class="kpi lead"><span class="label">Monthly close · {MONTH(month)}</span><span class="value">{done ? 'Closed' : n('blocked') ? `${n('blocked')} blocked` : n('check') ? `${n('check')} to check` : 'Ready to close'}</span>
-          <span class="ctx">{done ? `closed ${date(done.at.slice(0, 10))} ${done.at.slice(11, 16)}` : last ? `last close: ${MONTH(last.month)}` : 'first close'}</span></div>
+        <div class="kpi lead"><span class="label">Monthly close · {MONTH(month)}</span><span class="value">{locked ? <><Lock /> Closed</> : done ? 'Reopened' : n('blocked') ? `${n('blocked')} blocked` : n('check') ? `${n('check')} to check` : 'Ready to close'}</span>
+          <span class="ctx">{locked ? `closed ${date(done!.at.slice(0, 10))} ${done!.at.slice(11, 16)} · figures locked` : done ? `reopened ${date(done.reopened!.slice(0, 10))} — close again when ready` : last ? `last close: ${MONTH(last.month)}` : 'first close'}</span></div>
         {(['clean', 'check', 'blocked'] as const).map((k) => <button class={`kpi click mc-k ${filter === k ? 'on' : ''}`} onClick={() => setFilter(filter === k ? 'all' : k)}><span class="label">{ST[k].label}</span><span class="value" style={{ color: k === 'blocked' ? 'var(--critical)' : k === 'check' ? 'var(--warn)' : 'var(--good)' }}>{n(k)}</span><span class="ctx">{k === 'clean' ? 'in the pack' : k === 'check' ? 'in the pack, marked' : 'left out until fixed'}</span></button>)}
       </section>
+
+      {drift.length > 0 && <section class="card mc-drift" role="alert">
+        <div class="mc-drift-h"><Lock /><div><b>Changed after the close</b><span>{drift.length} figure{drift.length > 1 ? 's' : ''} no longer read{drift.length > 1 ? '' : 's'} what was closed, although no newer report came in. Check the change, then close the month again to record the new figures.</span></div></div>
+        <table class="mini"><thead><tr><th>Project</th><th>Closed month</th><th>Figure</th><th class="r">As closed</th><th class="r">Now</th><th class="r">Difference</th><th /></tr></thead>
+          <tbody>{drift.map((d) => <tr><td><b class="num">{d.code}</b></td><td>{MONTH(d.month)}</td><td>{d.removed ? 'Report of the close removed' : d.what}</td><td class="r num">{full(d.closed)}</td><td class="r num">{full(d.now)}</td>
+            <td class="r num" style={{ color: 'var(--critical)', fontWeight: 600 }}>{d.now - d.closed > 0 ? '+' : ''}{full(d.now - d.closed)}</td><td class="r"><button class="btn" onClick={() => go(`project/${d.pid}/reports`)}>Open →</button></td></tr>)}</tbody></table>
+      </section>}
 
       <section class="card mc-step">
         <div class="mc-n">1</div>
@@ -87,14 +96,40 @@ export function MonthlyClose() {
       <section class="card mc-step">
         <div class="mc-n">4</div>
         <div style={{ flex: 1 }}><h2>Download the pack and close the month</h2>
-          <p class="muted">One ZIP: the close summary (every project, the decisions, the problems) and the workbook of each project that is not blocked, each with its source report in the file properties. Closing records the figures as they stand today — next month shows the changes since.</p>
+          <p class="muted">One ZIP: the close summary (every project, the decisions, the problems) and the workbook of each project that is not blocked, each with its source report in the file properties. Closing records the figures as they stand today and locks the reports behind them — next month shows the changes since.</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
             <button class="btn primary" disabled={busy || !rows.length} onClick={pack}>{busy ? 'Preparing…' : `⤓ Close pack · ${rows.length - n('blocked')} project${rows.length - n('blocked') === 1 ? '' : 's'}`}</button>
-            <button class="btn" disabled={!rows.length} onClick={() => { if (!n('blocked') || confirm(`${n('blocked')} project${n('blocked') > 1 ? 's are' : ' is'} blocked. Close ${MONTH(month)} anyway? Their figures are recorded as they are.`)) saveClose(closeRecord(rows, TODAY)); }}>{done ? `Close ${MONTH(month)} again` : `Close ${MONTH(month)}`}</button>
+            <button class="btn" disabled={!rows.length} onClick={() => { if (!n('blocked') || confirm(`${n('blocked')} project${n('blocked') > 1 ? 's are' : ' is'} blocked. Close ${MONTH(month)} anyway? Their figures are recorded as they are.`)) saveClose(closeRecord(rows, TODAY)); }}>{done ? `Close ${MONTH(month)} again` : `Close and lock ${MONTH(month)}`}</button>
           </div>
-          {closes.length > 0 && <div class="mc-hist"><h3>Earlier closes</h3><ul>{closes.slice(0, 12).map((c) => <li><b>{MONTH(c.month)}</b> <span class="muted">closed {date(c.at.slice(0, 10))} · {c.rows.length} projects · spent {short(c.rows.reduce((a, x) => a + x.spent, 0))} · {c.rows.filter((x) => x.status === 'blocked').length} blocked</span></li>)}</ul></div>}
+          {locked && <p class="mc-lock"><Lock /> {MONTH(month)} is closed: the report behind each project's figures is locked. Changing or deleting one asks for the admin and shows up above as “changed after the close”.</p>}
+          {closes.length > 0 && <CloseHistory closes={closes} />}
         </div>
       </section>
+    </div>
+  );
+}
+
+const Lock = () => <svg class="mc-lk" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
+
+/** Earlier closes: the figures exactly as they were closed, month by month. */
+function CloseHistory({ closes }: { closes: CloseRecord[] }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <div class="mc-hist"><h3>Closed months</h3>
+      <ul>{closes.slice(0, 24).map((c) => { const T = c.rows.reduce((a, x) => ({ b: a.b + x.budget, s: a.s + x.spent, c: a.c + x.sc }), { b: 0, s: 0, c: 0 }), on = open === c.month;
+        return <li class={on ? 'on' : ''}>
+          <button class="mc-hrow" aria-expanded={on} onClick={() => setOpen(on ? null : c.month)}>
+            <span class="mc-more">{on ? '▾' : '▸'}</span><b>{MONTH(c.month)}</b>
+            {c.reopened ? <span class="badge warning">reopened</span> : <span class="badge neutral"><Lock /> locked</span>}
+            <span class="muted">closed {date(c.at.slice(0, 10))} · {c.rows.length} projects · spent {short(T.s)} · {c.rows.filter((x) => x.status === 'blocked').length} blocked</span>
+          </button>
+          {on && <div class="mc-hx">
+            <div style={{ overflowX: 'auto' }}><table class="mini"><thead><tr><th>Project</th><th>Status</th><th>Report</th><th class="r">Budget</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
+              <tbody>{c.rows.map((x) => <tr><td><b class="num">{x.code}</b></td><td><span class={`badge ${ST[x.status].badge}`}>{ST[x.status].label}</span></td><td>{x.report ? <>{x.report}{x.reportDate ? <span class="muted"> · {date(x.reportDate)}</span> : null}</> : <span class="muted">none</span>}</td><td class="r num">{full(x.budget)}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc)}</td></tr>)}
+                <tr class="tot"><td colSpan={3}><b>Total as closed</b></td><td class="r num"><b>{full(T.b)}</b></td><td class="r num"><b>{full(T.s)}</b></td><td class="r num"><b>{full(T.c)}</b></td></tr></tbody></table></div>
+            {!c.reopened && <button class="btn ghost" style={{ marginTop: '8px' }} title="The reports of this month can be changed again; asks for the admin password" onClick={() => reopenClose(c.month)}>Reopen {MONTH(c.month)}…</button>}
+          </div>}
+        </li>; })}</ul>
     </div>
   );
 }

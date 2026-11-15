@@ -1,6 +1,7 @@
 import { BudgetVersions } from '../ui/BudgetVersions';
 import { exportOk } from '../ui/exportGate';
 import { Fig } from '../ui/Trace';
+import { lockOf } from '../domain/close';
 import { CrossDocsCard } from '../ui/CrossDocsCard';
 import { ForecastDialog } from '../ui/ForecastDialog';
 import { ForecastEditor } from './ForecastEditor';
@@ -189,7 +190,7 @@ function Lines({ p }: { p: Project }) {
 }
 
 function Reports({ p }: { p: Project }) {
-  const R = reportsByDate(p);
+  const R = reportsByDate(p), closes = useStore((x) => x.ledger.closes);
   const [a, setA] = useState(R.at(-2)?.id ?? '');
   const [b, setB] = useState(R.at(-1)?.id ?? '');
   const A = R.find((r) => r.id === a), B = R.find((r) => r.id === b);
@@ -206,7 +207,7 @@ function Reports({ p }: { p: Project }) {
             return (
               <li style={{ cursor: 'default', gridTemplateColumns: 'auto 1fr auto auto' }}>
                 <span class="badge neutral count num">{i + 1}</span>
-                <div style={{ minWidth: 0 }}><div class="t">{r.name}</div><div class="d">{date(r.date)} · {r.type}{r.fileName ? ` · ${r.fileName}` : ''}</div></div>
+                <div style={{ minWidth: 0 }}><div class="t">{r.name}{(() => { const c = lockOf(closes, p.id, r); return c && <span class="badge neutral rp-lock" title={`Carries the figures of the closed month ${c.month} — changing it asks for the admin`}>🔒 closed {month(c.month + '-01')}</span>; })()}</div><div class="d">{date(r.date)} · {r.type}{r.fileName ? ` · ${r.fileName}` : ''}</div></div>
                 <div class="num" style={{ textAlign: 'right', fontSize: '13px' }}>{short(t.actual)}<div class="d" style={{ color: 'var(--ink-3)' }}>{i ? `${t.actual - prev < 0 ? "" : "+"}${short(t.actual - prev)}` : 'baseline'}</div></div>
                 <button class="btn icon ghost" aria-label={`Remove ${r.name}`} title="Remove report" onClick={() => confirm(`Remove “${r.name}”? You can undo right after.`) && deleteReport(p.id, r.id)}>✕</button>
               </li>
