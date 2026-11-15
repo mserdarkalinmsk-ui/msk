@@ -1,3 +1,4 @@
+import { rules } from '../domain/rules';
 import { nearOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { oneOff } from '../domain/ledger';
@@ -152,7 +153,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
           </tfoot>
         </table>
       </div>
-      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> {headTag ? 'projects with the heading above budget, each against its own flexibility (25% Joint Programme, 15% Voluntary Contribution) — hover for the projects' : <>heading above budget (≤{pctOf(nearOf(flex))}% / {pctOf(nearOf(flex))}–{FX}% / &gt;{FX}%) · “Risk:” = projected at the current pace</>}</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
+      <div class="stmt-legend muted"><span><i class="lg over" />over budget (amount or units)</span><span><i class="lg warn" />ahead of time by 15+ points, or unit rate 15%+ above budget</span><span><i class="lg slow" />30+ points behind time</span><span><i class="lg ok" />on track</span><span><b class="chg chg-not now">Notification</b> / <b class="chg chg-near now">Near addendum</b> / <b class="chg chg-add now">Addendum</b> {headTag ? 'projects with the heading above budget, each against its own flexibility (' + rules().flexJP + '% Joint Programme, ' + rules().flexVC + '% Voluntary Contribution) — hover for the projects' : <>heading above budget (≤{pctOf(nearOf(flex))}% / {pctOf(nearOf(flex))}–{FX}% / &gt;{FX}%) · “Risk:” = projected at the current pace</>}</span><span>bar: solid = spent · light = committed · │ = time elapsed</span></div>
     </div>
   );
 }

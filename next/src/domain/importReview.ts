@@ -1,5 +1,5 @@
 import { byUpload, lineExposure, lines, money, n } from './calc';
-import { averageRate } from './rates';
+import { lineRate } from './rates';
 import { reportDiff, type PoChange } from './reportDiff';
 import { flexOf, nearOf, pctOf } from './flex';
 import { headings } from './insights';
@@ -74,7 +74,7 @@ export function importReview(p: Project, report: ReportingPeriod, replaced: stri
   const delta: LineDelta[] = [];
   for (const l of lines(P1)) {
     const o = L0.get(l.code), dSpent = r2(n(l.actual) - n(o?.actual)), dSc = r2(lineExposure(l) - (o ? lineExposure(o) : 0));
-    const ra = o ? averageRate(o) : undefined, rb = averageRate(l), rate = ra && rb && Math.abs(rb / ra - 1) > 0.005 ? { from: ra, to: rb } : undefined;
+    const ra = o ? lineRate(P0, o)?.rate : undefined, rb = lineRate(P1, l)?.rate, rate = ra && rb && Math.abs(rb / ra - 1) > 0.005 ? { from: ra, to: rb } : undefined;
     if (Math.abs(dSpent) > 0.5 || Math.abs(dSc) > 0.5 || rate) delta.push({ code: l.code, label: l.description ?? '', spent: r2(n(l.actual)), dSpent, dSc, rate, fresh: had && !o ? true : undefined });
   }
   delta.sort((a, b) => Math.abs(b.dSpent) + Math.abs(b.dSc) - Math.abs(a.dSpent) - Math.abs(a.dSc));

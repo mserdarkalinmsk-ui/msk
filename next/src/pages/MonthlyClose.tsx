@@ -120,7 +120,7 @@ function CloseHistory({ closes }: { closes: CloseRecord[] }) {
         return <li class={on ? 'on' : ''}>
           <button class="mc-hrow" aria-expanded={on} onClick={() => setOpen(on ? null : c.month)}>
             <span class="mc-more">{on ? '▾' : '▸'}</span><b>{MONTH(c.month)}</b>
-            {c.reopened ? <span class="badge warning">reopened</span> : <span class="badge neutral"><Lock /> locked</span>}
+            {c.reopened ? <span class="badge warning">reopened</span> : <span class="badge neutral">locked</span>}
             <span class="muted">closed {date(c.at.slice(0, 10))} · {c.rows.length} projects · spent {short(T.s)} · {c.rows.filter((x) => x.status === 'blocked').length} blocked</span>
           </button>
           {on && <div class="mc-hx">

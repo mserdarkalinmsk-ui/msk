@@ -1,3 +1,4 @@
+import { rules } from '../domain/rules';
 import { outcome } from '../domain/insights';
 import { useState } from 'preact/hooks';
 import { filtered, useStore } from '../data/store';
@@ -105,7 +106,7 @@ export function Outlook() {
           <div class="card-b"><Chart height={O.length * 40 + 80} label="Projected use of the budget at the end date" onClick={(e) => e.dataIndex != null && openProject(O[e.dataIndex].p.id, 'summary')} option={(t) => barsOption(t, O)} /></div>
         </section>
         <section class="card span-12">
-          <div class="card-h"><div><h2>When headings will need a letter</h2><p>The month spent + committed passes a heading's budget (notification) and its flexibility — 25% Joint Programme, 15% Voluntary Contribution — (addendum), at the current pace · grey bar = project period</p></div></div>
+          <div class="card-h"><div><h2>When headings will need a letter</h2><p>The month spent + committed passes a heading's budget (notification) and its flexibility — {rules().flexJP}% Joint Programme, {rules().flexVC}% Voluntary Contribution — (addendum), at the current pace · grey bar = project period</p></div></div>
           <div class="card-b"><Chart height={O.length * 46 + 90} label="Heading crossings over time" onClick={(e) => e.data?.c && openProject(e.data.c.p.id, 'budget')} option={(t) => timelineOption(t, X, O)} /></div>
         </section>
         <section class="card span-12">

@@ -339,10 +339,13 @@ export function lockOk(pid: string, rid: string, what: string): boolean {
   const p = state.ledger.projects.find((x) => x.id === pid), r = p?.reportingPeriods?.find((x) => x.id === rid);
   const c = p && r ? lockOf(state.ledger.closes, pid, r) : undefined;
   if (!c) return true;
+  const k = `${pid}:${rid}:${c.month}`; if (Date.now() - (lockAsked.get(k) ?? 0) < 5 * 60_000) return true;
   const m = new Date(c.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   if (typeof confirm === 'function' && !confirm(`“${r!.name}” carries the figures of ${m}, which is closed.\n\nTo ${what} changes what was closed. Monthly close will show the difference until the month is closed again.\n\nGo ahead?`)) return false;
-  return isAdmin('change a closed month');
+  const ok = isAdmin('change a closed month'); if (ok) lockAsked.set(k, Date.now());
+  return ok;
 }
+const lockAsked = new Map<string, number>();
 /** Reopens a closed month: its report can be changed again and its figures are no longer watched. */
 export function reopenClose(month: string) {
   if (!isAdmin('reopen a closed month')) return;
@@ -399,7 +402,7 @@ export function markAlerts(items: { key: string; title: string; project?: string
   L.alertMarks = Object.keys(M).length > 300 ? pruneMarks(M, new Set(items.map((x) => x.key)), new Date()) : M;
   L.alertLog = [...items.map((x) => ({ at, key: x.key, action: mark ? mark.state : 'reopened' as const, title: x.title, project: x.project, note, until: mark?.until })), ...(L.alertLog ?? [])].slice(0, 400);
   const n = items.length, what = n > 1 ? `${n} alerts` : `“${items[0].title}”`;
-  commit(L, mark ? (mark.state === 'done' ? `${what} marked as handled` : `${what} snoozed until ${mark.until}`) : `${what} reopened`, items[0].project);
+  commit(L, mark ? (mark.state === 'done' ? `${what} marked as handled` : `${what} snoozed until ${mark.until ? new Date(mark.until + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : 'later'}`) : `${what} reopened`, items[0].project);
 }
 /** Remembers how a file format is read (block roles, document type); null forgets it. */
 export function setFormat(key: string, f: { roles?: Record<string, string>; type?: string } | null) {

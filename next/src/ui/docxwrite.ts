@@ -2,6 +2,7 @@ import { takeStamp } from './stamp';
 import { saveFile } from './save';
 import { pngData, zip } from './xlsxwrite';
 import { unzip } from './xlsx';
+import { TODAY } from '../today';
 import { get, toast } from '../data/store';
 import { applyTemplate, FIELDS, inspectTemplate, type TemplateInfo } from '../domain/docxTemplate';
 
@@ -84,8 +85,8 @@ export async function readTemplate(f: File): Promise<{ info: TemplateInfo; data:
   if ([...parts.keys()].some((n) => /vbaProject/i.test(n))) throw new Error('A file with macros cannot be used — save it as .docx');
   return { info: inspectTemplate(new Map([...parts].filter(([n]) => /\.xml$/.test(n)).map(([n, b]) => [n, dec.decode(b)]))), data: b64(new Uint8Array(buf)) };
 }
-const long = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-const dmy = (d: Date) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+const long = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const dmy = (d: Date) => `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}`;
 /** The fields of a project for the template: {{project}}, {{code}}, {{bh}}, {{agreement}}. */
 export const projectVars = (p: { name: string; code: string; bh?: string; contractNo?: string; contract?: Record<string, unknown> }): Record<string, string> =>
   ({ project: p.name, code: p.code, bh: p.bh ?? '', agreement: p.contractNo || String((p.contract as { number?: string } | undefined)?.number ?? '') });
@@ -93,7 +94,7 @@ export const projectVars = (p: { name: string; code: string; bh?: string; contra
 async function fromTemplate(name: string, body: string, title: string, stamp: string | undefined, vars: Record<string, string>): Promise<boolean> {
   const brand = get().ledger.brand, t = brand?.docx; if (!t) return false;
   try {
-    const parts = await unzip(unb64(t.data).buffer as ArrayBuffer, true), now = new Date();
+    const parts = await unzip(unb64(t.data).buffer as ArrayBuffer, true), now = TODAY; // the same day the text of the letter carries
     // Fields the document does not give are filled with nothing rather than left as {{…}} in a letter that goes out.
     const all: Record<string, string> = { ...Object.fromEntries(FIELDS.map(([k]) => [k, ''])), date: dmy(now), date_long: long(now), title, organisation: brand?.name ?? '', addressee: brand?.addressee ?? '', signature: brand?.sign1 ?? '', ...vars };
     const out = applyTemplate(parts, body, all, { title, description: stamp });

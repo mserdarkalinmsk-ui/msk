@@ -2,6 +2,7 @@ import { flexOf } from '../domain/flex';
 import { useMemo, useState } from 'preact/hooks';
 import { go, markAlerts, set, useStore } from '../data/store';
 import { backReason, snoozeDay, splitAlerts } from '../domain/worklist';
+import { Fig } from '../ui/Trace';
 import { progress } from '../domain/logframe';
 import { money } from '../domain/calc';
 import { ALERT_KINDS, alerts, changes, headings, readiness, status, outcome, scenario, type Alert } from '../domain/insights';
@@ -187,8 +188,8 @@ export function ForecastCard({ p }: { p: Project }) {
         <div class="fc-big" style={{ color: `var(--${tone})` }}>{pct(o.utilisation)}<small>of budget used</small></div>
         <div class="meter fc-m"><span style={{ width: `${Math.min(100, use / 1.2 * 100)}%`, background: `var(--${tone})` }} /><i class="tick" style={{ left: `calc(${100 / 1.2}% - 1px)` }} /></div>
         <dl class="fc-dl">
-          <dt>Projected spend</dt><dd class="num">{full(o.projected)}</dd>
-          <dt>{o.overrun > 1 ? 'Over budget' : 'Likely unused'}</dt><dd class="num">{full(o.overrun > 1 ? o.overrun : o.unused)}</dd>
+          <dt>Projected spend</dt><dd class="num"><Fig p={p} f="projected">{full(o.projected)}</Fig></dd>
+          <dt>{o.overrun > 1 ? 'Over budget' : 'Likely unused'}</dt><dd class="num">{o.overrun > 1 ? full(o.overrun) : <Fig p={p} f="unused">{full(o.unused)}</Fig>}</dd>
           <dt>Current rate</dt><dd class="num">{full(o.rate)}/mo</dd>
           <dt>Needed to use all</dt><dd class="num">{full(o.needRate)}/mo</dd>
           <dt>Months left</dt><dd class="num">{o.monthsLeft.toFixed(1)}</dd>

@@ -272,6 +272,7 @@ function ImportReviewCard({ p, report, replaced }: { p: Project; report: Reporti
 }
 
 const PO_KIND: Record<PoChange['kind'], string> = { new: 'New', raised: 'Raised', spent: 'Invoiced', reduced: 'Reduced', closed: 'Closed', gone: 'No longer in the file' };
+const n2 = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const sgn = (v: number) => (Math.abs(v) < 0.005 ? '–' : `${v > 0 ? '+' : '−'}${full(Math.abs(v)).replace('−', '')}`);
 /** Line by line and order by order: what is different from the report on file. */
 export function ImportChanges({ R }: { R: ImportReview }) {
@@ -286,12 +287,12 @@ export function ImportChanges({ R }: { R: ImportReview }) {
         <span class="muted">{tab === 'lines' ? `${rates ? `${rates} unit cost${rates > 1 ? 's' : ''} change · ` : ''}against the report on file` : (['new', 'raised', 'closed', 'reduced', 'gone'] as const).filter((k) => by(k).length).map((k) => `${by(k).length} ${PO_KIND[k].toLowerCase()}`).join(' · ')}</span>
       </div>
       <div class="irv-scroll">{tab === 'lines' ? (
-        <table class="mini irv-t"><thead><tr><th>Line</th><th class="r">Spent after</th><th class="r">Spent</th><th class="r">Spent + committed</th><th class="r">Unit cost</th></tr></thead>
-          <tbody>{L.map((l) => <tr><td><span class="num">{l.code}</span> <span class="irv-d" title={l.label}>{l.label}</span>{l.fresh && <span class="badge info">new line</span>}</td><td class="r num">{full(l.spent)}</td>
+        <table class="mini irv-t"><thead><tr><th>Line</th><th class="r">Spent<br />change</th><th class="r">Spent + committed<br />change</th><th class="r">Unit cost<br />before → after</th></tr></thead>
+          <tbody>{L.map((l) => <tr><td title={`${l.code} ${l.label} · spent after this report ${full(l.spent)}`}><span class="num">{l.code}</span> <span class="irv-d">{l.label}</span>{l.fresh && <span class="badge info">new line</span>}</td>
             <td class={`r num ${l.dSpent < -0.5 ? 'irv-dn' : l.dSpent > 0.5 ? 'irv-up' : 'muted'}`}>{sgn(l.dSpent)}</td><td class={`r num ${l.dSc < -0.5 ? 'irv-dn' : l.dSc > 0.5 ? 'irv-up' : 'muted'}`}>{sgn(l.dSc)}</td>
-            <td class="r num">{l.rate ? <span title="Average unit cost: spent ÷ units used">{l.rate.from.toFixed(2)} → <b>{l.rate.to.toFixed(2)}</b></span> : <span class="muted">–</span>}</td></tr>)}</tbody></table>
+            <td class="r num">{l.rate ? <span title="Average unit cost: spent ÷ units used">{n2(l.rate.from)} → <b>{n2(l.rate.to)}</b></span> : <span class="muted">–</span>}</td></tr>)}</tbody></table>
       ) : (
-        <table class="mini irv-t"><thead><tr><th>Purchase order</th><th>Line</th><th>Change</th><th class="r">Spent + committed</th><th class="r">Was</th></tr></thead>
+        <table class="mini irv-t"><thead><tr><th>Purchase order</th><th>Line</th><th>Change</th><th class="r">Spent +<br />committed</th><th class="r">Was</th></tr></thead>
           <tbody>{P.map((x) => <tr><td><span class="num">{x.po}</span> <span class="irv-d" title={`${x.supplier} · ${x.description}`}>{x.supplier || x.description}</span></td><td class="num">{x.line}</td>
             <td><span class={`badge ${x.kind === 'new' || x.kind === 'raised' ? 'info' : x.kind === 'gone' ? 'warning' : 'neutral'}`}>{PO_KIND[x.kind]}</span></td><td class="r num">{full(x.scNow)}</td><td class="r num muted">{x.kind === 'new' ? '–' : full(x.scBefore)}</td></tr>)}</tbody></table>
       )}</div>

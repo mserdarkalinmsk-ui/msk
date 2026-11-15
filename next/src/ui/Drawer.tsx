@@ -1,3 +1,4 @@
+import { rules } from '../domain/rules';
 import { programmeOf } from '../domain/flex';
 
 import { SharePanel } from './Share';
@@ -216,7 +217,7 @@ export function ProjectForm({ close, project: editing, preset, prefill, thenRepo
         <div class="form-2">{f('start', 'Start', { type: 'date' })}{f('end', 'End', { type: 'date' })}</div>
         <div class="field"><label for="f-prog">Programme</label>
           <select id="f-prog" value={prog} onChange={(e) => setProg((e.target as HTMLSelectElement).value as '' | 'JP' | 'VC')}>
-            <option value="">From the funding source ({programmeOf({ funding: d.funding, jp: project?.jp }) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'})</option><option value="JP">Joint Programme (JP) — addendum beyond 25%</option><option value="VC">Voluntary Contribution (VC) — addendum beyond 15%</option>
+            <option value="">From the funding source ({programmeOf({ funding: d.funding, jp: project?.jp }) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'})</option><option value="JP">Joint Programme (JP) — addendum beyond {rules().flexJP}%</option><option value="VC">Voluntary Contribution (VC) — addendum beyond {rules().flexVC}%</option>
           </select>
           <span class="muted" style={{ fontSize: '12px' }}>{Number((project?.contract as { flexPct?: number } | undefined)?.flexPct) ? `The contract on file sets the flexibility at ${Number((project!.contract as { flexPct?: number }).flexPct)}% — that figure is used whatever is chosen here.` : 'Sets the heading flexibility: beyond it a change between headings needs an addendum.'}</span>
         </div>

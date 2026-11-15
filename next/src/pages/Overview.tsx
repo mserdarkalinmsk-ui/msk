@@ -85,7 +85,7 @@ export function Overview() {
           </div>
           <span class="ctx" style={{ fontSize: '11.5px' }}><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', marginRight: '4px' }} />spent</span><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', opacity: .35, marginRight: '4px' }} />committed</span><span>│ time elapsed {pct(T.elapsed)}</span></span>
         </div>
-        <div class="kpi">
+        <div class="kpi" data-tone={({ good: 'good', warning: 'warn', serious: 'bad' } as const)[gapTone(gap)]}>
           <span class="label">Pace vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
           <span class="value"><Count value={gap} format={signedPct} /></span>
           <span class="ctx">percentage points {gap < 0 ? "behind" : "ahead of"} the time elapsed ({pct(T.burn)} spent · {pct(T.elapsed)} of time)</span>
@@ -96,9 +96,9 @@ export function Overview() {
           <span class="value"><Count value={T.committed} format={short} /></span>
           <span class="ctx"><b>{short(T.exposure)}</b> spent + committed</span>
         </div>
-        <div class="kpi">
+        <div class="kpi" data-tone={T.remaining < 0 ? 'bad' : undefined}>
           <span class="label">Uncommitted balance</span>
-          <span class="value" style={{ color: T.remaining < 0 ? 'var(--critical)' : undefined }}><Count value={T.remaining} format={short} /></span>
+          <span class="value"><Count value={T.remaining} format={short} /></span>
           <span class="ctx">{final?.mid != null ? <>forecast end spend <b>{short(final.mid)}</b></> : 'no forecast'}</span>
         </div>
       </section>

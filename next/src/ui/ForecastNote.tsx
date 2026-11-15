@@ -6,7 +6,7 @@ import { FORECAST_KINDS, forecastFileName, forecastPeriod, ifrSheet, type Foreca
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { shrink } from './Appearance';
-import { downloadDocx } from './docxwrite';
+import { downloadDocx, projectVars } from './docxwrite';
 import { date, full } from './format';
 import { download, pngData } from './xlsxwrite';
 import { NotificationLetter } from './NotificationLetter';
@@ -39,7 +39,7 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
   const base = forecastFileName(p, country, TODAY, opt, 'donor').replace(/\.xlsx$/, '').replace('Revised Budget proposal', dk === 'letter' ? 'Notification letter' : 'Revision note');
   const logos = [brand?.logo, brand?.logo2];
   const pick = async (k: 'logo' | 'logo2', f?: File) => { if (!f) return; if (!/^image\//.test(f.type)) return setErr('Choose an image (PNG, JPG or SVG)'); setErr(''); setBrand({ ...(brand ?? {}), [k]: await shrink(f) }); };
-  const word = () => { if (doc.current && exportOk(p, 'the revision note')) void downloadDocx(`${base}.docx`, doc.current, `Revision note — ${p.name}`, logos); };
+  const word = () => { if (doc.current && exportOk(p, 'the revision note')) void downloadDocx(`${base}.docx`, doc.current, dk === 'letter' ? `Notification letter — ${p.name}` : `Revision note — ${p.name}`, logos, { letter: dk === 'letter', vars: projectVars(p) }); };
   const pdf = () => {
     if (!exportOk(p, 'the revision note')) return;
     const w = window.open('', '_blank'); if (!w || !doc.current) return setErr('Allow pop-ups to print the PDF');

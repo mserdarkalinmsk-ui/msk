@@ -1,4 +1,4 @@
-import { paceWord } from '../domain/rules';
+import { paceTone, paceWord } from '../domain/rules';
 import { BudgetVersions } from '../ui/BudgetVersions';
 import { exportOk } from '../ui/exportGate';
 import { Fig } from '../ui/Trace';
@@ -99,9 +99,9 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
           <div class="meter"><span style={{ width: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%`, background: 'var(--c1)' }} /><i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} /></div>
           <span class="ctx" style={{ fontSize: '11.5px' }}>│ time elapsed {pct(el)}</span>
         </div>
-        <div class="kpi"><span class="label">Pace vs time</span><span class="value"><Fig p={p} f="pace">{signedPct(gap)}</Fig></span><span class="ctx">{paceWord(gap)}</span></div>
-        <div class="kpi"><span class="label">Uncommitted balance</span><span class="value" style={{ color: m.remaining < 0 ? 'var(--critical)' : undefined }}><Fig p={p} f="remaining">{short(m.remaining)}</Fig></span><span class="ctx">after <Fig p={p} f="committed">{short(m.committed)}</Fig> committed</span></div>
-        <div class="kpi"><span class="label">Activities</span><span class="value">{plan ? `${plan.done}/${plan.total}` : '—'}</span><span class="ctx">{plan ? <>{plan.late > 0 ? <b style={{ color: 'var(--serious)' }}>{plan.late} overdue</b> : 'none overdue'} · month {plan.month}</> : 'no plan on file'}</span></div>
+        <div class="kpi" data-tone={p.datesTbc ? undefined : ({ good: 'good', warning: 'warn', serious: 'bad' } as const)[paceTone(gap)]}><span class="label">Pace vs time</span><span class="value"><Fig p={p} f="pace">{signedPct(gap)}</Fig></span><span class="ctx">{paceWord(gap)}</span></div>
+        <div class="kpi" data-tone={m.remaining < 0 ? 'bad' : undefined}><span class="label">Uncommitted balance</span><span class="value"><Fig p={p} f="remaining">{short(m.remaining)}</Fig></span><span class="ctx">after <Fig p={p} f="committed">{short(m.committed)}</Fig> committed</span></div>
+        <div class="kpi" data-tone={plan && plan.late > 0 ? 'warn' : undefined}><span class="label">Activities</span><span class="value">{plan ? `${plan.done}/${plan.total}` : '—'}</span><span class="ctx">{plan ? <>{plan.late > 0 ? <b style={{ color: 'var(--serious)' }}>{plan.late} overdue</b> : 'none overdue'} · month {plan.month}</> : 'no plan on file'}</span></div>
       </section>
       <div class="tabs" role="tablist">
         {GROUPS.map((g) => { const n = g.tabs.reduce((s, t) => s + (counts[t] ?? 0), 0); return <button role="tab" aria-selected={g.tabs.includes(tab)} onClick={() => !g.tabs.includes(tab) && setTab(g.tabs[0])}>{g.label}{n > 0 && <span class="tab-n">{n}</span>}</button>; })}
@@ -171,7 +171,9 @@ function Lines({ p }: { p: Project }) {
     ?? (p.approvedBudget ? { id: '__approved', name: 'Approved budget', type: `baseline from ${p.approvedBudget.source}`, date: (p.approvedBudget.importedAt ?? p.start).slice(0, 10), snapshot: { lines: p.approvedBudget.lines } } as ReportingPeriod : undefined);
   if (!rep) return <div class="card empty-page"><div><h2>No budget lines yet</h2><p>Import an approved budget or a financial report.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button></div></div>;
   const rows: LineV[] = rep.snapshot!.lines.map((l) => { const ex = lineExposure(l), ap = l.approved ?? 0; const nt = p.budgetNotes?.[l.code]; return { code: l.code, description: l.description ?? '', approved: ap, actual: l.actual ?? 0, committed: ex - (l.actual ?? 0), exposure: ex, used: ap ? ex / ap : 0, note: nt?.clarification, why: nt?.justification }; });
-  const ro = rep.id === '__approved'; // the approved baseline is replaced by a newer approved budget, not edited
+  // The approved baseline is replaced by a newer approved budget, and the lines of a system extraction are summed
+  // from its postings: neither is typed over.
+  const ext = !!rep.snapshot?.workbook?.meta?.extraction, ro = rep.id === '__approved' || ext;
   const ed = (f: 'approved' | 'actual' | 'committed') => ro ? undefined : ({ type: 'text' as const, commit: (r: LineV, v: string) => { const x = parseAmount(v); if (x != null && x >= 0) updateLine(p.id, rep.id, r.code, { [f]: x }); } });
   const cols: Column<LineV>[] = [
     { key: 'code', label: 'Line', width: 84, pin: true, value: (r) => r.code, render: (r) => <span class="num">{r.code}</span> },
@@ -185,7 +187,7 @@ function Lines({ p }: { p: Project }) {
   ];
   return (
     <section class="card" style={{ overflow: 'hidden' }}>
-      <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>{rep.name}</h2><p>{date(rep.date)} · {rep.type} · double-click a value to correct it · tick = time elapsed</p></div></div>
+      <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>{rep.name}</h2><p>{date(rep.date)} · {rep.type} · {ext ? 'summed from the postings of the system extraction — load a newer extraction to change them' : ro ? 'approved baseline' : 'double-click a value to correct it'} · tick = time elapsed</p></div></div>
       <DataTable rows={rows} columns={cols} rowKey={(r) => r.code} title={`${p.code}-lines`} storageKey="pl-cols-plines" maxHeight={520} />
     </section>
   );

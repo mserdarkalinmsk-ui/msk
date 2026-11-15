@@ -75,3 +75,13 @@ The sample data includes fictional demo staff so the People screens can be seen.
 - **History**: every saved change with time and project.
 - **Excel / PDF**: portfolio and project workbooks (no dependencies), print-to-PDF.
 - Import shows **before → after** per project; a whole **folder** can be imported; backups from the previous app are converted.
+
+## Trust, workflow and safety
+- **Where a figure comes from:** the headline figures of a project, the forecast and every amount of the financial statement open a panel with the rule, the amounts behind it, the file / sheet / date they were read from and the postings or purchase orders on the line (`domain/provenance.ts`). "Copy as text" puts it in an e-mail.
+- **Import preview, line by line:** before a report is saved — every budget line whose spent, spent + committed or unit cost changes, and the purchase orders that are new, raised, reduced or closed (`domain/importReview.ts`).
+- **Monthly close with a period lock:** closing records the figures and locks the report behind them; changing one asks for the admin and shows as "changed after the close" until the month is closed again. Closed months can be opened as they were recorded, and reopened (`domain/close.ts`).
+- **Alerts as a work list:** an alert is open until it is marked handled or snoozed (with a note); a handled one returns when it gets more serious, a snoozed one on its date; every decision is in the history (`domain/worklist.ts`).
+- **Rules & thresholds:** heading flexibility, pace thresholds, line limits, report age and alert windows are settings saved with the data (`domain/rules.ts`); a change is previewed as the number of alerts it gives.
+- **Word template:** a user's own Word file (letterhead) is the layout of letters and requests: header, footer, fonts and margins kept, `{{content}}` and fields such as `{{date}}`, `{{project}}`, `{{bh}}` filled (`domain/docxTemplate.ts`).
+- **Data safety:** backup state always visible, password-protected backups (AES-256-GCM, PBKDF2), folder copies read back after writing, restore points per day and before every import.
+- **Quiet headline tiles:** tiles are neutral; colour only says something (good / warn / bad). Ratios against a target are compact bars with a target mark.

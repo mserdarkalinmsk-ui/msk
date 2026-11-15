@@ -10,7 +10,7 @@ import type { WorkbookSummary } from './workbook';
  */
 export type Figure = 'budget' | 'spent' | 'committed' | 'exposure' | 'remaining' | 'pace' | 'projected' | 'unused';
 export type LineField = 'approved' | 'actual' | 'committed' | 'exposure' | 'balance';
-export type Unit = 'eur' | 'pct' | 'months' | 'units';
+export type Unit = 'eur' | 'pct' | /** percentage points */ 'pp' | 'months' | 'units';
 export interface TraceTerm { label: string; value: number; unit?: Unit; op?: '+' | '−' | '×' | '÷' | '='; note?: string }
 export interface TracePart { code: string; label: string; value: number }
 export interface TracePosting { date: string; ref: string; who: string; text: string; amount: number }
@@ -26,6 +26,7 @@ export interface Trace {
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const day = (s?: string) => (s ? s.slice(0, 10) : '');
+const nice = (s: string) => new Date(s.slice(0, 10) + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const fmt = (v: number) => r2(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** The file behind the current figures: name, sheet, the date the figures stand at and when it was loaded. */
@@ -84,8 +85,8 @@ export function trace(p: Project, f: Figure, today: Date): Trace {
       return { title: 'Uncommitted balance', value: m.remaining, unit: 'eur', how: 'What is still free to use: the total budget less everything spent or ordered.', terms: [{ label: 'Total budget', value: m.budget }, { label: 'Spent + committed', value: m.exposure, op: '−', note: agree ? `spent ${fmt(m.spent)} + committed ${fmt(m.committed)}` : undefined }, { label: 'Uncommitted balance', value: m.remaining, op: '=' }], sources: [...budgetSrc.slice(0, 1), ...src], parts: { title: 'Balance by budget heading', rows: byHeading(L, (l) => n(l.approved) - lineExposure(l)) }, notes };
     case 'pace': {
       const el = elapsed(p, today), sh = m.budget ? m.spent / m.budget : 0;
-      return { title: 'Pace vs time', value: burnGap(p, today), unit: 'pct', how: 'The share of the budget spent, less the share of the implementation period that has passed. Below zero the project spends slower than time runs.',
-        terms: [{ label: 'Share of the budget spent', value: sh, unit: 'pct', note: `${r2(m.spent).toLocaleString('en-GB')} of ${r2(m.budget).toLocaleString('en-GB')}` }, { label: 'Share of the period elapsed', value: el, unit: 'pct', op: '−', note: `${p.start} → ${p.end}, today ${today.toISOString().slice(0, 10)}` }, { label: 'Pace vs time', value: sh - el, unit: 'pct', op: '=' }],
+      return { title: 'Pace vs time', value: burnGap(p, today), unit: 'pp', how: 'The share of the budget spent, less the share of the implementation period that has passed. Below zero the project spends slower than time runs.',
+        terms: [{ label: 'Share of the budget spent', value: sh, unit: 'pct', note: `${r2(m.spent).toLocaleString('en-GB')} of ${r2(m.budget).toLocaleString('en-GB')}` }, { label: 'Share of the period elapsed', value: el, unit: 'pct', op: '−', note: `${nice(p.start)} → ${nice(p.end)}, today ${nice(today.toISOString().slice(0, 10))}` }, { label: 'Pace vs time', value: sh - el, unit: 'pp', op: '=' }],
         sources: src, notes: p.datesTbc ? ['The project dates are not confirmed yet — the elapsed share is counted as zero.', ...notes] : notes };
     }
     case 'projected': case 'unused': {

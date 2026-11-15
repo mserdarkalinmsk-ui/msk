@@ -168,7 +168,8 @@ async function page(opts) {
   await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/report-q3.xlsx')); await p.waitForTimeout(400);
   await p.selectOption('#r-sheet', 'Budget'); await p.waitForTimeout(200);
   await p.fill('#r-date', '2026-09-30');
-  check(await p.locator('.drawer table.mini tbody tr').count() === 6, 'Excel report: header found, total row skipped');
+  check(await p.locator('.drawer table.mini:not(.irv-t) tbody tr').count() === 6, 'Excel report: header found, total row skipped');
+  check(await p.locator('.drawer .irv-c .irv-t tbody tr').count() > 0, 'import preview lists the budget lines that change');
   check(await p.locator('.drawer .badge.warning').count() >= 1, 'Excel report: decreases flagged as warnings');
   await p.screenshot({ path: `${shots}/report-import.png` });
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(300);
@@ -317,6 +318,81 @@ async function page(opts) {
   check(await p.locator('.hist-i:has-text("Old edit")').count() === 1, 'old history carried over');
   check(await p.locator('.hist-i').first().textContent().then((t) => t.includes('Imported')), 'change history records the import');
   check(errors.length === 0, 'insights: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+// Where a figure comes from, the work list, rules, the period lock and protected backups
+{
+  const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'light', acceptDownloads: true });
+  p.on('dialog', (d) => d.accept(d.type() === 'prompt' ? 'MSK' : undefined));
+  // a project figure explains itself
+  await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
+  const tile = (await p.locator('.ph-tiles .kpi.lead .value').innerText()).trim();
+  await p.locator('.ph-tiles .kpi.lead .fig').click(); await p.waitForSelector('.tr-hero');
+  check((await p.locator('.tr-t').innerText()) === 'Spent to date' && (await p.locator('.tr-terms li.eq').count()) === 1 && (await p.locator('.tr-src dt').count()) >= 2, `a figure opens where it comes from (${tile})`);
+  check(await p.evaluate(() => { const b = document.querySelector('.drawer-b'); return b.scrollWidth <= b.clientWidth + 1; }), 'trace panel fits its drawer');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  check(await p.locator('.ck-g .gauge-bar').count() === 3 && await p.locator('.ck-g svg').count() === 0, 'project ratios shown as bars');
+  // alerts as a work list: handled leaves the open list and the bell, reopen brings it back
+  await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.alerts li');
+  const open0 = Number(await p.locator('.hero .kpi.lead .value').innerText()), bell0 = Number(await p.locator('.bell-n').textContent().catch(() => '0'));
+  const first = (await p.locator('.alerts li .t').first().innerText()).trim();
+  await p.locator('.alerts li .wl-act button:has-text("Handled")').first().click(); await p.fill('.wl-form .wl-in', 'letter sent'); await p.click('.wl-form .primary'); await p.waitForTimeout(300);
+  const open1 = Number(await p.locator('.hero .kpi.lead .value').innerText()), bell1 = Number(await p.locator('.bell-n').textContent().catch(() => '0'));
+  check(open1 === open0 - 1 && bell1 <= bell0, `a handled alert leaves the open list (${open0} → ${open1}, bell ${bell0} → ${bell1})`);
+  await p.click('.wl .seg button:has-text("Handled")'); await p.waitForTimeout(150);
+  check((await p.locator('.alerts li .t').first().innerText()).trim() === first && (await p.locator('.wl-note').first().innerText()).includes('letter sent'), 'handled alert kept with its note');
+  await p.click('.wl .seg button:has-text("History")'); await p.waitForTimeout(150);
+  check(await p.locator('.wl-log tbody tr').count() === 1, 'the decision is in the history');
+  await p.click('.wl .seg button:has-text("Open")'); await p.locator('.alerts li .wl-act button:has-text("Snooze")').first().click(); await p.click('.wl-when .chipb:has-text("1 week")'); await p.click('.wl-form .primary'); await p.waitForTimeout(300);
+  check(Number(await p.locator('.hero .kpi.lead .value').innerText()) === open0 - 2, 'a snoozed alert leaves the open list');
+  await p.reload(); await p.waitForSelector('.alerts li'); await p.waitForTimeout(300);
+  check(Number(await p.locator('.hero .kpi.lead .value').innerText()) === open0 - 2, 'alert decisions persist after reload');
+  await p.click('.wl .seg button:has-text("Handled")'); await p.click('.wl-act button:has-text("Reopen")'); await p.waitForTimeout(300);
+  check(Number(await p.locator('.hero .kpi.lead .value').innerText()) === open0 - 1, 'a reopened alert is open again');
+  // rules: a stricter threshold gives more alerts, the defaults bring the count back
+  const count = async () => Number(await p.locator('.hero .kpi.lead .value').innerText()) + await p.locator('.wl .seg button:has-text("Snoozed") .muted').innerText().then(Number) + await p.locator('.wl .seg button:has-text("Handled") .muted').innerText().then(Number);
+  const all0 = await count();
+  await p.click('.side-foot button:has-text("Rules")'); await p.waitForSelector('#rl-paceBehind');
+  check(await p.locator('.rl-row').count() === 12 && await p.locator('.drawer-f .primary').isDisabled(), 'rules panel lists the twelve rules');
+  await p.fill('#rl-paceBehind', '1'); await p.fill('#rl-staleDays', '30'); await p.fill('#rl-endingDays', '700'); await p.waitForTimeout(400);
+  const prev = await p.locator('.rl-prev').innerText().catch(() => '');
+  await p.click('.drawer-f .primary'); await p.waitForTimeout(500);
+  const all1 = await count();
+  check(all1 > all0 && prev.includes(`${all1} alert`), `stricter rules give more alerts, as previewed (${all0} → ${all1})`);
+  await p.reload(); await p.waitForSelector('.alerts li'); await p.waitForTimeout(300);
+  check(await count() === all1, 'rules persist after reload');
+  await p.click('.side-foot button:has-text("Rules")'); await p.click('.drawer-f button:has-text("Reset all")'); await p.click('.drawer-f .primary'); await p.waitForTimeout(500);
+  check(await count() === all0, 'defaults bring the alerts back');
+  // monthly close locks the report of each project; a change afterwards is shown
+  await p.goto(url + '#/reports/close'); await p.waitForSelector('.mc'); await p.waitForTimeout(300);
+  await p.click('button:has-text("Close and lock")'); await p.waitForTimeout(400);
+  check((await p.locator('.mc .hero .kpi.lead .ctx').innerText()).includes('figures locked') && await p.locator('.mc-drift').count() === 0, 'closing a month locks its figures');
+  await p.locator('.mc-hrow').first().click(); await p.waitForTimeout(150);
+  check(await p.locator('.mc-hx tbody tr').count() >= 2, 'a closed month shows the figures as closed');
+  await p.goto(url + '#/project/lang/reports'); await p.waitForSelector('.rp-lock');
+  check(await p.locator('.rp-lock').count() === 1, 'the report of the close carries a lock');
+  await p.goto(url + '#/project/lang/lines'); await p.waitForSelector('.dt-scroll .editable');
+  await p.locator('.dt-scroll .dt-cell.r .editable').nth(1).dblclick(); await p.waitForTimeout(150);
+  await p.locator('.dt-scroll input:not([type=checkbox])').first().fill('1'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+  await p.goto(url + '#/reports/close'); await p.waitForSelector('.mc'); await p.waitForTimeout(300);
+  check(await p.locator('.mc-drift tbody tr').count() >= 1, 'a figure changed after the close is shown');
+  await p.locator('.mc-hrow').first().click(); await p.click('.mc-hx button:has-text("Reopen")'); await p.waitForTimeout(400);
+  check(await p.locator('.mc-drift').count() === 0 && (await p.locator('.mc .hero .kpi.lead .value').innerText()).includes('Reopened'), 'a reopened month is no longer watched');
+  // protected backup: encrypted file, opened again with the saved password
+  await p.click('.side-foot button:has-text("Import / backup")'); await p.waitForSelector('.ds');
+  await p.click('.ds button:has-text("Set a password")'); await p.fill('dialog.ask input[name=a]', 'secret-12'); await p.fill('dialog.ask input[name=b]', 'secret-13'); await p.click('dialog.ask button.primary');
+  check((await p.locator('.ask-e').innerText()).includes('not the same'), 'a mistyped password is refused');
+  await p.fill('dialog.ask input[name=b]', 'secret-12'); await p.click('dialog.ask button.primary'); await p.waitForTimeout(600);
+  const [bk] = await Promise.all([p.waitForEvent('download'), p.click('.ds button:has-text("Back up now")')]);
+  const { readFileSync } = await import('node:fs'); const raw = readFileSync(await bk.path(), 'utf8'), J = JSON.parse(raw);
+  check(J.protected === true && !!J.enc?.data && !raw.includes('"projects":[') && !raw.includes('"code"'), 'protected backup is encrypted');
+  check((await p.locator('.ds-head').innerText()).includes('backed up') && (await p.locator('.bk-status').innerText()).startsWith('Backed up'), 'backup state shown in the panel and the sidebar');
+  writeFileSync(`${shots}/protected.json`, raw);
+  await p.setInputFiles('.drawer .drop input[type=file]', `${shots}/protected.json`); await p.waitForTimeout(1500);
+  check(await p.locator('.drawer button:has-text("Replace data")').count() === 1, 'protected backup opens with the saved password');
+  await p.screenshot({ path: `${shots}/safety.png` });
+  check(errors.length === 0, `work list, rules, lock, backup: no console errors${errors.length ? ' — ' + errors[0] : ''}`);
   await ctx.close();
 }
 

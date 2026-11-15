@@ -1,3 +1,4 @@
+import { rules } from '../domain/rules';
 import { flexOf, nearOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
 import { filtered, useStore } from '../data/store';
@@ -42,8 +43,8 @@ export function Heatmap() {
   return (
     <>
       <section class="hero" aria-label="Headings">
-        <div class="kpi lead"><span class="label">Headings beyond the flexibility</span><span class="value" style={{ color: count('addendum') ? 'var(--critical)' : undefined }}>{count('addendum')}</span><span class="ctx">25% Joint Programmes · 15% Voluntary Contributions — an addendum is needed</span></div>
-        <div class="kpi"><span class="label">Near the addendum threshold</span><span class="value" style={{ color: count('near') ? 'var(--serious)' : undefined }}>{count('near')}</span><span class="ctx">20–25% above the heading (12–15% for VC)</span></div>
+        <div class="kpi lead"><span class="label">Headings beyond the flexibility</span><span class="value" style={{ color: count('addendum') ? 'var(--critical)' : undefined }}>{count('addendum')}</span><span class="ctx">{rules().flexJP}% Joint Programmes · {rules().flexVC}% Voluntary Contributions — an addendum is needed</span></div>
+        <div class="kpi"><span class="label">Near the addendum threshold</span><span class="value" style={{ color: count('near') ? 'var(--serious)' : undefined }}>{count('near')}</span><span class="ctx">{+(rules().flexJP * rules().nearShare / 100).toFixed(1)}–{rules().flexJP}% above the heading ({+(rules().flexVC * rules().nearShare / 100).toFixed(1)}–{rules().flexVC}% for VC)</span></div>
         <div class="kpi"><span class="label">Notification</span><span class="value">{count('notification')}</span><span class="ctx">above the heading, within the flexibility</span></div>
         <div class="kpi"><span class="label">90%+ used</span><span class="value">{count('high')}</span><span class="ctx">of {R.length} projects × {HS.length} headings</span></div>
       </section>
