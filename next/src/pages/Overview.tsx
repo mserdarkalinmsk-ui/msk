@@ -14,6 +14,7 @@ import { Sparkline } from '../ui/Sparkline';
 import { Count } from '../ui/Count';
 import { MapView, type MapMode } from '../ui/MapView';
 import { mapData, ModeSwitch } from './MapPage';
+import { openAlerts } from '../domain/worklist';
 import { useState } from 'preact/hooks';
 
 const gapTone = (g: number) => (g < -0.3 ? 'serious' : g < -0.15 ? 'warning' : g > 0.1 ? 'serious' : 'good');
@@ -50,7 +51,7 @@ export function Overview() {
   const cname = (id: string) => countries.find((c) => c.id === id)?.name ?? id;
   const T = totals(P, TODAY), staff = staffCount(P, TODAY);
   const S = portfolioSeries(P, TODAY);
-  const flags = alerts(P, TODAY);
+  const allFlags = alerts(P, TODAY), flags = openAlerts(allFlags, state.ledger.alertMarks, TODAY), parked = allFlags.length - flags.length;
   const actualPts = S.filter((x) => x.actual != null);
   const gap = T.burn - T.elapsed;
   const open = (id: string) => set({ drawer: { kind: 'project', id } });
@@ -124,7 +125,7 @@ export function Overview() {
         </section>
 
         <section class="card span-4" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items, most severe first` : 'Nothing flagged'}</p></div><button class="btn ghost" style={{ marginLeft: 'auto', height: '28px' }} onClick={() => go('reports/alerts')}>Alert centre →</button></div>
+          <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} open, most severe first` : 'Nothing open'}{parked ? ` · ${parked} handled or snoozed` : ''}</p></div><button class="btn ghost" style={{ marginLeft: 'auto', height: '28px' }} onClick={() => go('reports/alerts')}>Alert centre →</button></div>
           <ul class="att" style={{ marginTop: '12px', maxHeight: '352px', overflow: 'auto' }}>
             {flags.map((f) => {
               const p = P.find((x) => x.id === f.projectId)!;
@@ -136,7 +137,7 @@ export function Overview() {
                 </li>
               );
             })}
-            {!flags.length && <li style={{ cursor: 'default' }}><span class="badge good">ok</span><div class="d">All projects within thresholds.</div><span /></li>}
+            {!flags.length && <li style={{ cursor: 'default' }}><span class="badge good">ok</span><div class="d">{parked ? 'Every alert is handled or snoozed.' : 'All projects within thresholds.'}</div><span /></li>}
           </ul>
         </section>
         <BudgetHealth P={P} />

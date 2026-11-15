@@ -283,7 +283,7 @@ async function page(opts) {
   const nAll = await p.locator('.alerts li').count();
   await p.click('.kpi-btn:has-text("critical")'); await p.waitForTimeout(100);
   check(await p.locator('.alerts li').count() < nAll, 'alert centre filters by severity');
-  check(await p.locator('.seg button:has-text("Staff")').count() + await p.locator('.seg button:has-text("Reporting")').count() >= 1, 'alerts grouped by area');
+  check(await p.locator('.wl-areas button:has-text("Staff")').count() + await p.locator('.wl-areas button:has-text("Reporting")').count() >= 1, 'alerts grouped by area');
   await p.screenshot({ path: `${shots}/alerts.png`, fullPage: true });
   await p.click('.tabs button:has-text("Finance")'); await p.waitForTimeout(200);
   await p.click('.subtabs button:has-text("Month comparison")'); await p.waitForTimeout(200);

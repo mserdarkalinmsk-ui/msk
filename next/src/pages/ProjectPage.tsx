@@ -2,6 +2,7 @@ import { BudgetVersions } from '../ui/BudgetVersions';
 import { exportOk } from '../ui/exportGate';
 import { Fig } from '../ui/Trace';
 import { lockOf } from '../domain/close';
+import { openAlerts } from '../domain/worklist';
 import { CrossDocsCard } from '../ui/CrossDocsCard';
 import { ForecastDialog } from '../ui/ForecastDialog';
 import { ForecastEditor } from './ForecastEditor';
@@ -130,11 +131,11 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
 function Summary({ p }: { p: Project }) {
   const m = money(p), s = parseDate(p.start).getTime(), e = parseDate(p.end).getTime();
   const pts = spendPoints(p);
-  const flags = alerts([p], TODAY);
+  const marks = useStore((x) => x.ledger.alertMarks), allFlags = alerts([p], TODAY), flags = openAlerts(allFlags, marks, TODAY);
   return (
     <div class="grid g-12">
       <Cockpit p={p} />
-      <Attention flags={flags} pid={p.id} />
+      <Attention flags={flags} parked={allFlags.length - flags.length} pid={p.id} />
       {p.datesTbc && <StatusWords p={p} />}
       <section class="card span-8">
         <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>One point per financial report · click a month for its breakdown</p></div></div>
@@ -304,7 +305,7 @@ function ReportTimeline({ p }: { p: Project }) {
 }
 
 /** Needs attention: full width, worst first, repeated kinds (e.g. contract ends) folded into one row. */
-function Attention({ flags, pid }: { flags: ReturnType<typeof alerts>; pid: string }) {
+function Attention({ flags, pid, parked = 0 }: { flags: ReturnType<typeof alerts>; pid: string; parked?: number }) {
   const order = { critical: 0, serious: 1, warning: 2, info: 3 } as Record<string, number>;
   const G = new Map<string, { sev: string; title: string; detail: string; n: number; names: string[]; kind: string; ids: string[] }>();
   for (const f of [...flags].sort((a, b) => order[a.severity] - order[b.severity])) {
@@ -317,7 +318,7 @@ function Attention({ flags, pid }: { flags: ReturnType<typeof alerts>; pid: stri
   for (const g of rows) if (g.n > 1) g.detail = g.names.join(', ') + ' · ' + g.detail.replace(/^[^·]*·\s*/, '');
   return (
     <section class="card span-12 attn">
-      <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} items, most serious first` : 'Nothing flagged — within all thresholds'}</p></div></div>
+      <div class="card-h"><div><h2>Needs attention</h2><p>{flags.length ? `${flags.length} open, most serious first` : parked ? 'Nothing open' : 'Nothing flagged — within all thresholds'}{parked ? ` · ${parked} handled or snoozed` : ''}</p></div>{(flags.length > 0 || parked > 0) && <button class="btn ghost" style={{ marginLeft: 'auto', height: '28px' }} title="Mark alerts as handled or snooze them" onClick={() => go('reports/alerts')}>Work list →</button>}</div>
       {rows.length > 0 && <ul class="attn-g">{rows.map((g) => <li class={`sev-${g.sev}`} tabIndex={0} role="button" onClick={() => set({ drawer: { kind: 'alert', projectId: pid, alertKind: g.kind, ids: g.ids } })} onKeyDown={(e) => e.key === 'Enter' && set({ drawer: { kind: 'alert', projectId: pid, alertKind: g.kind, ids: g.ids } })}><span class={`badge ${g.sev}`}>{g.sev}</span><div><b>{g.title}</b><small>{g.detail}</small></div></li>)}</ul>}
     </section>
   );

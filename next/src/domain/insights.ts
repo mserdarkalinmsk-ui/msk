@@ -32,7 +32,7 @@ export function outcome(p: Project, today: Date): Outcome {
 }
 
 /* ---------------- alert centre ---------------- */
-export interface Alert { id: string; projectId: string; severity: Severity; kind: string; title: string; detail: string; due?: string }
+export interface Alert { id: string; /** the same from one day to the next, so a decision on the alert (handled, snoozed) stays with it */ key: string; projectId: string; severity: Severity; kind: string; title: string; detail: string; due?: string }
 
 export const ALERT_KINDS: Record<string, string> = {
   underspend: 'Pacing', overspend: 'Pacing', overbudget: 'Budget', line: 'Budget', stale: 'Reporting', risk: 'Risk',
@@ -46,10 +46,12 @@ export function alerts(ps: Project[], today: Date): Alert[] {
   return out.sort((a, b) => order[a.severity] - order[b.severity] || (a.due ?? '9').localeCompare(b.due ?? '9'));
 }
 const projectAlerts = perProject((p: Project, today: Date): Alert[] => {
-  const out: Alert[] = attention([p], today).map((f, i) => ({ ...f, id: `${f.projectId}:${f.kind}:${i}` }));
+  const out: Omit<Alert, 'key'>[] = attention([p], today).map((f, i) => ({ ...f, id: `${f.projectId}:${f.kind}:${i}` }));
+  // Flags are numbered in the order found (which shifts as others come and go); their title names what they are about.
+  const flags = out.length, keyed = (): Alert[] => out.map((a, i) => ({ ...a, key: i < flags ? `${a.projectId}:${a.kind}:${a.title}` : a.id }));
   {
-    if (p.status && p.status !== 'Active') return out;
-    if (p.datesTbc) { out.push({ id: `${p.id}:setup`, projectId: p.id, kind: 'setup', severity: 'warning', title: 'Set-up incomplete', detail: 'Add the DoA / contract and the approved budget to confirm dates and budget' }); return out; }
+    if (p.status && p.status !== 'Active') return keyed();
+    if (p.datesTbc) { out.push({ id: `${p.id}:setup`, projectId: p.id, kind: 'setup', severity: 'warning', title: 'Set-up incomplete', detail: 'Add the DoA / contract and the approved budget to confirm dates and budget' }); return keyed(); }
     const o = outcome(p, today), el = elapsed(p, today);
     if (el > 0.25 && o.basis !== 'no data' && o.utilisation < 0.85)
       out.push({ id: `${p.id}:forecast`, projectId: p.id, kind: 'forecast', severity: o.utilisation < 0.7 ? 'serious' : 'warning', title: `Forecast to use ${pct(o.utilisation)} of budget`, detail: `${eur(o.unused)} may stay unused at the current rate; ${eur(o.needRate)}/month needed` });
@@ -72,7 +74,7 @@ const projectAlerts = perProject((p: Project, today: Date): Alert[] => {
     const left = daysUntil(p.end, today);
     if (left >= 0 && left <= 120) out.push({ id: `${p.id}:ending`, projectId: p.id, kind: 'ending', severity: left <= 45 ? 'serious' : 'warning', title: `Project ends in ${left} days`, detail: p.successor ? `Successor: ${p.successor}` : 'No successor recorded', due: p.end });
   }
-  return out;
+  return keyed();
 });
 
 /* ---------------- narrative ---------------- */

@@ -1075,3 +1075,24 @@ dialog.ask::backdrop { background: rgb(15 15 14 / .45); backdrop-filter: blur(2p
 .mc-hrow .badge svg { width: 11px; height: 11px; }
 .mc-hx { padding: 4px 12px 12px; } .mc-hx table { width: 100%; background: var(--surface); border-radius: var(--r-sm); } .mc-hx tr.tot td { border-top: 1px solid var(--line-strong); }
 .rp-lock { margin-left: 8px; font-weight: 500; vertical-align: 1px; }
+
+/* ---------- Alert centre as a work list ---------- */
+.chipb { all: unset; box-sizing: border-box; display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.chipb:hover { background: var(--surface-hover); } .chipb.on { background: var(--ink); border-color: var(--ink); color: var(--surface); } .chipb span { opacity: .65; font-variant-numeric: tabular-nums; }
+.chipb:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.wl-areas { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 12px var(--s5) 0; } .wl-all { margin-left: auto; height: 28px; }
+.wl-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.wl-list > li { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 4px var(--s3); align-items: center; padding: 10px var(--s5); border-top: 1px solid var(--line); border-left: 3px solid transparent; }
+.wl-list > li.sev-critical { border-left-color: var(--critical); } .wl-list > li.sev-serious { border-left-color: var(--serious); } .wl-list > li.sev-warning { border-left-color: var(--warn); }
+.wl-list > li.ed { background: var(--surface-2); } .wl-list > li > .badge { justify-self: start; }
+.wl-main { all: unset; box-sizing: border-box; display: grid; gap: 2px; min-width: 0; cursor: pointer; border-radius: var(--r-sm); padding: 2px 4px; margin: -2px -4px; }
+.wl-main:hover .t { color: var(--accent); } .wl-main:focus-visible { outline: 2px solid var(--focus); }
+.wl-main .t { font-weight: 600; font-size: 13.5px; } .wl-main .d { font-size: var(--fs-sm); color: var(--ink-3); line-height: 1.4; }
+.wl-back { font-style: normal; font-weight: 500; font-size: 11.5px; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.wl-note { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+.wl-act { display: flex; gap: 6px; } .wl-act .btn { height: 28px; padding: 0 10px; font-size: 12.5px; } .wl-act .btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.wl-form { grid-column: 2 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 0 4px; }
+.wl-in { flex: 1 1 260px; min-width: 0; height: 32px; } .wl-when { flex-basis: 100%; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--ink-3); } .wl-when .input { height: 28px; }
+.wl-none { grid-template-columns: auto 1fr !important; color: var(--ink-3); font-size: 13px; border-left-color: transparent !important; }
+.wl-empty { margin: 0; padding: 20px var(--s5); color: var(--ink-3); font-size: 13px; } .wl-log { width: 100%; margin-top: 8px; } .wl-log td, .wl-log th { padding-left: var(--s5); }
+@media (max-width: 720px) { .wl-list > li { grid-template-columns: 1fr; } .wl-form { grid-column: 1; } }

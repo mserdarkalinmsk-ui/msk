@@ -10,6 +10,7 @@ import type { Country, Ledger, Project, ReportingPeriod, Risk, TrashItem } from 
 import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
 import { lockOf } from '../domain/close';
+import { pruneMarks } from '../domain/worklist';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -377,6 +378,16 @@ export function setBrand(brand: Ledger['brand'] | null) {
 export function saveClose(rec: import('../domain/close').CloseRecord) {
   const L = draft(state.ledger); L.closes = [rec, ...(L.closes ?? []).filter((c) => c.month !== rec.month)].slice(0, 36);
   commit(L, `Month ${rec.month} closed`);
+}
+/** Marks alerts handled or snoozed (null puts them back in the open list); each decision goes to the alert log. */
+export function markAlerts(items: { key: string; title: string; project?: string; severity: import('../domain/calc').Severity }[], mark: { state: 'done' | 'snoozed'; until?: string; note?: string } | null) {
+  if (!items.length) return;
+  const L = draft(state.ledger), M = { ...(L.alertMarks ?? {}) }, at = new Date().toISOString(), note = mark?.note?.trim() || undefined;
+  for (const x of items) { if (mark) M[x.key] = { state: mark.state, at, until: mark.until, note, severity: x.severity, title: x.title, project: x.project }; else delete M[x.key]; }
+  L.alertMarks = Object.keys(M).length > 300 ? pruneMarks(M, new Set(items.map((x) => x.key)), new Date()) : M;
+  L.alertLog = [...items.map((x) => ({ at, key: x.key, action: mark ? mark.state : 'reopened' as const, title: x.title, project: x.project, note, until: mark?.until })), ...(L.alertLog ?? [])].slice(0, 400);
+  const n = items.length, what = n > 1 ? `${n} alerts` : `“${items[0].title}”`;
+  commit(L, mark ? (mark.state === 'done' ? `${what} marked as handled` : `${what} snoozed until ${mark.until}`) : `${what} reopened`, items[0].project);
 }
 /** Remembers how a file format is read (block roles, document type); null forgets it. */
 export function setFormat(key: string, f: { roles?: Record<string, string>; type?: string } | null) {

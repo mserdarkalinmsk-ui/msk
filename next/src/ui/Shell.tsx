@@ -5,6 +5,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { get, go, set, setTheme, useStore } from '../data/store';
 import { attention } from '../domain/calc';
+import { alertStatus } from '../domain/worklist';
 import { TODAY } from '../today';
 
 export const ROUTES = [
@@ -40,7 +41,8 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
     if (matchMedia('(max-width: 900px)').matches) return setOpen(true);
     const h = !hidden; setHidden(h); try { localStorage.setItem('pl-side', h ? 'hidden' : 'shown'); } catch { /* ignore */ }
   };
-  const flags = attention(ledger.projects, TODAY).filter((f) => f.severity !== 'warning').length;
+  // Flags handled or snoozed in the Alert centre are not counted.
+  const flags = attention(ledger.projects, TODAY).filter((f) => f.severity !== 'warning' && alertStatus({ ...f, id: '', key: `${f.projectId}:${f.kind}:${f.title}` }, ledger.alertMarks, TODAY) === 'open').length;
   const nextTheme = theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto';
   return (
     <div class={`shell${hidden ? ' side-hidden' : ''}`}>

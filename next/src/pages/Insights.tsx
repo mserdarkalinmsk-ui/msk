@@ -1,6 +1,7 @@
 import { flexOf } from '../domain/flex';
 import { useMemo, useState } from 'preact/hooks';
-import { go, set, useStore } from '../data/store';
+import { go, markAlerts, set, useStore } from '../data/store';
+import { backReason, snoozeDay, splitAlerts } from '../domain/worklist';
 import { progress } from '../domain/logframe';
 import { money } from '../domain/calc';
 import { ALERT_KINDS, alerts, changes, headings, readiness, status, outcome, scenario, type Alert } from '../domain/insights';
@@ -10,43 +11,91 @@ import { parseAmount } from '../ui/csv';
 import { date, full, pct, short } from '../ui/format';
 
 /* ---------------- alert centre ---------------- */
+type WTab = 'open' | 'snoozed' | 'done' | 'log';
+const SNOOZE: [string, number][] = [['1 week', 7], ['2 weeks', 14], ['1 month', 30], ['3 months', 91]];
+
+/** The alerts as a work list: open ones first; each can be marked handled or snoozed with a note, and reopened. */
 export function AlertCentre({ projects }: { projects: Project[] }) {
+  const marks = useStore((s) => s.ledger.alertMarks), log = useStore((s) => s.ledger.alertLog) ?? [];
   const A = useMemo(() => alerts(projects, TODAY), [projects]);
+  const G = useMemo(() => splitAlerts(A, marks, TODAY), [A, marks]);
+  const [tab, setTab] = useState<WTab>('open');
   const [area, setArea] = useState('');
   const [sev, setSev] = useState('');
-  const areas = [...new Set(A.map((a) => ALERT_KINDS[a.kind] ?? a.kind))];
-  const shown = A.filter((a) => (!area || (ALERT_KINDS[a.kind] ?? a.kind) === area) && (!sev || a.severity === sev));
-  const code = (a: Alert) => projects.find((p) => p.id === a.projectId)?.code ?? '';
-  const n = (s: string) => A.filter((a) => a.severity === s).length;
+  const [edit, setEdit] = useState<{ key: string; mode: 'done' | 'snoozed' } | null>(null);
+  const list = tab === 'log' ? [] : G[tab];
+  const areas = [...new Set(list.map((a) => ALERT_KINDS[a.kind] ?? a.kind))];
+  const shown = list.filter((a) => (!area || (ALERT_KINDS[a.kind] ?? a.kind) === area) && (!sev || a.severity === sev));
+  const proj = (a: Alert) => projects.find((p) => p.id === a.projectId);
+  const item = (a: Alert) => ({ key: a.key, title: a.title, project: proj(a)?.code, severity: a.severity });
+  const n = (s: string) => G.open.filter((a) => a.severity === s).length;
+  const go_ = (t: WTab) => { setTab(t); setArea(''); setEdit(null); };
   return (
     <>
       <section class="hero" aria-label="Alert summary">
-        <div class="kpi lead"><span class="label">Open alerts</span><span class="value">{A.length}</span><span class="ctx">finance, staff, reporting, activities</span></div>
+        <div class="kpi lead"><span class="label">Open alerts</span><span class="value">{G.open.length}</span><span class="ctx">{G.done.length + G.snoozed.length ? `${G.done.length} handled · ${G.snoozed.length} snoozed` : 'finance, staff, reporting, activities'}</span></div>
         {(['critical', 'serious', 'warning'] as const).map((s) => (
-          <button class={`kpi kpi-btn ${sev === s ? 'on' : ''}`} onClick={() => setSev(sev === s ? '' : s)} aria-pressed={sev === s}>
+          <button class={`kpi kpi-btn ${sev === s ? 'on' : ''}`} onClick={() => { setSev(sev === s ? '' : s); setTab('open'); }} aria-pressed={sev === s}>
             <span class="label">{s}</span><span class="value" style={{ color: n(s) ? `var(--${s === 'warning' ? 'warn' : s})` : undefined }}>{n(s)}</span><span class="ctx">{sev === s ? 'showing only these — click to clear' : 'click to filter'}</span>
           </button>
         ))}
       </section>
-      <section class="card">
-        <div class="card-h"><div><h2>Alert centre</h2><p>Everything that needs a decision, most urgent first</p></div>
-          <div class="seg" style={{ marginLeft: 'auto' }} role="group" aria-label="Area">
-            <button aria-pressed={!area} onClick={() => setArea('')}>All</button>
-            {areas.map((x) => <button aria-pressed={area === x} onClick={() => setArea(x)}>{x} <span class="muted">{A.filter((a) => (ALERT_KINDS[a.kind] ?? a.kind) === x).length}</span></button>)}
+      <section class="card wl">
+        <div class="card-h"><div><h2>Alert centre</h2><p>{tab === 'open' ? 'What still needs a decision, most urgent first — mark an item handled or put it off, with a note' : tab === 'snoozed' ? 'Put off until a date; they come back on their own' : tab === 'done' ? 'Handled while the condition lasts; an item comes back if it gets more serious' : 'Every decision taken on an alert, newest first'}</p></div>
+          <div class="seg" style={{ marginLeft: 'auto' }} role="tablist" aria-label="Work list">
+            {([['open', 'Open', G.open.length], ['snoozed', 'Snoozed', G.snoozed.length], ['done', 'Handled', G.done.length], ['log', 'History', log.length]] as [WTab, string, number][]).map(([k, l, c]) => <button role="tab" aria-pressed={tab === k} onClick={() => go_(k)}>{l} <span class="muted">{c}</span></button>)}
           </div>
         </div>
-        <ul class="att alerts" style={{ marginTop: '12px' }}>
-          {shown.map((a) => (
-            <li onClick={() => go(`project/${a.projectId}`)}>
-              <span class={`badge ${a.severity}`}>{a.severity}</span>
-              <div><div class="t"><b class="num">{code(a)}</b> · {a.title}</div><div class="d">{ALERT_KINDS[a.kind] ?? a.kind} · {a.detail}</div></div>
-              <span class="num muted" style={{ fontSize: '12px' }}>{a.due ? date(a.due) : ''}</span>
-            </li>
-          ))}
-          {!shown.length && <li style={{ cursor: 'default' }}><span class="badge good">clear</span><div class="d">No alerts in this view.</div><span /></li>}
-        </ul>
+        {tab !== 'log' && areas.length > 1 && <div class="wl-areas" role="group" aria-label="Area">
+          <button class={`chipb ${!area ? 'on' : ''}`} onClick={() => setArea('')}>All</button>
+          {areas.map((x) => <button class={`chipb ${area === x ? 'on' : ''}`} onClick={() => setArea(area === x ? '' : x)}>{x} <span>{list.filter((a) => (ALERT_KINDS[a.kind] ?? a.kind) === x).length}</span></button>)}
+          {tab === 'open' && shown.length > 1 && (area || sev) && <button class="btn ghost wl-all" onClick={() => markAlerts(shown.map(item), { state: 'done' })}>Mark these {shown.length} as handled</button>}
+        </div>}
+        {tab === 'log' ? (
+          log.length ? <div class="table-scroll"><table class="mini wl-log"><thead><tr><th>When</th><th>Project</th><th>Alert</th><th>Decision</th><th>Note</th></tr></thead>
+            <tbody>{log.slice(0, 200).map((e) => <tr><td class="num">{date(e.at.slice(0, 10))}</td><td class="num">{e.project ?? '—'}</td><td>{e.title}</td>
+              <td><span class={`badge ${e.action === 'done' ? 'good' : e.action === 'snoozed' ? 'info' : 'neutral'}`}>{e.action === 'done' ? 'handled' : e.action === 'snoozed' ? `snoozed until ${e.until ? date(e.until) : '—'}` : 'reopened'}</span></td><td class="muted">{e.note ?? ''}</td></tr>)}</tbody></table></div>
+            : <p class="wl-empty">No decision recorded yet. Mark an open alert as handled or snooze it — it is kept here with your note.</p>
+        ) : (
+          <ul class="wl-list alerts">
+            {shown.map((a) => { const m = marks?.[a.key], back = tab === 'open' ? backReason(a, marks, TODAY) : undefined, ed = edit?.key === a.key ? edit.mode : null;
+              return (
+                <li class={`sev-${a.severity}${ed ? ' ed' : ''}`}>
+                  <span class={`badge ${a.severity}`}>{a.severity}</span>
+                  <button class="wl-main" onClick={() => go(`project/${a.projectId}`)} title="Open the project">
+                    <span class="t"><b class="num">{proj(a)?.code ?? ''}</b> · {a.title}{back && <em class="wl-back">{back}</em>}</span>
+                    <span class="d">{ALERT_KINDS[a.kind] ?? a.kind} · {a.detail}{a.due ? ` · due ${date(a.due)}` : ''}</span>
+                    {tab !== 'open' && m && <span class="wl-note">{tab === 'done' ? `Handled ${date(m.at.slice(0, 10))}` : `Snoozed until ${m.until ? date(m.until) : '—'}`}{m.note ? ` — ${m.note}` : ''}</span>}
+                  </button>
+                  <span class="wl-act">
+                    {tab === 'open' ? <>
+                      <button class="btn" aria-pressed={ed === 'done'} onClick={() => setEdit(ed === 'done' ? null : { key: a.key, mode: 'done' })}>✓ Handled</button>
+                      <button class="btn" aria-pressed={ed === 'snoozed'} onClick={() => setEdit(ed === 'snoozed' ? null : { key: a.key, mode: 'snoozed' })}>Snooze</button>
+                    </> : <button class="btn" onClick={() => markAlerts([item(a)], null)}>Reopen</button>}
+                  </span>
+                  {ed && <MarkForm mode={ed} onCancel={() => setEdit(null)} onSave={(note, until) => { markAlerts([item(a)], { state: ed, note, until }); setEdit(null); }} />}
+                </li>
+              ); })}
+            {!shown.length && <li class="wl-none"><span class="badge good">clear</span><span>{tab === 'open' ? 'No open alerts in this view.' : tab === 'snoozed' ? 'Nothing is snoozed.' : 'Nothing marked as handled.'}</span></li>}
+          </ul>
+        )}
       </section>
     </>
+  );
+}
+
+/** The note and, for a snooze, the date an alert comes back. */
+function MarkForm({ mode, onSave, onCancel }: { mode: 'done' | 'snoozed'; onSave: (note: string, until?: string) => void; onCancel: () => void }) {
+  const [note, setNote] = useState(''), [until, setUntil] = useState(snoozeDay(TODAY, 14));
+  const min = snoozeDay(TODAY, 1), ok = mode === 'done' || until >= min;
+  return (
+    <form class="wl-form" onSubmit={(e) => { e.preventDefault(); if (ok) onSave(note, mode === 'snoozed' ? until : undefined); }}>
+      {mode === 'snoozed' && <div class="wl-when"><span>Come back in</span>{SNOOZE.map(([l, d]) => <button type="button" class={`chipb ${until === snoozeDay(TODAY, d) ? 'on' : ''}`} onClick={() => setUntil(snoozeDay(TODAY, d))}>{l}</button>)}
+        <input class="input" type="date" min={min} value={until} aria-label="Snooze until" onInput={(e) => setUntil((e.target as HTMLInputElement).value)} /></div>}
+      <input class="input wl-in" autoFocus maxLength={240} placeholder={mode === 'done' ? 'What was done (optional) — e.g. notification letter sent on 12 November' : 'Why it can wait (optional)'} value={note} onInput={(e) => setNote((e.target as HTMLInputElement).value)} />
+      <button type="button" class="btn ghost" onClick={onCancel}>Cancel</button>
+      <button class="btn primary" disabled={!ok}>{mode === 'done' ? 'Mark as handled' : 'Snooze'}</button>
+    </form>
   );
 }
 

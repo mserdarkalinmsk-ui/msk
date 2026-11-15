@@ -20,10 +20,12 @@ import { Placeholder, ROUTES, Shell } from './ui/Shell';
 import { applyPrefs } from './ui/Appearance';
 import { loadCharts } from './ui/Chart';
 import { alerts } from './domain/insights';
+import { openAlerts } from './domain/worklist';
 import { TODAY } from './today';
 
-let memo: [unknown, number] = [null, 0];
-const urgent = (ps: import('./domain/types').Project[]) => memo[0] === ps ? memo[1] : (memo = [ps, alerts(ps, TODAY).filter((a) => a.severity !== 'warning').length])[1];
+let memo: [unknown, unknown, number] = [null, null, 0];
+/** Urgent alerts still open (handled and snoozed ones are not counted). */
+const urgent = (L: import('./domain/types').Ledger) => memo[0] === L.projects && memo[1] === L.alertMarks ? memo[2] : (memo = [L.projects, L.alertMarks, openAlerts(alerts(L.projects, TODAY), L.alertMarks, TODAY).filter((a) => a.severity !== 'warning').length])[2];
 
 /** Password screen of a protected shared copy. */
 function Gate() {
@@ -49,7 +51,7 @@ function App() {
   const proj = useStore((s) => (head === 'project' ? s.ledger.projects.find((p) => p.id === arg) : undefined));
   const title = head === 'project' ? proj?.code ?? 'Project' : r?.label ?? 'Not found';
   const crumb = head === 'project' ? <a class="crumb-link" href="#/projects" onClick={(e) => { e.preventDefault(); go('projects'); }}>Projects /</a> : null;
-  const nAlerts = useStore((s) => (s.ready ? urgent(s.ledger.projects) : 0));
+  const nAlerts = useStore((s) => (s.ready ? urgent(s.ledger) : 0));
   const actions = (<>
     <SelfCheck />
     <button class="btn ghost bell" title="Alert centre" aria-label={`${nAlerts} urgent alerts`} onClick={() => go('reports/alerts')}>
