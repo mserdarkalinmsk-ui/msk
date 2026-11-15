@@ -3,7 +3,7 @@ import { revisedRate } from '../domain/rates';
 import type { TransferPlan } from '../domain/transfers';
 import type { Ledger, Project } from '../domain/types';
 import { TODAY } from '../today';
-import { downloadDocx } from './docxwrite';
+import { downloadDocx, projectVars } from './docxwrite';
 import { decreaseReason, increaseReason } from '../domain/reasons';
 import { latestWorkbook } from '../pages/FinancialReport';
 
@@ -64,5 +64,5 @@ export function transferLetterDocx(p: Project, T: TransferPlan, flex: number, le
   <tr><td colspan="4"><b>7. Subtotal direct eligible costs of the action</b></td><td class="r">${n2(direct)}</td><td colspan="2"></td><td class="r">${n2(direct)}</td><td class="r">0.00</td><td></td></tr>
   <tr><td colspan="4"><b>8. Indirect costs (maximum 7% of 7.)</b></td><td class="r">${n2(admin)}</td><td colspan="2"></td><td class="r">${n2(admin)}</td><td class="r">0.00</td><td></td></tr>
   <tr><td colspan="4"><b>9. Total eligible costs of the action (7 + 8)</b></td><td class="r">${n2(direct + admin)}</td><td colspan="2"></td><td class="r">${n2(direct + admin)}</td><td class="r">0.00</td><td></td></tr></tbody></table>`;
-  downloadDocx(`${p.bh ? `BH${p.bh}` : p.code}-notification-${no}-${TODAY.toISOString().slice(0, 10)}.docx`, d, `Notification No. ${no}`, [brand.logo, brand.logo2]);
+  downloadDocx(`${p.bh ? `BH${p.bh}` : p.code}-notification-${no}-${TODAY.toISOString().slice(0, 10)}.docx`, d, `Notification No. ${no}`, [brand.logo, brand.logo2], { letter: true, vars: projectVars(p) });
 }

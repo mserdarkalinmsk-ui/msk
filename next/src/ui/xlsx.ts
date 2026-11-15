@@ -11,7 +11,8 @@ async function inflate(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(out).arrayBuffer());
 }
 
-export async function unzip(buf: ArrayBuffer): Promise<Map<string, Uint8Array>> {
+/** Unzips the XML parts of an Office file; with `all`, every part (pictures, fonts) as it is. */
+export async function unzip(buf: ArrayBuffer, all = false): Promise<Map<string, Uint8Array>> {
   const b = new Uint8Array(buf), v = new DataView(buf);
   let eocd = -1;
   for (let i = b.length - 22; i >= Math.max(0, b.length - 65_557); i--) if (v.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
@@ -27,7 +28,8 @@ export async function unzip(buf: ArrayBuffer): Promise<Map<string, Uint8Array>> 
     const name = td.decode(b.subarray(p + 46, p + 46 + nlen));
     const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
     const raw = b.subarray(start, start + csize);
-    if (/\.(xml|rels)$/.test(name)) files.set(name, method === 8 ? await inflate(raw) : method === 0 ? raw : new Uint8Array());
+    if (name.endsWith('/')) { /* a folder entry */ }
+    else if (all || /\.(xml|rels)$/.test(name)) files.set(name, method === 8 ? await inflate(raw) : method === 0 ? raw : new Uint8Array());
     p += 46 + nlen + xlen + clen;
   }
   return files;

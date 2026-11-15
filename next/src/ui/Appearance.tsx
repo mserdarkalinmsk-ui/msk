@@ -1,5 +1,7 @@
 import { useState } from 'preact/hooks';
 import { setBrand, useStore } from '../data/store';
+import { FIELDS, type TemplateInfo } from '../domain/docxTemplate';
+import { downloadDocx, readTemplate } from './docxwrite';
 
 /** Visual direction, accent, density and number style — stored per browser, applied as html data-attributes. */
 export const PREFS = {
@@ -29,6 +31,7 @@ export function AppearancePanel({ close }: { close: () => void }) {
       <div class="drawer-h"><h2>Appearance</h2><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
       <div class="drawer-b">
         <BrandSection />
+        <TemplateSection />
         <section style={{ display: 'grid', gap: '10px' }}>
           <h3 style={{ margin: 0, fontSize: '14px' }}>Design direction</h3>
           <div class="style-grid">
@@ -59,6 +62,47 @@ export function AppearancePanel({ close }: { close: () => void }) {
       </div>
       <div class="drawer-f"><button class="btn ghost" onClick={() => { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { try { localStorage.removeItem('pl-' + k); } catch { /* */ } delete document.documentElement.dataset[k]; } dispatchEvent(new Event('pl-prefs')); force((x) => x + 1); }}>Reset to default</button><span style={{ flex: 1 }} /><button class="btn primary" onClick={close}>Done</button></div>
     </>
+  );
+}
+
+/** The user's own Word file as the layout of letters: its header, footer, fonts and margins are kept. */
+function TemplateSection() {
+  const brand = useStore((s) => s.ledger.brand), t = brand?.docx;
+  const [err, setErr] = useState(''), [info, setInfo] = useState<TemplateInfo | null>(null), [help, setHelp] = useState(false);
+  const pick = async (f?: File) => {
+    if (!f) return; setErr('');
+    try { const r = await readTemplate(f); setInfo(r.info); setBrand({ ...(brand ?? {}), docx: { name: f.name, at: new Date().toISOString(), data: r.data, use: t?.use ?? 'letters' } }); }
+    catch (e) { setErr((e as Error).message); }
+  };
+  const test = () => {
+    const d = document.createElement('div');
+    d.innerHTML = '<h1>Template test</h1><p>This is where the text of a letter goes. The header, footer, fonts and margins of this page come from your Word file.</p><h2>A heading</h2><p>Tables are written like this one:</p><table><thead><tr><th>Column</th><th>Amount (EUR)</th></tr></thead><tbody><tr><td>First row</td><td class="r">0.00</td></tr><tr><td>Second row</td><td class="r">0.00</td></tr></tbody></table>';
+    void downloadDocx('template-test.docx', d, 'Template test', [], { letter: true, vars: { project: '{{project}}', code: '{{code}}', bh: '{{bh}}', agreement: '{{agreement}}' } });
+  };
+  return (
+    <section class="tp">
+      <h3>Word template</h3>
+      <p class="muted">Use your own Word file as the layout of the letters the app drafts: its header and footer (logos, addresses), fonts and margins are kept, and the text is written into it.</p>
+      {t ? <div class="tp-file">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13l1.2 4L12 13l1.8 4L15 13" /></svg>
+        <div><b>{t.name}</b><span>added {new Date(t.at).toLocaleDateString('en-GB', { dateStyle: 'medium' })}{info ? ` · ${info.content ? 'text goes where {{content}} stands' : 'text goes after the file’s own text'}${info.fields.length ? ` · fields: ${info.fields.join(', ')}` : ''}` : ''}</span></div>
+        <button class="btn ghost danger" onClick={() => { setInfo(null); setBrand({ ...brand, docx: undefined }); }}>Remove</button>
+      </div> : null}
+      <div class="tp-act">
+        <label class="btn">{t ? 'Replace the file…' : 'Choose a Word file…'}<input type="file" accept=".docx,.dotx" hidden onChange={(e) => { const i = e.target as HTMLInputElement; void pick(i.files?.[0]); i.value = ''; }} /></label>
+        {t && <button class="btn" onClick={test}>Download a test page</button>}
+        <button class="btn ghost" aria-expanded={help} onClick={() => setHelp(!help)}>{help ? 'Hide the fields' : 'Fields you can use'}</button>
+      </div>
+      {t && <div class="field"><label>Use it for</label>
+        <div class="seg"><button aria-pressed={t.use === 'letters'} onClick={() => setBrand({ ...brand, docx: { ...t, use: 'letters' } })}>Letters and requests</button><button aria-pressed={t.use === 'all'} onClick={() => setBrand({ ...brand, docx: { ...t, use: 'all' } })}>Every Word document</button></div>
+        <span class="muted" style={{ fontSize: '12px' }}>{t.use === 'letters' ? 'Notification and addendum letters, staff PO and budget transfer requests. Reports and summaries keep the standard layout.' : 'Also the monthly summary, Work Plan follow-up, revision note and the project report.'}</span></div>}
+      {help && <div class="tp-help">
+        <p>Type a field in your Word file, in curly brackets, wherever its value should appear — in the text, the header or the footer:</p>
+        <dl>{FIELDS.map(([k, d]) => <><dt><code>{`{{${k}}}`}</code></dt><dd>{d}</dd></>)}</dl>
+        <p>Without <code>{'{{content}}'}</code> the text is written after whatever your file already contains. A field keeps the font and size it is typed in.</p>
+      </div>}
+      {err && <p class="badge warning" style={{ margin: 0, whiteSpace: 'normal' }}>{err}</p>}
+    </section>
   );
 }
 

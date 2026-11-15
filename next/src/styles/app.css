@@ -1110,3 +1110,11 @@ dialog.ask::backdrop { background: rgb(15 15 14 / .45); backdrop-filter: blur(2p
 .rl-err { margin: 0; color: var(--critical); font-weight: 600; font-size: 13px; }
 .rl-prev { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-md); background: var(--accent-soft); font-size: 13px; }
 @media (max-width: 560px) { .rl-row { grid-template-columns: 1fr auto; } .rl-def { grid-column: 1 / -1; justify-self: start; } }
+
+/* ---------- Word template ---------- */
+.tp { display: grid; gap: 10px; } .tp > h3 { margin: 0; font-size: 14px; } .tp > p { margin: 0; font-size: 12.5px; line-height: 1.5; }
+.tp-file { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.tp-file svg { flex: none; color: var(--accent); } .tp-file div { display: grid; gap: 1px; min-width: 0; flex: 1; } .tp-file b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .tp-file span { font-size: 12px; color: var(--ink-3); line-height: 1.4; }
+.tp-act { display: flex; gap: 8px; flex-wrap: wrap; }
+.tp-help { padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: var(--r-md); font-size: 12.5px; line-height: 1.5; } .tp-help p { margin: 0 0 8px; } .tp-help p:last-child { margin: 8px 0 0; color: var(--ink-3); }
+.tp-help dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; } .tp-help dd { margin: 0; color: var(--ink-2); } .tp-help code { font: 600 12px var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }

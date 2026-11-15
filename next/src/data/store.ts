@@ -376,7 +376,7 @@ export function fixProject(pid: string, fix: import('../domain/health').AutoFix,
 /** The organisation's logo and name shown in the menu, the browser tab and on covers (null removes it). */
 export function setBrand(brand: Ledger['brand'] | null) {
   const L = draft(state.ledger); if (brand) L.brand = brand; else delete L.brand;
-  commit(L, brand ? 'Name and logo saved' : 'Name and logo removed');
+  commit(L, brand ? 'Appearance and document settings saved' : 'Name and logo removed');
 }
 /** Records the close of a month (replaces an earlier close of the same month). */
 export function saveClose(rec: import('../domain/close').CloseRecord) {

@@ -1,6 +1,9 @@
 import { takeStamp } from './stamp';
 import { saveFile } from './save';
 import { pngData, zip } from './xlsxwrite';
+import { unzip } from './xlsx';
+import { get, toast } from '../data/store';
+import { applyTemplate, FIELDS, inspectTemplate, type TemplateInfo } from '../domain/docxTemplate';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
 const run = (t: string, b = false, sz?: number, color?: string) => t ? `<w:r><w:rPr>${b ? '<w:b/>' : ''}${color ? `<w:color w:val="${color}"/>` : ''}${sz ? `<w:sz w:val="${sz}"/>` : ''}</w:rPr><w:t xml:space="preserve">${esc(t)}</w:t></w:r>` : '';
@@ -66,10 +69,45 @@ const pic = (i: number, w: number, h: number) => {
 };
 const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"';
 
+const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const b64 = (u: Uint8Array) => { let x = ''; for (let i = 0; i < u.length; i += 0x8000) x += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(x); };
+const unb64 = (x: string) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+export interface DocOptions { /** a letter: written into the user's Word template when one is set for letters */ letter?: boolean; /** values for the {{fields}} of the template */ vars?: Record<string, string> }
+
+/** Reads a Word file chosen as the template: what it offers, and the file itself ready to be kept with the data. */
+export async function readTemplate(f: File): Promise<{ info: TemplateInfo; data: string }> {
+  if (!/\.(docx|dotx)$/i.test(f.name)) throw new Error('Choose a Word document (.docx or .dotx)');
+  if (f.size > 4 * 1024 * 1024) throw new Error('This file is larger than 4 MB — a letterhead usually is far smaller; compress its pictures in Word first');
+  const buf = await f.arrayBuffer(), dec = new TextDecoder();
+  let parts: Map<string, Uint8Array>;
+  try { parts = await unzip(buf, true); } catch { throw new Error('This file could not be opened as a Word document'); }
+  if ([...parts.keys()].some((n) => /vbaProject/i.test(n))) throw new Error('A file with macros cannot be used — save it as .docx');
+  return { info: inspectTemplate(new Map([...parts].filter(([n]) => /\.xml$/.test(n)).map(([n, b]) => [n, dec.decode(b)]))), data: b64(new Uint8Array(buf)) };
+}
+const long = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const dmy = (d: Date) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+/** The fields of a project for the template: {{project}}, {{code}}, {{bh}}, {{agreement}}. */
+export const projectVars = (p: { name: string; code: string; bh?: string; contractNo?: string; contract?: Record<string, unknown> }): Record<string, string> =>
+  ({ project: p.name, code: p.code, bh: p.bh ?? '', agreement: p.contractNo || String((p.contract as { number?: string } | undefined)?.number ?? '') });
+/** The generated body written into the user's template; resolves false when the template cannot be used (the plain document is saved instead). */
+async function fromTemplate(name: string, body: string, title: string, stamp: string | undefined, vars: Record<string, string>): Promise<boolean> {
+  const brand = get().ledger.brand, t = brand?.docx; if (!t) return false;
+  try {
+    const parts = await unzip(unb64(t.data).buffer as ArrayBuffer, true), now = new Date();
+    // Fields the document does not give are filled with nothing rather than left as {{…}} in a letter that goes out.
+    const all: Record<string, string> = { ...Object.fromEntries(FIELDS.map(([k]) => [k, ''])), date: dmy(now), date_long: long(now), title, organisation: brand?.name ?? '', addressee: brand?.addressee ?? '', signature: brand?.sign1 ?? '', ...vars };
+    const out = applyTemplate(parts, body, all, { title, description: stamp });
+    await saveFile(name, new Blob([zip([...out].map(([n, data]) => ({ name: n, data }))) as BlobPart], { type: DOCX }));
+    return true;
+  } catch { toast('Your Word template could not be used for this file — the standard layout was saved instead'); return false; }
+}
+
 /** Saves an element (e.g. the report studio document) as an editable Word document; `logos` (PNG data URLs) go in the page header, first left, second right. */
-export function downloadDocx(name: string, el: HTMLElement, title: string, logos: (string | undefined)[] = []) {
+export async function downloadDocx(name: string, el: HTMLElement, title: string, logos: (string | undefined)[] = [], opts: DocOptions = {}) {
   const stamp = takeStamp();
   const body = blocks(el), L = pngs(logos);
+  const tpl = get().ledger.brand?.docx;
+  if (tpl && (tpl.use === 'all' || opts.letter) && await fromTemplate(name, body, title, stamp, opts.vars ?? {})) return;
   const header = L.length ? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${NS}><w:p><w:pPr>${L.length === 1 ? '<w:jc w:val="center"/>' : '<w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs>'}</w:pPr>${L.map((x, i) => (i ? '<w:r><w:tab/></w:r>' : '') + pic(i, x.w, x.h)).join('')}</w:p></w:hdr>` : '';
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:lang w:val="en-GB"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
 <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
@@ -88,5 +126,5 @@ export function downloadDocx(name: string, el: HTMLElement, title: string, logos
     { name: 'word/styles.xml', data: styles },
     { name: 'word/document.xml', data: doc },
   ]);
-  return saveFile(name, new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+  return saveFile(name, new Blob([bytes as BlobPart], { type: DOCX }));
 }

@@ -176,7 +176,7 @@ function TransferCard({ o, r, skip }: { o: Office; r: Office['reports'][number];
   const T = transferPlan(r, skip), short = T.needs.reduce((s, n) => s + n.need, 0);
   let el: HTMLElement | null = null;
   if (!T.needs.length) return <section class="card span-12"><div class="card-b"><b>No line is short after the forecast</b> — no transfer needed.</div></section>;
-  const word = () => { if (el) void downloadDocx(`${o.name.replace(/\s+/g, '-')}-budget-transfer-${r.date}.docx`, el, `${o.name} budget transfer request`); };
+  const word = () => { if (el) void downloadDocx(`${o.name.replace(/\s+/g, '-')}-budget-transfer-${r.date}.docx`, el, `${o.name} budget transfer request`, [], { letter: true }); };
   return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Transfer proposal</h2><p>Room left on other lines after their own forecast and pace covers the shortages; the rest is the additional budget to request · lines marked corrected are left out</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={word}>⤓ Word draft</button></div>
     <div class="card-b" ref={(x) => { el = x; }}>
       <h3 class="of-doc-t">{o.name} — Ordinary Budget {r.year}: budget transfer request</h3>

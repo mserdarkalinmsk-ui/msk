@@ -9,7 +9,7 @@ import { BASIS_LABEL } from '../domain/forecast';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full } from '../ui/format';
-import { downloadDocx } from '../ui/docxwrite';
+import { downloadDocx, projectVars } from '../ui/docxwrite';
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
 const pc = (v: number) => (Number.isFinite(v) ? `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v * 1000) / 10)}%` : 'new');
@@ -32,7 +32,7 @@ export function BudgetChanges() {
   const desc = (c: string) => L.find((l) => l.code === c)?.description ?? p.approvedBudget?.names?.[c] ?? '';
   const V = VERDICT[A.verdict], c = (p.contract ?? {}) as { number?: string; title?: string };
   const total = planned.reduce((a, x) => a + x.amount, 0);
-  const word = () => { if (letter) downloadDocx(`${p.code}-${A.verdict}-${TODAY.toISOString().slice(0, 10)}.docx`, letter, DOC[A.verdict]); };
+  const word = () => { if (letter) void downloadDocx(`${p.code}-${A.verdict}-${TODAY.toISOString().slice(0, 10)}.docx`, letter, DOC[A.verdict], [], { letter: true, vars: projectVars(p) }); };
   const EW = portfolioWarnings(filtered(s), TODAY);
   // Prefill a transfer that covers a warning: from the line with most room in the spare heading to the most overspent line.
   const plan = (w: (typeof EW)[number]) => {
