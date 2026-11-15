@@ -85,3 +85,19 @@ describe('the amount typed as the number of units', () => {
     expect((fixTypedUnits(wb as never) as typeof wb).lines[0].actual.units).toBe(25);
   });
 });
+
+describe('units in an extraction', () => {
+  const row = (u: string, doc: string, amt: string, sp: string, sc: string) => ['1-PURCHASE ORDERS', '0185', '9413', '1.3.1', u, doc, 'Experts per diems', amt, sp, String(Number(sc) - Number(sp)), sc, 'OPEN'];
+  it('takes the units the finance team counted in "data for pivot", not the units ordered', () => {
+    const wb = parseWorkbook([
+      { name: 'data for pivot', R: [['CONSO'], H, row('4.25', '890383', '2592.75', '845.75', '2592.75'), row('5', '881657', '1000', '1000', '1000')] },
+      { name: 'Consolidation', R: [['CONSO'], H, row('13', '890383', '2592.75', '845.75', '2592.75'), row('8', '881657', '1000', '1000', '1000')] }]);
+    expect(wb.meta.unitsOfficial).toBe(true);
+    expect(wb.lines.find((l) => l.code === '1.3.1')?.actual.units).toBe(9.25);
+  });
+  it('counts only the spent share of the ordered units otherwise, and marks them estimated', () => {
+    const wb = parseWorkbook([{ name: 'Consolidation', R: [['CONSO'], H, row('13', '890383', '2592.75', '845.75', '2592.75'), row('8', '881657', '1000', '1000', '1000')] }]);
+    expect(wb.meta.unitsOfficial).toBeUndefined();
+    expect(wb.lines.find((l) => l.code === '1.3.1')?.actual.units).toBe(12.24);
+  });
+});

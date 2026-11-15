@@ -3,7 +3,7 @@ export interface Country { id: string; name: string; region?: string; iso3?: str
 export interface BudgetLine {
   code: string; description?: string; approved?: number | null; actual?: number | null;
   spentCommitted?: number | null; committed?: number | null; forecast?: number | null;
-  unit?: string; approvedUnits?: number | null; unitRate?: number | null; reportedUnits?: number | null; reportedUnitRate?: number | null;
+  unit?: string; approvedUnits?: number | null; unitRate?: number | null; reportedUnits?: number | null; reportedUnitRate?: number | null; /** units of a raw extraction, estimated from the POs (the finance team counts them in the report) */ unitsEstimated?: boolean;
   proposedBudget?: number | null; roundedBudget?: number | null;
 }
 

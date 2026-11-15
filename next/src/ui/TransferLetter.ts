@@ -1,5 +1,5 @@
 import { HEADINGS, lines as linesOf } from '../domain/calc';
-import { revisedRate, standardRate } from '../domain/rates';
+import { revisedRate } from '../domain/rates';
 import type { TransferPlan } from '../domain/transfers';
 import type { Ledger, Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -25,18 +25,19 @@ export function transferLetterDocx(p: Project, T: TransferPlan, flex: number, le
   const between = T.heads.some((h) => Math.abs(h.after - h.budget) >= 0.5);
   const agreement = p.contractNo || (p.contract as { number?: string } | undefined)?.number || '';
   const wb = latestWorkbook(p)?.snapshot?.workbook;
-  // One standard rule: tariff lines (per diems, fees, salaries) and decreased lines keep the approved rate;
-  // an increased market-priced line takes its average cost so far. Units follow from the new amount.
+  // One rule: a changed line is priced at the average unit cost the financial report shows (spent ÷ units used);
+  // a line without enough units keeps the approved rate. Units follow from the new amount.
   const LL = new Map(linesOf(p).map((l) => [l.code, l]));
   const uw = (c: string) => (AB.get(c)?.unit ?? 'unit').replace(/^per\s+/i, '').toLowerCase().trim();
   const per = (c: string) => (uw(c) === 'diem' ? 'per diem' : `per ${uw(c)}`);
   const many = (c: string) => { const w = uw(c); return w === 'diem' ? 'per diems' : w.replace(/\//g, '-').replace(/s?$/, 's'); };
-  const priceOf = (l: TransferPlan['lines'][number]) => { const x = revisedRate(LL.get(l.code), AB.get(l.code)?.unitRate, l.after > l.budget), u = x.rate ? Math.round((l.after / x.rate) * 100) / 100 : 0; return { u, r: x.rate, basis: x.basis }; };
-  const priced = (l: TransferPlan['lines'][number]) => { const x = priceOf(l), b = AB.get(l.code)?.unitRate, L = LL.get(l.code); if (!x.u) return '';
-    const why = x.basis === 'average' ? `the average cost so far${b ? ` (budgeted EUR ${n2(b)})` : ''}` : L && standardRate(L) ? 'the approved standard rate' : 'the approved unit rate';
+  const priceOf = (l: TransferPlan['lines'][number]) => { const x = revisedRate(p, LL.get(l.code), AB.get(l.code)?.unitRate), u = x.rate ? Math.round((l.after / x.rate) * 100) / 100 : 0; return { u, r: x.rate, basis: x.basis, date: x.date }; };
+  const priced = (l: TransferPlan['lines'][number]) => { const x = priceOf(l), b = AB.get(l.code)?.unitRate; if (!x.u) return '';
+    const why = x.basis === 'average' ? `the average unit cost ${x.date ? `in the financial report of ${dmy(new Date(x.date))}` : 'so far'}${b ? ` (budgeted EUR ${n2(b)})` : ''}` : 'the approved unit rate';
     return ` In the notification budget the line counts ${n2(x.u)} ${many(l.code)} at EUR ${n2(x.r)} ${per(l.code)}, ${why}.`; };
+  const unitsOf = (c: string) => { const L = LL.get(c); return L && !L.unitsEstimated ? L.reportedUnits ?? null : null; };
   const fact = (l: TransferPlan['lines'][number]) => l.after > l.budget
-    ? `In the revised budget, the amount of the line is increased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}, in line with the amount spent and committed of EUR ${n2(l.sc)}. ${increaseReason(p, l.code, wb?.lines ?? [], wb?.pos ?? [])}${priced(l)}`.trim()
+    ? `In the revised budget, the amount of the line is increased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}, in line with the amount spent and committed of EUR ${n2(l.sc)}. ${increaseReason(p, l.code, wb?.lines ?? [], wb?.pos ?? [], unitsOf(l.code))}${priced(l)}`.trim()
     : `In the revised budget, the amount of the line is decreased from EUR ${n2(l.budget)} to EUR ${n2(l.after)}. ${decreaseReason(l.budget, l.after, l.sc)}${priced(l)}`;
   const from = (c: string) => { const x = T.moves.filter((m) => m.to === c).map((m) => `EUR ${n2(m.amount)} from line ${m.from}`); return x.length > 1 ? `${x.slice(0, -1).join(', ')} and ${x.at(-1)}` : x[0] ?? ''; };
   const signer = (brand.sign1 ?? '').split('\n').filter(Boolean);

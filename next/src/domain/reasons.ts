@@ -1,4 +1,3 @@
-import { standardRate } from './rates';
 import type { Project } from './types';
 import type { PO, WbLine } from './workbook';
 
@@ -30,22 +29,15 @@ export function poPurpose(po: Pick<PO, 'description' | 'nature'>): { kind: 'miss
  * the purchase orders behind the spending (events, experts, staff missions), largest first. Nothing is invented: where
  * the file gives no units or no purchase orders, only what it gives is said.
  */
-export function increaseReason(p: Project, code: string, wbLines: WbLine[], pos: PO[] = []): string {
+export function increaseReason(p: Project, code: string, wbLines: WbLine[], pos: PO[] = [], usedUnits?: number | null): string {
   const ab = p.approvedBudget?.lines?.find((l) => l.code === code), wl = wbLines.find((l) => l.code === code);
   const bu = ab?.approvedUnits ?? wl?.budget.units ?? 0, br = ab?.unitRate ?? wl?.budget.rate ?? 0, unit = ab?.unit ?? wl?.unit ?? '';
-  const spent = wl?.actual.cost ?? 0, sc = wl?.sc ?? spent, u = wl?.actual.units ?? 0, ar = u ? spent / u : 0;
+  const spent = wl?.actual.cost ?? 0, sc = wl?.sc ?? spent, u = usedUnits === undefined ? wl?.actual.units ?? 0 : usedUnits ?? 0, ar = u ? spent / u : 0;
   const parts: string[] = [];
-  // A tariff line (per diems, fees, salaries) has a fixed rate: the increase is a matter of units, counted at that rate.
-  if (br > 0 && standardRate({ description: ab?.description ?? wl?.description, unit })) {
-    const eq = Math.round((sc / br) * 100) / 100;
-    if (eq > bu + 0.004) parts.push(`The increase is due to a higher number of ${unitWord(unit, 2)} than budgeted: the amount spent and committed corresponds to ${num(eq)} ${unitWord(unit, 2)} at the standard rate of ${eur(br)}, against ${num(bu)} planned.`);
-  }
-  const tariff = parts.length > 0;
-  const more = !tariff && bu > 0 && u > bu + 0.004, dearer = !tariff && br > 0 && ar > br * 1.02;
+  const more = bu > 0 && u > bu + 0.004, dearer = br > 0 && ar > br * 1.02;
   if (more && dearer) parts.push(`The increase is due both to a higher number of ${unitWord(unit, 2)} than budgeted (${num(u)} used against ${num(bu)} planned) and to a higher average cost (${eur(ar)} against ${eur(br)}).`);
   else if (more) parts.push(`The increase is due to a higher number of ${unitWord(unit, 2)} than budgeted: ${num(u)} have been used against ${num(bu)} planned${ar && br ? `, while the average cost (${eur(ar)}) remains ${ar <= br ? 'within' : 'close to'} the budgeted ${eur(br)}` : ''}.`);
   else if (dearer) parts.push(`The increase is due to a higher average cost than budgeted: ${eur(ar)} per ${unitWord(unit, 1)} against ${eur(br)}${bu ? `, for ${num(u)} of the ${num(bu)} ${unitWord(unit, 2)} planned` : ''}.`);
-  else if (!tariff && sc > spent + 0.5) parts.push(`The increase covers the commitments already made on the line.`);
   // What the money went to: the purchase orders of the line, grouped by purpose.
   const P = pos.filter((x) => x.line === code && (x.sc || x.spent) > 0.005);
   if (P.length) {

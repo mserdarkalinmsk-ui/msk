@@ -1,7 +1,7 @@
 import { programmeOf } from './flex';
 import { HEADINGS, latestReport, lineExposure, lines, n, parseDate } from './calc';
 import type { BudgetLine, Project } from './types';
-import { averageRate } from './rates';
+import { lineRate } from './rates';
 import type { Cell, SheetSpec, XCell } from '../ui/xlsxwrite';
 
 /**
@@ -219,7 +219,7 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
       }
       // Planned rates start from what is known: staff at the latest cost plus the guideline margin, charging back at the
       // latest monthly rate, activities at their average cost so far (the budget rate until two units are reported).
-      const pr = staff ? staffRate(code, aRate || rate || 0, monthsLeft) || undefined : cb ? (aRate ? Math.round(aRate) : rate ?? undefined) : (empty ? undefined : averageRate(l)) ?? rate ?? undefined;
+      const pr = staff ? staffRate(code, aRate || rate || 0, monthsLeft) || undefined : cb ? (aRate ? Math.round(aRate) : rate ?? undefined) : (empty ? undefined : lineRate(p, l)?.rate) ?? rate ?? undefined;
       const cv = new Map<string, { u: number; c: number }>(); // cached units and cost per block
       for (const b of B) {
         const c = at.get(b.id)!, U = F(c), R = F(c + 1), K = F(c + 2);

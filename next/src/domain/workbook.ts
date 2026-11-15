@@ -19,7 +19,7 @@ export interface WbTotals { budget: number; actual: number; sc: number; planned?
 export interface WbMeta {
   title?: string; contract?: string; jp?: string; bh?: string; periodFrom?: string; periodTo?: string; asAt?: string;
   plannedFrom?: string; plannedTo?: string;
-  /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** levy actually taken on donor tranches (7%), shown apart: the report's line 10 is 7% of the direct costs */ levyTaken?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
+  /** Raw system extraction (no report grid): lines were summed from the entries; budgets come from the project. */ extraction?: boolean; /** Units read from "data for pivot" (counted by the finance team); else estimated from the POs */ unitsOfficial?: boolean; /** spent + committed posted without a reporting line (e.g. levies on a tranche) */ unallocated?: number; /** levy actually taken on donor tranches (7%), shown apart: the report's line 10 is 7% of the direct costs */ levyTaken?: number; /** Row numbers of the totals block as found (template differs between contracts) */ layout?: Record<string, string>; situationDate?: string; situationPeriod?: string;
   /** Budget proposal with a secured-funding block (VC): what is already funded, by line code. Not spending. */ secured?: Record<string, number>;
   /** Sheet of the line grid and how each block of columns was read (key = normalised heading, for remembered corrections). */
   grid?: string; blocks?: Block[];
@@ -210,7 +210,9 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   const totals: Workbook['totals'] = { ...(report?.g!.totals ?? {}), ...(best?.g!.totals ?? {}) };
   // A raw system extraction has no report grid: sum the posted entries (POs, invoices, GL) per reporting line.
   if (!lines.length) {
-    const co = table(sheets, ['reportingline', 'spentcomeur']);
+    // "data for pivot" carries the units the finance team counted (used, not ordered): taken as they are.
+    const pv = table(sheets.filter((x) => /data\s*for\s*pivot/i.test(x.name)), ['reportingline', 'spentcomeur']);
+    const co = pv ?? table(sheets, ['reportingline', 'spentcomeur']);
     if (co) {
       const C = { line: co.col('reportingline'), u: co.col('nbreofunits'), sp: co.col('spenteur'), sc: co.col('spentcomeur'), src: co.col('source'), d: co.col('description'), ut: co.col('unittype'), doc: co.col('docnumber') };
       // Months with an invoice on each PO: a staff line counts the months paid, as the report does.
@@ -224,10 +226,10 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
         if (!/^\d+(\.\d+)*$/.test(code) || code === '0') {
           un += z(r[C.sc]); continue;
         }
-        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); if (!unitsLookTyped({ units: z(r[C.u]), amount: Math.abs(z(r[C.sc])), sc: Math.abs(z(r[C.sp])) })) x.u += usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
+        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); if (!unitsLookTyped({ units: z(r[C.u]), amount: Math.abs(z(r[C.sc])), sc: Math.abs(z(r[C.sp])) })) x.u += pv ? z(r[C.u]) : usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
       }
       if (by.size) {
-        meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un;
+        meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un; if (pv) meta.unitsOfficial = true;
         const ad = by.get('10'); by.delete('10');
         lines = [...by].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })).map(([code, x]) => ({ code, description: '', unit: '', level: code.split('.').length, leaf: true,
           budget: { units: null, rate: null, cost: null }, actual: { units: x.u || null, rate: null, cost: x.a }, sc: x.sc }));
@@ -502,6 +504,20 @@ export function fixLevy<W extends { meta: Workbook['meta']; totals: Workbook['to
   if (!levy.length || Math.abs(L - T.admin.actual) > 0.5) return wb;
   const A = { a: Math.round(d.actual * ADMIN_RATE * 100) / 100, sc: Math.round(d.sc * ADMIN_RATE * 100) / 100 };
   return { ...wb, meta: { ...wb.meta, levyTaken: L }, totals: { ...T, admin: { budget: T.admin.budget, actual: A.a, sc: A.sc }, eligible: { budget: T.eligible?.budget ?? 0, actual: d.actual + A.a, sc: d.sc + A.sc } } };
+}
+
+/**
+ * Extractions read before units were counted as used: activity lines (not months) recomputed from the POs
+ * (the spent share of the units ordered) and the units of GL postings.
+ */
+export function fixExtractionUnits<W extends { meta: Workbook['meta']; lines: WbLine[]; pos?: PO[]; entries?: Entry[] }>(wb: W): W {
+  if (!wb.meta.extraction || wb.meta.unitsOfficial || !wb.pos?.length) return wb;
+  const U = new Map<string, number>();
+  for (const p of wb.pos) { if (/month/i.test(p.unitType) || unitsLookTyped(p)) continue; U.set(p.line, (U.get(p.line) ?? 0) + usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate)); }
+  for (const e of wb.entries ?? []) if (e.src === 'gl' && e.units && !/month/i.test(e.unitType ?? '')) U.set(e.line, (U.get(e.line) ?? 0) + e.units);
+  let changed = false;
+  const lines = wb.lines.map((l) => { if (!U.has(l.code) || wb.pos!.some((p) => p.line === l.code && /month/i.test(p.unitType))) return l; const u = Math.round(U.get(l.code)! * 100) / 100; if (Math.abs(u - (l.actual.units ?? 0)) < 0.005) return l; changed = true; return { ...l, actual: { ...l.actual, units: u || null } }; });
+  return changed ? { ...wb, lines } : wb;
 }
 
 /** A PO whose number of units is its amount typed again (1,100 units for EUR 1,100): the units are an entry error. */

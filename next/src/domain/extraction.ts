@@ -14,7 +14,7 @@ export function isExtraction(s: { format?: string; workbook?: { meta?: { extract
  * Lines of a raw system extraction in the standard report shape: every line of the approved budget (or of the
  * latest full report) with its amount and description, spent and spent + committed summed from the entries.
  */
-export function extractionLines(wb: Pick<Workbook, 'lines' | 'totals'>, p: Project): BudgetLine[] {
+export function extractionLines(wb: Pick<Workbook, 'lines' | 'totals'> & { meta?: Workbook['meta'] }, p: Project): BudgetLine[] {
   const full = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length && !isExtraction(r.snapshot)).sort((a, b) => a.date.localeCompare(b.date)).at(-1)?.snapshot!.lines;
   const base = p.approvedBudget?.lines?.length ? p.approvedBudget.lines : full ?? [];
   const leafs = base.filter((l) => !base.some((x) => x !== l && x.code.startsWith(l.code + '.')));
@@ -24,7 +24,7 @@ export function extractionLines(wb: Pick<Workbook, 'lines' | 'totals'>, p: Proje
     // Entries posted on a parent code of a broken-down line stay on their own row below.
     const e = got.get(b.code); got.delete(b.code);
     const actual = e?.actual.cost ?? 0, sc = e?.sc ?? actual;
-    return { code: b.code, description: b.description, unit: b.unit, approved: b.approved ?? 0, approvedUnits: b.approvedUnits ?? null, unitRate: b.unitRate ?? null, actual: b.code === ADMIN_LINE && !e ? 0 : actual, spentCommitted: b.code === ADMIN_LINE && !e ? 0 : sc, committed: Math.max(0, sc - actual), reportedUnits: e?.actual.units ?? null, reportedUnitRate: null } as BudgetLine;
+    return { code: b.code, description: b.description, unit: b.unit, approved: b.approved ?? 0, approvedUnits: b.approvedUnits ?? null, unitRate: b.unitRate ?? null, actual: b.code === ADMIN_LINE && !e ? 0 : actual, spentCommitted: b.code === ADMIN_LINE && !e ? 0 : sc, committed: Math.max(0, sc - actual), reportedUnits: e?.actual.units ?? null, reportedUnitRate: null, ...(e?.actual.units && !wb.meta?.unitsOfficial ? { unitsEstimated: true } : {}) } as BudgetLine;
   });
   for (const [code, e] of got) out.push({ code, description: `Line ${code} (not in the approved budget)`, approved: 0, actual: e.actual.cost ?? 0, spentCommitted: e.sc ?? 0, committed: Math.max(0, (e.sc ?? 0) - (e.actual.cost ?? 0)), reportedUnits: e.actual.units ?? null } as BudgetLine);
   return out.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
