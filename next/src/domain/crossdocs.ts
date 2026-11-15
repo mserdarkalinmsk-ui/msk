@@ -30,7 +30,7 @@ export function crossDocs(p: Project): CrossDocs {
     rows.push({ key, label, values: v, ok, money, note });
   };
   const reportTotal = T?.eligible?.budget ?? (RL.length ? RL.reduce((a, l) => a + n(l.approved), 0) : undefined);
-  add('total', 'Total eligible costs', { contract: n(c.total) || undefined, approved: ab?.total, card: p.budget || undefined, report: reportTotal });
+  add('total', 'Total eligible costs', { contract: n(c.total) >= 1000 ? n(c.total) : undefined, approved: ab?.total, card: p.budget || undefined, report: reportTotal });
   add('direct', 'Direct costs', { approved: ab?.direct, report: T?.direct?.budget ?? (RL.length ? RL.filter((l) => l.code !== ADMIN_LINE && l.code !== '8').reduce((a, l) => a + n(l.approved), 0) : undefined) });
   add('admin', 'Administrative costs', { approved: ab?.admin || undefined, report: T?.admin?.budget ?? RL.find((l) => l.code === ADMIN_LINE)?.approved ?? undefined });
   // Headings 1–6: approved budget against the budget column of the report, with the recorded changes.
@@ -47,7 +47,7 @@ export function crossDocs(p: Project): CrossDocs {
     rows.push(row);
   }
   add('start', 'Start date', { contract: c.start, card: p.datesTbc ? undefined : p.start }, false);
-  add('end', 'End date', { contract: c.end && (!c.start || c.end > c.start) ? c.end : undefined, card: p.datesTbc ? undefined : p.end }, false);
+  add('end', 'End date', { contract: c.end && (c.start ? c.end > c.start : !!(c.number || (c as { months?: number }).months)) ? c.end : undefined, card: p.datesTbc ? undefined : p.end }, false);
   add('contract', 'Contract number', { contract: c.number, card: p.contractNo, report: wb?.meta?.contract }, false);
   add('bh', 'Budget head (BH)', { contract: c.bh, card: p.bh, report: wb?.meta?.bh }, false);
   add('jp', 'Joint programme (JP)', { contract: c.jp, card: p.jp, report: wb?.meta?.jp }, false);

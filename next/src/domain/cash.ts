@@ -1,6 +1,7 @@
 import { money, n, parseDate, spendPoints } from './calc';
 import type { Project } from './types';
-import { ahead, type Basis } from './forecast';
+import { type Basis } from './forecast';
+import { outcome } from './insights';
 
 const DAY = 864e5, MONTH = 30.44 * DAY;
 
@@ -15,15 +16,16 @@ export function pace(p: Project, today: Date): number {
 export interface EndingRow { p: Project; monthsLeft: number; budget: number; spent: number; sc: number; remaining: number; pace: number; need: number; unspent: number; share: number; basis: Basis; level: 'bad' | 'warn' | 'ok' }
 /**
  * Projects ending within `within` months: what is left, the monthly spending needed to use it by the end date,
- * the current pace, and what would stay unspent (to be returned) at that pace. Commitments count as used.
+ * the current pace, and what would stay unspent (to be returned) at that pace — the end-of-project forecast.
  */
 export function ending(P: Project[], today: Date, within = 12): EndingRow[] {
   const t = today.getTime();
   return P.filter((p) => !p.datesTbc && parseDate(p.end).getTime() > t && parseDate(p.end).getTime() - t <= within * MONTH).map((p) => {
     const m = money(p), monthsLeft = Math.max(0.5, (parseDate(p.end).getTime() - t) / MONTH);
-    const sc = m.spent + m.committed, remaining = Math.max(0, m.budget - sc), pc = pace(p, today);
-    const f = ahead(p, today, pc), need = remaining / monthsLeft, unspent = Math.max(0, remaining - f.add), share = m.budget ? unspent / m.budget : 0;
-    return { p, monthsLeft, budget: m.budget, spent: m.spent, sc, remaining, pace: pc, need, unspent, share, basis: f.basis, level: share > 0.1 ? 'bad' : share > 0.03 ? 'warn' : 'ok' } as EndingRow;
+    // The same projection as the end-of-project forecast: spent at the forecast pace, never below spent + committed.
+    const sc = m.spent + m.committed, remaining = Math.max(0, m.budget - sc), o = outcome(p, today);
+    const unspent = o.unused, share = m.budget ? unspent / m.budget : 0;
+    return { p, monthsLeft, budget: m.budget, spent: m.spent, sc, remaining, pace: o.rate, need: o.needRate, unspent, share, basis: 'pace' as Basis, level: share > 0.1 ? 'bad' : share > 0.03 ? 'warn' : 'ok' } as EndingRow;
   }).sort((a, b) => b.unspent - a.unspent);
 }
 export interface CashRow {

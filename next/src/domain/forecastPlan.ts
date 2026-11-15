@@ -15,7 +15,7 @@ export interface PlanCell { u?: number; r?: number }
 export interface ForecastDraft { /** keep the total fixed: the remainder goes to this line (default on, 5.7) */ auto?: { on?: boolean; line?: string }; /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[]; /** revision note: justification per heading, and who prepares / approves */ just?: Record<string, string>; sign?: { by?: string; ok?: string }; /** notification letter: reference and the text per changed line */ letter?: { ref?: string; no?: string; lines?: Record<string, string> } }
 
 export { averageRate } from './rates';
-import { lineRate } from './rates';
+import { lineRate, usedUnitsOf } from './rates';
 
 export const isStaffLine = (code: string) => /^1\.[12]\.1\.\d+$/.test(code);
 export const isChargeBack = (code: string) => code === '4.2' || code === '4.4';
@@ -59,7 +59,7 @@ export function computePlan(p: Project, today: Date, d: ForecastDraft | undefine
   const end = o.extendTo && o.extendTo > p.end ? o.extendTo : p.end, monthsLeft = Math.max(0, (parseDate(end).getTime() - parseDate(blocks[0].from).getTime()) / MONTH);
   const out: PlanLine[] = planLines(p).map((x) => {
     const l = byCode.get(x.code), staff = isStaffLine(x.code), cb = isChargeBack(x.code);
-    const budget = n(l?.approved), actual = n(l?.actual), sc = l ? lineExposure(l) : 0, aUnits = n(l?.reportedUnits);
+    const budget = n(l?.approved), actual = n(l?.actual), sc = l ? lineExposure(l) : 0, aUnits = l ? n(usedUnitsOf(p, l)) : 0;
     const aRate = aUnits ? actual / aUnits : n(l?.reportedUnitRate), rate = l?.unitRate ?? undefined;
     const defRate = staff ? staffRate(x.code, aRate || rate || 0, monthsLeft) || undefined : cb ? (aRate ? Math.round(aRate) : rate) : l ? (lineRate(p, l)?.rate ?? rate) : rate;
     // Local staff under the inflation projection: latest cost × average raise and EUR/TRY effect over each planned period.

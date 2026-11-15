@@ -1,4 +1,5 @@
 import { HEADINGS, lines } from './calc';
+import { usedUnitsOf } from './rates';
 import type { Project } from './types';
 
 export interface UnitPoint { p: Project; code: string; description: string; unit: string; budgetRate: number | null; actualRate: number | null; units: number | null; vsBudget: number | null; vsMedian: number | null }
@@ -16,7 +17,8 @@ export function unitCosts(P: Project[]): UnitGroup[] {
   const by = new Map<string, UnitPoint[]>();
   for (const p of P) for (const l of lines(p)) {
     const br = l.unitRate ?? (l.approvedUnits ? (l.approved ?? 0) / l.approvedUnits : null);
-    const ar = l.reportedUnitRate ?? (l.reportedUnits ? (l.actual ?? 0) / l.reportedUnits : null);
+    // Units of a raw extraction are only estimated: they are counted at the latest full report's average cost.
+    const u = usedUnitsOf(p, l), ar = l.unitsEstimated ? (u ? (l.actual ?? 0) / u : null) : l.reportedUnitRate ?? (u ? (l.actual ?? 0) / u : null);
     if (!(br && br > 0) && !(ar && ar > 0)) continue;
     const unit = normUnit(l.unit ?? '');
     const key = `${l.code}|${unit}`;

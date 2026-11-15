@@ -216,10 +216,10 @@ function Reports({ p }: { p: Project }) {
       </section>
       <section class="card span-7">
         <div class="card-h" style={{ flexWrap: 'wrap' }}><div><h2>Compare versions</h2><p>Line-by-line change in spent and approved amounts</p></div>
-          <div class="tools">
-            <select class="select" value={a} onChange={(e) => setA((e.target as HTMLSelectElement).value)} aria-label="From report">{R.map((r) => <option value={r.id}>{r.name}</option>)}</select>
+          <div class="tools" style={{ flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
+            <select class="select" style={{ maxWidth: '100%', minWidth: 0 }} value={a} onChange={(e) => setA((e.target as HTMLSelectElement).value)} aria-label="From report">{R.map((r) => <option value={r.id}>{r.name}</option>)}</select>
             <span class="muted" style={{ alignSelf: 'center' }}>→</span>
-            <select class="select" value={b} onChange={(e) => setB((e.target as HTMLSelectElement).value)} aria-label="To report">{R.map((r) => <option value={r.id}>{r.name}</option>)}</select>
+            <select class="select" style={{ maxWidth: '100%', minWidth: 0 }} value={b} onChange={(e) => setB((e.target as HTMLSelectElement).value)} aria-label="To report">{R.map((r) => <option value={r.id}>{r.name}</option>)}</select>
           </div></div>
         <div class="card-b">
           {D.length > 0 && <Chart height={Math.max(180, D.length * 34 + 40)} label="Change in spend by line" option={(t) => deltaOption(t, D)} />}

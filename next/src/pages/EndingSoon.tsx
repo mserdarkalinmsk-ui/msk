@@ -28,7 +28,7 @@ export function EndingSoon() {
         <div class="kpi"><span class="label">Need to speed up</span><span class="value" style={{ color: risk.length ? TONE.bad : undefined }}>{risk.length}</span><span class="ctx">{risk.length ? risk.map((r) => lab(r.p)).join(', ') : 'none would leave over 10% unspent'}</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
-        <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Spending needed to the end date</h2><p>Needed per month = budget left ÷ months left · pace = spending of the last six months of reports</p></div>
+        <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Spending needed to the end date</h2><p>Needed per month = budget not yet spent ÷ months left · pace = the forecast pace of spending, as on the project page</p></div>
           <div class="seg" style={{ marginLeft: 'auto' }}>{[6, 12, 18].map((m) => <button aria-pressed={within === m} onClick={() => setWithin(m)}>{m} months</button>)}</div>
           <button class="btn" onClick={xlsx}>⤓ Excel</button></div>
         <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Ends</th><th class="r">Months left</th><th class="r">Left to use</th><th style={{ width: '22%' }}>Needed vs pace (per month)</th><th class="r">Unspent at the end</th></tr></thead>

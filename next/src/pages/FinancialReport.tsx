@@ -124,7 +124,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
         {(funding.length > 0 || wb.situation.length > 0) && (
           <section class="card span-5">
             <div class="card-h"><div><h2>Funding & accounts</h2><p>Contributions received and the budget situation in the accounting system{m.situationDate ? ` (${date(m.situationDate)})` : ''}</p></div></div>
-            <div class="card-b" style={{ display: 'grid', gap: '14px' }}>
+            <div class="card-b" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '14px' }}>
               {funding.length > 0 && (
                 <div class="fa-fund">
                   <div class="fa-total"><span>Net received</span><b class="num">{full(received)}</b><small>{funding.filter((x) => x.amount > 0).length} receipts · {funding.filter((x) => x.amount < 0).length} reversals</small></div>

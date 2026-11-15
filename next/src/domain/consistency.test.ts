@@ -5,6 +5,9 @@ import { lineRows, lines, money, totals } from './calc';
 import { headings } from './insights';
 import { portfolioStatement } from './statement';
 import type { Project } from './types';
+import { outcome } from './insights';
+import { ending } from './cash';
+import { PRESETS, runScenario } from './scenarios';
 
 /** The same figure (budget, spent, committed) must read the same on every screen. */
 const sets: [string, Project[]][] = [['seed', (seed as { projects: Project[] }).projects], ['demo', (demo as { projects: Project[] }).projects]];
@@ -43,5 +46,14 @@ describe.each(sets)('cross-screen consistency (%s)', (_, P) => {
     if ('budget' in T) near(T.budget, sum('budget'));
     if ('spent' in T) near(T.spent, sum('spent'));
     if ('committed' in T) near(T.committed, sum('committed'));
+  });
+  it('the end-of-project forecast reads the same on the project page, Ending soon and Scenarios', () => {
+    const T = new Date('2026-10-12');
+    for (const p of P) {
+      if (p.datesTbc || Date.parse(p.end) <= T.getTime()) continue;
+      const o = outcome(p, T), sc = runScenario(p, PRESETS[0], T);
+      near(sc.projected, o.projected);
+      const [e] = ending([p], T, 1000); if (e) near(e.unspent, o.unused);
+    }
   });
 });

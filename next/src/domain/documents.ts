@@ -48,6 +48,15 @@ export function anyDate(s: string): string | undefined {
 const addMonths = (iso: string, n: number) => { const d = new Date(iso + 'T00:00:00Z'); const e = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate() - 1)); return e.toISOString().slice(0, 10); };
 const MONEY = String.raw`(?:EUR|€)\s*([\d][\d .,']*\d)|([\d][\d .,']*\d)\s*(?:EUR|€)`;
 
+/** Contract facts stored before the checks above: a total under EUR 1,000 or an end that is not after the start (or stands alone) is dropped. */
+export function fixContract<P extends { contract?: unknown }>(p: P): P {
+  const c = p.contract as { total?: number; start?: string; end?: string; number?: string; months?: number } | undefined; if (!c) return p;
+  const badTotal = c.total != null && c.total < 1000, badEnd = !!c.end && (c.start ? c.end <= c.start : !c.number && !c.months);
+  if (!badTotal && !badEnd) return p;
+  const x = { ...c }; if (badTotal) delete x.total; if (badEnd) delete x.end;
+  return { ...p, contract: x };
+}
+
 /* ---------- contract ---------- */
 export function contractFacts(doc: Doc): ContractFacts {
   const T = clean(doc.paragraphs.join(' ') + ' ' + doc.tables.flat(2).join(' '));
@@ -75,6 +84,10 @@ export function contractFacts(doc: Doc): ContractFacts {
   const pdm = T.match(/progress reports shall be submitted within ([a-z]+|\d+)\s*\(?(\d+)?\)?\s*Days after the period/i); if (pdm) f.progDays = +(pdm[2] || W[pdm[1].toLowerCase()] || pdm[1]);
   const fm = T.match(/final report shall be submitted, at the latest, ([a-z]+|\d+)\s*\(?(\d+)?\)?\s*months after the end of the Implementation Period/i); if (fm) f.finalMonths = +(fm[2] || W[fm[1].toLowerCase()] || fm[1]);
   const rm = pick(/forecast budget for the subsequent (\d+) months/i); if (rm) f.repMonths = +rm;
+  // A total in millions ("EUR 4.444 million") or cut at a space ("4.444 450") is not the total of an action.
+  const mil = T.match(/(?:EUR|€)\s*(\d{1,3}(?:[.,]\d{1,3})?)\s*million/i); if (f.total != null && f.total < 1000) f.total = mil ? Math.round(parseFloat(mil[1].replace(',', '.')) * 1e6) : undefined;
+  // A lone end date without a start, a duration or a contract number is some other date of the document (a Gantt, a form).
+  if (f.end && !f.start && !f.months && !f.number) delete f.end;
   // An end on or before the start is another date of the letter (e.g. a delegation "until" the start), not the end.
   if (f.start && f.end && f.end <= f.start) delete f.end;
   if (f.start && f.months && !f.end) f.end = addMonths(f.start, f.months);

@@ -34,7 +34,9 @@ export function ForecastEditor({ p }: { p: Project }) {
   const plug = autoLine(d), E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), lastB = R.blocks.at(-1)!.id;
   const twelve = d.opt.kind === 'twelve';
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
-  const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (R.decision === 'addendum' ? 'addendum' : 'notification')) : undefined, balance: plug ?? undefined };
+  // Nothing typed yet: what the balancing line (5.7) takes in is no plan, so no notification or addendum is suggested.
+  const blank = R.lines.filter((l) => l.code !== plug).reduce((a, l) => a + l.planned, 0) < 0.5, dec = blank ? 'none' : R.decision;
+  const opt = { ...d.opt, change: d.opt.programme === 'JP' && !twelve ? (d.opt.change ?? (dec === 'addendum' ? 'addendum' : 'notification')) : undefined, balance: plug ?? undefined };
   const xlsx = (mode: ForecastMode) => exportOk(p, 'the forecast') && download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt, mode), forecastSheets(p, TODAY, opt, resolvedLines(p, TODAY, E), mode));
   // Units that look like a rate typed in the wrong box: more months than the period has for a monthly line, or far more
   // than the budget has left.
@@ -46,7 +48,7 @@ export function ForecastEditor({ p }: { p: Project }) {
     return null;
   };
   const bad = R.lines.flatMap((l) => R.blocks.map((b) => odd(l, b.id)).filter(Boolean).map((m) => `${l.code}: ${m}`));
-  const tone = R.decision === 'addendum' ? 'critical' : R.decision === 'notification' ? 'warn' : 'good';
+  const tone = dec === 'addendum' ? 'critical' : dec === 'notification' ? 'warn' : blank ? 'neutral' : 'good';
   return (
     <div class="fe">
       <section class="card">
@@ -58,7 +60,7 @@ export function ForecastEditor({ p }: { p: Project }) {
               {(Object.keys(FORECAST_KINDS) as ForecastKind[]).filter((k) => FORECAST_KINDS[k].programmes.includes(d.opt.programme)).map((k) => <option value={k}>{FORECAST_KINDS[k].label}</option>)}
             </select>
             {d.opt.programme === 'JP' && !twelve && <label class="fe-ext"><select value={d.opt.change ?? ''} onChange={(e) => setOpt({ change: ((e.target as HTMLSelectElement).value || undefined) as ForecastOptions['change'] })}>
-              <option value="">{R.decision === 'addendum' ? 'Addendum (suggested)' : 'Notification (suggested)'}</option><option value="notification">Notification</option><option value="addendum">Addendum</option></select>
+              <option value="">{dec === 'addendum' ? 'Addendum (suggested)' : 'Notification (suggested)'}</option><option value="notification">Notification</option><option value="addendum">Addendum</option></select>
               n° <input style={{ width: '56px' }} value={d.opt.changeNo ?? ''} onChange={(e) => setOpt({ changeNo: (e.target as HTMLInputElement).value || undefined })} /></label>}
             {(d.opt.kind === 'revision' || d.opt.kind === 'extension') && <label class="fe-ext">until <input type="date" value={d.opt.extendTo ?? ''} min={p.end} onChange={(e) => setOpt({ extendTo: (e.target as HTMLInputElement).value || undefined })} /></label>}
           </div>
@@ -88,14 +90,14 @@ export function ForecastEditor({ p }: { p: Project }) {
       <Inflation p={p} d={d} save={save} />
 
       {!twelve && <section class={`fe-decision ${tone}`} role="status">
-        <div><b>{R.decision === 'addendum' ? 'Addendum needed' : R.decision === 'notification' ? 'Notification is enough' : R.direct.planned ? 'No change to the budget' : 'Fill in the planned expenditure'}</b>
-          <span>{R.decision === 'addendum' ? ' — EU acceptance and a contract amendment' : R.decision === 'notification' ? ` — every heading stays within ${Math.round(R.flex * 100)}% of the agreement` : ''}</span></div>
+        <div><b>{dec === 'addendum' ? 'Addendum needed' : dec === 'notification' ? 'Notification is enough' : !blank ? 'No change to the budget' : 'Fill in the planned expenditure'}</b>
+          <span>{dec === 'addendum' ? ' — EU acceptance and a contract amendment' : dec === 'notification' ? ` — every heading stays within ${Math.round(R.flex * 100)}% of the agreement` : ''}</span></div>
         {plug && (E.lines[plug]?.[lastB]?.u ?? 0) === 0 && R.direct.rounded > R.direct.budget + 50 && <p class="fe-over">The other lines already plan <b>{full(R.direct.rounded - R.direct.budget)}</b> more than the budget — {plug} cannot go below zero. Reduce the plan or request an increase of the total (addendum).</p>}
-        {R.reasons.length > 0 && <ul>{R.reasons.map((x) => <li>{x}</li>)}</ul>}
+        {!blank && R.reasons.length > 0 && <ul>{R.reasons.map((x) => <li>{x}</li>)}</ul>}
         <div class="fe-tot">Direct: budget <b>{full(R.direct.budget)}</b> → proposal <b>{full(R.direct.rounded)}</b> · total eligible <b>{full(R.total.rounded)}</b> · planned <b>{full(R.direct.planned)}</b></div>
       </section>}
 
-      {!twelve && <div class="fe-heads">{R.heads.filter((h) => h.baseline || h.rounded).map((h) => (
+      {!twelve && !blank && <div class="fe-heads">{R.heads.filter((h) => h.baseline || h.rounded).map((h) => (
         <div class={`fe-h${h.beyond || h.isNew ? ' bad' : Math.abs(h.change) > R.flex * 0.7 ? ' warn' : ''}`}>
           <span>{h.code} {h.label}</span><b>{pc(h.change)}</b><small>{full(h.baseline)} → {full(h.rounded)}</small>
           <i style={{ width: `${Math.min(100, Math.abs(h.change) / R.flex * 100)}%` }} />

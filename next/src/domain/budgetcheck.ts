@@ -71,7 +71,8 @@ export function budgetCheck(p: Project, medians = new Map<string, { median: numb
     // Rates far from the portfolio
     for (const l of base) {
       const md = l.unit ? medians.get(`${l.code}|${l.unit.toLowerCase()}`) : undefined, r = n(l.unitRate);
-      if (md && r > 0 && (r > md.median * 1.5 || r < md.median * 0.5)) F.push({ level: 'warn', where: W, code: l.code, text: `Unit rate ${eur(r)} ${l.unit} is ${r > md.median ? Math.round((r / md.median - 1) * 100) + '% above' : Math.round((1 - r / md.median) * 100) + '% below'} the portfolio median ${eur(md.median)} (${md.n} projects) — check for a typing error`, expected: md.median, found: r });
+      // A typing error is a slip of a digit or a decimal point (5× or more); smaller gaps are real price differences, compared on the Unit costs page.
+      if (md && r > 0 && (r >= md.median * 5 || r <= md.median / 5)) F.push({ level: 'warn', where: W, code: l.code, text: `Unit rate ${eur(r)} ${l.unit} is ${r > md.median ? Math.round((r / md.median - 1) * 100) + '% above' : Math.round((1 - r / md.median) * 100) + '% below'} the portfolio median ${eur(md.median)} (${md.n} projects) — check for a typing error`, expected: md.median, found: r });
     }
   }
   // Reports: every report against the approved budget, the latest one in detail

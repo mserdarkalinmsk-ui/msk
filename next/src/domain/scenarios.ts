@@ -17,8 +17,8 @@ export const PRESETS: ScenarioIn[] = [
 const addMonths = (iso: string, m: number) => { const d = parseDate(iso); d.setUTCMonth(d.getUTCMonth() + m); return d.toISOString().slice(0, 10); };
 
 /**
- * Projects each scenario to the (new) end date: spent + open commitments + the monthly forecast rate × pace over the
- * months left; staff cuts reduce the human-resources part of that rate. Balance > 0 is money left unused.
+ * Projects each scenario to the (new) end date as the end-of-project forecast does: spent + the monthly forecast rate ×
+ * pace over the months left, never below spent + committed; staff cuts reduce the human-resources part of that rate. Balance > 0 is money left unused.
  */
 export function runScenario(p: Project, s: ScenarioIn, today: Date): ScenarioOut {
   const m = money(p), L = lines(p), now = Math.max(today.getTime(), spendPoints(p).at(-1)?.t ?? 0);
@@ -33,8 +33,9 @@ export function runScenario(p: Project, s: ScenarioIn, today: Date): ScenarioOut
   const origMonths = Math.max(0, (parseDate(p.end).getTime() - now) / MONTH);
   const stretch = s.extend && origMonths > 0 ? origMonths / months : 1;
   const rate = base * stretch * (1 + s.pacePct / 100) * (1 - hrShare * (s.staffPct / 100));
-  const projected = m.exposure + rate * months;
-  const balance = budget - projected, use = budget ? projected / budget : 0, need = months ? Math.max(0, (budget - m.exposure) / months) : 0;
+  // As the end-of-project forecast: spending goes on at the rate (which also pays the open commitments), never below spent + committed.
+  const projected = Math.max(m.exposure, m.spent + rate * months);
+  const balance = budget - projected, use = budget ? projected / budget : 0, need = months ? Math.max(0, (budget - m.spent) / months) : 0;
   const staffSaving = base * hrShare * (s.staffPct / 100) * months;
   const notes: string[] = [];
   if (s.budgetPct < 0 && budget < m.exposure) notes.push(`the cut goes below what is already spent or committed (${m.exposure.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`);

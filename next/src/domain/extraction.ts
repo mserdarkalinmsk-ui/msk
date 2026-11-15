@@ -24,7 +24,7 @@ export function extractionLines(wb: Pick<Workbook, 'lines' | 'totals'> & { meta?
     // Entries posted on a parent code of a broken-down line stay on their own row below.
     const e = got.get(b.code); got.delete(b.code);
     const actual = e?.actual.cost ?? 0, sc = e?.sc ?? actual;
-    return { code: b.code, description: b.description, unit: b.unit, approved: b.approved ?? 0, approvedUnits: b.approvedUnits ?? null, unitRate: b.unitRate ?? null, actual: b.code === ADMIN_LINE && !e ? 0 : actual, spentCommitted: b.code === ADMIN_LINE && !e ? 0 : sc, committed: Math.max(0, sc - actual), reportedUnits: e?.actual.units ?? null, reportedUnitRate: null, ...(e?.actual.units && !wb.meta?.unitsOfficial ? { unitsEstimated: true } : {}) } as BudgetLine;
+    return { code: b.code, description: b.description, unit: b.unit, approved: b.approved ?? 0, approvedUnits: b.approvedUnits ?? null, unitRate: b.unitRate ?? null, actual: b.code === ADMIN_LINE && !e ? 0 : actual, spentCommitted: b.code === ADMIN_LINE && !e ? 0 : sc, committed: Math.max(0, sc - actual), reportedUnits: e?.actual.units ?? null, reportedUnitRate: null, ...(e?.actual.units && !wb.meta?.unitsOfficial && !/month/i.test(b.unit ?? '') ? { unitsEstimated: true } : {}) } as BudgetLine;
   });
   for (const [code, e] of got) out.push({ code, description: `Line ${code} (not in the approved budget)`, approved: 0, actual: e.actual.cost ?? 0, spentCommitted: e.sc ?? 0, committed: Math.max(0, (e.sc ?? 0) - (e.actual.cost ?? 0)), reportedUnits: e.actual.units ?? null } as BudgetLine);
   return out.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));

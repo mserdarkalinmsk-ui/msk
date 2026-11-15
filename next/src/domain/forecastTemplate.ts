@@ -1,7 +1,7 @@
 import { programmeOf } from './flex';
 import { HEADINGS, latestReport, lineExposure, lines, n, parseDate } from './calc';
 import type { BudgetLine, Project } from './types';
-import { lineRate } from './rates';
+import { lineRate, usedUnitsOf } from './rates';
 import type { Cell, SheetSpec, XCell } from '../ui/xlsxwrite';
 
 /**
@@ -205,7 +205,7 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
       const l: BudgetLine = leafBy.get(code) ?? { code, description: desc(code), unit: STD.get(code)?.u, approved: 0, actual: 0 } as BudgetLine;
       const F = (c: number) => `${col(c)}${r}`;
       const units = l.approvedUnits, rate = l.unitRate, budget = n(l.approved);
-      const aUnits = l.reportedUnits, actual = n(l.actual), sc = lineExposure(l);
+      const aUnits = usedUnitsOf(p, l), actual = n(l.actual), sc = lineExposure(l);
       const aRate = aUnits ? actual / aUnits : l.reportedUnitRate ?? 0;
       const staff = isStaff(code), cb = isChargeBack(code), inSt = staff || cb ? 'rIn' : 'rInY';
       row[C.unit] = { v: l.unit ?? '', st: 'rUnit' };

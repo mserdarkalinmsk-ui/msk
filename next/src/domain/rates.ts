@@ -36,3 +36,13 @@ export function revisedRate(p: Project, l: BudgetLine | undefined, approved: num
   const a = lineRate(p, l);
   return a ? { rate: a.rate, basis: 'average', date: a.date } : { rate: approved ?? 0, basis: 'approved' };
 }
+
+/**
+ * Units used on a line as the finance team counts them: the reported units, or — when a raw extraction only
+ * estimates them — the amount spent at the average unit cost of the latest full report.
+ */
+export function usedUnitsOf(p: Project, l: BudgetLine): number | null {
+  if (!l.unitsEstimated) return l.reportedUnits ?? null;
+  const r = reportRate(p, l.code);
+  return r ? Math.round((n(l.actual) / r.rate) * 100) / 100 : l.reportedUnits ?? null;
+}

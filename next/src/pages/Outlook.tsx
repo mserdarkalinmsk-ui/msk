@@ -1,3 +1,4 @@
+import { outcome } from '../domain/insights';
 import { useState } from 'preact/hooks';
 import { filtered, useStore } from '../data/store';
 import { money } from '../domain/calc';
@@ -27,7 +28,6 @@ export function outlook(p: Project): ProjectOutlook | null {
   const crossings: Crossing[] = [];
   let atEnd = 0;
   for (const h of D.rows) {
-    atEnd += h.exposure + h.rate * D.monthsLeft;
     if (!h.budget || h.code === '10') continue; // administrative costs follow the direct costs
     for (const [kind, lim] of [['budget', h.budget], ['flex', h.budget * (1 + fx)]] as const) {
       if (h.exposure > lim + 0.5) { crossings.push({ p, code: h.code, label: h.label, kind, at: now, now: true, budget: h.budget, exposure: h.exposure, rate: h.rate, flex: fx }); continue; }
@@ -36,6 +36,8 @@ export function outlook(p: Project): ProjectOutlook | null {
       if (t <= end) crossings.push({ p, code: h.code, label: h.label, kind, at: t, now: false, budget: h.budget, exposure: h.exposure, rate: h.rate, flex: fx });
     }
   }
+  // Spending at the end: the end-of-project forecast of the project page (one projection everywhere).
+  atEnd = outcome(p, TODAY).projected;
   return { p, budget: m.budget, spent: m.spent, committed: m.exposure - m.spent, atEnd, end, crossings };
 }
 

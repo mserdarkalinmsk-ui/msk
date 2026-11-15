@@ -1,3 +1,4 @@
+import { outcome } from './insights';
 import { describe, expect, it } from 'vitest';
 import { cashRow } from './cash';
 
@@ -22,9 +23,11 @@ describe('ending soon', () => {
       reportingPeriods: [{ id: 'r1', name: 'R1', type: 'x', date: '2025-07-31', snapshot: { lines: [{ code: '1', approved: 1000000, actual: 200000 }] } },
         { id: 'r2', name: 'R2', type: 'x', date: '2026-01-31', snapshot: { lines: [{ code: '1', approved: 1000000, actual: 320000 }] } }] } as never;
     const [r] = ending([p], new Date('2026-02-01'));
-    expect(Math.round(r.pace / 1000)).toBe(20);
     expect(Math.round(r.monthsLeft)).toBe(6);
     expect(r.remaining).toBe(680000);
-    expect(r.unspent).toBeGreaterThan(500000); expect(r.level).toBe('bad');
+    // The same projection as the end-of-project forecast on the project page.
+    const o = outcome(p, new Date('2026-02-01'));
+    expect(r.pace).toBe(o.rate); expect(r.unspent).toBe(o.unused); expect(r.need).toBe(o.needRate);
+    expect(r.unspent).toBeGreaterThan(400000); expect(r.level).toBe('bad');
   });
 });
