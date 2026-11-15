@@ -34,6 +34,8 @@ export function Palette() {
     { group: 'Actions', label: 'Import Excel, CSV or backup', run: () => set({ drawer: { kind: 'import' } }) },
     { group: 'Actions', label: 'Undo last change', hint: 'Ctrl Z', run: undo },
     { group: 'Actions', label: 'Appearance: design direction, accent, density', run: () => set({ drawer: { kind: 'appearance' } }) },
+    { group: 'Actions', label: 'Rules & thresholds: flexibility, pace, line limits, report age', run: () => set({ drawer: { kind: 'rules' } }) },
+    { group: 'Actions', label: 'Alert centre: open, handled and snoozed alerts', run: () => go('reports/alerts') },
     { group: 'Actions', label: 'Theme: light', run: () => setTheme('light') },
     { group: 'Actions', label: 'Theme: dark', run: () => setTheme('dark') },
     { group: 'Actions', label: 'Theme: follow system', run: () => setTheme('auto') },

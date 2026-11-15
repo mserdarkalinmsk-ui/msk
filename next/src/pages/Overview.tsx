@@ -1,3 +1,4 @@
+import { paceBand, paceTone } from '../domain/rules';
 import { staffCount, staffSplit } from '../domain/staff';
 import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
@@ -17,8 +18,8 @@ import { mapData, ModeSwitch } from './MapPage';
 import { openAlerts } from '../domain/worklist';
 import { useState } from 'preact/hooks';
 
-const gapTone = (g: number) => (g < -0.3 ? 'serious' : g < -0.15 ? 'warning' : g > 0.1 ? 'serious' : 'good');
-const gapWord = (g: number) => (g < -0.15 ? 'Behind' : g > 0.1 ? 'Ahead' : 'On track');
+const gapTone = paceTone;
+const gapWord = (g: number) => ({ 'far-behind': 'Behind', behind: 'Behind', ahead: 'Ahead', ok: 'On track' })[paceBand(g)];
 
 export function Filters() {
   const { countries } = useStore((s) => s.ledger);
@@ -273,7 +274,7 @@ function gapOption(t: Tokens, P: Project[]) {
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${R[x.dataIndex].p.code}</b> ${R[x.dataIndex].p.name}<br/>${signedPct(R[x.dataIndex].g)}` },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => signedPct(v) } },
     yAxis: { type: 'category', data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 11.5 } },
-    series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: r.g < -0.3 || r.g > 0.1 ? t.serious : r.g < -0.15 ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
+    series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: paceTone(r.g) === 'serious' ? t.serious : paceTone(r.g) === 'warning' ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
       label: { show: true, position: 'outside', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => signedPct(x.value) },
       markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: t.ink3, type: 'solid' }, data: [{ xAxis: 0 }] } }],
   };
@@ -318,7 +319,7 @@ export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, bu
 function pacingOption(t: Tokens, P: Project[], exposure = false) {
   const R = P.map((p) => { const m = money(p); const b = m.budget ? m.spent / m.budget : 0, c = m.budget ? m.committed / m.budget : 0; return { p, b, c, el: elapsed(p, TODAY), g: exposure ? b + c - elapsed(p, TODAY) : burnGap(p, TODAY) }; })
     .sort((a, b) => a.g - b.g).reverse();
-  const tone = (g: number) => (g < -0.3 ? t.serious : g < -0.15 ? t.warn : g > 0.1 ? t.serious : t.c[0]);
+  const tone = (g: number) => (paceTone(g) === 'serious' ? t.serious : paceTone(g) === 'warning' ? t.warn : t.c[0]);
   return {
     ...base(t),
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },

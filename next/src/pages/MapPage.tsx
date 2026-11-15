@@ -1,3 +1,4 @@
+import { paceBand } from '../domain/rules';
 import { useState } from 'preact/hooks';
 import { go, set, useStore } from '../data/store';
 import { attention, burnGap, money, totals } from '../domain/calc';
@@ -120,6 +121,6 @@ function MapProjects({ P, cname }: { P: Project[]; cname: (id: string) => string
         <td><b class="num">{p.bh ? `BH ${p.bh}` : p.code}</b> <span class="muted">{p.name.length > 60 ? p.name.slice(0, 58) + '…' : p.name}</span></td><td>{cname(p.country)}</td>
         <td class="r num">{short(m.budget)}</td>
         <td><div class="map-bar"><i style={{ width: '100%' }}><b style={{ width: `${m.budget ? Math.min(100, m.spent / m.budget * 100) : 0}%` }} /></i></div><small class="muted num">{pct(m.budget ? m.spent / m.budget : 0)}</small></td>
-        <td class="r num" style={{ whiteSpace: 'nowrap', color: g < -0.15 ? 'var(--serious)' : g > 0.1 ? 'var(--serious)' : 'var(--good)' }}>{p.datesTbc ? '—' : signedPct(g)}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{date(p.end)}</td></tr>)}</tbody></table></div>
+        <td class="r num" style={{ whiteSpace: 'nowrap', color: paceBand(g) === 'ok' ? 'var(--good)' : 'var(--serious)' }}>{p.datesTbc ? '—' : signedPct(g)}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{date(p.end)}</td></tr>)}</tbody></table></div>
   );
 }

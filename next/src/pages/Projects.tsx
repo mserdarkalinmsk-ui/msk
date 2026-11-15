@@ -1,3 +1,4 @@
+import { paceTone } from '../domain/rules';
 import { useState } from 'preact/hooks';
 import { filtered, go, set, useStore } from '../data/store';
 import { attention, burnGap, deadlines, elapsed, latestReport, money, reportsByDate, reportTotals, spendPoints } from '../domain/calc';
@@ -59,7 +60,7 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
   const staff = roster(p, TODAY).filter((a) => a.status === 'Active').length;
   const next = deadlines(p, TODAY).find((d) => d.status !== 'submitted');
   const pts = spendPoints(p).map((x) => x.v);
-  const tone = g < -0.3 || g > 0.1 ? 'serious' : g < -0.15 ? 'warning' : 'good';
+  const tone = paceTone(g);
   return (
     <article class="pcard" style={{ '--sc': sectorColor(p.sector), animationDelay: `${Math.min(i, 12) * 40}ms` } as Record<string, string>}
       tabIndex={0} onClick={() => go(`project/${p.id}`)} onKeyDown={(e) => e.key === 'Enter' && go(`project/${p.id}`)}>

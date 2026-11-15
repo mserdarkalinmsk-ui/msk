@@ -1,3 +1,4 @@
+import { rules } from './rules';
 import { ADMIN_LINE } from './terms';
 import type { BudgetLine, Ledger, Project, ReportingPeriod } from './types';
 import { extractionLines, isExtraction } from './extraction';
@@ -223,27 +224,27 @@ export const riskScore = (r: { likelihood?: unknown; impact?: unknown }) => Numb
 
 /** Items that need management attention, ordered by severity. */
 export function attention(ps: Project[], today: Date): Flag[] {
-  const F: Flag[] = [];
+  const F: Flag[] = [], R = rules();
   const pct = (x: number) => `${Math.round(x * 100)}%`;
   for (const p of ps) {
     if ((p.status && p.status !== 'Active') || p.datesTbc) continue;
     const m = money(p);
     const gap = burnGap(p, today), el = elapsed(p, today);
-    if (el > 0.1 && gap < -0.15)
-      F.push({ projectId: p.id, kind: 'underspend', severity: gap < -0.3 ? 'serious' : 'warning', title: 'Spending behind schedule', detail: `${pct(m.budget ? m.spent / m.budget : 0)} spent at ${pct(el)} of time` });
-    if (gap > 0.1)
+    if (el > 0.1 && gap < -R.paceBehind / 100)
+      F.push({ projectId: p.id, kind: 'underspend', severity: gap < -R.paceFarBehind / 100 ? 'serious' : 'warning', title: 'Spending behind schedule', detail: `${pct(m.budget ? m.spent / m.budget : 0)} spent at ${pct(el)} of time` });
+    if (gap > R.paceAhead / 100)
       F.push({ projectId: p.id, kind: 'overspend', severity: 'serious', title: 'Spending ahead of schedule', detail: `${pct(m.spent / m.budget)} spent at ${pct(el)} of time` });
     if (m.remaining < 0)
       F.push({ projectId: p.id, kind: 'overbudget', severity: 'critical', title: 'Exposure exceeds budget', detail: `Spent + committed is over budget` });
     for (const l of lines(p)) {
       const ex = l.spentCommitted ?? n(l.actual) + n(l.committed);
-      if (n(l.approved) > 0 && ex > n(l.approved) * 1.1)
-        F.push({ projectId: p.id, kind: 'line', severity: ex > n(l.approved) * 1.25 ? 'critical' : 'serious', title: `Line ${l.code} over approved`, detail: `${l.description || ''} at ${pct(ex / n(l.approved))} of approved` });
+      if (n(l.approved) > 0 && ex > n(l.approved) * (1 + R.lineOver / 100))
+        F.push({ projectId: p.id, kind: 'line', severity: ex > n(l.approved) * (1 + R.lineCritical / 100) ? 'critical' : 'serious', title: `Line ${l.code} over approved`, detail: `${l.description || ''} at ${pct(ex / n(l.approved))} of approved` });
     }
     const last = latestReport(p);
     const sinceStart = (today.getTime() - parseDate(p.start).getTime()) / DAY;
     const age = last ? (today.getTime() - parseDate(last.date).getTime()) / DAY : sinceStart;
-    if (sinceStart > 180 && age > 180)
+    if (sinceStart > R.staleDays && age > R.staleDays)
       F.push({ projectId: p.id, kind: 'stale', severity: 'warning', title: 'No recent financial report', detail: `Last figures ${Math.round(age / 30.4)} months old` });
     for (const r of p.riskRegister ?? [])
       if ((r.status ?? 'Open') === 'Open' && riskScore(r) >= 12)

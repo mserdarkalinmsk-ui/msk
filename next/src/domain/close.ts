@@ -1,6 +1,7 @@
 import { latestReport, money, parseDate } from './calc';
 import { decisions, type Decision } from './decisions';
 import { health } from './health';
+import { rules } from './rules';
 import { selfCheck } from './selfcheck';
 import type { Project } from './types';
 
@@ -17,8 +18,8 @@ export interface CloseRow {
 }
 
 const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
-/** A report counts for the month when its period ends within the last 75 days (quarterly reports included). */
-const FRESH = 75 * 864e5;
+/** A report counts for the month when its period ends within the last 75 days (quarterly reports included; see Rules & thresholds). */
+const FRESH = () => rules().freshDays * 864e5;
 
 export function closeRows(P: Project[], today: Date, last?: CloseRecord): CloseRow[] {
   const live = P.filter((p) => !p.datesTbc && parseDate(p.end).getTime() >= today.getTime() - 92 * 864e5);
@@ -27,7 +28,7 @@ export function closeRows(P: Project[], today: Date, last?: CloseRecord): CloseR
     const m = money(p), h = health(p, today), self = selfCheck([p]), r = latestReport(p);
     const reasons = [...self.map((x) => `${x.figure} reads ${x.a.v.toFixed(2)} on ${x.a.label} and ${x.b.v.toFixed(2)} on ${x.b.label}`), ...h.findings.filter((f) => f.level === 'bad').map((f) => f.text)];
     const warn = h.findings.filter((f) => f.level === 'warn').map((f) => f.text);
-    const fresh = !!r && today.getTime() - parseDate(r.date).getTime() <= FRESH;
+    const fresh = !!r && today.getTime() - parseDate(r.date).getTime() <= FRESH();
     if (!r) warn.unshift('No financial report loaded');
     else if (!fresh) warn.unshift(`Latest report is from ${r.date} — load this month's extraction`);
     const status: CloseStatus = reasons.length ? 'blocked' : warn.length ? 'check' : 'clean';

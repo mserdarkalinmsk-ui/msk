@@ -1,3 +1,4 @@
+import { paceBand, rules } from './rules';
 import { flexOf } from './flex';
 import { earlyWarnings } from './earlywarn';
 import { ADMIN_LINE } from './terms';
@@ -56,7 +57,7 @@ const projectAlerts = perProject((p: Project, today: Date): Alert[] => {
     if (el > 0.25 && o.basis !== 'no data' && o.utilisation < 0.85)
       out.push({ id: `${p.id}:forecast`, projectId: p.id, kind: 'forecast', severity: o.utilisation < 0.7 ? 'serious' : 'warning', title: `Forecast to use ${pct(o.utilisation)} of budget`, detail: `${eur(o.unused)} may stay unused at the current rate; ${eur(o.needRate)}/month needed` });
     if (o.overrun > 1) out.push({ id: `${p.id}:forecast-over`, projectId: p.id, kind: 'forecast', severity: 'serious', title: 'Forecast exceeds budget', detail: `${eur(o.overrun)} over at the current rate` });
-    for (const a of renewals(roster(p, today), today, 90))
+    for (const a of renewals(roster(p, today), today, rules().renewalDays))
       out.push({ id: `${p.id}:contract:${a.key}`, projectId: p.id, kind: 'contract', severity: daysUntil(a.end, today) <= 30 ? 'serious' : 'warning', title: `Contract ends: ${a.display}`, detail: `${a.position} · ${daysUntil(a.end, today)} days`, due: a.end });
     for (const d of deadlines(p, today))
       if (d.status === 'overdue' || d.status === 'due')
@@ -72,7 +73,7 @@ const projectAlerts = perProject((p: Project, today: Date): Alert[] => {
       else if (w.stage === 'notify') out.push({ id: `${p.id}:ew:${w.code}`, projectId: p.id, kind: 'line', severity: 'warning', title: `Notification ahead: ${w.code} ${w.label}`, detail: `${w.why}${w.by ? ` Short by ${w.by}.` : ''}`, due: w.by ?? undefined });
     }
     const left = daysUntil(p.end, today);
-    if (left >= 0 && left <= 120) out.push({ id: `${p.id}:ending`, projectId: p.id, kind: 'ending', severity: left <= 45 ? 'serious' : 'warning', title: `Project ends in ${left} days`, detail: p.successor ? `Successor: ${p.successor}` : 'No successor recorded', due: p.end });
+    if (left >= 0 && left <= rules().endingDays) out.push({ id: `${p.id}:ending`, projectId: p.id, kind: 'ending', severity: left <= 45 ? 'serious' : 'warning', title: `Project ends in ${left} days`, detail: p.successor ? `Successor: ${p.successor}` : 'No successor recorded', due: p.end });
   }
   return keyed();
 });
@@ -86,8 +87,9 @@ export interface Status { verdict: string; tone: Tone; headline: string; points:
 export function status(p: Project, today: Date): Status {
   const m = money(p), el = elapsed(p, today), o = outcome(p, today), P: Point[] = [];
   const burn = m.budget ? m.spent / m.budget : 0, gap = burn - el;
-  const tone: Tone = gap < -0.15 || gap > 0.1 || m.remaining < 0 ? 'bad' : gap < -0.05 ? 'warn' : 'good';
-  const verdict = m.remaining < 0 ? 'Over budget' : gap < -0.15 ? 'Behind schedule' : gap > 0.1 ? 'Ahead of schedule' : gap < -0.05 ? 'Slightly behind' : 'On track';
+  const band = paceBand(gap);
+  const tone: Tone = band !== 'ok' || m.remaining < 0 ? 'bad' : gap < -0.05 ? 'warn' : 'good';
+  const verdict = m.remaining < 0 ? 'Over budget' : band === 'behind' || band === 'far-behind' ? 'Behind schedule' : band === 'ahead' ? 'Ahead of schedule' : gap < -0.05 ? 'Slightly behind' : 'On track';
   const headline = `${pct(burn)} spent at ${pct(el)} of time`;
   P.push({ area: 'Budget', tone: m.remaining < 0 ? 'bad' : 'info', head: `${eur(m.remaining)} uncommitted`, text: `${eur(m.spent)} spent and ${eur(m.committed)} committed of ${eur(m.budget)}` });
   if (o.basis !== 'no data' && el < 1) {

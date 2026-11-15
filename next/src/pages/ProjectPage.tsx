@@ -1,3 +1,4 @@
+import { paceWord } from '../domain/rules';
 import { BudgetVersions } from '../ui/BudgetVersions';
 import { exportOk } from '../ui/exportGate';
 import { Fig } from '../ui/Trace';
@@ -98,7 +99,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
           <div class="meter"><span style={{ width: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%`, background: 'var(--c1)' }} /><i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} /></div>
           <span class="ctx" style={{ fontSize: '11.5px' }}>│ time elapsed {pct(el)}</span>
         </div>
-        <div class="kpi"><span class="label">Pace vs time</span><span class="value"><Fig p={p} f="pace">{signedPct(gap)}</Fig></span><span class="ctx">{gap < -0.15 ? 'behind schedule' : gap > 0.1 ? 'ahead of schedule' : 'on track'}</span></div>
+        <div class="kpi"><span class="label">Pace vs time</span><span class="value"><Fig p={p} f="pace">{signedPct(gap)}</Fig></span><span class="ctx">{paceWord(gap)}</span></div>
         <div class="kpi"><span class="label">Uncommitted balance</span><span class="value" style={{ color: m.remaining < 0 ? 'var(--critical)' : undefined }}><Fig p={p} f="remaining">{short(m.remaining)}</Fig></span><span class="ctx">after <Fig p={p} f="committed">{short(m.committed)}</Fig> committed</span></div>
         <div class="kpi"><span class="label">Activities</span><span class="value">{plan ? `${plan.done}/${plan.total}` : '—'}</span><span class="ctx">{plan ? <>{plan.late > 0 ? <b style={{ color: 'var(--serious)' }}>{plan.late} overdue</b> : 'none overdue'} · month {plan.month}</> : 'no plan on file'}</span></div>
       </section>

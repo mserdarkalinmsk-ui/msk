@@ -11,6 +11,7 @@ import { validateLedger } from '../domain/calc';
 import { officeCountry } from '../domain/office';
 import { lockOf } from '../domain/close';
 import { pruneMarks } from '../domain/worklist';
+import { customRules, setRules } from '../domain/rules';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -18,7 +19,7 @@ export interface State {
   ledger: Ledger;
   route: string;
   filters: Filters;
-  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'trace'; projectId: string; figure?: import('../domain/provenance').Figure; line?: string; field?: import('../domain/provenance').LineField } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'share' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'smart-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] } | { kind: 'period'; t: number; from: number; ids: string[] };
+  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'rules' } | { kind: 'trace'; projectId: string; figure?: import('../domain/provenance').Figure; line?: string; field?: import('../domain/provenance').LineField } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'share' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'smart-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] } | { kind: 'period'; t: number; from: number; ids: string[] };
   palette: boolean;
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];
@@ -62,8 +63,11 @@ function safeGet(k: string) { try { return localStorage.getItem(k); } catch { re
 function safeSet(k: string, v: string | null) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* storage unavailable */ } }
 
 export const get = () => state;
+let rulesOf: unknown;
 export function set(patch: Partial<State> | ((s: State) => Partial<State>)) {
   state = { ...state, ...(typeof patch === 'function' ? patch(state) : patch) };
+  // The house rules travel with the ledger: whenever another ledger is shown (load, undo, restore), its rules apply.
+  if (state.ledger.rules !== rulesOf) { rulesOf = state.ledger.rules; setRules(state.ledger.rules); }
   subs.forEach((f) => f());
 }
 export function useStore<T>(sel: (s: State) => T): T {
@@ -378,6 +382,14 @@ export function setBrand(brand: Ledger['brand'] | null) {
 export function saveClose(rec: import('../domain/close').CloseRecord) {
   const L = draft(state.ledger); L.closes = [rec, ...(L.closes ?? []).filter((c) => c.month !== rec.month)].slice(0, 36);
   commit(L, `Month ${rec.month} closed`);
+}
+/** Saves the house rules (only what differs from the defaults is kept). Every check is redone under the new rules. */
+export function saveRules(r: import('../domain/rules').Rules) {
+  const L = draft(state.ledger), c = customRules(r);
+  if (c) L.rules = c; else delete L.rules;
+  // Checks are remembered per project: a new identity for each project makes them read the new rules.
+  L.projects = L.projects.map((p) => ({ ...p }));
+  commit(L, c ? 'Rules and thresholds saved' : 'Rules and thresholds back to the defaults');
 }
 /** Marks alerts handled or snoozed (null puts them back in the open list); each decision goes to the alert log. */
 export function markAlerts(items: { key: string; title: string; project?: string; severity: import('../domain/calc').Severity }[], mark: { state: 'done' | 'snoozed'; until?: string; note?: string } | null) {
