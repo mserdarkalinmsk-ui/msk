@@ -14,6 +14,9 @@ const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver
 const drawAll = () => { for (const [el, go] of waiting) { io?.unobserve(el); go(); } waiting.clear(); };
 if (typeof window !== 'undefined') addEventListener('beforeprint', drawAll);
 const whenVisible = (el: Element, go: () => void) => { if (!io || (typeof matchMedia === 'function' && matchMedia('print').matches)) return go(); waiting.set(el, go); io.observe(el); return () => { io.unobserve(el); waiting.delete(el); }; };
+/** Charts on the page: resized to the paper before printing and back after, so none is cut at the page edge. */
+const live = new Set<ECharts>();
+if (typeof window !== 'undefined') { const fit = () => { for (const c of live) c.resize(); }; addEventListener('beforeprint', fit); addEventListener('afterprint', fit); matchMedia('print').addEventListener?.('change', fit); }
 /** Draws every chart still waiting (before an export or print started from code). */
 export const drawAllCharts = drawAll;
 
@@ -126,7 +129,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     const draw = ({ echarts }: Lib) => {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
-    inst.current = c;
+    inst.current = c; live.add(c);
     const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens()), true);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
@@ -143,7 +146,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     const mq = matchMedia('(prefers-color-scheme: dark)');
     const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens()), true); };
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
-    off = () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
+    off = () => { live.delete(c); ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
     };
     const stopWait = whenVisible(el.current!, () => { if (mod) draw(mod); else void loadCharts().then(draw); });
     return () => { dead = true; stopWait?.(); off(); };

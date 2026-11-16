@@ -240,3 +240,20 @@ body :is(.hero, .ph-tiles) > .kpi[data-empty] .value { color: var(--ink-3) !impo
 /* Cash plan: the spending trend beside the monthly pace. */
 .cp-pace { display: inline-flex; align-items: center; gap: 10px; justify-content: flex-end; }
 .cp-spark { display: inline-block; width: 64px; }
+
+/* Download buttons beside the page's work stay quiet; the page's main action keeps the weight. */
+body .btn[data-dl]:not(.primary) { background: transparent; border-color: transparent; color: var(--ink-2); box-shadow: none; }
+body .btn[data-dl]:not(.primary):not(:disabled):hover { background: var(--surface-hover); border-color: transparent; color: var(--ink); }
+
+/* Keyboard: whatever can be clicked shows where focus is. */
+.click:focus-visible, tr.click:focus-visible > td { outline: 2px solid var(--focus); outline-offset: -2px; }
+tr.click:focus-visible { outline: none; }
+tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); outline: 0; box-shadow: inset 0 2px 0 var(--focus), inset 0 -2px 0 var(--focus); }
+
+/* Print: figures that open their source (buttons on screen) print as plain figures; headline tiles keep their values. */
+@media print {
+  .fig { display: inline !important; text-decoration: none !important; color: inherit !important; }
+  .hero > button.kpi { display: flex !important; }
+  body .btn[data-dl] { display: none !important; }
+}
+@media print { [role=img] { overflow: hidden; max-width: 100%; } }
