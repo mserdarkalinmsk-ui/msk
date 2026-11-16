@@ -319,3 +319,4 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
 .cpf-h3 { margin: 18px 0 4px; font-size: 14px; }
 .cpf-notes { margin: 10px 0 0; padding-left: 18px; font-size: 12px; color: var(--ink-3); }
 .cpf-foot { margin: 10px 0 0; font-size: 12px; }
+.cpf-k b .cp-i { font-size: inherit; font-weight: inherit; }

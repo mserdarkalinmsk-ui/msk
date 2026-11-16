@@ -10,6 +10,8 @@ import { download } from '../ui/xlsxwrite';
 import { plabel } from '../domain/label';
 
 const H = ['1', '2', '3', '4', '5', '6', '10'];
+/* Column names short enough for one line, still telling headings 5 and 6 apart. */
+const SHORT: Record<string, string> = { '1': 'Staff', '2': 'Travel', '3': 'Equipment', '4': 'Local office', '5': 'Services', '6': 'Other', '10': 'Admin' };
 const head = (code: string) => code.split('.')[0];
 const at = (p: Project, m: string) => reportsByDate(p).filter((r) => r.snapshot?.lines?.length && r.date.slice(0, 7) <= m).at(-1);
 
@@ -46,16 +48,16 @@ export function MonthCompare({ projects }: { projects: Project[] }) {
           <button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
       <div class="card-b table-scroll">
         {a >= b ? <p class="muted">Choose a later “to” month.</p> : <table class="mini mc-t">
-          <thead><tr><th>Project</th><th class="r">Spent added</th><th class="r">Commit. Δ</th><th class="r">Budget Δ</th>{H.map((h) => <th class="r" title={HEADINGS[h]}>{h}. {(HEADINGS[h] ?? '').split(' ')[0]}</th>)}</tr></thead>
+          <thead><tr><th>Project</th><th class="r">Spent added</th><th class="r">Committed change</th><th class="r">Budget change</th>{H.map((h) => <th class="r" title={HEADINGS[h]}>{h}. {SHORT[h] ?? HEADINGS[h]}</th>)}</tr></thead>
           <tbody>{rows.map((r) => <>
             <tr class="click" onClick={() => setOpen(open === r.p.id ? '' : r.p.id)}>
               <td><span class="muted">{open === r.p.id ? '▾' : '▸'}</span> <b>{lab(r.p)}</b><small class="muted" style={{ display: 'block' }}>{r.A ? `${month(r.A.date)} → ${month(r.B.date)}` : `first report ${month(r.B.date)}`}</small></td>
-              <td class="r num"><b>{full(r.spent)}</b></td><td class="r num">{full(r.committed)}</td><td class="r num" style={{ color: Math.abs(r.budget) > 1 ? 'var(--warn)' : 'var(--ink-3)' }}>{Math.abs(r.budget) > 1 ? short(r.budget) : '—'}</td>
-              {H.map((h) => <td class="r num" style={cell(r.by[h] ?? 0)}>{Math.abs(r.by[h] ?? 0) > 0.5 ? short(r.by[h]) : ''}</td>)}</tr>
-            {open === r.p.id && <tr class="mc-d"><td colSpan={4 + H.length}><BurnPanel p={r.p} from={r.A ? Date.parse(r.A.date) : null} to={Date.parse(r.B.date)} /><table class="mini"><thead><tr><th>Line</th><th>Description</th><th class="r">Spent A</th><th class="r">Spent B</th><th class="r">Δ spent</th><th class="r">Δ approved</th></tr></thead>
+              <td class="r num"><b>{full(r.spent)}</b></td><td class="r num">{full(r.committed)}</td><td class="r num" style={{ color: Math.abs(r.budget) > 1 ? 'var(--warn)' : 'var(--ink-3)' }}>{Math.abs(r.budget) > 1 ? full(r.budget) : '—'}</td>
+              {H.map((h) => <td class="r num" style={cell(r.by[h] ?? 0)}>{Math.abs(r.by[h] ?? 0) > 0.5 ? full(r.by[h]) : ''}</td>)}</tr>
+            {open === r.p.id && <tr class="mc-d"><td colSpan={4 + H.length}><BurnPanel p={r.p} from={r.A ? Date.parse(r.A.date) : null} to={Date.parse(r.B.date)} /><table class="mini"><thead><tr><th>Line</th><th>Description</th><th class="r">Spent at first report</th><th class="r">Spent at second report</th><th class="r">Spent in between</th><th class="r">Budget change</th></tr></thead>
               <tbody>{r.D.sort((x, y) => Math.abs(y.actual[1] - y.actual[0]) - Math.abs(x.actual[1] - x.actual[0])).map((d) => <tr><td class="num">{d.code}</td><td>{d.description}{r.A && d.status !== 'changed' && <span class="badge neutral" style={{ marginLeft: '6px' }}>{d.status === 'added' ? 'new line' : 'removed'}</span>}</td><td class="r num">{full(d.actual[0])}</td><td class="r num">{full(d.actual[1])}</td><td class="r num"><b style={{ color: d.actual[1] - d.actual[0] < 0 ? 'var(--critical)' : undefined }}>{full(d.actual[1] - d.actual[0])}</b></td><td class="r num" style={{ color: d.approved[1] !== d.approved[0] ? 'var(--warn)' : 'var(--ink-3)' }}>{d.approved[1] !== d.approved[0] ? full(d.approved[1] - d.approved[0]) : '—'}</td></tr>)}</tbody></table></td></tr>}
           </>)}</tbody>
-          <tfoot><tr><td>Total · {rows.length} projects</td><td class="r num">{full(rows.reduce((s, r) => s + r.spent, 0))}</td><td class="r num">{full(rows.reduce((s, r) => s + r.committed, 0))}</td><td class="r num">{full(rows.reduce((s, r) => s + r.budget, 0))}</td>{H.map((h) => <td class="r num">{Math.abs(tot(h)) > 0.5 ? short(tot(h)) : ''}</td>)}</tr></tfoot>
+          <tfoot><tr><td>Total · {rows.length} projects</td><td class="r num">{full(rows.reduce((s, r) => s + r.spent, 0))}</td><td class="r num">{full(rows.reduce((s, r) => s + r.committed, 0))}</td><td class="r num">{full(rows.reduce((s, r) => s + r.budget, 0))}</td>{H.map((h) => <td class="r num">{Math.abs(tot(h)) > 0.5 ? full(tot(h)) : ''}</td>)}</tr></tfoot>
         </table>}
         {a < b && !rows.length && <p class="muted">No project has a different report between these months.</p>}
       </div>

@@ -154,8 +154,9 @@ export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, 
             it.kind === 'group' ? (
               <div class="dt-row dt-group" role="row" key={'g' + it.label}>
                 <div class="dt-cell pin" />
-                {cols.map((c, i) => (
-                  <div class={`dt-cell ${c.align ?? ''} ${c.pin ? 'pin' : ''}`} style={c.pin ? { left: '40px' } : undefined}>
+                {/* Without subtotals the group name takes the whole row, so a long name is never cut. */}
+                {!hasSum ? <div class="dt-cell" style={{ gridColumn: '2 / -1' }}>{`${it.label} · ${it.rows.length}`}</div> : cols.map((c, i) => (
+                  <div class={`dt-cell ${c.align ?? ''} ${c.pin ? 'pin' : ''}`} style={c.pin ? { left: '40px' } : undefined} title={i === 0 ? it.label : undefined}>
                     {i === 0 ? `${it.label} · ${it.rows.length}` : c.sum ? <span class="num">{(c.format ?? String)(sumOf(it.rows, c))}</span> : ''}
                   </div>
                 ))}
@@ -167,7 +168,7 @@ export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, 
                   <input type="checkbox" checked={sel.has(rowKey(it.r))} aria-label="Select row" onChange={() => toggle(rowKey(it.r))} />
                 </div>
                 {cols.map((c) => (
-                  <div class={`dt-cell ${c.align ?? ''} ${c.pin ? 'pin' : ''} ${c.align ? 'num' : ''}`} style={c.pin ? { left: '40px' } : undefined} role="gridcell">
+                  <div class={`dt-cell ${c.align ?? ''} ${c.pin ? 'pin' : ''} ${c.align ? 'num' : ''}`} style={c.pin ? { left: '40px' } : undefined} role="gridcell" title={c.align ? undefined : String(c.value(it.r) ?? '') || undefined}>
                     {cell(c, it.r)}
                   </div>
                 ))}
@@ -186,7 +187,7 @@ export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, 
             </div>
           )}
         </div>
-        {!view.length && <div class="dt-empty">No rows match “{q}”.</div>}
+        {!view.length && <div class="dt-empty">{q.trim() ? <>No rows match “{q}”.</> : rows.length ? 'No rows in this view.' : 'Nothing recorded yet.'}</div>}
       </div>
     </div>
   );

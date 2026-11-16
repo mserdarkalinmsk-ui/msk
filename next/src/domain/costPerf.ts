@@ -50,18 +50,18 @@ export function costPerf(p: Project, today: Date, wb?: WorkbookSummary | null): 
   const total = Math.max(1, (end - parseDate(p.start).getTime()) / MONTH), baseRate = m.budget / total, baseline = m.spent + baseRate * monthsLeft;
   const way = (key: EacWay['key'], label: string, eac: number, basis: string): EacWay => ({ key, label, eac: r2(eac), vac: r2(m.budget - eac), basis });
   const eac = [
-    way('pace', 'At the current pace', pace, `spent + ${eur(rate)} a month × ${monthsLeft.toFixed(1)} months left`),
-    way('plan', a.basis === 'pace' ? 'Committed, then the pace' : 'The report plan', plan, a.basis === 'pace' ? 'spent + committed + the current pace for the months left' : `spent + committed + ${BASIS_LABEL[a.basis as Basis]}`),
-    way('baseline', 'At the planned pace from now', baseline, `spent + the baseline's ${eur(baseRate)} a month × ${monthsLeft.toFixed(1)} months left`),
+    way('pace', "At today's pace", pace, `spent + ${eur(rate)} a month × ${monthsLeft.toFixed(1)} months left`),
+    way('plan', a.basis === 'pace' ? "What is committed, then today's pace" : 'Following the report plan', plan, a.basis === 'pace' ? "spent + committed + today's pace for the months left" : `spent + committed + ${BASIS_LABEL[a.basis as Basis]}`),
+    way('baseline', 'If spending returns to plan', baseline, `spent + the planned ${eur(baseRate)} a month × ${monthsLeft.toFixed(1)} months left`),
   ];
   const main = a.basis !== 'pace' ? eac[1] : eac[0];
   const notes: string[] = [];
   if (pts.length < 3) notes.push('Fewer than two reports on file: the monthly pace rests on one interval.');
-  if (a.basis === 'pace') notes.push('The latest report has no planned expenditure: estimates use the current pace.');
+  if (a.basis === 'pace') notes.push("The latest report has no planned expenditure, so the estimates use today's pace.");
   const ev = evByWorkPlan(p.workPlans ?? [], wb ?? null, today);
-  if (!ev.length) notes.push('Earned value needs the status of Work Plan activities (done / postponed / cancelled) in an ended Work Plan; none recorded yet.');
+  if (!ev.length) notes.push('Delivery of the Work Plans can be measured once the activities of an ended Work Plan carry a status (done / postponed / cancelled); none recorded yet.');
   const early = m.spent < 0.5 && rate < 0.5;
-  if (early) notes.unshift('No spending reported yet: too early for a pace or an estimate at completion.');
+  if (early) notes.unshift('No spending reported yet: too early to estimate where the project ends.');
   return { early, bac: r2(m.budget), ac: r2(m.spent), committed: r2(m.committed), sc: r2(m.exposure), asAt, timeGone, monthsLeft, pv: r2(pv), fei: pv > 0 ? m.spent / pv : null, sv: r2(m.spent - pv),
     rate: r2(rate), needRate: r2(needRate), tcpiRate: rate > 0 ? needRate / rate : null, eac, main, ev, notes };
 }

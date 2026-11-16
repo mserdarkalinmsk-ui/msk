@@ -114,7 +114,7 @@ export function Changes({ projects }: { projects: Project[] }) {
       </div>
       <div class="card-b table-scroll">
         <table class="mini chg-t">
-          <thead><tr><th>Project</th><th>Period</th><th class="r">Spent before</th><th class="r">Spent now</th><th>Change</th><th class="r">Exposure Δ</th><th class="r">Lines</th><th>Notes</th></tr></thead>
+          <thead><tr><th>Project</th><th>Period</th><th class="r">Spent before</th><th class="r">Spent now</th><th>Change</th><th class="r">Spent + committed change</th><th class="r">Lines</th><th>Notes</th></tr></thead>
           <tbody>{C.map((c) => { const d = c.spent[1] - c.spent[0]; return (
             <tr class="click" onClick={() => go(`project/${c.project.id}`)}>
               <td><b class="num">{c.project.code}</b> <span class="muted">{c.project.name}</span></td>
@@ -229,7 +229,7 @@ export function Scenario({ p }: { p: Project }) {
       </div>
       <div class="card-b table-scroll">
         <table class="mini scn">
-          <thead><tr><th>Line</th><th>Description</th><th class="r">Approved</th><th class="r">Spent + committed</th><th class="r">Change</th><th class="r">Revised</th><th class="r">Δ %</th><th /></tr></thead>
+          <thead><tr><th>Line</th><th>Description</th><th class="r">Approved</th><th class="r">Spent + committed</th><th class="r">Change</th><th class="r">Revised</th><th class="r">Change %</th><th /></tr></thead>
           <tbody>{S.rows.map((r) => (
             <tr class={r.flag ? 'flag' : r.delta ? 'chg' : ''}>
               <td class="num">{r.code}</td><td>{r.description}</td><td class="r num">{full(r.approved)}</td><td class="r num">{full(r.exposure)}</td>
