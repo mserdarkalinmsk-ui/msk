@@ -6,10 +6,10 @@ const proj = (actual: number, pos: object[], reports = ['r1']) => ({ id: 'a', co
   reportingPeriods: reports.map((id, i) => ({ id, name: id, type: 'x', date: `2026-0${i + 1}-28`, snapshot: { lines: [{ code: '1', approved: 1000, actual }], workbook: { pos, lines: [], totals: {} } } })) }) as never;
 describe('what changed', () => {
   it('finds spending, new reports, new and closed POs and new suppliers', () => {
-    const old = { countries: [], projects: [proj(100, [po('1', 'FLAP'), po('2', 'SERENAS')])] } as never;
-    const now = { countries: [], projects: [proj(250, [po('1', 'FLAP', 'CLOSED', 0), po('2', 'SERENAS'), po('3', 'ENTERKON')], ['r1', 'r2'])] } as never;
+    const old = { countries: [], projects: [proj(100, [po('1', 'GAMA'), po('2', 'ZETA')])] } as never;
+    const now = { countries: [], projects: [proj(250, [po('1', 'GAMA', 'CLOSED', 0), po('2', 'ZETA'), po('3', 'ETA')], ['r1', 'r2'])] } as never;
     const C = changesSince(old, now, '2026-01-15');
-    expect(C.spent).toBe(150); expect(C.newPOs).toBe(1); expect(C.newSuppliers).toEqual(['ENTERKON']);
+    expect(C.spent).toBe(150); expect(C.newPOs).toBe(1); expect(C.newSuppliers).toEqual(['ETA']);
     expect(C.projects[0].reports).toEqual(['r2']); expect(C.projects[0].closedPOs.map((x) => x.po)).toEqual(['1']);
   });
 });

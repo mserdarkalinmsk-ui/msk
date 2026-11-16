@@ -7,7 +7,7 @@ const PO = {
   name: 'Purchase Orders', R: [
     ['Purchase orders report'],
     ['Reporting line', 'Description PO', 'PO number', 'Spent in EUR', 'Spent and committed in EUR'],
-    ['1.1.1.4', 'Redacted, Ayse - Project officer from 01/01/2026 to 31/12/2026 100%', '4500123', '30 000,00', '40000'],
+    ['1.1.1.4', 'Ornek, Ayse - Project officer from 01/01/2026 to 31/12/2026 100%', '4500123', '30 000,00', '40000'],
     ['1.2.1.2', 'Martin, Claire Anne - PM HQ from 01.03.2025 to 28.02.2027 50 %', '4500124', '12000', '20000'],
     ['1.1.1.7', 'Unclear description without person', '4500125', '', ''],
     ['2.1', 'Travel - not staff', '4500126', '', ''],
@@ -19,7 +19,7 @@ const GROUPS = { name: 'Budget', R: [['1.1 Local staff (Ankara)'], ['1.2 Staff H
 describe('staff extraction', () => {
   const { records } = extractStaff([GROUPS, PO]);
   it('reads contracts with names, dates, FTE and base', () => {
-    const a = records.find((r) => r.name === 'Redacted, Ayse')!;
+    const a = records.find((r) => r.name === 'Ornek, Ayse')!;
     expect(a).toMatchObject({ code: '1.1.1.4', position: 'Project officer', start: '2026-01-01', end: '2026-12-31', fte: 1, base: 'Local', po: '4500123', review: false });
     expect(a.actual).toBe(30000);
     expect(records.find((r) => r.name === 'Martin, Claire Anne')).toMatchObject({ base: 'HQ', fte: 0.5, end: '2027-02-28' });

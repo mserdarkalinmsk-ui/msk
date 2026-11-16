@@ -84,6 +84,15 @@ describe('petty cash spread over several lines', () => {
     const by = (l: string) => Math.round(R.filter((x) => x.line === l).reduce((a, x) => a + x.amount, 0) * 100) / 100;
     expect(by('2.2')).toBe(22.6); expect(by('5.7')).toBe(44.21);
   });
+  it('puts back together an invoice saved in pieces, places it once, and gives the same result when run again', () => {
+    const pos = [{ line: '2.1', nature: 'T', spent: 242.1 }, { line: '1.3.1', nature: 'P', spent: 273 }].map((x) => ({ po: 'M1', line: x.line, description: 'OM', nature: x.nature, supplier: '', amount: x.spent, spent: x.spent, balance: 0, sc: x.spent, status: '', date: '', units: null, unitType: '' }));
+    const piece = (line: string, amount: number) => ({ date: '2025-01-30', period: 'JAN-25', src: 'invoice' as const, doc: 'D1', po: 'M1', line, account: '6250', description: 'OM', detail: 'M1/MAR-25/trip', supplier: '', amount, posted: true });
+    const shares = [113.8, 128.3]; const entries = [...shares.flatMap((v) => [piece('2.1', v * 0.47), piece('1.3.1', v * 0.53)]), { ...piece('2.1', 273), date: '2025-04-10', doc: 'D2', detail: 'P' }];
+    const once = relineEntries({ pos, entries }), twice = relineEntries(once);
+    const by = (R: typeof entries, l: string) => Math.round(R.filter((x) => x.line === l).reduce((a, x) => a + x.amount, 0) * 100) / 100;
+    expect(by(once.entries!, '2.1')).toBe(242.1); expect(by(once.entries!, '1.3.1')).toBe(273);
+    expect(twice.entries).toEqual(once.entries);
+  });
   it('keeps every cent on the right line over many small invoices', () => {
     const pos = [{ line: '2.2', spent: 22.6 }, { line: '5.7', spent: 44.21 }].map((x) => ({ po: '8', line: x.line, description: 'Petty cash', nature: 'Petty cash multiple BLs', supplier: '', amount: 0, spent: x.spent, balance: 0, sc: 0, status: '', date: '', units: null, unitType: '' }));
     const e = (amount: number, i: number) => ({ date: '2026-03-19', period: 'MAR-26', src: 'invoice' as const, doc: String(i), po: '8', line: '2.2', account: '6187', description: '', detail: 'Petty cash advance request', supplier: '', amount, posted: true });

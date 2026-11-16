@@ -61,6 +61,15 @@ export function importReview(p: Project, report: ReportingPeriod, replaced: stri
     const off = w.lines.filter((l) => l.leaf && Math.abs((by.get(l.code) ?? 0) - (l.actual.cost ?? 0)) > 1);
     if (off.length) issues.push({ level: 'warning', text: `Dated entries and line totals of the file differ on ${off.length} line${off.length > 1 ? 's' : ''}: ${off.slice(0, 4).map((l) => `${l.code} (${eur(r2(by.get(l.code) ?? 0))} vs ${eur(r2(l.actual.cost ?? 0))})`).join(', ')}${off.length > 4 ? ' …' : ''} — the by-date and by-year views follow the entries, the statement the totals` });
   }
+  // Any file: a PO split over several budget lines must have its payments on the lines the PO records them on.
+  if (w?.entries?.length && w.pos?.length) {
+    const spent = new Map<string, Map<string, number>>(), paid = new Map<string, Map<string, number>>();
+    const add = (M: Map<string, Map<string, number>>, po: string, line: string, v: number) => { const m = M.get(po) ?? new Map<string, number>(); m.set(line, (m.get(line) ?? 0) + v); M.set(po, m); };
+    for (const x of w.pos) add(spent, x.po, x.line, x.spent);
+    for (const e of w.entries) if (e.src === 'invoice' && e.po) add(paid, e.po, e.line, e.amount);
+    const bad = [...spent].filter(([po, m]) => m.size > 1 && paid.has(po) && [...new Set([...m.keys(), ...paid.get(po)!.keys()])].some((l) => Math.abs((m.get(l) ?? 0) - (paid.get(po)!.get(l) ?? 0)) > 1)).map(([po]) => po);
+    if (bad.length) issues.push({ level: 'warning', text: `${bad.length} purchase order${bad.length > 1 ? 's' : ''} split over several budget lines ha${bad.length > 1 ? 've' : 's'} payments that could not all be tied to the line they were made from (PO ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ' …' : ''}) — the line totals are right; the by-date figures of those lines may not be` });
+  }
   if (w?.meta.situationDate) {
     const last = (p.reportingPeriods ?? []).filter((r) => !replaced.includes(r.id)).map((r) => r.snapshot?.workbook?.meta?.situationDate).filter(Boolean).sort().at(-1);
     if (last && w.meta.situationDate < last) issues.push({ level: 'warning', text: `Situation at ${w.meta.situationDate} is older than the report already on file (${last}) — the screens keep showing the newer one` });

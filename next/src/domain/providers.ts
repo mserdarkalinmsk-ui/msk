@@ -103,7 +103,7 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
 }
 /**
  * One key per company, however the name was typed: case, punctuation, the legal form (A.S., INC., LTD. STI …),
- * a city after a dash and "(Fournisseur …)" notes are ignored, so "SERENAS … INC.- ANKARA" and "SERENAS … INC." merge.
+ * a city after a dash and "(Fournisseur …)" notes are ignored, so "ZETA … INC.- ANKARA" and "ZETA … INC." merge.
  */
 export function supKey(s: string) {
   return s.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/\s*[-–]\s*(ankara|istanbul|izmir|kyiv|tbilisi|strasbourg)\b.*$/i, ' ')

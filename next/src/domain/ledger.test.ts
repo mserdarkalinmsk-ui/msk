@@ -9,7 +9,7 @@ const INV_H = ['Budget', 'Nature', 'Date GL', 'Period', 'Invoice No', 'Descripti
 const GL_H = ['Budget', 'Nature', 'Reporting Line', 'Unit Type', 'Nbre of Units', 'GL Number', 'Description', 'Line Description', 'SPENT €', 'Period', 'Accounting Date', 'Posting Flag'];
 const sheets = [
   { name: 'Purchase Orders', R: [['All Purchase Orders'], PO_H,
-    ['0189', '5260', '622000004', '5.5.2', 'Per day', '2', '900001', 'Interpretation workshop', 'Interpretation', '1000', '1000', '0', '1000', 'CLOSED', 'ENTERKON', '2026-01-10'],
+    ['0189', '5260', '622000004', '5.5.2', 'Per day', '2', '900001', 'Interpretation workshop', 'Interpretation', '1000', '1000', '0', '1000', 'CLOSED', 'ETA', '2026-01-10'],
     ['0189', '5260', '618500100', '5.7', 'Per contract', '1', '900002', 'Event management conference', 'Contracts', '10000', '12000', '0', '12000', 'CLOSED', 'EVENTCO', '2026-02-01'],
     ['0189', '5260', '640210000', '1.1.1', 'Per month', '12', '900003', 'DOE,Jane - B2 - from 01/01/2026 to 31/12/2028', 'Personnel', '30000', '5000', '25000', '30000', 'OPEN', 'PAIE', '2026-01-01']] },
   { name: 'Factures a date', R: [['Factures'], INV_H,
@@ -147,7 +147,7 @@ describe('what a purchase order was for', () => {
   const P = (description: string, nature = '') => poPurpose({ description, nature });
   it('never names a person', () => {
     expect(P('OM26_599988- Mrs KAYA Zeynep-Nur - Agent').label).toBe('missions of project staff');
-    expect(P('Redacted,Gizem - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
+    expect(P('SAHIN ORNEK,Deniz - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
   });
   it('reads events and experts', () => {
     expect(P('Event Management_Focus Group Meeting_Ankara_8-10 June 2026').label).toBe('the Focus Group Meeting (Ankara, 8-10 June 2026)');

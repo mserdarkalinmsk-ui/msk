@@ -475,7 +475,9 @@ export function pickPoLine<T extends { line: string; nature?: string; detail?: s
   if (byText.length === 1) return byText[0];
   const byAmt = L.filter((x) => x.amount != null && Math.abs(x.amount - amount) < 0.01);
   if (byAmt.length === 1) return byAmt[0];
-  // An invoice equal to what one line of the PO has spent (a mission order: the ticket on 2.1, the per diem on 1.3.1).
+  // An invoice equal to what one line of the PO has spent (a mission order: the ticket on 2.1, the per diem on 1.3.1) —
+  // only when the PO's lines are different things; lines of one kind (petty cash over several lines) are shared instead.
+  if (new Set(L.map((x) => (x.nature ?? '').trim().toLowerCase())).size < L.length) return undefined;
   const bySpent = L.filter((x) => x.spent != null && Math.abs(x.spent - amount) < 0.01);
   return bySpent.length === 1 ? bySpent[0] : undefined;
 }
@@ -487,17 +489,27 @@ export function relineEntries<W extends { pos?: PO[]; entries?: Entry[] }>(wb: W
   // A PO whose invoices already sit on its lines as the PO records the spending is left as it is.
   const cur = new Map<string, Map<string, number>>(); for (const e of wb.entries) if (e.src === 'invoice' && e.po) { const m = cur.get(e.po) ?? new Map<string, number>(); m.set(e.line, (m.get(e.line) ?? 0) + e.amount); cur.set(e.po, m); }
   for (const [po, L] of [...by]) { if (new Set(L.map((x) => x.line)).size < 2) continue; const m = cur.get(po); if (!m) continue; const sp = new Map<string, number>(); for (const x of L) sp.set(x.line, (sp.get(x.line) ?? 0) + x.spent);
-    if ([...new Set([...sp.keys(), ...m.keys()])].every((l) => Math.abs((sp.get(l) ?? 0) - (m.get(l) ?? 0)) <= 1)) by.delete(po); }
+    if ([...new Set([...sp.keys(), ...m.keys()])].every((l) => Math.abs((sp.get(l) ?? 0) - (m.get(l) ?? 0)) < 0.005)) by.delete(po); }
   let changed = false;
+  // Pieces of one invoice shared out by an earlier version (and saved that way, sometimes shared again on each opening)
+  // are put back together first: same invoice, PO, date and text. The invoice is then placed once, the same way every time.
+  const pieces = new Map<string, Entry[]>();
+  for (const e of wb.entries) if (e.src === 'invoice' && e.po && by.has(e.po)) { const k = `${e.doc}|${e.po}|${e.date}|${e.detail}|${e.description}`; const a = pieces.get(k); if (a) a.push(e); else pieces.set(k, [e]); }
+  let source = wb.entries;
+  if ([...pieces.values()].some((a) => a.length > 1)) {
+    const first = new Map<Entry, number>(); for (const a of pieces.values()) if (a.length > 1) first.set(a[0], Math.round(a.reduce((t, x) => t + x.amount, 0) * 100) / 100);
+    const drop = new Set([...pieces.values()].filter((a) => a.length > 1).flatMap((a) => a.slice(1)));
+    source = wb.entries.filter((e) => !drop.has(e)).map((e) => (first.has(e) ? { ...e, amount: first.get(e)! } : e)); changed = true;
+  }
   // Invoices nothing ties to one line (petty cash over several lines): shared out as the PO lines record their spending,
   // when that spending adds up to the invoices.
   const loose = new Map<string, number>();
-  for (const e of wb.entries) if (e.src === 'invoice' && e.po) { const L = by.get(e.po); if (L && new Set(L.map((x) => x.line)).size > 1 && !pickPoLine(L, e.detail, e.amount)) loose.set(e.po, (loose.get(e.po) ?? 0) + e.amount); }
+  for (const e of source) if (e.src === 'invoice' && e.po) { const L = by.get(e.po); if (L && new Set(L.map((x) => x.line)).size > 1 && !pickPoLine(L, e.detail, e.amount)) loose.set(e.po, (loose.get(e.po) ?? 0) + e.amount); }
   const share = new Map<string, { line: string; f: number }[]>();
-  for (const [po, tot] of loose) { const L = by.get(po)!, inv = wb.entries.filter((e) => e.src === 'invoice' && e.po === po).reduce((a, e) => a + e.amount, 0), sp = L.reduce((a, x) => a + x.spent, 0);
+  for (const [po, tot] of loose) { const L = by.get(po)!, inv = source.filter((e) => e.src === 'invoice' && e.po === po).reduce((a, e) => a + e.amount, 0), sp = L.reduce((a, x) => a + x.spent, 0);
     if (sp > 0 && Math.abs(sp - inv) <= 1 && tot) { const m = new Map<string, number>(); for (const x of L) m.set(x.line, (m.get(x.line) ?? 0) + x.spent); share.set(po, [...m].filter(([, v]) => v).map(([line, v]) => ({ line, f: v / sp }))); } }
   const runs = new Map<string, { cum: number; got: Map<string, number> }>();
-  const entries = wb.entries.flatMap((e) => {
+  const entries = source.flatMap((e) => {
     if (e.src !== 'invoice' || !e.po) return [e];
     const L = by.get(e.po); if (!L || new Set(L.map((x) => x.line)).size < 2) return [e];
     const x = pickPoLine(L, e.detail, e.amount);

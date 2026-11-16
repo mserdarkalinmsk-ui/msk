@@ -45,3 +45,17 @@ describe('import preview: line by line', () => {
     if (wb.pos.some((x) => codes.includes(x.line))) expect(R.pos.some((x) => x.kind === 'new')).toBe(true);
   });
 });
+
+describe('import preview: payments of a PO split over several lines', () => {
+  it('raise no warning when every payment sits on the line the PO records it on', () => {
+    const R = importReview(base, report('a', '2026-09-30'));
+    expect(R.issues.some((i) => /could not all be tied/.test(i.text))).toBe(false);
+  });
+  it('warn when payments cannot be tied to the line they were made from', () => {
+    const po = (line: string, spent: number) => ({ po: 'X1', line, description: 'Event', nature: '', supplier: 'S', amount: spent, spent, balance: 0, sc: spent, status: 'OPEN', date: '2026-08-01', units: null, unitType: '' });
+    const inv = { date: '2026-08-10', period: 'AUG-26', src: 'invoice' as const, doc: 'I1', po: 'X1', line: '5.7', account: '6185', description: 'Event', detail: 'Invoice', supplier: 'S', amount: 140, posted: true };
+    const w2 = { ...wb, pos: [...wb.pos, po('5.7', 100), po('2.2', 50)], entries: [...(wb.entries ?? []), inv] };
+    const R = importReview(base, report('a', '2026-09-30', w2 as typeof wb));
+    expect(R.issues.some((i) => /could not all be tied.*X1/.test(i.text))).toBe(true);
+  });
+});
