@@ -129,7 +129,7 @@ export function roster(p: StaffProject, today: Date): Person[] {
   const reports = [...(p.reportingPeriods ?? [])].sort((a, b) => a.date.localeCompare(b.date));
   for (const r of reports) for (let x of ((r.snapshot as { staffRecords?: StaffRecord[] } | undefined)?.staffRecords ?? [])) {
     if (!x.name) continue;
-    // Names stored by earlier imports may still carry a day count ("JS Redacted,…").
+    // Names stored by earlier imports may still carry a day count ("JS SURNAME,…").
     if (x.recordKind === 'Payroll observation') { const c = cleanGlName(x.name); if (c !== x.name) x = { ...x, name: c }; }
     if (!x.name) continue;
     const key = personKey(x.name, x.code);
@@ -142,7 +142,7 @@ export function roster(p: StaffProject, today: Date): Person[] {
     const same = a.contracts.findIndex((c) => c.po && c.po === x.po && c.recordKind === x.recordKind);
     if (same >= 0) a.contracts[same] = x; else a.contracts.push(x);
   }
-  // The same person written twice (a typo in the first name, e.g. "Burcu" / "Bursu" in one GL line): merged into the entry
+  // The same person written twice (a typo in the first name, e.g. "Sena" / "Sema" in one GL line): merged into the entry
   // with more records, on the same reporting line and surname.
   const all = [...map.values()].sort((x, y) => y.contracts.length - x.contracts.length);
   for (const b of all) {

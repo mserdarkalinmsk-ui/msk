@@ -293,10 +293,10 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
   const poBy = new Map<string, { line: string; supplier: string; description: string; detail: string; activity: string }>();
   // A PO split over several budget lines: each invoice goes to the line it names ("5.7-Framework …"), else to the line of the same amount.
   const poAll = new Map<string, PoLineRef[]>();
-  if (pt) { const C = { po: pt.col('ponumber'), na: pt.col('nature'), line: pt.col('reportingline'), sup: pt.col('supplier'), d: pt.col('descriptionpo'), dl: pt.col('descriptionpoline'), amt: pt.col('poamountineur') };
+  if (pt) { const C = { po: pt.col('ponumber'), na: pt.col('nature'), line: pt.col('reportingline'), sup: pt.col('supplier'), d: pt.col('descriptionpo'), dl: pt.col('descriptionpoline'), amt: pt.col('poamountineur'), sp: pt.col('spentineur') };
     for (const r of pt.rows) { const po = cell(r, C.po); if (!po) continue; const x = { line: cell(r, C.line), supplier: cell(r, C.sup), description: cell(r, C.d), detail: cell(r, C.dl), activity: actNo(cell(r, pt.col('activitynumber', 'activitynbr', 'activityno'))) };
       if (!poBy.has(po + '|' + cell(r, C.na))) poBy.set(po + '|' + cell(r, C.na), x); if (!poBy.has(po)) poBy.set(po, x);
-      const all = poAll.get(po) ?? []; all.push({ ...x, nature: cell(r, C.na), amount: z(r[C.amt]) }); poAll.set(po, all); } }
+      const all = poAll.get(po) ?? []; all.push({ ...x, nature: cell(r, C.na), amount: z(r[C.amt]), spent: z(r[C.sp]) }); poAll.set(po, all); } }
   if (inv) {
     const C = { dg: inv.col('dategl'), pe: inv.col('period'), no: inv.col('invoiceno'), d: inv.col('description'), am: inv.col('montantengage', 'montantligne'), po: inv.col('numeropo'), na: inv.col('nature'), pf: inv.col('postedflag') };
     for (const r of inv.rows) {
@@ -463,18 +463,21 @@ export function arithmetic(wb: Workbook): Check[] {
   return out;
 }
 
-type PoLineRef = { line: string; supplier: string; description: string; detail: string; activity: string; nature: string; amount: number };
+type PoLineRef = { line: string; supplier: string; description: string; detail: string; activity: string; nature: string; amount: number; spent: number };
 /** The line of a split PO an invoice belongs to: the code its text starts with, the PO line text it repeats, or a single line of the same amount. */
-export function pickPoLine<T extends { line: string; nature?: string; detail?: string; amount?: number }>(L: T[] | undefined, text: string, amount: number): T | undefined {
+export function pickPoLine<T extends { line: string; nature?: string; detail?: string; amount?: number; spent?: number }>(L: T[] | undefined, text: string, amount: number): T | undefined {
   if (!L?.length) return undefined;
   if (new Set(L.map((x) => x.line)).size < 2) return L[0];
-  const code = text.match(/^\s*(\d+(?:\.\d+)*)\s*[-–/:]/)?.[1];
+  const code = text.match(/^\s*(\d{1,2}(?:\.\d{1,2}){0,3})\s*[-–/:]/)?.[1];
   const byCode = code ? L.find((x) => x.line === code) : undefined; if (byCode) return byCode;
   const t = text.trim().toLowerCase();
   const byText = t ? L.filter((x) => [x.nature, x.detail].some((v) => v && v.trim().toLowerCase() === t)) : [];
   if (byText.length === 1) return byText[0];
   const byAmt = L.filter((x) => x.amount != null && Math.abs(x.amount - amount) < 0.01);
-  return byAmt.length === 1 ? byAmt[0] : undefined;
+  if (byAmt.length === 1) return byAmt[0];
+  // An invoice equal to what one line of the PO has spent (a mission order: the ticket on 2.1, the per diem on 1.3.1).
+  const bySpent = L.filter((x) => x.spent != null && Math.abs(x.spent - amount) < 0.01);
+  return bySpent.length === 1 ? bySpent[0] : undefined;
 }
 
 /** Entries stored before split POs were handled: each invoice moved to the line of the PO it names. */

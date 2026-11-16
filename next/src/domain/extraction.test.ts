@@ -47,6 +47,11 @@ describe('invoices of a PO split over several budget lines', () => {
   it('go to the line the invoice names', () => expect(pickPoLine(L, '5.7-Framework agreement', 14334.63)?.line).toBe('5.7'));
   it('else to the single line of the same amount', () => expect(pickPoLine(L, 'Invoice 12', 27.92)?.line).toBe('2.2'));
   it('stay unresolved when nothing tells them apart', () => expect(pickPoLine(L, 'Invoice 12', 50)).toBeUndefined());
+  it('take a mission-order invoice to the line whose spending it equals, not a PO number read as a code', () => {
+    const M = [{ line: '2.1', nature: 'T', amount: 233.6, spent: 242.1 }, { line: '1.3.1', nature: 'P', amount: 273, spent: 273 }];
+    expect(pickPoLine(M, '000001/MAR-25/SURNAME/GIVEN MRS/City A / City B', 242.1)?.line).toBe('2.1');
+    expect(pickPoLine(M, 'P', 273)?.line).toBe('1.3.1');
+  });
   it('read the line written with a slash too (1.3.1/Framework …)', () => {
     const E = [{ line: '2.1', amount: 325 }, { line: '1.3.1', amount: 1000 }, { line: '5.7', amount: 490.4 }, { line: '5.8', amount: 332 }];
     expect(pickPoLine(E, '1.3.1/Framework agreement/contract for event organisation', 1000)?.line).toBe('1.3.1');

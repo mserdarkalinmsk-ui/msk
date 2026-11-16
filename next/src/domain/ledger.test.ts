@@ -146,7 +146,7 @@ import { poPurpose } from './reasons';
 describe('what a purchase order was for', () => {
   const P = (description: string, nature = '') => poPurpose({ description, nature });
   it('never names a person', () => {
-    expect(P('OM26_599988- Mrs Redacted Ayse-Gunce - Agent').label).toBe('missions of project staff');
+    expect(P('OM26_599988- Mrs KAYA Zeynep-Nur - Agent').label).toBe('missions of project staff');
     expect(P('Redacted,Gizem - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
   });
   it('reads events and experts', () => {
