@@ -229,3 +229,14 @@ body :is(.hero, .ph-tiles) > .kpi[data-empty] .value { color: var(--ink-3) !impo
 
 /* The money series in HTML keys and bars, the same steps the charts use: spent, committed (a light step of spent), left. */
 :root { --s-spent: var(--c1); --s-committed: color-mix(in srgb, var(--c1) 42%, var(--surface)); --s-left: var(--plan); }
+
+/* Heat map: a cell past a threshold names its state too, so colour is never the only signal (print, colour-blind). */
+.hm-c { position: relative; }
+.hm-c:is(.notification, .near, .addendum)::after { position: absolute; top: 4px; right: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; opacity: .9; }
+.hm-c.notification::after { content: 'notif.'; }
+.hm-c.near::after { content: 'near'; }
+.hm-c.addendum::after { content: 'add.'; }
+
+/* Cash plan: the spending trend beside the monthly pace. */
+.cp-pace { display: inline-flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.cp-spark { display: inline-block; width: 64px; }

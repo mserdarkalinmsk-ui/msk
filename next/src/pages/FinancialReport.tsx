@@ -100,10 +100,10 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
 
       <div class="grid g-12">
         <section class="card span-7">
-          <div class="card-h"><div><h2>Budget, use and plan by heading</h2><p>Spent, committed and planned for the next 12 months against each heading's budget</p></div></div>
+          <div class="card-h"><div><h2>Budget, use and plan by heading</h2><p>Each heading against its own budget: spent, committed and planned for the next 12 months, the flexibility between headings and the time gone</p></div></div>
           <div class="card-b">
-            <div class="legend" style={{ marginBottom: '4px' }}><span><i style={{ background: 'var(--c1)' }} />Spent</span><span><i style={{ background: 'var(--c1)', opacity: .4 }} />Committed</span><span><i style={{ background: 'var(--c2)' }} />Planned 12 m</span><span><i style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }} />Budget</span></div>
-            <Chart height={Math.max(220, heads.length * 52 + 40)} label="Budget by heading" option={(t) => headingOption(t, heads)} />
+            <div class="legend" style={{ marginBottom: '4px' }}><span><i style={{ background: 'var(--c1)' }} />Spent</span><span><i style={{ background: 'var(--s-committed)' }} />Committed</span><span><i style={{ background: 'var(--c2)' }} />Planned 12 m</span><span><i style={{ background: 'var(--surface-2)' }} />Budget (100%)</span><span><i style={{ background: 'color-mix(in srgb, var(--warn) 18%, var(--surface))' }} />Flexibility ({pctOf(flexOf(p))}%)</span><span><i class="line" style={{ background: 'var(--ink)' }} />Time gone</span></div>
+            <Chart height={Math.max(220, heads.length * 52 + 40)} label="Budget by heading" option={(t) => headingOption(t, heads, flexOf(p), el)} />
           </div>
         </section>
         <section class="card span-5">
@@ -203,19 +203,30 @@ function POTable({ rows }: { rows: WorkbookSummary['pos'] }) {
   return <DataTable rows={rows} columns={cols} rowKey={(x) => x.po + x.line + x.description} title="open-pos" storageKey="pl-cols-pos" maxHeight={520} groupBy={[{ label: 'nature', key: (x) => x.nature }, { label: 'line', key: (x) => x.line }]} />;
 }
 
-function headingOption(t: Tokens, H: { name: string; budget: number; actual: number; sc: number; planned: number }[]) {
+/**
+ * Each heading against its own budget (a bullet bar): the track is the budget (100%), the light band past it the
+ * flexibility between headings, the fill spent then committed then planned for the next 12 months, and one line the
+ * share of time gone. Every heading reads on the same scale, so a small heading is as legible as a large one.
+ */
+function headingOption(t: Tokens, H: { name: string; budget: number; actual: number; sc: number; planned: number }[], flex: number, el: number) {
+  const P = (v: number, h: { budget: number }) => (h.budget ? (v / h.budget) * 100 : 0);
+  const top = Math.max(100 + flex * 100 + 10, ...H.map((h) => P(h.sc + h.planned, h) + 8));
   return {
     ...base(t),
-    grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const h = H[ps[0].dataIndex]; return `<b>${h.name}</b><br/>Budget ${full(h.budget)}<br/>Spent ${full(h.actual)} · committed ${full(h.sc - h.actual)}<br/>Planned 12 m ${full(h.planned)}<br/>After plan: <b>${pct(h.budget ? (h.sc + h.planned) / h.budget : 0)}</b> of budget`; } },
-    xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
-    yAxis: { type: 'category', inverse: true, data: H.map((h) => h.name), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
+    grid: { left: 8, right: 8, top: 26, bottom: 8, containLabel: true },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: t.surface2, opacity: 0.6 } }, formatter: (ps: any[]) => { const h = H[ps[0].dataIndex];
+      return `<b>${h.name}</b><br/>Budget <b>${full(h.budget)}</b><br/>Spent ${full(h.actual)} (${pct(h.budget ? h.actual / h.budget : 0)})<br/>Committed ${full(h.sc - h.actual)}<br/>Spent + committed <b>${full(h.sc)}</b> (${pct(h.budget ? h.sc / h.budget : 0)})${h.planned ? `<br/>Planned next 12 months ${full(h.planned)}` : ''}<br/><span style="color:${t.ink3}">time gone ${pct(el)} · flexibility up to ${pct(1 + flex)}</span>`; } },
+    xAxis: { type: 'value', min: 0, max: Math.ceil(top / 10) * 10, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => `${v}%` } },
+    // the figures sit in their own right-hand column, aligned, off the bars
+    yAxis: [{ type: 'category', inverse: true, data: H.map((h) => h.name), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
+      { type: 'category', inverse: true, position: 'right', data: H.map((h) => `${pct(h.budget ? (h.sc + h.planned) / h.budget : 0)}   ${short(h.sc + h.planned)} / ${short(h.budget)}`), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: t.ink2, fontSize: 11.5, fontFamily: t.font, align: 'left', margin: 12 } }],
     series: [
-      { name: 'Budget', type: 'bar', barWidth: 24, barGap: '-100%', z: 1, data: H.map((h) => h.budget), itemStyle: { color: t.surface2, borderColor: t.ink3, borderWidth: 0.5, borderRadius: 5 },
-        label: { show: true, position: 'right', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => pct(H[x.dataIndex].budget ? (H[x.dataIndex].sc + H[x.dataIndex].planned) / H[x.dataIndex].budget : 0) } },
-      { name: 'Spent', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => h.actual), itemStyle: { color: t.c[0], borderRadius: [3, 0, 0, 3] } },
-      { name: 'Committed', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => Math.max(0, h.sc - h.actual)), itemStyle: { color: t.committed } },
-      { name: 'Planned', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => h.planned), itemStyle: { color: t.c[1], borderRadius: [0, 3, 3, 0] } },
+      { name: 'Budget', type: 'bar', barWidth: 22, barGap: '-100%', z: 1, silent: true, data: H.map(() => 100), itemStyle: { color: t.surface2, borderRadius: 4 },
+        markArea: { silent: true, itemStyle: { color: t.warn, opacity: 0.08 }, data: [[{ xAxis: 100 }, { xAxis: 100 + flex * 100 }]] },
+        markLine: { silent: true, symbol: 'none', label: { show: true, position: 'start', distance: 4, formatter: `time ${pct(el)}`, color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink, width: 1.5, type: 'solid' }, data: [{ xAxis: el * 100 }] } },
+      { name: 'Spent', type: 'bar', stack: 'u', barWidth: 10, z: 2, data: H.map((h) => P(h.actual, h)), itemStyle: { color: t.spent } },
+      { name: 'Committed', type: 'bar', stack: 'u', barWidth: 10, z: 2, data: H.map((h) => P(Math.max(0, h.sc - h.actual), h)), itemStyle: { color: t.committed } },
+      { name: 'Planned', type: 'bar', stack: 'u', barWidth: 10, z: 2, data: H.map((h) => P(h.planned, h)), itemStyle: { color: t.c[1], opacity: 0.85 } },
     ],
   };
 }

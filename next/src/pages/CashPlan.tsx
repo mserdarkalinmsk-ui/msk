@@ -1,3 +1,5 @@
+import { Sparkline } from '../ui/Sparkline';
+import { spendPoints } from '../domain/calc';
 import { useState } from 'preact/hooks';
 import { filtered, go, upsertProject, useStore } from '../data/store';
 import { cashRow, type CashRow } from '../domain/cash';
@@ -48,7 +50,7 @@ export function CashPlan() {
               <td class="r num">{full(r.spent)}</td>
               <td class="r num" style={{ color: r.received && r.cash < 0 ? 'var(--critical)' : undefined }}><b>{r.received ? full(r.cash) : '—'}</b></td>
               <td>{r.received ? <span class="cp-bar" title={`${Math.round(r.used * 100)}% of the money received is spent`}><i style={{ width: `${Math.min(100, r.used * 100)}%`, background: r.used >= th / 100 ? 'var(--critical)' : r.used >= th / 100 - 0.15 ? 'var(--c4)' : 'var(--accent)' }} /><b style={{ left: `${th}%` }} /><span>{Math.round(r.used * 100)}%</span></span> : <span class="muted">no payment</span>}</td>
-              <td class="r num">{full(r.burn)}</td>
+              <td class="r num"><span class="cp-pace">{spendPoints(r.p).length > 2 && <span class="cp-spark" title="Cumulative spend at each report"><Sparkline values={spendPoints(r.p).slice(-8).map((x) => x.v)} height={22} /></span>}{full(r.burn)}</span></td>
               <td class="num" style={{ color: r.runout && r.runout <= in90 ? 'var(--warn)' : undefined }}>{r.runout ? date(r.runout) : '—'}</td>
               <td><span class="badge" style={{ color: REQ[r.request].c, borderColor: REQ[r.request].c }}>{REQ[r.request].t}</span>{r.request !== 'now' && r.request !== 'none' && r.requestOn && <small class="muted"> from {date(r.requestOn)}</small>}</td></tr>
             {open === r.p.id && <tr class="sp-sub"><td colSpan={9}><Payments p={r.p} /></td></tr>}</>)}</tbody></table>
