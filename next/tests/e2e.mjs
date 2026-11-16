@@ -35,7 +35,6 @@ async function page(opts) {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'light' });
   check((await p.locator('.kpi.lead .value').textContent()).startsWith('€'), 'hero KPI renders');
   check(await p.locator('svg path').count() > 20, 'charts render');
-  check(await p.locator('.ask-btn').count() === 0, 'assistant hidden in a saved copy (no claude.ai viewer)');
   await p.screenshot({ path: `${shots}/overview-light.png`, fullPage: true });
 
   // Scroll stability: nothing but the top bar may move relative to the document

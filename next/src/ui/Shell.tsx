@@ -4,7 +4,6 @@ import { READONLY } from '../data/store';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { watchTables } from './tableTidy';
-import { sampler } from '../ai/assistant';
 import { get, go, set, setTheme, useStore } from '../data/store';
 import { attention } from '../domain/calc';
 import { alertStatus } from '../domain/worklist';
@@ -32,10 +31,6 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
   const theme = useStore((s) => s.theme);
   const ledger = useStore((s) => s.ledger);
   const [open, setOpen] = useState(false);
-  // The assistant appears only where the page can ask Claude with the app's figures (opened from its claude.ai link).
-  const [ai, setAi] = useState(false);
-  useEffect(() => { let on = true; void sampler().then(async (f) => { if (!f) return; const l = await f.limits?.().catch(() => null); if (on && (!l || l.tools)) setAi(true); }); return () => { on = false; }; }, []);
-  useEffect(() => { if (!ai) return; const k = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); set({ drawer: { kind: 'ask' } }); } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, [ai]);
   // Every table, on the page and in side panels, gets the same figure alignment and sticky header.
   useEffect(() => watchTables(document.body), []);
   const appTitle = ledger.brand?.title || 'Portfolio Ledger';
@@ -90,7 +85,6 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           <button class="search hide-sm" onClick={() => set({ palette: true })}>
             <Icon d="m21 21-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" /><span>Search or run a command</span><kbd>Ctrl K</kbd>
           </button>
-          {ai && <button class="btn ask-btn" onClick={() => set({ drawer: { kind: 'ask' } })} title="Ask about the portfolio (Ctrl J)"><span aria-hidden="true">✦</span> Ask</button>}
           {actions}
         </header>
         <main class="page" id="content"><OldCopyBanner /><SharedBanner />{!READONLY && <><FreshStart /><BackupBanner /></>}{children}</main>

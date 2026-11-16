@@ -25,7 +25,6 @@ import { ImportPanel } from './ImportPanel';
 import { X } from './CloseX';
 import { TracePanel } from './Trace';
 import { RulesPanel } from './RulesPanel';
-import { AskPanel } from './AskPanel';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -39,7 +38,7 @@ export function Drawer() {
   return (
     <>
       <div class="scrim" onClick={close} />
-      <div class={`drawer${d.kind === 'ask' ? ' drawer-ask' : ''}`} role="dialog" aria-modal="true">
+      <div class="drawer" role="dialog" aria-modal="true">
         {d.kind === 'project' && <ProjectView id={d.id} close={close} />}
         {d.kind === 'new-project' && <ProjectForm close={close} preset={d.country} prefill={d.prefill} thenReport={d.thenReport} />}
         {d.kind === 'report' && <ReportImport projectId={d.projectId} close={close} />}
@@ -51,7 +50,6 @@ export function Drawer() {
         {d.kind === 'countries' && <CountryPanel close={close} edit={d.edit} />}
         {d.kind === 'import' && <ImportPanel close={close} />}
         {d.kind === 'rules' && <RulesPanel close={close} />}
-        {d.kind === 'ask' && <AskPanel close={close} />}
         {d.kind === 'trace' && <TracePanel projectId={d.projectId} figure={d.figure} line={d.line} field={d.field} close={close} />}
         {d.kind === 'smart-import' && <SmartImport files={d.files} close={close} />}
         {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
