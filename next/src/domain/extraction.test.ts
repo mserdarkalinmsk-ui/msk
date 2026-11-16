@@ -47,6 +47,11 @@ describe('invoices of a PO split over several budget lines', () => {
   it('go to the line the invoice names', () => expect(pickPoLine(L, '5.7-Framework agreement', 14334.63)?.line).toBe('5.7'));
   it('else to the single line of the same amount', () => expect(pickPoLine(L, 'Invoice 12', 27.92)?.line).toBe('2.2'));
   it('stay unresolved when nothing tells them apart', () => expect(pickPoLine(L, 'Invoice 12', 50)).toBeUndefined());
+  it('read the line written with a slash too (1.3.1/Framework …)', () => {
+    const E = [{ line: '2.1', amount: 325 }, { line: '1.3.1', amount: 1000 }, { line: '5.7', amount: 490.4 }, { line: '5.8', amount: 332 }];
+    expect(pickPoLine(E, '1.3.1/Framework agreement/contract for event organisation', 1000)?.line).toBe('1.3.1');
+    expect(pickPoLine(E, '5.8/Framework agreement/contract for event organisation', 332)?.line).toBe('5.8');
+  });
   it('are moved in stored workbooks', () => {
     const e = { date: '2026-07-22', period: 'JUL-26', src: 'invoice' as const, doc: '1', po: '9', line: '2.2', account: '6185', description: '', detail: '5.7-Framework agreement', supplier: '', amount: 100, posted: true };
     const pos = L.map((x) => ({ po: '9', line: x.line, description: '', nature: x.nature, supplier: '', amount: x.amount, spent: 0, balance: 0, sc: 0, status: '', date: '', units: null, unitType: '' }));
@@ -71,6 +76,13 @@ describe('petty cash spread over several lines', () => {
     const pos = [{ line: '2.2', spent: 22.6 }, { line: '5.7', spent: 44.21 }].map((x) => ({ po: '8', line: x.line, description: 'Petty cash', nature: 'Petty cash multiple BLs', supplier: '', amount: 0, spent: x.spent, balance: 0, sc: 0, status: 'OPEN', date: '', units: null, unitType: '' }));
     const e = (amount: number) => ({ date: '2026-03-19', period: 'MAR-26', src: 'invoice' as const, doc: String(amount), po: '8', line: '2.2', account: '6187', description: '', detail: 'Petty cash advance request', supplier: '', amount, posted: true });
     const R = relineEntries({ pos, entries: [e(40.62), e(26.19)] }).entries!;
+    const by = (l: string) => Math.round(R.filter((x) => x.line === l).reduce((a, x) => a + x.amount, 0) * 100) / 100;
+    expect(by('2.2')).toBe(22.6); expect(by('5.7')).toBe(44.21);
+  });
+  it('keeps every cent on the right line over many small invoices', () => {
+    const pos = [{ line: '2.2', spent: 22.6 }, { line: '5.7', spent: 44.21 }].map((x) => ({ po: '8', line: x.line, description: 'Petty cash', nature: 'Petty cash multiple BLs', supplier: '', amount: 0, spent: x.spent, balance: 0, sc: 0, status: '', date: '', units: null, unitType: '' }));
+    const e = (amount: number, i: number) => ({ date: '2026-03-19', period: 'MAR-26', src: 'invoice' as const, doc: String(i), po: '8', line: '2.2', account: '6187', description: '', detail: 'Petty cash advance request', supplier: '', amount, posted: true });
+    const R = relineEntries({ pos, entries: [40.62, -0.31, 3.98, -0.08, 24.26, -1.66].map(e) }).entries!;
     const by = (l: string) => Math.round(R.filter((x) => x.line === l).reduce((a, x) => a + x.amount, 0) * 100) / 100;
     expect(by('2.2')).toBe(22.6); expect(by('5.7')).toBe(44.21);
   });

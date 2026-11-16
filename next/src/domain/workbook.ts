@@ -301,7 +301,11 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     const C = { dg: inv.col('dategl'), pe: inv.col('period'), no: inv.col('invoiceno'), d: inv.col('description'), am: inv.col('montantengage', 'montantligne'), po: inv.col('numeropo'), na: inv.col('nature'), pf: inv.col('postedflag') };
     for (const r of inv.rows) {
       const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
-      const po = cell(r, C.po), x = poBy.get(po + '|' + cell(r, C.na)) ?? pickPoLine(poAll.get(po), cell(r, C.d), num(r[C.am]) ?? 0) ?? poBy.get(po);
+      // A PO split over several lines (an event organised by a framework contractor: per diems 1.3.x, travel 2.x, 5.7,
+      // 5.8 …) usually books every line on the same account, so the line the invoice names comes first; the account
+      // decides only when it points to one line of the PO.
+      const po = cell(r, C.po), all = poAll.get(po), na = cell(r, C.na), byNature = all?.filter((y) => y.nature === na) ?? [];
+      const x = pickPoLine(all, cell(r, C.d), num(r[C.am]) ?? 0) ?? (new Set(byNature.map((y) => y.line)).size === 1 ? poBy.get(po + '|' + na) : undefined) ?? poBy.get(po);
       entries.push({ ...(x?.activity ? { activity: x.activity } : {}), date: toDay(r[C.dg]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'invoice', doc: no, po, line: x?.line ?? '', account: cell(r, C.na), description: x?.description || cell(r, C.d), detail: cell(r, C.d), supplier: x?.supplier ?? '', amount, posted: !/^n/i.test(cell(r, C.pf)) });
     }
   }
@@ -464,7 +468,7 @@ type PoLineRef = { line: string; supplier: string; description: string; detail: 
 export function pickPoLine<T extends { line: string; nature?: string; detail?: string; amount?: number }>(L: T[] | undefined, text: string, amount: number): T | undefined {
   if (!L?.length) return undefined;
   if (new Set(L.map((x) => x.line)).size < 2) return L[0];
-  const code = text.match(/^\s*(\d+(?:\.\d+)*)\s*[-–]/)?.[1];
+  const code = text.match(/^\s*(\d+(?:\.\d+)*)\s*[-–/:]/)?.[1];
   const byCode = code ? L.find((x) => x.line === code) : undefined; if (byCode) return byCode;
   const t = text.trim().toLowerCase();
   const byText = t ? L.filter((x) => [x.nature, x.detail].some((v) => v && v.trim().toLowerCase() === t)) : [];
@@ -489,11 +493,21 @@ export function relineEntries<W extends { pos?: PO[]; entries?: Entry[] }>(wb: W
   const share = new Map<string, { line: string; f: number }[]>();
   for (const [po, tot] of loose) { const L = by.get(po)!, inv = wb.entries.filter((e) => e.src === 'invoice' && e.po === po).reduce((a, e) => a + e.amount, 0), sp = L.reduce((a, x) => a + x.spent, 0);
     if (sp > 0 && Math.abs(sp - inv) <= 1 && tot) { const m = new Map<string, number>(); for (const x of L) m.set(x.line, (m.get(x.line) ?? 0) + x.spent); share.set(po, [...m].filter(([, v]) => v).map(([line, v]) => ({ line, f: v / sp }))); } }
+  const runs = new Map<string, { cum: number; got: Map<string, number> }>();
   const entries = wb.entries.flatMap((e) => {
     if (e.src !== 'invoice' || !e.po) return [e];
     const L = by.get(e.po); if (!L || new Set(L.map((x) => x.line)).size < 2) return [e];
     const x = pickPoLine(L, e.detail, e.amount);
-    if (!x) { const S = share.get(e.po); if (!S) return [e]; changed = true; let left = e.amount; return S.map((s, i) => { const a = i === S.length - 1 ? Math.round(left * 100) / 100 : Math.round(e.amount * s.f * 100) / 100; left -= a; return { ...e, line: s.line, amount: a }; }); }
+    if (!x) {
+      const S = share.get(e.po); if (!S) return [e]; changed = true;
+      // Shared on the running total of the PO's invoices, so the cents add up to each line's own spending at the end.
+      const run = runs.get(e.po) ?? { cum: 0, got: new Map<string, number>() }; runs.set(e.po, run); run.cum += e.amount;
+      let left = Math.round(e.amount * 100) / 100;
+      return S.map((s, i) => {
+        const a = i === S.length - 1 ? Math.round(left * 100) / 100 : Math.round((Math.round(run.cum * s.f * 100) / 100 - (run.got.get(s.line) ?? 0)) * 100) / 100;
+        left -= a; run.got.set(s.line, Math.round(((run.got.get(s.line) ?? 0) + a) * 100) / 100); return { ...e, line: s.line, amount: a };
+      });
+    }
     if (x.line === e.line) return [e];
     changed = true; return [{ ...e, line: x.line }];
   });
