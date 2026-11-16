@@ -9,3 +9,20 @@ describe('isFigure', () => {
     for (const t of ['1.3', '2.1.4', 'BH 9413', 'Travel', '14 Nov 2026', '4500123456', '']) expect(isFigure(t), t).toBe(false);
   });
 });
+
+import { iconFor } from './tileIcons';
+describe('iconFor', () => {
+  it('picks the icon from the tile label', () => {
+    expect(iconFor('Uncommitted balance')).toBe('coins');
+    expect(iconFor('Spent to date')).toBe('trend');
+    expect(iconFor('Committed')).toBe('receipt');
+    expect(iconFor('Total budget')).toBe('wallet');
+    expect(iconFor('Pace vs time')).toBe('clock');
+    expect(iconFor('Lines over approved')).toBe('alert');
+    expect(iconFor('Reports on file')).toBe('file');
+    expect(iconFor('Staff')).toBe('users');
+  });
+});
+describe('iconFor on staff tiles', () => {
+  it('reads people first', () => { expect(iconFor('Within contract today')).toBe('users'); expect(iconFor('Records to confirm')).toBe('file'); });
+});

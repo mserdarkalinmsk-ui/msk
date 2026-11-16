@@ -45,6 +45,24 @@ export function Filters() {
   );
 }
 
+/* Headline-tile icons: 24px line drawings in the label colour. */
+const I = {
+  wallet: 'M3 7.5A2.5 2.5 0 0 1 5.5 5H18v3M3 7.5V17a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5.5A2.5 2.5 0 0 1 3 7.5ZM16 13.5h.01',
+  trend: 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  pace: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM12 7v5l3 2',
+  lock: 'M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+  coins: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6',
+};
+const Ico = ({ d }: { d: string }) => <i class="sc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d={d} /></svg></i>;
+/** A flat ring: the share filled, the figure in the middle. */
+function Ring({ share, label }: { share: number; label: string }) {
+  const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, share));
+  return <div class="sc-ring" title={`${pct(v)} ${label}`}><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+    <circle cx="32" cy="32" r={r} fill="none" stroke="var(--surface-2)" stroke-width="7" />
+    <circle cx="32" cy="32" r={r} fill="none" stroke="var(--c7)" stroke-width="7" stroke-linecap="round" stroke-dasharray={`${(c * v).toFixed(1)} ${c.toFixed(1)}`} transform="rotate(-90 32 32)" />
+  </svg><span><b>{pct(v)}</b><small>{label}</small></span></div>;
+}
+
 export function Overview() {
   const state = useStore((s) => s);
   const P = filtered(state);
@@ -67,39 +85,49 @@ export function Overview() {
   return (
     <>
       <Filters />
-      <section class="hero" aria-label="Key figures">
+      <section class="hero showcase" aria-label="Key figures">
         <div class="kpi">
-          <span class="label">Total budget</span>
+          <span class="label"><Ico d={I.wallet} />Total budget</span>
           <span class="value"><Count value={T.budget} format={short} /></span>
           <span class="ctx">{T.projects} project{T.projects === 1 ? '' : 's'} · {short(T.budget - T.exposure)} not yet spent or committed</span>
+          <div class="sc-split" title={`Spent ${pct(T.burn)} · committed ${pct(T.committed / (T.budget || 1))} · free ${pct(Math.max(0, T.budget - T.exposure) / (T.budget || 1))}`}>
+            <span style={{ flex: Math.max(0, T.spent) }} class="s" /><span style={{ flex: Math.max(0, T.committed) }} class="c" /><span style={{ flex: Math.max(0, T.budget - T.exposure) }} class="f" />
+          </div>
           {staff.total > 0 && <span class="ctx kpi-staff" title={staff.positions ? "People with a contract running today; projects without staff records count the staff positions of their latest report" : "People with a contract running today (from the staff records of the reports)"}><b>👥 {staff.total} staff</b><span>{staffSplit(staff)}</span></span>}
         </div>
         <div class="kpi lead">
-          <span class="label">Spent to date</span>
+          <span class="label"><Ico d={I.trend} />Spent to date</span>
           <span class="value"><Count value={T.spent} format={short} /></span>
           <span class="ctx"><b>{pct(T.burn)}</b> of {short(T.budget)} budget · {T.projects} projects</span>
           <div class="meter" title={`${pct(T.burn)} spent, ${pct(T.elapsed)} of time elapsed`}>
-            <span style={{ width: `${Math.min(100, T.burn * 100)}%`, background: 'var(--c1)' }} />
-            <span style={{ left: `${Math.min(100, T.burn * 100)}%`, width: `${Math.min(100 - T.burn * 100, (T.committed / T.budget) * 100)}%`, background: 'var(--c1)', opacity: 0.35 }} />
-            <i class="tick" style={{ left: `calc(${T.elapsed * 100}% - 1px)` }} />
+            <span class="m-s" style={{ width: `${Math.min(100, T.burn * 100)}%` }} />
+            <span class="m-c" style={{ left: `${Math.min(100, T.burn * 100)}%`, width: `${Math.max(0, Math.min(100 - T.burn * 100, (T.committed / (T.budget || 1)) * 100))}%` }} />
+            <i class="tick" style={{ left: `calc(${Math.min(100, T.elapsed * 100)}% - 1px)` }} />
           </div>
-          <span class="ctx" style={{ fontSize: '12px' }}><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', marginRight: '4px' }} />spent</span><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', opacity: .35, marginRight: '4px' }} />committed</span><span>│ time elapsed {pct(T.elapsed)}</span></span>
+          <span class="ctx sc-key"><span><i class="k-s" />spent</span><span><i class="k-c" />committed</span><span><i class="k-t" />time elapsed {pct(T.elapsed)}</span></span>
         </div>
         <div class="kpi" data-tone={({ good: 'good', warning: 'warn', serious: 'bad' } as const)[gapTone(gap)]}>
-          <span class="label">Pace vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
+          <span class="label"><Ico d={I.pace} />Pace vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
           <span class="value"><Count value={gap} format={signedPct} /></span>
           <span class="ctx">percentage points {gap < 0 ? "behind" : "ahead of"} the time elapsed ({pct(T.burn)} spent · {pct(T.elapsed)} of time)</span>
-          <div class="spark"><Sparkline values={actualPts.map((x) => x.actual!)} target={actualPts.map((x) => x.plan)} /></div>
+          <div class="spark"><Sparkline values={actualPts.map((x) => x.actual!)} target={actualPts.map((x) => x.plan)} height={44} /></div>
         </div>
         <div class="kpi">
-          <span class="label">Committed</span>
-          <span class="value"><Count value={T.committed} format={short} /></span>
+          <span class="label"><Ico d={I.lock} />Committed</span>
+          <div class="sc-row">
+            <span class="value"><Count value={T.committed} format={short} /></span>
+            <Ring share={T.exposure > 0 ? T.committed / T.exposure : 0} label="of S+C" />
+          </div>
           <span class="ctx"><b>{short(T.exposure)}</b> spent + committed</span>
         </div>
         <div class="kpi" data-tone={T.remaining < 0 ? 'bad' : undefined}>
-          <span class="label">Uncommitted balance</span>
+          <span class="label"><Ico d={I.coins} />Uncommitted balance</span>
           <span class="value"><Count value={T.remaining} format={short} /></span>
           <span class="ctx">{final?.mid != null ? <>forecast end spend <b>{short(final.mid)}</b></> : 'no forecast'}</span>
+          {final?.mid != null && T.budget > 0 && <div class="sc-fc" title={`The forecast reaches ${pct(final.mid / T.budget)} of the budget by the last end date`}>
+            <div class="sc-fc-bar"><span style={{ width: `${Math.min(100, (final.mid / T.budget) * 100)}%` }} /></div>
+            <span class="sc-fc-l">forecast uses <b>{pct(final.mid / T.budget)}</b> of the budget</span>
+          </div>}
         </div>
       </section>
 

@@ -1,3 +1,4 @@
+import { tileIcons } from './tileIcons';
 /* One look for every table, whichever page drew it: a column of figures is right-aligned with even-width digits
    (its header too), and a long table keeps its header in view while the page scrolls. Pages keep writing plain
    tables; this pass reads what a column holds and marks it. A table opts out with data-raw. */
@@ -53,10 +54,10 @@ function tidyTable(t: HTMLTableElement) {
   }
 }
 
-/** Watches the page and tidies tables as they appear or change; returns the stop function. */
+/** Watches the page and tidies tables (and headline-tile icons) as they appear or change; returns the stop function. */
 export function watchTables(root: HTMLElement) {
   let queued = 0;
-  const run = () => { queued = 0; root.querySelectorAll('table').forEach((t) => tidyTable(t as HTMLTableElement)); };
+  const run = () => { queued = 0; root.querySelectorAll('table').forEach((t) => tidyTable(t as HTMLTableElement)); tileIcons(root); };
   const obs = new MutationObserver(() => { if (!queued) queued = requestAnimationFrame(run); });
   obs.observe(root, { childList: true, subtree: true, characterData: true });
   run();

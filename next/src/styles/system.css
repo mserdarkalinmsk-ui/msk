@@ -93,3 +93,102 @@ body .tabs .btn:not(.primary):hover { background: var(--surface-hover); color: v
 
 /* Long descriptions and supplier names break inside their cell instead of widening the card. */
 .ledger .range-lines td { overflow-wrap: anywhere; }
+
+/* ==========================================================================
+   Headline tiles on every page — the showcase band. Each tile: an icon, the figure, and a small picture of what the figure
+   means. The lead tile (spent to date) is the deep accent card; the others are light cards with a soft top light.
+   ========================================================================== */
+body :is(.hero, .ph-tiles) { gap: 14px; }
+body :is(.hero, .ph-tiles) > .kpi { padding: 22px 22px 20px; gap: 8px; border-radius: 16px; border-color: var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface)) 0%, var(--surface) 46%);
+  box-shadow: 0 1px 2px rgb(20 20 18 / .04), 0 8px 24px -12px rgb(20 20 18 / .16); }
+body :is(.hero, .ph-tiles) > .kpi:hover { border-color: var(--line-strong); box-shadow: 0 1px 2px rgb(20 20 18 / .05), 0 16px 32px -14px rgb(20 20 18 / .24); }
+body :is(.hero, .ph-tiles) > .kpi .label { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+body :is(.hero, .ph-tiles) > .kpi .label .badge { margin-left: auto; }
+.sc-ico { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; flex: none;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 11%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi .value { font-family: var(--font); font-weight: 700; font-size: 30px; letter-spacing: -.035em; line-height: 1.05; margin-top: 4px; font-variant-numeric: tabular-nums; }
+body :is(.hero, .ph-tiles) > .kpi .ctx { font-size: 13px; line-height: 1.45; }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="good"] .sc-ico { color: var(--good); background: var(--good-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--good) 18%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="warn"] .sc-ico { color: var(--warn); background: var(--warn-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 18%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="bad"] .sc-ico { color: var(--critical); background: var(--critical-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--critical) 18%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="good"] .value { color: var(--good); }
+
+/* lead: the deep card */
+body :is(.hero, .ph-tiles) > .kpi.lead { --kc: transparent; color: #fff; border-color: transparent;
+  background: radial-gradient(120% 140% at 100% 0%, #2f74c9 0%, transparent 55%), linear-gradient(140deg, #0f2140 0%, #163a6b 55%, #1d5296 100%);
+  box-shadow: 0 2px 4px rgb(15 33 64 / .2), 0 18px 40px -16px rgb(15 33 64 / .55); }
+body :is(.hero, .ph-tiles) > .kpi.lead:hover { border-color: transparent; box-shadow: 0 2px 4px rgb(15 33 64 / .25), 0 24px 48px -16px rgb(15 33 64 / .65); }
+body :is(.hero, .ph-tiles) > .kpi.lead .label, body :is(.hero, .ph-tiles) > .kpi.lead .ctx { color: rgb(255 255 255 / .78); }
+body :is(.hero, .ph-tiles) > .kpi.lead .ctx b { color: #fff; }
+body :is(.hero, .ph-tiles) > .kpi.lead .value { color: #fff; font-size: 44px; letter-spacing: -.045em; }
+body :is(.hero, .ph-tiles) > .kpi.lead .sc-ico { color: #fff; background: rgb(255 255 255 / .14); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter { height: 10px; margin-top: 14px; background: rgb(255 255 255 / .14); }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter .m-s { background: linear-gradient(90deg, #6fb2ff, #b9dcff); box-shadow: 0 0 12px rgb(130 190 255 / .55); border-radius: 99px; }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter .m-c { background: rgb(185 220 255 / .38); border-radius: 0 99px 99px 0; }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick { background: #fff; top: -5px; bottom: -5px; }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick em { position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); font: 600 11px var(--font); font-style: normal; color: rgb(255 255 255 / .85); white-space: nowrap; }
+.sc-key { gap: 14px !important; font-size: 12px !important; }
+.sc-key i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.sc-key .k-s { background: #8cc3ff; } .sc-key .k-c { background: rgb(185 220 255 / .45); } .sc-key .k-t { width: 2px; height: 10px; background: #fff; border-radius: 1px; vertical-align: -1px; }
+
+/* total budget: spent | committed | free in one bar */
+.sc-split { display: flex; gap: 2px; height: 8px; margin-top: 6px; border-radius: 99px; overflow: hidden; }
+.sc-split span { min-width: 2px; }
+.sc-split .s { background: var(--c1); } .sc-split .c { background: color-mix(in srgb, var(--c1) 45%, var(--surface)); } .sc-split .f { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+
+/* pace: a taller trend */
+body :is(.hero, .ph-tiles) > .kpi .spark { margin-top: auto; padding-top: 6px; }
+
+/* committed: figure beside a ring */
+.sc-row { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+.sc-row > div:first-child { display: grid; gap: 6px; min-width: 0; }
+.sc-ring { position: relative; width: 64px; height: 64px; flex: none; }
+.sc-ring > span { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
+.sc-ring b { font-size: 13px; font-weight: 700; } .sc-ring small { font-size: 9.5px; color: var(--ink-3); }
+
+/* uncommitted: how much of the budget the forecast uses */
+.sc-fc { display: grid; gap: 6px; margin-top: auto; padding-top: 6px; }
+.sc-fc-bar { height: 8px; border-radius: 99px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.sc-fc-bar span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--c3), color-mix(in srgb, var(--c3) 60%, #fff)); }
+.sc-fc-l { font-size: 12px; color: var(--ink-3); } .sc-fc-l b { color: var(--ink-2); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) { body :is(.hero, .ph-tiles) > .kpi { transition: none; } }
+@media print { body :is(.hero, .ph-tiles) > .kpi.lead { background: none; color: inherit; box-shadow: none; border: 1px solid #999; }
+  body :is(.hero, .ph-tiles) > .kpi.lead .value, body :is(.hero, .ph-tiles) > .kpi.lead .label, body :is(.hero, .ph-tiles) > .kpi.lead .ctx { color: #000; } }
+
+/* Pages that do not draw their own icon get one from the tile's label (tileIcons sets data-ico): a tinted chip
+   (::before) with the line icon on top (::after, masked, in the tile's colour). */
+body :is(.hero, .ph-tiles) > .kpi .label[data-ico] { position: relative; padding-left: 40px; min-height: 30px; }
+body :is(.hero, .ph-tiles) > .kpi .label[data-ico]::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi .label[data-ico]::after { content: ''; position: absolute; left: 7px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;
+  background: var(--accent); -webkit-mask: var(--ico) center / 16px no-repeat; mask: var(--ico) center / 16px no-repeat; }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="good"] .label[data-ico]::before { background: var(--good-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--good) 18%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="good"] .label[data-ico]::after { background: var(--good); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="warn"] .label[data-ico]::before { background: var(--warn-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 18%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="warn"] .label[data-ico]::after { background: var(--warn); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="bad"] .label[data-ico]::before { background: var(--critical-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--critical) 18%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi[data-tone="bad"] .label[data-ico]::after { background: var(--critical); }
+body :is(.hero, .ph-tiles) > .kpi.lead .label[data-ico]::before { background: rgb(255 255 255 / .14); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); }
+body :is(.hero, .ph-tiles) > .kpi.lead .label[data-ico]::after { background: #fff; }
+.label[data-ico="wallet"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7.5A2.5 2.5 0 0 1 5.5 5H18v3M3 7.5V17a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5.5A2.5 2.5 0 0 1 3 7.5ZM16 13.5h.01'/%3E%3C/svg%3E"); }
+.label[data-ico="trend"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17l6-6 4 4 8-8M15 7h6v6'/%3E%3C/svg%3E"); }
+.label[data-ico="clock"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM12 7v5l3 2'/%3E%3C/svg%3E"); }
+.label[data-ico="lock"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3'/%3E%3C/svg%3E"); }
+.label[data-ico="coins"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3ZM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6'/%3E%3C/svg%3E"); }
+.label[data-ico="users"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM20 19v-1.5a3.5 3.5 0 0 0-2.5-3.35M15 4.6a3 3 0 0 1 0 5.8'/%3E%3C/svg%3E"); }
+.label[data-ico="alert"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4 2.8 19.5h18.4L12 4ZM12 10v4M12 17h.01'/%3E%3C/svg%3E"); }
+.label[data-ico="file"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5M9 13h6M9 17h6'/%3E%3C/svg%3E"); }
+.label[data-ico="check"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM8 12.5l2.5 2.5L16 9.5'/%3E%3C/svg%3E"); }
+.label[data-ico="folder"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z'/%3E%3C/svg%3E"); }
+.label[data-ico="building"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M3 21h18M8 8h3M8 12h3M8 16h3'/%3E%3C/svg%3E"); }
+.label[data-ico="receipt"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3h12v18l-3-2-3 2-3-2-3 2V3ZM9 8h6M9 12h6M9 16h4'/%3E%3C/svg%3E"); }
+.label[data-ico="chart"] { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20V10M10 20V4M16 20v-7M22 20H2'/%3E%3C/svg%3E"); }
+
+/* Lead-tile meters drawn by any page: the spent part glows, the rest is a lighter wash (pages colour them inline). */
+body :is(.hero, .ph-tiles) > .kpi.lead .meter { height: 10px; margin-top: 14px; background: rgb(255 255 255 / .14) !important; }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter > span:first-of-type { background: linear-gradient(90deg, #6fb2ff, #b9dcff) !important; box-shadow: 0 0 12px rgb(130 190 255 / .55); border-radius: 99px; opacity: 1 !important; }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter > span:not(:first-of-type) { background: rgb(185 220 255 / .38) !important; opacity: 1 !important; }
+body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick { background: #fff; }
+body :is(.hero, .ph-tiles) > .kpi.lead .ctx i[style] { filter: brightness(1.6); }
