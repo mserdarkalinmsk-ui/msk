@@ -5,6 +5,7 @@ import { setStamp } from './stamp';
 import { saveFile } from './save';
 import { workbook, zip, type SheetSpec } from './xlsxwrite';
 import { plabel } from '../domain/label';
+import { dmy } from '../domain/dt';
 
 const lab = (r: CloseRow) => (plabel(r.p));
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -29,7 +30,7 @@ export async function downloadClosePack(rows: CloseRow[], general: Decision[], m
   setStamp(`Monthly close ${month} · ${rows.length} projects · produced ${today.toISOString().slice(0, 10)}`);
   files.push({ name: `Close ${month}/Close summary ${month}.xlsx`, data: workbook(closeSheets(rows, general, month)) });
   for (const r of rows.filter((x) => x.status !== 'blocked')) {
-    setStamp(`${r.p.code} · figures from ${r.report ? `${r.report.name} (${r.report.date})` : 'no report'} · close ${month} · produced ${today.toISOString().slice(0, 10)}`);
+    setStamp(`${r.p.code} · figures from ${r.report ? `${r.report.name} (${dmy(r.report.date)})` : 'no report'} · close ${month} · produced ${today.toISOString().slice(0, 10)}`);
     files.push({ name: `Close ${month}/Projects/${lab(r).replace(/[\\/:*?"<>|]/g, '-')} ${r.status === 'check' ? '(to check) ' : ''}${month}.xlsx`, data: workbook(projectSheets(r.p, today)) });
   }
   await saveFile(`Monthly close ${month}.zip`, new Blob([zip(files) as BlobPart], { type: 'application/zip' }));

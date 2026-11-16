@@ -7,6 +7,7 @@ import { ADMIN_LINE } from './terms';
  */
 import type { Activity, Risk } from './types';
 import { joinLines } from './notes';
+import { dmy } from './dt';
 
 export interface Doc { name: string; kind: 'pdf' | 'docx' | 'xlsx' | 'text'; paragraphs: string[]; tables: string[][][]; geometry?: Geometry; notes?: Record<string, BudgetNote> }
 /** Results of the layout readers for PDFs (shaded action-plan cells, logframe columns, annex tables). */
@@ -203,7 +204,7 @@ export function analyse(doc: Doc): DocFindings {
     plan && `${plan.acts.length} activities over ${plan.months} months`,
     R.length && `${R.length} risks`, NR.assumptions.length && `${NR.assumptions.length} assumptions`, I.length && `${I.length} indicators`,
   ].filter(Boolean) as string[];
-  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, assumptions: NR.assumptions, summary: letter ? [`${letterLabel(letter)}${letter.date ? ` of ${letter.date}` : ''}${letter.outcome ? ` · ${letter.outcome}` : ''}${letter.scanned ? ' · scanned letter (no text)' : ''}`, ...summary] : summary, letter, ...(versions.length > 1 ? { versions } : {}) };
+  return { contract, acts: plan?.acts ?? [], planMonths: plan?.months, risks: R, indicators: I, budget, notes, assumptions: NR.assumptions, summary: letter ? [`${letterLabel(letter)}${letter.date ? ` of ${dmy(letter.date)}` : ''}${letter.outcome ? ` · ${letter.outcome}` : ''}${letter.scanned ? ' · scanned letter (no text)' : ''}`, ...summary] : summary, letter, ...(versions.length > 1 ? { versions } : {}) };
 }
 
 /* ---------- approved budget (CoE "Budget for all years" template, DoA annex) ---------- */

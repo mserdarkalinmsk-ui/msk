@@ -8,6 +8,7 @@ import { normalizeProject } from './normalize';
 import { selfCheck } from './selfcheck';
 import type { Project, ReportingPeriod } from './types';
 import type { Entry, Workbook } from './workbook';
+import { dmy } from './dt';
 
 export type Stage = 'ok' | 'notification' | 'near' | 'addendum';
 export interface ImportReview {
@@ -72,7 +73,7 @@ export function importReview(p: Project, report: ReportingPeriod, replaced: stri
   }
   if (w?.meta.situationDate) {
     const last = (p.reportingPeriods ?? []).filter((r) => !replaced.includes(r.id)).map((r) => r.snapshot?.workbook?.meta?.situationDate).filter(Boolean).sort().at(-1);
-    if (last && w.meta.situationDate < last) issues.push({ level: 'warning', text: `Situation at ${w.meta.situationDate} is older than the report already on file (${last}) — the screens keep showing the newer one` });
+    if (last && w.meta.situationDate < last) issues.push({ level: 'warning', text: `Situation at ${dmy(w.meta.situationDate)} is older than the report already on file (${last}) — the screens keep showing the newer one` });
   }
   if (m1.spent < m0.spent - 1 && !replaced.length) issues.push({ level: 'warning', text: `Spent goes down from ${eur(r2(m0.spent))} to ${eur(r2(m1.spent))} — a reversal, a cancelled invoice or an older file` });
   for (const s of selfCheck([P1])) issues.push({ level: 'error', text: `${s.figure} reads ${eur(r2(s.a.v))} on the ${s.a.label.toLowerCase()} but ${eur(r2(s.b.v))} on the ${s.b.label.toLowerCase()}` });

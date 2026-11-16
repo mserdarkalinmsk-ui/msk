@@ -2,6 +2,7 @@ import { byPeriodThenImport, money } from './calc';
 import { kindOf, supKey } from './providers';
 import type { Ledger, Project } from './types';
 import type { PO } from './workbook';
+import { dmy } from './dt';
 
 const posOf = (p: Project): PO[] => [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byPeriodThenImport).at(-1)?.snapshot?.workbook?.pos ?? [];
 const poId = (x: PO) => `${x.po}|${x.line}`;
@@ -31,7 +32,7 @@ export function changesSince(old: Ledger, now: Ledger, since: string): Changes {
     const real = (x: PO) => !['staff', 'perdiem', 'petty'].includes(kindOf(`${x.description} ${x.nature}`, x.line, '', x.supplier) ?? '');
     const newSuppliers = [...new Set(newPOs.filter((x) => x.supplier && real(x) && !allOldSup.has(supKey(x.supplier))).map((x) => x.supplier.trim()))];
     const c: ProjectChange = { p, added: !o, spent: mN.spent - mO.spent, sc: mN.spent + mN.committed - (mO.spent + mO.committed), reports, documents, newPOs, closedPOs, newSuppliers };
-    if (o && (o.start !== p.start || o.end !== p.end)) c.dates = `${o.start} – ${o.end} → ${p.start} – ${p.end}`;
+    if (o && (o.start !== p.start || o.end !== p.end)) c.dates = `${dmy(o.start)} – ${dmy(o.end)} → ${dmy(p.start)} – ${dmy(p.end)}`;
     if (o && Math.abs(mO.budget - mN.budget) > 1) c.budget = [mO.budget, mN.budget];
     if (c.added || Math.abs(c.spent) > 1 || Math.abs(c.sc) > 1 || reports.length || documents.length || newPOs.length || closedPOs.length || c.dates || c.budget) projects.push(c);
   }

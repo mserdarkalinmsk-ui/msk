@@ -1,6 +1,7 @@
 import type { Project } from './types';
 import { STANDARD_LINES } from './forecastTemplate';
 import type { WorkbookSummary } from './workbook';
+import { dmy as showDate } from './dt';
 
 /** One quarterly Work Plan of a project, entered by hand from what the project team sends. */
 export interface WpActivity { ref: string; id: string; name: string; amount: number; /** status column of the WorkPlan file (done / postponed / cancelled …) */ status?: string; start?: string; end?: string; lines: { line: string; text: string; amount: number }[] }
@@ -399,7 +400,7 @@ export function tableChecks(items: { t: TableSheet; p?: { id: string; bh?: strin
   const by = new Map<string, typeof M>(); for (const i of M) by.set(i.p!.id, [...(by.get(i.p!.id) ?? []), i]);
   for (const L of by.values()) {
     for (const i of L) if (i.t.prev?.from) { const own = L.find((x) => x.t.from === i.t.prev!.from); if (own && i.t.prev.planned && !eq(own.t.planned, i.t.prev.planned)) out.push({ sheet: i.t.sheet, text: `"${own.t.sheet}" plans ${own.t.planned.toLocaleString('en-GB')}, but "${i.t.sheet}" gives that Work Plan as ${i.t.prev.planned.toLocaleString('en-GB')}` }); }
-    for (const a of L) for (const b of L) if (a.t.sheet < b.t.sheet && a.t.from && a.t.from === b.t.from && !eq(a.t.planned, b.t.planned)) out.push({ sheet: b.t.sheet, text: `"${a.t.sheet}" and "${b.t.sheet}" are both for the period from ${a.t.from} with different amounts (${a.t.planned.toLocaleString('en-GB')} / ${b.t.planned.toLocaleString('en-GB')}) — the later sheet is kept` });
+    for (const a of L) for (const b of L) if (a.t.sheet < b.t.sheet && a.t.from && a.t.from === b.t.from && !eq(a.t.planned, b.t.planned)) out.push({ sheet: b.t.sheet, text: `"${a.t.sheet}" and "${b.t.sheet}" are both for the period from ${showDate(a.t.from)} with different amounts (${a.t.planned.toLocaleString('en-GB')} / ${b.t.planned.toLocaleString('en-GB')}) — the later sheet is kept` });
     const nums = L.filter((i) => i.t.no > 0).sort((a, b) => a.t.from.localeCompare(b.t.from));
     for (let k = 1; k < nums.length; k++) if (nums[k].t.no <= nums[k - 1].t.no) out.push({ sheet: nums[k].t.sheet, text: `"${nums[k].t.sheet}" is titled WP ${nums[k].t.no}, like the sheet before it — numbered by its period instead` });
   }

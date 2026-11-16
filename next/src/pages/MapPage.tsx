@@ -5,7 +5,7 @@ import { attention, burnGap, money, totals } from '../domain/calc';
 import { roster } from '../domain/staff';
 import { SECTORS, type Country, type Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, pct, short, signedPct } from '../ui/format';
+import { date, pct, short, signedPct, full } from '../ui/format';
 import { MapView, MODES, shapeFor, type MapDatum, type MapMode } from '../ui/MapView';
 import { plabel } from '../domain/label';
 
@@ -120,7 +120,7 @@ function MapProjects({ P, cname }: { P: Project[]; cname: (id: string) => string
       <thead><tr><th>Project</th><th>Country</th><th class="r">Budget</th><th style={{ width: '22%' }}>Spent</th><th class="r">Pace</th><th>Ends</th></tr></thead>
       <tbody>{R.map(({ p, m, g }) => <tr class="click" onClick={() => go(`project/${p.id}`)}>
         <td><b class="num">{plabel(p)}</b> <span class="muted">{p.name.length > 60 ? p.name.slice(0, 58) + '…' : p.name}</span></td><td>{cname(p.country)}</td>
-        <td class="r num">{short(m.budget)}</td>
+        <td class="r num">{full(m.budget)}</td>
         <td><div class="map-bar"><i style={{ width: '100%' }}><b style={{ width: `${m.budget ? Math.min(100, m.spent / m.budget * 100) : 0}%` }} /></i></div><small class="muted num">{pct(m.budget ? m.spent / m.budget : 0)}</small></td>
         <td class="r num" style={{ whiteSpace: 'nowrap', color: paceBand(g) === 'ok' ? 'var(--good)' : 'var(--serious)' }}>{p.datesTbc ? '—' : signedPct(g)}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{date(p.end)}</td></tr>)}</tbody></table></div>
   );

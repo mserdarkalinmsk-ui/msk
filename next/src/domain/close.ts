@@ -5,6 +5,7 @@ import { rules } from './rules';
 import { selfCheck } from './selfcheck';
 import type { Project } from './types';
 import { plabel } from './label';
+import { dmy } from './dt';
 
 /**
  * Monthly close: every project in one row — is its data clean, what changed since the last close, what needs a
@@ -31,7 +32,7 @@ export function closeRows(P: Project[], today: Date, last?: CloseRecord): CloseR
     const warn = h.findings.filter((f) => f.level === 'warn').map((f) => f.text);
     const fresh = !!r && today.getTime() - parseDate(r.date).getTime() <= FRESH();
     if (!r) warn.unshift('No financial report loaded');
-    else if (!fresh) warn.unshift(`Latest report is from ${r.date} — load this month's extraction`);
+    else if (!fresh) warn.unshift(`Latest report is from ${dmy(r.date)} — load this month's extraction`);
     const status: CloseStatus = reasons.length ? 'blocked' : warn.length ? 'check' : 'clean';
     const prev = last?.rows.find((x) => x.pid === p.id);
     return { p, status, reasons: [...reasons, ...warn], report: r ? { id: r.id, name: r.name, date: r.date, fresh } : undefined, budget: m.budget, spent: m.spent, sc: m.exposure,

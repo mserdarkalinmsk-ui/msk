@@ -5,7 +5,7 @@ import { headings } from '../domain/insights';
 import { catchUp } from '../domain/monitor';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { month, short } from '../ui/format';
+import { month, short, full } from '../ui/format';
 import { Simulator } from './Studio';
 
 const MS = 30.4375 * 86_400_000;
@@ -81,7 +81,7 @@ export function ProjectForesight({ p }: { p: Project }) {
             <tbody>{D.rows.map((r) => { const used = r.budget ? r.exposure / r.budget : 0; return (
               <tr style={{ borderLeft: `4px solid ${col(r.status)}` }}>
                 <td><b>{r.code}.</b> {r.label}</td>
-                <td class="r num">{short(r.budget)}</td><td class="r num">{short(r.exposure)}</td><td class="r num">{short(r.rate)}</td>
+                <td class="r num">{full(r.budget)}</td><td class="r num">{full(r.exposure)}</td><td class="r num">{full(r.rate)}</td>
                 <td><div class="dep-bar"><span class="now" style={{ width: `${Math.min(100, used / 1.3 * 100)}%` }} /><span class="fut" style={{ left: `${Math.min(100, used / 1.3 * 100)}%`, width: `${Math.max(0, Math.min(100, r.endUse / 1.3 * 100) - Math.min(100, used / 1.3 * 100))}%`, background: col(r.status) }} /><i style={{ left: `${100 / 1.3}%` }} /></div><small class="num" style={{ color: col(r.status) }}>{Math.round(r.endUse * 100)}%</small></td>
                 <td class="num">{r.runOut == null ? '—' : r.runOut <= end ? <b style={{ color: col(r.status) }}>{month(r.runOut)}</b> : <span class="muted">after end</span>}</td>
                 <td><span class="dep-pill" style={{ background: col(r.status) }}>{lab(r.status)}</span></td>

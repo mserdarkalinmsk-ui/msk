@@ -16,6 +16,7 @@ export interface ForecastDraft { /** keep the total fixed: the remainder goes to
 
 export { averageRate } from './rates';
 import { lineRate, usedUnitsOf } from './rates';
+import { dmy } from './dt';
 
 export const isStaffLine = (code: string) => /^1\.[12]\.1\.\d+$/.test(code);
 export const isChargeBack = (code: string) => code === '4.2' || code === '4.4';
@@ -131,7 +132,7 @@ export function autofillStaff(p: Project, today: Date, d: ForecastDraft): Foreca
       cell[b.id] = { u: Math.round(u * 100) / 100, r: cell[b.id]?.r ?? (d.infl?.on && /^1\.1\./.test(x.code) ? undefined : rate) };
       if (/^1\.1\./.test(x.code)) localMonths[b.id] = (localMonths[b.id] ?? 0) + u;
     }
-    if (who.length) notes.push(`${x.code}: ${who.map((s) => `${s.display}${s.fte != null && s.fte !== 1 ? ` (${Math.round(s.fte * 100)}%)` : ''}${s.end && s.end < end ? `, contract to ${s.end} carried on` : ''}`).join('; ')}`);
+    if (who.length) notes.push(`${x.code}: ${who.map((s) => `${s.display}${s.fte != null && s.fte !== 1 ? ` (${Math.round(s.fte * 100)}%)` : ''}${s.end && s.end < end ? `, contract to ${dmy(s.end)} carried on` : ''}`).join('; ')}`);
     else if (x.budget) notes.push(`${x.code}: no contract on file — fill in by hand`);
     next.lines[x.code] = cell;
   }

@@ -3,6 +3,7 @@ import { health } from './health';
 import type { Office } from './office';
 import type { Ledger, Project } from './types';
 import { plabel } from './label';
+import { dmy } from './dt';
 
 /** One thing to do this month. Items the data can prove are done tick themselves; the rest are ticked by hand. */
 export interface Task { key: string; group: 'Data' | 'Reports' | 'Staff' | 'Offices' | 'Close the month'; title: string; detail: string; pid?: string; auto?: boolean; done?: boolean; to?: string; due?: string; /** opens the import panel instead of a screen */ importer?: boolean }
@@ -22,7 +23,7 @@ export function monthTasks(L: Ledger, today: Date, ctx: { events: { day: string;
   const out: Task[] = [];
   for (const p of running) {
     const r = latestReport(p), fresh = !!r && (ym(r.date) === m || ym(r.date) === prev || ym(r.registeredAt ?? '') === m);
-    out.push({ key: `extract:${p.id}`, group: 'Data', title: `Load the system extraction for ${lab(p)}`, detail: r ? `latest figures ${r.date}` : 'no financial report yet', pid: p.id, auto: true, done: fresh, importer: true });
+    out.push({ key: `extract:${p.id}`, group: 'Data', title: `Load the system extraction for ${lab(p)}`, detail: r ? `latest figures ${dmy(r.date)}` : 'no financial report yet', pid: p.id, auto: true, done: fresh, importer: true });
   }
   for (const p of running) {
     const bad = health(p, today).findings.filter((f) => f.level === 'bad');
@@ -37,7 +38,7 @@ export function monthTasks(L: Ledger, today: Date, ctx: { events: { day: string;
     out.push({ key: `office:${o.id}`, group: 'Offices', title: `Load the office budget of ${o.name}`, detail: last ? `latest situation ${last}` : 'none yet', auto: true, done: ym(last) === m || ym(last) === prev, importer: true });
   }
   for (const r of ctx.officeRequests.filter((x) => x.request > 0))
-    out.push({ key: `transfer:${r.o.id}:${r.date}`, group: 'Offices', title: `Send the budget transfer request of ${r.o.name}`, detail: `about €${r.request.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to request after transfers (situation ${r.date})`, to: 'offices' });
+    out.push({ key: `transfer:${r.o.id}:${r.date}`, group: 'Offices', title: `Send the budget transfer request of ${r.o.name}`, detail: `about €${r.request.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to request after transfers (situation ${dmy(r.date)})`, to: 'offices' });
   out.push(
     { key: 'close:pack', group: 'Close the month', title: 'Share the monthly pack', detail: 'Reports → Summary → Monthly pack → Save as PDF', to: 'reports/pack' },
     { key: 'close:deck', group: 'Close the month', title: 'Prepare the presentation', detail: 'Reports → Presentation → PowerPoint (management or donor)', to: 'reports/deck' },

@@ -5,6 +5,7 @@ import { base, Chart, type Tokens } from '../ui/Chart';
 import { full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { plabel } from '../domain/label';
+import { dmy } from '../domain/dt';
 
 const thisYear = TODAY.getUTCFullYear();
 
@@ -18,7 +19,7 @@ export function AnnualPlanCard({ p }: { p: Project }) {
   return (
     <div class="grid g-12">
       <section class="card span-12">
-        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual budget plan</h2><p>Cash still to pay per calendar year until {p.end}: open commitments in the next three months, the free balance spread evenly over the months left</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual budget plan</h2><p>Cash still to pay per calendar year until {dmy(p.end)}: open commitments in the next three months, the free balance spread evenly over the months left</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
         <div class="card-b">
           <div class="ap-years">{A.years.map((y) => <div class={y < thisYear ? 'past' : y === thisYear ? 'cur' : ''}><span>{y}{y === thisYear ? ' · rest of year' : ''}</span><b class="num">{short(y < thisYear ? A.past[y] ?? 0 : A.total[y])}</b><small>{y < thisYear ? 'spent' : y === thisYear ? `${short(A.past[y] ?? 0)} spent so far` : 'to pay'}</small></div>)}</div>
           <Chart height={220} label="Spending by year" option={(t) => yearsOption(t, A, thisYear)} />
@@ -62,8 +63,8 @@ export function AnnualPortfolio({ projects }: { projects: Project[] }) {
         <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual cash plan by project</h2><p>Open commitments in the next three months, the free balance spread evenly until each project's end date</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
         <div class="card-b table-scroll"><table class="mini ap-plan">
           <thead><tr><th>Project</th><th>Ends</th>{Y.map((y) => <th class="r">{y}</th>)}<th class="r">Total</th></tr></thead>
-          <tbody>{R.map((x) => { const m = Math.max(1, ...Y.map((y) => x.A.total[y] ?? 0)); return <tr><td><b>{lab(x.p)}</b> <span class="muted">{x.p.name.slice(0, 50)}</span></td><td class="num">{x.p.end}</td>{Y.map((y) => { const v = x.A.total[y] ?? 0; return <td class="r num" style={{ background: v > 1 ? `color-mix(in srgb,var(--c1) ${Math.round(6 + v / m * 30)}%,var(--surface))` : undefined }}>{v > 1 ? short(v) : ''}</td>; })}<td class="r num"><b>{short(Y.reduce((a, y) => a + (x.A.total[y] ?? 0), 0))}</b></td></tr>; })}</tbody>
-          <tfoot><tr><td colSpan={2}>Total</td>{Y.map((y) => <td class="r num">{short(tot(y))}</td>)}<td class="r num">{short(Y.reduce((a, y) => a + tot(y), 0))}</td></tr></tfoot>
+          <tbody>{R.map((x) => { const m = Math.max(1, ...Y.map((y) => x.A.total[y] ?? 0)); return <tr><td><b>{lab(x.p)}</b> <span class="muted">{x.p.name.slice(0, 50)}</span></td><td class="num">{dmy(x.p.end)}</td>{Y.map((y) => { const v = x.A.total[y] ?? 0; return <td class="r num" style={{ background: v > 1 ? `color-mix(in srgb,var(--c1) ${Math.round(6 + v / m * 30)}%,var(--surface))` : undefined }}>{v > 1 ? full(v) : ''}</td>; })}<td class="r num"><b>{full(Y.reduce((a, y) => a + (x.A.total[y] ?? 0), 0))}</b></td></tr>; })}</tbody>
+          <tfoot><tr><td colSpan={2}>Total</td>{Y.map((y) => <td class="r num">{full(tot(y))}</td>)}<td class="r num">{full(Y.reduce((a, y) => a + tot(y), 0))}</td></tr></tfoot>
         </table></div>
       </section>
     </>

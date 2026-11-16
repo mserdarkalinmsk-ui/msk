@@ -7,6 +7,7 @@ import { isExtraction } from './extraction';
 import { readCheck } from './intake';
 import type { Workbook } from './workbook';
 import { integrity, type Detail, type Tab } from './integrity';
+import { dmy } from './dt';
 
 export type Level = 'ok' | 'warn' | 'bad';
 export interface Finding { level: Level; text: string; fix?: 'report' | 'documents' | 'edit' | 'reports' | AutoFix; /** project tab to open, and the records behind the finding */ tab?: import('./integrity').Tab; detail?: import('./integrity').Detail }
@@ -31,7 +32,7 @@ export function health(p: Project, today: Date): Health {
   if (!last) add('warn', 'No financial report loaded yet', 'report');
   else {
     const age = (today.getTime() - parseDate(last.date).getTime()) / 864e5;
-    if (age > 120) add('warn', `Latest report is ${Math.round(age / 30)} months old (${last.date})`, 'report');
+    if (age > 120) add('warn', `Latest report is ${Math.round(age / 30)} months old (${dmy(last.date)})`, 'report');
     if (wb && isExtraction(last.snapshot)) {
       // A system extraction has no totals block: check that every entry landed on a line instead.
       for (const c of readCheck(wb as unknown as Workbook, p, last.snapshot!.lines).checks) add(c.level === 'ok' ? 'ok' : c.level === 'error' ? 'bad' : 'warn', `System extraction: ${c.text}`, c.level === 'ok' ? undefined : 'reports', 'Budget lines');

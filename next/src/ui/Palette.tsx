@@ -7,6 +7,7 @@ import { TODAY } from '../today';
 import { short } from './format';
 import type { Project } from '../domain/types';
 import { plabel } from '../domain/label';
+import { dmy } from '../domain/dt';
 
 interface Cmd { group: string; label: string; hint?: string; run: () => void }
 
@@ -53,7 +54,7 @@ export function Palette() {
     const SCREENS: [string, string][] = [['wp', 'Work Plan'], ['statement', 'Financial statement'], ['checks', 'Entry checks'], ['budget', 'vs approved budget'], ['bydate', 'Spending by date'], ['pos', 'Open POs'], ['staff', 'Staff'], ['docs', 'Documents'], ['forecast', 'Forecast & revision'], ['reports', 'Reports']];
     return [
       ...projects.flatMap((p) => SCREENS.map(([k, t]) => ({ group: 'Project screens', label: `${lab(p)} · ${p.code} ${p.name} — ${t}`, run: () => go(`project/${p.id}/${k}`) }))),
-      ...projects.flatMap((p) => (p.workPlans ?? []).map((w) => ({ group: 'Work Plans', label: `${lab(p)} · ${w.label && w.no <= 0 ? `WP ${w.label}` : `WP ${w.no}`} ${w.from} – ${w.to}`, hint: short(w.planned), run: () => go(`project/${p.id}/wp`) }))),
+      ...projects.flatMap((p) => (p.workPlans ?? []).map((w) => ({ group: 'Work Plans', label: `${lab(p)} · ${w.label && w.no <= 0 ? `WP ${w.label}` : `WP ${w.no}`} ${dmy(w.from)} – ${dmy(w.to)}`, hint: short(w.planned), run: () => go(`project/${p.id}/wp`) }))),
       ...projects.flatMap((p) => { const w = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).at(-1)?.snapshot?.workbook; return (w?.pos ?? []).map((o) => ({ group: 'Purchase orders', label: `${lab(p)} · PO ${o.po} ${o.line} ${o.description} ${o.supplier}`, hint: short(o.sc), run: () => go(`project/${p.id}/pos`) })); }),
       ...projects.flatMap((p) => lines(p).map((l) => ({ group: 'Budget lines', label: `${plabel(p)} · ${l.code} ${l.description ?? ''}`, hint: short(l.approved ?? 0), run: tab(p.id, 'Budget lines') }))),
       ...projects.flatMap((p) => roster(p, TODAY).map((a) => ({ group: 'Staff', label: `${a.display} — ${a.position} · ${plabel(p)}`, hint: a.status, run: tab(p.id, 'People') }))),

@@ -16,6 +16,7 @@ import { migrateBackup } from '../domain/insights';
 
 import { X } from './CloseX';
 import { plabel } from '../domain/label';
+import { dmy } from '../domain/dt';
 
 const FIELDS = [
   { key: 'code', label: 'Code', req: true, alias: ['code', 'project code', 'id', 'kod'] },
@@ -147,7 +148,7 @@ export function ImportPanel({ close }: { close: () => void }) {
                     <li style={{ cursor: 'default' }}>
                       <span class={`badge ${bad.length ? 'critical' : 'good'}`}>Row {x.line}</span>
                       <div><div class="t">{x.d.code || '—'} · {x.d.name || '—'} {x.existing && !bad.length && <span class="badge neutral count">update</span>}</div>
-                        <div class="d">{bad.length ? bad.map(([k, v]) => `${k}: ${v}`).join(' · ') : `${short(parseAmount(x.d.budget) ?? 0)} · ${x.d.start} → ${x.d.end}`}</div></div><span />
+                        <div class="d">{bad.length ? bad.map(([k, v]) => `${k}: ${v}`).join(' · ') : `${short(parseAmount(x.d.budget) ?? 0)} · ${dmy(x.d.start)} → ${dmy(x.d.end)}`}</div></div><span />
                     </li>
                   );
                 })}

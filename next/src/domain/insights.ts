@@ -5,6 +5,7 @@ import { ADMIN_LINE } from './terms';
 import { HEADINGS, attention, perProject, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
 import { daysUntil, renewals, roster } from './staff';
 import type { Ledger, Project } from './types';
+import { dmy } from './dt';
 
 const DAY = 86_400_000;
 const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -105,7 +106,7 @@ export function status(p: Project, today: Date): Status {
   const risks = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open');
   if (risks.length) { const hi = risks.filter((r) => riskScore(r) >= 12).length; P.push({ area: 'Risks', tone: hi ? 'bad' : 'info', head: `${risks.length} open risk${risks.length > 1 ? 's' : ''}`, text: hi ? `${hi} rated high` : 'None rated high' }); }
   const od = deadlines(p, today).filter((d) => d.status === 'overdue');
-  if (od.length) P.push({ area: 'Reporting', tone: 'bad', head: `${od.length} report${od.length > 1 ? 's' : ''} overdue`, text: od.map((d) => `${d.kind} due ${d.due}`).join(' · ') });
+  if (od.length) P.push({ area: 'Reporting', tone: 'bad', head: `${od.length} report${od.length > 1 ? 's' : ''} overdue`, text: od.map((d) => `${d.kind} due ${dmy(d.due)}`).join(' · ') });
   const plain = [`${verdict}: ${headline}.`, ...P.map((x) => `${x.area}: ${x.head} (${x.text}).`)].join('\n');
   return { verdict, tone, headline, points: P, plain };
 }

@@ -1,5 +1,6 @@
 import { unitsLookTyped, type Entry, type PO } from './workbook';
 import { nearOf, pctOf } from './flex';
+import { dmy as showDate } from './dt';
 
 /**
  * The dated ledger of a system extraction: spending between two dates, and the entries that look posted in error.
@@ -181,7 +182,7 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   // 10. contract period past the project end ("from 01/01/2026 to 31/12/2027")
   if (o.end && o.pos?.length) {
     const P = o.pos.filter((p) => { const m = p.description.match(/\bto\s+(\d{1,2}\/\d{1,2}\/\d{4})/i); return m && dmy(m[1]) > o.end!; });
-    if (P.length) out.push({ kind: 'contract-beyond', level: 'warning', title: KIND_LABEL['contract-beyond'], text: `${P.length} PO${P.length > 1 ? 's' : ''} run past the project end (${o.end}) — the months after it cannot be charged here.`, amount: r2(P.reduce((a, p) => a + p.balance, 0)),
+    if (P.length) out.push({ kind: 'contract-beyond', level: 'warning', title: KIND_LABEL['contract-beyond'], text: `${P.length} PO${P.length > 1 ? 's' : ''} run past the project end (${showDate(o.end)}) — the months after it cannot be charged here.`, amount: r2(P.reduce((a, p) => a + p.balance, 0)),
       rows: P.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: p.description, amount: p.balance })) });
   }
 
