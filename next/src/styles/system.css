@@ -320,3 +320,17 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
 .cpf-notes { margin: 10px 0 0; padding-left: 18px; font-size: 12px; color: var(--ink-3); }
 .cpf-foot { margin: 10px 0 0; font-size: 12px; }
 .cpf-k b .cp-i { font-size: inherit; font-weight: inherit; }
+
+/* Month by month ahead: one cell per heading and month, tinted when a letter is needed. */
+.ma-sum { margin: 0 0 12px; color: var(--ink-2); line-height: 1.5; }
+.ma-bad { color: var(--critical); } .ma-warn { color: var(--warn); }
+.ma-t { border-collapse: separate; border-spacing: 0; }
+.ma-t .ma-h { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; white-space: nowrap; font-weight: 500; min-width: 190px; }
+.ma-t td, .ma-t th { font-variant-numeric: tabular-nums; }
+.ma-t .ma-m { white-space: nowrap; font-size: 11px; }
+.ma-t .ma-c { min-width: 58px; }
+.ma-t .ma-notify { background: var(--warn-soft, color-mix(in srgb, var(--warn) 16%, transparent)); color: var(--ink); font-weight: 600; }
+.ma-t .ma-addendum { background: var(--critical-soft, color-mix(in srgb, var(--critical) 16%, transparent)); color: var(--critical); font-weight: 700; }
+.ma-t tfoot td, .ma-t tfoot th { border-top: 1px solid var(--line); font-weight: 600; }
+@media print { .ma .tools { display: none !important; } .ma .table-scroll { overflow: visible; } .ma-t { font-size: 8px; } }
+.ma-t .ma-end { display: block; font-size: 10px; color: var(--ink-3); font-weight: 500; }

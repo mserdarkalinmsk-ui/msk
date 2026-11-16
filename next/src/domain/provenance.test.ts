@@ -4,6 +4,7 @@ import demo from '../data/demo.json';
 import { lines, money } from './calc';
 import { outcome } from './insights';
 import { normalizeProject } from './normalize';
+import { costPerf } from './costPerf';
 import { trace, traceLine, type Figure, type Trace } from './provenance';
 import type { Project } from './types';
 
@@ -15,8 +16,8 @@ const addUp = (t: Trace) => { let v = 0; for (const x of t.terms) { if (x.op ===
 describe.each(sets)('where a figure comes from (%s)', (_, P) => {
   it('explains the figure the screens show', () => {
     for (const p of P) {
-      const m = money(p), o = outcome(p, T);
-      const want: Record<Figure, number> = { budget: m.budget, spent: m.spent, committed: m.committed, exposure: m.exposure, remaining: m.remaining, pace: trace(p, 'pace', T).value, projected: o.projected, unused: o.unused };
+      const m = money(p), o = outcome(p, T), c = costPerf(p, T);
+      const want: Record<Figure, number> = { budget: m.budget, spent: m.spent, committed: m.committed, exposure: m.exposure, remaining: m.remaining, pace: trace(p, 'pace', T).value, projected: o.projected, unused: o.unused, planned: c.pv, vsplan: c.fei ?? 0, need: c.tcpiRate ?? 0 };
       for (const f of Object.keys(want) as Figure[]) {
         const t = trace(p, f, T);
         expect(t.value, `${p.code} ${f}`).toBeCloseTo(want[f], 2);

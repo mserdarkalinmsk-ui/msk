@@ -5,6 +5,7 @@ import type { Project } from '../domain/types';
 import { reportWorkbook } from '../pages/FinancialReport';
 import { TODAY } from '../today';
 import { download } from './xlsxwrite';
+import { Fig } from './Trace';
 import { date, full, pct, short } from './format';
 
 /* Is spending on track — in plain words. The method underneath is the earned value standard (PMI / ISO 21508);
@@ -22,11 +23,11 @@ export function CostCard({ p }: { p: Project }) {
       <div class="card-h"><div><h2>Is spending on track?</h2><p>Figures of the report of {date(c.asAt)}, against a plan that spreads the budget evenly over the project period</p></div></div>
       <div class="card-b">
         <div class="cpf-k">
-          <div><span>Total budget</span><b>{full(c.bac)}</b><small>{date(p.start)} → {date(p.end)}</small></div>
-          <div><span>Planned by now</span><b>{full(c.pv)}</b><small>{pct(c.timeGone)} of the period has passed</small></div>
-          <div><span>Spent</span><b>{full(c.ac)}</b><small>{full(c.sc)} with what is committed</small></div>
-          <div><span>Spent against plan</span><b><Tone v={c.fei}>{P(c.fei)}</Tone></b><small>{c.sv >= 0 ? `${short(c.sv)} ahead of the plan` : `${short(-c.sv)} behind the plan`}</small></div>
-          <div><span>Pace needed to use the budget</span><b><Tone v={c.tcpiRate == null ? null : 2 - c.tcpiRate}>{times(c.tcpiRate)}</Tone></b><small>{full(c.needRate)} a month, today {full(c.rate)}</small></div>
+          <div><span>Total budget</span><b><Fig p={p} f="budget">{full(c.bac)}</Fig></b><small>{date(p.start)} → {date(p.end)}</small></div>
+          <div><span>Planned by now</span><b><Fig p={p} f="planned">{full(c.pv)}</Fig></b><small>{pct(c.timeGone)} of the period has passed</small></div>
+          <div><span>Spent</span><b><Fig p={p} f="spent">{full(c.ac)}</Fig></b><small>{full(c.sc)} with what is committed</small></div>
+          <div><span>Spent against plan</span><b><Fig p={p} f="vsplan"><Tone v={c.fei}>{P(c.fei)}</Tone></Fig></b><small>{c.sv >= 0 ? `${short(c.sv)} ahead of the plan` : `${short(-c.sv)} behind the plan`}</small></div>
+          <div><span>Pace needed to use the budget</span><b><Fig p={p} f="need"><Tone v={c.tcpiRate == null ? null : 2 - c.tcpiRate}>{times(c.tcpiRate)}</Tone></Fig></b><small>{full(c.needRate)} a month, today {full(c.rate)}</small></div>
         </div>
         {!c.early && <>
           <h3 class="cpf-h3">Where the project ends</h3>

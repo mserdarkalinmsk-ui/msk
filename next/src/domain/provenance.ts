@@ -1,6 +1,7 @@
 import { burnGap, elapsed, forecastRate, HEADINGS, latestReport, lineCommitted, lineExposure, lines, money, n } from './calc';
 import { isExtraction } from './extraction';
 import { outcome } from './insights';
+import { costPerf } from './costPerf';
 import type { BudgetLine, Project, ReportingPeriod } from './types';
 import type { WorkbookSummary } from './workbook';
 
@@ -8,9 +9,9 @@ import type { WorkbookSummary } from './workbook';
  * Where a figure comes from: the rule it follows, the amounts it is made of, the file and sheet they were read
  * from, and the postings or purchase orders behind it. Every screen figure answers "why this number?" the same way.
  */
-export type Figure = 'budget' | 'spent' | 'committed' | 'exposure' | 'remaining' | 'pace' | 'projected' | 'unused';
+export type Figure = 'budget' | 'spent' | 'committed' | 'exposure' | 'remaining' | 'pace' | 'projected' | 'unused' | 'planned' | 'vsplan' | 'need';
 export type LineField = 'approved' | 'actual' | 'committed' | 'exposure' | 'balance';
-export type Unit = 'eur' | 'pct' | /** percentage points */ 'pp' | 'months' | 'units';
+export type Unit = 'eur' | 'pct' | /** percentage points */ 'pp' | 'months' | 'units' | /** a multiple */ 'times';
 export interface TraceTerm { label: string; value: number; unit?: Unit; op?: '+' | '−' | '×' | '÷' | '='; note?: string }
 export interface TracePart { code: string; label: string; value: number }
 export interface TracePosting { date: string; ref: string; who: string; text: string; amount: number }
@@ -88,6 +89,15 @@ export function trace(p: Project, f: Figure, today: Date): Trace {
       return { title: 'Pace vs time', value: burnGap(p, today), unit: 'pp', how: 'The share of the budget spent, less the share of the implementation period that has passed. Below zero the project spends slower than time runs.',
         terms: [{ label: 'Share of the budget spent', value: sh, unit: 'pct', note: `${r2(m.spent).toLocaleString('en-GB')} of ${r2(m.budget).toLocaleString('en-GB')}` }, { label: 'Share of the period elapsed', value: el, unit: 'pct', op: '−', note: `${nice(p.start)} → ${nice(p.end)}, today ${nice(today.toISOString().slice(0, 10))}` }, { label: 'Pace vs time', value: sh - el, unit: 'pp', op: '=' }],
         sources: src, notes: p.datesTbc ? ['The project dates are not confirmed yet — the elapsed share is counted as zero.', ...notes] : notes };
+    }
+    case 'planned': case 'vsplan': case 'need': {
+      const c = costPerf(p, today), span = `${nice(p.start)} → ${nice(p.end)}, report of ${nice(c.asAt)}`;
+      if (f === 'planned') return { title: 'Planned by now', value: c.pv, unit: 'eur', how: 'The plan spreads the total budget evenly over the project period: what should be spent by the date of the latest report.',
+        terms: [{ label: 'Total budget', value: c.bac }, { label: 'Share of the period passed', value: c.timeGone, unit: 'pct', op: '×', note: span }, { label: 'Planned by now', value: c.pv, op: '=' }], sources: [...budgetSrc.slice(0, 1), ...src], notes };
+      if (f === 'vsplan') return { title: 'Spent against plan', value: c.fei ?? 0, unit: 'pct', how: 'Spent divided by what the plan expects by now. 100% is on plan; below 95% the project is behind it, below 85% well behind.',
+        terms: [{ label: 'Spent', value: c.ac }, { label: 'Planned by now', value: c.pv, op: '÷', note: `${fmt(c.bac)} × ${(c.timeGone * 100).toFixed(1)}% of the period` }, { label: 'Spent against plan', value: c.fei ?? 0, unit: 'pct', op: '=' }], sources: src, notes: [c.fei == null ? 'Nothing is planned yet: the project period has not started at the report date.' : `${fmt(Math.abs(c.sv))} ${c.sv >= 0 ? 'ahead of' : 'behind'} the plan (spent less planned by now).`, ...notes] };
+      return { title: 'Pace needed to use the budget', value: c.tcpiRate ?? 0, unit: 'times', how: 'The monthly spending needed to use the whole budget by the end date, as a multiple of what the project spends a month today. Above 1.0 it has to speed up.',
+        terms: [{ label: 'Total budget', value: c.bac }, { label: 'Spent', value: c.ac, op: '−' }, { label: 'Months left', value: c.monthsLeft, unit: 'months', op: '÷', note: `to ${nice(p.end)}` }, { label: 'Needed a month', value: c.needRate, op: '=' }, { label: 'Spent a month today', value: c.rate, op: '÷', note: forecastRate(p, today).recent ? 'average since the start, blended with the rate between the last two reports' : 'average since the start' }, { label: 'Pace needed (× today)', value: c.tcpiRate ?? 0, unit: 'times', op: '=' }], sources: src, notes: c.tcpiRate == null ? ['No spending yet, so there is no pace to compare with.', ...notes] : notes };
     }
     case 'projected': case 'unused': {
       const o = outcome(p, today), fr = forecastRate(p, today), byRate = m.spent + o.rate * o.monthsLeft;

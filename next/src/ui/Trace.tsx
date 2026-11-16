@@ -8,7 +8,7 @@ import { date, full } from './format';
 import { plabel } from '../domain/label';
 
 const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const show = (v: number, u: Unit = 'eur') => (u === 'eur' ? full(v) : u === 'pct' ? `${v < -0.0005 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%` : u === 'pp' ? `${v < -0.0005 ? '−' : v > 0.0005 ? '+' : ''}${Math.abs(v * 100).toFixed(1)} points` : u === 'months' ? `${v.toFixed(1)} months` : nf2.format(v));
+const show = (v: number, u: Unit = 'eur') => (u === 'eur' ? full(v) : u === 'pct' ? `${v < -0.0005 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%` : u === 'pp' ? `${v < -0.0005 ? '−' : v > 0.0005 ? '+' : ''}${Math.abs(v * 100).toFixed(1)} points` : u === 'months' ? `${v.toFixed(1)} months` : u === 'times' ? `${v.toFixed(2)}×` : nf2.format(v));
 const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 /**

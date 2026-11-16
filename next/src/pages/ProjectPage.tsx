@@ -10,6 +10,7 @@ import { ForecastDialog } from '../ui/ForecastDialog';
 import { ForecastEditor } from './ForecastEditor';
 import { auditSheets } from '../domain/audit';
 import { ScenarioCompare } from './ScenarioCompare';
+import { MonthsAhead } from './MonthsAhead';
 import { Closure, Revision } from './Closure';
 import { useEffect, useState } from 'preact/hooks';
 import { deleteProjects, deleteReport, go, set, updateLine, useStore } from '../data/store';
@@ -124,7 +125,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
       {tab === 'Indicators' && <Indicators p={p} />}
       {tab === 'Justification' && <Justification p={p} />}
       {tab === 'Annual plan' && <AnnualPlanCard p={p} />}
-      {tab === 'Scenario' && <><ScenarioCompare p={p} /><div style={{ marginTop: '16px' }} /><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
+      {tab === 'Scenario' && <><MonthsAhead p={p} /><div style={{ marginTop: '16px' }} /><ScenarioCompare p={p} /><div style={{ marginTop: '16px' }} /><ProjectForesight p={p} /><div style={{ marginTop: '16px' }}><Scenario p={p} /></div></>}
       {tab === 'Forecast' && <ForecastEditor p={p} />}
       {tab === 'Revision' && <div class="grid g-12"><BudgetVersions p={p} /><Revision p={p} /></div>}
       {tab === 'Closure' && <Closure p={p} />}
