@@ -4,7 +4,7 @@ import { base, Chart } from './Chart';
 import { axisX, axisY } from '../pages/Overview';
 import { useStore } from '../data/store';
 import { updateProject } from '../data/store';
-import { poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { overlaps, poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -26,8 +26,12 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
     const x = await readXlsx(await file.arrayBuffer());
     const got = x.sheets.map((n) => readWorkPlan(x.read(n))).find(Boolean);
     if (!got) { setMsg(`${file.name}: no WorkPlan table found (title "Work plan for project … from … to …" and the Estimated budget column).`); return; }
-    const same = plans.find((w) => w.from === got.from);
-    const base = same ?? nextPlan(plans, TODAY);
+    // The file's period decides: the plan with the same start, or an empty plan (added by hand, nothing entered) whose
+    // dates overlap it, is filled in; otherwise a new plan numbered after the last one that ends before it.
+    const empty = (w: WP) => !w.acts?.length && !w.file && !w.planned;
+    const same = plans.find((w) => w.from === got.from) ?? (got.from && got.to ? plans.find((w) => empty(w) && w.from <= got.to && w.to >= got.from) : undefined);
+    const before = plans.filter((w) => got.from && w.to && w.to < got.from);
+    const base = same ?? (got.from ? { ...nextPlan(plans, TODAY), no: Math.max(0, ...before.map((w) => w.no)) + 1 } : nextPlan(plans, TODAY));
     const w: WP = { ...base, from: got.from || base.from, to: got.to || base.to, planned: got.planned, acts: got.acts, file: file.name, snap: base.snap ?? snapshot(wb) };
     save(same ? plans.map((y) => (y.id === w.id ? w : y)) : [...plans, w]); setSel(w.id);
     setMsg(`${file.name}: WP ${w.no} · ${got.acts.length} activities · ${full(got.planned)}${got.bh && p.bh && !p.bh.includes(got.bh.replace(/\D/g, '')) ? ` · budget head ${got.bh} differs from ${p.bh}` : ''}`);
@@ -62,6 +66,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && prompt('Admin password') === 'MSK') { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
       </div>
       {msg && <p class="muted" style={{ padding: '0 20px 8px' }}>{msg}</p>}
+      {overlaps(plans).map(([a, b]) => <p class="wp-warn"><b>WP {a.no}</b> ({date(a.from)} / {date(a.to)}) and <b>WP {b.no}</b> ({date(b.from)} / {date(b.to)}) overlap. The previous Work Plan is chosen by dates — correct the dates or delete the plan that was added by mistake.</p>)}
       <div class="wp-edit">
         <label>WP No <input type="number" min={1} value={wp.no} onChange={(e) => upd({ no: Number((e.target as HTMLInputElement).value) || 1 })} /></label>
         <label>From <input type="date" value={wp.from} onChange={(e) => upd({ from: (e.target as HTMLInputElement).value })} /></label>
@@ -78,7 +83,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
           <Row label="Total Activity Budget (excl. staff salaries & office costs)" a={full(f.activity)} b={f.manual ? `deducted ${full(f.eligible - f.activity)} (typed)` : `staff salaries ${full(f.staff)}`} c={f.manual ? `budget: ${full(f.staff + f.office)}` : `office ${full(f.office)}`} cls="y" />
           <Row label="Total Project Duration" a={date(f.start)} b={date(f.end)} c={`${f.duration} months`} cls="y" />
           <Row label={`WP No:${wp.no} — Activity Planned Expenditure`} a={full(wp.planned)} cls="b" />
-          <Row label={`Total time elapsed until ${f.prev ? `WP No:${f.prev.no}` : 'this WP'}`} a={date(f.elapsedFrom)} b={f.elapsedTo ? date(f.elapsedTo) : ''} c={`${f.elapsed} months`} cls="g" />
+          <Row label={`Total time elapsed until WP No:${wp.no}`} a={date(f.elapsedFrom)} b={f.elapsedTo ? date(f.elapsedTo) : ''} c={`${f.elapsed} months`} cls="g" />
           <Row k="A" label={`Total Activity Spent Amount (fin. rep. date ${f.asAt ? date(f.asAt) : '—'})`} a={full(f.spent)} b={pct(r(f.spent, f.activity) ?? 0, 1)} cls="g" />
           <Row k="B" label={`Total Activity Spent & Committed Amount (fin. rep. date ${f.asAt ? date(f.asAt) : '—'})`} a={full(f.sc)} b={pct(r(f.sc, f.activity) ?? 0, 1)} cls="g" />
           {f.prev ? <>
@@ -99,7 +104,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <label>Project Teams — comments<textarea rows={3} value={wp.teams ?? ''} onChange={(e) => upd({ teams: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Head of Operations — comments<textarea rows={3} value={wp.hoo ?? ''} onChange={(e) => upd({ hoo: (e.target as HTMLTextAreaElement).value })} /></label>
       </div>
-      <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except staff salaries (1.1.1 local team, 1.2.1 HQ team), heading 4 (local office) and 10 (administrative costs); consultants and per diems count as activity. D sums the invoices and GL entries dated within the previous WP; E adds the open balance of POs raised in those dates.</p>
+      <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except staff salaries (1.1.1 local team, 1.2.1 HQ team), heading 4 (local office) and 10 (administrative costs); consultants and per diems count as activity. D sums the invoices and GL entries dated within the previous WP plus every posting, on any line and at any date, that carries one of its activity IDs; E adds the open balance of the POs counted the same way. The previous WP is the one that ended last before this one starts.{f.prevTagged ? ` ${f.prevTagged} posting${f.prevTagged > 1 ? 's were' : ' was'} counted by activity ID.` : ''}</p>
     </div>
   );
 }

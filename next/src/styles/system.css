@@ -192,3 +192,6 @@ body :is(.hero, .ph-tiles) > .kpi.lead .meter > span:first-of-type { background:
 body :is(.hero, .ph-tiles) > .kpi.lead .meter > span:not(:first-of-type) { background: rgb(185 220 255 / .38) !important; opacity: 1 !important; }
 body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick { background: #fff; }
 body :is(.hero, .ph-tiles) > .kpi.lead .ctx i[style] { filter: brightness(1.6); }
+
+/* Work Plan: overlapping plans are called out above the follow-up table. */
+.wp-warn { margin: 0 20px 10px; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: var(--warn); background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }

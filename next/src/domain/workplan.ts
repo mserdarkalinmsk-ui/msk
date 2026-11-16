@@ -26,7 +26,7 @@ export interface WpFollowUp {
   start: string; end: string; duration: number;
   elapsedFrom: string; elapsedTo: string; elapsed: number;
   asAt: string; spent: number; sc: number;
-  prevSpent: number | null; prevSc: number | null;
+  prevSpent: number | null; prevSc: number | null; /** postings counted for the previous WP because they carry one of its activity IDs */ prevTagged: number;
   remaining: number; remainingMonths: number;
 }
 
@@ -45,13 +45,9 @@ export function followUp(p: Project, wb: WorkbookSummary, wp: WorkPlan, plans: W
   const activity = p.wpDeduct != null ? eligible - p.wpDeduct : eligible - staff - office;
   const act = leaf.filter((l) => isActivity(l.code));
   const spent = act.reduce((s, l) => s + (l.actual.cost ?? 0), 0), sc = act.reduce((s, l) => s + (l.sc ?? 0), 0);
-  const prev = plans.filter((x) => x.no < wp.no).sort((a, b) => b.no - a.no)[0];
-  let prevSpent: number | null = null, prevSc: number | null = null;
-  if (prev && wb.entries?.length) {
-    const inR = (d: string) => d >= prev.from && d <= prev.to;
-    prevSpent = wb.entries.filter((e) => inR(e.date) && isActivity(e.line)).reduce((s, e) => s + e.amount, 0);
-    prevSc = prevSpent + wb.pos.filter((x) => inR(x.date) && isActivity(x.line)).reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0);
-  }
+  const prev = previousPlan(plans, wp);
+  let prevSpent: number | null = null, prevSc: number | null = null, prevTagged = 0;
+  if (prev && wb.entries?.length) { const u = wpUse(prev, wb); prevSpent = u.spent; prevSc = u.sc; prevTagged = u.tagged; }
   if (prev?.rec) { if (prevSpent == null && prev.rec.spent != null) prevSpent = prev.rec.spent; if (prevSc == null && prev.rec.sc != null) prevSc = prev.rec.sc; }
   const elapsedTo = dayBefore(wp.from);
   const asAt = wb.meta.situationDate || wb.meta.asAt || '';
@@ -59,10 +55,53 @@ export function followUp(p: Project, wb: WorkbookSummary, wp: WorkPlan, plans: W
     wp, prev, manual: p.wpDeduct != null, total: r2(total), eligible: r2(eligible), staff: r2(staff), office: r2(office), activity: r2(activity),
     start: p.start, end: p.end, duration: months(p.start, p.end),
     elapsedFrom: p.start, elapsedTo, elapsed: months(p.start, wp.from),
-    asAt, spent: r2(spent), sc: r2(sc), prevSpent: prevSpent == null ? null : r2(prevSpent), prevSc: prevSc == null ? null : r2(prevSc),
+    asAt, spent: r2(spent), sc: r2(sc), prevSpent: prevSpent == null ? null : r2(prevSpent), prevSc: prevSc == null ? null : r2(prevSc), prevTagged,
     remaining: r2(activity - sc - wp.planned), remainingMonths: Math.max(0, months(p.start, p.end) - months(p.start, wp.from) - Math.max(1, months(wp.from, dayAfter(wp.to)))),
   };
 }
+/**
+ * The Work Plan before `wp` is the one that ended last before `wp` starts — by dates, not by the number typed, so an
+ * empty plan added for the current quarter never counts as the "previous" of a plan that starts earlier.
+ */
+export function previousPlan(plans: WorkPlan[], wp: WorkPlan): WorkPlan | undefined {
+  if (!wp.from) return plans.filter((x) => x.id !== wp.id && x.no < wp.no).sort((a, b) => b.no - a.no)[0];
+  return plans.filter((x) => x.id !== wp.id && x.to && x.to < wp.from).sort((a, b) => b.to.localeCompare(a.to) || b.no - a.no)[0];
+}
+
+/** Plans whose dates overlap — usually an empty plan added by hand next to the one read from the team's file. */
+export function overlaps(plans: WorkPlan[]): [WorkPlan, WorkPlan][] {
+  const out: [WorkPlan, WorkPlan][] = [];
+  const L = plans.filter((x) => x.from && x.to).sort((a, b) => a.from.localeCompare(b.from));
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) if (L[j].from <= L[i].to) out.push([L[i], L[j]]);
+  return out;
+}
+
+/** An activity ID or logframe reference written in a posting's text (PO description, invoice or GL detail). */
+const tagRe = (id: string) => new RegExp(`(^|[^\\w.])${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w]|\\.\\d)`, 'i');
+export function carriesActivity(text: string, wp: WorkPlan): boolean {
+  const ids = (wp.acts ?? []).map((a) => a.id).filter((x) => /\d{3,}/.test(x));
+  return ids.some((id) => tagRe(id).test(text));
+}
+
+/**
+ * What was spent on a Work Plan: activity lines posted within its dates, plus any posting — on any line, at any date up
+ * to the report — that carries one of the plan's activity IDs. Spent counts invoices and GL entries; spent & committed
+ * adds the open balance of the POs counted the same way.
+ */
+export function wpUse(wp: WorkPlan, wb: WorkbookSummary): { spent: number; sc: number; tagged: number } {
+  const inR = (d: string) => !!d && d >= wp.from && d <= wp.to;
+  const poTag = new Set(wb.pos.filter((x) => carriesActivity(x.description, wp)).map((x) => x.po));
+  let tagged = 0;
+  const E = (wb.entries ?? []).filter((e) => {
+    const tag = carriesActivity(`${e.description} ${e.detail}`, wp) || (!!e.po && poTag.has(e.po));
+    if (tag && !(inR(e.date) && isActivity(e.line))) tagged++;
+    return tag || (inR(e.date) && isActivity(e.line));
+  });
+  const spent = E.reduce((s, e) => s + e.amount, 0);
+  const P = wb.pos.filter((x) => poTag.has(x.po) || (inR(x.date) && isActivity(x.line)));
+  return { spent, sc: spent + P.reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0), tagged };
+}
+
 const shift = (d: string, n: number) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const dayBefore = (d: string) => (d ? shift(d, -1) : ''), dayAfter = (d: string) => (d ? shift(d, 1) : '');
 
@@ -105,11 +144,7 @@ export function history(plans: WorkPlan[], wb: WorkbookSummary): WpHistoryRow[] 
   const sorted = [...plans].sort((a, b) => a.no - b.no);
   return sorted.map((wp, i) => {
     let spent: number | null = wp.rec?.spent ?? null, sc: number | null = wp.rec?.sc ?? null;
-    if (spent == null && wb.entries?.length && wp.from && wp.to) {
-      const inR = (d: string) => d >= wp.from && d <= wp.to;
-      spent = wb.entries.filter((e) => inR(e.date) && isActivity(e.line)).reduce((s, e) => s + e.amount, 0);
-      sc = spent + wb.pos.filter((x) => inR(x.date) && isActivity(x.line)).reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0);
-    }
+    if (spent == null && wb.entries?.length && wp.from && wp.to) { const u = wpUse(wp, wb); spent = u.spent; sc = u.sc; }
     const before = new Set(sorted.slice(0, i).flatMap((w) => (w.acts ?? []).map((a) => a.id)));
     return { wp, spent: spent == null ? null : r2(spent), sc: sc == null ? null : r2(sc), spentPct: spent == null || !wp.planned ? null : spent / wp.planned, scPct: sc == null || !wp.planned ? null : sc / wp.planned, acts: wp.acts?.length ?? 0, carried: (wp.acts ?? []).filter((a) => before.has(a.id)).length };
   });
@@ -245,9 +280,9 @@ export const wpName = (w: WorkPlan) => (w.label && w.no <= 0 ? `WP ${w.label}` :
 export type ActFate = 'carried' | 'done' | 'cancelled' | 'postponed' | 'unknown';
 export interface PrevAct { a: WpActivity; fate: ActFate; note: string; now?: WpActivity }
 export function previousActivities(plans: WorkPlan[], wp: WorkPlan): { prev?: WorkPlan; rows: PrevAct[] } {
-  const prev = plans.filter((x) => x.no < wp.no).sort((a, b) => b.no - a.no)[0];
+  const prev = previousPlan(plans, wp);
   if (!prev?.acts?.length) return { prev, rows: [] };
-  const later = plans.filter((x) => x.no > prev.no).flatMap((x) => x.acts ?? []);
+  const later = plans.filter((x) => x.id !== prev.id && x.from > prev.to).flatMap((x) => x.acts ?? []);
   const rows = prev.acts.map((a): PrevAct => {
     const now = (wp.acts ?? []).find((x) => x.id === a.id), st = [now?.status, ...later.filter((x) => x.id === a.id).map((x) => x.status), a.status].find(Boolean) ?? '';
     const fate: ActFate = /cancel|iptal/i.test(st) ? 'cancelled' : now ? 'carried' : /postpon|ertelen|modif/i.test(st) ? 'postponed' : /\bdone\b|complet|tamam|implemented|held|organi[sz]ed/i.test(st) ? 'done' : 'unknown';
