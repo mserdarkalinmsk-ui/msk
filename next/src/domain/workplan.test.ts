@@ -64,3 +64,18 @@ describe('spending of a Work Plan', () => {
     expect(carriesActivity('ref 1274130', plan)).toBe(false);
   });
 });
+
+describe('activity number column', () => {
+  it('counts postings by the report activity number, ignoring the text', () => {
+    const plan: WPx = { id: 'q', no: 2, from: '2026-07-01', to: '2026-09-30', planned: 5000, acts: [{ ref: '', id: '146732', name: 'Launch', amount: 5000, lines: [] }] };
+    const e = (date: string, line: string, amount: number, activity?: string, po = '') => ({ date, period: '', src: 'gl' as const, doc: '', po, line, account: '', description: 'text 146732', detail: '', supplier: '', amount, posted: true, ...(activity ? { activity } : {}) });
+    const wb = {
+      entries: [e('2026-11-02', '1.1.1.3', 400, '146732'), e('2026-11-02', '5.7', 900, '144976'), e('2026-08-02', '5.7', 100)],
+      pos: [{ po: '1', line: '5.7', description: '', supplier: '', amount: 1000, spent: 0, sc: 1000, date: '2026-11-01', activity: '146732' }],
+      lines: [], totals: {}, meta: {},
+    } as unknown as WBx;
+    const u = wpUse(plan, wb);
+    expect(u.spent).toBe(500);   // 400 by number (staff line, after the dates) + 100 in-date activity line; 900 has another number
+    expect(u.sc).toBe(1500);
+  });
+});

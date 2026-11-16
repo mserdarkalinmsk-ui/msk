@@ -4,7 +4,7 @@ import { base, Chart } from './Chart';
 import { axisX, axisY } from '../pages/Overview';
 import { useStore } from '../data/store';
 import { updateProject } from '../data/store';
-import { overlaps, poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { activityUse, overlaps, poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -104,7 +104,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
         <label>Project Teams — comments<textarea rows={3} value={wp.teams ?? ''} onChange={(e) => upd({ teams: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Head of Operations — comments<textarea rows={3} value={wp.hoo ?? ''} onChange={(e) => upd({ hoo: (e.target as HTMLTextAreaElement).value })} /></label>
       </div>
-      <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except staff salaries (1.1.1 local team, 1.2.1 HQ team), heading 4 (local office) and 10 (administrative costs); consultants and per diems count as activity. D sums the invoices and GL entries dated within the previous WP plus every posting, on any line and at any date, that carries one of its activity IDs; E adds the open balance of the POs counted the same way. The previous WP is the one that ended last before this one starts.{f.prevTagged ? ` ${f.prevTagged} posting${f.prevTagged > 1 ? 's were' : ' was'} counted by activity ID.` : ''}</p>
+      <p class="muted" style={{ padding: '8px 20px 16px', fontSize: '12px' }}>Activity = all lines except staff salaries (1.1.1 local team, 1.2.1 HQ team), heading 4 (local office) and 10 (administrative costs); consultants and per diems count as activity. D sums the invoices and GL entries dated within the previous WP plus every posting, on any line and at any date, that carries one of its activity IDs; E adds the open balance of the POs counted the same way. Activity IDs are read from the report's activity number column (an invoice takes its PO's); reports imported before this need importing again. The previous WP is the one that ended last before this one starts.{f.prevTagged ? ` ${f.prevTagged} posting${f.prevTagged > 1 ? 's were' : ' was'} counted by activity ID.` : ''}</p>
     </div>
   );
 }
@@ -242,6 +242,8 @@ function WpPrevActs({ wp, plans }: { wp: WP; plans: WP[] }) {
 function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary }) {
   const carried = carriedFrom(plans, wp), L = byLine(wp, wb), C = wpChecks(wp, wb), PM = poMatch(wp, wb);
   const [showAll, setShowAll] = useState(false);
+  // Spending per activity from the report's activity number column (shown when the report carries it).
+  const AU = activityUse(wb), useOf = (id: string) => AU.get(id.trim().replace(/^0+/, ''));
   const noPo = PM.filter((x) => x.raised < 0.5), started = wp.from && wp.from <= (wb.meta.situationDate || wb.meta.asAt || '');
   const over = L.filter((l) => l.after < 0), unb = L.filter((l) => l.unbudgeted);
   return (
@@ -254,9 +256,10 @@ function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary 
           <tbody>{PM.map((x) => { const r_ = x.planned ? x.raised / x.planned : 0; return <tr class={x.raised < 0.5 ? 'warning' : ''}><td class="num">{x.line}</td><td class="muted" style={{ fontSize: '12px' }}>{x.acts.join(', ')}</td><td class="num">{full(x.planned)}</td><td class="num">{full(x.raised)}</td>
             <td class={`num ${r_ >= 0.8 ? 'good' : r_ < 0.3 ? 'serious' : 'warning'}`}>{pct(r_)}</td><td style={{ fontSize: '12px' }}>{x.pos.length ? x.pos.map((o) => <div title={`${o.description} · ${o.supplier}`}>{o.po} · {full(o.amount)} · {date(o.date)}</div>) : <span class="badge warning">no PO yet</span>}</td></tr>; })}</tbody></table></details> : null}
       <details class="wp-sec" open><summary>Activities in WP {wp.no} · {wp.acts!.length} · {full(wp.acts!.reduce((t, a) => t + a.amount, 0))}{carried.size ? ` · ${carried.size} carried over from earlier WPs` : ''}{wp.file ? ` · ${wp.file}` : ''}</summary>
-        <table class="wp-t"><thead><tr><th>Ref.</th><th>Activity ID</th><th>Activity</th><th>Budget lines</th><th class="num">Estimated</th><th>Earlier WPs</th></tr></thead>
+        <table class="wp-t"><thead><tr><th>Ref.</th><th>Activity ID</th><th>Activity</th><th>Budget lines</th><th class="num">Estimated</th>{AU.size > 0 && <><th class="num" title="All postings with this activity number in the report, at any date">Spent (report)</th><th class="num">Spent & committed (report)</th></>}<th>Earlier WPs</th></tr></thead>
           <tbody>{[...wp.acts!].sort((a, b) => b.amount - a.amount).map((a) => { const c = carried.get(a.id); return (
             <tr class={c ? 'warning' : ''}><td>{a.ref}</td><td class="num">{a.id}</td><td>{a.name}</td><td><div class="wp-chips">{a.lines.filter((l) => l.amount).map((l) => <span title={l.text}><b>{l.line}</b> {full(l.amount)}</span>)}</div></td><td class="num">{full(a.amount)}</td>
+              {AU.size > 0 && <><td class="num">{useOf(a.id) ? full(useOf(a.id)!.spent) : '—'}</td><td class="num">{useOf(a.id) ? full(useOf(a.id)!.sc) : '—'}</td></>}
               <td>{c ? <span class="badge warning">Also in WP {c.join(', ')}</span> : <span class="muted">new</span>}</td></tr>); })}</tbody></table></details>
       <details class="wp-sec" open><summary>By budget line · {L.length} lines{over.length ? ` · ${over.length} above what is left` : ''}{unb.length ? ` · ${unb.length} not in the budget (check the line codes or the budget loaded)` : ''}</summary>
         <table class="wp-t"><thead><tr><th>Line</th><th>Description</th><th class="num">Budget</th><th class="num">Spent & committed</th><th class="num">Left</th><th class="num">WP {wp.no} plan</th><th class="num">Left after WP</th></tr></thead>

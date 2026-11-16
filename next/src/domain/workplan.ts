@@ -82,24 +82,40 @@ export function carriesActivity(text: string, wp: WorkPlan): boolean {
   const ids = (wp.acts ?? []).map((a) => a.id).filter((x) => /\d{3,}/.test(x));
   return ids.some((id) => tagRe(id).test(text));
 }
+/** The plan's activity IDs as the extraction writes them (no leading zeros). */
+const actIds = (wp: WorkPlan) => new Set((wp.acts ?? []).map((a) => a.id.trim().replace(/^0+/, '')).filter((x) => /^\d+$/.test(x)));
+/** A posting belongs to the plan's activities: its activity number column (PO, invoice through its PO, GL), else its text. */
+const ofPlan = (ids: Set<string>, wp: WorkPlan, x: { activity?: string }, text: string) => (x.activity ? ids.has(x.activity) : carriesActivity(text, wp));
 
 /**
  * What was spent on a Work Plan: activity lines posted within its dates, plus any posting — on any line, at any date up
- * to the report — that carries one of the plan's activity IDs. Spent counts invoices and GL entries; spent & committed
+ * to the report — that carries one of the plan's activity IDs (the report's "Activity number" / "Activity Nbr" column;
+ * an invoice takes its PO's; text is read only when the posting has no number). Spent counts invoices and GL entries; spent & committed
  * adds the open balance of the POs counted the same way.
  */
 export function wpUse(wp: WorkPlan, wb: WorkbookSummary): { spent: number; sc: number; tagged: number } {
-  const inR = (d: string) => !!d && d >= wp.from && d <= wp.to;
-  const poTag = new Set(wb.pos.filter((x) => carriesActivity(x.description, wp)).map((x) => x.po));
+  const inR = (d: string) => !!d && d >= wp.from && d <= wp.to, ids = actIds(wp);
+  const tagPo = (x: WorkbookSummary['pos'][number]) => ofPlan(ids, wp, x, x.description);
+  const poTag = new Set(wb.pos.filter(tagPo).map((x) => x.po));
   let tagged = 0;
   const E = (wb.entries ?? []).filter((e) => {
-    const tag = carriesActivity(`${e.description} ${e.detail}`, wp) || (!!e.po && poTag.has(e.po));
+    const tag = ofPlan(ids, wp, e, `${e.description} ${e.detail}`) || (!e.activity && !!e.po && poTag.has(e.po));
     if (tag && !(inR(e.date) && isActivity(e.line))) tagged++;
     return tag || (inR(e.date) && isActivity(e.line));
   });
   const spent = E.reduce((s, e) => s + e.amount, 0);
-  const P = wb.pos.filter((x) => poTag.has(x.po) || (inR(x.date) && isActivity(x.line)));
+  const P = wb.pos.filter((x) => tagPo(x) || (inR(x.date) && isActivity(x.line)));
   return { spent, sc: spent + P.reduce((s, x) => s + Math.max(0, x.sc - x.spent), 0), tagged };
+}
+
+/** Spent and spent & committed per PMM activity number, from the report's activity number column (all dates). */
+export function activityUse(wb: WorkbookSummary): Map<string, { spent: number; sc: number }> {
+  const out = new Map<string, { spent: number; sc: number }>();
+  const at = (id: string) => { let x = out.get(id); if (!x) out.set(id, (x = { spent: 0, sc: 0 })); return x; };
+  for (const e of wb.entries ?? []) if (e.activity) { const x = at(e.activity); x.spent += e.amount; x.sc += e.amount; }
+  for (const o of wb.pos) if (o.activity) at(o.activity).sc += Math.max(0, o.sc - o.spent);
+  for (const x of out.values()) { x.spent = r2(x.spent); x.sc = r2(x.sc); }
+  return out;
 }
 
 const shift = (d: string, n: number) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };

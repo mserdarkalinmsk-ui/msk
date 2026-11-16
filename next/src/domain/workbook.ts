@@ -32,10 +32,12 @@ export interface Block { key: string; label: string; col: number; role: Role | '
 /** Corrections remembered for a file format: heading key → role. */
 export interface ReadOptions { roles?: Record<string, Role> }
 export interface SituationRow { ccm: string; article: string; description: string; budget: number; da: number; po: number; invoice: number; actual: number; available: number; balance: number }
-export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string }
+/** A PMM activity number as the extraction writes it ("146732", "0" or empty = none). */
+export const actNo = (v: string) => { const t = String(v ?? '').trim().replace(/\.0+$/, ''); return /^\d+$/.test(t) && Number(t) > 0 ? String(Number(t)) : ''; };
+export interface PO { po: string; line: string; description: string; nature: string; supplier: string; amount: number; spent: number; balance: number; sc: number; status: string; date: string; units: number | null; unitType: string; /** PMM activity number of the PO line ("Activity number"), when set */ activity?: string }
 export interface Movement { article: string; period: string; date: string; amount: number; description: string; funding: boolean }
 /** One dated posting: an invoice on a purchase order (by GL date) or a direct GL entry. Together they make up "spent". */
-export interface Entry { date: string; period: string; src: 'invoice' | 'gl'; doc: string; po: string; line: string; account: string; description: string; detail: string; supplier: string; amount: number; posted: boolean; units?: number | null; unitType?: string }
+export interface Entry { date: string; period: string; src: 'invoice' | 'gl'; doc: string; po: string; line: string; account: string; description: string; detail: string; supplier: string; amount: number; posted: boolean; units?: number | null; unitType?: string; /** PMM activity number: the GL entry's own, or the PO's for an invoice */ activity?: string }
 export interface MonthPoint { month: string; invoices: number; gl: number }
 export interface Check { ok: boolean; level: 'error' | 'warning' | 'info'; text: string }
 
@@ -260,7 +262,8 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     const C = { line: pt.col('reportingline'), ut: pt.col('unittype'), u: pt.col('nbreofunits'), po: pt.col('ponumber'), d: pt.col('descriptionpo'), nat: pt.col('descriptionpoline'), amt: pt.col('poamountineur'), sp: pt.col('spentineur'), bal: pt.col('balanceonpoineur'), sc: pt.col('spentandcommittedineur'), st: pt.col('closurestatus'), sup: pt.col('supplier'), dt: pt.col('encumbereddate') };
     for (const r of pt.rows) {
       if (!cell(r, C.po)) continue;
-      pos.push({ po: cell(r, C.po), line: cell(r, C.line), description: cell(r, C.d), nature: cell(r, C.nat), supplier: cell(r, C.sup), amount: z(r[C.amt]), spent: z(r[C.sp]), balance: z(r[C.bal]), sc: z(r[C.sc]), status: cell(r, C.st), date: toDay(r[C.dt]), units: num(r[C.u]), unitType: cell(r, C.ut) });
+      const activity = actNo(cell(r, pt.col('activitynumber', 'activitynbr', 'activityno')));
+      pos.push({ ...(activity ? { activity } : {}), po: cell(r, C.po), line: cell(r, C.line), description: cell(r, C.d), nature: cell(r, C.nat), supplier: cell(r, C.sup), amount: z(r[C.amt]), spent: z(r[C.sp]), balance: z(r[C.bal]), sc: z(r[C.sc]), status: cell(r, C.st), date: toDay(r[C.dt]), units: num(r[C.u]), unitType: cell(r, C.ut) });
     }
   }
 
@@ -287,11 +290,11 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
 
   /* dated postings: invoices on POs (line, supplier from the PO) + direct GL entries */
   const entries: Entry[] = [];
-  const poBy = new Map<string, { line: string; supplier: string; description: string; detail: string }>();
+  const poBy = new Map<string, { line: string; supplier: string; description: string; detail: string; activity: string }>();
   // A PO split over several budget lines: each invoice goes to the line it names ("5.7-Framework …"), else to the line of the same amount.
   const poAll = new Map<string, PoLineRef[]>();
   if (pt) { const C = { po: pt.col('ponumber'), na: pt.col('nature'), line: pt.col('reportingline'), sup: pt.col('supplier'), d: pt.col('descriptionpo'), dl: pt.col('descriptionpoline'), amt: pt.col('poamountineur') };
-    for (const r of pt.rows) { const po = cell(r, C.po); if (!po) continue; const x = { line: cell(r, C.line), supplier: cell(r, C.sup), description: cell(r, C.d), detail: cell(r, C.dl) };
+    for (const r of pt.rows) { const po = cell(r, C.po); if (!po) continue; const x = { line: cell(r, C.line), supplier: cell(r, C.sup), description: cell(r, C.d), detail: cell(r, C.dl), activity: actNo(cell(r, pt.col('activitynumber', 'activitynbr', 'activityno'))) };
       if (!poBy.has(po + '|' + cell(r, C.na))) poBy.set(po + '|' + cell(r, C.na), x); if (!poBy.has(po)) poBy.set(po, x);
       const all = poAll.get(po) ?? []; all.push({ ...x, nature: cell(r, C.na), amount: z(r[C.amt]) }); poAll.set(po, all); } }
   if (inv) {
@@ -299,7 +302,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     for (const r of inv.rows) {
       const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
       const po = cell(r, C.po), x = poBy.get(po + '|' + cell(r, C.na)) ?? pickPoLine(poAll.get(po), cell(r, C.d), num(r[C.am]) ?? 0) ?? poBy.get(po);
-      entries.push({ date: toDay(r[C.dg]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'invoice', doc: no, po, line: x?.line ?? '', account: cell(r, C.na), description: x?.description || cell(r, C.d), detail: cell(r, C.d), supplier: x?.supplier ?? '', amount, posted: !/^n/i.test(cell(r, C.pf)) });
+      entries.push({ ...(x?.activity ? { activity: x.activity } : {}), date: toDay(r[C.dg]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'invoice', doc: no, po, line: x?.line ?? '', account: cell(r, C.na), description: x?.description || cell(r, C.d), detail: cell(r, C.d), supplier: x?.supplier ?? '', amount, posted: !/^n/i.test(cell(r, C.pf)) });
     }
   }
   if (gl) {
@@ -307,7 +310,8 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
     for (const r of gl.rows) {
       const amount = num(r[C.am]); const no = cell(r, C.no); if (amount == null || !no || /^total/i.test(cell(r, 0))) continue;
       const ln = cell(r, C.line), levy = (!ln || ln === '0') && /tranche|prelev|levy/i.test(cell(r, C.d));
-      entries.push({ date: toDay(r[C.ad]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'gl', doc: no, po: '', line: levy ? '10' : ln, account: cell(r, C.na), description: cell(r, C.d), detail: cell(r, C.dl), supplier: '', amount, posted: !/^n/i.test(cell(r, C.pf)), units: num(r[C.u]), unitType: cell(r, C.ut) });
+      const activity = actNo(cell(r, gl.col('activitynbr', 'activitynumber', 'activityno')));
+      entries.push({ ...(activity ? { activity } : {}), date: toDay(r[C.ad]) || periodMonth(cell(r, C.pe)) + '-01', period: cell(r, C.pe), src: 'gl', doc: no, po: '', line: levy ? '10' : ln, account: cell(r, C.na), description: cell(r, C.d), detail: cell(r, C.dl), supplier: '', amount, posted: !/^n/i.test(cell(r, C.pf)), units: num(r[C.u]), unitType: cell(r, C.ut) });
     }
   }
   entries.sort((a, b) => a.date.localeCompare(b.date));
@@ -455,7 +459,7 @@ export function arithmetic(wb: Workbook): Check[] {
   return out;
 }
 
-type PoLineRef = { line: string; supplier: string; description: string; detail: string; nature: string; amount: number };
+type PoLineRef = { line: string; supplier: string; description: string; detail: string; activity: string; nature: string; amount: number };
 /** The line of a split PO an invoice belongs to: the code its text starts with, the PO line text it repeats, or a single line of the same amount. */
 export function pickPoLine<T extends { line: string; nature?: string; detail?: string; amount?: number }>(L: T[] | undefined, text: string, amount: number): T | undefined {
   if (!L?.length) return undefined;
