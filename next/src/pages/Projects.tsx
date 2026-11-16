@@ -38,7 +38,7 @@ export function Projects() {
           <button aria-pressed={view === 'list'} onClick={() => { setView('list'); save('pl-projects-view', 'list'); }}>☰ List</button>
         </div>
         {view === 'cards' && <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); save('pl-projects-sort', v); }}>{SORTS.map((x) => <option value={x.id}>Sort: {x.label}</option>)}</select>}
-        <span class="muted" style={{ fontSize: '12.5px' }}>{P.length} projects</span>
+        <span class="muted" style={{ fontSize: '13px' }}>{P.length} projects</span>
         <button class="btn" style={{ marginLeft: 'auto' }} onClick={() => set({ drawer: { kind: 'import' } })}>Import project list</button>
       </div>
       {view === 'list'

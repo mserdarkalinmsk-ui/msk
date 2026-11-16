@@ -42,7 +42,7 @@ export function MapPage() {
         <select class="select" style={{ height: '30px' }} value={sector} onChange={(e) => set((s) => ({ filters: { ...s.filters, sector: (e.target as HTMLSelectElement).value } }))} aria-label="Sector">
           <option value="">All sectors</option>{SECTORS.map((s) => <option>{s}</option>)}
         </select>
-        <span class="muted" style={{ fontSize: '12.5px' }}>{MODES.find((m) => m.id === mode)!.hint} · drag to pan, scroll to zoom</span>
+        <span class="muted" style={{ fontSize: '13px' }}>{MODES.find((m) => m.id === mode)!.hint} · drag to pan, scroll to zoom</span>
         <button class="chip" style={{ marginLeft: 'auto', borderStyle: 'dashed' }} onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })}>+ Country</button>
         <button class="btn ghost" style={{ height: '28px' }} onClick={() => set({ drawer: { kind: 'countries' } })}>Manage countries</button>
       </div>
@@ -57,7 +57,7 @@ export function MapPage() {
             <>
               <div class="map-side-h">
                 <button class="btn ghost" style={{ height: '26px', padding: '0 8px' }} onClick={() => setSel(null)}>← All countries</button>
-                <h2>{c.name}</h2><div class="muted" style={{ fontSize: '12.5px' }}>{c.region || '—'} {c.iso3 && `· ${c.iso3}`}</div>
+                <h2>{c.name}</h2><div class="muted" style={{ fontSize: '13px' }}>{c.region || '—'} {c.iso3 && `· ${c.iso3}`}</div>
               </div>
               <div class="map-side-kpis">
                 <div><span>Budget</span><b class="num">{short(d.budget)}</b></div>
@@ -71,7 +71,7 @@ export function MapPage() {
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline' }}><b class="num">{p.code}</b><span class="muted" style={{ fontSize: '12px' }}>{p.sector}</span><span class={`badge ${g < -0.3 ? 'serious' : g < -0.15 ? 'warning' : g > 0.1 ? 'serious' : 'good'}`} style={{ marginLeft: 'auto' }}>{signedPct(g)}</span></div>
                     <div style={{ fontSize: '13px', margin: '2px 0 6px' }}>{p.name}</div>
                     <div class="minibar"><span style={{ width: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%` }} /></div>
-                    <div class="muted num" style={{ fontSize: '11.5px', marginTop: '4px' }}>{short(m.spent)} of {short(m.budget)}</div>
+                    <div class="muted num" style={{ fontSize: '12px', marginTop: '4px' }}>{short(m.spent)} of {short(m.budget)}</div>
                   </button>); })}
               </div>
               <div style={{ display: 'flex', gap: '8px', padding: '12px 16px', borderTop: '1px solid var(--line)' }}>
@@ -84,7 +84,7 @@ export function MapPage() {
               const on = [...D].filter((x) => x.projects).sort((a, b) => b.budget - a.budget), off = D.filter((x) => !x.projects);
               const tb = on.reduce((s, x) => s + x.budget, 0), ts = on.reduce((s, x) => s + x.spent, 0), maxB = Math.max(1, ...on.map((x) => x.budget));
               return (<>
-                <div class="map-side-h"><h2>Portfolio by country</h2><div class="muted" style={{ fontSize: '12.5px' }}>{on.length} countr{on.length === 1 ? 'y' : 'ies'} with projects · select one for details</div></div>
+                <div class="map-side-h"><h2>Portfolio by country</h2><div class="muted" style={{ fontSize: '13px' }}>{on.length} countr{on.length === 1 ? 'y' : 'ies'} with projects · select one for details</div></div>
                 <div class="map-side-kpis">
                   <div><span>Budget</span><b class="num">{short(tb)}</b></div>
                   <div><span>Spent</span><b class="num">{pct(tb ? ts / tb : 0)}</b></div>
@@ -95,7 +95,7 @@ export function MapPage() {
                   {on.map((x) => (
                     <button class="map-proj" onClick={() => setSel(x.id)}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline' }}><b>{x.name}</b><span class="muted num" style={{ fontSize: '12px' }}>{x.projects} project{x.projects > 1 ? 's' : ''}</span>{x.alerts > 0 && <span class={`badge ${x.critical ? 'critical' : 'serious'}`} style={{ marginLeft: 'auto' }}>{x.alerts}</span>}</div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}><span class="num" style={{ fontSize: '19px', fontWeight: 650 }}>{short(x.budget)}</span><span class="muted" style={{ fontSize: '12px' }}>{pct(x.budget ? x.spent / x.budget : 0)} spent · pace {signedPct(x.gap)}</span></div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}><span class="num" style={{ fontSize: '19px', fontWeight: 600 }}>{short(x.budget)}</span><span class="muted" style={{ fontSize: '12px' }}>{pct(x.budget ? x.spent / x.budget : 0)} spent · pace {signedPct(x.gap)}</span></div>
                       <div class="map-bar"><i style={{ width: `${x.budget / maxB * 100}%` }}><b style={{ width: `${x.budget ? Math.min(100, x.spent / x.budget * 100) : 0}%` }} /></i></div>
                     </button>
                   ))}

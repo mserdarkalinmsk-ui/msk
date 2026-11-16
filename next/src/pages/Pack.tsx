@@ -103,7 +103,7 @@ export function MonthlyPack() {
         {DEC.length ? <ul>{DEC.map((x) => <li class={`t-${x.tone}`} onClick={() => x.p && go(`project/${x.p.id}`)} style={{ cursor: x.p ? 'pointer' : undefined }}><span class="badge">{x.kind}</span> {x.text}</li>)}</ul>
           : <p class="muted">Nothing needs a decision this month.</p>}
       </section>
-      {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '12.5px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
+      {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
         <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
       <section class="pack-s">
         <h3>What changed since the previous report</h3>
@@ -122,7 +122,7 @@ export function MonthlyPack() {
         </table>
       </section>
       {(s.ledger.offices ?? []).length > 0 && <section class="pack-s"><h3>Office running costs</h3><OfficeSummary variant="pack" /></section>}
-      <section class="pack-s"><h3>Service providers</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '12.5px' }}>Event management, interpretation, consultants, visibility, research, publication and grants — purchase orders of the latest report workbooks</p><ProviderBrief P={P} cname={cname} /></section>
+      <section class="pack-s"><h3>Service providers</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Event management, interpretation, consultants, visibility, research, publication and grants — purchase orders of the latest report workbooks</p><ProviderBrief P={P} cname={cname} /></section>
       {A.length > 0 && <section class="pack-s"><h3>Top alerts</h3>
         <ul class="pack-al">{A.map((a) => <li><span class={`badge ${a.severity}`}>{a.severity}</span><b>{(() => { const q = P.find((p) => p.id === a.projectId); return q ? lab(q) : ''; })()}</b> {a.title} <span class="muted">— {a.detail}</span></li>)}</ul></section>}
       <section class="pack-s pack-break"><h3>Expenditure monitoring</h3><Compare /></section>

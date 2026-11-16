@@ -28,7 +28,7 @@ export function Closure({ p }: { p: Project }) {
     <div class="grid g-12">
       <section class="hero ph-tiles span-12">
         <div class="kpi lead"><span class="label">End date</span><span class="value">{left >= 0 ? `${left} days` : 'ended'}</span><span class="ctx">{date(p.end)}</span></div>
-        <div class="kpi"><span class="label">Final report due</span><span class="value" style={{ fontSize: '22px' }}>{final ? date(final.due) : '—'}</span><span class="ctx">{final?.status ?? 'set reporting terms in the contract'}</span></div>
+        <div class="kpi"><span class="label">Final report due</span><span class="value" style={{ fontSize: '24px' }}>{final ? date(final.due) : '—'}</span><span class="ctx">{final?.status ?? 'set reporting terms in the contract'}</span></div>
         <div class="kpi"><span class="label">Closure checklist</span><span class="value">{nDone}/{steps.length}</span><span class="ctx">{nDone === steps.length ? 'complete' : `${steps.filter((x) => x.state === 'overdue').length} overdue · ${steps.length - nDone} to do`}</span></div>
         <div class="kpi"><span class="label">{balance >= 0 ? 'Final payment expected' : 'To be recovered'}</span><span class="value" style={{ color: balance < 0 ? 'var(--critical)' : undefined }}>{full(Math.abs(balance))}</span><span class="ctx">at the current forecast</span></div>
       </section>
@@ -101,7 +101,7 @@ export function Revision({ p }: { p: Project }) {
           </tr>)}</tbody>
           <tfoot class="hd-f"><tr class="hd-total"><td>Total direct costs</td><td class="r num">{full(H.direct.baseline)}</td><td class="r num">{full(tA)}</td><td /><td /><td class="r num">{full(tP)}</td><td class="r num">{Math.abs(tP - tA) < 1 ? '—' : `${tP > tA ? '+' : '−'}${full(Math.abs(tP - tA))}`}</td><td /><td /></tr></tfoot>
         </table>
-        <p class="muted" style={{ fontSize: '12.5px', marginTop: '10px' }}>{Math.abs(gap) < 1 ? 'Proposal keeps the total unchanged.' : gap > 0 ? `${full(gap)} of direct costs would stay unallocated (${pct(gap / (tA || 1))}) — move it to headings that need more, or plan activities to use it.` : `Proposal exceeds the current total by ${full(-gap)} — reduce other headings.`}{rows.some((r) => r.breach) ? ' Headings marked “amendment” move more than the flexibility allows and need a contract amendment.' : ''}</p>
+        <p class="muted" style={{ fontSize: '13px', marginTop: '10px' }}>{Math.abs(gap) < 1 ? 'Proposal keeps the total unchanged.' : gap > 0 ? `${full(gap)} of direct costs would stay unallocated (${pct(gap / (tA || 1))}) — move it to headings that need more, or plan activities to use it.` : `Proposal exceeds the current total by ${full(-gap)} — reduce other headings.`}{rows.some((r) => r.breach) ? ' Headings marked “amendment” move more than the flexibility allows and need a contract amendment.' : ''}</p>
       </div>
     </section>
   );

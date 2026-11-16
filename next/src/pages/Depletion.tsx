@@ -96,7 +96,7 @@ export function ProjectForesight({ p }: { p: Project }) {
           <ul class="dep-tr">{T.list.map((t) => <li>
             {t.from ? <><span class="dep-pill" style={{ background: C.idle }}>{t.from}. {HEADINGS[t.from]}</span><span class="arr">→</span></> : <span class="dep-pill" style={{ background: C.warn }}>{t.capped ? 'Above the flexibility limit — needs an amendment' : 'No spare heading — cut or amend'}</span>}
             <span class="dep-pill" style={{ background: C.bad }}>{t.to}. {HEADINGS[t.to]}</span><b class="num">{short(t.amount)}</b></li>)}</ul>}
-          <p class="muted" style={{ fontSize: '11.5px', marginTop: '10px' }}>Projection = spent + committed + (average monthly spend so far × months left). A heading below 85% at the end gives up to 80% of its projected surplus. Check with the Revision tab before submitting.</p>
+          <p class="muted" style={{ fontSize: '12px', marginTop: '10px' }}>Projection = spent + committed + (average monthly spend so far × months left). A heading below 85% at the end gives up to 80% of its projected surplus. Check with the Revision tab before submitting.</p>
         </div>
       </section>}
     </div>

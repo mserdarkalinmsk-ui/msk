@@ -1,0 +1,95 @@
+/* ==========================================================================
+   The system layer — loaded last. One answer for each shared element, so every page reads as the same product:
+   type scale 11 / 12 / 13 / 14 / 16 / 20 / 28; weights 400 / 500 / 600 / 700;
+   three button ranks (primary, secondary, quiet); three tab levels (page tabs, section pills, segmented switch);
+   figures right-aligned with even-width digits; headline tiles neutral unless they report a state.
+   ========================================================================== */
+
+/* ---------- type: emphasis and small print stay on the scale ---------- */
+b, strong { font-weight: 600; }
+small { font-size: 12px; }
+
+/* ---------- buttons: three ranks ---------- */
+.btn { height: 34px; font-size: 13px; font-weight: 500; border-radius: var(--r-sm); transition: background .14s, border-color .14s, color .14s, box-shadow .14s; }
+.btn.primary { font-weight: 600; }
+.btn:not(.primary):not(.ghost):not(.danger) { background: var(--surface); border-color: var(--line-strong); color: var(--ink); }
+.btn:not(.primary):not(.ghost):not(.danger):not(:disabled):hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line-strong)); background: var(--surface-hover); }
+.btn.sm, .card-h .tools .btn { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn:active:not(:disabled) { transform: translateY(.5px); }
+
+/* Project header: one primary action, the working actions, then the downloads as a quiet group, delete apart. */
+.ph-actions { align-items: center; gap: 8px; }
+.ph-actions .btn, .ph-actions a.btn { background: var(--surface); border-color: var(--line-strong); color: var(--ink); font-weight: 500; box-shadow: none; }
+.ph-actions .btn:not(:disabled):hover { background: var(--surface-hover); border-color: color-mix(in srgb, var(--ink) 35%, var(--line-strong)); color: var(--ink); box-shadow: none; }
+.ph-actions .btn.primary, .ph-actions .btn.primary:not(:disabled):hover { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 600; }
+.ph-actions .btn.primary:not(:disabled):hover { opacity: .9; }
+.ph-dl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; margin-left: 6px; }
+.ph-actions .ph-dl .btn { background: transparent; border-color: transparent; color: var(--ink-2); padding: 0 10px; }
+.ph-actions .ph-dl .btn:not(:disabled):hover { background: var(--surface-hover); border-color: transparent; color: var(--ink); }
+.ph-actions .ph-del { margin-left: auto; }
+.ph-actions .btn.danger, .ph-actions .btn.ghost.danger { background: transparent; border-color: transparent; color: var(--critical); }
+
+/* ---------- tabs: page tabs (underline) › section pills › segmented switch ---------- */
+.tabs { gap: 2px; padding: 0; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+.tabs button { height: 42px; padding: 0 14px; border-radius: 0; font-size: 14px; font-weight: 500; color: var(--ink-2); background: none; box-shadow: none; transform: none; }
+.tabs button::after { left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--ink); }
+.tabs button:hover { background: none; color: var(--ink); transform: none; box-shadow: none; }
+.tabs button:hover::after { left: 10px; right: 10px; opacity: .18; }
+.tabs button:active { transform: none; }
+.tabs button[aria-selected="true"] { background: none; color: var(--ink); font-weight: 600; box-shadow: none; }
+.tabs button[aria-selected="true"]::after { left: 10px; right: 10px; opacity: 1; }
+.tabs .tab-n, .tabs button[aria-selected="true"] .tab-n { background: var(--surface-2); color: var(--ink-2); }
+
+/* Section pills wrap onto a second line rather than hiding the last ones off the edge. */
+.subtabs { flex-wrap: wrap; overflow: visible; gap: 6px; margin: 4px 0 18px; }
+.subtabs button { height: 30px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 13px; font-weight: 500; transform: none; box-shadow: none; }
+.subtabs button:hover { border-color: var(--line-strong); color: var(--ink); background: var(--surface-hover); transform: none; box-shadow: none; }
+body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="true"]:hover { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); font-weight: 600; box-shadow: none; }
+body .subtabs button[aria-selected="true"] .tab-n { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+
+.seg button { font-size: 12px; font-weight: 500; }
+.seg button[aria-pressed="true"] { font-weight: 600; }
+
+/* ---------- headline tiles: neutral; a state shows as a top rule and a coloured figure, never a painted card ---------- */
+.hero > .kpi.lead, .ph-tiles > .kpi.lead { --kc: transparent; }
+.hero > .kpi[data-tone="warn"], .ph-tiles > .kpi[data-tone="warn"],
+.hero > .kpi[data-tone="bad"], .ph-tiles > .kpi[data-tone="bad"] { background: var(--surface); }
+.hero > .kpi:hover, .ph-tiles > .kpi:hover { transform: none; }
+.hero > .kpi .label, .ph-tiles > .kpi .label { font-size: 13px; font-weight: 500; }
+.hero > .kpi .ctx, .ph-tiles > .kpi .ctx { font-size: 13px; }
+.sp-tile.lead { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.sp-tile.lead .sp-tc { color: var(--ink-3); }
+.sp-tile:hover { transform: none; }
+
+/* ---------- cards ---------- */
+.card-h h2 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.card-h p { font-size: 13px; }
+
+/* ---------- tables: one header style, figures right-aligned, sticky header on long tables ---------- */
+table td, table th { font-variant-numeric: tabular-nums; }
+table th { font-weight: 600; }
+table td.tnum, table th.tnum { text-align: right; }
+table td.tnum { white-space: nowrap; }
+table.stick thead th { position: sticky; top: 60px; z-index: 3; background: var(--surface); box-shadow: inset 0 -1px 0 var(--line); }
+table tfoot td, table tr.total td, table tr.tot td { font-weight: 600; }
+@media print { table.stick thead th { position: static; box-shadow: none; } }
+
+/* ---------- touch targets: nothing clickable under 24px ---------- */
+.of-nb { min-height: 26px; height: auto; }
+button.tw { min-width: 24px; min-height: 24px; }
+
+
+/* Buttons that sit on the page-tab line are quiet, so the line stays one line. */
+body .tabs .btn:not(.primary) { background: transparent; border-color: transparent; color: var(--ink-2); height: 32px; align-self: center; }
+body .tabs .btn:not(.primary):hover { background: var(--surface-hover); color: var(--ink); }
+
+/* Workbook strip: the export controls keep the strip's inner margin. */
+.wb-strip .pack { padding: 8px var(--s4); gap: 8px; }
+.wb-strip .pack select { height: 34px; padding: 0 10px; border-radius: var(--r-sm); }
+
+/* Attention lists: the severity column has one width, so every title starts on the same line. */
+.att li { grid-template-columns: 80px minmax(0, 1fr) auto; }
+.att li > .badge { justify-self: start; }
+
+/* Long descriptions and supplier names break inside their cell instead of widening the card. */
+.ledger .range-lines td { overflow-wrap: anywhere; }

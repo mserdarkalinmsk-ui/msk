@@ -88,7 +88,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
               {E.planned != null && <span style={{ left: `${Math.min(100, (E.sc / E.budget) * 100)}%`, width: `${Math.min(100 - (E.sc / E.budget) * 100, (E.planned / E.budget) * 100)}%`, background: 'var(--c2)', opacity: .5 }} />}
               <i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} />
             </div>
-            <span class="ctx" style={{ fontSize: '11.5px' }}>spent · committed{E.planned != null && ' · planned next 12 months'} │ time</span>
+            <span class="ctx" style={{ fontSize: '12px' }}>spent · committed{E.planned != null && ' · planned next 12 months'} │ time</span>
           </div>
           <div class="kpi"><span class="label">Spent + committed</span><span class="value">{short(E.sc)}</span><span class="ctx">{short(E.sc - E.actual)} committed, not yet spent</span></div>
           <div class="kpi"><span class="label">Planned next 12 months</span><span class="value">{E.planned != null ? short(E.planned) : '—'}</span>
@@ -262,7 +262,7 @@ function DiffView({ p, a, b }: { p: Project; a: WorkbookSummary; b: WorkbookSumm
   return (
     <div class="ledger">
       <div class="wp-kpi" style={{ padding: 0 }}>
-        <div class="k"><span>Period</span><b style={{ fontSize: '15px' }}>{D.from ? date(D.from) : '—'} → {D.to ? date(D.to) : '—'}</b></div>
+        <div class="k"><span>Period</span><b style={{ fontSize: '16px' }}>{D.from ? date(D.from) : '—'} → {D.to ? date(D.to) : '—'}</b></div>
         <div class="k"><span>Spent since</span><b>{full(D.spent)}</b></div>
         <div class="k"><span>Spent + committed change</span><b>{full(D.sc)}</b></div>
         <div class="k"><span>New POs · closed</span><b>{n('new')} · {n('closed')}</b></div>

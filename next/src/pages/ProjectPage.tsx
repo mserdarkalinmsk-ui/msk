@@ -80,15 +80,17 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
           <h2 class="ph-title">{p.name}</h2>
         </div>
         <div class="ph-actions">
-          {validUrl(p.pmmUrl) && <a class="btn" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`Open PMM for ${p.name}`}>PMM ↗</a>}
+          <button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button>
-          <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button>
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
-          <button class="btn" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => exportOk(p, 'the Excel') && download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
-          <button class="btn" title="Forecast request in the CoE templates: choose JP or VC and the template (revision with payment, 12-month, revision and extension, extension with details). Load it back through Import report." onClick={() => setFc(true)}>⤓ Forecast Excel</button>
-          <button class="btn" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => exportOk(p, 'the audit pack') && download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
-          <button class="btn" onClick={() => exportOk(p, 'the PDF') && print()}>⎙ PDF</button>
-          <button class="btn ghost danger" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
+          {validUrl(p.pmmUrl) && <a class="btn" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`Open PMM for ${p.name}`}>PMM ↗</a>}
+          <span class="ph-dl" role="group" aria-label="Downloads">
+          <button class="btn ghost" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => exportOk(p, 'the Excel') && download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
+          <button class="btn ghost" title="Forecast request in the CoE templates: choose JP or VC and the template (revision with payment, 12-month, revision and extension, extension with details). Load it back through Import report." onClick={() => setFc(true)}>⤓ Forecast Excel</button>
+          <button class="btn ghost" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => exportOk(p, 'the audit pack') && download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
+          <button class="btn ghost" onClick={() => exportOk(p, 'the PDF') && print()}>⎙ PDF</button>
+          </span>
+          <button class="btn ghost danger ph-del" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>
       </div>
       <section class={`hero ph-tiles${tab === "Summary" ? "" : " ph-tiles-tab"}`} aria-label="Project figures">
@@ -97,7 +99,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
           <span class="label">Spent to date</span><span class="value"><Fig p={p} f="spent">{short(m.spent)}</Fig></span>
           <span class="ctx"><b>{pct(m.budget ? m.spent / m.budget : 0)}</b> of {full(m.budget)}</span>
           <div class="meter"><span style={{ width: `${Math.min(100, (m.spent / (m.budget || 1)) * 100)}%`, background: 'var(--c1)' }} /><i class="tick" style={{ left: `calc(${el * 100}% - 1px)` }} /></div>
-          <span class="ctx" style={{ fontSize: '11.5px' }}>│ time elapsed {pct(el)}</span>
+          <span class="ctx" style={{ fontSize: '12px' }}>│ time elapsed {pct(el)}</span>
         </div>
         <div class="kpi" data-tone={p.datesTbc ? undefined : ({ good: 'good', warning: 'warn', serious: 'bad' } as const)[paceTone(gap)]}><span class="label">Pace vs time</span><span class="value"><Fig p={p} f="pace">{signedPct(gap)}</Fig></span><span class="ctx">{paceWord(gap)}</span></div>
         <div class="kpi" data-tone={m.remaining < 0 ? 'bad' : undefined}><span class="label">Uncommitted balance</span><span class="value"><Fig p={p} f="remaining">{short(m.remaining)}</Fig></span><span class="ctx">after <Fig p={p} f="committed">{short(m.committed)}</Fig> committed</span></div>
@@ -251,7 +253,7 @@ function deltaOption(t: Tokens, D: ReturnType<typeof compareReports>) {
     grid: { left: 8, right: 64, top: 4, bottom: 4, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const d = D[x.dataIndex]; return `<b>${d.code} ${d.description}</b><br/>${full(d.actual[0])} → <b>${full(d.actual[1])}</b>`; } },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
-    yAxis: { type: 'category', inverse: true, data: D.map((d) => `${d.code} ${d.description}`.slice(0, 26)), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 11.5 } },
+    yAxis: { type: 'category', inverse: true, data: D.map((d) => `${d.code} ${d.description}`.slice(0, 26)), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [{ type: 'bar', barWidth: 14, data: D.map((d) => { const v = d.actual[1] - d.actual[0]; return { value: v, itemStyle: { color: v < 0 ? t.critical : t.c[0], borderRadius: v < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } }; }),
       label: { show: true, position: 'right', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => (x.value ? axisMoney(x.value) : '') } }],
   };
@@ -293,7 +295,7 @@ function ReportTimeline({ p }: { p: Project }) {
         <table class="mini rt">
           <thead><tr><th>Report date</th><th>Report</th><th class="r">Spent</th><th class="r">Change</th><th class="r">Per month</th><th class="r">Committed</th><th class="r">Spent + committed</th><th>Use of budget</th></tr></thead>
           <tbody>{rows.map((x) => (
-            <tr><td class="num" style={{ whiteSpace: 'nowrap' }}>{date(x.r.date)}</td><td>{x.r.name}<div class="muted" style={{ fontSize: '11.5px' }}>{x.r.fileName}</div></td>
+            <tr><td class="num" style={{ whiteSpace: 'nowrap' }}>{date(x.r.date)}</td><td>{x.r.name}<div class="muted" style={{ fontSize: '12px' }}>{x.r.fileName}</div></td>
               <td class="r num">{full(x.t.actual)}</td><td class="r num" style={{ color: x.delta < 0 ? 'var(--serious)' : undefined }}>{fmtDelta(x.delta)}</td><td class="r num">{full(x.rate)}</td>
               <td class="r num">{full(x.t.committed)}</td><td class="r num">{full(x.t.exposure)}</td>
               <td style={{ minWidth: '140px' }}><div class="delta-bar"><span style={{ width: `${Math.min(100, budget ? x.t.exposure / budget * 100 : 0)}%`, background: 'var(--c1)' }} /><b class="num">{pct(budget ? x.t.exposure / budget : 0)}</b></div></td></tr>))}</tbody>

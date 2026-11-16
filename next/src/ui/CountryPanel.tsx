@@ -69,7 +69,7 @@ export function CountryPanel({ close, edit: initial }: { close: () => void; edit
               const P = projects.filter((p) => p.country === c.id);
               return (
                 <li style={{ cursor: 'default', gridTemplateColumns: '1fr auto' }}>
-                  <div><div class="t">{c.name} {c.iso3 && <span class="num muted" style={{ fontSize: '11.5px' }}>{c.iso3}</span>}</div>
+                  <div><div class="t">{c.name} {c.iso3 && <span class="num muted" style={{ fontSize: '12px' }}>{c.iso3}</span>}</div>
                     <div class="d">{c.region || 'No region'} · {P.length} project{P.length === 1 ? '' : 's'} · {short(P.reduce((s, p) => s + money(p).budget, 0))}</div></div>
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button class="btn ghost" title="Add a project in this country" onClick={() => set({ drawer: { kind: 'new-project', country: c.id } })}>+ Project</button>

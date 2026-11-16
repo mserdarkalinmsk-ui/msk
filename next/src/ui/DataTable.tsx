@@ -128,7 +128,7 @@ export function DataTable<T>({ rows, columns, rowKey, groupBy, onOpen, actions, 
           </select>
         )}
         <span class="grow" />
-        {selRows.length > 0 && <span class="muted" style={{ fontSize: '12.5px' }}>{selRows.length} selected</span>}
+        {selRows.length > 0 && <span class="muted" style={{ fontSize: '13px' }}>{selRows.length} selected</span>}
         {actions?.(selRows, () => setSel(new Set()))}
         <button class="btn" onClick={() => downloadCSV(`${title}.csv`, columns, selRows.length ? selRows : view)}>
           Export {selRows.length ? 'selected' : 'CSV'}

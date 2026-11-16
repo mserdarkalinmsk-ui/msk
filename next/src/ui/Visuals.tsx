@@ -33,7 +33,7 @@ export function MoneyFlow({ P, countries }: { P: Project[]; countries: Country[]
     series: [{ type: 'sankey', left: 8, right: 110, top: 10, bottom: 10, nodeGap: 10, nodeWidth: 12, draggable: false, layoutIterations: 32, emphasis: { focus: 'adjacency' },
       data: [...nodes.values()].map((n) => ({ ...n, itemStyle: { color: n.name === 'Spent' ? t.c[0] : n.name === 'Committed' ? t.c[2] : n.name === 'Still available' ? t.ink3 : n.depth === 0 ? t.ink2 : n.depth === 1 ? t.c[6] : t.c[0] } })),
       links: merged, lineStyle: { color: 'gradient', opacity: 0.28, curveness: 0.5 },
-      label: { color: t.ink, fontSize: 11.5, formatter: (q: { name: string; value: number }) => `${q.name}  ${short(q.value)}` } }],
+      label: { color: t.ink, fontSize: 12, formatter: (q: { name: string; value: number }) => `${q.name}  ${short(q.value)}` } }],
   });
   return (
     <section class="card span-12">
@@ -58,7 +58,7 @@ export function FlexPanel({ p }: { p: Project }) {
     grid: { left: 170, right: 30, top: 28, bottom: 30 },
     legend: { top: 0, right: 0, textStyle: { color: t.ink2 }, itemWidth: 12, itemHeight: 10, data: ['Allowed without addendum', 'Agreement', 'Now', 'Expected at end'] },
     xAxis: { type: 'value', min: 0, max: top, axisLabel: { formatter: '{value}%', color: t.ink3 }, splitLine: { lineStyle: { color: t.line } } },
-    yAxis: { type: 'category', data: cats, inverse: true, axisLabel: { color: t.ink, fontSize: 11.5 } },
+    yAxis: { type: 'category', data: cats, inverse: true, axisLabel: { color: t.ink, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (q: { dataIndex: number }[]) => { const { r, w } = rows[q[0].dataIndex]; return `<b>${r.code} ${r.label}</b><br/>Agreement ${full(r.baseline)}<br/>Allowed ${full(r.baseline * (1 - f))} – ${full(r.baseline * (1 + f))}<br/>Now ${full(r.approved)} (${pc(r.approved, r)}%) · spent + committed ${full(r.exposure)}<br/>Expected at end ${full(w?.projected ?? r.exposure)} (${pc(w?.projected ?? r.exposure, r)}%)${w && w.stage !== 'ok' ? `<br/><b>${STAGE[w.stage].label}</b>` : ''}`; } },
     series: [
       { type: 'bar', stack: 'band', silent: true, itemStyle: { color: 'transparent' }, data: rows.map(() => 100 - f * 100), barWidth: 18 },

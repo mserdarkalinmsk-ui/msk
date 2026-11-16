@@ -136,7 +136,7 @@ function historyOption(t: Tokens, P: ReturnType<typeof filtered>) {
   return {
     ...base(t),
     grid: { left: 8, right: 16, top: 36, bottom: 8, containLabel: true },
-    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => {
       const p = P.find((q) => q.id === x.seriesId)!; const r = reportsByDate(p).find((q) => parseDate(q.date).getTime() === x.value[0]);
       return `<b>${p.code}</b> · ${r?.name ?? ''}<br/>${month(x.value[0])}: <b>${full(x.value[1])}</b>${r ? `<br/><span style="color:${t.ink3}">approved ${short(reportTotals(r).approved)}</span>` : ''}`;

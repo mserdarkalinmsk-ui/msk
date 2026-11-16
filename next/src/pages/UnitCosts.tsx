@@ -68,7 +68,7 @@ export function UnitCosts() {
           </article>))}
           {!shown.length && <p class="muted">Nothing to show with these filters.</p>}
         </div>
-        <p class="muted" style={{ fontSize: '11.5px', padding: '0 20px 16px' }}>Budget rate = approved amount ÷ budgeted units; actual rate = reported cost ÷ reported units, from each project's latest report. Lines are matched by their template number and unit, so a project manager month is compared with other project manager months. Flags: actual rate more than 15% over the budget rate, or more than 25% above the portfolio median.</p>
+        <p class="muted" style={{ fontSize: '12px', padding: '0 20px 16px' }}>Budget rate = approved amount ÷ budgeted units; actual rate = reported cost ÷ reported units, from each project's latest report. Lines are matched by their template number and unit, so a project manager month is compared with other project manager months. Flags: actual rate more than 15% over the budget rate, or more than 25% above the portfolio median.</p>
       </section>
     </>
   );

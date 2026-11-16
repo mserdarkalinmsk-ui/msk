@@ -81,7 +81,7 @@ export function PeriodPanel({ t, from, ids, close }: { t: number; from: number; 
             <small class="muted">plan {short(r.plan)} · <b style={{ color: c }}>{pct(q)}</b> · cumulative {short(r.cum)} ({pct(r.share)} of {short(money(r.p).budget)})</small>
           </li>;
         })}</ul>
-        <p class="muted" style={{ fontSize: '11.5px' }}>Monthly amounts are interpolated between report dates; heading split follows line movement in the covering report interval. As of {month(TODAY.getTime())}.</p>
+        <p class="muted" style={{ fontSize: '12px' }}>Monthly amounts are interpolated between report dates; heading split follows line movement in the covering report interval. As of {month(TODAY.getTime())}.</p>
       </div>
     </>
   );

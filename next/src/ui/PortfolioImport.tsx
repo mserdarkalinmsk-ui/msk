@@ -49,7 +49,7 @@ export function PortfolioImport({ files, close }: { files: File[]; close: () => 
   };
   return (
     <>
-      <div class="drawer-h"><div><h2>Monthly update · {files.length} files</h2><p class="muted" style={{ margin: 0, fontSize: '12.5px' }}>Each workbook goes to its project by budget head (BH), contract or JP number</p></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
+      <div class="drawer-h"><div><h2>Monthly update · {files.length} files</h2><p class="muted" style={{ margin: 0, fontSize: '13px' }}>Each workbook goes to its project by budget head (BH), contract or JP number</p></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
       <div class="drawer-b">
         {!rows ? <div role="status"><div class="muted" style={{ marginBottom: '6px' }}><span class="spin" /> Reading {done} of {files.length}…</div><div class="meter"><span style={{ width: `${done / files.length * 100}%`, background: 'var(--c1)' }} /></div></div> : <>
           <table class="mini" style={{ width: '100%' }}><thead><tr><th>File</th><th>Project</th><th>Report date</th><th class="r">Spent</th><th /></tr></thead>

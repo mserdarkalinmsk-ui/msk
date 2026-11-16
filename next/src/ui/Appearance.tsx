@@ -134,7 +134,7 @@ function BrandSection() {
   return (
     <section style={{ display: 'grid', gap: '10px' }}>
       <h3 style={{ margin: 0, fontSize: '14px' }}>Name and logo</h3>
-      <p class="muted" style={{ margin: 0, fontSize: '12.5px' }}>Shown at the top of the menu, in the browser tab and on the presentation cover. It is saved with your data (backups and shared copies include it).</p>
+      <p class="muted" style={{ margin: 0, fontSize: '13px' }}>Shown at the top of the menu, in the browser tab and on the presentation cover. It is saved with your data (backups and shared copies include it).</p>
       <div class="brand-pick">
         <div class="brand-prev">{brand?.logo ? <img src={brand.logo} alt="Logo" /> : <span class="muted">No logo</span>}</div>
         <div style={{ display: 'grid', gap: '6px' }}>

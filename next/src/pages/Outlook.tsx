@@ -56,7 +56,7 @@ function barsOption(t: Tokens, O: ProjectOutlook[]) {
       seg('Spent', (o) => o.spent / o.budget, g(t.c[0], t.c[0] + 'cc'), { borderRadius: [4, 0, 0, 4], shadowBlur: 6, shadowColor: 'rgba(0,0,0,.12)', shadowOffsetY: 2 }),
       seg('Committed', (o) => o.committed / o.budget, g(t.c[0] + '88', t.c[0] + '66')),
       { ...seg('Rest at the current pace', (o) => Math.max(0, o.atEnd - o.spent - o.committed) / o.budget, t.c[0] + '22', { borderRadius: [0, 4, 4, 0], borderColor: t.c[0] + '88', borderWidth: 1, borderType: 'dashed' }),
-        label: { show: true, position: 'right', fontFamily: t.mono, fontSize: 11.5, fontWeight: 700, formatter: (x: any) => { const o = O[x.dataIndex], v = o.atEnd / o.budget; return `{${v > 1.001 ? 'r' : v < 0.85 ? 'b' : 'g'}|${Math.round(v * 100)}%}`; }, rich: { r: { color: t.critical, fontWeight: 700 }, b: { color: t.c[0], fontWeight: 700 }, g: { color: t.good, fontWeight: 700 } } },
+        label: { show: true, position: 'right', fontFamily: t.mono, fontSize: 12, fontWeight: 700, formatter: (x: any) => { const o = O[x.dataIndex], v = o.atEnd / o.budget; return `{${v > 1.001 ? 'r' : v < 0.85 ? 'b' : 'g'}|${Math.round(v * 100)}%}`; }, rich: { r: { color: t.critical, fontWeight: 700 }, b: { color: t.c[0], fontWeight: 700 }, g: { color: t.good, fontWeight: 700 } } },
         markLine: { symbol: 'none', silent: true, lineStyle: { color: t.ink, type: 'solid', width: 1.5 }, label: { formatter: 'budget', position: 'start', color: t.ink2, fontSize: 11, fontWeight: 600 }, data: [{ xAxis: 100 }] },
         markArea: { silent: true, itemStyle: { color: t.good + '14' }, data: [[{ xAxis: 85 }, { xAxis: 100 }]] } },
     ] };

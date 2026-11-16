@@ -40,7 +40,7 @@ export function Gaps() {
       <section class="hero" aria-label="Missing data">
         <div class="kpi lead"><span class="label">Missing items</span><span class="value" style={{ color: total ? 'var(--serious)' : 'var(--good)' }}>{total}</span><span class="ctx">across {rows.length} active project{rows.length === 1 ? '' : 's'}</span></div>
         <div class="kpi"><span class="label">Complete files</span><span class="value">{complete}</span><span class="ctx">nothing missing</span></div>
-        <div class="kpi"><span class="label">Most often missing</span><span class="value" style={{ fontSize: '22px' }}>{byNeed[0]?.n.label ?? '—'}</span><span class="ctx">{byNeed[0] ? `${byNeed[0].c} project${byNeed[0].c > 1 ? 's' : ''} · ${byNeed[0].n.hint}` : 'every file complete'}</span></div>
+        <div class="kpi"><span class="label">Most often missing</span><span class="value" style={{ fontSize: '24px' }}>{byNeed[0]?.n.label ?? '—'}</span><span class="ctx">{byNeed[0] ? `${byNeed[0].c} project${byNeed[0].c > 1 ? 's' : ''} · ${byNeed[0].n.hint}` : 'every file complete'}</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>What each project file is missing</h2><p>✕ missing · ✓ on file · — does not apply · click a cell to open the screen where it is added</p></div><button class="btn" onClick={xlsx}>⤓ Excel</button></div>

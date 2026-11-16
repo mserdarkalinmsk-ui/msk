@@ -137,7 +137,7 @@ function WpHero({ p, f, dPct, ePct, remPct }: { p: Project; f: WpFollowUp; dPct:
         <Ring v={V.timeUsed} label="Time elapsed" sub={`${f.elapsed} of ${f.duration} months`} color="var(--muted)" />
         {f.prev ? <><Ring v={dPct ?? 0} label={`${wpName(f.prev)} delivered`} sub={`spent ${f.prevSpent == null ? '—' : full(f.prevSpent)} of ${full(f.prev.planned)}`} color={c(tone(dPct, 0.8, 0.5) || 'x')} />
           <Ring v={ePct ?? 0} label={`${wpName(f.prev)} spent & committed`} sub={f.prevSc != null ? full(f.prevSc) : ''} color={c(tone(ePct, 0.8, 0.5) || 'x')} /></>
-          : <div class="wp-fig" style={{ borderColor: 'var(--border)' }}><span>Previous Work Plan</span><b style={{ fontSize: '15px' }}>First Work Plan</b><span>delivery appears from the next one</span></div>}
+          : <div class="wp-fig" style={{ borderColor: 'var(--border)' }}><span>Previous Work Plan</span><b style={{ fontSize: '16px' }}>First Work Plan</b><span>delivery appears from the next one</span></div>}
         <div class="wp-fig"><span>This WP plans</span><b>{full(f.wp.planned)}</b><span>{full(V.wpMonth)} / month</span>
           <span>Needed pace {V.need ? `${full(V.need)} / month` : '—'}</span></div>
         <div class={`wp-fig ${f.remaining < 0 ? 'serious' : ''}`}><span>Left after this WP</span><b>{full(f.remaining)}</b><span>{remPct == null ? '' : pct(remPct)} of activity budget · {f.remainingMonths} months</span></div>

@@ -109,7 +109,7 @@ export function Changes({ projects }: { projects: Project[] }) {
   return (
     <section class="card">
       <div class="card-h"><div><h2>What changed</h2><p>{since ? `Latest report vs the last one on or before ${date(since)}` : 'Latest report vs the previous one, per project'} · <b>{full(tot)}</b> new spending</p></div>
-        <label class="muted" style={{ marginLeft: 'auto', fontSize: '12.5px', display: 'flex', gap: '6px', alignItems: 'center' }}>Compare with
+        <label class="muted" style={{ marginLeft: 'auto', fontSize: '13px', display: 'flex', gap: '6px', alignItems: 'center' }}>Compare with
           <input class="input" type="date" value={since} onInput={(e) => setSince((e.target as HTMLInputElement).value)} style={{ height: '30px' }} /></label>
       </div>
       <div class="card-b table-scroll">
@@ -215,7 +215,7 @@ export function Scenario({ p }: { p: Project }) {
     <section class="card">
       <div class="card-h"><div><h2>Budget revision scenario</h2><p>Type increases or decreases per line — nothing is saved until you decide; the project data stays unchanged</p></div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <label class="muted" style={{ fontSize: '12.5px' }}>Flag changes above <input class="input num" type="number" min={1} max={100} value={limit} onInput={(e) => setLimit(Number((e.target as HTMLInputElement).value) || 10)} style={{ width: '56px', height: '30px' }} />%</label>
+          <label class="muted" style={{ fontSize: '13px' }}>Flag changes above <input class="input num" type="number" min={1} max={100} value={limit} onInput={(e) => setLimit(Number((e.target as HTMLInputElement).value) || 10)} style={{ width: '56px', height: '30px' }} />%</label>
           <button class="btn" disabled={S.balanced} onClick={balance}>Balance</button>
           <button class="btn ghost" disabled={!Object.keys(d).length} onClick={() => setD({})}>Reset</button>
         </div>

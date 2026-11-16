@@ -84,7 +84,7 @@ function curveOption(t: Tokens, p: Project, X: ReturnType<typeof burn>, from: nu
   const proj = [[last.t, last.v], [e, X.projectedEnd]];
   return {
     ...base(t), grid: { left: 8, right: 56, top: 26, bottom: 8, containLabel: true },
-    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', valueFormatter: (v: number) => full(v) },
     xAxis: { type: 'time', min: s, max: e, axisLabel: { color: t.ink3, fontSize: 11, formatter: (v: number) => month(v) }, axisLine: { lineStyle: { color: t.line } } },
     yAxis: [{ type: 'value', max: Math.max(B, X.projectedEnd), axisLabel: { color: t.ink3, fontSize: 11, formatter: (v: number) => short(v) }, splitLine: { lineStyle: { color: t.line } } },

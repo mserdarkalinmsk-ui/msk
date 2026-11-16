@@ -20,8 +20,8 @@ const tip = (t: Tokens) => ({ ...(base(t).tooltip as object), trigger: 'axis' as
 const time = (t: Tokens) => ({ type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } });
 const money = (t: Tokens) => ({ type: 'value', ...axisY(t) });
 const row = (c: string, name: string, v: number | null | undefined, f = full) => v == null ? '' : `<div style="display:flex;justify-content:space-between;gap:16px"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:6px"></i>${name}</span><b>${f(v)}</b></div>`;
-const head = (t: number | string) => `<div style="font-weight:650;margin-bottom:6px">${typeof t === 'number' ? month(t) : t}</div>`;
-const legend = (t: Tokens) => ({ top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } });
+const head = (t: number | string) => `<div style="font-weight:600;margin-bottom:6px">${typeof t === 'number' ? month(t) : t}</div>`;
+const legend = (t: Tokens) => ({ top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } });
 
 function neededOption(t: Tokens, P: Project[]) {
   const R = neededSeries(P, TODAY);
@@ -40,7 +40,7 @@ function headingOption(t: Tokens, P: Project[]) {
     tooltip: { ...tip(t), axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const h = H[ps[0].dataIndex];
       return head(`${h.code} ${h.label}`) + row(t.c[0], 'Spent', h.spent) + row(t.c[2], 'Committed', h.committed) + row(t.ink3, 'Budget now', h.budget) + row(t.ink3, 'Agreement', h.baseline) + row(bad(h.stage) ? t.serious : t.ink, 'Expected at the end', h.projected)
         + (h.flagged.length ? `<div style="color:${t.serious};margin-top:4px">Beyond the flexibility: ${h.flagged.join(', ')}</div>` : ''); } },
-    xAxis: money(t), yAxis: { type: 'category', data: H.map((h) => `${h.code} ${h.label}`), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 11.5 } },
+    xAxis: money(t), yAxis: { type: 'category', data: H.map((h) => `${h.code} ${h.label}`), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
       { name: 'Spent', type: 'bar', stack: 'h', barWidth: 16, data: H.map((h) => h.spent), itemStyle: { color: t.c[0] } },
       { name: 'Committed', type: 'bar', stack: 'h', data: H.map((h) => h.committed), itemStyle: { color: t.c[2], opacity: 0.75 } },

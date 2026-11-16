@@ -51,7 +51,7 @@ export function SharePanel({ close }: { close: () => void }) {
           <h3 style={{ margin: 0, fontSize: '14px' }}>What to include</h3>
           <div class="cm-chips"><span class="muted">Countries</span>{used.map((c) => <button class="chip" aria-pressed={selC.includes(c.id)} onClick={() => { setSelC(tog(selC, c.id)); setSelP([]); }}>{c.name}</button>)}</div>
           <div class="cm-chips"><span class="muted">Projects</span>{inC.map((p) => <button class="chip" aria-pressed={selP.includes(p.id)} onClick={() => setSelP(tog(selP, p.id))}>{p.bh ? `BH ${p.bh}` : p.code}</button>)}</div>
-          <p class="muted" style={{ margin: 0, fontSize: '12.5px' }}><b>{scope}</b> · {P.length} projects · {reports} reports · ~{size < 1024 ? `${size} KB` : `${(size / 1024).toFixed(1)} MB`} of data. Nothing selected = everything.</p>
+          <p class="muted" style={{ margin: 0, fontSize: '13px' }}><b>{scope}</b> · {P.length} projects · {reports} reports · ~{size < 1024 ? `${size} KB` : `${(size / 1024).toFixed(1)} MB`} of data. Nothing selected = everything.</p>
           <label style={{ fontSize: '13px' }}><input type="checkbox" checked={hist} onChange={() => setHist(!hist)} /> Include the change history</label>
         </section>
         <section class="card card-b" style={{ display: 'grid', gap: '8px' }}>
@@ -68,7 +68,7 @@ export function SharePanel({ close }: { close: () => void }) {
           <small class="muted">{pw ? 'The data inside the file is encrypted (AES-256): without the password it cannot be read. Send the password through a different channel than the file (e.g. phone or SMS). A forgotten password cannot be recovered.' : 'Without a password, anyone who gets the file can read the data.'}</small>
           {pwBad && <p class="badge warning" style={{ margin: 0 }}>{pw.length < 6 ? 'At least 6 characters' : 'The two passwords differ'}</p>}
         </section>
-        <p class="muted" style={{ margin: 0, fontSize: '12.5px' }}>⚠ The file contains financial data: share it only through channels approved for it.</p>
+        <p class="muted" style={{ margin: 0, fontSize: '13px' }}>⚠ The file contains financial data: share it only through channels approved for it.</p>
       </div>
       <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!P.length || pwBad} onClick={make}>⤓ Save shareable file</button></div>
     </>

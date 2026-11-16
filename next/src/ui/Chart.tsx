@@ -37,7 +37,7 @@ export function base(t: Tokens): EChartsCoreOption {
     textStyle: { fontFamily: t.font, color: t.ink2 },
     tooltip: {
       backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, padding: [10, 12], transitionDuration: 0.15, hideDelay: 0,
-      textStyle: { color: t.ink, fontSize: 12.5, fontFamily: t.font },
+      textStyle: { color: t.ink, fontSize: 13, fontFamily: t.font },
       extraCssText: 'border-radius:12px;box-shadow:0 12px 32px rgb(15 23 42 / .16),0 2px 6px rgb(15 23 42 / .08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);line-height:1.55;',
     },
   };

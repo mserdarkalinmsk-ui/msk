@@ -35,7 +35,7 @@ export function AnnualPlanCard({ p }: { p: Project }) {
 function yearsOption(t: Tokens, A: ReturnType<typeof annualPlan>, cur: number) {
   return {
     ...base(t), grid: { left: 8, right: 16, top: 26, bottom: 8, containLabel: true },
-    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => full(v) },
     xAxis: { type: 'category', data: A.years.map(String), axisLabel: { color: t.ink3 }, axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false } },
     yAxis: { type: 'value', axisLabel: { color: t.ink3, formatter: (v: number) => short(v) }, splitLine: { lineStyle: { color: t.line } } },

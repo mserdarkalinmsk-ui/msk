@@ -156,7 +156,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
   const nFiles = fresh.length;
   return (
     <>
-      <div class="drawer-h"><div><h2>Smart import · {nFiles} file{nFiles > 1 ? 's' : ''}</h2><p class="muted" style={{ margin: 0, fontSize: '12.5px' }}>Each file is recognised and sent to its project by BH, JP, PMM or contract number — check the project before importing</p></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
+      <div class="drawer-h"><div><h2>Smart import · {nFiles} file{nFiles > 1 ? 's' : ''}</h2><p class="muted" style={{ margin: 0, fontSize: '13px' }}>Each file is recognised and sent to its project by BH, JP, PMM or contract number — check the project before importing</p></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
       <div class="drawer-b">
         {skipped > 0 && <div class="si-skip"><span>{skipped} file{skipped > 1 ? 's' : ''} already loaded earlier (same name, size and date) — skipped{fresh.length ? '' : '; nothing new in this folder'}.</span><button class="btn ghost" onClick={() => setAll(true)}>Read them too</button></div>}
         {!fresh.length && !all ? null : !rows ? <div role="status"><div class="muted" style={{ marginBottom: '6px' }}><span class="spin" /> Reading {done} of {nFiles}…</div><div class="meter"><span style={{ width: `${(done / nFiles) * 100}%`, background: 'var(--c1)' }} /></div></div> : <>
@@ -174,7 +174,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
                 <option value="">— choose project —</option>{P.map((p) => <option value={p.id}>{lab(p)}</option>)}</select>
                 {r.pid ? <span class="badge good">{r.why === 'chosen' ? 'chosen' : `matched by ${r.why}`}</span> : <span class="badge warning">no match — choose</span>}</div>}
             </li>))}</ul>
-          <p class="muted" style={{ fontSize: '11.5px' }}>Reports are added to the project's reports (same month is replaced). Budgets, contracts, DoA/action plans, logframes and justifications update the project as in “Add documents”. Nothing leaves this browser.</p>
+          <p class="muted" style={{ fontSize: '12px' }}>Reports are added to the project's reports (same month is replaced). Budgets, contracts, DoA/action plans, logframes and justifications update the project as in “Add documents”. Nothing leaves this browser.</p>
         </>}
       </div>
       <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok.length && !nOff} onClick={apply}>Import {ok.length + nOff} file{ok.length + nOff === 1 ? '' : 's'}{ok.length ? ` into ${new Set(ok.map((r) => r.pid)).size} project${new Set(ok.map((r) => r.pid)).size === 1 ? '' : 's'}` : ''}{nOff ? `${ok.length ? ' +' : ''} ${nOff} office budget${nOff > 1 ? 's' : ''}` : ''}</button></div>

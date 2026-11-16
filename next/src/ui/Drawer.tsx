@@ -79,9 +79,9 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
       </div>
       <div class="drawer-b">
         <div class="hero" style={{ gridTemplateColumns: 'repeat(3,1fr)', margin: 0 }}>
-          <div class="kpi"><span class="label">Spent</span><span class="value" style={{ fontSize: '22px' }}>{short(m.spent)}</span><span class="ctx">of {short(m.budget)}</span></div>
-          <div class="kpi"><span class="label">Burn vs time</span><span class="value" style={{ fontSize: '22px' }}>{signedPct(gap)}</span><span class="ctx">{pct(el)} of time used</span></div>
-          <div class="kpi"><span class="label">Remaining</span><span class="value" style={{ fontSize: '22px', color: m.remaining < 0 ? 'var(--critical)' : undefined }}>{short(m.remaining)}</span><span class="ctx">after commitments</span></div>
+          <div class="kpi"><span class="label">Spent</span><span class="value" style={{ fontSize: '24px' }}>{short(m.spent)}</span><span class="ctx">of {short(m.budget)}</span></div>
+          <div class="kpi"><span class="label">Burn vs time</span><span class="value" style={{ fontSize: '24px' }}>{signedPct(gap)}</span><span class="ctx">{pct(el)} of time used</span></div>
+          <div class="kpi"><span class="label">Remaining</span><span class="value" style={{ fontSize: '24px', color: m.remaining < 0 ? 'var(--critical)' : undefined }}>{short(m.remaining)}</span><span class="ctx">after commitments</span></div>
         </div>
         <section class="card">
           <div class="card-h"><div><h2>Cumulative spend vs linear plan</h2><p>Reported actuals at each financial report</p></div></div>

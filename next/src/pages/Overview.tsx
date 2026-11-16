@@ -83,7 +83,7 @@ export function Overview() {
             <span style={{ left: `${Math.min(100, T.burn * 100)}%`, width: `${Math.min(100 - T.burn * 100, (T.committed / T.budget) * 100)}%`, background: 'var(--c1)', opacity: 0.35 }} />
             <i class="tick" style={{ left: `calc(${T.elapsed * 100}% - 1px)` }} />
           </div>
-          <span class="ctx" style={{ fontSize: '11.5px' }}><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', marginRight: '4px' }} />spent</span><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', opacity: .35, marginRight: '4px' }} />committed</span><span>│ time elapsed {pct(T.elapsed)}</span></span>
+          <span class="ctx" style={{ fontSize: '12px' }}><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', marginRight: '4px' }} />spent</span><span><i style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--c1)', opacity: .35, marginRight: '4px' }} />committed</span><span>│ time elapsed {pct(T.elapsed)}</span></span>
         </div>
         <div class="kpi" data-tone={({ good: 'good', warning: 'warn', serious: 'bad' } as const)[gapTone(gap)]}>
           <span class="label">Pace vs time <span class={`badge ${gapTone(gap)}`}>{gapWord(gap)}</span></span>
@@ -255,7 +255,7 @@ function byCountryOption(t: Tokens, P: Project[], countries: { id: string; name:
   const all = [...new Set(S.flat().map((x) => x.t))].sort((a, b) => a - b);
   return {
     ...base(t), grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: true },
-    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', valueFormatter: (v: number) => full(v) },
     xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
     yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
@@ -273,7 +273,7 @@ function gapOption(t: Tokens, P: Project[]) {
     ...base(t), grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${R[x.dataIndex].p.code}</b> ${R[x.dataIndex].p.name}<br/>${signedPct(R[x.dataIndex].g)}` },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => signedPct(v) } },
-    yAxis: { type: 'category', data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 11.5 } },
+    yAxis: { type: 'category', data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
     series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: paceTone(r.g) === 'serious' ? t.serious : paceTone(r.g) === 'warning' ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
       label: { show: true, position: 'outside', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => signedPct(x.value) },
       markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: t.ink3, type: 'solid' }, data: [{ xAxis: 0 }] } }],
@@ -297,7 +297,7 @@ export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, bu
       ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: t.ink3 } },
       formatter: (ps: any[]) => {
         const x = S.find((s) => s.t === ps[0].value[0]); if (!x) return '';
-        return `<div style="min-width:220px"><div style="font-weight:650;margin-bottom:6px">${month(x.t)}</div>${row(t.c[0], 'Actual', x.actual)}${row(t.plan, 'Plan', x.plan, true)}${x.mid != null ? row(t.c[1], 'Forecast', x.mid, true) + `<div style="color:${t.ink3};font-size:11.5px;margin-top:2px">range ${short(x.low!)} – ${short(x.high!)}</div>` : ''}</div>`;
+        return `<div style="min-width:220px"><div style="font-weight:600;margin-bottom:6px">${month(x.t)}</div>${row(t.c[0], 'Actual', x.actual)}${row(t.plan, 'Plan', x.plan, true)}${x.mid != null ? row(t.c[1], 'Forecast', x.mid, true) + `<div style="color:${t.ink3};font-size:12px;margin-top:2px">range ${short(x.low!)} – ${short(x.high!)}</div>` : ''}</div>`;
       },
     },
     xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
@@ -325,7 +325,7 @@ function pacingOption(t: Tokens, P: Project[], exposure = false) {
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const r = R[x.dataIndex]; return `<b>${r.p.code}</b> ${r.p.name}<br/>Spent <b>${pct(r.b)}</b> · committed ${pct(r.c)}<br/>Time elapsed <b>${pct(r.el)}</b> → ${signedPct(r.g)}`; } },
     xAxis: { type: 'value', max: 1, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => pct(v) } },
-    yAxis: { type: 'category', inverse: true, data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 11.5 } },
+    yAxis: { type: 'category', inverse: true, data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
     series: [
       { type: 'bar', stack: 's', barWidth: 14, data: R.map((r) => ({ value: r.b, id: r.p.id, itemStyle: { color: tone(r.g), borderRadius: [4, 0, 0, 4] } })),
 },
@@ -373,12 +373,12 @@ function waterfallOption(t: Tokens, T: ReturnType<typeof totals>) {
     ...base(t),
     grid: { left: 8, right: 8, top: 24, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `${steps[x.dataIndex].name}<br/><b style="font-family:${t.mono}">${full(steps[x.dataIndex].v)}</b>` },
-    xAxis: { type: 'category', data: steps.map((s) => s.name), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 11.5, interval: 0 } },
+    xAxis: { type: 'category', data: steps.map((s) => s.name), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12, interval: 0 } },
     yAxis: { type: 'value', ...axisY(t) },
     series: [
       { type: 'bar', stack: 'w', silent: true, data: steps.map((s) => s.base), itemStyle: { color: 'transparent' }, tooltip: { show: false } },
       { type: 'bar', stack: 'w', barWidth: '52%', data: steps.map((s) => ({ value: s.v, itemStyle: { color: s.c, borderRadius: 4 } })),
-        label: { show: true, position: 'top', color: t.ink, fontFamily: t.mono, fontSize: 11.5, fontWeight: 600, formatter: (x: any) => short(steps[x.dataIndex].v) } },
+        label: { show: true, position: 'top', color: t.ink, fontFamily: t.mono, fontSize: 12, fontWeight: 600, formatter: (x: any) => short(steps[x.dataIndex].v) } },
     ],
   };
 }
@@ -407,7 +407,7 @@ export function remainingOption(t: Tokens, S: ReturnType<typeof portfolioSeries>
     grid: { left: 8, right: ends.length ? 72 : 16, top: 22, bottom: 40, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: t.ink3 } },
       formatter: (ps: any[]) => { const x = S.find((s) => s.t === ps[0].value[0]); if (!x) return '';
-        return `<div style="min-width:220px"><div style="font-weight:650;margin-bottom:6px">${month(x.t)} · funds left</div>${row(t.c[0], 'Actual', x.actual != null ? budget - x.actual : null)}${row(t.plan, 'Plan', x.plan != null ? budget - x.plan : null)}${row(t.c[1], 'Forecast', x.mid != null ? budget - x.mid : null)}</div>`; } },
+        return `<div style="min-width:220px"><div style="font-weight:600;margin-bottom:6px">${month(x.t)} · funds left</div>${row(t.c[0], 'Actual', x.actual != null ? budget - x.actual : null)}${row(t.plan, 'Plan', x.plan != null ? budget - x.plan : null)}${row(t.c[1], 'Forecast', x.mid != null ? budget - x.mid : null)}</div>`; } },
     xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
     yAxis: { type: 'value', min: (v: { min: number }) => Math.min(0, Math.floor(v.min / 1e6) * 1e6), max: Math.ceil(budget / 1e6) * 1e6, ...axisY(t) },
     dataZoom: [{ type: 'inside' }],
@@ -419,7 +419,7 @@ export function remainingOption(t: Tokens, S: ReturnType<typeof portfolioSeries>
       { name: 'low', type: 'line', data: lowR, stack: 'band', symbol: 'none', lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 }, tooltip: { show: false } },
       { name: 'Range', type: 'line', data: band, stack: 'band', symbol: 'none', lineStyle: { opacity: 0 }, areaStyle: { color: t.c[1], opacity: 0.16 } },
       { name: 'Forecast', type: 'line', data: rem('mid'), symbol: 'none', lineStyle: { color: t.c[1], width: 2, type: [6, 4] },
-        ...(mark ? { markPoint: { symbol: 'circle', symbolSize: 9, itemStyle: { color: mark.color }, label: { show: true, position: out ? 'top' : 'left', distance: 8, formatter: mark.value, backgroundColor: t.surface, padding: [2, 5], borderRadius: 4, color: mark.color, fontWeight: 650, fontSize: 11.5 }, data: [{ coord: mark.coord, value: mark.value }] } } : {}) },
+        ...(mark ? { markPoint: { symbol: 'circle', symbolSize: 9, itemStyle: { color: mark.color }, label: { show: true, position: out ? 'top' : 'left', distance: 8, formatter: mark.value, backgroundColor: t.surface, padding: [2, 5], borderRadius: 4, color: mark.color, fontWeight: 600, fontSize: 12 }, data: [{ coord: mark.coord, value: mark.value }] } } : {}) },
       { name: 'Actual', type: 'line', data: rem('actual'), symbol: 'none', lineStyle: { color: t.c[0], width: 2.5 }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: t.c[0] + '33' }, { offset: 1, color: t.c[0] + '00' }] } }, z: 3 },
     ],
   };

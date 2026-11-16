@@ -116,7 +116,7 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
               <dt><b>Office report spent + committed (OB)</b></dt><dd class="num"><b>{full(T.ob.sc)}</b></dd>
               <dt>Difference</dt><dd class="num" style={{ color: Math.abs(T.ob.sc - sysSC!) > 1 ? AMB : GRN }}><b>{Math.abs(T.ob.sc - sysSC!) > 1 ? full(T.ob.sc - sysSC!) : 'none ✓'}</b></dd>
               {Math.abs(sit.budget - T.ob.budget) > 1 && <><dt>Budget difference</dt><dd class="num" style={{ color: AMB }}>{full(T.ob.budget - sit.budget)}</dd></>}</dl>
-            {recon.length > 0 && <><p class="muted" style={{ fontSize: '12.5px', margin: '12px 0 6px' }}>Lines where the office report (OB) differs from the entries posted on the Ordinary Budget:</p>
+            {recon.length > 0 && <><p class="muted" style={{ fontSize: '13px', margin: '12px 0 6px' }}>Lines where the office report (OB) differs from the entries posted on the Ordinary Budget:</p>
               <ul class="of-rec">{recon.map((x) => { const ls = lsEnt.filter((e) => e.line === x.l.code).reduce((a, e) => a + e.spent + e.committed, 0);
                 const n = N[nk(x.l.code)];
                 return <li class={n?.resolved ? 'ok' : ''}><span class="num">{x.l.code}</span><span>{x.l.description}{ls > 0.5 && <small class="muted" style={{ display: 'block' }}>{full(ls)} of entries on this line are posted on LS & Pagoda</small>}

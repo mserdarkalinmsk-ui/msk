@@ -49,11 +49,11 @@ export function BudgetChanges() {
         <div class="card-b table-scroll">{EW.length ? <table class="mini"><thead><tr><th>Project</th><th>Heading</th><th>Stage</th><th class="r">Budget now</th><th class="r">Expected at end</th><th class="r">Shortfall</th><th class="r">Change if covered</th><th>Short by</th><th>Cover from</th><th /></tr></thead>
           <tbody>{EW.map((w) => <tr>
             <td><b>{lab(w.p)}</b></td><td><b>{w.code}</b> {w.label}</td>
-            <td><span class={`badge ${STAGE[w.stage].tone}`} title={w.why}>{STAGE[w.stage].label}</span><div class="muted" style={{ fontSize: '11.5px', maxWidth: '260px' }}>{w.why}</div></td>
+            <td><span class={`badge ${STAGE[w.stage].tone}`} title={w.why}>{STAGE[w.stage].label}</span><div class="muted" style={{ fontSize: '12px', maxWidth: '260px' }}>{w.why}</div></td>
             <td class="r num">{full(w.current)}</td><td class="r num">{full(w.projected)}<small class="muted" style={{ display: 'block' }}>{BASIS_LABEL[w.basis]}</small></td><td class="r num"><b>{w.need ? full(w.need) : '—'}</b></td>
             <td class="r num" style={{ color: w.changeIfCovered > w.flex ? 'var(--critical)' : undefined }}>{w.need ? pc(w.changeIfCovered) : '—'}<small class="muted"> / ±{Math.round(w.flex * 100)}%</small></td>
             <td class="num" style={{ whiteSpace: 'nowrap' }}>{w.by ? date(w.by) : '—'}</td>
-            <td>{w.from ? <><b>{w.from.code}</b> {w.from.label}<div class="muted" style={{ fontSize: '11.5px' }}>{full(w.from.spare)} spare</div></> : '—'}</td>
+            <td>{w.from ? <><b>{w.from.code}</b> {w.from.label}<div class="muted" style={{ fontSize: '12px' }}>{full(w.from.spare)} spare</div></> : '—'}</td>
             <td>{w.need > 0 && <button class="btn ghost" onClick={() => plan(w)}>Plan transfer</button>}</td></tr>)}</tbody></table>
           : <p class="muted" style={{ margin: 0 }}>No heading is heading for a shortfall at the current pace.</p>}
           <p class="muted" style={{ fontSize: '12px', marginTop: '8px' }}>Expected at end = spent + committed today + the planned expenditure of the latest report (when it has a forecast), then the heading's average monthly spending until the end date. "Addendum ahead": covering the shortfall would take the heading beyond the flexibility — plan the request early (an addendum takes time). "Notify now": already overspent.</p></div>
@@ -80,7 +80,7 @@ export function BudgetChanges() {
             <button class="btn primary" disabled={!from || !to || from === to || !(Number(amt) > 0)} onClick={add}>Add transfer</button></div>
           {planned.length > 0 && <table class="mini"><thead><tr><th>From</th><th>To</th><th class="r">Amount</th><th>Reason</th><th>Needs</th><th /></tr></thead>
             <tbody>{A.per.map((x, i) => <tr><td><b class="num">{x.t.from}</b> <span class="muted">{desc(x.t.from).slice(0, 34)}</span></td><td><b class="num">{x.t.to}</b> <span class="muted">{desc(x.t.to).slice(0, 34)}</span></td><td class="r num">{full(x.t.amount)}</td><td>{planned[i].reason ?? ''}</td>
-              <td><span class={`badge ${VERDICT[x.verdict].tone}`} title={x.why}>{VERDICT[x.verdict].label}</span><div class="muted" style={{ fontSize: '11.5px' }}>{x.why}</div></td>
+              <td><span class={`badge ${VERDICT[x.verdict].tone}`} title={x.why}>{VERDICT[x.verdict].label}</span><div class="muted" style={{ fontSize: '12px' }}>{x.why}</div></td>
               <td><button class="btn ghost danger" onClick={() => save(all.filter((y) => y.id !== planned[i].id))}>Remove</button></td></tr>)}</tbody></table>}
           {planned.length > 0 && <div class={`bt-verdict ${V.tone}`}><b>{V.label}</b><span>{V.what}</span>{A.reasons.filter((r) => r !== V.what).map((r) => <small>{r}</small>)}
             <div class="bt-act"><button class="btn primary" onClick={word}>⤓ {DOC[A.verdict]} (Word)</button>

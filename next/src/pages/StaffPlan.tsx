@@ -26,7 +26,7 @@ export function StaffPlanCard({ p }: { p: Project }) {
             <td class="r num" title={x.rateSource}>{x.rate ? full(x.rate) : <span class="muted">no rate</span>}</td><td class="r num">{full(x.signedLeft)}</td>
             <td class="r num" style={{ color: x.renewal ? 'var(--warn)' : undefined }}>{x.renewal ? full(x.renewal) : '—'}</td><td class="r num"><b>{full(x.toEnd)}</b></td></tr>)}</tbody>
           <tfoot><tr><td colSpan={3}>Total</td><td class="r num">{full(S.people.reduce((a, x) => a + x.rate, 0))}</td><td class="r num">{full(S.people.reduce((a, x) => a + x.signedLeft, 0))}</td><td class="r num">{full(S.renewalNeed)}</td><td class="r num">{full(S.people.reduce((a, x) => a + x.toEnd, 0))}</td></tr></tfoot></table></div>
-        <p class="muted" style={{ fontSize: '11.5px' }}>Per month = value of the person's latest contract (spent + committed on its PO) ÷ its months; without one, the budget unit rate × FTE. Signed amounts are already in “spent + committed”; renewals are the new money needed.</p>
+        <p class="muted" style={{ fontSize: '12px' }}>Per month = value of the person's latest contract (spent + committed on its PO) ÷ its months; without one, the budget unit rate × FTE. Signed amounts are already in “spent + committed”; renewals are the new money needed.</p>
       </div>
     </section>
   );
@@ -35,7 +35,7 @@ export function StaffPlanCard({ p }: { p: Project }) {
 function planOption(t: Tokens, M: { m: string; signed: number; renewal: number }[]) {
   return {
     ...base(t), grid: { left: 8, right: 16, top: 26, bottom: 8, containLabel: true },
-    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11.5 } },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => full(v) },
     xAxis: { type: 'category', data: M.map((x) => month(x.m)), axisLabel: { color: t.ink3, fontSize: 11 }, axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false } },
     yAxis: { type: 'value', axisLabel: { color: t.ink3, fontSize: 11, formatter: (v: number) => short(v) }, splitLine: { lineStyle: { color: t.line } } },

@@ -273,7 +273,7 @@ function ImportReviewCard({ p, report, replaced }: { p: Project; report: Reporti
 
 const PO_KIND: Record<PoChange['kind'], string> = { new: 'New', raised: 'Raised', spent: 'Invoiced', reduced: 'Reduced', closed: 'Closed', gone: 'No longer in the file' };
 const n2 = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const sgn = (v: number) => (Math.abs(v) < 0.005 ? '–' : `${v > 0 ? '+' : '−'}${full(Math.abs(v)).replace('−', '')}`);
+const sgn = (v: number) => (Math.abs(v) < 0.005 ? '—' : `${v > 0 ? '+' : '−'}${full(Math.abs(v)).replace('−', '')}`);
 /** Line by line and order by order: what is different from the report on file. */
 export function ImportChanges({ R }: { R: ImportReview }) {
   const [tab, setTab] = useState<'lines' | 'pos'>('lines'), [all, setAll] = useState(false);
@@ -294,7 +294,7 @@ export function ImportChanges({ R }: { R: ImportReview }) {
       ) : (
         <table class="mini irv-t"><thead><tr><th>Purchase order</th><th>Line</th><th>Change</th><th class="r">Spent +<br />committed</th><th class="r">Was</th></tr></thead>
           <tbody>{P.map((x) => <tr><td><span class="num">{x.po}</span> <span class="irv-d" title={`${x.supplier} · ${x.description}`}>{x.supplier || x.description}</span></td><td class="num">{x.line}</td>
-            <td><span class={`badge ${x.kind === 'new' || x.kind === 'raised' ? 'info' : x.kind === 'gone' ? 'warning' : 'neutral'}`}>{PO_KIND[x.kind]}</span></td><td class="r num">{full(x.scNow)}</td><td class="r num muted">{x.kind === 'new' ? '–' : full(x.scBefore)}</td></tr>)}</tbody></table>
+            <td><span class={`badge ${x.kind === 'new' || x.kind === 'raised' ? 'info' : x.kind === 'gone' ? 'warning' : 'neutral'}`}>{PO_KIND[x.kind]}</span></td><td class="r num">{full(x.scNow)}</td><td class="r num muted">{x.kind === 'new' ? '—' : full(x.scBefore)}</td></tr>)}</tbody></table>
       )}</div>
       {(tab === 'lines' ? R.lines.length : R.pos.length) > 8 && <button class="btn ghost irv-more" onClick={() => setAll(!all)}>{all ? 'Show fewer' : `Show all ${tab === 'lines' ? R.lines.length : R.pos.length}`}</button>}
     </div>
@@ -341,7 +341,7 @@ function CoeSummary({ wb, onManual, fillIds, saveIds, setSaveIds, onRole, onForg
     <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span class="badge good">Recognised</span><b style={{ fontSize: '14px' }}>Council of Europe financial report workbook</b>
         <button class="btn ghost" style={{ marginLeft: 'auto', height: '26px' }} onClick={onManual}>Map columns manually</button></div>
-      {m.title && <div style={{ fontSize: '13.5px' }}>{m.title}</div>}
+      {m.title && <div style={{ fontSize: '13px' }}>{m.title}</div>}
       <div class="doc-kind" style={{ fontSize: '13px' }}><span class={`badge ${dt.sure ? 'good' : 'warning'}`}>{dt.sure ? 'Read as' : 'Probably'}</span> <b>{dt.label}</b> <span class="muted">— {dt.why.join(', ')}</span></div>
       {(m.blocks?.length ?? 0) > 0 && <div class="blocks" style={{ display: 'grid', gap: '6px' }}>
         <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-2)' }}>Columns read as <span class="muted" style={{ fontWeight: 400 }}>· {m.grid} · correct a block and it is remembered for files of this format</span>
