@@ -156,5 +156,5 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
   // Leaving the chart hides its tooltip at once (otherwise a faded box can stay behind after switching views).
-  return <div role="img" aria-label={label} onMouseLeave={() => inst.current?.dispatchAction({ type: 'hideTip' })} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
+  return <div class="chart-box" role="img" aria-label={label} onMouseLeave={() => inst.current?.dispatchAction({ type: 'hideTip' })} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
 }

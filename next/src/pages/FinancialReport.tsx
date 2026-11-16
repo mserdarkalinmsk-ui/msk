@@ -22,6 +22,21 @@ import { reportDiff, type PoChange } from '../domain/reportDiff';
 
 const HEADINGS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '3': 'Equipment & supplies', '4': 'Local office', '5': 'Other costs, services', '6': 'Other' };
 
+/** Spent, committed, planned and budget by heading (1–6, 10) from a report workbook, as the financial report shows them. */
+export function headsOf(wb: WorkbookSummary) {
+  const leaf = wb.lines.filter((l) => l.leaf);
+  return Object.keys(HEADINGS).map((h) => {
+    const L = leaf.filter((l) => l.code.split('.')[0] === h);
+    const s = (f: (l: WbLine) => number | null | undefined) => L.reduce((a, l) => a + (f(l) ?? 0), 0);
+    return { h, name: HEADINGS[h], budget: s((l) => l.budget.cost), actual: s((l) => l.actual.cost), sc: s((l) => l.sc), planned: s((l) => l.planned?.cost), proposal: s((l) => l.rounded?.cost ?? l.proposal?.cost) };
+  }).filter((x) => x.budget || x.actual || x.planned);
+}
+/** The latest report workbook of a project, with an extraction completed from the project's approved budget. */
+export function reportWorkbook(p: Project): WorkbookSummary | null {
+  const rep = latestWorkbook(p), wb0 = rep?.snapshot?.workbook as WorkbookSummary | undefined;
+  return wb0 ? (wb0.meta.extraction ? enrichExtraction(wb0, p) : wb0) : null;
+}
+
 export function latestWorkbook(p: Project) {
   const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byPeriodThenImport);
   return R.at(-1);
@@ -44,11 +59,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
   const prevRep = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook && r.id !== rep.id).sort(byPeriodThenImport).at(-1);
   const prevWb = prevRep ? (prevRep.snapshot!.workbook!.meta.extraction ? enrichExtraction(prevRep.snapshot!.workbook!, p) : prevRep.snapshot!.workbook!) : undefined;
   const leaf = wb.lines.filter((l) => l.leaf);
-  const heads = Object.keys(HEADINGS).map((h) => {
-    const L = leaf.filter((l) => l.code.split('.')[0] === h);
-    const s = (f: (l: WbLine) => number | null | undefined) => L.reduce((a, l) => a + (f(l) ?? 0), 0);
-    return { h, name: HEADINGS[h], budget: s((l) => l.budget.cost), actual: s((l) => l.actual.cost), sc: s((l) => l.sc), planned: s((l) => l.planned?.cost), proposal: s((l) => l.rounded?.cost ?? l.proposal?.cost) };
-  }).filter((x) => x.budget || x.actual || x.planned);
+  const heads = headsOf(wb);
   const openPO = wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5).sort((a, b) => b.balance - a.balance);
   const funding = wb.movements.filter((x) => x.funding);
   const received = funding.reduce((s, x) => s + x.amount, 0);
@@ -208,7 +219,7 @@ function POTable({ rows }: { rows: WorkbookSummary['pos'] }) {
  * flexibility between headings, the fill spent then committed then planned for the next 12 months, and one line the
  * share of time gone. Every heading reads on the same scale, so a small heading is as legible as a large one.
  */
-function headingOption(t: Tokens, H: { name: string; budget: number; actual: number; sc: number; planned: number }[], flex: number, el: number) {
+export function headingOption(t: Tokens, H: { name: string; budget: number; actual: number; sc: number; planned: number }[], flex: number, el: number) {
   const P = (v: number, h: { budget: number }) => (h.budget ? (v / h.budget) * 100 : 0);
   const top = Math.max(100 + flex * 100 + 10, ...H.map((h) => P(h.sc + h.planned, h) + 8));
   return {

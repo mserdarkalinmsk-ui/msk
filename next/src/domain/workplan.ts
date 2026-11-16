@@ -402,3 +402,42 @@ export function tableChecks(items: { t: TableSheet; p?: { id: string; bh?: strin
   }
   return out;
 }
+
+/** One PMM activity across the project's Work Plans and the report: what was planned, where, and what was spent on it. */
+export type ActFlag = 'carried' | 'not-started' | 'over-plan' | 'no-plan';
+export interface ActivityRow { id: string; name: string; ref: string; wps: string[]; planned: number; latestPlanned: number; latestWp: string;
+  spent: number | null; sc: number | null; status: string; flags: ActFlag[] }
+export interface ActivityLedger { rows: ActivityRow[]; /** the report carries activity numbers */ numbered: boolean; spentNumbered: number; spentAll: number }
+/**
+ * Every activity named in a Work Plan, plus every activity number the report spends on without a Work Plan, with:
+ * the Work Plans it is in, planned (sum over the plans and the latest plan), spent and spent & committed from the
+ * report's activity numbers, and flags — carried over to a later plan, planned in a plan that has ended with nothing
+ * spent, spent above its latest plan, spent with no plan.
+ */
+export function activityLedger(plans: WorkPlan[], wb: WorkbookSummary | null, today: Date): ActivityLedger {
+  const U = wb ? activityUse(wb) : new Map<string, { spent: number; sc: number }>();
+  const numbered = U.size > 0, t = today.toISOString().slice(0, 10);
+  const norm = (id: string) => id.trim().replace(/^0+/, '');
+  const P = [...plans].sort((a, b) => a.from.localeCompare(b.from));
+  const by = new Map<string, ActivityRow & { ended: boolean }>();
+  for (const w of P) for (const a of w.acts ?? []) {
+    const k = norm(a.id); if (!k) continue;
+    const r = by.get(k) ?? { id: a.id, name: a.name, ref: a.ref, wps: [], planned: 0, latestPlanned: 0, latestWp: '', spent: null, sc: null, status: '', flags: [], ended: false };
+    r.wps.push(wpName(w)); r.planned += a.amount; r.latestPlanned = a.amount; r.latestWp = wpName(w); r.name = a.name || r.name; r.ref = a.ref || r.ref;
+    if (a.status) r.status = a.status; r.ended = !!w.to && w.to < t;
+    by.set(k, r);
+  }
+  for (const k of U.keys()) if (!by.has(k)) by.set(k, { id: k, name: '', ref: '', wps: [], planned: 0, latestPlanned: 0, latestWp: '', spent: null, sc: null, status: '', flags: [], ended: false });
+  const rows = [...by].map(([k, r]) => {
+    const u = U.get(k); if (numbered) { r.spent = r2(u?.spent ?? 0); r.sc = r2(u?.sc ?? 0); }
+    const flags: ActFlag[] = [];
+    if (r.wps.length > 1) flags.push('carried');
+    if (!r.wps.length) flags.push('no-plan');
+    if (numbered && r.wps.length && r.ended && (r.sc ?? 0) < 0.5 && r.latestPlanned > 0) flags.push('not-started');
+    if (numbered && r.latestPlanned > 0 && (r.sc ?? 0) > r.latestPlanned + 0.5) flags.push('over-plan');
+    const { ended: _e, ...row } = r; void _e;
+    return { ...row, planned: r2(r.planned), latestPlanned: r2(r.latestPlanned), flags };
+  }).sort((a, b) => (b.flags.length - a.flags.length) || (b.latestPlanned - a.latestPlanned) || ((b.sc ?? 0) - (a.sc ?? 0)));
+  const spentNumbered = r2([...U.values()].reduce((s, x) => s + x.spent, 0)), spentAll = r2((wb?.entries ?? []).reduce((s, e) => s + e.amount, 0));
+  return { rows, numbered, spentNumbered, spentAll };
+}

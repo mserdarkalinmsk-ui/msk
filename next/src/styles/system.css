@@ -256,4 +256,54 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
   .hero > button.kpi { display: flex !important; }
   body .btn[data-dl] { display: none !important; }
 }
-@media print { [role=img] { overflow: hidden; max-width: 100%; } }
+/* A chart's box takes its width from the page, never from the drawing inside it (the drawing is sized in pixels);
+   so a narrower page (paper, a closed sidebar) narrows the card and the chart is redrawn to fit. */
+.chart-box { contain: inline-size; min-width: 0; max-width: 100%; }
+@media print { .chart-box { overflow: hidden; } }
+
+/* ==========================================================================
+   One-page brief: an A4 sheet on screen and on paper.
+   ========================================================================== */
+.brief-bar { display: flex; align-items: center; gap: 12px; max-width: 210mm; margin: 0 auto 12px; }
+.brief-bar .grow { flex: 1; } .brief-bar .muted { font-size: 12px; }
+.brief { page: brief; box-sizing: border-box; width: 210mm; min-height: 297mm; margin: 0 auto 24px; padding: 14mm 14mm 10mm; background: #fff; color: #111; border: 1px solid var(--line); border-radius: 4px; box-shadow: var(--shadow-2);
+  --ink: #111; --ink-2: #444; --ink-3: #666; --line: #e3e2de; --surface: #fff; --surface-2: #f1f1ee; color-scheme: light; display: flex; flex-direction: column; gap: 10px; font-size: 11px; }
+.br-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 8px; border-bottom: 2px solid #111; }
+.br-org { display: flex; align-items: center; gap: 10px; } .br-org img { height: 34px; width: auto; }
+.br-org div { display: grid; line-height: 1.25; } .br-org b { font-size: 12px; } .br-org span { font-size: 10px; color: #555; }
+.br-id { display: grid; text-align: right; font-size: 10.5px; color: #333; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.br-t { margin: 4px 0 0; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; }
+.br-sub { margin: 0; color: #555; font-size: 11px; }
+.br-k { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+.br-k > div { display: grid; gap: 2px; align-content: start; padding: 9px 10px; border-left: 1px solid #ddd; }
+.br-k > div:first-child { border-left: 0; }
+.br-k span { font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; color: #666; }
+.br-k b { font-size: 13.5px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.br-k small { font-size: 9.5px; color: #666; }
+.br-k .lead { background: #f3f6fb; } .br-k .lead b { color: #163a6b; }
+.br-k [data-tone="warn"] b { color: var(--warn); } .br-k [data-tone="bad"] b { color: var(--critical); }
+.br-m { position: relative; display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: #dde3ec; }
+.br-m em { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: #1d68c4; } .br-m u { position: absolute; top: -3px; bottom: -3px; width: 1.5px; background: #111; }
+.br-s h2 { margin: 0; font-size: 12.5px; } .br-s > p { margin: 1px 0 4px; font-size: 10px; color: #666; }
+.br-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+.br-a { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.br-a li { display: grid; gap: 1px; padding: 5px 8px; border-left: 3px solid var(--warn); background: #fafaf8; border-radius: 0 4px 4px 0; }
+.br-a li.critical { border-left-color: var(--critical); } .br-a li.serious { border-left-color: var(--serious); }
+.br-a b { font-size: 10.5px; } .br-a span { font-size: 9.5px; color: #555; }
+.br-more, .br-ok { margin: 4px 0 0; font-size: 10px; color: #666; }
+.br-wp { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 10.5px; }
+.br-wp th { text-align: left; font-weight: 500; color: #555; padding: 4px 0; border-bottom: 1px solid #eee; } .br-wp td { text-align: right; padding: 4px 0; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.br-f { margin-top: auto; display: flex; justify-content: space-between; gap: 12px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 9px; color: #777; }
+@page brief { size: A4 portrait; margin: 0; }
+@media print {
+  .side, .top, .pstat, .brief-bar { display: none !important; }
+  .shell:has(.brief) { display: block; } .shell:has(.brief) .main { margin: 0; } .page:has(.brief) { padding: 0; max-width: none; }
+  .brief { width: 210mm; min-height: 296mm; margin: 0; border: 0; border-radius: 0; box-shadow: none; break-after: avoid; }
+}
+
+/* Work Plan activities: the share of the latest plan used, as a small bar. */
+.act-u { display: inline-flex; align-items: center; gap: 8px; }
+.act-u .trk { position: relative; width: 70px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.act-u .trk i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--s-spent); }
+.act-u .trk i.over { background: var(--critical); }
+.act-u b { font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }

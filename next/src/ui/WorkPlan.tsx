@@ -4,7 +4,7 @@ import { base, Chart } from './Chart';
 import { axisX, axisY } from '../pages/Overview';
 import { useStore } from '../data/store';
 import { updateProject } from '../data/store';
-import { activityUse, overlaps, poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
+import { activityLedger, activityUse, overlaps, poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
 import type { WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -97,6 +97,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       </table>
       <WpRollover wp={wp} wb={wb} onLock={() => upd({ snap: snapshot(wb) })} />
       <WpCompare plans={plans} wb={wb} sel={wp.id} onPick={setSel} />
+      <WpActivities plans={plans} wb={wb} />
       <WpPrevActs wp={wp} plans={plans} />
       {wp.acts?.length ? <WpDetail wp={wp} plans={plans} wb={wb} /> : null}
       <div class="wp-notes">
@@ -265,6 +266,33 @@ function WpDetail({ wp, plans, wb }: { wp: WP; plans: WP[]; wb: WorkbookSummary 
         <table class="wp-t"><thead><tr><th>Line</th><th>Description</th><th class="num">Budget</th><th class="num">Spent & committed</th><th class="num">Left</th><th class="num">WP {wp.no} plan</th><th class="num">Left after WP</th></tr></thead>
           <tbody>{L.map((l) => <tr class={l.after < 0 ? 'serious' : ''}><td class="num">{l.line}</td><td>{l.description}{l.unbudgeted && <span class="badge warning" style={{ marginLeft: '6px' }}>not in the budget</span>}</td><td class="num">{full(l.budget)}</td><td class="num">{full(l.sc)}</td><td class="num">{full(l.left)}</td><td class="num">{full(l.planned)}</td><td class="num">{full(l.after)}</td></tr>)}</tbody></table></details>
     </>);
+}
+
+const FLAG: Record<string, [string, string]> = { carried: ['Carried over', 'warning'], 'not-started': ['Nothing spent', 'serious'], 'over-plan': ['Above plan', 'critical'], 'no-plan': ['Spent, in no WP', 'neutral'] };
+/** Every PMM activity across the Work Plans, against what the report spends on its activity number. */
+function WpActivities({ plans, wb }: { plans: WP[]; wb: WorkbookSummary }) {
+  const L = activityLedger(plans, wb, TODAY);
+  const [only, setOnly] = useState(false);
+  if (!L.rows.length) return null;
+  const n = (f: string) => L.rows.filter((r) => r.flags.includes(f as never)).length;
+  const rows = only ? L.rows.filter((r) => r.flags.length) : L.rows;
+  return (
+    <details class="wp-sec" open>
+      <summary>Activities across the Work Plans · {L.rows.length} activities{n('carried') ? ` · ${n('carried')} carried over` : ''}{n('not-started') ? ` · ${n('not-started')} with nothing spent` : ''}{n('over-plan') ? ` · ${n('over-plan')} above plan` : ''}{n('no-plan') ? ` · ${n('no-plan')} spent in no Work Plan` : ''}</summary>
+      {!L.numbered ? <p class="wp-warn">The report on file carries no activity numbers, so spending per activity cannot be shown. Import the latest report workbook again — the activity number column is read from it.</p>
+        : <p class="muted" style={{ margin: '0 0 8px', fontSize: '12px' }}>Spent and spent & committed are every posting with the activity's number in the report, at any date and on any line ({full(L.spentNumbered)} of {full(L.spentAll)} spent carries an activity number). <label style={{ marginLeft: '8px' }}><input type="checkbox" checked={only} onChange={(e) => setOnly((e.target as HTMLInputElement).checked)} /> Only those to look at</label></p>}
+      <table class="wp-t"><thead><tr><th>Activity ID</th><th>Activity</th><th>Work Plans</th><th class="num">Latest plan</th><th class="num">Planned, all WPs</th>{L.numbered && <><th class="num">Spent</th><th class="num">Spent & committed</th><th>Of the latest plan</th></>}<th /></tr></thead>
+        <tbody>{rows.map((r) => { const u = r.latestPlanned && r.sc != null ? r.sc / r.latestPlanned : null; return (
+          <tr class={r.flags.includes('over-plan') ? 'serious' : r.flags.includes('not-started') ? 'warning' : ''}>
+            <td class="num">{r.id}</td><td>{r.name || <span class="muted">not in a Work Plan</span>}{r.ref && <small class="muted"> · {r.ref}</small>}{r.status && <small class="muted" title={r.status}> · {r.status.length > 60 ? `${r.status.slice(0, 57).trim()}…` : r.status}</small>}</td>
+            <td>{r.wps.length ? <div class="wp-chips">{r.wps.map((w) => <span>{w}</span>)}</div> : '—'}</td>
+            <td class="num">{r.latestPlanned ? full(r.latestPlanned) : '—'}</td><td class="num">{r.planned ? full(r.planned) : '—'}</td>
+            {L.numbered && <><td class="num">{full(r.spent ?? 0)}</td><td class="num">{full(r.sc ?? 0)}</td>
+              <td>{u == null ? '—' : <span class="act-u"><span class="trk"><i style={{ width: `${Math.min(100, u * 100)}%` }} class={u > 1 ? 'over' : ''} /></span><b>{pct(u)}</b></span>}</td></>}
+            <td>{r.flags.map((f) => <span class={`badge ${FLAG[f][1]}`} style={{ marginRight: '4px' }}>{FLAG[f][0]}</span>)}</td>
+          </tr>); })}</tbody></table>
+    </details>
+  );
 }
 
 export function wpSheet(p: Project, f: WpFollowUp): SheetSpec {

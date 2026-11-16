@@ -1,3 +1,4 @@
+import { Brief } from './pages/Brief';
 import { SelfCheck } from './ui/SelfCheck';
 import { WeekDigest } from './ui/WeekDigest';
 import { render } from 'preact';
@@ -49,9 +50,9 @@ function App() {
   const ready = useStore((s) => s.ready);
   const [head, arg] = route.split('/');
   const r = ROUTES.find((x) => x.id === head);
-  const proj = useStore((s) => (head === 'project' ? s.ledger.projects.find((p) => p.id === arg) : undefined));
-  const title = head === 'project' ? proj?.code ?? 'Project' : r?.label ?? 'Not found';
-  const crumb = head === 'project' ? <a class="crumb-link" href="#/projects" onClick={(e) => { e.preventDefault(); go('projects'); }}>Projects /</a> : null;
+  const proj = useStore((s) => (head === 'project' || head === 'brief' ? s.ledger.projects.find((p) => p.id === arg) : undefined));
+  const title = head === 'project' ? proj?.code ?? 'Project' : head === 'brief' ? `${proj?.code ?? 'Project'} · one-page brief` : r?.label ?? 'Not found';
+  const crumb = head === 'project' || head === 'brief' ? <a class="crumb-link" href="#/projects" onClick={(e) => { e.preventDefault(); go('projects'); }}>Projects /</a> : null;
   const nAlerts = useStore((s) => (s.ready ? urgent(s.ledger) : 0));
   const actions = (<>
     <SelfCheck />
@@ -65,7 +66,7 @@ function App() {
   return (
     <>
       <Shell title={title} crumb={crumb} actions={actions}>
-        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'offices' ? <Offices /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports key={route} /> : head === 'project' ? <ProjectPage id={arg} key={arg} sub={route.split('/')[2]} /> : <Placeholder id={head} />}
+        {!ready ? null : head === 'overview' ? <Overview /> : head === 'projects' ? <Projects /> : head === 'budget' ? <Budget /> : head === 'people' ? <People /> : head === 'offices' ? <Offices /> : head === 'map' ? <MapPage /> : head === 'reports' ? <Reports key={route} /> : head === 'project' ? <ProjectPage id={arg} key={arg} sub={route.split('/')[2]} /> : head === 'brief' ? <Brief id={arg} key={arg} /> : <Placeholder id={head} />}
       </Shell>
       <Drawer />
       <Palette />

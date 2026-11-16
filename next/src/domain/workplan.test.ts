@@ -79,3 +79,27 @@ describe('activity number column', () => {
     expect(u.sc).toBe(1500);
   });
 });
+
+import { activityLedger } from './workplan';
+describe('activity ledger', () => {
+  const act = (id: string, amount: number, status?: string) => ({ ref: '1.1', id, name: `Activity ${id}`, amount, lines: [], ...(status ? { status } : {}) });
+  const plans: WPx[] = [
+    { id: 'a', no: 1, from: '2026-04-01', to: '2026-06-30', planned: 3000, acts: [act('100001', 1000), act('100002', 2000)] },
+    { id: 'b', no: 2, from: '2026-07-01', to: '2026-09-30', planned: 1500, acts: [act('100002', 1500)] },
+  ];
+  const e = (activity: string, amount: number) => ({ date: '2026-08-01', period: '', src: 'gl' as const, doc: '', po: '', line: '5.7', account: '', description: '', detail: '', supplier: '', amount, posted: true, activity });
+  const wb = { entries: [e('100002', 1800), e('100009', 400)], pos: [], lines: [], totals: {}, meta: {} } as unknown as WBx;
+  it('follows each activity across the plans and the report', () => {
+    const L = activityLedger(plans, wb, new Date('2026-11-16'));
+    const r = (id: string) => L.rows.find((x) => x.id === id)!;
+    expect(L.numbered).toBe(true);
+    expect(r('100002')).toMatchObject({ wps: ['WP 1', 'WP 2'], planned: 3500, latestPlanned: 1500, spent: 1800 });
+    expect(r('100002').flags).toEqual(['carried', 'over-plan']);
+    expect(r('100001').flags).toEqual(['not-started']);
+    expect(r('100009').flags).toEqual(['no-plan']);
+  });
+  it('says when the report carries no activity numbers', () => {
+    const L = activityLedger(plans, { ...wb, entries: [] } as unknown as WBx, new Date('2026-11-16'));
+    expect(L.numbered).toBe(false); expect(L.rows.every((x) => x.spent == null)).toBe(true);
+  });
+});
