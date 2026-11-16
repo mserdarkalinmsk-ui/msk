@@ -1,3 +1,4 @@
+import { plabel } from '../domain/label';
 import { paceBand, paceTone } from '../domain/rules';
 import { staffCount, staffSplit } from '../domain/staff';
 import { MoneyFlow } from '../ui/Visuals';
@@ -190,7 +191,7 @@ export function Overview() {
             <div class="tools"><div class="seg">{(['country', 'sector', 'funding'] as const).map((m) => <button aria-pressed={bm === m} onClick={() => setBm(m)}>{m[0].toUpperCase() + m.slice(1)}</button>)}</div></div></div>
           <div class="card-b">
             <div class="legend" style={{ marginBottom: '4px' }}>
-              <span><i style={{ background: 'var(--c1)' }} />Spent</span><span><i style={{ background: 'var(--c3)' }} />Committed</span><span><i style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }} />Uncommitted</span>
+              <span><i style={{ background: 'var(--c1)' }} />Spent</span><span><i style={{ background: 'var(--s-committed)' }} />Committed</span><span><i style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }} />Uncommitted</span>
             </div>
             <Chart height={Math.max(160, groupBy(P, keyOf).length * 52 + 30)} label={`Budget by ${bm}`} onClick={(e) => {
               if (!e.name) return;
@@ -301,7 +302,7 @@ function gapOption(t: Tokens, P: Project[]) {
     ...base(t), grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${R[x.dataIndex].p.code}</b> ${R[x.dataIndex].p.name}<br/>${signedPct(R[x.dataIndex].g)}` },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => signedPct(v) } },
-    yAxis: { type: 'category', data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
+    yAxis: { type: 'category', data: R.map((r) => plabel(r.p)), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
     series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: paceTone(r.g) === 'serious' ? t.serious : paceTone(r.g) === 'warning' ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
       label: { show: true, position: 'outside', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => signedPct(x.value) },
       markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: t.ink3, type: 'solid' }, data: [{ xAxis: 0 }] } }],
@@ -353,7 +354,7 @@ function pacingOption(t: Tokens, P: Project[], exposure = false) {
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const r = R[x.dataIndex]; return `<b>${r.p.code}</b> ${r.p.name}<br/>Spent <b>${pct(r.b)}</b> · committed ${pct(r.c)}<br/>Time elapsed <b>${pct(r.el)}</b> → ${signedPct(r.g)}`; } },
     xAxis: { type: 'value', max: 1, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => pct(v) } },
-    yAxis: { type: 'category', inverse: true, data: R.map((r) => r.p.code), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
+    yAxis: { type: 'category', inverse: true, data: R.map((r) => plabel(r.p)), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
     series: [
       { type: 'bar', stack: 's', barWidth: 14, data: R.map((r) => ({ value: r.b, id: r.p.id, itemStyle: { color: tone(r.g), borderRadius: [4, 0, 0, 4] } })),
 },
@@ -384,7 +385,7 @@ function countryOption(t: Tokens, G: { key: string; budget: number; spent: numbe
     yAxis: { type: 'category', inverse: true, data: G.map((g) => g.key), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
       mk('Spent', (g) => g.spent, t.c[0], [4, 0, 0, 4]),
-      mk('Committed', (g) => g.committed, t.c[2], [0, 0, 0, 0]),
+      mk('Committed', (g) => g.committed, t.committed, [0, 0, 0, 0]),
       { ...mk('Uncommitted', (g) => Math.max(0, g.budget - g.spent - g.committed), t.surface2, [0, 4, 4, 0]), itemStyle: { color: t.surface2, borderColor: t.ink3, borderWidth: 0.5, borderRadius: [0, 4, 4, 0] } },
     ],
   };
@@ -394,8 +395,8 @@ function waterfallOption(t: Tokens, T: ReturnType<typeof totals>) {
   const steps = [
     { name: 'Budget', base: 0, v: T.budget, c: t.ink3 },
     { name: 'Spent', base: T.budget - T.spent, v: T.spent, c: t.c[0] },
-    { name: 'Committed', base: T.budget - T.spent - T.committed, v: T.committed, c: t.c[2] },
-    { name: 'Balance', base: 0, v: T.remaining, c: T.remaining < 0 ? t.critical : t.good },
+    { name: 'Committed', base: T.budget - T.spent - T.committed, v: T.committed, c: t.committed },
+    { name: 'Balance', base: 0, v: T.remaining, c: T.remaining < 0 ? t.critical : t.left },
   ];
   return {
     ...base(t),

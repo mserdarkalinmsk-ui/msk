@@ -226,3 +226,6 @@ body :is(.hero, .ph-tiles) > .kpi[data-empty] .value { color: var(--ink-3) !impo
 .pstat > .bk-banner .btn { height: 26px; padding: 0 10px; font-size: 12px; }
 .pstat > .bk-banner .bk-i { font-size: 13px; opacity: .7; }
 .pstat > .sh-banner { background: color-mix(in srgb, var(--accent) 5%, var(--surface)) !important; }
+
+/* The money series in HTML keys and bars, the same steps the charts use: spent, committed (a light step of spent), left. */
+:root { --s-spent: var(--c1); --s-committed: color-mix(in srgb, var(--c1) 42%, var(--surface)); --s-left: var(--plan); }

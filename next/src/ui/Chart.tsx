@@ -18,10 +18,18 @@ const whenVisible = (el: Element, go: () => void) => { if (!io || (typeof matchM
 export const drawAllCharts = drawAll;
 
 /** Resolved design tokens, read at render time so charts follow the theme. */
+const mixHex = (a: string, b: string, w: number) => {
+  const p = (h: string) => (/^#[0-9a-f]{6}$/i.test(h) ? [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) : null);
+  const x = p(a), y = p(b); if (!x || !y) return a;
+  return '#' + x.map((c, i) => Math.round(c * w + y[i] * (1 - w)).toString(16).padStart(2, '0')).join('');
+};
 export function tokens() {
   const cs = getComputedStyle(document.documentElement);
   const v = (k: string) => cs.getPropertyValue(k).trim();
+  const c1 = v('--c1'), surface = v('--surface');
   return {
+    /** the money series, the same in every chart: spent, committed (a light step of spent), what is left */
+    spent: c1, committed: mixHex(c1, surface, 0.42), left: v('--plan'),
     ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), line: v('--line'), surface: v('--surface'), surface2: v('--surface-2'),
     plan: v('--plan'), mono: v('--mono'), font: v('--font'),
     good: v('--good'), warn: v('--warn'), serious: v('--serious'), critical: v('--critical'),
@@ -43,37 +51,60 @@ export function base(t: Tokens): EChartsCoreOption {
   };
 }
 
-/* ---------- the finish every chart shares: depth without distorting the values ---------- */
+/* ---------- one chart language: every chart passes through here ----------
+   Marks: bars at most 24px thick with a 4px rounded data end and a 2px surface gap between stacked parts; lines 2px;
+   areas a light wash. Axes: no axis line or ticks on value axes, a hairline grid, small muted labels. Legend: small
+   rounded keys in text colour. Tooltips: one card, with a crosshair on line charts. Nothing here changes a value;
+   a chart that sets something itself keeps it. */
 const HEX = /^#[0-9a-f]{6}$/i;
 const shade = (hex: string, a: string) => (HEX.test(hex) ? hex + a : hex);
-const vGrad = (c: string, top = 'ff', bottom = 'b8') => ({ type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: shade(c, top) }, { offset: 1, color: shade(c, bottom) }] });
-const hGrad = (c: string) => ({ type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: shade(c, 'c4') }, { offset: 1, color: shade(c, 'ff') }] });
-/**
- * Gradient fills and soft shadows on bars, rounded free-standing bars, smooth lines with a glow, fading areas,
- * eased animations. Only plain colours are dressed: a colour a chart sets per point (a status, a band) is left as it is.
- */
-export function polish(o: any): any {
+const vWash = (c: string) => ({ type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: shade(c, '33') }, { offset: 1, color: shade(c, '05') }] });
+const arr = (v: any) => (Array.isArray(v) ? v : v ? [v] : []);
+function axis(a: any, t: Tokens | undefined) {
+  if (!a || typeof a !== 'object' || !t) return a;
+  const value = a.type === 'value' || a.type === 'log' || a.type == null;
+  return {
+    ...a,
+    axisLine: { show: !value, ...a.axisLine, lineStyle: { color: t.line, ...a.axisLine?.lineStyle } },
+    axisTick: { show: false, ...a.axisTick },
+    // value labels in the text face; a fixed top (the budget) does not print a second, colliding top label
+    axisLabel: { color: t.ink3, fontSize: 11, ...(typeof a.max === 'number' ? { showMaxLabel: false } : {}), ...a.axisLabel, ...(value ? { fontFamily: t.font } : { fontFamily: a.axisLabel?.fontFamily ?? t.font }) },
+    splitLine: { ...a.splitLine, lineStyle: { color: t.line, width: 1, ...a.splitLine?.lineStyle, type: 'solid' } },
+    nameTextStyle: { color: t.ink3, fontSize: 11, ...a.nameTextStyle },
+  };
+}
+export function polish(o: any, t?: Tokens): any {
   if (!o || typeof o !== 'object') return o;
   const S = Array.isArray(o.series) ? o.series : o.series ? [o.series] : [];
-  const yCat = [o.yAxis].flat().some((a: any) => a?.type === 'category');
+  const yCat = arr(o.yAxis).some((a: any) => a?.type === 'category');
+  const hasLine = S.some((x: any) => x?.type === 'line');
   for (const x of S) {
     if (!x || x.__plain) continue;
     const c = typeof x.itemStyle?.color === 'string' ? x.itemStyle.color : typeof x.color === 'string' ? x.color : undefined;
     if (x.type === 'bar') {
       x.itemStyle = { ...x.itemStyle };
-      if (c && HEX.test(c)) x.itemStyle.color = yCat ? hGrad(c) : vGrad(c);
-      if (!x.stack && x.itemStyle.borderRadius == null) x.itemStyle.borderRadius = yCat ? [0, 5, 5, 0] : [5, 5, 0, 0];
-      if (x.itemStyle.shadowBlur == null) Object.assign(x.itemStyle, { shadowBlur: 6, shadowColor: 'rgba(15,23,42,.10)', shadowOffsetY: 2 });
-      x.emphasis = { focus: 'series', ...x.emphasis, itemStyle: { shadowBlur: 14, shadowColor: 'rgba(15,23,42,.22)', ...x.emphasis?.itemStyle } };
+      if (x.barMaxWidth == null && x.barWidth == null) x.barMaxWidth = 24;
+      if (x.itemStyle.borderRadius == null) x.itemStyle.borderRadius = x.stack ? 0 : yCat ? [0, 4, 4, 0] : [4, 4, 0, 0];
+      // touching parts of a stack are told apart by a 2px gap in the surface colour, never by a drawn border
+      if (x.stack && t && x.itemStyle.borderWidth == null) Object.assign(x.itemStyle, { borderColor: t.surface, borderWidth: 1 });
+      x.emphasis = { focus: 'series', ...x.emphasis };
     } else if (x.type === 'line') {
-      x.lineStyle = { width: 2.5, cap: 'round', ...x.lineStyle };
+      x.lineStyle = { width: 2, cap: 'round', join: 'round', ...x.lineStyle };
       const lc = typeof x.lineStyle.color === 'string' ? x.lineStyle.color : c;
-      if (lc && HEX.test(lc) && x.lineStyle.shadowBlur == null && x.lineStyle.type !== 'dashed') Object.assign(x.lineStyle, { shadowBlur: 8, shadowColor: shade(lc, '55'), shadowOffsetY: 3 });
-      if (x.areaStyle && lc && HEX.test(lc) && (x.areaStyle.color == null || typeof x.areaStyle.color === 'string')) x.areaStyle = { ...x.areaStyle, color: vGrad(lc, '40', '00'), opacity: 1 };
-      x.emphasis = { focus: 'series', ...x.emphasis, lineStyle: { width: 3.5, ...x.emphasis?.lineStyle } };
+      if (x.areaStyle && lc && HEX.test(lc) && (x.areaStyle.color == null || typeof x.areaStyle.color === 'string')) x.areaStyle = { ...x.areaStyle, color: vWash(lc), opacity: 1 };
+      if (x.symbolSize == null && x.showSymbol !== false && x.symbol !== 'none') x.symbolSize = 8;
+      if (t) x.itemStyle = { borderColor: t.surface, borderWidth: 2, ...x.itemStyle };
+      x.emphasis = { focus: 'series', ...x.emphasis, lineStyle: { width: 2.5, ...x.emphasis?.lineStyle } };
     }
   }
-  return { animationDuration: 750, animationEasing: 'cubicOut', animationDurationUpdate: 450, animationEasingUpdate: 'cubicInOut', ...o };
+  const out: any = { animationDuration: 600, animationEasing: 'cubicOut', animationDurationUpdate: 400, animationEasingUpdate: 'cubicInOut', ...o };
+  if (t) {
+    if (o.xAxis) out.xAxis = Array.isArray(o.xAxis) ? o.xAxis.map((a: any) => axis(a, t)) : axis(o.xAxis, t);
+    if (o.yAxis) out.yAxis = Array.isArray(o.yAxis) ? o.yAxis.map((a: any) => axis(a, t)) : axis(o.yAxis, t);
+    if (o.legend) out.legend = Array.isArray(o.legend) ? o.legend : { icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 16, ...o.legend, textStyle: { color: t.ink2, fontSize: 12, fontFamily: t.font, ...o.legend.textStyle } };
+    if (o.tooltip && (o.tooltip.trigger === 'axis') && hasLine) out.tooltip = { ...o.tooltip, axisPointer: { type: 'line', lineStyle: { color: t.ink3, width: 1, type: [3, 3] }, ...o.tooltip.axisPointer } };
+  }
+  return out;
 }
 
 const keyOf = (o: unknown) => { try { return JSON.stringify(o, (_, v) => (typeof v === 'function' ? String(v) : v)); } catch { return String(Math.random()); } };
@@ -96,7 +127,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c;
-    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o), true);
+    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens()), true);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
     c.getZr().on('click', (ev: any) => {
@@ -110,7 +141,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     const ro = new ResizeObserver(() => { const x = el.current; if (!x || (x.clientWidth === w && x.clientHeight === h)) return; w = x.clientWidth; h = x.clientHeight; c.resize(); });
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o), true); };
+    const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens()), true); };
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
     off = () => { ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
     };
@@ -118,7 +149,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     return () => { dead = true; stopWait?.(); off(); };
   }, []);
   // A parent re-render redraws the chart only when its option really changed.
-  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o), true); } });
+  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o, tokens()), true); } });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
   // Leaving the chart hides its tooltip at once (otherwise a faded box can stay behind after switching views).

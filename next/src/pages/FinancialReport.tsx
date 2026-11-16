@@ -214,7 +214,7 @@ function headingOption(t: Tokens, H: { name: string; budget: number; actual: num
       { name: 'Budget', type: 'bar', barWidth: 24, barGap: '-100%', z: 1, data: H.map((h) => h.budget), itemStyle: { color: t.surface2, borderColor: t.ink3, borderWidth: 0.5, borderRadius: 5 },
         label: { show: true, position: 'right', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => pct(H[x.dataIndex].budget ? (H[x.dataIndex].sc + H[x.dataIndex].planned) / H[x.dataIndex].budget : 0) } },
       { name: 'Spent', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => h.actual), itemStyle: { color: t.c[0], borderRadius: [3, 0, 0, 3] } },
-      { name: 'Committed', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => Math.max(0, h.sc - h.actual)), itemStyle: { color: t.c[0], opacity: 0.4 } },
+      { name: 'Committed', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => Math.max(0, h.sc - h.actual)), itemStyle: { color: t.committed } },
       { name: 'Planned', type: 'bar', stack: 'u', barWidth: 12, z: 2, data: H.map((h) => h.planned), itemStyle: { color: t.c[1], borderRadius: [0, 3, 3, 0] } },
     ],
   };

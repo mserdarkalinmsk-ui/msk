@@ -11,7 +11,7 @@ import { plabel } from '../domain/label';
 
 const lab = (p: Project) => (plabel(p));
 const pc = (v: number) => `${Math.round(v * 100)}%`;
-const COL = ['var(--c1)', 'var(--critical)', 'var(--c3)'];
+const COL = ['var(--c1)', 'var(--c2)', 'var(--c3)'];
 // Unit rates worth comparing between projects (same budget codes in the CoE template).
 const RATES: [string, string][] = [['1.1.3', 'Local short-term consultant'], ['1.2.3', 'International short-term consultant'], ['5.5.1', 'Translation'], ['5.5.2', 'Interpretation']];
 

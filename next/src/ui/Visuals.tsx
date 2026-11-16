@@ -32,7 +32,7 @@ export function MoneyFlow({ P, countries }: { P: Project[]; countries: Country[]
     ...base(t),
     tooltip: { ...(base(t).tooltip as object), formatter: (q: { dataType: string; data: { source?: string; target?: string; value?: number; name?: string }; value: number }) => q.dataType === 'edge' ? `${q.data.source} → ${q.data.target}<br/><b>${full(q.data.value!)}</b>` : `<b>${q.data.name}</b><br/>${full(q.value)}` },
     series: [{ type: 'sankey', left: 8, right: 110, top: 10, bottom: 10, nodeGap: 10, nodeWidth: 12, draggable: false, layoutIterations: 32, emphasis: { focus: 'adjacency' },
-      data: [...nodes.values()].map((n) => ({ ...n, itemStyle: { color: n.name === 'Spent' ? t.c[0] : n.name === 'Committed' ? t.c[2] : n.name === 'Still available' ? t.ink3 : n.depth === 0 ? t.ink2 : n.depth === 1 ? t.c[6] : t.c[0] } })),
+      data: [...nodes.values()].map((n) => ({ ...n, itemStyle: { color: n.name === 'Spent' ? t.c[0] : n.name === 'Committed' ? t.committed : n.name === 'Still available' ? t.ink3 : n.depth === 0 ? t.ink2 : n.depth === 1 ? t.c[6] : t.c[0] } })),
       links: merged, lineStyle: { color: 'gradient', opacity: 0.28, curveness: 0.5 },
       label: { color: t.ink, fontSize: 12, formatter: (q: { name: string; value: number }) => `${q.name}  ${short(q.value)}` } }],
   });

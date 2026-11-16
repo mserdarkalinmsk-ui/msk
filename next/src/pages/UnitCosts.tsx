@@ -9,7 +9,7 @@ import { plabel } from '../domain/label';
 const lab = (x: UnitPoint) => (plabel(x.p));
 const pctS = (v: number | null) => (v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))}%`);
 const tone = (v: number | null, lim: number) => (v == null ? '' : v > lim ? 'bad' : v < -lim ? 'low' : 'ok');
-const COL = ['var(--c1)', 'var(--critical)', 'var(--good)', 'var(--c4)', 'var(--c7)', 'var(--c3)', '#c2410c', 'var(--ink-3)'];
+const COL = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)', 'var(--c8)'];
 
 /** One group as a strip: each project's budget rate (ring) and actual rate (dot) on a shared scale, median marked. */
 function Strip({ g, color }: { g: UnitGroup; color: (id: string) => string }) {

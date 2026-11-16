@@ -38,12 +38,12 @@ function headingOption(t: Tokens, P: Project[]) {
   const H = headingBars(P, TODAY).reverse(), bad = (s: string) => s === 'addendum' || s === 'notify-now';
   return { ...base(t), grid: { left: 8, right: 24, top: 30, bottom: 8, containLabel: true }, legend: legend(t),
     tooltip: { ...tip(t), axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const h = H[ps[0].dataIndex];
-      return head(`${h.code} ${h.label}`) + row(t.c[0], 'Spent', h.spent) + row(t.c[2], 'Committed', h.committed) + row(t.ink3, 'Budget now', h.budget) + row(t.ink3, 'Agreement', h.baseline) + row(bad(h.stage) ? t.serious : t.ink, 'Expected at the end', h.projected)
+      return head(`${h.code} ${h.label}`) + row(t.c[0], 'Spent', h.spent) + row(t.committed, 'Committed', h.committed) + row(t.ink3, 'Budget now', h.budget) + row(t.ink3, 'Agreement', h.baseline) + row(bad(h.stage) ? t.serious : t.ink, 'Expected at the end', h.projected)
         + (h.flagged.length ? `<div style="color:${t.serious};margin-top:4px">Beyond the flexibility: ${h.flagged.join(', ')}</div>` : ''); } },
     xAxis: money(t), yAxis: { type: 'category', data: H.map((h) => `${h.code} ${h.label}`), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
       { name: 'Spent', type: 'bar', stack: 'h', barWidth: 16, data: H.map((h) => h.spent), itemStyle: { color: t.c[0] } },
-      { name: 'Committed', type: 'bar', stack: 'h', data: H.map((h) => h.committed), itemStyle: { color: t.c[2], opacity: 0.75 } },
+      { name: 'Committed', type: 'bar', stack: 'h', data: H.map((h) => h.committed), itemStyle: { color: t.committed } },
       { name: 'Budget left', type: 'bar', stack: 'h', data: H.map((h) => Math.max(0, h.budget - h.spent - h.committed)), itemStyle: { color: t.line, borderRadius: [0, 4, 4, 0] } },
       { name: 'Expected at the end', type: 'scatter', symbol: 'rect', symbolSize: [3, 22], data: H.map((h) => ({ value: h.projected, itemStyle: { color: bad(h.stage) ? t.serious : t.ink } })), z: 5 },
     ] };
@@ -52,11 +52,11 @@ function headingOption(t: Tokens, P: Project[]) {
 function committedOption(t: Tokens, P: Project[]) {
   const R = committedSeries(P, TODAY);
   return { ...base(t), grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: true }, legend: legend(t),
-    tooltip: { ...tip(t), formatter: (ps: any[]) => { const x = R[ps[0].dataIndex]; return x ? head(x.t) + row(t.c[0], 'Spent', x.spent) + row(t.c[2], 'Committed', x.committed) + row(t.ink3, 'Spent + committed', x.spent + x.committed) : ''; } },
+    tooltip: { ...tip(t), formatter: (ps: any[]) => { const x = R[ps[0].dataIndex]; return x ? head(x.t) + row(t.c[0], 'Spent', x.spent) + row(t.committed, 'Committed', x.committed) + row(t.ink3, 'Spent + committed', x.spent + x.committed) : ''; } },
     xAxis: time(t), yAxis: money(t),
     series: [
       { name: 'Spent', type: 'line', stack: 's', step: 'end', symbol: 'none', data: R.map((x) => [x.t, x.spent]), lineStyle: { color: t.c[0], width: 2 }, itemStyle: { color: t.c[0] }, areaStyle: { color: t.c[0], opacity: 0.35 } },
-      { name: 'Committed', type: 'line', stack: 's', step: 'end', symbol: 'none', data: R.map((x) => [x.t, x.committed]), lineStyle: { color: t.c[2], width: 1.5 }, itemStyle: { color: t.c[2] }, areaStyle: { color: t.c[2], opacity: 0.3 } },
+      { name: 'Committed', type: 'line', stack: 's', step: 'end', symbol: 'none', data: R.map((x) => [x.t, x.committed]), lineStyle: { color: t.committed, width: 1.5 }, itemStyle: { color: t.committed }, areaStyle: { color: t.committed, opacity: 0.35 } },
     ] };
 }
 
