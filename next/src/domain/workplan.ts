@@ -294,6 +294,9 @@ export const wpName = (w: WorkPlan) => (w.label && w.no <= 0 ? `WP ${w.label}` :
 
 /** The previous WP's activities and what became of them: carried into this WP (not done), marked done/cancelled in a WorkPlan file, or not mentioned again. */
 export type ActFate = 'carried' | 'done' | 'cancelled' | 'postponed' | 'unknown';
+/** What the status written in a WorkPlan file says happened to an activity (English or Turkish wording). */
+export const statusFate = (st: string): 'done' | 'cancelled' | 'postponed' | 'unknown' =>
+  /cancel|iptal/i.test(st) ? 'cancelled' : /postpon|ertelen|modif/i.test(st) ? 'postponed' : /\bdone\b|complet|tamam|implemented|held|organi[sz]ed/i.test(st) ? 'done' : 'unknown';
 export interface PrevAct { a: WpActivity; fate: ActFate; note: string; now?: WpActivity }
 export function previousActivities(plans: WorkPlan[], wp: WorkPlan): { prev?: WorkPlan; rows: PrevAct[] } {
   const prev = previousPlan(plans, wp);
