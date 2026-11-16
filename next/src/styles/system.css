@@ -195,3 +195,34 @@ body :is(.hero, .ph-tiles) > .kpi.lead .ctx i[style] { filter: brightness(1.6); 
 
 /* Work Plan: overlapping plans are called out above the follow-up table. */
 .wp-warn { margin: 0 20px 10px; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: var(--warn); background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+
+/* Project page, any tab but Summary: the project's headline figures shrink to one quiet strip, so the tab's own figures
+   (financial report, Work Plan …) are the only cards on the page and nothing shows twice. */
+body .hero.ph-tiles.ph-tiles-tab { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 14px; padding: 2px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: none; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi, body .hero.ph-tiles.ph-tiles-tab > .kpi.lead { flex: 1 1 150px; padding: 9px 16px; gap: 2px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; color: var(--ink); }
+body .hero.ph-tiles.ph-tiles-tab > .kpi:first-child { border-left: 0; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi::before { display: none; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi:hover { box-shadow: none; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi .label { font-size: 12px; font-weight: 500; color: var(--ink-3); padding-left: 0; min-height: 0; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi .label::before, body .hero.ph-tiles.ph-tiles-tab > .kpi .label::after, body .hero.ph-tiles.ph-tiles-tab > .kpi .sc-ico { display: none; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi .value, body .hero.ph-tiles.ph-tiles-tab > .kpi.lead .value { font-size: 18px; color: var(--ink); letter-spacing: -.02em; margin: 0; }
+body .hero.ph-tiles.ph-tiles-tab > .kpi[data-tone="warn"] .value { color: var(--warn); } body .hero.ph-tiles.ph-tiles-tab > .kpi[data-tone="bad"] .value { color: var(--critical); }
+body .hero.ph-tiles.ph-tiles-tab > .kpi :is(.ctx, .meter, .spark, .kpi-staff, .sc-split, .sc-fc, .sc-key) { display: none; }
+
+/* A headline tile with nothing to show (0, —) is never the showcase card, and says so quietly. */
+body :is(.hero, .ph-tiles) > .kpi.lead[data-empty] { color: var(--ink); border-color: var(--line); background: var(--surface); box-shadow: 0 1px 2px rgb(20 20 18 / .04), 0 8px 24px -12px rgb(20 20 18 / .16); }
+body :is(.hero, .ph-tiles) > .kpi.lead[data-empty] :is(.label, .ctx) { color: var(--ink-2); }
+body :is(.hero, .ph-tiles) > .kpi.lead[data-empty] .ctx b { color: var(--ink); }
+body :is(.hero, .ph-tiles) > .kpi.lead[data-empty] .label[data-ico]::before { background: color-mix(in srgb, var(--accent) 11%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent); }
+body :is(.hero, .ph-tiles) > .kpi.lead[data-empty] .label[data-ico]::after { background: var(--accent); }
+body :is(.hero, .ph-tiles) > .kpi[data-empty] .value { color: var(--ink-3) !important; font-size: 30px; }
+
+/* Page status (shared copy, backup): one slim panel above the page instead of two tall banners. */
+.pstat:empty { display: none; }
+.pstat { display: grid; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.pstat > .bk-banner { margin: 0 !important; padding: 7px 14px !important; min-height: 0; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; font-size: 12.5px; gap: 10px; background: var(--surface) !important; color: var(--ink-2); }
+.pstat > .bk-banner + .bk-banner { border-top: 1px solid var(--line) !important; }
+.pstat > .bk-banner b { color: var(--ink); }
+.pstat > .bk-banner .btn { height: 26px; padding: 0 10px; font-size: 12px; }
+.pstat > .bk-banner .bk-i { font-size: 13px; opacity: .7; }
+.pstat > .sh-banner { background: color-mix(in srgb, var(--accent) 5%, var(--surface)) !important; }

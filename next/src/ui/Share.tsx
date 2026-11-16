@@ -3,6 +3,7 @@ import { EMBED, READONLY, SOURCE, useStore } from '../data/store';
 import type { Ledger } from '../domain/types';
 import { saveFile } from './save';
 import { seal } from './crypto';
+import { plabel } from '../domain/label';
 
 /** The donor version: staff names and contracts, office budgets, change history and the trash are left out. */
 export function donorLedger(L: Ledger): Ledger {
@@ -50,7 +51,7 @@ export function SharePanel({ close }: { close: () => void }) {
         <section class="card card-b" style={{ display: 'grid', gap: '10px' }}>
           <h3 style={{ margin: 0, fontSize: '14px' }}>What to include</h3>
           <div class="cm-chips"><span class="muted">Countries</span>{used.map((c) => <button class="chip" aria-pressed={selC.includes(c.id)} onClick={() => { setSelC(tog(selC, c.id)); setSelP([]); }}>{c.name}</button>)}</div>
-          <div class="cm-chips"><span class="muted">Projects</span>{inC.map((p) => <button class="chip" aria-pressed={selP.includes(p.id)} onClick={() => setSelP(tog(selP, p.id))}>{p.bh ? `BH ${p.bh}` : p.code}</button>)}</div>
+          <div class="cm-chips"><span class="muted">Projects</span>{inC.map((p) => <button class="chip" aria-pressed={selP.includes(p.id)} onClick={() => setSelP(tog(selP, p.id))}>{plabel(p)}</button>)}</div>
           <p class="muted" style={{ margin: 0, fontSize: '13px' }}><b>{scope}</b> · {P.length} projects · {reports} reports · ~{size < 1024 ? `${size} KB` : `${(size / 1024).toFixed(1)} MB`} of data. Nothing selected = everything.</p>
           <label style={{ fontSize: '13px' }}><input type="checkbox" checked={hist} onChange={() => setHist(!hist)} /> Include the change history</label>
         </section>

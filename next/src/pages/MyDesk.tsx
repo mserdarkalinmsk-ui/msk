@@ -8,9 +8,10 @@ import { date, full, pct, short } from '../ui/format';
 import { latestWorkbook } from './FinancialReport';
 import { openProject } from './ProjectPage';
 import { wpRow } from './WorkPlans';
+import { plabel } from '../domain/label';
 
 const today = TODAY.toISOString().slice(0, 10);
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 type Item = { p: Project; slug: string; title: string; detail: string; tone: 'serious' | 'warning' | 'good' | 'neutral' };
 
 /** Home page: what needs doing, grouped, each item opening the right screen of the project. */

@@ -11,9 +11,10 @@ import { NEEDS } from './Gaps';
 import { monthSummaryDocx, projectActions } from './MonthSummary';
 import { staffRequestDocx, staffShortRows } from './StaffPOs';
 import { date, full, short } from '../ui/format';
+import { plabel } from '../domain/label';
 
 const ST: Record<CloseStatus, { label: string; badge: string }> = { blocked: { label: 'Blocked', badge: 'critical' }, check: { label: 'To check', badge: 'warning' }, clean: { label: 'Clean', badge: 'good' } };
-const lab = (r: CloseRow) => (r.p.bh ? `BH ${r.p.bh}` : r.p.code);
+const lab = (r: CloseRow) => (plabel(r.p));
 const MONTH = (m: string) => new Date(m + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 /** Monthly close: load the month's files in one go, see every project's state, download the pack, close the month. */
@@ -148,7 +149,7 @@ function MonthDocs({ P }: { P: Project[] }) {
         <div class="mc-docs">
           <button class="mc-doc" onClick={() => monthSummaryDocx(P, s.ledger)}><b>Monthly summary</b><span>For the Head of Operations: every project's figures, actions, Work Plan and FOMA notes</span><em>Word</em></button>
           <button class="mc-doc" disabled={!staff.length} onClick={() => staffRequestDocx(staff, s.ledger)}><b>Staff PO increase request</b><span>{staff.length ? `${staff.length} PO${staff.length > 1 ? 's' : ''} in ${new Set(staff.map((r) => r.p.id)).size} project${new Set(staff.map((r) => r.p.id)).size > 1 ? 's' : ''} · ${full(staff.reduce((a, r) => a + Math.ceil((r.staff?.shortfall ?? r.amount) / 100) * 100, 0))}` : 'every staff PO covers its months'}</span><em>Word</em></button>
-          {letters.map(({ p, T }) => <button class="mc-doc" onClick={() => transferLetterDocx(p, T, flexOf(p), s.ledger)}><b>{T.beyond ? 'Draft letter — addendum needed' : 'Notification letter'} · {p.bh ? `BH ${p.bh}` : p.code}</b><span>{T.moves.length} transfer{T.moves.length > 1 ? 's' : ''} · {full(T.moves.reduce((a, m) => a + m.amount, 0))} · every line back within its budget</span><em>Word</em></button>)}
+          {letters.map(({ p, T }) => <button class="mc-doc" onClick={() => transferLetterDocx(p, T, flexOf(p), s.ledger)}><b>{T.beyond ? 'Draft letter — addendum needed' : 'Notification letter'} · {plabel(p)}</b><span>{T.moves.length} transfer{T.moves.length > 1 ? 's' : ''} · {full(T.moves.reduce((a, m) => a + m.amount, 0))} · every line back within its budget</span><em>Word</em></button>)}
           <button class="mc-doc" disabled={!wps} onClick={() => go('reports/wp')}><b>Work Plan follow-up</b><span>{wps} project{wps === 1 ? '' : 's'} with a Work Plan · summary (Word) and the FOMA tables (Excel)</span><em>open →</em></button>
         </div>
       </div>

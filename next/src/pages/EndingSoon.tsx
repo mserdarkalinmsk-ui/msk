@@ -6,8 +6,9 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const TONE = { bad: 'var(--critical)', warn: 'var(--warn)', ok: 'var(--good)' };
 
 /** Projects ending soon: the monthly spending needed to use the budget by the end date against the current pace. */

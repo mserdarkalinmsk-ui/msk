@@ -13,12 +13,13 @@ import { TODAY } from '../today';
 import { date, month, short } from '../ui/format';
 import { Compare } from './Studio';
 import { decisions } from '../domain/decisions';
+import { plabel } from '../domain/label';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
 const band = (v: number) => (v >= 1 ? 'blue' : v >= 0.9 ? 'green' : v >= 0.7 ? 'amber' : 'red');
 const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
 const p0 = (v: number) => `${Math.round(v * 100)}%`;
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const pts = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))} pts`;
 
 export interface Move { p: Project; perf: number; prev: number | null; spent: number; added: number; from?: string; to?: string; was: string | null; now: string }

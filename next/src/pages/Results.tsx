@@ -6,9 +6,10 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
 const TONE: Record<IndState, string> = { reached: 'var(--good)', 'on track': 'var(--c1)', behind: 'var(--c4)', 'off track': 'var(--critical)', 'not measured': '#8b8d98', 'no target': '#8b8d98' };
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const pct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`);
 const openInd = (p: Project) => { go(`project/${p.id}`); setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: 'Indicators' })), 60); };
 

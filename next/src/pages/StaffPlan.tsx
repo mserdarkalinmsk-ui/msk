@@ -3,6 +3,7 @@ import { staffPlan } from '../domain/staffplan';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { date, full, month, short } from '../ui/format';
+import { plabel } from '../domain/label';
 
 /** Project staff cost plan: monthly cost to the end date, signed vs renewals, against the free staff budget. */
 export function StaffPlanCard({ p }: { p: Project }) {
@@ -54,7 +55,7 @@ export function StaffPlanTable({ projects }: { projects: Project[] }) {
     <section class="card span-12">
       <div class="card-h"><div><h2>Staff cost plan by project</h2><p>Free staff budget against renewing current staff to each project's end date</p></div></div>
       <div class="card-b table-scroll"><table class="mini sp-t"><thead><tr><th>Project</th><th class="r">Staff</th><th class="r">Staff budget</th><th class="r">Spent + committed</th><th class="r">Free</th><th class="r">Renewals needed</th><th class="r">Left / shortfall</th><th>Ends</th></tr></thead>
-        <tbody>{R.map(({ p, S }) => <tr><td><b>{p.bh ? `BH ${p.bh}` : p.code}</b> <span class="muted">{p.name.slice(0, 50)}</span></td><td class="r num">{S.people.length}</td><td class="r num">{short(S.hrBudget)}</td><td class="r num">{short(S.hrExposure)}</td><td class="r num">{short(S.hrFree)}</td><td class="r num">{short(S.renewalNeed)}</td>
+        <tbody>{R.map(({ p, S }) => <tr><td><b>{plabel(p)}</b> <span class="muted">{p.name.slice(0, 50)}</span></td><td class="r num">{S.people.length}</td><td class="r num">{short(S.hrBudget)}</td><td class="r num">{short(S.hrExposure)}</td><td class="r num">{short(S.hrFree)}</td><td class="r num">{short(S.renewalNeed)}</td>
           <td class="r num"><b style={{ color: S.gap < 0 ? 'var(--critical)' : 'var(--good)' }}>{S.gap <= -0.5 ? '' : '+'}{short(S.gap)}</b></td><td class="num">{date(S.end)}</td></tr>)}</tbody></table></div>
     </section>
   );

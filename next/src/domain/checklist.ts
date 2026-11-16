@@ -2,11 +2,12 @@ import { latestReport } from './calc';
 import { health } from './health';
 import type { Office } from './office';
 import type { Ledger, Project } from './types';
+import { plabel } from './label';
 
 /** One thing to do this month. Items the data can prove are done tick themselves; the rest are ticked by hand. */
 export interface Task { key: string; group: 'Data' | 'Reports' | 'Staff' | 'Offices' | 'Close the month'; title: string; detail: string; pid?: string; auto?: boolean; done?: boolean; to?: string; due?: string; /** opens the import panel instead of a screen */ importer?: boolean }
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const ym = (d: string) => d.slice(0, 7);
 
 /**

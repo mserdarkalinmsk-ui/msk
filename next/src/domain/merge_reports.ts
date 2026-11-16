@@ -5,6 +5,7 @@ import { ADMIN_LINE } from './terms';
 import type { ApprovedBudget } from './documents';
 import type { Project, ReportingPeriod } from './types';
 import { toBudgetLines, type Workbook } from './workbook';
+import { plabel } from './label';
 
 /**
  * The one way a workbook joins a project, whatever screen it was loaded from: a budget (no spending) becomes the
@@ -42,7 +43,7 @@ export function mergeReports(p: Project, files: { wb: Workbook; fileName: string
   if (!after.approvedBudget && eb && Math.abs(eb - p.budget) > 1) patch.budget = Math.round(eb * 100) / 100;
   const loaded = new Set(files.map((f) => f.fileName));
   const ahead = last && last.fileName && !loaded.has(last.fileName) && added + replaced ? last : undefined;
-  return { patch, receipt: { project: p.bh ? `BH ${p.bh}` : p.code, added, replaced, budget: budget?.total, spentBefore: money(p).spent, spentAfter: money({ ...p, ...patch } as Project).spent, latest: last?.name, ahead: ahead ? `${ahead.name} (${ahead.date})` : undefined } };
+  return { patch, receipt: { project: plabel(p), added, replaced, budget: budget?.total, spentBefore: money(p).spent, spentAfter: money({ ...p, ...patch } as Project).spent, latest: last?.name, ahead: ahead ? `${ahead.name} (${ahead.date})` : undefined } };
 }
 
 /** One line per project for the message after an import. */

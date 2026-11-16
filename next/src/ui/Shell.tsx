@@ -87,7 +87,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           </button>
           {actions}
         </header>
-        <main class="page" id="content"><OldCopyBanner /><SharedBanner />{!READONLY && <><FreshStart /><BackupBanner /></>}{children}</main>
+        <main class="page" id="content"><div class="pstat"><OldCopyBanner /><SharedBanner />{!READONLY && <BackupBanner />}</div>{!READONLY && <FreshStart />}{children}</main>
       </div>
     </div>
   );

@@ -6,8 +6,9 @@ import type { Country, Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from './Chart';
 import { full, short } from './format';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 
 /** Money flow: funding → country → project → spent / committed / still available. */
 export function MoneyFlow({ P, countries }: { P: Project[]; countries: Country[] }) {

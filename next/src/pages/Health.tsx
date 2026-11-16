@@ -6,6 +6,7 @@ import { TODAY } from '../today';
 import { useEffect, useState } from 'preact/hooks';
 import type { Project } from '../domain/types';
 import { full } from '../ui/format';
+import { plabel } from '../domain/label';
 
 const C: Record<Level, string> = { ok: 'var(--good)', warn: 'var(--c4)', bad: 'var(--critical)' };
 const W: Record<Level, string> = { ok: 'Healthy', warn: 'Check', bad: 'Fix' };
@@ -36,7 +37,7 @@ export function HealthPage() {
       </section>
       <div class="hl-grid">{H.map((h) => (
         <section class="card hl" style={{ borderTopColor: C[h.level] }}>
-          <div class="hl-h"><button class="linkish" onClick={() => go(`project/${h.p.id}`)}><b>{h.p.bh ? `BH ${h.p.bh}` : h.p.code}</b> <span class="muted">{h.p.name}</span></button><span class="hl-pill" style={{ background: C[h.level] }}>{W[h.level]}</span></div>
+          <div class="hl-h"><button class="linkish" onClick={() => go(`project/${h.p.id}`)}><b>{plabel(h.p)}</b> <span class="muted">{h.p.name}</span></button><span class="hl-pill" style={{ background: C[h.level] }}>{W[h.level]}</span></div>
           <ul class="hl-l">{h.findings.map((f) => <li class={`hl-${f.level}`}><i style={{ background: C[f.level] }}>{ICON[f.level]}</i><span>{f.text}</span>{f.detail?.rows.length ? <button class="btn ghost hl-show" onClick={() => setOpen({ p: h.p, f })}>Show {f.detail.rows.length} →</button>
             : f.level !== 'ok' && f.fix && <button class="btn ghost" onClick={() => act(h.p.id, f)}>{label(f)} →</button>}</li>)}</ul>
         </section>))}</div>
@@ -63,7 +64,7 @@ function FindingDialog({ p, f, tab, close, goTab }: { p: Project; f: Finding; ta
     <>
       <div class="scrim" onClick={close} />
       <div class="fc-dlg card hl-dlg" role="dialog" aria-label={d.title}>
-        <div class="card-h"><div><div class="num muted" style={{ fontSize: '12px' }}>{p.bh ? `BH ${p.bh}` : p.code} · {p.name}</div><h2>{d.title}</h2><p>{f.text.replace(/^[^:]+:\s*/, '')}</p></div>
+        <div class="card-h"><div><div class="num muted" style={{ fontSize: '12px' }}>{plabel(p)} · {p.name}</div><h2>{d.title}</h2><p>{f.text.replace(/^[^:]+:\s*/, '')}</p></div>
           <button class="btn ghost" aria-label="Close" style={{ marginLeft: 'auto' }} onClick={close}>✕</button></div>
         <div class="card-b" style={{ overflow: 'auto', maxHeight: '60vh', paddingTop: 0 }}>
           <table class="mini">

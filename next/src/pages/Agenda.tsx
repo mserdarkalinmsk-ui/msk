@@ -6,6 +6,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, month } from '../ui/format';
 import { downloadIcs } from '../ui/WeekDigest';
+import { plabel } from '../domain/label';
 
 type Kind = 'report' | 'contract' | 'activity' | 'project';
 export interface Ev { day: string; kind: Kind; p: Project; title: string; sub: string; tone: 'bad' | 'warn' | 'info' | 'good' }
@@ -15,7 +16,7 @@ const KIND: Record<Kind, { label: string; color: string; tab?: string }> = {
   activity: { label: 'Activities', color: 'var(--c4)', tab: 'Activity plan' },
   project: { label: 'Project ends', color: 'var(--c1)' },
 };
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 
 /** Everything with a date: report deadlines, staff contract ends, planned activity ends and project end dates. */
 export function events(P: Project[]): Ev[] {

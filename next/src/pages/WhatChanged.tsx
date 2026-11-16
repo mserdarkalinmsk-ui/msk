@@ -4,8 +4,9 @@ import { changesSince } from '../domain/changes';
 import type { Ledger, Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const signed = (v: number) => `${v >= 0 ? '+' : '−'}${full(Math.abs(v))}`;
 type Point = { key: string; at: string; ledger: Ledger };
 

@@ -20,7 +20,14 @@ export function iconFor(label: string) {
   return RULES.find(([r]) => r.test(t))?.[1] ?? 'chart';
 }
 
+/** A figure that says nothing yet: zero, a dash, empty. */
+const EMPTY = /^[\s€$]*(0([.,]0+)?\s*(%|pp|[KM])?|—|–|-)?\s*$/;
+
 export function tileIcons(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>(':is(.hero, .ph-tiles) > .kpi').forEach((k) => {
+    const v = k.querySelector('.value'), empty = !!v && EMPTY.test(v.textContent ?? '');
+    if (empty !== k.hasAttribute('data-empty')) { if (empty) k.setAttribute('data-empty', ''); else k.removeAttribute('data-empty'); }
+  });
   root.querySelectorAll<HTMLElement>(':is(.hero, .ph-tiles) > .kpi > .label').forEach((l) => {
     if (l.querySelector('.sc-ico')) { if (l.dataset.ico) delete l.dataset.ico; return; }
     const ico = iconFor(l.textContent ?? '');

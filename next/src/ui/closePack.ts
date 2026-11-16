@@ -4,8 +4,9 @@ import { projectSheets } from '../domain/exports';
 import { setStamp } from './stamp';
 import { saveFile } from './save';
 import { workbook, zip, type SheetSpec } from './xlsxwrite';
+import { plabel } from '../domain/label';
 
-const lab = (r: CloseRow) => (r.p.bh ? `BH ${r.p.bh}` : r.p.code);
+const lab = (r: CloseRow) => (plabel(r.p));
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const STATUS = { clean: 'Clean', check: 'To check', blocked: 'Blocked' } as const;
 

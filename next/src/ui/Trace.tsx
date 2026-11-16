@@ -5,6 +5,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { X } from './CloseX';
 import { date, full } from './format';
+import { plabel } from '../domain/label';
 
 const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const show = (v: number, u: Unit = 'eur') => (u === 'eur' ? full(v) : u === 'pct' ? `${v < -0.0005 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%` : u === 'pp' ? `${v < -0.0005 ? '−' : v > 0.0005 ? '+' : ''}${Math.abs(v * 100).toFixed(1)} points` : u === 'months' ? `${v.toFixed(1)} months` : nf2.format(v));
@@ -39,7 +40,7 @@ export function TracePanel({ projectId, figure, line, field, close }: { projectI
       <div class="drawer-h"><h2>Where this figure comes from</h2><X close={close} /></div>
       <div class="drawer-b tr">
         <section class="tr-hero">
-          <span class="tr-p">{p.bh ? `BH ${p.bh}` : p.code} · {p.name}</span>
+          <span class="tr-p">{plabel(p)} · {p.name}</span>
           <span class="tr-t">{t.title}</span>
           <span class="tr-v num">{show(t.value, t.unit)}</span>
           <p>{t.how}</p>

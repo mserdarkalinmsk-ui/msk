@@ -6,6 +6,7 @@ import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { latestWorkbook } from './FinancialReport';
+import { plabel } from '../domain/label';
 
 const DAY = 864e5;
 const BUCKETS = [
@@ -58,7 +59,7 @@ export function Commitments() {
   const tot = all.reduce((a, x) => a + x.balance, 0), flagged = all.filter((x) => x.flags.length), flaggedTot = flagged.reduce((a, x) => a + x.balance, 0);
   const byB = BUCKETS.map((_, i) => all.filter((x) => x.bucket === i).reduce((a, x) => a + x.balance, 0));
   const sup = [...all.filter((x) => !x.staff).reduce((m, x) => m.set(x.supplier || '—', (m.get(x.supplier || '—') ?? 0) + x.balance), new Map<string, number>())].sort((a, c) => c[1] - a[1]).slice(0, 8);
-  const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+  const lab = (p: Project) => (plabel(p));
   const noWb = P.filter((p) => !latestWorkbook(p)?.snapshot?.workbook).length;
   const xlsx = () => download(`open-commitments-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Open POs', money: [6, 7, 8], rows: [
     ['Project', 'PO', 'Line', 'Description', 'Supplier', 'Encumbered', 'PO amount', 'Paid', 'Open balance', 'Age (days)', 'Staff', 'Flags', 'Country'],

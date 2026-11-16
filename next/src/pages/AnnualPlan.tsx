@@ -4,6 +4,7 @@ import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
 const thisYear = TODAY.getUTCFullYear();
 
@@ -51,7 +52,7 @@ export function AnnualPortfolio({ projects }: { projects: Project[] }) {
   const R = projects.filter((p) => !p.datesTbc).map((p) => ({ p, A: annualPlan(p, TODAY) }));
   const Y = [...new Set(R.flatMap((x) => x.A.years))].filter((y) => y >= thisYear).sort();
   const tot = (y: number) => R.reduce((a, x) => a + (x.A.total[y] ?? 0), 0), max = Math.max(1, ...Y.map(tot));
-  const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+  const lab = (p: Project) => (plabel(p));
   const xlsx = () => download(`portfolio-annual-plan-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Annual plan', money: Y.map((_, i) => 2 + i), rows: [
     ['Project', 'Ends', ...Y.map(String)], ...R.map((x) => [lab(x.p), x.p.end, ...Y.map((y) => Math.round(x.A.total[y] ?? 0))]), ['Total', '', ...Y.map((y) => Math.round(tot(y)))]] }]);
   return (

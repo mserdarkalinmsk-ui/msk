@@ -17,6 +17,7 @@ import { download, type Cell, type SheetSpec } from '../ui/xlsxwrite';
 import { downloadDocx } from '../ui/docxwrite';
 import { variances } from '../domain/variance';
 import { updateProject } from '../data/store';
+import { plabel } from '../domain/label';
 
 const SECTIONS = [
   ['summary', 'Summary and key figures'], ['headings', 'Budget by heading'], ['period', 'Spending in the period'], ['lines', 'Budget lines'], ['variance', 'Variance explanations'],
@@ -253,7 +254,7 @@ export function Compare() {
         <Gauge value={T.s ? T.hs / T.s : 0} max={1} label="Staff ratio (spent)" bands={[[0.35, 'var(--good)'], [0.5, 'var(--c4)'], [1, 'var(--critical)']]} />
         <Gauge value={rows.length ? rows.reduce((a, r) => a + r.ws.score, 0) / rows.length / 100 : 0} max={1} fmt={(v) => String(Math.round(v * 100))} label="Average attention score" sub={`${rows.filter((r) => r.ws.level === 'high').length} high · ${rows.filter((r) => r.ws.level === 'medium').length} medium`} bands={[[0.25, 'var(--good)'], [0.5, 'var(--c4)'], [1, 'var(--critical)']]} />
       </div>
-      <Simulator rows={rows.map((r) => ({ id: r.p.id, label: `${r.p.bh ? `BH ${r.p.bh}` : r.p.code} · ${r.p.name}`, p: r.p, spent: r.m.spent, committed: r.committed, budget: r.m.budget, rate: r.cu.rate }))} riskPct={riskPct} />
+      <Simulator rows={rows.map((r) => ({ id: r.p.id, label: `${plabel(r.p)} · ${r.p.name}`, p: r.p, spent: r.m.spent, committed: r.committed, budget: r.m.budget, rate: r.cu.rate }))} riskPct={riskPct} />
       <header class="em-h">
         <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
           <tr><td>100%</td><td>-</td><td class="em-blue" /></tr><tr><td>90%</td><td>100%</td><td class="em-green" /></tr>
@@ -294,7 +295,7 @@ export function Compare() {
       <section class="em-risk">
         <h3>Early warning — attention score (0–100)</h3>
         <div class="ew-grid">{[...rows].sort((a, b) => b.ws.score - a.ws.score).map((r) => <div class={`ew ew-${r.ws.level}`}>
-          <div class="ew-top"><b class="ew-s">{r.ws.score}</b><div><b>{r.p.bh ? `BH ${r.p.bh}` : r.p.code}</b> · {r.p.name.slice(0, 60)}</div></div>
+          <div class="ew-top"><b class="ew-s">{r.ws.score}</b><div><b>{plabel(r.p)}</b> · {r.p.name.slice(0, 60)}</div></div>
           <div class="ew-bar"><span style={{ width: `${r.ws.score}%` }} /></div>
           <ul>{r.ws.parts.slice(0, 3).map((x) => <li>{x.label} <span class="em-g">· {x.why}</span> <b>+{x.points}</b></li>)}{!r.ws.parts.length && <li class="em-g">No warning signals</li>}</ul>
           {r.tr.length > 1 && <Spark v={r.tr.map((t) => t.perf)} />}

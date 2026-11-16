@@ -10,8 +10,9 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full } from '../ui/format';
 import { downloadDocx, projectVars } from '../ui/docxwrite';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const pc = (v: number) => (Number.isFinite(v) ? `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v * 1000) / 10)}%` : 'new');
 const DOC: Record<Verdict, string> = { free: 'Information note', notify: 'Notification of budget transfer', approval: 'Request for prior approval — use of the contingency reserve', addendum: 'Request for an addendum — budget modification' };
 

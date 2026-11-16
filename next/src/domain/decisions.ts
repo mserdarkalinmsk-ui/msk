@@ -3,11 +3,12 @@ import { portfolioWarnings } from './earlywarn';
 import { health } from './health';
 import { renewals, roster } from './staff';
 import type { Project } from './types';
+import { plabel } from './label';
 
 /** What needs a decision or an action this month, most urgent first, from the checks the app already runs. */
 export interface Decision { tone: 'bad' | 'warn'; kind: string; p?: Project; text: string }
 const eur = (v: number) => `€${Math.round(v).toLocaleString('en-GB')}`;
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const d = (s: string) => new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 export function decisions(P: Project[], today: Date): Decision[] {

@@ -4,8 +4,9 @@ import { unitCosts, type UnitGroup, type UnitPoint } from '../domain/unitcost';
 import { TODAY } from '../today';
 import { full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
-const lab = (x: UnitPoint) => (x.p.bh ? `BH ${x.p.bh}` : x.p.code);
+const lab = (x: UnitPoint) => (plabel(x.p));
 const pctS = (v: number | null) => (v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))}%`);
 const tone = (v: number | null, lim: number) => (v == null ? '' : v > lim ? 'bad' : v < -lim ? 'low' : 'ok');
 const COL = ['var(--c1)', 'var(--critical)', 'var(--good)', 'var(--c4)', 'var(--c7)', 'var(--c3)', '#c2410c', 'var(--ink-3)'];
@@ -57,7 +58,7 @@ export function UnitCosts() {
             <select class="select" value={h} onChange={(e) => setH((e.target as HTMLSelectElement).value)} aria-label="Heading"><option value="">All headings</option>{heads.map((x) => <option>{x}</option>)}</select>
             <div class="seg"><button aria-pressed={!only} onClick={() => setOnly(false)}>All</button><button aria-pressed={only} onClick={() => setOnly(true)}>Outliers ({G.filter((g) => g.flags).length})</button></div>
             <button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
-        <div class="uc-leg">{ids.map((id) => { const p = P.find((x) => x.id === id)!; return <span><i style={{ background: color(id) }} />{p.bh ? `BH ${p.bh}` : p.code}</span>; })}</div>
+        <div class="uc-leg">{ids.map((id) => { const p = P.find((x) => x.id === id)!; return <span><i style={{ background: color(id) }} />{plabel(p)}</span>; })}</div>
         <div class="card-b uc-list">{shown.map((g) => (
           <article class={`uc-g${g.flags ? ' flag' : ''}`}>
             <header><div><b>{g.label}</b><small class="muted"> · per {g.unit || 'unit'} · {g.heading}</small>{g.points.length > 1 && !g.comparable && <small class="uc-nc">items differ between projects — not compared</small>}</div>{g.flags > 0 && <span class="badge warning">{g.flags} to check</span>}</header>

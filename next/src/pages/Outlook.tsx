@@ -11,9 +11,10 @@ import { date, full, month, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { depletion } from './Depletion';
 import { openProject } from './ProjectPage';
+import { plabel } from '../domain/label';
 
 const MS = 30.4375 * 86_400_000;
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 
 export interface Crossing { p: Project; code: string; label: string; kind: 'budget' | 'flex'; at: number; now: boolean; budget: number; exposure: number; rate: number; flex: number }
 export interface ProjectOutlook { p: Project; budget: number; spent: number; committed: number; atEnd: number; end: number; crossings: Crossing[] }

@@ -22,11 +22,12 @@ import { events } from './Agenda';
 import { mapData } from './MapPage';
 import { endMarks, spendOption } from './Overview';
 import { moves, narrative } from './Pack';
+import { plabel } from '../domain/label';
 
 const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
 const BAND_W: Record<string, string> = { blue: 'Ahead', green: 'On track', amber: 'Behind', red: 'Well behind' };
 const KIND_C: Record<string, string> = { report: 'var(--critical)', contract: 'var(--c7)', activity: 'var(--c4)', project: 'var(--c1)' };
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 /** Percent for headlines: small shares keep one decimal so 0.4% never reads as 0%. */
 const pq = (x: number) => (x > 0 && x < 0.095 ? `${(x * 100).toFixed(1)}%` : pct(x));
 const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);

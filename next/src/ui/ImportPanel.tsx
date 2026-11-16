@@ -15,6 +15,7 @@ import { readCoe, readTable } from './ReportImport';
 import { migrateBackup } from '../domain/insights';
 
 import { X } from './CloseX';
+import { plabel } from '../domain/label';
 
 const FIELDS = [
   { key: 'code', label: 'Code', req: true, alias: ['code', 'project code', 'id', 'kod'] },
@@ -190,7 +191,7 @@ function RestorePoints({ close }: { close: () => void }) {
       <p class="muted" style={{ margin: 0, fontSize: '13px' }}>A copy is kept each day you work (last 30 days) and just before every import (last 10). Now: {now.projects.length} projects, {nowReports} reports.</p>
       {!P ? <span class="muted">Loading…</span> : !P.length ? <span class="muted">No restore points yet.</span> : (
         <table class="mini"><thead><tr><th>Saved</th><th class="r">Projects</th><th class="r">Reports</th><th>Missing now</th><th /></tr></thead>
-          <tbody>{P.map((x) => { const miss = x.ledger.projects.filter((p) => !now.projects.some((q) => q.id === p.id || (p.bh && q.bh === p.bh))).map((p) => p.bh ? `BH ${p.bh}` : p.code);
+          <tbody>{P.map((x) => { const miss = x.ledger.projects.filter((p) => !now.projects.some((q) => q.id === p.id || (p.bh && q.bh === p.bh))).map((p) => plabel(p));
             return <tr><td>{x.key.endsWith('rescued') ? 'Rescued at load · ' : x.label ? <><span class="badge info">{x.label}</span> </> : ''}{new Date(x.at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</td><td class="r num">{x.projects}</td><td class="r num">{x.reports}</td><td>{miss.join(', ') || '—'}</td>
               <td><button class="btn" onClick={() => { if (confirm('Replace the current data with this restore point? (undo is possible right after)')) { void checkpoint('Before restoring'); replaceLedger(x.ledger, `Restored data from ${x.at.slice(0, 10)}`); close(); } }}>Restore</button></td></tr>; })}</tbody></table>)}
     </section>

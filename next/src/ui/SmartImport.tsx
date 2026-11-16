@@ -18,6 +18,7 @@ import { readCoe } from './ReportImport';
 import { readXlsx } from './xlsx';
 import { matchProject as matchWpProject, mergeTable, nextPlan, readTableSheet, readWorkPlan, snapshot, type TableSheet } from '../domain/workplan';
 import { TODAY } from '../today';
+import { plabel } from '../domain/label';
 
 type Kind = 'workplan' | 'wptable' | 'office' | 'report' | 'budget' | 'plan' | 'contract' | 'logframe' | 'other' | 'error';
 interface Row { file: File; kind: Kind; wpf?: NonNullable<ReturnType<typeof readWorkPlan>>; tbl?: TableSheet[]; office?: import('../domain/office').OfficeReport; wb?: Workbook; F?: DocFindings; docKind?: string; date?: string; pid: string; why: string; note: string; force?: boolean }
@@ -145,14 +146,14 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
       const wb0 = [...(p.reportingPeriods ?? [])].filter((x) => x.snapshot?.workbook).at(-1)?.snapshot?.workbook;
       const wp = { ...base, from: w.from || base.from, to: w.to || base.to, planned: w.planned, acts: w.acts, file: r.file.name, snap: base.snap ?? (wb0 ? snapshot(wb0) : undefined) };
       updateProject(p.id, { workPlans: same ? plans.map((x) => (x.id === wp.id ? wp : x)) : [...plans, wp] });
-      msgs.push(`${p.bh ? `BH ${p.bh}` : p.code}: WP ${wp.no} · ${full(w.planned)}`);
+      msgs.push(`${plabel(p)}: WP ${wp.no} · ${full(w.planned)}`);
     }
     if (msgs.length) toast(msgs.length > 3 ? `${msgs.length} projects updated — ${msgs.slice(0, 2).join(' · ')}…` : msgs.join(' · '));
     markSeen([...ok, ...(rows ?? []).filter((x) => x.kind === 'office')].map((r) => r.file));
     close();
     if (nOff && !ok.length) go('offices');
   };
-  const lab = (p: Project) => `${p.bh ? `BH ${p.bh}` : p.code} · ${p.name.slice(0, 50)}`;
+  const lab = (p: Project) => `${plabel(p)} · ${p.name.slice(0, 50)}`;
   const nFiles = fresh.length;
   return (
     <>

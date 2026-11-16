@@ -5,8 +5,9 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { full } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const TAG: Record<Level, { t: string; c: string }> = { bad: { t: 'Error', c: 'critical' }, warn: { t: 'Check', c: 'warning' }, info: { t: 'Note', c: 'neutral' } };
 
 /** Budget check: line-by-line mistakes in approved budgets and reports, per project. */

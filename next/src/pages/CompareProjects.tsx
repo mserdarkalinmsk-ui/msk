@@ -7,8 +7,9 @@ import { providerSummary } from '../domain/providers';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const pc = (v: number) => `${Math.round(v * 100)}%`;
 const COL = ['var(--c1)', 'var(--critical)', 'var(--c3)'];
 // Unit rates worth comparing between projects (same budget codes in the CoE template).

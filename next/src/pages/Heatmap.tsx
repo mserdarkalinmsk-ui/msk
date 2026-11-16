@@ -8,6 +8,7 @@ import { TODAY } from '../today';
 import { full, pct, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { openProject } from './ProjectPage';
+import { plabel } from '../domain/label';
 
 const HS = ['1', '2', '3', '4', '5', '6'];
 type Cell = { budget: number; sc: number; spent: number; used: number; over: number; status: 'none' | 'ok' | 'high' | 'notification' | 'near' | 'addendum' };
@@ -53,7 +54,7 @@ export function Heatmap() {
           <div class="tools" style={{ display: 'flex', gap: '8px' }}><div class="seg"><button aria-pressed={mode === 'sc'} onClick={() => setMode('sc')}>Spent + committed</button><button aria-pressed={mode === 'spent'} onClick={() => setMode('spent')}>Spent</button></div><button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
         <div class="table-wrap" style={{ padding: '0 16px 8px' }}><table class="hm">
           <thead><tr><th>Project</th>{HS.map((h) => <th>{h}. {HEADINGS[h]}</th>)}</tr></thead>
-          <tbody>{R.map((r) => <tr><th><button class="hm-p" onClick={() => openProject(r.p.id, 'summary')}><b>{r.p.bh ? `BH ${r.p.bh}` : r.p.code}</b><span>{r.p.name}</span></button></th>
+          <tbody>{R.map((r) => <tr><th><button class="hm-p" onClick={() => openProject(r.p.id, 'summary')}><b>{plabel(r.p)}</b><span>{r.p.name}</span></button></th>
             {HS.map((h) => { const c = r.c[h]; return <td><button class={`hm-c ${c.status} ${dark(c) ? 'dk' : ''}`} style={{ background: bg(c) }} disabled={c.status === 'none'} onClick={() => openProject(r.p.id, 'budget')}
               title={`${r.p.name} · ${h}. ${HEADINGS[h]}\nBudget ${full(c.budget)}\nSpent ${full(c.spent)}\nSpent + committed ${full(c.sc)}\n${LABEL[c.status]}`}>
               {c.status === 'none' ? <span class="hm-nil">—</span> : <><b>{c.budget ? pct(val(c)) : 'n/b'}</b><small>{short(mode === 'sc' ? c.sc : c.spent)} / {short(c.budget)}</small></>}</button></td>; })}</tr>)}</tbody></table></div>
@@ -65,7 +66,7 @@ export function Heatmap() {
         return A.length ? <section class="card" style={{ marginTop: '16px' }}>
           <div class="card-h"><div><h2>What to prepare</h2><p>Each heading above its budget, against the project's own flexibility · the letter and the revision are drafted from the project's figures</p></div></div>
           <div class="table-wrap" style={{ padding: '0 16px 12px' }}><table class="wp-t" style={{ width: '100%', margin: 0 }}><thead><tr><th>Project</th><th>Heading</th><th class="num">Budget</th><th class="num">Spent + committed</th><th class="num">Above</th><th>Needed</th><th /></tr></thead>
-            <tbody>{A.map((x) => <tr><td><b>{x.p.bh ? `BH ${x.p.bh}` : x.p.code}</b> · {x.p.name.slice(0, 50)}</td><td>{x.h}. {HEADINGS[x.h]}</td><td class="num">{full(x.c.budget)}</td><td class="num">{full(x.c.sc)}</td><td class="num"><b>+{(x.c.over * 100).toFixed(1)}%</b> · {full(x.c.sc - x.c.budget)}</td>
+            <tbody>{A.map((x) => <tr><td><b>{plabel(x.p)}</b> · {x.p.name.slice(0, 50)}</td><td>{x.h}. {HEADINGS[x.h]}</td><td class="num">{full(x.c.budget)}</td><td class="num">{full(x.c.sc)}</td><td class="num"><b>+{(x.c.over * 100).toFixed(1)}%</b> · {full(x.c.sc - x.c.budget)}</td>
               <td><span class={`badge ${x.c.status === 'addendum' ? 'critical' : x.c.status === 'near' ? 'serious' : 'warning'}`}>{x.c.status === 'addendum' ? `Addendum (beyond ${pctOf(flexOf(x.p))}%)` : x.c.status === 'near' ? 'Notification — near the addendum threshold' : `Notification (within ${pctOf(flexOf(x.p))}%)`}</span></td>
               <td style={{ whiteSpace: 'nowrap' }}><button class="btn" onClick={() => openProject(x.p.id, 'budget')} title="Transfers from the headings with unused budget, as an Excel proposal">Revision proposal</button> <button class="btn primary" onClick={() => openProject(x.p.id, x.c.status === 'addendum' ? 'forecast' : 'revision')} title={x.c.status === 'addendum' ? 'Forecast and budget revision in the CoE template' : 'Notification letter with the annex'}>{x.c.status === 'addendum' ? 'Prepare addendum' : 'Prepare letter'}</button></td></tr>)}</tbody></table></div>
         </section> : null; })()}

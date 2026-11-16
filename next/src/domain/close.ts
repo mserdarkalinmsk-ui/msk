@@ -4,6 +4,7 @@ import { health } from './health';
 import { rules } from './rules';
 import { selfCheck } from './selfcheck';
 import type { Project } from './types';
+import { plabel } from './label';
 
 /**
  * Monthly close: every project in one row — is its data clean, what changed since the last close, what needs a
@@ -17,7 +18,7 @@ export interface CloseRow {
   budget: number; spent: number; sc: number; since?: { spent: number; sc: number; label: string }; decisions: Decision[];
 }
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 /** A report counts for the month when its period ends within the last 75 days (quarterly reports included; see Rules & thresholds). */
 const FRESH = () => rules().freshDays * 864e5;
 

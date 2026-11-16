@@ -5,8 +5,9 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
-const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+const lab = (p: Project) => (plabel(p));
 const kl = (k: Kind) => KINDS.find((x) => x.k === k)!;
 const sum = (L: ProviderPO[]) => L.reduce((a, x) => a + x.value, 0);
 function readOn(): Set<Kind> {

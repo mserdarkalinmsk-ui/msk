@@ -7,6 +7,7 @@ import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { money, parseDate } from '../domain/calc';
 import { download } from '../ui/xlsxwrite';
+import { plabel } from '../domain/label';
 
 const H = ['1', '2', '3', '4', '5', '6', '10'];
 const head = (code: string) => code.split('.')[0];
@@ -31,7 +32,7 @@ export function MonthCompare({ projects }: { projects: Project[] }) {
   rows.sort((x, y) => y.spent - x.spent);
   const max = Math.max(1, ...rows.flatMap((r) => Object.values(r.by).map(Math.abs)));
   const tot = (h: string) => rows.reduce((s, r) => s + (r.by[h] ?? 0), 0);
-  const lab = (p: Project) => (p.bh ? `BH ${p.bh}` : p.code);
+  const lab = (p: Project) => (plabel(p));
   const cell = (v: number) => { const x = Math.min(1, Math.abs(v) / max); return { background: v > 0.5 ? `color-mix(in srgb,var(--c1) ${Math.round(8 + x * 50)}%,var(--surface))` : v < -0.5 ? `color-mix(in srgb,var(--critical) ${Math.round(8 + x * 45)}%,var(--surface))` : undefined }; };
   const xlsx = () => download(`month-comparison-${a}-${b}.xlsx`, [{ name: `${a} vs ${b}`, money: [3, 4, 5, ...H.map((_, i) => 6 + i)], rows: [
     ['Project', 'Report A', 'Report B', 'Spent added', 'Commitments change', 'Budget change', ...H.map((h) => `${h} ${HEADINGS[h] ?? ''}`)],

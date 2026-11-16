@@ -81,7 +81,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
         <section class="hero" aria-label="Report totals">
           <div class="kpi lead">
             <span class="label">Total eligible costs — actual</span><span class="value">{short(E.actual)}</span>
-            <span class="ctx"><b>{pct(E.budget ? E.actual / E.budget : 0)}</b> of {full(E.budget)} · {pct(el)} of time used</span>
+            <span class="ctx"><b>{pct(E.budget ? E.actual / E.budget : 0)}</b> of <span title={full(E.budget)}>{short(E.budget)}</span> · {pct(el)} of time used</span>
             <div class="meter">
               <span style={{ width: `${Math.min(100, (E.actual / E.budget) * 100)}%`, background: 'var(--c1)' }} />
               <span style={{ left: `${Math.min(100, (E.actual / E.budget) * 100)}%`, width: `${Math.min(100, ((E.sc - E.actual) / E.budget) * 100)}%`, background: 'var(--c1)', opacity: .35 }} />

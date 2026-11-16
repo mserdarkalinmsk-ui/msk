@@ -6,6 +6,7 @@ import type { Project } from '../domain/types';
 import type { Workbook } from '../domain/workbook';
 import { date, full } from './format';
 import { readCoe } from './ReportImport';
+import { plabel } from '../domain/label';
 
 interface Row { file: File; wb?: Workbook; date: string; p?: Project; note: string }
 
@@ -54,7 +55,7 @@ export function PortfolioImport({ files, close }: { files: File[]; close: () => 
         {!rows ? <div role="status"><div class="muted" style={{ marginBottom: '6px' }}><span class="spin" /> Reading {done} of {files.length}…</div><div class="meter"><span style={{ width: `${done / files.length * 100}%`, background: 'var(--c1)' }} /></div></div> : <>
           <table class="mini" style={{ width: '100%' }}><thead><tr><th>File</th><th>Project</th><th>Report date</th><th class="r">Spent</th><th /></tr></thead>
             <tbody>{rows.map((r) => <tr><td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.file.name}>{r.file.name}</td>
-              <td>{r.p ? <b>{r.p.bh ? `BH ${r.p.bh}` : r.p.code}</b> : '—'}</td><td class="num">{r.date ? date(r.date) : ''}</td><td class="r num">{r.wb ? full(r.wb.totals.eligible?.actual ?? 0) : ''}</td>
+              <td>{r.p ? <b>{plabel(r.p)}</b> : '—'}</td><td class="num">{r.date ? date(r.date) : ''}</td><td class="r num">{r.wb ? full(r.wb.totals.eligible?.actual ?? 0) : ''}</td>
               <td>{r.p ? <span class="badge good">ok</span> : <span class="badge critical" title={r.note}>skip</span>}</td></tr>)}</tbody></table>
           {rows.some((r) => !r.p) && <p class="muted" style={{ fontSize: '12px' }}>Skipped files: {rows.filter((r) => !r.p).map((r) => `${r.file.name} (${r.note})`).join('; ')}</p>}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '12px' }}><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok.length} onClick={apply}>Import {ok.length} into {new Set(ok.map((r) => r.p!.id)).size} projects</button></div>
