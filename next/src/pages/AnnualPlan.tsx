@@ -20,7 +20,7 @@ export function AnnualPlanCard({ p }: { p: Project }) {
   return (
     <div class="grid g-12">
       <section class="card span-12">
-        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual budget plan</h2><p>Cash still to pay per project year (year 1 starts on {dmy(p.start)}) until {dmy(p.end)}: open commitments in the next three months, the free balance spread evenly over the months left</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual budget plan</h2><p>Project years as the financial reports count them (year 1 starts on {dmy(A.label[1]?.from ?? p.start)}) · spent in past years from the dated invoices and GL entries of the latest report · still to pay until {dmy(p.end)}: open commitments in the next three months, the free balance spread evenly over the months left</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
         <div class="card-b">
           <div class="ap-years">{A.years.map((y) => <div class={y < cur ? 'past' : y === cur ? 'cur' : ''} title={span(y)}><span>{nm(y)}{y === cur ? ' · rest of year' : ''}<small style={{ display: 'block', fontSize: '11px', fontWeight: 400 }}>{span(y)}</small></span><b class="num">{short(y < cur ? A.past[y] ?? 0 : A.total[y])}</b><small>{y < cur ? 'spent' : y === cur ? `${short(A.past[y] ?? 0)} spent so far` : 'to pay'}</small></div>)}</div>
           <Chart height={220} label="Spending by year" option={(t) => yearsOption(t, A, cur)} />

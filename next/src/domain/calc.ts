@@ -443,3 +443,23 @@ export function projectYears(start: string, end: string): ReturnType<typeof proj
   const last = projectYearOf(start, end < start ? start : end);
   return Array.from({ length: last }, (_, i) => projectYear(start, i + 1, end));
 }
+
+/**
+ * The day project year 1 starts, as the financial reports give it: the start of the reporting period of the latest
+ * report that states one ("Period: 12/07/2024 – …"); the project's start date when no report states it.
+ */
+export function yearsStart(p: Project): string {
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => /^\d{4}-\d\d-\d\d$/.test(r.snapshot?.workbook?.meta?.periodFrom ?? '')).sort(byUpload);
+  return R.at(-1)?.snapshot?.workbook?.meta?.periodFrom ?? p.start;
+}
+/** Spending by project year from the dated postings of the latest report (invoices and GL entries), when it has them. */
+export function spentByProjectYear(p: Project): Record<number, number> | null {
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byUpload);
+  const E = R.at(-1)?.snapshot?.workbook?.entries;
+  if (!E?.length) return null;
+  const s = yearsStart(p), out: Record<number, number> = {};
+  // Direct costs by posting date, plus the 7% administrative costs — as the spending-by-year table counts them.
+  for (const e of E) { if (!e.date || !e.line || e.line === '0' || e.line === '10') continue; const y = projectYearOf(s, e.date); out[y] = (out[y] ?? 0) + e.amount; }
+  for (const y in out) out[y] = Math.round(out[y] * 1.07 * 100) / 100;
+  return out;
+}

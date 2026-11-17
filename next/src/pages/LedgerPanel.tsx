@@ -8,7 +8,7 @@ import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
 import type { Entry, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
-import { elapsed, projectYear, projectYearOf } from '../domain/calc';
+import { elapsed, projectYear, projectYearOf, yearsStart } from '../domain/calc';
 import { DataTable, type Column } from '../ui/DataTable';
 import { base, Chart } from '../ui/Chart';
 import { axisX, axisY } from './Overview';
@@ -150,14 +150,16 @@ const HEADS: Record<string, string> = { '1': 'Human resources', '2': 'Travel', '
 function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }) {
   const r2 = (v: number) => Math.round(v * 100) / 100;
   // Years are project years: year 1 runs from the start date to the day before its first anniversary.
-  const key = (iso: string) => String(projectYearOf(p.start, iso)).padStart(2, '0');
-  const Y = useMemo(() => spendByYear(E, wb, key), [E, wb, p.start]);
+  // Year 1 starts where the reports' period starts (the project's start date when no report gives it).
+  const y1 = yearsStart(p);
+  const key = (iso: string) => String(projectYearOf(y1, iso)).padStart(2, '0');
+  const Y = useMemo(() => spendByYear(E, wb, key), [E, wb, y1]);
   type L = (typeof Y.lines)[number];
   const asAt = wb.meta.situationDate || wb.meta.asAt || TODAY.toISOString().slice(0, 10);
   const yMax = Math.max(+key(asAt < p.end ? asAt : p.end), ...Y.years.map(Number));
   const years = Array.from({ length: Math.max(1, yMax) }, (_, i) => String(i + 1).padStart(2, '0'));
   // Dates each year column covers: the project year, cut at the extraction date (current year) and the end date.
-  const yr = (y: string) => { const P = projectYear(p.start, +y, p.end); return { from: P.from, to: asAt >= P.from && asAt < P.to ? asAt : P.to }; };
+  const yr = (y: string) => { const P = projectYear(y1, +y, p.end); return { from: P.from, to: asAt >= P.from && asAt < P.to ? asAt : P.to }; };
   const yd = (y: string) => `${date(yr(y).from)} – ${date(yr(y).to)}`;
   const yn = (y: string) => `Year ${+y}`;
   const yl = (y: string) => `${yn(y)} (${yd(y)})`;
@@ -233,7 +235,7 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
         <div class="yr-legend">{years.map((y, i) => <span><i style={{ background: YC[Math.min(i, YC.length - 1)] }} />{yn(y)}</span>)}<span><i style={{ background: 'repeating-linear-gradient(45deg,#9db4e8,#9db4e8 3px,transparent 3px,transparent 6px)' }} />committed</span>{shut.length ? <button class="btn ghost" onClick={() => setShut([])}>Show all headings</button> : null}</div></div>
       <div class="table-wrap yr-wrap"><table class="yr-table yr-x">
         <thead>
-          <tr class="yr-g"><th rowSpan={2} class="yr-s1">Line</th><th rowSpan={2} class="yr-s2">Description</th><th colSpan={3} class="c yr-b yr-e">Approved budget</th>{years.map((y) => <th colSpan={4} class="c yr-e">{yn(y)}<small>{yd(y)}{yr(y).to !== projectYear(p.start, +y).to && yr(y).to !== p.end ? ' · year not complete' : ''}</small></th>)}<th colSpan={4} class="c yr-t yr-e">Total<small>{years.length ? `${date(yr(years[0]).from)} – ${date(yr(years.at(-1)!).to)}` : ''}</small></th><th rowSpan={2} class="r">Remaining<small>budget − S&C</small></th><th rowSpan={2}>Used</th></tr>
+          <tr class="yr-g"><th rowSpan={2} class="yr-s1">Line</th><th rowSpan={2} class="yr-s2">Description</th><th colSpan={3} class="c yr-b yr-e">Approved budget</th>{years.map((y) => <th colSpan={4} class="c yr-e">{yn(y)}<small>{yd(y)}{yr(y).to !== projectYear(y1, +y).to && yr(y).to !== p.end ? ' · year not complete' : ''}</small></th>)}<th colSpan={4} class="c yr-t yr-e">Total<small>{years.length ? `${date(yr(years[0]).from)} – ${date(yr(years.at(-1)!).to)}` : ''}</small></th><th rowSpan={2} class="r">Remaining<small>budget − S&C</small></th><th rowSpan={2}>Used</th></tr>
           <tr class="yr-g2"><th class="r yr-b">Units</th><th class="r yr-b">Unit rate</th><th class="r yr-b yr-e">Total</th>{years.map(() => <><th class="r">Units</th><th class="r">Unit rate</th><th class="r">Spent</th><th class="r yr-e">Spent + comm.</th></>)}<th class="r yr-t">Units</th><th class="r yr-t">Unit rate</th><th class="r yr-t">Spent</th><th class="r yr-t yr-e">Spent + comm.</th></tr>
         </thead>
         <tbody>{heads.map((h) => { const X = all.filter((l) => l.code.split('.')[0] === h); return <><tr class="yr-h" onClick={() => setShut(shut.includes(h) ? shut.filter((x) => x !== h) : [...shut, h])} style={{ cursor: 'pointer' }}><td colSpan={2} class="yr-s1"><span class="yr-tw">{shut.includes(h) ? '▸' : '▾'}</span>{h}. {HEADS[h] ?? 'Other lines'} <span class="yr-hn">{X.length} line{X.length > 1 ? 's' : ''}</span>{headTag(X)}</td><td colSpan={NC} /></tr>{shut.includes(h) ? null : X.map(row)}{tot(X, `Sub-total ${h}. ${HEADS[h] ?? 'Other lines'}`, 'yr-subt')}</>; })}</tbody>

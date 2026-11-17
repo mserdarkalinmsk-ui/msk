@@ -1,4 +1,4 @@
-import { HEADINGS, lineCommitted, lines, money, parseDate, projectYearOf, projectYears, spendAt } from './calc';
+import { HEADINGS, lineCommitted, lines, money, parseDate, projectYearOf, projectYears, spendAt, spentByProjectYear, yearsStart } from './calc';
 import type { Project } from './types';
 
 const MONTH = 30.4375 * 864e5;
@@ -8,7 +8,7 @@ type Period = { y: number; a: number; b: number; name: string; from: string; to:
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 /** The years of a project: project years (from the start date), or calendar years for a portfolio sum. */
 function periods(p: Project, kind: AnnualPlan['kind']): Period[] {
-  if (kind === 'project') return projectYears(p.start, p.end).map((x) => ({ y: x.n, a: parseDate(x.from).getTime(), b: parseDate(x.to).getTime() + 864e5, name: x.label, from: x.from, to: x.to }));
+  if (kind === 'project') return projectYears(yearsStart(p), p.end).map((x) => ({ y: x.n, a: parseDate(x.from).getTime(), b: parseDate(x.to).getTime() + 864e5, name: x.label, from: x.from, to: x.to }));
   const out: Period[] = [];
   for (let y = parseDate(p.start).getUTCFullYear(); y <= parseDate(p.end).getUTCFullYear(); y++) out.push({ y, a: Date.UTC(y, 0, 1), b: Date.UTC(y + 1, 0, 1), name: String(y), from: iso(Math.max(Date.UTC(y, 0, 1), parseDate(p.start).getTime())), to: iso(Math.min(Date.UTC(y + 1, 0, 1) - 864e5, parseDate(p.end).getTime())) });
   return out;
@@ -33,7 +33,9 @@ export function annualPlan(p: Project, today: Date, kind: AnnualPlan['kind'] = '
   for (const l of L) { const h = l.code.split('.')[0]; const x = byH.get(h) ?? { budget: 0, spent: 0, committed: 0 }; x.budget += l.approved ?? 0; x.spent += l.actual ?? 0; x.committed += lineCommitted(l); byH.set(h, x); }
   if (!byH.size) { const m = money(p); byH.set('*', { budget: m.budget, spent: m.spent, committed: m.committed }); }
   const past: Record<number, number> = {};
-  for (const x of P) { const a = Math.max(s, x.a), b = Math.min(now, x.b); if (b > a) past[x.y] = Math.max(0, spendAt(p, b) - spendAt(p, a)); }
+  // Project years: what was spent in each, from the dated postings of the latest report when it has them.
+  const posted = kind === 'project' ? spentByProjectYear(p) : null;
+  for (const x of P) { const a = Math.max(s, x.a), b = Math.min(now, x.b); if (b > a) past[x.y] = posted ? posted[x.y] ?? 0 : Math.max(0, spendAt(p, b) - spendAt(p, a)); }
   const years = [...new Set([...Object.keys(past), ...Object.keys(left)].map(Number))].sort();
   const rows = [...byH].sort((a, b) => +a[0] - +b[0]).map(([h, x]) => {
     const free = Math.max(0, x.budget - x.spent - x.committed), byYear: Record<number, number> = {};
@@ -42,7 +44,7 @@ export function annualPlan(p: Project, today: Date, kind: AnnualPlan['kind'] = '
   });
   const total: Record<number, number> = {};
   for (const y of years) total[y] = rows.reduce((a, r) => a + r.byYear[y], 0);
-  const current = kind === 'project' ? projectYearOf(p.start, iso(Math.max(now, s))) : today.getUTCFullYear();
+  const current = kind === 'project' ? projectYearOf(yearsStart(p), iso(Math.max(now, s))) : today.getUTCFullYear();
   const label: AnnualPlan['label'] = {}; for (const x of P) label[x.y] = { name: x.name, from: x.from, to: x.to };
   return { kind, current, label, years, past, rows, total, remaining: rows.reduce((a, r) => a + r.free + r.committed, 0) };
 }
