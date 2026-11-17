@@ -30,7 +30,8 @@ export function Plan({ p }: { p: Project }) {
   const setStatus = (code: string) => updateProject(p.id, { doa: { ...p.doa!, acts: p.doa!.acts.map((x) => x.code === code ? { ...x, status: STATUSES[(STATUSES.indexOf((x.status ?? '') as never) + 1) % STATUSES.length] } : x) } });
   // year bands for the two-row header
   const years: { y: number; from: number; n: number }[] = [];
-  for (let i = 1; i <= M; i++) { const y = mdate(i).getUTCFullYear(); const last = years.at(-1); if (last && last.y === y) last.n++; else years.push({ y, from: i, n: 1 }); }
+  // Project years: months 1–12 of the plan are year 1, and so on (not calendar years).
+  for (let i = 1; i <= M; i++) { const y = Math.ceil(i / 12); const last = years.at(-1); if (last && last.y === y) last.n++; else years.push({ y, from: i, n: 1 }); }
   const cols = `${nameW}px 112px repeat(${M}, ${zoom}px)`;
   const mlabel = (i: number) => { const t = label(i); return zoom >= 34 ? t.slice(0, 3) : zoom >= 20 ? t.slice(0, 1) : ''; };
   return (
@@ -45,7 +46,7 @@ export function Plan({ p }: { p: Project }) {
       <div class="gantt-wrap" ref={wrap}>
         <div class="gantt" style={{ gridTemplateColumns: cols, width: 'max-content' }}>
           <div class="gh gsticky g0" style={{ gridRow: 'span 2' }}>Activity</div><div class="gh gsticky g1" style={{ gridRow: 'span 2', left: `${nameW}px` }}>Status</div>
-          {years.map((y) => <div class="gh gy" style={{ gridColumn: `span ${y.n}` }}>{y.n * zoom > 40 ? y.y : ''}</div>)}
+          {years.map((y) => <div class="gh gy" style={{ gridColumn: `span ${y.n}` }} title={`Year ${y.y}: ${label(y.from)} – ${label(y.from + y.n - 1)}`}>{y.n * zoom > 70 ? `Year ${y.y}` : y.n * zoom > 24 ? `Y${y.y}` : ''}</div>)}
           {Array.from({ length: M }, (_, i) => <div class={`gh gm ${i + 1 === s.month ? 'today' : ''}`} title={label(i + 1)}>{mlabel(i + 1)}</div>)}
           {groups.map((g) => (
             <>

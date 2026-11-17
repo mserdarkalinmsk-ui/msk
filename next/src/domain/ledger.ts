@@ -269,7 +269,8 @@ export function compareBudget(entries: Entry[], budget: BudgetRef[], sc: Map<str
 
 /** Spending of each budget line year by year (the current year to the extraction date), with units, against the budget. */
 export interface YearLine { code: string; description: string; unit: string; budget: { units: number | null; rate: number | null; cost: number }; years: Record<string, { units: number; amount: number; /** open balance of the POs raised in the year */ committed: number }>; units: number; amount: number; committed: number }
-export function spendByYear(entries: Entry[], wb: { lines: { code: string; description: string; unit: string; leaf: boolean; budget: { units: number | null; rate: number | null; cost: number | null } }[]; pos: PO[] }): { years: string[]; lines: YearLine[] } {
+/** The year key of a date: the calendar year by default; pass `yearKey` to count project years ('01', '02' …) instead. */
+export function spendByYear(entries: Entry[], wb: { lines: { code: string; description: string; unit: string; leaf: boolean; budget: { units: number | null; rate: number | null; cost: number | null } }[]; pos: PO[] }, yearKey: (iso: string) => string = (d) => d.slice(0, 4)): { years: string[]; lines: YearLine[] } {
   const po = new Map(wb.pos.map((p) => [p.po + '|' + p.line, p]));
   const L = new Map<string, YearLine>();
   for (const l of wb.lines.filter((x) => x.leaf)) L.set(l.code, { code: l.code, description: l.description, unit: l.unit, budget: { units: l.budget.units, rate: l.budget.rate, cost: l.budget.cost ?? 0 }, years: {}, units: 0, amount: 0, committed: 0 });
@@ -278,7 +279,7 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
   const years = new Set<string>();
   for (const e of entries) {
     const code = e.line && e.line !== '0' && e.line !== '10' ? e.line : ''; if (!code) continue;
-    const y = e.date.slice(0, 4); years.add(y);
+    const y = yearKey(e.date); years.add(y);
     const x = L.get(code) ?? { code, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0, committed: 0 }; L.set(code, x);
     let u = 0;
     if (e.src === 'gl') u = e.units ?? 0;
@@ -294,7 +295,7 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
   const lastY = [...years].sort().at(-1) ?? '';
   for (const p of wb.pos) {
     const open = Math.max(0, p.sc - p.spent); if (open < 0.005 || !p.line || p.line === '0' || p.line === '10') continue;
-    const y = p.date?.slice(0, 4) || lastY; if (!y) continue; years.add(y);
+    const y = (p.date ? yearKey(p.date) : '') || lastY; if (!y) continue; years.add(y);
     const x = L.get(p.line) ?? { code: p.line, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0, committed: 0 }; L.set(p.line, x);
     const Y = x.years[y] ?? { units: 0, amount: 0, committed: 0 }; Y.committed += open; x.years[y] = Y; x.committed += open;
   }

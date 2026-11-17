@@ -422,3 +422,24 @@ function deadlinesOf(p: Project, today: Date): Deadline[] {
   out.push({ project: p, kind: 'Final report', periodEnd: p.end, due, status: status(p.end, due) });
   return out;
 }
+
+/* ---------- project years: counted from the start date, not the calendar ---------- */
+const isoDay = (t: number) => new Date(t).toISOString().slice(0, 10);
+/** The day `n` years after an ISO date (29 Feb falls on 1 Mar in a common year). */
+const plusYears = (iso: string, n: number) => { const d = parseDate(iso); return Date.UTC(d.getUTCFullYear() + n, d.getUTCMonth(), d.getUTCDate()); };
+/** Project year of a date: 1 from the start date to the day before its first anniversary, then 2, and so on. Dates before the start count in year 1. */
+export function projectYearOf(start: string, iso: string): number {
+  const t = parseDate(iso).getTime(); let n = 1;
+  while (n < 100 && plusYears(start, n) <= t) n++;
+  return n;
+}
+/** Year `n` of a project: its first and last day (the last year stops at the end date). */
+export function projectYear(start: string, n: number, end?: string): { n: number; from: string; to: string; label: string } {
+  const from = isoDay(plusYears(start, n - 1)), to0 = isoDay(plusYears(start, n) - 864e5);
+  return { n, from, to: end && end < to0 ? end : to0, label: `Year ${n}` };
+}
+/** Every project year from the start date to the end date. */
+export function projectYears(start: string, end: string): ReturnType<typeof projectYear>[] {
+  const last = projectYearOf(start, end < start ? start : end);
+  return Array.from({ length: last }, (_, i) => projectYear(start, i + 1, end));
+}
