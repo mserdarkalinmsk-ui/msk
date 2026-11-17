@@ -19,6 +19,12 @@ function tidyTable(t: HTMLTableElement) {
   if (t.dataset.raw != null) return;
   const body = [...t.tBodies].flatMap((b) => [...b.rows]);
   if (!body.length) return;
+  // On a phone, a table wider than the screen scrolls on its own instead of pushing the page sideways.
+  if (innerWidth < 700 && !t.classList.contains('t-wide') && t.getBoundingClientRect().right > document.documentElement.clientWidth + 1) {
+    let scrolls = false;
+    for (let e = t.parentElement; e && e !== document.body; e = e.parentElement) { const s = getComputedStyle(e); if (s.overflowX === 'auto' || s.overflowX === 'scroll') { scrolls = true; break; } }
+    if (!scrolls) t.classList.add('t-wide');
+  }
   // Unchanged since the last pass: nothing to do.
   const sig = () => `${body.length}:${(t.textContent ?? '').length}:${t.querySelectorAll('.tnum').length}`;
   if (seen.get(t) === sig()) return;

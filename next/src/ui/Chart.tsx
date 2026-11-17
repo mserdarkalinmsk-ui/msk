@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { chartTable } from './chartTable';
+import { download } from './xlsxwrite';
 import type { ECharts, EChartsCoreOption } from 'echarts/core';
 import { useStore } from '../data/store';
 
@@ -76,7 +78,7 @@ function axis(a: any, t: Tokens | undefined) {
     nameTextStyle: { color: t.ink3, fontSize: 11, ...a.nameTextStyle },
   };
 }
-export function polish(o: any, t?: Tokens): any {
+export function polish(o: any, t?: Tokens, narrow = false): any {
   if (!o || typeof o !== 'object') return o;
   const S = Array.isArray(o.series) ? o.series : o.series ? [o.series] : [];
   const yCat = arr(o.yAxis).some((a: any) => a?.type === 'category');
@@ -105,6 +107,13 @@ export function polish(o: any, t?: Tokens): any {
     if (o.xAxis) out.xAxis = Array.isArray(o.xAxis) ? o.xAxis.map((a: any) => axis(a, t)) : axis(o.xAxis, t);
     if (o.yAxis) out.yAxis = Array.isArray(o.yAxis) ? o.yAxis.map((a: any) => axis(a, t)) : axis(o.yAxis, t);
     if (o.legend) out.legend = Array.isArray(o.legend) ? o.legend : { icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 16, ...o.legend, textStyle: { color: t.ink2, fontSize: 12, fontFamily: t.font, ...o.legend.textStyle } };
+    // A phone-width box: the legend scrolls on one line and axis labels step down a size.
+    if (narrow) {
+      if (out.legend && !Array.isArray(out.legend)) out.legend = { type: 'scroll', pageIconSize: 10, pageTextStyle: { color: t.ink3 }, ...out.legend, itemGap: 10 };
+      const small = (a: any) => (a && typeof a === 'object' ? { ...a, axisLabel: { ...a.axisLabel, fontSize: Math.min(10, a.axisLabel?.fontSize ?? 10), hideOverlap: true } } : a);
+      if (out.xAxis) out.xAxis = Array.isArray(out.xAxis) ? out.xAxis.map(small) : small(out.xAxis);
+      if (out.yAxis) out.yAxis = Array.isArray(out.yAxis) ? out.yAxis.map(small) : small(out.yAxis);
+    }
     if (o.tooltip && (o.tooltip.trigger === 'axis') && hasLine) out.tooltip = { ...o.tooltip, axisPointer: { type: 'line', lineStyle: { color: t.ink3, width: 1, type: [3, 3] }, ...o.tooltip.axisPointer } };
   }
   return out;
@@ -122,6 +131,8 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
   const theme = useStore((s) => s.theme);
   const clickRef = useRef(onClick); clickRef.current = onClick;
   const axisRef = useRef(onAxisClick); axisRef.current = onAxisClick;
+  const narrowRef = useRef(false);
+  const [asTable, setAsTable] = useState(false), [hasTable, setHasTable] = useState(false);
 
   useEffect(() => {
     let off = () => {}, dead = false;
@@ -130,7 +141,9 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c; live.add(c);
-    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens()), true);
+    narrowRef.current = el.current.clientWidth < 520;
+    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current), true);
+    setHasTable(chartTable(o) != null);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
     c.getZr().on('click', (ev: any) => {
@@ -139,12 +152,12 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
       const v = c.convertFromPixel({ gridIndex: 0 }, pt) as number[];
       if (v && isFinite(v[0])) axisRef.current(v[0]);
     });
+    const re = () => { if (el.current) narrowRef.current = el.current.clientWidth < 520; const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current), true); };
     // Resized only when the box really changes (the observer also reports the size it starts with).
     let w = el.current.clientWidth, h = el.current.clientHeight;
-    const ro = new ResizeObserver(() => { const x = el.current; if (!x || (x.clientWidth === w && x.clientHeight === h)) return; w = x.clientWidth; h = x.clientHeight; c.resize(); });
+    const ro = new ResizeObserver(() => { const x = el.current; if (!x || (x.clientWidth === w && x.clientHeight === h)) return; w = x.clientWidth; h = x.clientHeight; c.resize(); if ((w < 520) !== narrowRef.current) re(); });
     ro.observe(el.current!);
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const re = () => { const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens()), true); };
     mq.addEventListener('change', re); addEventListener('pl-prefs', re);
     off = () => { live.delete(c); ro.disconnect(); mq.removeEventListener('change', re); removeEventListener('pl-prefs', re); c.dispose(); };
     };
@@ -152,9 +165,33 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     return () => { dead = true; stopWait?.(); off(); };
   }, []);
   // A parent re-render redraws the chart only when its option really changed.
-  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o, tokens()), true); } });
+  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o, tokens(), narrowRef.current), true); } });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
   // Leaving the chart hides its tooltip at once (otherwise a faded box can stay behind after switching views).
-  return <div class="chart-box" role="img" aria-label={label} onMouseLeave={() => inst.current?.dispatchAction({ type: 'hideTip' })} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>;
+  return (
+    <div class="chart-wrap">
+      {(hasTable || asTable) && <button type="button" class="chart-tbl-btn no-print" aria-pressed={asTable} title={asTable ? 'Back to the chart' : 'Show the figures behind this chart as a table'} onClick={() => setAsTable(!asTable)}>{asTable ? 'Chart' : 'Table'}</button>}
+      <div class="chart-box" role="img" aria-label={label} hidden={asTable} onMouseLeave={() => inst.current?.dispatchAction({ type: 'hideTip' })} style={{ height: `${height}px`, width: '100%', cursor: onAxisClick ? 'pointer' : undefined }}><div ref={el} style={{ height: '100%', width: '100%' }} /></div>
+      {asTable && <FigureTable label={label} option={option} height={height} />}
+    </div>
+  );
+}
+
+const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), nf0 = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+/** The chart's figures as a table, with the same figures to Excel. */
+function FigureTable({ label, option, height }: { label: string; option: Props['option']; height: number }) {
+  const T = chartTable(option(tokens()));
+  if (!T) return <div class="chart-tbl empty" style={{ minHeight: `${Math.min(height, 160)}px` }}><p class="muted">This chart has no figures that read as a table.</p></div>;
+  // A column of whole numbers (people, counts) stays whole; any other column shows amounts with two decimals.
+  const whole = T.cols.map((_, i) => i > 0 && T.rows.every((r) => r[i] == null || (typeof r[i] === 'number' && Number.isInteger(r[i]) && Math.abs(r[i] as number) < 1000)));
+  const money = T.cols.map((_, i) => i).filter((i) => i > 0 && !whole[i]);
+  const xlsx = () => download(`${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'chart'}.xlsx`, [{ name: label.slice(0, 31) || 'Chart', money, rows: [T.cols.map((v) => ({ v, st: 'head' as const })), ...T.rows.map((r) => r.map((v) => v ?? ''))] }]);
+  return (
+    <div class="chart-tbl" style={{ maxHeight: `${Math.max(height, 240)}px` }}>
+      <div class="chart-tbl-h"><span class="muted">{T.rows.length} row{T.rows.length === 1 ? '' : 's'} · the figures drawn in the chart</span><button type="button" class="btn ghost" onClick={xlsx}>⤓ Excel</button></div>
+      <table class="mini"><thead><tr>{T.cols.map((c, i) => <th class={i ? 'r' : ''}>{c}</th>)}</tr></thead>
+        <tbody>{T.rows.map((r) => <tr>{r.map((v, i) => (i ? <td class="r num">{typeof v === 'number' ? (whole[i] ? nf0 : nf2).format(v) : v ?? '—'}</td> : <td>{T.time && typeof v === 'string' ? new Date(v + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : v}</td>))}</tr>)}</tbody></table>
+    </div>
+  );
 }

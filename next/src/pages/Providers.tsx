@@ -112,7 +112,7 @@ export function Providers() {
   // One-page summary: printed alone (the rest of the screen is hidden while it prints).
   const brief = () => { document.body.classList.add('sp-brief'); const off = () => { document.body.classList.remove('sp-brief'); removeEventListener('afterprint', off); }; addEventListener('afterprint', off); print(); };
   const hand = every.filter((x) => set[x.key] || set[`sup|${supKey(x.supplier)}`]);
-  const Kinds = ({ L }: { L: Kind[] }) => <>{L.map((k) => <span class="sp-k" style={{ borderColor: kl(k).color, color: kl(k).color }}>{kl(k).label}</span>)}</>;
+  const Kinds = ({ L }: { L: Kind[] }) => <>{L.map((k) => <span class="sp-kind" style={{ borderColor: kl(k).color, color: kl(k).color }}>{kl(k).label}</span>)}</>;
   return (
     <>
       {(() => { const base = everyAll.filter((x) => x.kind && on.has(x.kind) && inYear(x)), grand = sum(base);

@@ -337,3 +337,30 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
 
 /* Views of one report tab: a quiet switch under the sub-tabs. */
 .seg.views { display: inline-flex; margin: 0 0 14px; }
+
+/* Every chart can show its figures as a table: a quiet switch in its top-right corner. */
+.chart-wrap { position: relative; }
+.chart-tbl-btn { position: absolute; top: -2px; right: 0; z-index: 2; font: 500 11px var(--font); color: var(--ink-3); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; cursor: pointer; opacity: 0; transition: opacity .15s; }
+.chart-wrap:hover .chart-tbl-btn, .chart-tbl-btn:focus-visible, .chart-tbl-btn[aria-pressed="true"] { opacity: 1; }
+@media (hover: none) { .chart-tbl-btn { opacity: .85; } }
+.chart-tbl-btn:hover { color: var(--ink); }
+.chart-tbl { overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 0 0 4px; }
+.chart-tbl.empty { display: grid; place-items: center; }
+.chart-tbl-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 64px 8px 12px; position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.chart-tbl table { width: 100%; }
+.chart-tbl th { position: sticky; top: 42px; background: var(--surface); }
+/* On a touch screen the switch has its own line above the chart, clear of legends. */
+@media (hover: none) { .chart-wrap:has(> .chart-tbl-btn) { padding-top: 26px; } .chart-tbl-btn { top: 0; } }
+
+/* Phone width: nothing pushes the page sideways. */
+@media screen and (max-width: 700px) {
+  table.t-wide { display: block; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  main select, .main select { max-width: 100%; }
+  .fe-ext, .uc-g header { flex-wrap: wrap; }
+  .uc-list { grid-template-columns: minmax(0, 1fr) !important; }
+  .uc-g, .uc-g header > *, .of-tr > *, .card-h > div { min-width: 0; max-width: 100%; }
+  .uc-g header b { overflow-wrap: anywhere; }
+  .of-tr { grid-template-columns: minmax(0, 1fr) !important; }
+  .sd-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media screen and (max-width: 900px) { .studio { grid-template-columns: minmax(0, 1fr); } }
