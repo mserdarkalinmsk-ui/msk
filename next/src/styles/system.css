@@ -334,3 +334,6 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
 .ma-t tfoot td, .ma-t tfoot th { border-top: 1px solid var(--line); font-weight: 600; }
 @media print { .ma .tools { display: none !important; } .ma .table-scroll { overflow: visible; } .ma-t { font-size: 8px; } }
 .ma-t .ma-end { display: block; font-size: 10px; color: var(--ink-3); font-weight: 500; }
+
+/* Views of one report tab: a quiet switch under the sub-tabs. */
+.seg.views { display: inline-flex; margin: 0 0 14px; }

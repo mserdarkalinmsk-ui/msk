@@ -45,7 +45,8 @@ type Tab = (typeof TABS)[number];
 /** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
 const GROUPS: { label: string; tabs: Tab[] }[] = [
   { label: 'Summary', tabs: ['Summary'] },
-  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Justification', 'Scenario', 'Revision', 'Reports', 'Closure'] },
+  { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Reports'] },
+  { label: 'Plan & revise', tabs: ['Scenario', 'Forecast', 'Revision', 'Justification', 'Annual plan', 'Closure'] },
   { label: 'Work Plan', tabs: ['Work Plan'] },
   { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
   { label: 'Staff', tabs: ['Staff'] },

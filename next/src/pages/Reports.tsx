@@ -36,31 +36,62 @@ import { download } from '../ui/xlsxwrite';
 import { get } from '../data/store';
 
 type Tab = 'cost' | 'close' | 'transfer' | 'bcheck' | 'vs' | 'changed' | 'ending' | 'cash' | 'providers' | 'annual' | 'closure' | 'units' | 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'results' | 'calendar' | 'compliance' | 'health' | 'history' | 'checklist' | 'wp' | 'staffpo' | 'heat' | 'gaps' | 'outlook';
-const GROUPS: { label: string; tabs: [Tab, string][] }[] = [
-  { label: 'Summary', tabs: [['close', 'Monthly close'], ['pack', 'Monthly pack'], ['deck', 'Presentation'], ['studio', 'Project report']] },
-  { label: 'Finance', tabs: [['outlook', 'Outlook'], ['cost', 'Spending on track'], ['compare', 'Expenditure monitoring'], ['changes', 'Month comparison'], ['vs', 'Compare projects'], ['heat', 'Headings heat map'], ['transfer', 'Budget changes'], ['commit', 'Commitments'], ['staffpo', 'Staff POs'], ['cash', 'Cash plan'], ['units', 'Unit costs'], ['providers', 'Service providers'], ['annual', 'Annual plan']] },
-  { label: 'Follow-up', tabs: [['checklist', 'This month'], ['wp', 'Work Plans'], ['changed', 'What changed'], ['ending', 'Ending soon'], ['alerts', 'Alerts'], ['results', 'Results'], ['calendar', 'Calendar'], ['compliance', 'Compliance & results'], ['closure', 'Closure']] },
-  { label: 'Data', tabs: [['gaps', 'Missing data'], ['health', 'Data health'], ['bcheck', 'Budget check'], ['history', 'Change history']] },
+/** A tab answers one question; when two or three screens answer it, they are views of the tab (a switch above it). */
+interface TabDef { label: string; views: [Tab, string][] }
+const GROUPS: { label: string; tabs: TabDef[] }[] = [
+  { label: 'This month', tabs: [
+    { label: 'Monthly close', views: [['close', 'Monthly close']] },
+    { label: 'To do', views: [['checklist', 'To do this month']] },
+    { label: 'What changed', views: [['changed', 'Since a day'], ['changes', 'Month comparison']] },
+    { label: 'Monthly pack', views: [['pack', 'Monthly pack'], ['deck', 'Presentation']] },
+    { label: 'Project report', views: [['studio', 'Project report']] },
+  ] },
+  { label: 'Ahead', tabs: [
+    { label: 'Outlook', views: [['outlook', 'Outlook']] },
+    { label: 'Spending on track', views: [['cost', 'Spending on track']] },
+    { label: 'Cash plan', views: [['cash', 'Cash plan']] },
+    { label: 'Deadlines', views: [['calendar', 'Calendar'], ['ending', 'Ending soon']] },
+    { label: 'Annual plan', views: [['annual', 'Annual plan']] },
+  ] },
+  { label: 'Budget', tabs: [
+    { label: 'Expenditure monitoring', views: [['compare', 'Expenditure monitoring']] },
+    { label: 'Compare projects', views: [['heat', 'Headings heat map'], ['vs', 'Side by side']] },
+    { label: 'Budget changes', views: [['transfer', 'Budget changes']] },
+    { label: 'Purchase orders', views: [['commit', 'Open commitments'], ['staffpo', 'Staff POs']] },
+    { label: 'Unit costs & providers', views: [['units', 'Unit costs'], ['providers', 'Service providers']] },
+  ] },
+  { label: 'Follow-up', tabs: [
+    { label: 'Alerts', views: [['alerts', 'Alerts']] },
+    { label: 'Work Plans', views: [['wp', 'Work Plans']] },
+    { label: 'Results', views: [['results', 'Results'], ['compliance', 'Compliance & results']] },
+    { label: 'Closure', views: [['closure', 'Closure']] },
+  ] },
+  { label: 'Data', tabs: [
+    { label: 'Data checks', views: [['gaps', 'Missing data'], ['health', 'Data health'], ['bcheck', 'Budget check']] },
+    { label: 'Change history', views: [['history', 'Change history']] },
+  ] },
 ];
+const ALL = GROUPS.flatMap((g) => g.tabs);
 // Old links keep working: the executive brief is now part of the monthly pack.
 const ALIAS: Record<string, Tab> = { brief: 'pack' };
 
 export function Reports() {
-  const [tab, setTab] = useState<Tab>(() => { const h = location.hash.split('/')[2] ?? ''; return ALIAS[h] ?? (GROUPS.some((g) => g.tabs.some(([k]) => k === h)) ? h as Tab : 'pack'); });
+  const [tab, setTab] = useState<Tab>(() => { const h = location.hash.split('/')[2] ?? ''; return ALIAS[h] ?? (ALL.some((t) => t.views.some(([k]) => k === h)) ? h as Tab : 'pack'); });
   const P = useStore((s) => filtered(s));
   const excel = () => download(`portfolio-${TODAY.toISOString().slice(0, 10)}.xlsx`, portfolioSheets(get().ledger, P, TODAY));
-  const g = GROUPS.find((x) => x.tabs.some(([k]) => k === tab))!;
+  const g = GROUPS.find((x) => x.tabs.some((t) => t.views.some(([k]) => k === tab)))!, cur = g.tabs.find((t) => t.views.some(([k]) => k === tab))!;
   return (
     <>
       <div class="no-print"><Filters /></div>
       <div class="tabs no-print" role="tablist">
-        {GROUPS.map((x) => <button role="tab" aria-selected={x === g} onClick={() => x !== g && setTab(x.tabs[0][0])}>{x.label}</button>)}
+        {GROUPS.map((x) => <button role="tab" aria-selected={x === g} onClick={() => x !== g && setTab(x.tabs[0].views[0][0])}>{x.label}</button>)}
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
           <button class="btn" onClick={excel} title="All projects, budget lines, staff, alerts and calendar in one workbook">⤓ Excel</button>
           <button class="btn" onClick={() => print()}>⎙ PDF</button>
         </span>
       </div>
-      <div class="subtabs no-print" role="tablist" aria-label={g.label}>{g.tabs.map(([k, l]) => <button role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <div class="subtabs no-print" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={t === cur} onClick={() => t !== cur && setTab(t.views[0][0])}>{t.label}</button>)}</div>
+      {cur.views.length > 1 && <div class="seg views no-print" role="group" aria-label={`${cur.label}: view`}>{cur.views.map(([k, l]) => <button aria-pressed={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>}
       {tab === 'cost' ? <CostPortfolio /> : tab === 'gaps' ? <Gaps /> : tab === 'outlook' ? <Outlook /> : tab === 'close' ? <MonthlyClose /> : tab === 'transfer' ? <BudgetChanges /> : tab === 'bcheck' ? <BudgetCheck /> : tab === 'vs' ? <CompareProjects /> : tab === 'changed' ? <WhatChanged /> : tab === 'ending' ? <EndingSoon /> : tab === 'wp' ? <WorkPlans /> : tab === 'staffpo' ? <StaffPOs /> : tab === 'heat' ? <Heatmap /> : tab === 'cash' ? <CashPlan /> : tab === 'providers' ? <Providers /> : tab === 'annual' ? <AnnualPortfolio projects={P} /> : tab === 'closure' ? <ClosureTracker /> : tab === 'units' ? <UnitCosts /> : tab === 'commit' ? <Commitments /> : tab === 'results' ? <Results /> : tab === 'health' ? <HealthPage /> : tab === 'checklist' ? <Checklist /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );

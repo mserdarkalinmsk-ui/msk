@@ -10,7 +10,7 @@ let failed = 0;
 const check = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++; };
 
 
-const PGROUP = { 'Financial report': 'Finance', 'Budget lines': 'Finance', Justification: 'Finance', Scenario: 'Finance', Reports: 'Finance', Indicators: 'Results', 'Activity plan': 'Results', Risks: 'Results', 'Results & documents': 'Documents', History: 'Documents' };
+const PGROUP = { 'Financial report': 'Finance', 'Budget lines': 'Finance', Justification: 'Plan & revise', Scenario: 'Plan & revise', Reports: 'Finance', Indicators: 'Results', 'Activity plan': 'Results', Risks: 'Results', 'Results & documents': 'Documents', History: 'Documents' };
 const SUBLABEL = { 'Results & documents': 'Documents' };
 /** Opens a project tab: its group in the tab bar, then the sub-tab. */
 async function ptab(p, name) {
@@ -204,8 +204,9 @@ async function page(opts) {
   await p.emulateMedia({ media: 'print' });
   check(!(await p.locator('.side').isVisible()) && await p.locator('.pack').isVisible(), 'print view shows only the pack');
   await p.emulateMedia({ media: 'screen' });
-  await p.click('.tabs button:has-text("Follow-up")'); await p.waitForTimeout(200);
-  await p.click('.subtabs button:has-text("Calendar")'); await p.waitForTimeout(300);
+  await p.click('.tabs button:has-text("Ahead")'); await p.waitForTimeout(200);
+  await p.click('.subtabs button:has-text("Deadlines")'); await p.waitForTimeout(300);
+  check(await p.locator('.seg.views button[aria-pressed="true"]:has-text("Calendar")').count() === 1, 'deadlines open on the calendar view');
   check(await p.locator('.ag-e').count() >= 6, 'calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
   // CoE workbook dropped on the global import: recognised and offered to its project via Smart import
@@ -286,8 +287,9 @@ async function page(opts) {
   check(await p.locator('.alerts li').count() < nAll, 'alert centre filters by severity');
   check(await p.locator('.wl-areas button:has-text("Staff")').count() + await p.locator('.wl-areas button:has-text("Reporting")').count() >= 1, 'alerts grouped by area');
   await p.screenshot({ path: `${shots}/alerts.png`, fullPage: true });
-  await p.click('.tabs button:has-text("Finance")'); await p.waitForTimeout(200);
-  await p.click('.subtabs button:has-text("Month comparison")'); await p.waitForTimeout(200);
+  await p.click('.tabs button:has-text("This month")'); await p.waitForTimeout(200);
+  await p.click('.subtabs button:has-text("What changed")'); await p.waitForTimeout(200);
+  await p.click('.seg.views button:has-text("Month comparison")'); await p.waitForTimeout(200);
   check(await p.locator('.mc-t tbody tr').count() >= 1, 'month comparison lists projects');
   await p.screenshot({ path: `${shots}/changes.png`, fullPage: true });
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.tabs button:has-text("Excel")')]);
