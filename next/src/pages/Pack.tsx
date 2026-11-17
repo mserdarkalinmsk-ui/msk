@@ -33,7 +33,7 @@ export function moves(P: Project[]): Move[] {
   });
 }
 
-export interface Point { label: string; text: string; tone: 'info' | 'good' | 'warn' | 'bad'; /** the projects behind the point, each with why */ items?: { id: string; label: string; why: string }[] }
+export interface Point { label: string; text: string; tone: 'info' | 'good' | 'warn' | 'bad'; /** the projects behind the point, each with why */ items?: { id: string; label: string; why: string; group?: string; tone?: 'bad' | 'warn' | 'good' | 'info' }[] }
 const names = (xs: string[]) => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`;
 
 /** Management summary as short labelled points, built from the figures. */
@@ -45,9 +45,10 @@ export function narrative(P: Project[], cname: (id: string) => string): Point[] 
   const many = new Set(M.map((x) => x.p.country)).size > 1;
   const who = (x: Move) => many ? `${lab(x.p)} (${cname(x.p.country)})` : lab(x.p);
   const out: Point[] = [];
-  const BAND: Record<string, string> = { blue: 'above plan', green: 'on plan', amber: 'slightly behind (70–90%)', red: 'well behind (under 70%)' };
-  const it = (x: Move, why: string) => ({ id: x.p.id, label: `${who(x)} · ${x.p.name}`, why });
-  const base = (x: Move) => `spent ${short(x.spent)} of ${short(money(x.p).budget)}; ${p0(x.perf)} of what should be spent by now — ${BAND[x.now] ?? x.now}`;
+  // Each project carries its band, so the panel can group them: well behind, slightly behind, on plan, above plan.
+  const GRP: Record<string, { group: string; tone: 'bad' | 'warn' | 'good' | 'info' }> = { red: { group: 'Well behind (under 70%)', tone: 'bad' }, amber: { group: 'Slightly behind (70–90%)', tone: 'warn' }, green: { group: 'On plan', tone: 'good' }, blue: { group: 'Above plan', tone: 'info' } };
+  const it = (x: Move, why: string, g?: { group: string; tone: 'bad' | 'warn' | 'good' | 'info' }) => ({ id: x.p.id, label: `${who(x)} · ${x.p.name}`, why, ...(g ?? GRP[x.now] ?? {}) });
+  const base = (x: Move) => `${p0(x.perf)} of what should be spent by now · spent ${short(x.spent)} of ${short(money(x.p).budget)}`;
   const verdict = perf >= 1 ? 'ahead of plan' : perf >= 0.9 ? 'on track' : perf >= 0.7 ? 'somewhat behind plan' : 'well behind plan';
   out.push({ label: 'Position', tone: perf >= 0.9 ? 'good' : perf >= 0.7 ? 'warn' : 'bad',
     text: `${M.length} projects have spent ${short(S)} of their ${short(B)} budget (${p0(B ? S / B : 0)}). By now ${short(PL)} should have been spent, so spending is at ${p0(perf)} of plan — ${verdict}.`, items: [...M].sort((a, b) => a.perf - b.perf).map((x) => it(x, base(x))) });
@@ -61,7 +62,7 @@ export function narrative(P: Project[], cname: (id: string) => string): Point[] 
     const worst = D.at(-1) && D.at(-1)!.d < -0.02 ? ` Biggest slip: ${who(D.at(-1)!.x)}, ${pts(D.at(-1)!.d)}.` : '';
     // A fall in recorded spending, or a swing of more than 100 points, means two reports that do not cover the same thing.
     const odd = D.filter((d) => Math.abs(d.d) > 1).map((d) => who(d.x));
-    const sinceItems = [...D].map(({ x, d }) => it(x, `${short(x.added)} added since the previous report; ${p0(x.prev!)} → ${p0(x.perf)} of plan (${pts(d)})`));
+    const sinceItems = [...D].map(({ x, d }) => it(x, `${short(x.added)} added since the previous report; ${p0(x.prev!)} → ${p0(x.perf)} of plan (${pts(d)})`, d > 0.02 ? { group: 'Improved', tone: 'good' } : d < -0.02 ? { group: 'Slipped', tone: 'bad' } : { group: 'About the same', tone: 'info' }));
     out.push(added < 0 || odd.length
       ? { label: 'Since last report', tone: 'warn', text: `${added < 0 ? `Recorded spending is ${short(-added)} lower than in the previous reports` : `${short(added)} of new spending recorded`}${odd.length ? ` — the last two reports of ${names(odd)} do not look comparable (different budget or coverage); check which report is the current one.` : ' — corrections or reversals; check the latest reports.'}` }
       : { label: 'Since last report', tone: 'info', text: `${short(added)} of new spending recorded.${best}${worst}` });

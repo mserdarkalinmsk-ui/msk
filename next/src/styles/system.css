@@ -515,3 +515,11 @@ body .pcard-add:hover { border-color: var(--accent); color: var(--accent-text); 
 .pack-pts li.click:hover .pack-n { background: var(--tab-on); color: #fff; }
 @media (max-width: 640px) { .pack-pts li.click { grid-template-columns: 1fr auto; } .pack-pts li.click > span { grid-column: 1 / -1; } }
 @media print { .pack-pts .pack-n { display: none; } .pack-pts li.click { grid-template-columns: 150px 1fr; } }
+/* Points panel: projects grouped by band, each group in its colour */
+.pt-g { margin-bottom: 16px; --pt: var(--accent); }
+.pt-g.pt-bad { --pt: var(--critical); } .pt-g.pt-warn { --pt: var(--warn); } .pt-g.pt-good { --pt: var(--good); } .pt-g.pt-info { --pt: var(--accent); }
+.pt-g h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--pt); text-transform: uppercase; letter-spacing: .04em; }
+.pt-g h3 i { width: 10px; height: 10px; border-radius: 50%; background: var(--pt); }
+.pt-g h3 span { margin-left: auto; padding: 1px 9px; border-radius: 99px; font-size: 12px; background: color-mix(in srgb, var(--pt) 14%, transparent); color: var(--pt); }
+.pt-g .pt-list li { border-left: 4px solid var(--pt); background: color-mix(in srgb, var(--pt) 5%, var(--surface)); }
+.pt-g .pt-list li:hover { border-color: var(--pt); }

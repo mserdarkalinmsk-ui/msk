@@ -27,12 +27,19 @@ import { TracePanel } from './Trace';
 import { X as CloseX } from './CloseX';
 
 /** The projects behind a summary point, each with why it is there; a click opens the project. */
-function PointsPanel({ title, text, items, close }: { title: string; text: string; items: { id: string; label: string; why: string }[]; close: () => void }) {
+function PointsPanel({ title, text, items, close }: { title: string; text: string; items: { id: string; label: string; why: string; group?: string; tone?: 'bad' | 'warn' | 'good' | 'info' }[]; close: () => void }) {
+  // Grouped by what the projects have in common (well behind, slightly behind …), the most pressing group first.
+  const rank = { bad: 0, warn: 1, info: 2, good: 3 } as const;
+  const G = [...items.reduce((m, x) => m.set(x.group ?? '', [...(m.get(x.group ?? '') ?? []), x]), new Map<string, typeof items>())]
+    .sort((a, b) => rank[a[1][0].tone ?? 'info'] - rank[b[1][0].tone ?? 'info']);
   return <>
     <div class="drawer-h"><h2>{title}</h2><CloseX close={close} /></div>
     <div class="drawer-b">
       <p class="muted" style={{ marginTop: 0 }}>{text}</p>
-      <ul class="pt-list">{items.map((x) => <li class="click" onClick={() => { close(); go(`project/${x.id}`); }}><b>{x.label}</b><span>{x.why}</span><em>Open ›</em></li>)}</ul>
+      {G.map(([g, L]) => <section class={`pt-g pt-${L[0].tone ?? 'info'}`}>
+        {g && <h3><i />{g}<span>{L.length}</span></h3>}
+        <ul class="pt-list">{L.map((x) => <li class="click" onClick={() => { close(); go(`project/${x.id}`); }}><b>{x.label}</b><span>{x.why}</span><em>Open ›</em></li>)}</ul>
+      </section>)}
     </div>
   </>;
 }
