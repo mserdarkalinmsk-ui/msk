@@ -75,9 +75,17 @@ export function ForecastEditor({ p }: { p: Project }) {
               <option value="">{dec === 'addendum' ? 'Addendum (suggested)' : 'Notification (suggested)'}</option><option value="notification">Notification</option><option value="addendum">Addendum</option></select>
               n° <input style={{ width: '56px' }} value={d.opt.changeNo ?? ''} onChange={(e) => setOpt({ changeNo: (e.target as HTMLInputElement).value || undefined })} /></label>}
             {sug.kind !== d.opt.kind && FORECAST_KINDS[sug.kind].programmes.includes(d.opt.programme) && <button class="btn sm" title={sug.why} onClick={() => setOpt({ kind: sug.kind })}>Suggested: {FORECAST_KINDS[sug.kind].label}</button>}
-            {(d.opt.kind === 'revision' || d.opt.kind === 'extension') && <label class="fe-ext">until <input type="date" value={d.opt.extendTo ?? ''} min={p.end} onChange={(e) => setOpt({ extendTo: (e.target as HTMLInputElement).value || undefined })} /></label>}
+            {(d.opt.kind === 'revision' || d.opt.kind === 'extension') && <label class={`fe-ext${sav && !d.opt.extendTo ? ' fe-need' : ''}`}>New end date <input type="date" value={d.opt.extendTo ?? ''} min={p.end} onChange={(e) => setOpt({ extendTo: (e.target as HTMLInputElement).value || undefined })} /></label>}
           </div>
         </div>
+        {sav && (() => { const pb = R.blocks[0], eb = R.blocks.find((x) => x.id === 'e')!; return <div class="card-b fe-how">
+          <b>Extension with details</b>, three parts from left to right:
+          <ol>
+            <li><b>To the current end</b> ({date(pb.from)} → {date(pb.to)}): units and rates still to spend until the end date in the contract.</li>
+            <li><b>Budget proposal (savings)</b>: spent + committed + that plan = what each line costs to the current end; <i>savings</i> = budget − that cost (red: over the budget). The savings are what pays for the extra months.</li>
+            <li><b>Extension</b>: {d.opt.extendTo && d.opt.extendTo > p.end ? <>the extra period {date(eb.from)} → {date(eb.to)} — staff months come from the contracts, other lines are typed by the project team.</> : <span class="fe-need-t">no new end date yet — choose it in <b>New end date</b> above; until then the extension period is empty (0 units).</span>}</li>
+          </ol>
+        </div>; })()}
         <div class="card-b fe-actions">
           <button class="btn primary" title="Units from the staff contracts on each line (months in each period × FTE), rates from the latest cost plus the guideline margin; 4.2 / 4.4 on the local staff months" onClick={() => save({ ...d, lines: Object.fromEntries(Object.entries(d.lines).map(([c, x]) => [c, isStaffLine(c) || isChargeBack(c) ? {} : x])) })}>↺ Recalculate staff and 4.2 / 4.4</button>
           <span class="muted fe-live">Calculated live from the contracts and the latest report{Object.entries(d.lines).some(([c, x]) => (isStaffLine(c) || isChargeBack(c)) && Object.values(x ?? {}).some((y) => y?.mu || y?.mr)) ? ' · cells with a dashed border were typed by hand (empty one to recalculate)' : ''}</span>

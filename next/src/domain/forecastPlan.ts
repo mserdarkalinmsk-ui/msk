@@ -29,7 +29,7 @@ export function planBlocks(p: Project, today: Date, o: ForecastOptions): { id: B
   if (o.kind === 'twelve') return [{ id: 'p', label: per.short ? 'To the end of the project' : `Next ${per.months} months`, from: per.from, to: per.to }];
   if (o.kind === 'payment') return [{ id: 'p', label: per.short ? 'To the end of the project' : `Next ${per.months} months`, from: per.from, to: per.to }, { id: 'r', label: 'Budget revision', from: per.revFrom, to: per.revTo }];
   if (o.kind === 'revision') return [{ id: 'p', label: per.extTo ? 'To the new end date' : 'To the end of the project', from: per.from, to: per.to }];
-  return [{ id: 'p', label: 'To the current end', from: per.from, to: per.to }, { id: 'e', label: 'Extension', from: per.extFrom, to: per.extTo ?? per.extFrom }];
+  return [{ id: 'p', label: 'To the current end', from: per.from, to: per.to }, { id: 'e', label: per.extTo ? 'Extension' : 'Extension (no new end date yet)', from: per.extFrom, to: per.extTo ?? per.extFrom }];
 }
 
 export interface PlanLine {
