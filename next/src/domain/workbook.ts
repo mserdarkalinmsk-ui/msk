@@ -228,7 +228,7 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
         if (!/^\d+(\.\d+)*$/.test(code) || code === '0') {
           un += z(r[C.sc]); continue;
         }
-        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); if (!unitsLookTyped({ units: z(r[C.u]), amount: Math.abs(z(r[C.sc])), sc: Math.abs(z(r[C.sp])) })) x.u += pv ? z(r[C.u]) : usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc))); by.set(code, x);
+        const x = by.get(code) ?? { a: 0, sc: 0, u: 0 }; x.a += z(r[C.sp]); x.sc += z(r[C.sc]); if (!unitsLookTyped({ units: z(r[C.u]), amount: Math.abs(z(r[C.sc])), sc: Math.abs(z(r[C.sp])) })) x.u += pv ? z(r[C.u]) : usedUnits(z(r[C.u]), z(r[C.sp]), z(r[C.sc]), cell(r, C.d), cell(r, C.ut), meta.situationDate, paidMonths.get(cell(r, C.doc)), false, code); by.set(code, x);
       }
       if (by.size) {
         meta.extraction = true; if (Math.abs(un) > 0.5) meta.unallocated = un; if (pv) meta.unitsOfficial = true;
@@ -337,7 +337,27 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
  * 12 months: the report counts the months paid (months with an invoice), else the months gone by the situation
  * date. Any other PO counts the units in proportion to what is spent: committed units are not used yet.
  */
-export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string, paid?: number, official = false): number {
+/**
+ * The smallest unit a PO can be used in, from its unit and budget line: per diem in quarter days (0.25), travel and
+ * days of work in halves (0.5), anything counted per item — an event, a workshop, a study, a lump sum — in whole units.
+ * Months in quarters (0.25).
+ */
+export function unitStep(unitType = '', line = '', description = ''): number | null {
+  const u = `${unitType} ${description}`;
+  if (/month/i.test(unitType)) return 0.25;
+  if (/per ?diem|\bDSA\b|subsistence|harc[ıi]rah/i.test(u) || /^1\.3\.[12](\.|$)/.test(line)) return 0.25;
+  if (/^2(\.|$)/.test(line) || /trip|ticket|journey|travel|flight|airfare|bilet|seyahat/i.test(unitType)) return 0.5;
+  if (/\bday|\bjour|g[üu]n\b|half/i.test(unitType)) return 0.5;
+  return 1;
+}
+/** Units rounded to the step their kind is used in; something spent counts at least one step. */
+export function roundUnits(v: number, step: number | null, spent = 0): number {
+  if (step == null || !v) return Math.round(v * 100) / 100;
+  const r = Math.round(v / step) * step;
+  return Math.round((r === 0 && spent > 0.005 && v > 0 ? step : r) * 100) / 100;
+}
+
+export function usedUnits(units: number, spent: number, sc: number, description: string, unitType: string, asAt?: string, paid?: number, official = false, line = ''): number {
   if (!units) return 0;
   // A PO with nothing spent yet is only a commitment: its units are not used (the report counts them as 0).
   if (Math.abs(spent) < 0.005) return 0;
@@ -345,12 +365,12 @@ export function usedUnits(units: number, spent: number, sc: number, description:
   const m = description.match(/from\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
   if (m && /month/i.test(unitType) && asAt) {
     const f = Date.parse(dmy(m[1])), t = Date.parse(dmy(m[2])), a = Date.parse(asAt) + 86_400_000;
-    if (t > f) return Math.round(units * Math.max(0, Math.min(1, (Math.min(a, t + 86_400_000) - f) / (t + 86_400_000 - f))) * 100) / 100;
+    if (t > f) return Math.min(units, roundUnits(units * Math.max(0, Math.min(1, (Math.min(a, t + 86_400_000) - f) / (t + 86_400_000 - f))), 0.25));
   }
   // Other POs: only the spent share counts — 45 days ordered, 760 of 8,550 invoiced = 4 days used; the rest is committed.
   // The official report (data for pivot) counts every unit of a PO once something is spent on it.
   if (official) return units;
-  return sc > spent + 0.005 && sc > 0 ? Math.round(units * Math.max(0, spent / sc) * 100) / 100 : units;
+  return sc > spent + 0.005 && sc > 0 ? Math.min(units, roundUnits(units * Math.max(0, spent / sc), unitStep(unitType, line, description), spent)) : units;
 }
 
 export const ADMIN_RATE = 0.07;
@@ -546,7 +566,7 @@ export function fixLevy<W extends { meta: Workbook['meta']; totals: Workbook['to
 export function fixExtractionUnits<W extends { meta: Workbook['meta']; lines: WbLine[]; pos?: PO[]; entries?: Entry[] }>(wb: W): W {
   if (!wb.meta.extraction || wb.meta.unitsOfficial || !wb.pos?.length) return wb;
   const U = new Map<string, number>();
-  for (const p of wb.pos) { if (/month/i.test(p.unitType) || unitsLookTyped(p)) continue; U.set(p.line, (U.get(p.line) ?? 0) + usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate)); }
+  for (const p of wb.pos) { if (/month/i.test(p.unitType) || unitsLookTyped(p)) continue; U.set(p.line, (U.get(p.line) ?? 0) + usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, undefined, false, p.line)); }
   for (const e of wb.entries ?? []) if (e.src === 'gl' && e.units && !/month/i.test(e.unitType ?? '')) U.set(e.line, (U.get(e.line) ?? 0) + e.units);
   let changed = false;
   const lines = wb.lines.map((l) => { if (!U.has(l.code) || wb.pos!.some((p) => p.line === l.code && /month/i.test(p.unitType))) return l; const u = Math.round(U.get(l.code)! * 100) / 100; if (Math.abs(u - (l.actual.units ?? 0)) < 0.005) return l; changed = true; return { ...l, actual: { ...l.actual, units: u || null } }; });

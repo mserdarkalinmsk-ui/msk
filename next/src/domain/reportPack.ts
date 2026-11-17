@@ -23,7 +23,7 @@ export function dataForPivot(wb: WorkbookSummary): { rows: (string | number | XC
   for (const e of E) if (e.src === 'invoice' && e.po) paid.set(e.po, (paid.get(e.po) ?? new Set()).add(e.period || e.date.slice(0, 7)));
   const rows: (string | number | XCell | null)[][] = [HEAD.map((h) => ({ v: h, st: 'head' }))];
   for (const p of wb.pos) {
-    const u = p.units ?? 0, used = usedUnits(u, p.spent, p.sc, p.description, p.unitType, asAt, paid.get(p.po)?.size);
+    const u = p.units ?? 0, used = usedUnits(u, p.spent, p.sc, p.description, p.unitType, asAt, paid.get(p.po)?.size, false, p.line);
     rows.push(['1-PURCHASE ORDERS', p.line, p.unitType, N(used), N(u), p.po, p.description, p.nature, p.supplier, N(p.amount), N(p.spent), N(p.sc - p.spent), N(p.sc), p.status, p.date]);
   }
   for (const e of E) if (e.src === 'gl')
@@ -37,7 +37,7 @@ function pivot(wb: WorkbookSummary, n: number): SheetSpec {
   const D = `'data for pivot'!`, rng = (c: string) => `${D}$${c}$2:$${c}$${n}`;
   const sum = (code: string, k: 'u' | 's' | 'c') => {
     let t = 0;
-    for (const p of wb.pos) if (p.line === code) t += k === 'u' ? usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, new Set((wb.entries ?? []).filter((e) => e.src === 'invoice' && e.po === p.po).map((e) => e.period || e.date.slice(0, 7))).size) : k === 's' ? p.spent : p.sc;
+    for (const p of wb.pos) if (p.line === code) t += k === 'u' ? usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, new Set((wb.entries ?? []).filter((e) => e.src === 'invoice' && e.po === p.po).map((e) => e.period || e.date.slice(0, 7))).size, false, p.line) : k === 's' ? p.spent : p.sc;
     for (const e of wb.entries ?? []) if (e.src === 'gl' && (e.line === '10' ? '0' : e.line) === code) t += k === 'u' ? e.units ?? 0 : e.amount;
     return r2(t);
   };

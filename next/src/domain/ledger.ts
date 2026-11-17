@@ -1,4 +1,4 @@
-import { unitsLookTyped, type Entry, type PO } from './workbook';
+import { roundUnits, unitStep, unitsLookTyped, type Entry, type PO } from './workbook';
 import { nearOf, pctOf } from './flex';
 import { dmy as showDate } from './dt';
 
@@ -277,7 +277,8 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
   const months = new Map<string, Set<string>>(); // staff PO → year|month already counted
   const staffUsed = new Map<string, number>(); // staff PO → units counted so far
   const years = new Set<string>();
-  for (const e of entries) {
+  const poRaw = new Map<string, number>(); // PO → units used so far, before rounding
+  for (const e of [...entries].sort((a, b) => a.date.localeCompare(b.date))) {
     const code = e.line && e.line !== '0' && e.line !== '10' ? e.line : ''; if (!code) continue;
     const y = yearKey(e.date); years.add(y);
     const x = L.get(code) ?? { code, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0, committed: 0 }; L.set(code, x);
@@ -288,7 +289,14 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
         const k = `${p.po}`, s = months.get(k) ?? new Set(); const m = e.date.slice(0, 7);
         if (!s.has(m) && e.amount > 0) { s.add(m); const done = staffUsed.get(k) ?? 0; u = p.units ? Math.max(0, Math.min(1, p.units - done)) : 1; staffUsed.set(k, done + u); }
         months.set(k, s); }
-      else if (p && p.units && p.amount) u = p.units * (e.amount / p.amount); }
+      else if (p && p.units && p.amount) {
+        // Units in the steps their kind is used in (per diem 0.25, travel 0.5, events whole): the PO's running total
+        // is rounded, and each invoice gets what it adds — so no year shows 0.67 of an event.
+        const k = `${p.po}|${p.line}`, step = unitStep(p.unitType, p.line, p.description), before = poRaw.get(k) ?? 0, after = before + p.units * (e.amount / p.amount);
+        poRaw.set(k, after);
+        const r = (v: number) => (v > 0 ? Math.min(p.units!, roundUnits(v, step, 1)) : roundUnits(v, step));
+        u = r(after) - r(before);
+      } }
     const Y = x.years[y] ?? { units: 0, amount: 0, committed: 0 }; Y.units += u; Y.amount += e.amount; x.years[y] = Y; x.units += u; x.amount += e.amount;
   }
   // Commitments: what is still open on each PO, in the year the PO was raised.

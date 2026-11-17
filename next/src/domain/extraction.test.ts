@@ -124,6 +124,6 @@ describe('units in an extraction', () => {
   it('counts only the spent share of the ordered units otherwise, and marks them estimated', () => {
     const wb = parseWorkbook([{ name: 'Consolidation', R: [['CONSO'], H, row('13', '890383', '2592.75', '845.75', '2592.75'), row('8', '881657', '1000', '1000', '1000')] }]);
     expect(wb.meta.unitsOfficial).toBeUndefined();
-    expect(wb.lines.find((l) => l.code === '1.3.1')?.actual.units).toBe(12.24);
+    expect(wb.lines.find((l) => l.code === '1.3.1')?.actual.units).toBe(12.25); // per diem is used in quarter days
   });
 });

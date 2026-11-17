@@ -57,7 +57,7 @@ describe('dated ledger of a system extraction', () => {
     const cap = spendByYear([{ ...wb.entries!.find((e) => e.po === '900003')!, date: '2026-03-31' }, { ...wb.entries!.find((e) => e.po === '900003')!, date: '2026-04-30' }], { lines: wb.lines, pos: wb.pos.map((x) => (x.po === '900003' ? { ...x, units: 1.25 } : x)) });
     expect(cap.lines.find((l) => l.code === '1.1.1')!.units).toBe(1.25);
     const ev = Y.lines.find((l) => l.code === '5.7')!;
-    expect(ev.years['2026'].units).toBe(1.2);
+    expect(ev.years['2026'].units).toBe(1); // events are counted whole, never 1.2 events
     expect(Y.lines.reduce((a, l) => a + l.amount, 0)).toBe(wb.entries!.filter((e) => e.line && e.line !== '0' && e.line !== '10').reduce((a, e) => a + e.amount, 0));
   });
   it('leaves grants out of the pace projections: a grant paid early is not a risk of more units', () => {
@@ -152,5 +152,22 @@ describe('what a purchase order was for', () => {
   it('reads events and experts', () => {
     expect(P('Event Management_Focus Group Meeting_Ankara_8-10 June 2026').label).toBe('the Focus Group Meeting (Ankara, 8-10 June 2026)');
     expect(P('EXPERT01_SxB_28-30 Apr 2026').label).toBe('the participation of experts in Strasbourg (28-30 Apr 2026)');
+  });
+});
+
+describe('units are counted in the steps their kind is used in', () => {
+  it('per diem in quarters, travel and days in halves, events whole', async () => {
+    const { unitStep, roundUnits, usedUnits } = await import('./workbook');
+    expect(unitStep('Per diem', '1.3.1')).toBe(0.25);
+    expect(unitStep('Per trip', '2.1')).toBe(0.5);
+    expect(unitStep('Per day', '1.1.2')).toBe(0.5);
+    expect(unitStep('Per event', '5.7')).toBe(1);
+    expect(unitStep('Per month', '4.1')).toBe(0.25);
+    expect(roundUnits(26.53, 0.5)).toBe(26.5);
+    expect(roundUnits(0.67, 1)).toBe(1);
+    expect(roundUnits(0.2, 1, 100)).toBe(1); // something spent counts at least one unit
+    expect(usedUnits(3, 2000, 3000, 'Workshop', 'Per event', undefined, undefined, false, '5.7')).toBe(2);
+    expect(usedUnits(30, 1000, 3000, 'Per diem', 'Per day', undefined, undefined, false, '1.3.1')).toBe(10);
+    expect(usedUnits(7, 1000, 3000, 'Per diem', 'Per day', undefined, undefined, false, '1.3.1')).toBe(2.25);
   });
 });
