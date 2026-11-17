@@ -1,3 +1,4 @@
+import { roundUnits, unitStep } from './workbook';
 import { lineExposure, lines, n, parseDate } from './calc';
 import { headings } from './insights';
 import { roster } from './staff';
@@ -129,7 +130,8 @@ export function autofillStaff(p: Project, today: Date, d: ForecastDraft): Foreca
       // check the fiche staff — the note below lists who was counted.
       const u = who.reduce((a, s) => a + (s.start ? monthsIn(b.from, b.to, s.start, end) * (s.fte ?? 1) : 0), 0);
       if (!who.length && !x.budget) continue;
-      cell[b.id] = { u: Math.round(u * 100) / 100, r: cell[b.id]?.r ?? (d.infl?.on && /^1\.1\./.test(x.code) ? undefined : rate) };
+      // Staff months in quarters, as a contract is counted (32.88 → 33): never 32.88 months on a forecast.
+      cell[b.id] = { u: roundUnits(u, 0.25), r: cell[b.id]?.r ?? (d.infl?.on && /^1\.1\./.test(x.code) ? undefined : rate) };
       if (/^1\.1\./.test(x.code)) localMonths[b.id] = (localMonths[b.id] ?? 0) + u;
     }
     if (who.length) notes.push(`${x.code}: ${who.map((s) => `${s.display}${s.fte != null && s.fte !== 1 ? ` (${Math.round(s.fte * 100)}%)` : ''}${s.end && s.end < end ? `, contract to ${dmy(s.end)} carried on` : ''}`).join('; ')}`);
@@ -141,10 +143,10 @@ export function autofillStaff(p: Project, today: Date, d: ForecastDraft): Foreca
   for (const [code, r] of [['4.2', r42], ['4.4', r44]] as const) {
     if (!plan.lines.some((l) => l.code === code && (l.budget || l.actual))) continue;
     const cell: Partial<Record<BlockId, PlanCell>> = {};
-    for (const b of blocks) cell[b.id] = { u: Math.round((localMonths[b.id] ?? 0) * 100) / 100, r };
+    for (const b of blocks) cell[b.id] = { u: roundUnits(localMonths[b.id] ?? 0, 0.25), r };
     next.lines[code] = cell;
   }
-  notes.push(`4.2 / 4.4: units = local staff months (${blocks.map((b) => Math.round((localMonths[b.id] ?? 0) * 100) / 100).join(' + ')}), rates ${r42 ?? '—'} / ${r44 ?? '—'} per month`);
+  notes.push(`4.2 / 4.4: units = local staff months (${blocks.map((b) => roundUnits(localMonths[b.id] ?? 0, 0.25)).join(' + ')}), rates ${r42 ?? '—'} / ${r44 ?? '—'} per month`);
   return { ...next, rates: { r42, r44 }, notes, updatedAt: new Date().toISOString() };
 }
 
@@ -159,7 +161,8 @@ export function balanceOn(p: Project, today: Date, d: ForecastDraft, code = '5.7
   const need = have + diff, r0 = (cur?.r || line.defRate || line.aRate || 1);
   if (Math.abs(diff) < 0.005) return d;
   if (need <= 0) return { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { u: 0, r: r0 } } }, updatedAt: new Date().toISOString() };
-  const u = Math.max(0.01, Math.round((need / r0) * 100) / 100), r = need / u;
+  // Units in the steps of the line's unit (an event is whole); the rate takes the exact remainder.
+  const step = unitStep(line.unit ?? '', code) ?? 0.01, u = Math.max(step, Math.round(need / r0 / step) * step), r = need / u;
   return { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { u, r } } }, updatedAt: new Date().toISOString() };
 }
 
