@@ -416,3 +416,24 @@ body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="
 .sd-det tr.sd-line td:first-child { padding-left: 16px; }
 .sd-det tr.sd-po td { font-size: 11px; color: #555; }
 .sd-det tr.sd-po td:first-child { padding-left: 28px; }
+
+/* ---------- Tabs that read at a glance ----------
+   Level 1 (.tabs): a framed bar; the chosen tab is a solid accent block with white text.
+   Level 2 (.subtabs): firm pills; the chosen one is tinted with an accent edge. Counts read on both. */
+:root { --tab-on: #1d68c4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tab-on: #2768c0; } }
+:root[data-theme="dark"] { --tab-on: #2768c0; }
+body .tabs { gap: 4px; padding: 5px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-1); margin-bottom: 14px; align-items: center; }
+body .tabs > button { height: 40px; padding: 0 18px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--ink-2); background: transparent; transition: background .15s, color .15s, box-shadow .15s; }
+body .tabs > button::after { display: none; }
+body .tabs > button:hover { background: var(--surface-hover); color: var(--ink); }
+body .tabs > button[aria-selected="true"], body .tabs > button[aria-selected="true"]:hover { background: var(--tab-on); color: #fff; box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--tab-on) 70%, transparent); }
+body .tabs > button .tab-n { background: var(--surface-2); color: var(--ink-2); font-weight: 700; }
+body .tabs > button[aria-selected="true"] .tab-n { background: rgb(255 255 255 / .22); color: #fff; }
+body .subtabs { gap: 8px; margin: 2px 0 18px; }
+body .subtabs button { height: 34px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 600; box-shadow: var(--shadow-1); }
+body .subtabs button:hover { border-color: var(--tab-on); color: var(--accent-text); background: color-mix(in srgb, var(--tab-on) 6%, var(--surface)); }
+body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="true"]:hover { background: color-mix(in srgb, var(--tab-on) 14%, var(--surface)); border: 1.5px solid var(--tab-on); color: var(--accent-text); font-weight: 700; box-shadow: 0 2px 8px -3px color-mix(in srgb, var(--tab-on) 60%, transparent); }
+body .subtabs button .tab-n { background: var(--surface-2); color: var(--ink-2); font-weight: 700; }
+body .subtabs button[aria-selected="true"] .tab-n { background: var(--tab-on); color: #fff; }
+@media print { body .tabs, body .subtabs { display: none !important; } }

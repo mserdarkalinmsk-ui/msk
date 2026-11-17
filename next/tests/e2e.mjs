@@ -229,8 +229,10 @@ async function page(opts) {
   check(await p.locator('.wb-strip :text("700009999")').count() === 1, 'financial report tab shows the contract');
   check(await p.locator('.att li:has-text("20% above budget rate")').count() === 1, 'unit-rate check shown');
   check(await p.locator('table.stmt tfoot tr.t3').count() === 1, 'financial statement with totals block');
+  const rowsOpen = await p.locator('table.stmt tbody tr').count();
   await p.locator('table.stmt .tw').first().click(); await p.waitForTimeout(100);
-  check(await p.locator('table.stmt tbody tr').count() < 8, 'statement heading collapses');
+  check(await p.locator('table.stmt tbody tr').count() < rowsOpen, 'statement heading collapses');
+  check(await p.locator('table.stmt tbody tr', { hasText: 'Equipment' }).count() >= 1, 'statement keeps every heading of the official layout, empty ones at zero');
   await p.click('.seg button:has-text("Units & rates")'); await p.waitForTimeout(100);
   await p.click('.seg button:has-text("Open POs")'); await p.waitForTimeout(200);
   check(await p.locator('.dt-total:has-text("€27,000")').count() === 1, 'open PO balance totals');

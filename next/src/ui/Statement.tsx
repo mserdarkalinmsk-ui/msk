@@ -32,6 +32,9 @@ function build(lines: WbLine[], names?: Map<string, string>) {
       all.set(code, r);
     }
   }
+  // The official layout numbers its headings 1 to 6: one the project has no budget for still shows, at zero, so the
+  // numbering has no gap (3 Equipment and supplies is often empty).
+  if (all.size) for (const c of ['1', '2', '3', '4', '5', '6']) if (!all.has(c)) all.set(c, { code: c, label: label(c), depth: 0, sum: { b: 0, a: 0, sc: 0, pl: 0, pr: 0, pb: 0, ap: 0, one: 0 } });
   const key = (c: string) => c.split('.').map((x) => x.padStart(3, '0')).join('.');
   return [...all.values()].sort((a, b) => key(a.code).localeCompare(key(b.code)));
 }
@@ -41,7 +44,7 @@ export function Statement({ lines, totals, elapsed, title, layout, names, source
   const [mode, setMode] = useState<'full' | 'compact'>('compact');
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [hideEmpty, setHideEmpty] = useState(true);
-  const rows = build(lines, names).filter((r) => !hideEmpty || r.sum.b || r.sum.a || r.sum.sc || r.sum.pl);
+  const rows = build(lines, names).filter((r) => !hideEmpty || r.sum.b || r.sum.a || r.sum.sc || r.sum.pl || (r.depth === 0 && /^[1-6]$/.test(r.code)));
   const hasPlan = lines.some((l) => l.planned?.cost != null), hasProp = lines.some((l) => (l.rounded ?? l.proposal)?.cost != null);
   const visible = rows.filter((r) => ![...closed].some((c) => r.code !== c && r.code.startsWith(c + '.')));
   const full_ = mode === 'full';
