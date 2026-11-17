@@ -137,8 +137,14 @@ export function traceLine(p: Project, code: string, f: LineField): Trace | null 
   const E = (wb?.entries ?? []).filter((e) => mine(e.line)), PO = (wb?.pos ?? []).filter((x) => mine(x.line));
   // Every PO on the line, with what it ordered, invoiced and still holds — and what looks wrong on it.
   const fmt2 = (x: number) => r2(x).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // A PO is one order over several lines: what it paid on all of them, and when.
+  const whole = new Map<string, { paid: number; last: string | null }>();
+  for (const x of wb?.pos ?? []) { const w = whole.get(x.po) ?? { paid: 0, last: null }; w.paid += x.spent; whole.set(x.po, w); }
+  for (const e of wb?.entries ?? []) if (e.po && e.src === 'invoice') { const w = whole.get(e.po); if (w && (!w.last || e.date > w.last)) w.last = e.date; }
   const orders: TraceOrder[] = PO.map((x) => {
-    const flags: string[] = [], openAmt = r2(Math.max(0, (x.sc ?? 0) - x.spent));
+    const flags: string[] = [], openAmt = r2(Math.max(0, (x.sc ?? 0) - x.spent)), w = whole.get(x.po);
+    const settled = w?.last ? (Date.now() - Date.parse(w.last)) / 864e5 > 60 : !!x.date && (Date.now() - Date.parse(x.date)) / 864e5 > 90;
+    if (x.spent < 0.005 && openAmt > 0.5 && w && w.paid > 0.5 && settled && !/petty cash|caisse|avans/i.test(`${x.description} ${x.supplier}`)) flags.push(`nothing paid on this line, while the PO was paid ${fmt2(w.paid)} on its other lines${w.last ? ` (last on ${w.last.split('-').reverse().join('/')})` : ''}: check it and have this line closed to release ${fmt2(openAmt)}`);
     if (x.spent > x.amount + 0.5) flags.push(`invoiced ${fmt2(x.spent - x.amount)} above what the PO ordered`);
     if (!x.units && x.amount > 0.005 && !/month/i.test(x.unitType)) flags.push(x.spent > 0.005 ? 'invoiced with 0 units: the cost counts on the line without units' : 'committed with 0 units: set the units before it is invoiced');
     if (x.units && x.spent > 0.005 && own?.unitRate && x.units <= 2 && x.spent / x.units > n(own.unitRate) * 2) flags.push(`${fmt2(x.spent / x.units)} per ${x.unitType.replace(/^per\s+/i, '') || 'unit'} against ${fmt2(n(own.unitRate))} budgeted — one unit for several`);

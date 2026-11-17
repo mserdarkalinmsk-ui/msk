@@ -13,23 +13,35 @@ const BUCKETS = [
   { k: '0–3 months', max: 91, color: 'var(--good)' }, { k: '3–6 months', max: 183, color: 'var(--c1)' },
   { k: '6–12 months', max: 365, color: 'var(--c4)' }, { k: 'over 12 months', max: Infinity, color: 'var(--critical)' },
 ];
-export interface OpenPO extends PO { p: Project; age: number; bucket: number; flags: string[]; staff: boolean }
+export interface OpenPO extends PO { p: Project; age: number; bucket: number; flags: string[]; staff: boolean; /** the whole PO (all its lines): paid so far, last payment, number of lines */ whole: { paid: number; last: string | null; lines: number }; /** the PO was paid on other lines and this one is unused: to check and close */ close?: boolean }
 
+/** A PO has had time to settle: its last payment is two months old (or, with no dated payment, the PO is three months old) — a mission's per diem is paid after the return. */
+const settled = (last: string | null, age: number) => (last ? (TODAY.getTime() - Date.parse(last)) / DAY > 60 : age > 90);
+/** Petty cash advances: a line of the advance left unused is normal. */
+const petty = (x: PO) => /petty cash|caisse|avans/i.test(`${x.description} ${x.supplier}`);
 /** Open purchase orders of the latest report of each project, with age and warning flags. */
 export function openPOs(P: Project[]): OpenPO[] {
   return P.flatMap((p) => {
     const wb = latestWorkbook(p)?.snapshot?.workbook; if (!wb) return [];
+    // A PO is one order over several budget lines: what it paid, and when, counts for all of them.
+    const W = new Map<string, { paid: number; last: string | null; lines: number }>();
+    for (const x of wb.pos) { const w = W.get(x.po) ?? { paid: 0, last: null, lines: 0 }; w.paid += x.spent; w.lines++; W.set(x.po, w); }
+    for (const e of wb.entries ?? []) if (e.po && e.src === 'invoice') { const w = W.get(e.po); if (w && (!w.last || e.date > w.last)) w.last = e.date; }
     return wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5).map((x) => {
+      const whole = W.get(x.po) ?? { paid: x.spent, last: null, lines: 1 };
       const age = x.date ? Math.max(0, Math.round((TODAY.getTime() - Date.parse(x.date)) / DAY)) : 0;
       // Staff contracts (remuneration lines 1.x.1, payroll suppliers) are planned salaries, not purchases to chase.
       const staff = /^1\.[12]\.1(\.|$)/.test(x.line) || /\bPAIE\b|payroll|salar/i.test(`${x.supplier} ${x.nature}`);
       const flags: string[] = [];
       if (staff) { /* no review flags on salaries */ }
-      else if (age > 183 && x.spent < 0.5) flags.push('nothing paid in 6+ months');
+      // Nothing paid on this line although the PO was paid on its other lines: the line was not used — check and close it.
+      else if (x.spent < 0.5 && whole.paid > 0.5 && settled(whole.last, age) && !petty(x)) flags.push(`unused line — the PO was paid ${short(whole.paid)} on its other lines${whole.last ? ` (last ${date(whole.last)})` : ''}: check and close it`);
+      // Nothing paid on the whole PO for six months.
+      else if (age > 183 && whole.paid < 0.5) flags.push('nothing paid on the PO in 6+ months');
       else if (age > 365 && x.balance > 0.5 * x.amount) flags.push('over half unpaid after a year');
       if (staff) { /* */ } else if (p.end && p.end < TODAY.toISOString().slice(0, 10)) flags.push('project already ended');
       else if (p.end && (Date.parse(p.end) - TODAY.getTime()) / DAY < 90) flags.push('project ends within 90 days');
-      return { ...x, p, age, bucket: BUCKETS.findIndex((b) => age <= b.max), flags, staff };
+      return { ...x, p, age, bucket: BUCKETS.findIndex((b) => age <= b.max), flags, staff, whole, close: !staff && x.spent < 0.5 && whole.paid > 0.5 && settled(whole.last, age) && !petty(x) };
     });
   });
 }
@@ -104,7 +116,7 @@ export function Commitments() {
             <tbody>{rows.slice(0, 300).map((x) => <tr class="click" onClick={() => go(`project/${x.p.id}`)} style={{ borderLeft: `4px solid ${BUCKETS[x.bucket].color}` }}>
               <td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td><div class="cm-d">{x.description || x.nature}</div><small class="muted">{x.supplier}</small></td>
               <td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}<small class="muted" style={{ display: 'block' }}>{x.age} days</small></td>
-              <td class="r num">{full(x.amount)}</td><td class="r num">{full(x.spent)}</td><td class="r num"><b>{full(x.balance)}</b></td>
+              <td class="r num">{full(x.amount)}</td><td class="r num">{full(x.spent)}{x.whole.lines > 1 && Math.abs(x.whole.paid - x.spent) > 0.5 && <small class="muted" style={{ display: 'block', fontSize: '11px' }} title="Paid on all the lines of this PO">PO: {full(x.whole.paid)}{x.whole.last ? ` · ${date(x.whole.last)}` : ''}</small>}</td><td class="r num"><b>{full(x.balance)}</b></td>
               <td>{x.staff && <span class="badge neutral" style={{ marginRight: '4px' }}>staff</span>}{x.flags.map((f) => <span class="badge warning" style={{ marginRight: '4px' }}>{f}</span>)}</td></tr>)}</tbody></table>
             {!rows.length && <p class="muted">{all.length ? 'No PO in this selection.' : 'No open purchase orders — import the report workbooks (with the “Purchase Orders” sheet).'}</p>}</div>
         </section>

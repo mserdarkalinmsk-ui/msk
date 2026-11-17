@@ -402,3 +402,6 @@ body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="
 .tr-post.tr-pos { table-layout: auto; } .tr-post.tr-pos th { width: auto !important; } .tr-post.tr-pos th:nth-child(2) { width: 42% !important; }
 .tr-post.tr-pos td.num { white-space: nowrap !important; overflow-wrap: normal !important; font-size: 12px; }
 .tr-post.tr-pos td:nth-child(2) { overflow-wrap: break-word; }
+/* Review notes on open POs wrap instead of being cut. */
+.cm-t td:last-child { min-width: 240px; max-width: 340px; }
+.cm-t td:last-child .badge { white-space: normal; display: inline-block; line-height: 1.35; padding-top: 3px; padding-bottom: 3px; text-align: left; }
