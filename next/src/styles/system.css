@@ -405,3 +405,7 @@ body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="
 /* Review notes on open POs wrap instead of being cut. */
 .cm-t td:last-child { min-width: 240px; max-width: 340px; }
 .cm-t td:last-child .badge { white-space: normal; display: inline-block; line-height: 1.35; padding-top: 3px; padding-bottom: 3px; text-align: left; }
+/* Report studio: ready-made section sets */
+.studio-pre { display: flex; flex-wrap: wrap; gap: 6px; }
+.studio-pre .btn { height: 28px; font-size: 12px; padding: 0 10px; }
+.studio-pre .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); font-weight: 600; }
