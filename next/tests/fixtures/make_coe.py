@@ -14,15 +14,15 @@ hdr = ['Budget', 'CCM', 'Budget\nHead', 'Article', 'Element', 'Nature', 'Country
 po = wb.create_sheet('Purchase Orders'); po.append(['All Purchase Orders as at 30 SEP, 2026']); po.append(hdr)
 def P(line, units, no, desc, nat, amt, spent, status, date):
     po.append(['0189', '00150', '9001', '15', '0', '640210000', '49', '06', '0', '0', '0', line, 'Per month', units, 0, 0, 0, no, desc, nat, 'EUR', amt, 0, amt, spent, spent, amt - spent, amt, 'x', status, '1', 'Supplier', date])
-P('1.1.1.2', 12, 900001, 'DOE,Jane - A2/1 - 100% - Ankara from 01/01/2026 to 31/12/2026', 'Personnel Temporaire External Offices', 72000, 54000, 'OPEN', datetime.datetime(2026, 1, 2))
-P('1.1.1.4', 6, 900002, 'ROE,Rick - B4/1 - 50% - Ankara from 01/07/2026 to 31/12/2026', 'Personnel Temporaire External Offices', 18000, 9000, 'OPEN', datetime.datetime(2026, 6, 20))
+P('1.1.1.2', 12, 900001, 'ALPHA,One - A2/1 - 100% - Ankara from 01/01/2026 to 31/12/2026', 'Personnel Temporaire External Offices', 72000, 54000, 'OPEN', datetime.datetime(2026, 1, 2))
+P('1.1.1.4', 6, 900002, 'BETA,Three - B4/1 - 50% - Ankara from 01/07/2026 to 31/12/2026', 'Personnel Temporaire External Offices', 18000, 9000, 'OPEN', datetime.datetime(2026, 6, 20))
 P('5.7', 1, 900003, 'Conference venue', 'Conferences', 20000, 20000, 'FINALLY CLOSED', datetime.datetime(2026, 3, 1))
 wb.create_sheet('Factures sans PO').append(['Factures sans PO'])
 wb['Factures sans PO'].append(['Budget', 'CCM', 'Invoice No', 'Description', 'Spent', 'Period'])
 gl = wb.create_sheet('Ecriture GL'); gl.append(['Ecriture GL'])
 gl.append(['Budget', 'CCM', 'Budget\nHead', 'Article', 'Element', 'Nature', 'Country', 'Ope.\nType', 'Act.\nType', 'Optional', 'Opt2', 'Reporting\nLine', 'Unit Type', 'Nbre of\nUnits', 'Compo', 'Sub Comp', 'Activity Nbr', 'GL Number', 'Description', 'Line Description', 'Category', 'Source', 'Actual Flag', 'CURR', 'SPENT €', 'Period', 'Accounting Date', 'Posting Flag'])
 for per, amt in [('JAN-26', 5000), ('FEB-26', 7000), ('FEB-26', 1000)]:
-    gl.append(['0189', '00150', '9001', '1', '0', '640110000', '16', '06', '0', '0', '0', '1.2.1.2', 'Per month', 1, 0, 0, 0, 1, 'PAIE', 'POE,Pat', 'Other', 'Spreadsheet', 'Reel', 'EUR', amt, per, datetime.datetime(2026, 1, 31), 'Y'])
+    gl.append(['0189', '00150', '9001', '1', '0', '640110000', '16', '06', '0', '0', '0', '1.2.1.2', 'Per month', 1, 0, 0, 0, 1, 'PAIE', 'GAMMA,Four', 'Other', 'Spreadsheet', 'Reel', 'EUR', amt, per, datetime.datetime(2026, 1, 31), 'Y'])
 fc = wb.create_sheet('Forecast'); fc.append(['Demo Rights Programme'])
 fc.append([])
 fc.append(['', '', 'Budget for all Years ', '', '', 'Actual expenditure\nas at 30/09/2026', '', '', 'Spent and\ncommitted(2)\n(in EUR)', 'Planned expenditure \nfrom 01/10/2026 to 30/09/2027', '', '', 'Planned expenditure \nfrom 01/10/26 to 30/09/27 (following)', '', '', 'Budget proposal\n(calculated)', '', '', 'Budget proposal\nRounded version'])

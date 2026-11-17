@@ -7,7 +7,6 @@ import { MonthlyPack } from './Pack';
 import { Agenda } from './Agenda';
 import { Deck } from './Deck';
 import { HealthPage } from './Health';
-import { Checklist } from './Checklist';
 import { Commitments } from './Commitments';
 import { Results } from './Results';
 import { MonthCompare } from './MonthCompare';
@@ -41,7 +40,6 @@ interface TabDef { label: string; views: [Tab, string][] }
 const GROUPS: { label: string; tabs: TabDef[] }[] = [
   { label: 'This month', tabs: [
     { label: 'Monthly close', views: [['close', 'Monthly close']] },
-    { label: 'To do', views: [['checklist', 'To do this month']] },
     { label: 'What changed', views: [['changed', 'Since a day'], ['changes', 'Month comparison']] },
     { label: 'Monthly pack', views: [['pack', 'Monthly pack'], ['deck', 'Presentation']] },
     { label: 'Project report', views: [['studio', 'Project report']] },
@@ -73,7 +71,7 @@ const GROUPS: { label: string; tabs: TabDef[] }[] = [
 ];
 const ALL = GROUPS.flatMap((g) => g.tabs);
 // Old links keep working: the executive brief is now part of the monthly pack.
-const ALIAS: Record<string, Tab> = { brief: 'pack' };
+const ALIAS: Record<string, Tab> = { brief: 'pack', checklist: 'close' };
 
 export function Reports() {
   const [tab, setTab] = useState<Tab>(() => { const h = location.hash.split('/')[2] ?? ''; return ALIAS[h] ?? (ALL.some((t) => t.views.some(([k]) => k === h)) ? h as Tab : 'pack'); });
@@ -92,7 +90,7 @@ export function Reports() {
       </div>
       <div class="subtabs no-print" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={t === cur} onClick={() => t !== cur && setTab(t.views[0][0])}>{t.label}</button>)}</div>
       {cur.views.length > 1 && <div class="seg views no-print" role="group" aria-label={`${cur.label}: view`}>{cur.views.map(([k, l]) => <button aria-pressed={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>}
-      {tab === 'cost' ? <CostPortfolio /> : tab === 'gaps' ? <Gaps /> : tab === 'outlook' ? <Outlook /> : tab === 'close' ? <MonthlyClose /> : tab === 'transfer' ? <BudgetChanges /> : tab === 'bcheck' ? <BudgetCheck /> : tab === 'vs' ? <CompareProjects /> : tab === 'changed' ? <WhatChanged /> : tab === 'ending' ? <EndingSoon /> : tab === 'wp' ? <WorkPlans /> : tab === 'staffpo' ? <StaffPOs /> : tab === 'heat' ? <Heatmap /> : tab === 'cash' ? <CashPlan /> : tab === 'providers' ? <Providers /> : tab === 'annual' ? <AnnualPortfolio projects={P} /> : tab === 'closure' ? <ClosureTracker /> : tab === 'units' ? <UnitCosts /> : tab === 'commit' ? <Commitments /> : tab === 'results' ? <Results /> : tab === 'health' ? <HealthPage /> : tab === 'checklist' ? <Checklist /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
+      {tab === 'cost' ? <CostPortfolio /> : tab === 'gaps' ? <Gaps /> : tab === 'outlook' ? <Outlook /> : tab === 'close' ? <MonthlyClose /> : tab === 'transfer' ? <BudgetChanges /> : tab === 'bcheck' ? <BudgetCheck /> : tab === 'vs' ? <CompareProjects /> : tab === 'changed' ? <WhatChanged /> : tab === 'ending' ? <EndingSoon /> : tab === 'wp' ? <WorkPlans /> : tab === 'staffpo' ? <StaffPOs /> : tab === 'heat' ? <Heatmap /> : tab === 'cash' ? <CashPlan /> : tab === 'providers' ? <Providers /> : tab === 'annual' ? <AnnualPortfolio projects={P} /> : tab === 'closure' ? <ClosureTracker /> : tab === 'units' ? <UnitCosts /> : tab === 'commit' ? <Commitments /> : tab === 'results' ? <Results /> : tab === 'health' ? <HealthPage /> : tab === 'pack' ? <MonthlyPack /> : tab === 'deck' ? <Deck /> : tab === 'studio' ? <Studio /> : tab === 'compare' ? <Compare /> : tab === 'alerts' ? <AlertCentre projects={P} /> : tab === 'changes' ? <MonthCompare projects={P} /> : tab === 'history' ? <History /> : tab === 'compliance' ? <Compliance projects={P} /> : <Calendar />}
     </>
   );
 }

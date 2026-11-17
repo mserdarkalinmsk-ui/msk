@@ -12,6 +12,7 @@ import { monthSummaryDocx, projectActions } from './MonthSummary';
 import { staffRequestDocx, staffShortRows } from './StaffPOs';
 import { date, full, short } from '../ui/format';
 import { plabel } from '../domain/label';
+import { Checklist } from './Checklist';
 
 const ST: Record<CloseStatus, { label: string; badge: string }> = { blocked: { label: 'Blocked', badge: 'critical' }, check: { label: 'To check', badge: 'warning' }, clean: { label: 'Clean', badge: 'good' } };
 const lab = (r: CloseRow) => (plabel(r.p));
@@ -38,6 +39,8 @@ export function MonthlyClose() {
           <span class="ctx">{locked ? `closed ${date(done!.at.slice(0, 10))} ${done!.at.slice(11, 16)} · figures locked` : done ? `reopened ${date(done.reopened!.slice(0, 10))} — close again when ready` : last ? `last close: ${MONTH(last.month)}` : 'first close'}</span></div>
         {(['clean', 'check', 'blocked'] as const).map((k) => <button class={`kpi click mc-k ${filter === k ? 'on' : ''}`} onClick={() => setFilter(filter === k ? 'all' : k)}><span class="label">{ST[k].label}</span><span class="value" style={{ color: k === 'blocked' ? 'var(--critical)' : k === 'check' ? 'var(--warn)' : 'var(--good)' }}>{n(k)}</span><span class="ctx">{k === 'clean' ? 'in the pack' : k === 'check' ? 'in the pack, marked' : 'left out until fixed'}</span></button>)}
       </section>
+
+      <Checklist fold />
 
       {drift.length > 0 && <section class="card mc-drift" role="alert">
         <div class="mc-drift-h"><Lock /><div><b>Changed after the close</b><span>{drift.length} figure{drift.length > 1 ? 's' : ''} no longer read{drift.length > 1 ? '' : 's'} what was closed, although no newer report came in. Check the change, then close the month again to record the new figures.</span></div></div>

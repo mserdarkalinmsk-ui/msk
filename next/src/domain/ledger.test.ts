@@ -11,7 +11,7 @@ const sheets = [
   { name: 'Purchase Orders', R: [['All Purchase Orders'], PO_H,
     ['0189', '5260', '622000004', '5.5.2', 'Per day', '2', '900001', 'Interpretation workshop', 'Interpretation', '1000', '1000', '0', '1000', 'CLOSED', 'ETA', '2026-01-10'],
     ['0189', '5260', '618500100', '5.7', 'Per contract', '1', '900002', 'Event management conference', 'Contracts', '10000', '12000', '0', '12000', 'CLOSED', 'EVENTCO', '2026-02-01'],
-    ['0189', '5260', '640210000', '1.1.1', 'Per month', '12', '900003', 'DOE,Jane - B2 - from 01/01/2026 to 31/12/2028', 'Personnel', '30000', '5000', '25000', '30000', 'OPEN', 'PAIE', '2026-01-01']] },
+    ['0189', '5260', '640210000', '1.1.1', 'Per month', '12', '900003', 'ALPHA,One - B2 - from 01/01/2026 to 31/12/2028', 'Personnel', '30000', '5000', '25000', '30000', 'OPEN', 'PAIE', '2026-01-01']] },
   { name: 'Factures a date', R: [['Factures'], INV_H,
     ['0189', '622000004', '2026-01-31', 'JAN-26', 'A1', 'Interp', 'Y', '1000', '', '1000', '900001'],
     ['0189', '618500100', '2026-02-28', 'FEB-26', 'B1', 'Event', 'Y', '6000', '', '6000', '900002'],
@@ -109,11 +109,11 @@ describe('against the approved budget', () => {
 describe('units used, not just ordered', () => {
   it('counts the months gone of a staff PO and the invoiced share of others', async () => {
     const { usedUnits } = await import('./workbook');
-    expect(usedUnits(12, 50000, 60000, 'DOE,Jane - B2 - Ankara from 01/01/2026 to 31/12/2026', 'Per month', '2026-06-30')).toBeCloseTo(6, 0);
+    expect(usedUnits(12, 50000, 60000, 'ALPHA,One - B2 - Ankara from 01/01/2026 to 31/12/2026', 'Per month', '2026-06-30')).toBeCloseTo(6, 0);
     expect(usedUnits(10, 500, 1000, 'Consultancy', 'Per day', '2026-06-30')).toBe(5);
     expect(usedUnits(45, 760, 8550, 'Consultancy', 'Per Day')).toBe(4);
     expect(usedUnits(45, 760, 8550, 'Consultancy', 'Per Day', undefined, undefined, true)).toBe(45);
-    expect(usedUnits(12, 1, 1, 'DOE from 01/01/2026 to 31/12/2026', 'Per month', '2026-10-14', 9)).toBe(9);
+    expect(usedUnits(12, 1, 1, 'ALPHA from 01/01/2026 to 31/12/2026', 'Per month', '2026-10-14', 9)).toBe(9);
     expect(usedUnits(4, 800, 800, 'Interpretation', 'Per day')).toBe(4);
     expect(usedUnits(17, 0, 2720, 'Consultancy', 'Per day')).toBe(0);
   });
@@ -146,8 +146,8 @@ import { poPurpose } from './reasons';
 describe('what a purchase order was for', () => {
   const P = (description: string, nature = '') => poPurpose({ description, nature });
   it('never names a person', () => {
-    expect(P('OM26_599988- Mrs KAYA Zeynep-Nur - Agent').label).toBe('missions of project staff');
-    expect(P('SAHIN ORNEK,Deniz - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
+    expect(P('OM26_599988- Mrs ZETA Seven-Nr - Agent').label).toBe('missions of project staff');
+    expect(P('ETA THETA,Eight - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
   });
   it('reads events and experts', () => {
     expect(P('Event Management_Focus Group Meeting_Ankara_8-10 June 2026').label).toBe('the Focus Group Meeting (Ankara, 8-10 June 2026)');

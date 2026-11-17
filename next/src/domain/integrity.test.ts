@@ -8,7 +8,7 @@ const p = { id: 'a', code: 'BH1', name: 'P', country: 'tr', start: '2025-01-01',
   reportingPeriods: [
     { id: 'r1', name: 'R1', type: 'x', date: '2025-12-31', snapshot: { lines: [L('5.7', 40_000, 50_000), L('5.8', 10_000, 10_000)] } },
     { id: 'r2', name: 'R2', type: 'x', date: '2026-06-30', snapshot: { lines: [L('5.7', 30_000, 60_000), L('5.8', 12_000, 11_000)],
-      staffRecords: [{ name: 'DEMIR,Elif Sena', code: '1.1.1.2', position: 'PM', po: 'GL 1' }, { name: 'DEMIR,Elif Sema', code: '1.1.1.3', position: 'PO', po: 'GL 2' }],
+      staffRecords: [{ name: 'EPSILON,Ten Tena', code: '1.1.1.2', position: 'PM', po: 'GL 1' }, { name: 'EPSILON,Ten Tema', code: '1.1.1.3', position: 'PO', po: 'GL 2' }],
       workbook: { pos: [po('900001', '5.7', 70_000), po('900002', '5.7', 1_000), po('900002', '5.8', 1_000)] } } },
   ] } as unknown as Project;
 
@@ -19,7 +19,7 @@ describe('integrity checks', () => {
     expect(t).toMatch(/above the reported spent \+ committed on 5\.7/);
     expect(t).toMatch(/Spent above spent \+ committed on 5\.8/);
     expect(t).toMatch(/Spent goes down/);
-    expect(t).toMatch(/same person under two names: Elif Sena DEMIR \/ Elif Sema DEMIR|same person under two names: Elif Sema DEMIR \/ Elif Sena DEMIR/);
+    expect(t).toMatch(/same person under two names: Ten Tena EPSILON \/ Ten Tema EPSILON|same person under two names: Ten Tema EPSILON \/ Ten Tena EPSILON/);
   });
   it('each finding carries its records and the tab to open', () => {
     const I = integrity(p, new Date('2026-10-01'));

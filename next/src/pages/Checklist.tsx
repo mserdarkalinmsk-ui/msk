@@ -9,7 +9,7 @@ const GROUPS: Task['group'][] = ['Data', 'Reports', 'Staff', 'Offices', 'Close t
 const ICON: Record<Task['group'], string> = { Data: '⇩', Reports: '▤', Staff: '☺', Offices: '⌂', 'Close the month': '✓' };
 
 /** This month's checklist: what the data says is still to do, ticked automatically when the data proves it. */
-export function Checklist() {
+export function Checklist({ fold }: { fold?: boolean } = {}) {
   const s = useStore((x) => x);
   const P = filtered(s), m = TODAY.toISOString().slice(0, 7);
   const L = { ...s.ledger, projects: P };
@@ -17,14 +17,7 @@ export function Checklist() {
   const ticks = s.ledger.checklist?.[m] ?? {};
   const isDone = (t: Task) => (t.auto ? !!t.done : !!ticks[t.key]);
   const done = T.filter(isDone).length, pct = T.length ? done / T.length : 1;
-  return (
-    <div class="ck">
-      <section class="card ck-h">
-        <div><div class="muted ck-k">Monthly checklist · {month(TODAY.getTime())}</div><h2>{done} of {T.length} done</h2>
-          <p class="muted">Built from the data: a fresh report for every running project, open data issues, deadlines and contracts in the next 45 days, office budgets and the monthly close. Items marked <span class="badge neutral">auto</span> tick themselves when the data shows they are done.</p></div>
-        <div class="ck-ring" style={{ '--p': `${Math.round(pct * 100)}` } as Record<string, string>}><b>{Math.round(pct * 100)}%</b></div>
-      </section>
-      {GROUPS.map((g) => { const G = T.filter((t) => t.group === g); if (!G.length) return null; const d = G.filter(isDone).length; return (
+  const groups = GROUPS.map((g) => { const G = T.filter((t) => t.group === g); if (!G.length) return null; const d = G.filter(isDone).length; return (
         <section class="card ck-g">
           <div class="card-h"><div><h2><span class="ck-i">{ICON[g]}</span>{g}</h2><p>{d} of {G.length} done</p></div></div>
           <ul class="ck-l">{G.sort((a, b) => Number(isDone(a)) - Number(isDone(b)) || (a.due ?? '').localeCompare(b.due ?? '')).map((t) => { const ok = isDone(t); return (
@@ -35,7 +28,23 @@ export function Checklist() {
               {t.due && !ok && t.due < TODAY.toISOString().slice(0, 10) && <span class="badge critical">overdue</span>}
               {(t.pid || t.to || t.importer) && !ok && <button class="linkish no-print ck-go" onClick={() => (t.importer ? set({ drawer: { kind: 'import' } }) : go(t.to ?? `project/${t.pid}`))}>{t.importer ? 'Import →' : 'Open →'}</button>}
             </li>); })}</ul>
-        </section>); })}
+        </section>); });
+  // Inside the monthly close: the month's to-do list folded into one card, open while something is left.
+  if (fold) return (
+    <details class="card ck-fold" open={done < T.length}>
+      <summary><span class="ck-ring sm" style={{ '--p': `${Math.round(pct * 100)}` } as Record<string, string>}><b>{Math.round(pct * 100)}%</b></span>
+        <span><b>To do this month · {done} of {T.length} done</b><small class="muted">Fresh reports, data issues, deadlines and contracts in the next 45 days, office budgets — items marked auto tick themselves from the data</small></span></summary>
+      <div class="ck ck-in">{groups}</div>
+    </details>
+  );
+  return (
+    <div class="ck">
+      <section class="card ck-h">
+        <div><div class="muted ck-k">Monthly checklist · {month(TODAY.getTime())}</div><h2>{done} of {T.length} done</h2>
+          <p class="muted">Built from the data: a fresh report for every running project, open data issues, deadlines and contracts in the next 45 days, office budgets and the monthly close. Items marked <span class="badge neutral">auto</span> tick themselves when the data shows they are done.</p></div>
+        <div class="ck-ring" style={{ '--p': `${Math.round(pct * 100)}` } as Record<string, string>}><b>{Math.round(pct * 100)}%</b></div>
+      </section>
+      {groups}
     </div>
   );
 }

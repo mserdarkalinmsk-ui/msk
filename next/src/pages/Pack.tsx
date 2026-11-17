@@ -6,6 +6,7 @@ import { asOf, deadlines, elapsed, money, parseDate, portfolioSeries, totals } f
 import { Chart } from '../ui/Chart';
 import { endMarks, spendOption } from './Overview';
 import { alerts } from '../domain/insights';
+import { openAlerts } from '../domain/worklist';
 import { perfTrend, warningScore } from '../domain/monitor';
 import { renewals, roster } from '../domain/staff';
 import type { Project } from '../domain/types';
@@ -114,7 +115,8 @@ export function MonthlyPack() {
   const M = moves(P).sort((a, b) => (a.prev == null ? 1 : 0) - (b.prev == null ? 1 : 0) || (a.perf - (a.prev ?? a.perf)) - (b.perf - (b.prev ?? b.perf)));
   const N = narrative(P, cname);
   const S = portfolioSeries(P, TODAY);
-  const A = alerts(P, TODAY).filter((a) => a.severity === 'critical' || a.severity === 'serious').slice(0, 8);
+  const AA = openAlerts(alerts(P, TODAY), s.ledger.alertMarks, TODAY), nAll = AA.length;
+  const A = AA.filter((a) => a.severity === 'critical' || a.severity === 'serious').slice(0, 8);
   const maxAdd = Math.max(1, ...M.map((x) => Math.abs(x.added)));
   const DEC = decisions(P, TODAY);
   return (
@@ -136,7 +138,7 @@ export function MonthlyPack() {
       {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
         <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
       <section class="pack-s">
-        <h3>What changed since the previous report</h3>
+        <h3>What changed since the previous report <button class="linkish no-print pack-more" onClick={() => go('reports/changed')}>details ›</button></h3>
         <table class="mini pack-t">
           <thead><tr><th>Project</th><th>Country</th><th>Reports</th><th class="r">Spend added</th><th class="r">Performance</th><th class="r">Change</th><th>Band</th></tr></thead>
           <tbody>{M.map((x) => { const d = x.prev == null ? null : x.perf - x.prev; return (
@@ -152,10 +154,10 @@ export function MonthlyPack() {
         </table>
       </section>
       {(s.ledger.offices ?? []).length > 0 && <section class="pack-s"><h3>Office running costs</h3><OfficeSummary variant="pack" /></section>}
-      <section class="pack-s"><h3>Service providers</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Event management, interpretation, consultants, visibility, research, publication and grants — purchase orders of the latest report workbooks</p><ProviderBrief P={P} cname={cname} /></section>
-      {A.length > 0 && <section class="pack-s"><h3>Top alerts</h3>
-        <ul class="pack-al">{A.map((a) => <li><span class={`badge ${a.severity}`}>{a.severity}</span><b>{(() => { const q = P.find((p) => p.id === a.projectId); return q ? lab(q) : ''; })()}</b> {a.title} <span class="muted">— {a.detail}</span></li>)}</ul></section>}
-      <section class="pack-s pack-break"><h3>Expenditure monitoring</h3><Compare /></section>
+      <section class="pack-s"><h3>Service providers <button class="linkish no-print pack-more" onClick={() => go('reports/providers')}>see all ›</button></h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Event management, interpretation, consultants, visibility, research, publication and grants — purchase orders of the latest report workbooks</p><ProviderBrief P={P} cname={cname} /></section>
+      {A.length > 0 && <section class="pack-s"><h3>Top alerts <button class="linkish no-print pack-more" onClick={() => go('reports/alerts')}>all {nAll} alerts ›</button></h3>
+        <ul class="pack-al">{A.map((a) => <li class="click" tabIndex={0} role="button" title="What it is and what to do" onClick={() => set({ drawer: { kind: 'alert', projectId: a.projectId, alertKind: a.kind, ids: [a.id] } })} onKeyDown={(e) => e.key === 'Enter' && set({ drawer: { kind: 'alert', projectId: a.projectId, alertKind: a.kind, ids: [a.id] } })}><span class={`badge ${a.severity}`}>{a.severity}</span><b>{(() => { const q = P.find((p) => p.id === a.projectId); return q ? lab(q) : ''; })()}</b> {a.title} <span class="muted">— {a.detail}</span></li>)}</ul></section>}
+      <section class="pack-s pack-break"><h3>Expenditure monitoring</h3><Compare only /><p class="no-print pack-more"><button class="linkish" onClick={() => go('reports/compare')}>Detailed analysis — scenarios, commitment risk, early warning, catch-up and staff projection → Expenditure monitoring ›</button></p></section>
     </article>
   );
 }

@@ -278,7 +278,8 @@ const n0 = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, 
 const p0 = (v: number) => `${Math.round(v * 100)}%`;
 
 /** Expenditure monitoring: one row per project — performance (spent vs planned), S&C vs planned, amounts, forecast, staff ratios. */
-export function Compare() {
+/** The monitoring screen; `only` keeps just the official monitoring table (the monthly pack). */
+export function Compare({ only }: { only?: boolean } = {}) {
   const s = useStore((x) => x);
   const [group, setGroup] = useState(pref('pl-em-group', 'overall'));
   const [sort, setSort] = useState(pref('pl-em-sort', 'perf'));
@@ -338,7 +339,7 @@ export function Compare() {
     ['Grand Total', '', '', '', '', '', '', '', '', '', '', '', T.b, T.s, T.sc, T.b - T.sc, T.u, p0(T.s ? T.hs / T.s : 0), p0(T.sc ? T.hsc / T.sc : 0), p0(T.b ? T.sc / T.b : 0), T.cm, T.rk, p0(T.pl ? (T.sc - T.rk) / T.pl : 0), '', '', '', '']], money: [12, 13, 14, 15, 16, 20, 21, 26] }]);
   const dot = (v: number) => <span class="em-dot" style={{ background: staffTone(v) }} />;
   return (
-    <article class="em">
+    <article class={`em${only ? ' em-only' : ''}`}>
       <div class="no-print em-tools">
         <div class="seg"><button aria-pressed={group === 'overall'} onClick={() => { setGroup('overall'); keep('pl-em-group', 'overall'); }}>Overall</button><button aria-pressed={group === 'country'} onClick={() => { setGroup('country'); keep('pl-em-group', 'country'); }}>By country</button></div>
         <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); keep('pl-em-sort', v); }}>
@@ -352,7 +353,7 @@ export function Compare() {
         <Gauge value={T.s ? T.hs / T.s : 0} max={1} label="Staff ratio (spent)" bands={[[0.35, 'var(--good)'], [0.5, 'var(--c4)'], [1, 'var(--critical)']]} />
         <Gauge value={rows.length ? rows.reduce((a, r) => a + r.ws.score, 0) / rows.length / 100 : 0} max={1} fmt={(v) => String(Math.round(v * 100))} label="Average attention score" sub={`${rows.filter((r) => r.ws.level === 'high').length} high · ${rows.filter((r) => r.ws.level === 'medium').length} medium`} bands={[[0.25, 'var(--good)'], [0.5, 'var(--c4)'], [1, 'var(--critical)']]} />
       </div>
-      <Simulator rows={rows.map((r) => ({ id: r.p.id, label: `${plabel(r.p)} · ${r.p.name}`, p: r.p, spent: r.m.spent, committed: r.committed, budget: r.m.budget, rate: r.cu.rate }))} riskPct={riskPct} />
+      {!only && <Simulator rows={rows.map((r) => ({ id: r.p.id, label: `${plabel(r.p)} · ${r.p.name}`, p: r.p, spent: r.m.spent, committed: r.committed, budget: r.m.budget, rate: r.cu.rate }))} riskPct={riskPct} />}
       <header class="em-h">
         <table class="em-key"><caption>Colour codes for spending rates</caption><tbody>
           <tr><td>100%</td><td>-</td><td class="em-blue" /></tr><tr><td>90%</td><td>100%</td><td class="em-green" /></tr>

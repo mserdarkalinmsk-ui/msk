@@ -5,8 +5,8 @@ import type { XCell } from '../ui/xlsxwrite';
 
 const L = (code: string, approved: number, actual: number, extra = {}) => ({ code, description: `Line ${code}`, unit: 'Per month', approved, actual, spentCommitted: actual, ...extra });
 const staffRecords = [
-  { name: 'Doe, Jane', code: '1.1.1.2', position: 'Project manager', fte: 1, start: '2025-01-01', end: '2027-12-31', recordKind: 'Contract' as const, base: 'Local' as const },
-  { name: 'Roe, Ann', code: '1.2.1.2', position: 'Project manager', fte: 0.5, start: '2025-01-01', end: '2026-12-31', recordKind: 'Contract' as const, base: 'HQ' as const },
+  { name: 'Alpha, One', code: '1.1.1.2', position: 'Project manager', fte: 1, start: '2025-01-01', end: '2027-12-31', recordKind: 'Contract' as const, base: 'Local' as const },
+  { name: 'Beta, Two', code: '1.2.1.2', position: 'Project manager', fte: 0.5, start: '2025-01-01', end: '2026-12-31', recordKind: 'Contract' as const, base: 'HQ' as const },
 ];
 const lines = [
   L('1.1.1.2', 120000, 50000, { approvedUnits: 36, unitRate: 3333.33, reportedUnits: 18, reportedUnitRate: 2777.78 }),
@@ -29,16 +29,16 @@ describe('forecast in the app', () => {
   it('fills staff from the contracts and charging back from local staff months', () => {
     const d0: ForecastDraft = { opt: { kind: 'revision', programme: 'JP' }, lines: {} };
     const d = autofillStaff(p, today, d0);
-    // Jane: 1 FTE from 1 Jul 2026 to 31 Dec 2027 = 18 months; Ann: 0.5 FTE, contract to 2026 carried on to the end = 9 months.
+    // One: 1 FTE from 1 Jul 2026 to 31 Dec 2027 = 18 months; Two: 0.5 FTE, contract to 2026 carried on to the end = 9 months.
     expect(d.lines['1.1.1.2'].p!.u).toBeCloseTo(18, 0);
     expect(d.lines['1.2.1.2'].p!.u).toBeCloseTo(9, 0);
     expect(d.lines['1.1.1.2'].p!.r).toBe(2780 + 125); // latest monthly cost rounded up + local margin (more than 12 months left)
     expect(d.lines['4.2'].p!.u).toBeCloseTo(18, 0); // local staff months
     expect(d.lines['4.4'].p!.u).toBe(d.lines['4.2'].p!.u);
-    expect(d.notes!.some((x) => x.includes('Jane Doe'))).toBe(true);
+    expect(d.notes!.some((x) => x.includes('One Alpha'))).toBe(true);
   });
   it('does not plan again the months a staff purchase order already commits', () => {
-    // Ann's contract to 31 Dec 2026 is committed in the report (spent + committed above spent): Jul–Dec are in spent +
+    // Two's contract to 31 Dec 2026 is committed in the report (spent + committed above spent): Jul–Dec are in spent +
     // committed, so only Jan–Dec 2027 at 50% = 6 months are planned, not 9.
     const L2 = lines.map((l) => (l.code === '1.2.1.2' ? { ...l, spentCommitted: 55000 } : l));
     const q = { ...(p as any), reportingPeriods: [{ ...(p as any).reportingPeriods[0], snapshot: { lines: L2, staffRecords } }] } as never;

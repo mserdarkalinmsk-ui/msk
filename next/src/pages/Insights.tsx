@@ -25,6 +25,10 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
   const [tab, setTab] = useState<WTab>('open');
   const [area, setArea] = useState('');
   const [sev, setSev] = useState('');
+  // Most urgent first, or grouped by country, then project, then kind of alert.
+  const [by, setBy] = useState<'urgent' | 'country'>(() => { try { return localStorage.getItem('pl-alert-by') === 'country' ? 'country' : 'urgent'; } catch { return 'urgent'; } });
+  const setBy_ = (v: 'urgent' | 'country') => { setBy(v); try { localStorage.setItem('pl-alert-by', v); } catch { /* */ } };
+  const countries = useStore((s) => s.ledger.countries);
   const [edit, setEdit] = useState<{ key: string; mode: 'done' | 'snoozed' } | null>(null);
   const list = tab === 'log' ? [] : G[tab];
   const areas = [...new Set(list.map((a) => ALERT_KINDS[a.kind] ?? a.kind))];
@@ -32,6 +36,9 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
   const proj = (a: Alert) => projects.find((p) => p.id === a.projectId);
   const item = (a: Alert) => ({ key: a.key, title: a.title, project: proj(a)?.code, severity: a.severity });
   const n = (s: string) => G.open.filter((a) => a.severity === s).length;
+  const cn = (a: Alert) => { const c = proj(a)?.country; return countries.find((x) => x.id === c)?.name ?? (c || 'No country'); };
+  const SEV = ['critical', 'serious', 'warning', 'info'];
+  const ordered = by === 'country' ? [...shown].sort((a, b) => cn(a).localeCompare(cn(b)) || (proj(a)?.code ?? '').localeCompare(proj(b)?.code ?? '') || (ALERT_KINDS[a.kind] ?? a.kind).localeCompare(ALERT_KINDS[b.kind] ?? b.kind) || SEV.indexOf(a.severity) - SEV.indexOf(b.severity)) : shown;
   const go_ = (t: WTab) => { setTab(t); setArea(''); setEdit(null); };
   return (
     <>
@@ -45,7 +52,10 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
       </section>
       <section class="card wl">
         <div class="card-h"><div><h2>Alert centre</h2><p>{tab === 'open' ? 'What still needs a decision, most urgent first — mark an item handled or put it off, with a note' : tab === 'snoozed' ? 'Put off until a date; they come back on their own' : tab === 'done' ? 'Handled while the condition lasts; an item comes back if it gets more serious' : 'Every decision taken on an alert, newest first'}</p></div>
-          <div class="seg" style={{ marginLeft: 'auto' }} role="tablist" aria-label="Work list">
+          <div class="seg" style={{ marginLeft: 'auto' }} role="group" aria-label="Order">
+            <button aria-pressed={by === 'urgent'} onClick={() => setBy_('urgent')}>Most urgent first</button><button aria-pressed={by === 'country'} onClick={() => setBy_('country')}>Country → project → kind</button>
+          </div>
+          <div class="seg" role="tablist" aria-label="Work list">
             {([['open', 'Open', G.open.length], ['snoozed', 'Snoozed', G.snoozed.length], ['done', 'Handled', G.done.length], ['log', 'History', log.length]] as [WTab, string, number][]).map(([k, l, c]) => <button role="tab" aria-pressed={tab === k} onClick={() => go_(k)}>{l} <span class="muted">{c}</span></button>)}
           </div>
         </div>
@@ -61,9 +71,14 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
             : <p class="wl-empty">No decision recorded yet. Mark an open alert as handled or snooze it — it is kept here with your note.</p>
         ) : (
           <ul class="wl-list alerts">
-            {shown.map((a) => { const m = marks?.[a.key], back = tab === 'open' ? backReason(a, marks, TODAY) : undefined, ed = edit?.key === a.key ? edit.mode : null;
-              return (
-                <li class={`sev-${a.severity}${ed ? ' ed' : ''}`}>
+            {ordered.map((a, i) => { const m = marks?.[a.key], back = tab === 'open' ? backReason(a, marks, TODAY) : undefined, ed = edit?.key === a.key ? edit.mode : null;
+              const prev = ordered[i - 1], newC = by === 'country' && (!prev || cn(prev) !== cn(a)), newP = by === 'country' && (newC || proj(prev!)?.id !== proj(a)?.id), newK = by === 'country' && (newP || (ALERT_KINDS[prev!.kind] ?? prev!.kind) !== (ALERT_KINDS[a.kind] ?? a.kind));
+              const count = (f: (x: Alert) => boolean) => ordered.filter(f).length;
+              return (<>
+                {newC && <li class="wl-gc"><b>{cn(a)}</b><span class="muted">{count((x) => cn(x) === cn(a))} alert{count((x) => cn(x) === cn(a)) > 1 ? 's' : ''}</span></li>}
+                {newP && <li class="wl-gp"><button class="linkish" onClick={() => proj(a) && go(`project/${proj(a)!.id}`)}><b class="num">{proj(a)?.code ?? ''}</b> {proj(a)?.name.slice(0, 70)}</button><span class="muted">{count((x) => proj(x)?.id === proj(a)?.id)}</span></li>}
+                {newK && <li class="wl-gk">{ALERT_KINDS[a.kind] ?? a.kind}</li>}
+                <li id={`al-${a.key}`} class={`sev-${a.severity}${ed ? ' ed' : ''}`}>
                   <span class={`badge ${a.severity}`}>{a.severity}</span>
                   <button class="wl-main" onClick={() => go(`project/${a.projectId}/${ALERT_TAB[a.kind] ?? 'summary'}`)} title="Open where this is">
                     <span class="t"><b class="num">{proj(a)?.code ?? ''}</b> · {a.title}{back && <em class="wl-back">{back}</em>}</span>
@@ -78,7 +93,7 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
                   </span>
                   {ed && <MarkForm mode={ed} onCancel={() => setEdit(null)} onSave={(note, until) => { markAlerts([item(a)], { state: ed, note, until }); setEdit(null); }} />}
                 </li>
-              ); })}
+              </>); })}
             {!shown.length && <li class="wl-none"><span class="badge good">clear</span><span>{tab === 'open' ? 'No open alerts in this view.' : tab === 'snoozed' ? 'Nothing is snoozed.' : 'Nothing marked as handled.'}</span></li>}
           </ul>
         )}

@@ -107,7 +107,7 @@ export interface Person {
   fte: number | null; start: string; end: string; status: Status; contracts: StaffRecord[]; review: boolean; override?: StaffOverride; po: string;
 }
 
-/** "Doe, Jane" → "Jane Doe". */
+/** "Alpha, One" → "One Alpha". */
 export const displayName = (s: string) => { const p = s.split(','); return p.length === 2 ? `${p[1].trim()} ${p[0].trim()}` : s; };
 /** A name read from a GL text without what stands before it: day counts ("16 JS", "14 JRS", "days") and similar. */
 export const cleanGlName = (s: string) => s.trim().replace(/^(?:(?:\d+\s*)?(?:JS|JRS|J|JOURS?|DAYS?|D|REGUL|IMP\.?|PAIE|PERM)\s+)+/i, '').trim();
@@ -142,7 +142,7 @@ export function roster(p: StaffProject, today: Date): Person[] {
     const same = a.contracts.findIndex((c) => c.po && c.po === x.po && c.recordKind === x.recordKind);
     if (same >= 0) a.contracts[same] = x; else a.contracts.push(x);
   }
-  // The same person written twice (a typo in the first name, e.g. "Sena" / "Sema" in one GL line): merged into the entry
+  // The same person written twice (a typo in the first name, e.g. "Tena" / "Tema" in one GL line): merged into the entry
   // with more records, on the same reporting line and surname.
   const all = [...map.values()].sort((x, y) => y.contracts.length - x.contracts.length);
   for (const b of all) {

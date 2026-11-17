@@ -1,3 +1,4 @@
+import { TR_SCALE_2027 } from '../domain/ccrScaleTR';
 import { X } from './CloseX';
 import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { useEffect, useState } from 'preact/hooks';
@@ -113,8 +114,23 @@ function SalaryScale({ c }: { c: Country }) {
         <span>Adjustment index {x.index.toFixed(1)} (CPI {x.cpi.toFixed(1)}{x.ppp ? `, PPP effect ${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}` : ''}){x.special ? ` less the special adjustments already granted (${x.special.toFixed(1)}: 1 Oct 2025, 1 Feb 2026, 1 May 2026)` : ''} → <b>{x.net > 100 ? '+' : ''}{(x.net - 100).toFixed(1)}%</b> on the scale in force at 31 Dec 2026. The projection uses it in place of the January catch-up.</span>
         <small>{CCR_SOURCE}.</small>
       </div>; })()}
+      {(c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)) && <TrScale />}
     </div>
   </section>;
+}
+
+/** The TRY scale at 1 January 2027 as published in CM(2026)136, grade by step, with the step values. */
+function TrScale() {
+  const R = TR_SCALE_2027.rows, n = Math.max(...R.map((r) => r.s.length));
+  const f = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return <details class="ccr-all tr-scale">
+    <summary>Monthly basic salary scale at 1 January 2027 (TRY, proposal) — {R.length} grades</summary>
+    <div class="table-scroll"><table class="mini">
+      <thead><tr><th>Grade</th>{Array.from({ length: n }, (_, i) => <th class="r">{i + 1}</th>)}<th class="r">Step value</th></tr></thead>
+      <tbody>{R.map((r) => <tr class={r.g === 'B 6' || r.g === 'C 6' || r.g === 'L 5' ? 'tr-g' : ''}><th scope="row">{r.g}</th>{Array.from({ length: n }, (_, i) => <td class="r num">{r.s[i] != null ? f(r.s[i]) : ''}</td>)}<td class="r num muted">{r.step.map(f).join(' / ')}</td></tr>)}</tbody>
+    </table></div>
+    <small class="muted">{TR_SCALE_2027.source}. A grades: the second step value applies from step 7. Grades A 6 and A 7 have no Türkiye scale.</small>
+  </details>;
 }
 
 /** Plans every dropped workbook against the ledger and applies them in one undoable step. */

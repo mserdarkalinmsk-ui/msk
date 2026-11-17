@@ -31,7 +31,7 @@ describe('CoE financial report workbook', () => {
     expect(wb.pos.filter((p) => p.status === 'OPEN').reduce((s, p) => s + p.balance, 0)).toBe(27000);
     expect(wb.monthly).toEqual([{ month: '2026-01', invoices: 6000, gl: 5000 }, { month: '2026-02', invoices: 6000, gl: 8000 }, { month: '2026-03', invoices: 20000, gl: 0 }]);
     expect(wb.movements.filter((m) => m.funding).map((m) => m.amount)).toEqual([400000]);
-    const doe = wb.staff.find((s) => s.name === 'DOE,Jane')!;
+    const doe = wb.staff.find((s) => s.name === 'ALPHA,One')!;
     expect(doe).toMatchObject({ start: '2026-01-01', end: '2026-12-31', fte: 1, base: 'Local' });
   });
   it('reconciles and flags issues', async () => {
