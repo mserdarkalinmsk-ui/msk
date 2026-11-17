@@ -40,12 +40,12 @@ export function costPerf(p: Project, today: Date, wb?: WorkbookSummary | null): 
   const asAtT = last && last.t > parseDate(p.start).getTime() ? last.t : today.getTime();
   const asAt = new Date(asAtT).toISOString().slice(0, 10);
   const timeGone = elapsed(p, new Date(asAtT));
-  const end = parseDate(p.end).getTime(), monthsLeft = Math.max(0, (end - Math.max(asAtT, today.getTime())) / MONTH);
+  const end = parseDate(p.end).getTime(), monthsLeft = Math.max(0, (end - asAtT) / MONTH); // from the report date: spending is as at that day
   const pv = m.budget * timeGone;
   const { rate } = forecastRate(p, today);
   const needRate = monthsLeft ? Math.max(0, m.budget - m.spent) / monthsLeft : 0;
   const pace = m.spent + rate * monthsLeft;
-  const a = ahead(p, today, rate);
+  const a = ahead(p, new Date(asAtT), rate);
   const plan = m.exposure + a.add;
   const total = Math.max(1, (end - parseDate(p.start).getTime()) / MONTH), baseRate = m.budget / total, baseline = m.spent + baseRate * monthsLeft;
   const way = (key: EacWay['key'], label: string, eac: number, basis: string): EacWay => ({ key, label, eac: r2(eac), vac: r2(m.budget - eac), basis });

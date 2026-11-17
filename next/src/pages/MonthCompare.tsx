@@ -3,7 +3,6 @@ import { HEADINGS, compareReports, reportsByDate } from '../domain/calc';
 import type { Project, ReportingPeriod } from '../domain/types';
 import { full, month, pct, short } from '../ui/format';
 import { burn } from '../domain/burn';
-import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { money, parseDate } from '../domain/calc';
 import { download } from '../ui/xlsxwrite';
@@ -67,7 +66,8 @@ export function MonthCompare({ projects }: { projects: Project[] }) {
 
 /** Burn analysis for one project between two reports: rate, acceleration, plan and the pace needed, with the spending curve. */
 function BurnPanel({ p, from, to }: { p: Project; from: number | null; to: number }) {
-  const X = burn(p, from, to, TODAY);
+  // Counted at the second report, not today: an older pair of months keeps its own months left.
+  const X = burn(p, from, to, new Date(to));
   const tone = (v: number, ref: number) => (v >= ref * 0.9 ? 'good' : v >= ref * 0.7 ? 'warn' : 'bad');
   return (
     <div class="bp">

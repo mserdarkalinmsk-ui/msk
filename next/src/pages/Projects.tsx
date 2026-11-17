@@ -1,7 +1,7 @@
 import { paceTone } from '../domain/rules';
 import { useState } from 'preact/hooks';
 import { filtered, go, set, useStore } from '../data/store';
-import { attention, burnGap, deadlines, elapsed, latestReport, money, reportsByDate, reportTotals, spendPoints } from '../domain/calc';
+import { asOf, attention, burnGap, deadlines, elapsed, latestReport, money, reportsByDate, reportTotals, spendPoints } from '../domain/calc';
 import { roster, staffCount } from '../domain/staff';
 import { SECTORS, type Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -51,7 +51,7 @@ export function Projects() {
 }
 
 function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => string; i: number }) {
-  const m = money(p), el = elapsed(p, TODAY), g = burnGap(p, TODAY);
+  const m = money(p), el = elapsed(p, asOf(p, TODAY)), g = burnGap(p, TODAY);
   const F = attention([p], TODAY), crit = F.filter((f) => f.severity === 'critical').length, ser = F.filter((f) => f.severity === 'serious').length;
   const R = reportsByDate(p).filter((r) => r.snapshot?.lines?.length && !/approved budget/i.test(r.type));
   const last = latestReport(p), prev = R.at(-2);

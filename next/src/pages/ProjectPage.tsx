@@ -14,7 +14,7 @@ import { MonthsAhead } from './MonthsAhead';
 import { Closure, Revision } from './Closure';
 import { useEffect, useState } from 'preact/hooks';
 import { deleteProjects, deleteReport, go, set, updateLine, useStore } from '../data/store';
-import { category, burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, spendPoints } from '../domain/calc';
+import { asOf, category, burnGap, compareReports, elapsed, lineExposure, money, parseDate, planStats, reportsByDate, reportTotals, spendPoints } from '../domain/calc';
 import { validUrl, type Project, type ReportingPeriod } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
@@ -70,7 +70,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
   const [fc, setFc] = useState(false);
   useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2><p>It may have been deleted.</p><button class="btn" onClick={() => go('projects')}>All projects</button></div></div>;
-  const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY), pstaff = staffCount([p], TODAY);
+  const m = money(p), el = elapsed(p, asOf(p, TODAY)), gap = burnGap(p, TODAY), pstaff = staffCount([p], TODAY);
   const reports = reportsByDate(p);
   const plan = planStats(p, TODAY);
   const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, Staff: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };

@@ -2,7 +2,7 @@ import { exportOk } from '../ui/exportGate';
 import { ending } from '../domain/cash';
 import { useState } from 'preact/hooks';
 import { filtered, set, useStore } from '../data/store';
-import { compareReports, elapsed, lineExposure, lines, money, planStats, reportsByDate, reportTotals, riskScore } from '../domain/calc';
+import { asOf, compareReports, elapsed, lineExposure, lines, money, planStats, reportsByDate, reportTotals, riskScore } from '../domain/calc';
 import { headings, outcome } from '../domain/insights';
 import { progress, tidy } from '../domain/logframe';
 import { roster } from '../domain/staff';
@@ -288,7 +288,7 @@ export function Compare() {
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
   const scope = s.filters.country ? cname(s.filters.country) : 'All countries';
   const rows = P.map((p) => {
-    const m = money(p), el = elapsed(p, TODAY), planned = m.budget * el, L = lines(p);
+    const m = money(p), el = elapsed(p, asOf(p, TODAY)), planned = m.budget * el, L = lines(p);
     const wb = latestWorkbook(p)?.snapshot?.workbook;
     // Staff ratio as in the accounting system: remuneration articles (permanent + temporary staff) of the Situation budgétaire.
     const SR = wb?.situation ?? [], staff = SR.filter((r) => /r[ée]mun|personnel|salar/i.test(r.description));
@@ -314,7 +314,7 @@ export function Compare() {
     const paced = under0 == null ? ending([p], TODAY, 1200)[0] : undefined;
     // The forecast column shows the amount for every project; the note flags only the real risks.
     const under = under0 != null ? Math.max(0, Math.round(m.budget - m.spent - committed - under0)) : paced && paced.share > 0.03 ? Math.round(paced.unspent) : 0;
-    const underRisk = under0 != null ? !!m.budget && under / m.budget >= 0.05 : !!paced && elapsed(p, TODAY) >= 0.25 && scp < 0.9 && paced.share >= 0.1;
+    const underRisk = under0 != null ? !!m.budget && under / m.budget >= 0.05 : !!paced && elapsed(p, asOf(p, TODAY)) >= 0.25 && scp < 0.9 && paced.share >= 0.1;
     const note = scp > 1 ? 'over' : underRisk ? 'under' : '';
     const tr = perfTrend(p), dPerf = tr.length > 1 ? perf - tr.at(-2)!.perf : null;
     return { p, m, planned, perf, scp, ccm, under, note, sr, scr, sc, committed, staffCommitted, risk, pct: m.budget ? sc / m.budget : 0, tr, dPerf,

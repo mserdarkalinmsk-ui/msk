@@ -9,7 +9,7 @@ import { PeriodPanel } from './PeriodPanel';
 import { SmartImport } from './SmartImport';
 import { useEffect, useState } from 'preact/hooks';
 import { deleteProjects, get, go, set, upsertProject, useStore } from '../data/store';
-import { burnGap, elapsed, lines, money, parseDate, riskScore, spendPoints } from '../domain/calc';
+import { asOf, burnGap, elapsed, lines, money, parseDate, riskScore, spendPoints } from '../domain/calc';
 import { normalizeSector, SECTORS, validUrl, type Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart } from './Chart';
@@ -27,7 +27,7 @@ import { TracePanel } from './Trace';
 import { X as CloseX } from './CloseX';
 
 /** The projects behind a summary point, each with why it is there; a click opens the project. */
-function PointsPanel({ title, text, items, close }: { title: string; text: string; items: { id: string; label: string; why: string; group?: string; tone?: 'bad' | 'warn' | 'good' | 'info' }[]; close: () => void }) {
+function PointsPanel({ title, text, items, close }: { title: string; text: string; items: { id: string; label: string; why: string; group?: string; tone?: 'bad' | 'warn' | 'good' | 'info'; to?: string }[]; close: () => void }) {
   // Grouped by what the projects have in common (well behind, slightly behind …), the most pressing group first.
   const rank = { bad: 0, warn: 1, info: 2, good: 3 } as const;
   const G = [...items.reduce((m, x) => m.set(x.group ?? '', [...(m.get(x.group ?? '') ?? []), x]), new Map<string, typeof items>())]
@@ -38,7 +38,7 @@ function PointsPanel({ title, text, items, close }: { title: string; text: strin
       <p class="muted" style={{ marginTop: 0 }}>{text}</p>
       {G.map(([g, L]) => <section class={`pt-g pt-${L[0].tone ?? 'info'}`}>
         {g && <h3><i />{g}<span>{L.length}</span></h3>}
-        <ul class="pt-list">{L.map((x) => <li class="click" onClick={() => { close(); go(`project/${x.id}`); }}><b>{x.label}</b><span>{x.why}</span><em>Open ›</em></li>)}</ul>
+        <ul class="pt-list">{L.map((x) => <li class="click" onClick={() => { close(); go(`project/${x.id}/${x.to ?? 'summary'}`); }}><b>{x.label}</b><span>{x.why}</span><em>{({ staff: 'Open the staff ›', reports: 'Open the reports ›', summary: 'Open spending on track ›' } as Record<string, string>)[x.to ?? 'summary'] ?? 'Open ›'}</em></li>)}</ul>
       </section>)}
     </div>
   </>;
@@ -86,7 +86,7 @@ function ProjectView({ id, close }: { id: string; close: () => void }) {
   const [edit, setEdit] = useState(false);
   if (!p) return <div class="drawer-b">Project not found.</div>;
   if (edit) return <ProjectForm close={() => setEdit(false)} project={p} />;
-  const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY);
+  const m = money(p), el = elapsed(p, asOf(p, TODAY)), gap = burnGap(p, TODAY);
   const pts = spendPoints(p);
   const L = lines(p);
   const risks = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open').sort((a, b) => riskScore(b) - riskScore(a)).slice(0, 5);

@@ -1,4 +1,4 @@
-import { forecastRate, lineCommitted, lines, money, parseDate, spendPoints } from './calc';
+import { asOf, forecastRate, lineCommitted, lines, money, parseDate } from './calc';
 import type { Project } from './types';
 import { dmy } from './dt';
 
@@ -22,7 +22,7 @@ const addMonths = (iso: string, m: number) => { const d = parseDate(iso); d.setU
  * pace over the months left, never below spent + committed; staff cuts reduce the human-resources part of that rate. Balance > 0 is money left unused.
  */
 export function runScenario(p: Project, s: ScenarioIn, today: Date): ScenarioOut {
-  const m = money(p), L = lines(p), now = Math.max(today.getTime(), spendPoints(p).at(-1)?.t ?? 0);
+  const m = money(p), L = lines(p), now = asOf(p, today).getTime(); // spending is as at the latest report: the scenario runs from that day
   const end = addMonths(p.end, s.extend), months = Math.max(0, (parseDate(end).getTime() - now) / MONTH);
   const budget = m.budget * (1 + s.budgetPct / 100);
   const leaf = L.filter((l) => !L.some((x) => x !== l && x.code.startsWith(l.code + '.')));

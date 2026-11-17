@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { filtered, useStore } from '../data/store';
-import { byCategory, elapsed, HEADINGS, lineRows, lines, money } from '../domain/calc';
+import { asOf, byCategory, elapsed, HEADINGS, lineRows, lines, money } from '../domain/calc';
 import { cashRow, pace } from '../domain/cash';
 import { providerSummary } from '../domain/providers';
 import type { Project } from '../domain/types';
@@ -23,7 +23,7 @@ export function CompareProjects() {
   const sel = ids.map((id) => P.find((p) => p.id === id)).filter((p): p is Project => !!p);
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
   const D = sel.map((p) => {
-    const m = money(p), el = elapsed(p, TODAY), H = byCategory(lineRows([p])), tot = H.reduce((a, h) => a + h.approved, 0);
+    const m = money(p), el = elapsed(p, asOf(p, TODAY)), H = byCategory(lineRows([p])), tot = H.reduce((a, h) => a + h.approved, 0);
     return { p, m, el, perf: m.budget * el ? m.spent / (m.budget * el) : 0, H, tot, pace: pace(p, TODAY), cash: cashRow(p, TODAY), sp: providerSummary([p], s.ledger.poKinds ?? {}, 3), L: lines(p) };
   });
   const heads = [...new Set(D.flatMap((d) => d.H.map((h) => h.key)))].sort((a, b) => parseInt(a) - parseInt(b));

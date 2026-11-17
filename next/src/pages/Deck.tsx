@@ -8,7 +8,7 @@ import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { resultRows } from '../domain/results';
 import { EMBED, filtered, get, useStore } from '../data/store';
-import { byCategory, elapsed, HEADINGS, groupBy, lineRows, money, parseDate, portfolioSeries, riskScore, totals } from '../domain/calc';
+import { asOf, byCategory, elapsed, HEADINGS, groupBy, lineRows, money, parseDate, portfolioSeries, riskScore, totals } from '../domain/calc';
 import { alerts } from '../domain/insights';
 import { catchUp } from '../domain/monitor';
 import { renewals, roster } from '../domain/staff';
@@ -65,7 +65,7 @@ export function Deck() {
   const scope = s.filters.country ? `${cname(s.filters.country)} portfolio` : 'Portfolio';
   if (!P.length) return <div class="card empty-page"><div><h2>No projects</h2><p>Change the filters.</p></div></div>;
   const T = totals(P, TODAY), S = portfolioSeries(P, TODAY), N = narrative(P, cname), M = moves(P).sort((a, b) => a.perf - b.perf);
-  const PL = P.reduce((a, p) => a + money(p).budget * elapsed(p, TODAY), 0), perf = PL ? T.spent / PL : 0;
+  const PL = P.reduce((a, p) => a + money(p).budget * elapsed(p, asOf(p, TODAY)), 0), perf = PL ? T.spent / PL : 0;
   const band = perf >= 1 ? 'blue' : perf >= 0.9 ? 'green' : perf >= 0.7 ? 'amber' : 'red';
   const C = groupBy(P, (p) => p.country).sort((a, b) => b.budget - a.budget);
   const H = byCategory(lineRows(P)).filter((h) => h.approved > 0);
@@ -248,7 +248,7 @@ export function Deck() {
         <ol class="sl-steps">{STEPS.map((t) => <li>{t}</li>)}</ol>
       </Slide>
 
-      {PP.map((p) => { const m = money(p), el = elapsed(p, TODAY), mv = M.find((x) => x.p === p), hp = byCategory(lineRows([p])).filter((h) => h.approved > 0), rr = RR.rows.find((r) => r.p === p), rk = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open').sort((a, b) => riskScore(b) - riskScore(a)).slice(0, 3);
+      {PP.map((p) => { const m = money(p), el = elapsed(p, asOf(p, TODAY)), mv = M.find((x) => x.p === p), hp = byCategory(lineRows([p])).filter((h) => h.approved > 0), rr = RR.rows.find((r) => r.p === p), rk = (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open').sort((a, b) => riskScore(b) - riskScore(a)).slice(0, 3);
         const b = mv?.now ?? 'green';
         return <Slide scope={scope} title={`${lab(p)} · ${cname(p.country)}`} msg={cut(p.name, 90)} sub={`${date(p.start)} → ${date(p.end)} · ${pct(el)} of time elapsed`} notes={`${BAND_W[b]}: ${short(m.spent)} spent of ${short(m.budget)} (${pct(m.budget ? m.spent / m.budget : 0)}), ${short(m.committed)} committed.${rr?.results != null ? ` Results ${pct(rr.results)} of targets.` : ''}`}>
           <div class="sl-kpis">

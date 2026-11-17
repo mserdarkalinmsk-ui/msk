@@ -1,4 +1,4 @@
-import { money, n, parseDate, spendPoints } from './calc';
+import { asOf, money, n, parseDate, spendPoints } from './calc';
 import type { Project } from './types';
 import { type Basis } from './forecast';
 import { outcome } from './insights';
@@ -19,9 +19,9 @@ export interface EndingRow { p: Project; monthsLeft: number; budget: number; spe
  * the current pace, and what would stay unspent (to be returned) at that pace — the end-of-project forecast.
  */
 export function ending(P: Project[], today: Date, within = 12): EndingRow[] {
-  const t = today.getTime();
+  const t = today.getTime(); // which projects end within the window is counted from today
   return P.filter((p) => !p.datesTbc && parseDate(p.end).getTime() > t && parseDate(p.end).getTime() - t <= within * MONTH).map((p) => {
-    const m = money(p), monthsLeft = Math.max(0.5, (parseDate(p.end).getTime() - t) / MONTH);
+    const m = money(p), monthsLeft = Math.max(0.5, (parseDate(p.end).getTime() - asOf(p, today).getTime()) / MONTH); // from the report date, as the forecast
     // The same projection as the end-of-project forecast: spent at the forecast pace, never below spent + committed.
     const sc = m.spent + m.committed, remaining = Math.max(0, m.budget - sc), o = outcome(p, today);
     const unspent = o.unused, share = m.budget ? unspent / m.budget : 0;

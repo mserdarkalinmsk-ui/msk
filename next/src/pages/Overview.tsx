@@ -5,7 +5,7 @@ import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
 import { BudgetHealth } from './BudgetHealth';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
-import { burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
+import { asOf, burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
 import { SECTORS, validUrl, type Project } from '../domain/types';
 import { alerts } from '../domain/insights';
 import { TODAY } from '../today';
@@ -242,7 +242,7 @@ export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cnam
     { key: 'committed', label: 'Committed', width: 140, align: 'r', sum: true, format: cents, value: (p) => money(p).committed },
     {
       key: 'pace', label: 'Spent vs time', width: 170, value: (p) => burnGap(p, TODAY), render: (p) => {
-        const m = money(p), b = m.budget ? m.spent / m.budget : 0, el = elapsed(p, TODAY);
+        const m = money(p), b = m.budget ? m.spent / m.budget : 0, el = elapsed(p, asOf(p, TODAY));
         return <div class="bar-cell" title={`${pct(b)} spent · ${pct(el)} time`}><div class="minibar"><span style={{ width: `${Math.min(100, b * 100)}%` }} /><i style={{ left: `${el * 100}%` }} /></div><span class="num" style={{ fontSize: '12px' }}>{pct(b)}</span></div>;
       },
     },

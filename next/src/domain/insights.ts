@@ -2,7 +2,7 @@ import { paceBand, rules } from './rules';
 import { flexOf } from './flex';
 import { earlyWarnings } from './earlywarn';
 import { ADMIN_LINE } from './terms';
-import { HEADINGS, attention, perProject, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
+import { asOf, HEADINGS, attention, perProject, riskScore, deadlines, forecastRate, elapsed, lineExposure, lines, money, n, parseDate, planStats, reportsByDate, reportTotals, compareReports, type Severity } from './calc';
 import { daysUntil, renewals, roster } from './staff';
 import type { Ledger, Project } from './types';
 import { dmy } from './dt';
@@ -22,7 +22,8 @@ export interface Outcome { projected: number; utilisation: number; unused: numbe
 export function outcome(p: Project, today: Date): Outcome {
   const m = money(p);
   const end = parseDate(p.end).getTime(), start = parseDate(p.start).getTime();
-  const monthsLeft = Math.max(0, (end - Math.max(today.getTime(), start)) / DAY / 30.4375);
+  // Spending is as at the latest report: the months left are counted from that day, so none goes missing in between.
+  const monthsLeft = Math.max(0, (end - Math.max(asOf(p, today).getTime(), start)) / DAY / 30.4375);
   const f = forecastRate(p, today);
   const rate = f.rate, basis: Outcome['basis'] = !rate ? 'no data' : f.recent ? 'recent rate' : 'average rate';
   const projected = Math.max(m.exposure, m.spent + rate * monthsLeft);
@@ -86,7 +87,7 @@ export interface Status { verdict: string; tone: Tone; headline: string; points:
 
 /** Status built from the figures: a verdict, a headline and short points with a tone each. */
 export function status(p: Project, today: Date): Status {
-  const m = money(p), el = elapsed(p, today), o = outcome(p, today), P: Point[] = [];
+  const m = money(p), el = elapsed(p, asOf(p, today)), o = outcome(p, today), P: Point[] = [];
   const burn = m.budget ? m.spent / m.budget : 0, gap = burn - el;
   const band = paceBand(gap);
   const tone: Tone = band !== 'ok' || m.remaining < 0 ? 'bad' : gap < -0.05 ? 'warn' : 'good';

@@ -1,4 +1,4 @@
-import { burnGap, elapsed, forecastRate, HEADINGS, latestReport, lineCommitted, lineExposure, lines, money, n } from './calc';
+import { asOf, burnGap, elapsed, forecastRate, HEADINGS, latestReport, lineCommitted, lineExposure, lines, money, n } from './calc';
 import { isExtraction } from './extraction';
 import { outcome } from './insights';
 import { costPerf } from './costPerf';
@@ -88,9 +88,9 @@ export function trace(p: Project, f: Figure, today: Date): Trace {
     case 'remaining':
       return { title: 'Uncommitted balance', value: m.remaining, unit: 'eur', how: 'What is still free to use: the total budget less everything spent or ordered.', terms: [{ label: 'Total budget', value: m.budget }, { label: 'Spent + committed', value: m.exposure, op: '−', note: agree ? `spent ${fmt(m.spent)} + committed ${fmt(m.committed)}` : undefined }, { label: 'Uncommitted balance', value: m.remaining, op: '=' }], sources: [...budgetSrc.slice(0, 1), ...src], parts: { title: 'Balance by budget heading', rows: byHeading(L, (l) => n(l.approved) - lineExposure(l)) }, notes };
     case 'pace': {
-      const el = elapsed(p, today), sh = m.budget ? m.spent / m.budget : 0;
-      return { title: 'Pace vs time', value: burnGap(p, today), unit: 'pp', how: 'The share of the budget spent, less the share of the implementation period that has passed. Below zero the project spends slower than time runs.',
-        terms: [{ label: 'Share of the budget spent', value: sh, unit: 'pct', note: `${r2(m.spent).toLocaleString('en-GB')} of ${r2(m.budget).toLocaleString('en-GB')}` }, { label: 'Share of the period elapsed', value: el, unit: 'pct', op: '−', note: `${nice(p.start)} → ${nice(p.end)}, today ${nice(today.toISOString().slice(0, 10))}` }, { label: 'Pace vs time', value: sh - el, unit: 'pp', op: '=' }],
+      const at = asOf(p, today), el = elapsed(p, at), sh = m.budget ? m.spent / m.budget : 0;
+      return { title: 'Pace vs time', value: burnGap(p, today), unit: 'pp', how: 'The share of the budget spent, less the share of the implementation period passed by the same day — the date of the latest report. Below zero the project spends slower than time runs.',
+        terms: [{ label: 'Share of the budget spent', value: sh, unit: 'pct', note: `${r2(m.spent).toLocaleString('en-GB')} of ${r2(m.budget).toLocaleString('en-GB')}` }, { label: 'Share of the period elapsed', value: el, unit: 'pct', op: '−', note: `${nice(p.start)} → ${nice(p.end)}, at the report date ${nice(at.toISOString().slice(0, 10))}` }, { label: 'Pace vs time', value: sh - el, unit: 'pp', op: '=' }],
         sources: src, notes: p.datesTbc ? ['The project dates are not confirmed yet — the elapsed share is counted as zero.', ...notes] : notes };
     }
     case 'planned': case 'vsplan': case 'need': {

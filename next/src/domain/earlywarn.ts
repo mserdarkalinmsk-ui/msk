@@ -1,5 +1,5 @@
 import { oneOff } from './ledger';
-import { elapsed, HEADINGS, perProject, lineExposure, lines, n, parseDate } from './calc';
+import { asOf, elapsed, HEADINGS, perProject, lineExposure, lines, n, parseDate } from './calc';
 import { headings } from './insights';
 import type { Project } from './types';
 import { ahead, type Basis } from './forecast';
@@ -26,15 +26,16 @@ const MONTH = 30.44 * 864e5;
 export const earlyWarnings = perProject(earlyWarningsOf);
 function earlyWarningsOf(p: Project, today: Date): HeadWarn[] {
   if (!p.approvedBudget?.lines?.length || p.datesTbc) return [];
-  const H = headings(p), flex = H.flex, el = elapsed(p, today), L = lines(p);
-  const t0 = parseDate(p.start).getTime(), t1 = parseDate(p.end).getTime(), now = today.getTime();
+  // Spending is as at the latest report: its pace and what follows are counted from that day.
+  const at = asOf(p, today), H = headings(p), flex = H.flex, el = elapsed(p, at), L = lines(p);
+  const t0 = parseDate(p.start).getTime(), t1 = parseDate(p.end).getTime(), now = at.getTime();
   const monthsGone = Math.max(1, (now - t0) / MONTH); void t1;
   // A grant is one contract paid in instalments: it sets no monthly pace (its open balance is in spent + committed already).
   const actual = (c: string) => L.filter((l) => l.code.split('.')[0] === c && !oneOff(l.description ?? '', l.unit ?? '')).reduce((a, l) => a + n(l.actual), 0);
   const rows = H.rows.map((h) => {
     const a = actual(h.code);
     // At the end date: spent + committed today, then the report's plan for the heading and the heading's pace after it.
-    const f = ahead(p, today, el < 0.1 ? 0 : a / monthsGone, (l) => l.code.split('.')[0] === h.code);
+    const f = ahead(p, at, el < 0.1 ? 0 : a / monthsGone, (l) => l.code.split('.')[0] === h.code);
     const projected = h.exposure + f.add;
     return { h, a, projected, basis: f.basis, spare: Math.max(0, h.approved - projected) };
   });

@@ -1,6 +1,6 @@
 import { saveFile } from './save';
 import type PptxGenJS from 'pptxgenjs';
-import { byCategory, elapsed, lineRows, money, riskScore } from '../domain/calc';
+import { asOf, byCategory, elapsed, lineRows, money, riskScore } from '../domain/calc';
 import type { ResultRow } from '../domain/results';
 import type { Project, Risk } from '../domain/types';
 import { TODAY } from '../today';
@@ -200,7 +200,7 @@ export async function exportPptx(m: DeckModel) {
 
   // One page per project
   for (const p of m.pages) {
-    const mm = money(p), el = elapsed(p, TODAY), mv = m.moves.find((x) => x.p === p), b = mv?.now ?? 'green', rr = m.results.find((r) => r.p === p);
+    const mm = money(p), el = elapsed(p, asOf(p, TODAY)), mv = m.moves.find((x) => x.p === p), b = mv?.now ?? 'green', rr = m.results.find((r) => r.p === p);
     const s = page(`${m.lab(p)} · ${m.cname(p.country)}`, p.name, `${date(p.start)} → ${date(p.end)} · ${pct(el)} of time elapsed`, `${m.bandWord(b)}: ${short(mm.spent)} spent of ${short(mm.budget)}, ${short(mm.committed)} committed.`);
     kpis(s, 1.95, [['Budget', short(mm.budget), p.approvedBudget ? 'approved budget' : 'project amount'], ['Spent', short(mm.spent), `${pct(mm.budget ? mm.spent / mm.budget : 0)} at ${pct(el)} of time`], ['Committed', short(mm.committed), `uncommitted ${short(mm.remaining)}`], ['Status', m.bandWord(b), mv ? `${Math.round(mv.perf * 100)}% of planned spending` : '', COL[b]]]);
     const hp = byCategory(lineRows([p])).filter((h) => h.approved > 0);

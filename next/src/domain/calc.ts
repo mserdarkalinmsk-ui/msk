@@ -78,9 +78,17 @@ export function elapsed(p: Project, today: Date): number {
 }
 
 /** Burn (spent / budget) minus time elapsed. Negative = behind plan. */
+/**
+ * The day the spending figures are as at: the date of the latest report (never after today). Spending is compared
+ * with the time gone on that same day — the report of 14 Oct against the time gone by 14 Oct, not by today.
+ */
+export function asOf(p: Project, today: Date): Date {
+  const r = latestReport(p);
+  return r && r.date && parseDate(r.date).getTime() < today.getTime() ? parseDate(r.date) : today;
+}
 export function burnGap(p: Project, today: Date): number {
   const m = money(p);
-  return (m.budget ? m.spent / m.budget : 0) - elapsed(p, today);
+  return (m.budget ? m.spent / m.budget : 0) - elapsed(p, asOf(p, today));
 }
 
 export function monthsBetween(a: Date, b: Date) {
@@ -201,7 +209,7 @@ export function totals(ps: Project[], today: Date): Totals {
   const M = ps.map(money);
   const budget = sum(M, (m) => m.budget), spent = sum(M, (m) => m.spent), committed = sum(M, (m) => m.committed);
   // budget-weighted elapsed time
-  const el = budget ? sum(ps, (p) => n(p.budget) * elapsed(p, today)) / budget : 0;
+  const el = budget ? sum(ps, (p) => n(p.budget) * elapsed(p, asOf(p, today))) / budget : 0;
   return { budget, spent, committed, exposure: spent + committed, remaining: budget - spent - committed, elapsed: el, burn: budget ? spent / budget : 0, projects: ps.length };
 }
 
@@ -229,7 +237,7 @@ export function attention(ps: Project[], today: Date): Flag[] {
   for (const p of ps) {
     if ((p.status && p.status !== 'Active') || p.datesTbc) continue;
     const m = money(p);
-    const gap = burnGap(p, today), el = elapsed(p, today);
+    const gap = burnGap(p, today), el = elapsed(p, asOf(p, today));
     if (el > 0.1 && gap < -R.paceBehind / 100)
       F.push({ projectId: p.id, kind: 'underspend', severity: gap < -R.paceFarBehind / 100 ? 'serious' : 'warning', title: 'Spending behind schedule', detail: `${pct(m.budget ? m.spent / m.budget : 0)} spent at ${pct(el)} of time` });
     if (gap > R.paceAhead / 100)
