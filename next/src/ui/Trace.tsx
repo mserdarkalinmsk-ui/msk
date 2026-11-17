@@ -25,6 +25,7 @@ function asText(p: Project, t: Trace): string {
   for (const x of t.terms) L.push(`${x.op ?? ' '} ${x.label}: ${show(x.value, x.unit)}${x.note ? ` (${x.note})` : ''}`);
   L.push('', ...t.sources.map((s) => `${s.label}: ${isDay(s.value) ? date(s.value) : s.value}`));
   if (t.parts) L.push('', t.parts.title + ':', ...t.parts.rows.map((r) => `  ${r.code} ${r.label}: ${show(r.value, t.unit)}`));
+  if (t.orders) L.push('', 'Purchase orders on this line:', ...t.orders.map((o) => `  PO ${o.po} ${o.supplier}: ${nf2.format(o.units)} ${o.unitType}, ordered ${full(o.ordered)}, invoiced ${full(o.spent)}, open ${full(o.open)}${o.flags.length ? ` — ${o.flags.join('; ')}` : ''}`));
   if (t.notes.length) L.push('', ...t.notes.map((n) => `Note: ${n}`));
   return L.join('\n');
 }
@@ -70,6 +71,15 @@ export function TracePanel({ projectId, figure, line, field, close }: { projectI
           <div class="tr-scroll"><table class="mini tr-post">
             <thead><tr><th>Date</th><th>Document</th><th>Supplier / description</th><th class="r">Amount</th></tr></thead>
             <tbody>{t.postings.rows.map((r) => <tr><td class="num">{isDay(r.date) ? date(r.date) : r.date || '—'}</td><td class="num">{r.ref || '—'}</td><td><b>{r.who || '—'}</b>{r.text && <small>{r.text}</small>}</td><td class="r num">{full(r.amount)}</td></tr>)}</tbody>
+          </table></div>
+        </section>}
+
+        {t.orders && <section>
+          <h3>Purchase orders on this line <span class="muted">· {t.orders.length} · {full(t.orders.reduce((a, o) => a + o.spent, 0))} invoiced · {full(t.orders.reduce((a, o) => a + o.open, 0))} open</span></h3>
+          <div class="tr-scroll"><table class="mini tr-post tr-pos">
+            <thead><tr><th>PO</th><th>Supplier / description</th><th class="r">Units</th><th class="r">Ordered</th><th class="r">Invoiced</th><th class="r">Open</th></tr></thead>
+            <tbody>{t.orders.map((o) => <tr class={o.flags.length ? 'tr-flag' : ''}><td class="num" style={{ whiteSpace: 'nowrap' }}>{o.po}{o.date && <small>{date(o.date)}</small>}</td><td><b>{o.supplier || '—'}</b>{o.text && <small>{o.text}</small>}{o.flags.map((f) => <small class="tr-warn">⚠ {f}</small>)}</td>
+              <td class="r num" style={{ whiteSpace: 'nowrap' }}>{nf2.format(o.units)}<small>{o.unitType.replace(/^per\s+/i, '')}</small></td><td class="r num">{full(o.ordered)}</td><td class="r num">{full(o.spent)}</td><td class="r num">{full(o.open)}</td></tr>)}</tbody>
           </table></div>
         </section>}
 

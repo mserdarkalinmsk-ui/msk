@@ -14,6 +14,7 @@ export type LineField = 'approved' | 'actual' | 'committed' | 'exposure' | 'bala
 export type Unit = 'eur' | 'pct' | /** percentage points */ 'pp' | 'months' | 'units' | /** a multiple */ 'times';
 export interface TraceTerm { label: string; value: number; unit?: Unit; op?: '+' | '−' | '×' | '÷' | '='; note?: string }
 export interface TracePart { code: string; label: string; value: number }
+export interface TraceOrder { po: string; supplier: string; text: string; units: number; unitType: string; ordered: number; spent: number; open: number; date: string; flags: string[] }
 export interface TracePosting { date: string; ref: string; who: string; text: string; amount: number }
 export interface Trace {
   title: string; value: number; unit: Unit;
@@ -22,6 +23,7 @@ export interface Trace {
   /** file, sheet, date — where the amounts were read */ sources: { label: string; value: string }[];
   /** what it is made of, by budget heading or line */ parts?: { title: string; rows: TracePart[] };
   /** dated postings or purchase orders behind a line */ postings?: { title: string; rows: TracePosting[]; count: number; total: number };
+  /** every purchase order on a line, with what it ordered, what is invoiced and what is open */ orders?: TraceOrder[];
   /** corrections made on reading and anything to know before quoting the figure */ notes: string[];
 }
 
@@ -133,19 +135,31 @@ export function traceLine(p: Project, code: string, f: LineField): Trace | null 
     return { title, value: v.approved, unit: 'eur', how: 'The budget of the line in the budget in force: units × unit rate.', terms, sources: ab ? [{ label: 'Approved budget', value: ab.source || 'budget annex' }, ...src] : src, parts, notes };
   }
   const E = (wb?.entries ?? []).filter((e) => mine(e.line)), PO = (wb?.pos ?? []).filter((x) => mine(x.line));
+  // Every PO on the line, with what it ordered, invoiced and still holds — and what looks wrong on it.
+  const fmt2 = (x: number) => r2(x).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const orders: TraceOrder[] = PO.map((x) => {
+    const flags: string[] = [], openAmt = r2(Math.max(0, (x.sc ?? 0) - x.spent));
+    if (x.spent > x.amount + 0.5) flags.push(`invoiced ${fmt2(x.spent - x.amount)} above what the PO ordered`);
+    if (!x.units && x.amount > 0.005 && !/month/i.test(x.unitType)) flags.push(x.spent > 0.005 ? 'invoiced with 0 units: the cost counts on the line without units' : 'committed with 0 units: set the units before it is invoiced');
+    if (x.units && x.spent > 0.005 && own?.unitRate && x.units <= 2 && x.spent / x.units > n(own.unitRate) * 2) flags.push(`${fmt2(x.spent / x.units)} per ${x.unitType.replace(/^per\s+/i, '') || 'unit'} against ${fmt2(n(own.unitRate))} budgeted — one unit for several`);
+    return { po: x.po, supplier: x.supplier?.trim() ?? '', text: x.description || x.nature, units: x.units ?? 0, unitType: x.unitType ?? '', ordered: r2(x.amount), spent: r2(x.spent), open: openAmt, date: x.date, flags };
+  }).sort((a, b) => b.spent + b.open - (a.spent + a.open));
+  const issues = orders.filter((o) => o.flags.length);
+  if (issues.length) notes.unshift(...issues.map((o) => `PO ${o.po}${o.supplier ? ` (${o.supplier})` : ''}: ${o.flags.join('; ')}.`));
   if (f === 'actual') {
     const tot = r2(E.reduce((a, e) => a + e.amount, 0));
     if (E.length && Math.abs(tot - v.actual) > 1) notes.push(`The dated postings add up to ${tot.toLocaleString('en-GB', { minimumFractionDigits: 2 })}; the line total of the report is used.`);
     if (own?.unitsEstimated) notes.push('The units of this line are estimated from the purchase orders; the finance team counts them in the report.');
-    const rows = [...E].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount)).slice(0, 12).map((e) => ({ date: e.date, ref: e.doc || e.po, who: e.supplier, text: e.description || e.detail, amount: r2(e.amount) }));
+    const rows = [...E].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount)).slice(0, 12).map((e) => ({ date: e.date, ref: [e.doc, e.po && `PO ${e.po}`].filter(Boolean).join(' · ') || '—', who: e.supplier, text: e.description || e.detail, amount: r2(e.amount) }));
     return { title, value: v.actual, unit: 'eur', how: leafs.length > 1 ? 'The sum of the “actual” column of the lines under this heading.' : 'The “actual” column of this line in the latest financial report: every invoice and direct posting booked on it.',
       terms: [{ label: E.length ? `${E.length} posting${E.length > 1 ? 's' : ''} on this line` : 'Actual column of the report', value: v.actual, op: '=' }], sources: src, parts,
-      postings: E.length ? { title: 'Largest postings', rows, count: E.length, total: tot } : undefined, notes };
+      postings: E.length ? { title: 'Largest postings', rows, count: E.length, total: tot } : undefined, orders: orders.length ? orders : undefined, notes };
   }
   const open = PO.filter((x) => (x.balance ?? 0) > 0.5), rows = [...open].sort((a, b) => b.balance - a.balance).slice(0, 12).map((x) => ({ date: x.date, ref: x.po, who: x.supplier, text: x.description || x.nature, amount: r2(x.balance) }));
   const postings = open.length ? { title: 'Open purchase orders', rows, count: open.length, total: r2(open.reduce((a, x) => a + x.balance, 0)) } : undefined;
   const ok = Math.abs(v.exposure - v.actual - v.committed) < 0.02;
-  if (f === 'committed') return { title, value: v.committed, unit: 'eur', how: 'The part of the purchase orders on this line that is ordered but not yet invoiced.', terms: ok ? [{ label: 'Spent + committed', value: v.exposure }, { label: 'Spent', value: v.actual, op: '−' }, { label: 'Committed', value: v.committed, op: '=' }] : [{ label: 'Committed column of the report', value: v.committed, op: '=' }], sources: src, parts, postings, notes };
-  if (f === 'exposure') return { title, value: v.exposure, unit: 'eur', how: 'What is paid plus what is ordered on this line.', terms: ok ? [{ label: 'Spent', value: v.actual }, { label: 'Committed', value: v.committed, op: '+' }, { label: 'Spent + committed', value: v.exposure, op: '=' }] : [{ label: 'Spent + committed column of the report', value: v.exposure, op: '=' }], sources: src, parts, postings, notes };
-  return { title, value: v.balance, unit: 'eur', how: 'What is still free on this line: its budget less everything spent or ordered.', terms: [{ label: 'Budget', value: v.approved }, { label: 'Spent + committed', value: v.exposure, op: '−', note: ok ? `spent ${fmt(v.actual)} + committed ${fmt(v.committed)}` : undefined }, { label: 'Balance', value: v.balance, op: '=' }], sources: src, parts, notes };
+  const withOrders = (t: Trace): Trace => ({ ...t, orders: orders.length ? orders : undefined });
+  if (f === 'committed') return withOrders({ title, value: v.committed, unit: 'eur', how: 'The part of the purchase orders on this line that is ordered but not yet invoiced.', terms: ok ? [{ label: 'Spent + committed', value: v.exposure }, { label: 'Spent', value: v.actual, op: '−' }, { label: 'Committed', value: v.committed, op: '=' }] : [{ label: 'Committed column of the report', value: v.committed, op: '=' }], sources: src, parts, postings, notes });
+  if (f === 'exposure') return withOrders({ title, value: v.exposure, unit: 'eur', how: 'What is paid plus what is ordered on this line.', terms: ok ? [{ label: 'Spent', value: v.actual }, { label: 'Committed', value: v.committed, op: '+' }, { label: 'Spent + committed', value: v.exposure, op: '=' }] : [{ label: 'Spent + committed column of the report', value: v.exposure, op: '=' }], sources: src, parts, postings, notes });
+  return withOrders({ title, value: v.balance, unit: 'eur', how: 'What is still free on this line: its budget less everything spent or ordered.', terms: [{ label: 'Budget', value: v.approved }, { label: 'Spent + committed', value: v.exposure, op: '−', note: ok ? `spent ${fmt(v.actual)} + committed ${fmt(v.committed)}` : undefined }, { label: 'Balance', value: v.balance, op: '=' }], sources: src, parts, notes });
 }

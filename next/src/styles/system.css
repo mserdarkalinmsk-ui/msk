@@ -393,3 +393,12 @@ body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="
 :is(.sl-pill, .hl-pill, .ag-n span, .sl-verdict span, [class^="hl-"] > i)[style*="background: var(--c4)"] { color: #1f1600 !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sp-kind { filter: brightness(1.55) saturate(.9); } }
 :root[data-theme="dark"] .sp-kind { filter: brightness(1.55) saturate(.9); }
+/* Purchase orders behind a line, in the trace panel */
+.tr-pos td small { display: block; font-size: 11px; color: var(--ink-3); font-weight: 400; }
+.tr-pos small.tr-warn { color: var(--critical); font-weight: 600; }
+.tr-pos tr.tr-flag td:first-child { box-shadow: inset 3px 0 0 var(--critical); }
+.tr-pos td, .tr-pos td small { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; max-width: none !important; }
+.tr-pos td:first-child small { white-space: nowrap !important; }
+.tr-post.tr-pos { table-layout: auto; } .tr-post.tr-pos th { width: auto !important; } .tr-post.tr-pos th:nth-child(2) { width: 42% !important; }
+.tr-post.tr-pos td.num { white-space: nowrap !important; overflow-wrap: normal !important; font-size: 12px; }
+.tr-post.tr-pos td:nth-child(2) { overflow-wrap: break-word; }
