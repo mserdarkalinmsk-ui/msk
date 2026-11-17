@@ -283,7 +283,8 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
     const y = yearKey(e.date); years.add(y);
     const x = L.get(code) ?? { code, description: '', unit: '', budget: { units: null, rate: null, cost: 0 }, years: {}, units: 0, amount: 0, committed: 0 }; L.set(code, x);
     let u = 0;
-    if (e.src === 'gl') u = e.units ?? 0;
+    // Units typed on GL entries (payroll: 16 days of July = 0.53 month) in the steps of their kind: 0.5 month.
+    if (e.src === 'gl') u = roundUnits(e.units ?? 0, unitStep(e.unitType ?? '', code, e.description));
     else { const p = po.get(e.po + '|' + e.line) ?? wb.pos.find((q) => q.po === e.po);
       if (p && /month/i.test(p.unitType) && /from\s+\d/i.test(p.description)) { // A staff PO counts the months paid, never more than the units ordered on it (a PO for 0.25 month counts 0.25) — as the statement does.
         const k = `${p.po}`, s = months.get(k) ?? new Set(); const m = e.date.slice(0, 7);
@@ -292,7 +293,7 @@ export function spendByYear(entries: Entry[], wb: { lines: { code: string; descr
       else if (p && p.units && p.amount) {
         // Units in the steps their kind is used in (per diem 0.25, travel 0.5, events whole): the PO's running total
         // is rounded, and each invoice gets what it adds — so no year shows 0.67 of an event.
-        const k = `${p.po}|${p.line}`, step = unitStep(p.unitType, p.line, p.description), before = poRaw.get(k) ?? 0, after = before + p.units * (e.amount / p.amount);
+        const k = `${p.po}|${p.line}`, step = unitStep(p.unitType, p.line, p.description) ?? p.units /* a grant: its PO's units once anything is paid */, before = poRaw.get(k) ?? 0, after = before + p.units * (e.amount / p.amount);
         poRaw.set(k, after);
         const r = (v: number) => (v > 0 ? Math.min(p.units!, roundUnits(v, step, 1)) : roundUnits(v, step));
         u = r(after) - r(before);

@@ -162,6 +162,8 @@ describe('units are counted in the steps their kind is used in', () => {
     expect(unitStep('Per trip', '2.1')).toBe(0.5);
     expect(unitStep('Per day', '1.1.2')).toBe(0.5);
     expect(unitStep('Per event', '5.7')).toBe(1);
+    expect(unitStep('Per grant', '6.2')).toBeNull(); // a grant keeps its PO's units (0.33 of a grant)
+    expect(roundUnits(0.53, unitStep('Per month', '1.2.1.2'))).toBe(0.5);
     expect(unitStep('Per month', '4.1')).toBe(0.25);
     expect(roundUnits(26.53, 0.5)).toBe(26.5);
     expect(roundUnits(0.67, 1)).toBe(1);

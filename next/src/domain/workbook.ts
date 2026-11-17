@@ -344,6 +344,8 @@ export function parseWorkbook(sheets: Sheet[], opts: ReadOptions = {}): Workbook
  */
 export function unitStep(unitType = '', line = '', description = ''): number | null {
   const u = `${unitType} ${description}`;
+  // Grants keep the units of their PO (a tranche can be a third of a grant).
+  if (/grant|hibe/i.test(unitType) || /^6\.[12](\.|$)/.test(line)) return null;
   if (/month/i.test(unitType)) return 0.25;
   if (/per ?diem|\bDSA\b|subsistence|harc[ıi]rah/i.test(u) || /^1\.3\.[12](\.|$)/.test(line)) return 0.25;
   if (/^2(\.|$)/.test(line) || /trip|ticket|journey|travel|flight|airfare|bilet|seyahat/i.test(unitType)) return 0.5;
@@ -370,7 +372,7 @@ export function usedUnits(units: number, spent: number, sc: number, description:
   // Other POs: only the spent share counts — 45 days ordered, 760 of 8,550 invoiced = 4 days used; the rest is committed.
   // The official report (data for pivot) counts every unit of a PO once something is spent on it.
   if (official) return units;
-  return sc > spent + 0.005 && sc > 0 ? Math.min(units, roundUnits(units * Math.max(0, spent / sc), unitStep(unitType, line, description), spent)) : units;
+  return sc > spent + 0.005 && sc > 0 ? Math.min(units, roundUnits(units * Math.max(0, spent / sc), unitStep(unitType, line, description) ?? units, spent)) : units;
 }
 
 export const ADMIN_RATE = 0.07;
@@ -567,7 +569,7 @@ export function fixExtractionUnits<W extends { meta: Workbook['meta']; lines: Wb
   if (!wb.meta.extraction || wb.meta.unitsOfficial || !wb.pos?.length) return wb;
   const U = new Map<string, number>();
   for (const p of wb.pos) { if (/month/i.test(p.unitType) || unitsLookTyped(p)) continue; U.set(p.line, (U.get(p.line) ?? 0) + usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, undefined, false, p.line)); }
-  for (const e of wb.entries ?? []) if (e.src === 'gl' && e.units && !/month/i.test(e.unitType ?? '')) U.set(e.line, (U.get(e.line) ?? 0) + e.units);
+  for (const e of wb.entries ?? []) if (e.src === 'gl' && e.units && !/month/i.test(e.unitType ?? '')) U.set(e.line, (U.get(e.line) ?? 0) + roundUnits(e.units, unitStep(e.unitType, e.line, e.description)));
   let changed = false;
   const lines = wb.lines.map((l) => { if (!U.has(l.code) || wb.pos!.some((p) => p.line === l.code && /month/i.test(p.unitType))) return l; const u = Math.round(U.get(l.code)! * 100) / 100; if (Math.abs(u - (l.actual.units ?? 0)) < 0.005) return l; changed = true; return { ...l, actual: { ...l.actual, units: u || null } }; });
   return changed ? { ...wb, lines } : wb;

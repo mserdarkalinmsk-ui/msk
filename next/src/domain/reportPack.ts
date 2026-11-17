@@ -1,7 +1,7 @@
 import type { SheetSpec, XCell } from '../ui/xlsxwrite';
 import { defaultOptions, forecastSheets, ifrSheet, type ForecastOptions, type ReportLook } from './forecastTemplate';
 import type { Project } from './types';
-import { usedUnits, type WorkbookSummary } from './workbook';
+import { roundUnits, unitStep, usedUnits, type WorkbookSummary } from './workbook';
 
 /**
  * A raw system extraction laid out as the finance team's report workbook:
@@ -38,7 +38,7 @@ function pivot(wb: WorkbookSummary, n: number): SheetSpec {
   const sum = (code: string, k: 'u' | 's' | 'c') => {
     let t = 0;
     for (const p of wb.pos) if (p.line === code) t += k === 'u' ? usedUnits(p.units ?? 0, p.spent, p.sc, p.description, p.unitType, wb.meta.situationDate, new Set((wb.entries ?? []).filter((e) => e.src === 'invoice' && e.po === p.po).map((e) => e.period || e.date.slice(0, 7))).size, false, p.line) : k === 's' ? p.spent : p.sc;
-    for (const e of wb.entries ?? []) if (e.src === 'gl' && (e.line === '10' ? '0' : e.line) === code) t += k === 'u' ? e.units ?? 0 : e.amount;
+    for (const e of wb.entries ?? []) if (e.src === 'gl' && (e.line === '10' ? '0' : e.line) === code) t += k === 'u' ? roundUnits(e.units ?? 0, unitStep(e.unitType ?? '', code, e.description)) : e.amount;
     return r2(t);
   };
   const rows: (string | XCell)[][] = [['Row Labels', 'Sum of NBRE_OF_UNITS', 'Sum of SPENT_EUR', 'Sum of SPENT_COM_EUR'].map((v) => ({ v, st: 'head' }))];
