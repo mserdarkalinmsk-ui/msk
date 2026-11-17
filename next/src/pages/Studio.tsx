@@ -96,13 +96,17 @@ export function Studio() {
 type R_ = ReturnType<typeof reportsByDate>[number];
 type Detail = 'headings' | 'lines' | 'orders';
 function build(p: Project, end?: R_, start?: R_, detail: Detail = 'headings') {
-  const m = money(p), o = outcome(p, TODAY), H = headings(p), el = elapsed(p, TODAY);
+  // Every section shows the project as it stood at the "to" report: the reports up to that date, counted on that day.
+  const asAt = end ? new Date(`${end.date}T00:00:00Z`) : TODAY, pAll = p;
+  const latest = reportsByDate(p).filter((r) => r.snapshot?.lines?.length && !/approved budget/i.test(r.type)).at(-1);
+  if (end && latest && end.id !== latest.id) p = { ...p, reportingPeriods: (p.reportingPeriods ?? []).filter((r) => r.date <= end.date) };
+  const m = money(p), o = outcome(p, asAt), H = headings(p), el = elapsed(p, asAt);
   const tEnd = end ? reportTotals(end) : { approved: m.budget, actual: m.spent, committed: m.committed, exposure: m.exposure };
   const tStart = start ? reportTotals(start) : null;
   const periodSpend = tEnd.actual - (tStart?.actual ?? 0);
   const deltas = end && start ? compareReports(start, end).filter((d) => Math.abs((d.actual[1] - d.actual[0])) > 0.5).sort((a, b) => Math.abs(b.actual[1] - b.actual[0]) - Math.abs(a.actual[1] - a.actual[0])) : [];
   const L = end?.snapshot?.lines ?? [];
-  const I = p.indicators ?? [], pl = planStats(p, TODAY), K = [...(p.riskRegister ?? [])].sort((a, b) => riskScore(b) - riskScore(a)), S = roster(p, TODAY);
+  const I = p.indicators ?? [], pl = planStats(p, asAt), K = [...(p.riskRegister ?? [])].sort((a, b) => riskScore(b) - riskScore(a)), S = roster(p, asAt);
   const tbl = (head: string[], rows: Cell[][], r: number[] = [], nw: number[] = []) => <table class="sd-t"><thead><tr>{head.map((h, i) => <th class={r.includes(i) ? 'r' : ''}>{h}</th>)}</tr></thead><tbody>{rows.map((x) => <tr>{x.map((c, i) => <td class={r.includes(i) ? 'r num' : nw.includes(i) ? 'nw' : ''}>{typeof c === 'number' ? full(c) : c}</td>)}</tr>)}</tbody></table>;
   const hRows: Cell[][] = [...H.rows.map((h) => [`${h.code} ${h.label}`, h.baseline, h.approved, h.exposure, h.baseline ? pct(h.exposure / h.baseline) : '']), ['Total direct costs', H.direct.baseline, H.direct.approved, H.direct.exposure, H.direct.baseline ? pct(H.direct.exposure / H.direct.baseline) : ''], ['Administrative costs', H.admin.baseline, H.admin.approved, H.admin.exposure, H.admin.baseline ? pct(H.admin.exposure / H.admin.baseline) : ''], ['Total budget', H.total.baseline, H.total.approved, H.total.exposure, H.total.baseline ? pct(H.total.exposure / H.total.baseline) : '']];
   // Administrative costs (line 10) are 7% of the direct costs, not a movement of their own: shown under the total.
@@ -128,24 +132,24 @@ function build(p: Project, end?: R_, start?: R_, detail: Detail = 'headings') {
   const V = variances(LA.map((x) => ({ code: x.code, d: x.d, aA: x.aA, act: x.act, use: x.use, dRp: x.dRp, dU: x.dU, unit: x.unit })), el, m.budget, p.budgetNotes);
   const vn = (p as { varianceNotes?: Record<string, string> }).varianceNotes ?? {};
   // Is spending on track: planned by now (budget × time gone), spent, pace needed; the Work Plans delivered.
-  const C = costPerf(p, TODAY, reportWorkbook(p));
+  const C = costPerf(p, asAt, reportWorkbook(p));
   const cRows: Cell[][] = [['Total budget', C.bac], ['Planned by now', C.pv], ['Spent', C.ac], ['Spent against plan', C.fei == null ? '—' : pct(C.fei)], ['Needed a month to use the budget', C.needRate], ['Spent a month today', C.rate], ['Pace needed (× today)', C.tcpiRate == null ? '—' : `${C.tcpiRate.toFixed(2)}×`], ...(C.early ? [] : [[`Total at the end (${C.main.label.toLowerCase()})`, C.main.eac] as Cell[]])];
   const wRows: Cell[][] = C.ev.map((x) => [x.wp, `${date(x.from)} – ${date(x.to)}`, x.pv, x.ev, x.ac ?? '', x.spi == null ? '' : pct(x.spi), `${x.done} done · ${x.postponed} postponed · ${x.cancelled} cancelled`]);
   // Budget changes: each heading's approved budget against the one in force, and against its flexibility.
   const fx = flexOf(p);
   const chRows: Cell[][] = H.rows.map((h) => { const d = h.baseline ? h.exposure / h.baseline - 1 : 0; return [`${h.code} ${h.label}`, h.baseline, h.approved, h.baseline ? `${h.approved >= h.baseline ? '+' : '−'}${Math.abs((h.approved / h.baseline - 1) * 100).toFixed(1)}%` : '', h.exposure, d > fx ? `beyond ${pctOf(fx)}% — addendum` : d > 0.0001 ? `within ${pctOf(fx)}% — notification` : 'within the budget']; });
   // Project years: spent in each (dated postings), still to pay in the current and later ones.
-  const A = annualPlan(p, TODAY);
+  const A = annualPlan(p, asAt);
   const yRows: Cell[][] = A.years.map((y) => [A.label[y]?.name ?? String(y), A.label[y] ? `${date(A.label[y].from)} – ${date(A.label[y].to)}` : '', A.past[y] ?? 0, y >= A.current ? A.total[y] ?? 0 : '']);
   // Month by month ahead: when a heading needs a letter at its pace so far.
-  const Dp = depletion(p), MA = p.datesTbc ? null : monthsAhead(Dp.rows.filter((h) => h.code !== '10'), Math.max(Dp.asOf, TODAY.getTime()), Date.parse(p.end), { flex: fx });
+  const Dp = depletion(p), MA = p.datesTbc ? null : monthsAhead(Dp.rows.filter((h) => h.code !== '10'), Math.max(Dp.asOf, asAt.getTime()), Date.parse(p.end), { flex: fx });
   const when = (k: string | null) => (k == null ? '—' : k === 'now' ? 'already' : date(`${k}-15`).replace(/^\d+ /, ''));
   const mRows: Cell[][] = (MA?.heads ?? []).map((h) => [`${h.code} ${h.label}`, h.budget, h.now, h.rate, h.budget ? pct(h.cells.at(-1)?.share ?? h.now / h.budget) : '', when(h.notify), when(h.addendum)]);
   // Open purchase orders (staff contracts aside), those to review first.
   const OP = openPOs([p]).filter((x) => !x.staff).sort((a, b) => b.flags.length - a.flags.length || b.balance - a.balance);
   const oRows: Cell[][] = OP.map((x) => [x.po, x.line, `${x.supplier.trim()} — ${x.description}`.slice(0, 110), x.date ? date(x.date) : '', x.amount, x.spent, x.balance, x.flags.join('; ')]);
   // Annex: every invoice and GL posting dated in the period.
-  const wbE = latestWorkbook(p)?.snapshot?.workbook?.entries ?? [], eFrom = start?.date ?? p.start, eTo = end?.date ?? TODAY.toISOString().slice(0, 10);
+  const wbE = latestWorkbook(pAll)?.snapshot?.workbook?.entries ?? [], eFrom = start?.date ?? p.start, eTo = end?.date ?? asAt.toISOString().slice(0, 10);
   const inv = wbE.filter((e) => e.date > eFrom && e.date <= eTo).sort((a, b) => a.date.localeCompare(b.date));
   const invRows: Cell[][] = inv.map((e) => [date(e.date), e.src === 'gl' ? `GL ${e.doc}` : e.doc, e.po ?? '', (e.supplier || e.detail || '').slice(0, 60), e.line, (e.description || '').slice(0, 90), e.amount]);
   // Budget detail: each heading, then its lines (approved, in force, spent + committed), then the POs on each line.
