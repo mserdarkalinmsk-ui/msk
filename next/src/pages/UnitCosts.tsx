@@ -20,9 +20,9 @@ function Strip({ g, color }: { g: UnitGroup; color: (id: string) => string }) {
       <div class="uc-track">
         {g.comparable && <i class="uc-med" style={{ left: X(g.median) }} title={`median ${full(g.median)}`}><b>median {short(g.median)}</b></i>}
         {g.points.map((x) => <>
-          {x.budgetRate && x.actualRate && <span class="uc-link" style={{ left: X(Math.min(x.budgetRate, x.actualRate)), width: `calc(${X(Math.max(x.budgetRate, x.actualRate))} - ${X(Math.min(x.budgetRate, x.actualRate))})`, background: color(x.p.id) }} />}
+          {x.budgetRate && x.actualRate && !x.note && <span class="uc-link" style={{ left: X(Math.min(x.budgetRate, x.actualRate)), width: `calc(${X(Math.max(x.budgetRate, x.actualRate))} - ${X(Math.min(x.budgetRate, x.actualRate))})`, background: color(x.p.id) }} />}
           {x.budgetRate && <span class="uc-dot ring" style={{ left: X(x.budgetRate), borderColor: color(x.p.id) }} title={`${lab(x)} budget ${full(x.budgetRate)}`} />}
-          {x.actualRate && <span class="uc-dot" style={{ left: X(x.actualRate), background: color(x.p.id) }} title={`${lab(x)} actual ${full(x.actualRate)}`} />}
+          {x.actualRate && !x.note && <span class="uc-dot" style={{ left: X(x.actualRate), background: color(x.p.id) }} title={`${lab(x)} actual ${full(x.actualRate)}`} />}
         </>)}
       </div>
     </div>
@@ -64,8 +64,8 @@ export function UnitCosts() {
             <header><div><b>{g.label}</b><small class="muted"> · per {g.unit || 'unit'} · {g.heading}</small>{g.points.length > 1 && !g.comparable && <small class="uc-nc">items differ between projects — not compared</small>}</div>{g.flags > 0 && <span class="badge warning">{g.flags} to check</span>}</header>
             <Strip g={g} color={color} />
             <table class="mini uc-t"><thead><tr><th>Project</th><th class="r">Budget rate</th><th class="r">Actual rate</th><th class="r">Actual vs budget</th><th class="r">vs median</th></tr></thead>
-              <tbody>{g.points.map((x) => <tr class="click" onClick={() => go(`project/${x.p.id}`)}><td><i class="uc-sw" style={{ background: color(x.p.id) }} /><b>{lab(x)}</b></td><td class="r num">{x.budgetRate ? full(x.budgetRate) : '—'}</td><td class="r num">{x.actualRate ? full(x.actualRate) : '—'}</td>
-                <td class={`r num uc-${tone(x.vsBudget, 0.15)}`}>{pctS(x.vsBudget)}</td><td class={`r num uc-${tone(x.vsMedian, 0.25)}`}>{pctS(x.vsMedian)}</td></tr>)}</tbody></table>
+              <tbody>{g.points.map((x) => <tr class="click" onClick={() => go(`project/${x.p.id}`)}><td><i class="uc-sw" style={{ background: color(x.p.id) }} /><b>{lab(x)}</b></td><td class="r num">{x.budgetRate ? full(x.budgetRate) : '—'}</td><td class="r num" title={x.note}>{x.actualRate ? (x.note ? <span class="muted">{full(x.actualRate)}<small style={{ display: 'block', fontSize: '11px' }}>event package</small></span> : full(x.actualRate)) : '—'}</td>
+                <td class={`r num uc-${tone(x.vsBudget, 0.15)}`} title={x.note}>{x.note ? <span class="muted">not a rate</span> : pctS(x.vsBudget)}</td><td class={`r num uc-${tone(x.vsMedian, 0.25)}`}>{pctS(x.vsMedian)}</td></tr>)}</tbody></table>
           </article>))}
           {!shown.length && <p class="muted">Nothing to show with these filters.</p>}
         </div>
