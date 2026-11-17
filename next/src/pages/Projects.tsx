@@ -84,7 +84,7 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
       </div>
       {(() => { const sp = m.budget ? m.spent / m.budget : 0, cm = m.budget ? m.committed / m.budget : 0;
         return <div class="pc-bars" title={`${pct(sp)} spent · ${pct(cm)} committed · ${pct(el)} of the time elapsed`}>
-          <div><span>Spent</span><i><b style={{ width: `${Math.min(100, sp * 100)}%`, background: 'var(--sc)' }} /><b style={{ width: `${Math.min(100 - Math.min(100, sp * 100), cm * 100)}%`, background: 'var(--sc)', opacity: .35 }} /></i><em class="num">{pct(sp)}{cm > 0.005 ? <small> +{pct(cm)}</small> : ''}</em></div>
+          <div><span>Spent</span><i><b style={{ width: `${Math.min(100, sp * 100)}%`, background: 'var(--sc)' }} /><b style={{ width: `${Math.min(100 - Math.min(100, sp * 100), cm * 100)}%`, background: 'var(--sc)', opacity: .35 }} /><u style={{ left: `${Math.min(100, el * 100)}%` }} title={`${pct(el)} of the time gone`} /></i><em class="num">{pct(sp)}{cm > 0.005 ? <small> +{pct(cm)}</small> : ''}</em></div>
           <div><span>Time</span><i><b style={{ width: `${Math.min(100, el * 100)}%`, background: 'var(--ink-3, #8a8a8a)', opacity: .55 }} /></i><em class="num">{pct(el)}</em></div>
         </div>; })()}
       {pts.length > 2 && <div class="pc-spark"><Sparkline values={pts} color="var(--sc)" height={30} /></div>}

@@ -437,3 +437,32 @@ body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="
 body .subtabs button .tab-n { background: var(--surface-2); color: var(--ink-2); font-weight: 700; }
 body .subtabs button[aria-selected="true"] .tab-n { background: var(--tab-on); color: #fff; }
 @media print { body .tabs, body .subtabs { display: none !important; } }
+
+/* ---------- Project cards with depth ----------
+   Each card carries its sector colour: a gradient band, a faint wash at the top, a tinted shadow that lifts on hover.
+   The amount reads first; bars are thicker with a gradient; the facts at the foot are small chips. */
+body .pcard { border-radius: 16px; border: 1px solid color-mix(in srgb, var(--sc, var(--accent)) 16%, var(--line)); padding: 18px 20px 14px; gap: 9px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sc, var(--accent)) 8%, var(--surface)) 0, var(--surface) 150px);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 10px 26px -16px color-mix(in srgb, var(--sc, var(--accent)) 55%, transparent); overflow: hidden; }
+body .pcard::before { height: 4px; background: linear-gradient(90deg, var(--sc, var(--accent)), color-mix(in srgb, var(--sc, var(--accent)) 45%, var(--surface))); }
+body .pcard::after { content: ""; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--sc, var(--accent)) 14%, transparent) 0, transparent 70%); pointer-events: none; }
+body .pcard:hover, body .pcard:focus-visible { transform: translateY(-4px); border-color: color-mix(in srgb, var(--sc, var(--accent)) 50%, var(--line));
+  box-shadow: 0 2px 4px rgb(0 0 0 / .05), 0 18px 38px -16px color-mix(in srgb, var(--sc, var(--accent)) 70%, transparent); }
+body .pcard h3 { font-size: 16.5px; font-weight: 700; }
+body .pcard .pc-code { font-family: var(--mono); letter-spacing: .02em; }
+body .pcard .pc-money b { font-size: 30px; font-weight: 800; letter-spacing: -.035em; }
+body .pcard .pc-money { margin-top: 6px; }
+body .pcard .pc-bars { gap: 8px; }
+body .pcard .pc-bars i { height: 9px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 9%, transparent); box-shadow: inset 0 1px 1px rgb(0 0 0 / .06); }
+body .pcard .pc-bars > div:first-child i b:first-child { background: linear-gradient(90deg, color-mix(in srgb, var(--sc) 72%, var(--ink)), var(--sc)) !important; border-radius: 99px 0 0 99px; }
+body .pcard .pc-bars > div:last-child i b { background: linear-gradient(90deg, color-mix(in srgb, var(--ink) 22%, transparent), color-mix(in srgb, var(--ink) 42%, transparent)) !important; opacity: 1 !important; border-radius: 99px 0 0 99px; }
+body .pcard .pc-bars i { position: relative; overflow: visible; }
+body .pcard .pc-bars i > u { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--ink); opacity: .75; }
+body .pcard .pc-spark { margin-top: 4px; }
+body .pcard footer { gap: 6px; border-top: 1px dashed color-mix(in srgb, var(--sc, var(--accent)) 25%, var(--line)); padding-top: 10px; }
+body .pcard footer > span { padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 5%, transparent); font-size: 11.5px; }
+body .pcard footer > span.stale { background: color-mix(in srgb, var(--serious) 12%, transparent); }
+body .pcard-add { background: none; box-shadow: none; border: 1.5px dashed var(--line-strong); }
+body .pcard-add::after { display: none; }
+body .pcard-add:hover { border-color: var(--accent); color: var(--accent-text); background: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
+@media print { body .pcard { box-shadow: none; background: var(--surface); } body .pcard::after { display: none; } }
