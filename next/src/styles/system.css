@@ -78,7 +78,6 @@ table tfoot td, table tr.total td, table tr.tot td { font-weight: 600; }
 .of-nb { min-height: 26px; height: auto; }
 button.tw { min-width: 24px; min-height: 24px; }
 
-
 /* Buttons that sit on the page-tab line are quiet, so the line stays one line. */
 body .tabs .btn:not(.primary) { background: transparent; border-color: transparent; color: var(--ink-2); height: 32px; align-self: center; }
 body .tabs .btn:not(.primary):hover { background: var(--surface-hover); color: var(--ink); }
@@ -318,7 +317,7 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
 .cpf-t tr.cpf-main td { background: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
 .cpf-h3 { margin: 18px 0 4px; font-size: 14px; }
 .cpf-notes { margin: 10px 0 0; padding-left: 18px; font-size: 12px; color: var(--ink-3); }
-.cpf-foot { margin: 10px 0 0; font-size: 12px; }
+
 .cpf-k b .cp-i { font-size: inherit; font-weight: inherit; }
 
 /* Month by month ahead: one cell per heading and month, tinted when a letter is needed. */

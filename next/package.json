@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "e2e": "node tests/e2e.mjs"
+    "e2e": "node tests/e2e.mjs",
+    "visual:baseline": "node tests/visual.mjs baseline",
+    "visual:check": "node tests/visual.mjs check"
   },
   "dependencies": {
     "echarts": "^6.1.0",
