@@ -498,3 +498,20 @@ body .pcard-add:hover { border-color: var(--accent); color: var(--accent-text); 
 .dec-k li.click { cursor: pointer; } .dec-k li.click:hover { background: var(--surface-hover); }
 .dec-sub { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; line-height: 1.45; }
 @media print { .dec-k ul { display: grid !important; } .dec-k summary::after { display: none; } }
+/* Report studio: line findings — one aligned row each, grouped by kind */
+.sd-kt { table-layout: fixed; margin-bottom: 10px; font-size: 12.5px; }
+.sd-kt th:nth-child(1) { width: 74px; } .sd-kt th:nth-child(3), .sd-kt th:nth-child(4) { width: 118px; } .sd-kt th:nth-child(5) { width: 128px; }
+.sd-kt td { padding: 6px 8px; vertical-align: middle; }
+.sd-kt td.sd-kd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+.sd-kt tr.sd-kg td { padding: 8px 8px 5px; font-weight: 700; font-size: 12px; letter-spacing: .02em; color: #1f2937; background: #fff; border-bottom: 1px solid #e5e7eb; }
+.sd-kt tr.sd-kg td span { font-weight: 500; color: #6b7280; }
+.sd-kt tr.sd-kg i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 0; }
+.sd-kg-bad i { background: #b42318; } .sd-kg-warn i { background: #d97706; } .sd-kg-good i { background: #1f7a3d; } .sd-kg-low i { background: #2563eb; }
+.sd-kb { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.sd-kb-bad { background: #fde8e6; color: #9b1c12; } .sd-kb-warn { background: #fdf0d9; color: #8a4b00; } .sd-kb-good { background: #e3f3e9; color: #146c34; } .sd-kb-low { background: #e5eefc; color: #1d4ed8; }
+/* A clickable summary point: the count sits at the right end of its own line, as a quiet pill. */
+.pack-pts li.click { grid-template-columns: 150px 1fr auto; align-items: center; }
+.pack-pts li.click .pack-n { grid-column: 3; padding: 2px 9px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.pack-pts li.click:hover .pack-n { background: var(--tab-on); color: #fff; }
+@media (max-width: 640px) { .pack-pts li.click { grid-template-columns: 1fr auto; } .pack-pts li.click > span { grid-column: 1 / -1; } }
+@media print { .pack-pts .pack-n { display: none; } .pack-pts li.click { grid-template-columns: 150px 1fr; } }

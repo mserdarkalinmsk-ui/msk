@@ -223,17 +223,26 @@ function LineTable({ rows, el }: { rows: LA[]; el: number }) {
   const dn = rows.filter((r) => (r.dRp ?? 0) < -0.05).sort((a, b) => (a.dRp ?? 0) - (b.dRp ?? 0)).slice(0, 4);
   const idle = rows.filter((r) => r.aA > 0 && r.act === 0).sort((a, b) => b.aA - a.aA).slice(0, 4);
   const unitsOver = rows.filter((r) => r.dU != null && r.aU && r.dU > 0).sort((a, b) => (b.dU! / b.aU!) - (a.dU! / a.aU!)).slice(0, 4);
-  const box = (t: string, cls: string, R: LA[], f: (r: LA) => string) => R.length ? <div class={`sd-kf ${cls}`}><b>{t}</b><ul>{R.map((r) => <li><span class="num">{r.code}</span> {r.d.slice(0, 48)} — <b>{f(r)}</b></li>)}</ul></div> : null;
+  // One aligned table, a coloured group row per kind of finding and one line per budget line: what was budgeted,
+  // what the report shows and the difference.
+  type K = { t: string; cls: string; R: LA[]; b: (r: LA) => string; a: (r: LA) => string; d: (r: LA) => string };
+  const pc = (v: number | null) => `${(v ?? 0) > 0 ? '+' : '−'}${Math.abs((v ?? 0) * 100).toFixed(1)}%`;
+  const kinds: K[] = [
+    { t: 'Over the approved amount', cls: 'bad', R: over, b: (r) => full(r.aA), a: (r) => full(r.act), d: (r) => `${full(-r.left)} over` },
+    { t: 'Unit cost above budget', cls: 'bad', R: up, b: (r) => full(r.aR ?? 0), a: (r) => full(r.rR ?? 0), d: (r) => pc(r.dRp) },
+    { t: 'More units than planned', cls: 'warn', R: unitsOver, b: (r) => `${nf(r.aU, 2)} ${r.unit.replace(/^per\s+/i, '').toLowerCase()}`, a: (r) => nf(r.rU, 2), d: (r) => `+${nf(r.dU, 2)}` },
+    { t: 'Unit cost below budget (savings)', cls: 'good', R: dn, b: (r) => full(r.aR ?? 0), a: (r) => full(r.rR ?? 0), d: (r) => pc(r.dRp) },
+    { t: 'Not started — no spending yet', cls: 'low', R: idle, b: (r) => full(r.aA), a: () => '—', d: () => 'not started' },
+  ];
+  const G = kinds.filter((g) => g.R.length);
   return (
     <>
-      <div class="sd-kfs">
-        {box('Over approved amount', 'bad', over, (r) => `${full(-r.left)} over (${pct(r.use ?? 0)})`)}
-        {box('Unit cost above budget', 'bad', up, (r) => `${full(r.rR ?? 0)} vs ${full(r.aR ?? 0)} (+${((r.dRp ?? 0) * 100).toFixed(1)}%)`)}
-        {box('Units above plan', 'warn', unitsOver, (r) => `${nf(r.rU, 1)} of ${nf(r.aU, 1)} ${r.unit.toLowerCase()}`)}
-        {box('Unit cost below budget (savings)', 'good', dn, (r) => `${full(r.rR ?? 0)} vs ${full(r.aR ?? 0)} (${((r.dRp ?? 0) * 100).toFixed(1)}%)`)}
-        {box('Not started — no spending yet', 'low', idle, (r) => `${full(r.aA)} unspent`)}
-        {!over.length && !up.length && !unitsOver.length && !dn.length && !idle.length && <div class="sd-kf good"><b>No line-level issues</b><ul><li>All lines within approved amounts and unit costs.</li></ul></div>}
-      </div>
+      {G.length ? <table class="sd-t sd-kt"><thead><tr><th>Line</th><th>Description</th><th class="r">Budget</th><th class="r">Actual</th><th class="r">Difference</th></tr></thead>
+        <tbody>{G.map((g) => <>
+          <tr class={`sd-kg sd-kg-${g.cls}`}><td colSpan={5}><i />{g.t} <span>· {g.R.length}</span></td></tr>
+          {g.R.map((r) => <tr><td class="nw num">{r.code}</td><td class="sd-kd" title={r.d}>{r.d}</td><td class="r num">{g.b(r)}</td><td class="r num">{g.a(r)}</td><td class="r num"><b class={`sd-kb sd-kb-${g.cls}`}>{g.d(r)}</b></td></tr>)}
+        </>)}</tbody></table>
+        : <p class="muted">No line-level issues: all lines within their approved amounts and unit costs.</p>}
       <p class="sd-note">Approved = baseline budget; actual = latest report. Unit cost variance compares the actual average cost per unit with the budgeted rate. <span class="sd-bad">red</span> over budget · <span class="sd-warn">amber</span> spending well ahead of time ({pct(el)} elapsed) · <span class="sd-low">blue</span> well behind.</p>
       <div class="sd-scroll"><table class="sd-t sd-lt">
         <thead>
