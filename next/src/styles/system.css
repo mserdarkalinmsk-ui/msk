@@ -558,3 +558,6 @@ p.pack-more { margin: 8px 0 0; }
 .pack-al li.click:hover, .pack-al li.click:focus-visible { background: var(--surface-2, var(--line)); }
 .tr-scale table { font-size: 12px; }
 .tr-scale tr.tr-g > * { border-top: 2px solid var(--line-strong); }
+button.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent, var(--c1)); cursor: pointer; text-align: left; }
+button.linkish:hover { text-decoration: underline; }
+.wl-gp button.linkish { color: var(--ink); }
