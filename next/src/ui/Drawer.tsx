@@ -24,6 +24,18 @@ import { CountryPanel } from './CountryPanel';
 import { ImportPanel } from './ImportPanel';
 import { X } from './CloseX';
 import { TracePanel } from './Trace';
+import { X as CloseX } from './CloseX';
+
+/** The projects behind a summary point, each with why it is there; a click opens the project. */
+function PointsPanel({ title, text, items, close }: { title: string; text: string; items: { id: string; label: string; why: string }[]; close: () => void }) {
+  return <>
+    <div class="drawer-h"><h2>{title}</h2><CloseX close={close} /></div>
+    <div class="drawer-b">
+      <p class="muted" style={{ marginTop: 0 }}>{text}</p>
+      <ul class="pt-list">{items.map((x) => <li class="click" onClick={() => { close(); go(`project/${x.id}`); }}><b>{x.label}</b><span>{x.why}</span><em>Open ›</em></li>)}</ul>
+    </div>
+  </>;
+}
 import { RulesPanel } from './RulesPanel';
 
 export function Drawer() {
@@ -55,6 +67,7 @@ export function Drawer() {
         {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
         {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
         {d.kind === 'period' && <PeriodPanel t={d.t} from={d.from} ids={d.ids} close={close} />}
+        {d.kind === 'points' && <PointsPanel title={d.title} text={d.text} items={d.items} close={close} />}
       </div>
     </>
   );

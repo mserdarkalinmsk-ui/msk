@@ -124,14 +124,48 @@ export function Risks({ p }: { p: Project }) {
 }
 export type { ReportingPeriod };
 
+/** The founding documents of a project, each with the file it was read from, and its financial reports (added over time). */
+const CORE: { key: string; label: string; re: RegExp; has: (p: Project) => boolean; hint: string }[] = [
+  { key: 'contract', label: 'Contract / agreement', re: /contract|\bCA\b|agreement|delegation|letter/i, has: (p) => !!(p.contractNo || (p.contract && Object.keys(p.contract).length)), hint: 'the signed contract or the financial delegation letter' },
+  { key: 'doa', label: 'Description of the Action', re: /\bDoA\b|description of the action|project description|\bEBR\b/i, has: (p) => !!p.doa || !p.datesTbc, hint: 'DoA: dates, activities, risks' },
+  { key: 'budget', label: 'Approved budget', re: /budget/i, has: (p) => !!p.approvedBudget, hint: 'the budget annex in force; a revised one after an addendum or notification' },
+  { key: 'logframe', label: 'Logframe', re: /logframe|log ?frame/i, has: (p) => !!p.indicators?.length, hint: 'indicators, baselines and targets' },
+  { key: 'plan', label: 'Activity plan', re: /gantt|workplan|work plan|activities/i, has: (p) => !!p.doa?.acts.length, hint: 'activities by month' },
+  { key: 'risks', label: 'Risk register', re: /risk/i, has: (p) => !!p.riskRegister?.length, hint: 'risks and mitigation' },
+];
+function ProjectFile({ p }: { p: Project }) {
+  const D = p.documents ?? [], V = p.budgetVersions ?? [];
+  const R = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.lines?.length && !/approved budget/i.test(r.type ?? '')).sort((a, b) => b.date.localeCompare(a.date));
+  const ab = p.approvedBudget, last = V.at(-1);
+  return (
+    <>
+      <section class="card span-8 pf-core">
+        <div class="card-h"><div><h2>Project file — founding documents</h2><p>The documents the project is run on, in one place · added once; a revised budget after an addendum or a notification is added here too, and the earlier version is kept</p></div>
+          <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div></div>
+        <div class="card-b"><table class="mini pf-t"><tbody>{CORE.map((c) => { const files = D.filter((d) => c.re.test(d.name) || (c.key === 'budget' && /budget/i.test(d.summary.join(' ')))); const ok = c.has(p) || files.length > 0; return (
+          <tr class={ok ? '' : 'pf-miss'}><td class="pf-s">{ok ? '✓' : '○'}</td><td><b>{c.label}</b><small>{files.length ? files.map((f) => f.name).join(' · ') : ok ? 'read from the project data' : `missing — ${c.hint}`}</small>
+            {c.key === 'budget' && ab && <small class="pf-v">In force: {last ? `${last.label}${last.kind !== 'original' ? ` (${last.kind})` : ''}` : 'original'}{ab.source ? ` · ${ab.source}` : ''}{V.length > 1 ? ` · ${V.length} versions — see Plan & revise → Revision` : ''}</small>}</td>
+            <td class="r">{!ok && <button class="btn sm" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add</button>}</td></tr>); })}</tbody></table></div>
+      </section>
+      <section class="card span-4 pf-reps">
+        <div class="card-h"><div><h2>Financial reports</h2><p>Added as they come · {R.length} on file</p></div>
+          <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import report</button></div></div>
+        <div class="card-b">{R.length ? <ul class="pf-list">{R.slice(0, 8).map((r) => <li><b>{date(r.date)}</b><span>{r.type || 'Report'}{r.fileName ? ` · ${r.fileName}` : ''}</span></li>)}</ul> : <p class="muted">No financial report yet.</p>}
+          {R.length > 8 && <p class="muted" style={{ fontSize: '12px' }}>and {R.length - 8} earlier — Finance → Reports</p>}</div>
+      </section>
+    </>
+  );
+}
+
 export function ResultsDocs({ p }: { p: Project }) {
   const D = p.documents ?? [];
   const c = (p.contract ?? {}) as Record<string, unknown>;
   const facts: [string, string][] = ([['Contract', c.number], ['Title', c.title], ['Total', typeof c.total === 'number' ? full(c.total) : ''], ['EU maximum', typeof c.euMax === 'number' ? full(c.euMax) : ''], ['Duration', c.months ? `${c.months} months` : ''], ['Reporting', c.repMonths ? `every ${c.repMonths} months, due ${c.progDays ?? 60} days after` : ''], ['Pre-financing', c.prefin ? `${c.prefin}%` : ''], ['First payment', typeof c.firstPayment === 'number' ? full(c.firstPayment) : ''], ['Instalments', c.instalments ? String(c.instalments) : ''], ['Next payment', c.payThreshold ? `once ${c.payThreshold}% of the previous payment is used` : '']] as [string, unknown][]).filter(([, v]) => v).map(([k, v]) => [k, String(v)]);
   return (
     <div class="grid g-12">
+      <ProjectFile p={p} />
       <section class="card span-8">
-        <div class="card-h"><div><h2>Project documents</h2><p>DoA, contract, budget annexes and logframe — what was read from each</p></div>
+        <div class="card-h"><div><h2>Every document added</h2><p>DoA, contract, budget annexes and logframe — what was read from each</p></div>
           <div class="tools"><button class="btn primary" onClick={() => set({ drawer: { kind: 'documents', projectId: p.id } })}>Add documents</button></div></div>
         <ul class="att" style={{ marginTop: '8px' }}>{D.map((d) => <li style={{ cursor: 'default' }}><span class="badge neutral">{d.kind}</span><div><div class="t">{d.name}</div><div class="d">{d.summary.join(' · ') || '—'} · {date(d.importedAt.slice(0, 10))}</div></div>
             <button class="btn ghost sm" title="Remove from the list (what was read stays on the project)" onClick={() => { if (confirm(`Remove “${d.name}”?`)) deleteDocument(p.id, d.name); }}>Delete</button></li>)}

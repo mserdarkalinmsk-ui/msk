@@ -466,3 +466,35 @@ body .pcard-add { background: none; box-shadow: none; border: 1.5px dashed var(-
 body .pcard-add::after { display: none; }
 body .pcard-add:hover { border-color: var(--accent); color: var(--accent-text); background: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
 @media print { body .pcard { box-shadow: none; background: var(--surface); } body .pcard::after { display: none; } }
+/* Project file: founding documents and reports */
+.pf-t td { vertical-align: top; padding: 9px 8px; }
+.pf-t td small { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; overflow-wrap: anywhere; }
+.pf-t td small.pf-v { color: var(--ink-2); }
+.pf-t .pf-s { width: 26px; font-weight: 800; color: var(--good); font-size: 15px; }
+.pf-t tr.pf-miss .pf-s { color: var(--warn); }
+.pf-t tr.pf-miss b { color: var(--ink-2); }
+.pf-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pf-list li { display: grid; gap: 1px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.pf-list li span { font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+/* Summary points that open the projects behind them */
+.pack-pts li.click { cursor: pointer; position: relative; }
+.pack-pts li.click:hover { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent); }
+.pack-pts .pack-n { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--accent-text); white-space: nowrap; align-self: center; }
+.pt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pt-list li { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.pt-list li:hover { border-color: var(--accent); }
+.pt-list li span { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.pt-list li em { font-style: normal; font-size: 12px; color: var(--accent-text); font-weight: 600; }
+/* Decisions grouped by kind */
+.dec-g { display: grid; gap: 8px; }
+.dec-k { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: inset 3px 0 0 var(--warn); }
+.dec-k.t-bad { box-shadow: inset 3px 0 0 var(--critical); }
+.dec-k summary { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; list-style: none; font-size: 13px; }
+.dec-k summary::-webkit-details-marker { display: none; }
+.dec-k summary::after { content: '▸'; margin-left: auto; color: var(--ink-3); transition: transform .15s; }
+.dec-k[open] summary::after { transform: rotate(90deg); }
+.dec-k ul { list-style: none; margin: 0; padding: 0 12px 10px 14px; display: grid; gap: 6px; }
+.dec-k li { font-size: 13px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.dec-k li.click { cursor: pointer; } .dec-k li.click:hover { background: var(--surface-hover); }
+.dec-sub { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; line-height: 1.45; }
+@media print { .dec-k ul { display: grid !important; } .dec-k summary::after { display: none; } }

@@ -1,6 +1,6 @@
 import { OfficeSummary } from './OfficeSummary';
 import { ProviderBrief } from './Providers';
-import { filtered, get, go, useStore } from '../data/store';
+import { filtered, get, go, set, useStore } from '../data/store';
 import { monthSummaryDocx } from './MonthSummary';
 import { deadlines, elapsed, money, parseDate, portfolioSeries, totals } from '../domain/calc';
 import { Chart } from '../ui/Chart';
@@ -12,7 +12,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, month, short } from '../ui/format';
 import { Compare } from './Studio';
-import { decisions } from '../domain/decisions';
+import { decisions, type Decision } from '../domain/decisions';
 import { plabel } from '../domain/label';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
@@ -33,7 +33,7 @@ export function moves(P: Project[]): Move[] {
   });
 }
 
-export interface Point { label: string; text: string; tone: 'info' | 'good' | 'warn' | 'bad' }
+export interface Point { label: string; text: string; tone: 'info' | 'good' | 'warn' | 'bad'; /** the projects behind the point, each with why */ items?: { id: string; label: string; why: string }[] }
 const names = (xs: string[]) => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`;
 
 /** Management summary as short labelled points, built from the figures. */
@@ -45,12 +45,15 @@ export function narrative(P: Project[], cname: (id: string) => string): Point[] 
   const many = new Set(M.map((x) => x.p.country)).size > 1;
   const who = (x: Move) => many ? `${lab(x.p)} (${cname(x.p.country)})` : lab(x.p);
   const out: Point[] = [];
+  const BAND: Record<string, string> = { blue: 'above plan', green: 'on plan', amber: 'slightly behind (70–90%)', red: 'well behind (under 70%)' };
+  const it = (x: Move, why: string) => ({ id: x.p.id, label: `${who(x)} · ${x.p.name}`, why });
+  const base = (x: Move) => `spent ${short(x.spent)} of ${short(money(x.p).budget)}; ${p0(x.perf)} of what should be spent by now — ${BAND[x.now] ?? x.now}`;
   const verdict = perf >= 1 ? 'ahead of plan' : perf >= 0.9 ? 'on track' : perf >= 0.7 ? 'somewhat behind plan' : 'well behind plan';
   out.push({ label: 'Position', tone: perf >= 0.9 ? 'good' : perf >= 0.7 ? 'warn' : 'bad',
-    text: `${M.length} projects have spent ${short(S)} of their ${short(B)} budget (${p0(B ? S / B : 0)}). By now ${short(PL)} should have been spent, so spending is at ${p0(perf)} of plan — ${verdict}.` });
+    text: `${M.length} projects have spent ${short(S)} of their ${short(B)} budget (${p0(B ? S / B : 0)}). By now ${short(PL)} should have been spent, so spending is at ${p0(perf)} of plan — ${verdict}.`, items: [...M].sort((a, b) => a.perf - b.perf).map((x) => it(x, base(x))) });
   const cnt = (b: string) => M.filter((x) => x.now === b).length;
   const parts = [['blue', 'above plan'], ['green', 'on plan'], ['amber', 'slightly behind (70–90%)'], ['red', 'well behind (under 70%)']].filter(([b]) => cnt(b)).map(([b, w]) => `${cnt(b)} ${w}`);
-  out.push({ label: 'Projects', tone: cnt('red') ? 'bad' : cnt('amber') ? 'warn' : 'good', text: cnt('red') === M.length ? `All ${M.length} projects are well behind plan (under 70%).` : `${names(parts)}.` });
+  out.push({ label: 'Projects', tone: cnt('red') ? 'bad' : cnt('amber') ? 'warn' : 'good', text: cnt('red') === M.length ? `All ${M.length} projects are well behind plan (under 70%).` : `${names(parts)}.`, items: [...M].sort((a, b) => a.perf - b.perf).map((x) => it(x, base(x))) });
   const added = M.reduce((a, x) => a + x.added, 0);
   const D = M.filter((x) => x.prev != null).map((x) => ({ x, d: x.perf - x.prev! })).sort((a, b) => b.d - a.d);
   if (added) {
@@ -58,23 +61,46 @@ export function narrative(P: Project[], cname: (id: string) => string): Point[] 
     const worst = D.at(-1) && D.at(-1)!.d < -0.02 ? ` Biggest slip: ${who(D.at(-1)!.x)}, ${pts(D.at(-1)!.d)}.` : '';
     // A fall in recorded spending, or a swing of more than 100 points, means two reports that do not cover the same thing.
     const odd = D.filter((d) => Math.abs(d.d) > 1).map((d) => who(d.x));
+    const sinceItems = [...D].map(({ x, d }) => it(x, `${short(x.added)} added since the previous report; ${p0(x.prev!)} → ${p0(x.perf)} of plan (${pts(d)})`));
     out.push(added < 0 || odd.length
       ? { label: 'Since last report', tone: 'warn', text: `${added < 0 ? `Recorded spending is ${short(-added)} lower than in the previous reports` : `${short(added)} of new spending recorded`}${odd.length ? ` — the last two reports of ${names(odd)} do not look comparable (different budget or coverage); check which report is the current one.` : ' — corrections or reversals; check the latest reports.'}` }
       : { label: 'Since last report', tone: 'info', text: `${short(added)} of new spending recorded.${best}${worst}` });
+    out.at(-1)!.items = sinceItems;
   }
   const order = ['blue', 'green', 'amber', 'red'];
   const worse = M.filter((x) => x.was && order.indexOf(x.now) > order.indexOf(x.was));
-  if (worse.length) out.push({ label: 'Downgraded', tone: 'warn', text: `${names(worse.map((x) => `${who(x)} ${x.was} → ${x.now}`))}.` });
+  if (worse.length) out.push({ label: 'Downgraded', tone: 'warn', text: `${names(worse.map((x) => `${who(x)} ${x.was} → ${x.now}`))}.`, items: worse.map((x) => it(x, `${x.was} → ${x.now}: ${p0(x.prev ?? 0)} → ${p0(x.perf)} of plan since the previous report`)) });
   const red = M.filter((x) => x.now === 'red').sort((a, b) => a.perf - b.perf);
-  if (red.length) out.push({ label: 'Needs action', tone: 'bad', text: `${names(red.slice(0, 5).map((x) => `${who(x)} at ${p0(x.perf)}`))} of planned spending${red.length > 5 ? `, and ${red.length - 5} more` : ''}.` });
+  if (red.length) out.push({ label: 'Needs action', tone: 'bad', text: `${names(red.slice(0, 5).map((x) => `${who(x)} at ${p0(x.perf)}`))} of planned spending${red.length > 5 ? `, and ${red.length - 5} more` : ''}.`, items: red.map((x) => { const pl = money(x.p).budget * elapsed(x.p, TODAY); return it(x, `${p0(x.perf)} of planned spending: ${short(x.spent)} spent, ${short(pl)} planned by now — ${short(Math.max(0, pl - x.spent))} behind`); }) });
   const high = M.filter((x) => warningScore(x.p, TODAY, { perf: x.perf, scp: x.perf, staffRatio: 0 }).level === 'high');
   const od = [...new Set(M.filter((x) => deadlines(x.p, TODAY).some((d) => d.status === 'overdue')).map(who))];
-  if (high.length || od.length) out.push({ label: 'Follow-up', tone: 'warn', text: [high.length && `High attention score: ${names(high.map(who))}.`, od.length && `Report overdue: ${names(od)}.`].filter(Boolean).join(' ') });
+  if (high.length || od.length) out.push({ label: 'Follow-up', tone: 'warn', text: [high.length && `High attention score: ${names(high.map(who))}.`, od.length && `Report overdue: ${names(od)}.`].filter(Boolean).join(' '),
+    items: M.filter((x) => high.includes(x) || deadlines(x.p, TODAY).some((d) => d.status === 'overdue')).map((x) => { const sc = warningScore(x.p, TODAY, { perf: x.perf, scp: x.perf, staffRatio: 0 }), o = deadlines(x.p, TODAY).find((d) => d.status === 'overdue');
+      return it(x, [high.includes(x) && `attention score ${sc.score} (${sc.parts.filter((q) => q.points > 0).map((q) => q.label.toLowerCase()).join(', ')})`, o && `report due ${date(o.due)} not on file`].filter(Boolean).join(' · ')); }) });
   const ren = M.flatMap((x) => renewals(roster(x.p, TODAY), TODAY, 90));
-  if (ren.length) { const by = [...new Set(ren.map((r) => r.end).filter(Boolean))].sort(); out.push({ label: 'Staff', tone: 'warn', text: `${ren.length} contract${ren.length > 1 ? 's end' : ' ends'} in the next 90 days${by[0] ? `, the first on ${date(by[0]!)}` : ''}.` }); }
+  const renBy = M.map((x) => ({ x, R: renewals(roster(x.p, TODAY), TODAY, 90) })).filter((y) => y.R.length);
+  if (ren.length) { const by = [...new Set(ren.map((r) => r.end).filter(Boolean))].sort(); out.push({ items: renBy.map(({ x, R }) => it(x, `${R.length} contract${R.length > 1 ? 's end' : ' ends'} by ${date(R.at(-1)!.end)}: ${R.map((r) => `${r.display} (${date(r.end)})`).join(', ')}`)), label: 'Staff', tone: 'warn', text: `${ren.length} contract${ren.length > 1 ? 's end' : ' ends'} in the next 90 days${by[0] ? `, the first on ${date(by[0]!)}` : ''}.` }); }
   const ending = M.filter((x) => { const d = (parseDate(x.p.end).getTime() - TODAY.getTime()) / 864e5; return d > 0 && d < 183 && money(x.p).budget - x.spent > 0.15 * money(x.p).budget; });
-  if (ending.length) out.push({ label: 'Closing soon', tone: 'bad', text: `${names(ending.map((x) => `${who(x)} ends ${date(x.p.end)} with ${short(money(x.p).budget - x.spent)} unspent`))}.` });
+  if (ending.length) out.push({ label: 'Closing soon', tone: 'bad', text: `${names(ending.map((x) => `${who(x)} ends ${date(x.p.end)} with ${short(money(x.p).budget - x.spent)} unspent`))}.`, items: ending.map((x) => it(x, `ends ${date(x.p.end)}; ${short(money(x.p).budget - x.spent)} of ${short(money(x.p).budget)} not spent yet`)) });
   return out;
+}
+
+/**
+ * Decisions grouped by their kind (addendum, staff contract …), the most pressing kind first. A kind with many items
+ * opens closed and lists them by project — one line per project with what each needs.
+ */
+function DecisionGroups({ D }: { D: Decision[] }) {
+  const G = [...D.reduce((m, x) => m.set(x.kind, [...(m.get(x.kind) ?? []), x]), new Map<string, Decision[]>())].map(([kind, L]) => ({ kind, L, tone: L.some((x) => x.tone === 'bad') ? 'bad' : 'warn' }))
+    .sort((a, b) => (a.tone === 'bad' ? 0 : 1) - (b.tone === 'bad' ? 0 : 1));
+  return <div class="dec-g">{G.map(({ kind, L, tone }) => {
+    const projects = [...new Set(L.map((x) => x.p?.id ?? ''))];
+    const byP = projects.map((id) => ({ p: L.find((x) => (x.p?.id ?? '') === id)?.p, L: L.filter((x) => (x.p?.id ?? '') === id) }));
+    const strip = (x: Decision) => (x.p ? x.text.replace(new RegExp(`^${plabel(x.p).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:?\\s*`), '') : x.text);
+    return <details class={`dec-k t-${tone}`} open={L.length <= 4}>
+      <summary><span class="badge">{kind}</span><b>{L.length}</b><span class="muted">{projects.filter(Boolean).length > 1 ? `across ${projects.filter(Boolean).length} projects` : L[0].p ? plabel(L[0].p) : ''}</span></summary>
+      <ul>{L.length <= 4 ? L.map((x) => <li class={x.p ? 'click' : ''} onClick={() => x.p && go(`project/${x.p.id}`)}>{x.text}</li>)
+        : byP.map(({ p, L: Q }) => <li class={p ? 'click' : ''} onClick={() => p && go(`project/${p.id}`)}><b>{p ? plabel(p) : 'Portfolio'}</b> <span class="muted">· {Q.length}</span><span class="dec-sub">{Q.map(strip).join(' · ')}</span></li>)}</ul>
+    </details>; })}</div>;
 }
 
 export function MonthlyPack() {
@@ -96,12 +122,12 @@ export function MonthlyPack() {
       </header>
       <section class="pack-s pack-sum">
         <h3>Summary</h3>
-        <ul class="pack-pts">{N.map((t) => <li class={`t-${t.tone}`}><span>{t.label}</span><p>{t.text}</p></li>)}</ul>
+        <ul class="pack-pts">{N.map((t) => <li class={`t-${t.tone}${t.items?.length ? ' click' : ''}`} title={t.items?.length ? 'Which projects, and why' : undefined} onClick={t.items?.length ? () => set({ drawer: { kind: 'points', title: t.label, text: t.text, items: t.items! } }) : undefined}><span>{t.label}</span><p>{t.text}</p>{t.items?.length ? <em class="pack-n">{t.items.length} ›</em> : null}</li>)}</ul>
         <button class="btn ghost no-print" onClick={() => navigator.clipboard?.writeText(N.map((t) => `${t.label}: ${t.text}`).join('\n'))}>Copy summary</button>
       </section>
       <section class="pack-s pack-dec">
         <h3>Decisions and actions this month</h3>
-        {DEC.length ? <ul>{DEC.map((x) => <li class={`t-${x.tone}`} onClick={() => x.p && go(`project/${x.p.id}`)} style={{ cursor: x.p ? 'pointer' : undefined }}><span class="badge">{x.kind}</span> {x.text}</li>)}</ul>
+        {DEC.length ? <DecisionGroups D={DEC} />
           : <p class="muted">Nothing needs a decision this month.</p>}
       </section>
       {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>

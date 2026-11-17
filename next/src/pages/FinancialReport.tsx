@@ -7,7 +7,7 @@ import { forecastFileName } from '../domain/forecastTemplate';
 import { reportPack, type PackExtra } from '../domain/reportPack';
 import { exportOk } from '../ui/exportGate';
 import { download, pngData } from '../ui/xlsxwrite';
-import { byPeriodThenImport, elapsed, latestReport, lines } from '../domain/calc';
+import { byPeriodThenImport, elapsed, latestReport, lines, yearsStart } from '../domain/calc';
 import type { Project } from '../domain/types';
 import type { WbLine, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -69,9 +69,10 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
   return (
     <>
       <div class="wb-strip">
-        <div><span>Contract</span><b class="num">{m.contract ?? '—'}</b></div>
-        <div><span>JP / BH</span><b class="num">{m.jp ?? '—'} / {m.bh ?? '—'}</b></div>
-        <div><span>Report period</span><b>{m.periodFrom ? `${date(m.periodFrom)} → ${date(m.periodTo!)}` : '—'}</b></div>
+        {/* A system extraction carries no header: contract, JP and the period come from the main report and the project file. */}
+        <div><span>Contract</span><b class="num">{m.contract ?? p.contractNo ?? '—'}</b></div>
+        <div><span>JP / BH</span><b class="num">{m.jp ?? p.jp ?? '—'} / {m.bh ?? p.bh ?? '—'}</b></div>
+        <div><span>Report period</span><b>{(() => { const f = m.periodFrom ?? yearsStart(p), t = m.periodTo ?? m.situationDate ?? m.asAt ?? rep.date; return f && t ? `${date(f)} → ${date(t)}` : '—'; })()}</b></div>
         <div><span>Actuals as at</span><b>{m.asAt ? date(m.asAt) : date(rep.date)}</b></div>
         <div><span>Source</span><b title={wb.sheets.join(', ')}>{wb.fileName ?? rep.fileName ?? '—'}</b></div>
         {wb.meta.extraction && <span class="pack">
