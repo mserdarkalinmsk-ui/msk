@@ -79,8 +79,18 @@ export interface ProviderPO extends PO { p: Project; kind: Kind | null; auto: Ki
  * Purchase orders of the latest report workbook of each project, with their kind. `set` holds the user's
  * corrections (a kind, or 'none' to leave a PO out); with `all`, POs of no kind come too (to correct them).
  */
+/** The automatic kind of each PO depends only on the project: kept per project object (a changed project is a new one). */
+const autoCache = new WeakMap<Project, ProviderPO[]>();
 export function providerPOs(P: Project[], set: Record<string, string> = {}, all = false): ProviderPO[] {
   const out = P.flatMap((p) => {
+    let c = autoCache.get(p);
+    if (!c) { c = autoPOs(p); autoCache.set(p, c); }
+    return c.map((x) => ({ ...x }));
+  });
+  return applyChoices(out, set, all);
+}
+function autoPOs(p: Project): ProviderPO[] {
+  {
     const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byUpload).at(-1)?.snapshot?.workbook;
     if (!wb?.pos?.length) return [];
     const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
@@ -89,7 +99,9 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
       const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature} ${PETTY.test(x.supplier) ? x.supplier : ''}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`, x.supplier);
       return [{ ...x, p, kind: auto, auto, key, value } as ProviderPO];
     });
-  });
+  }
+}
+function applyChoices(out: ProviderPO[], set: Record<string, string>, all: boolean): ProviderPO[] {
   // A provider known for interpretation (any of its POs reads as interpretation) is an interpretation firm: its
   // other POs (technical equipment, booths under 5.7, a "conference" PO) count as interpretation too.
   const interp = new Set(out.filter((x) => x.auto === 'interp').map((x) => supKey(x.supplier)));
@@ -105,7 +117,13 @@ export function providerPOs(P: Project[], set: Record<string, string> = {}, all 
  * One key per company, however the name was typed: case, punctuation, the legal form (A.S., INC., LTD. STI …),
  * a city after a dash and "(Fournisseur …)" notes are ignored, so "ZETA … INC.- ANKARA" and "ZETA … INC." merge.
  */
+const keyCache = new Map<string, string>();
 export function supKey(s: string) {
+  let k = keyCache.get(s);
+  if (k == null) { if (keyCache.size > 20000) keyCache.clear(); k = supKeyOf(s); keyCache.set(s, k); }
+  return k;
+}
+function supKeyOf(s: string) {
   return s.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/\s*[-–]\s*(ankara|istanbul|izmir|kyiv|tbilisi|strasbourg)\b.*$/i, ' ')
     .replace(/[.,;:'"’()\-–_/&]+/g, ' ')
     .replace(/(?<=^|\s)(a ?s|aş|a ?ş|inc|ltd|limited|sti|şti|org|co|corp|llc|gmbh|sarl|sa|srl|tic|ticaret|san|sanayi|ve)(?=\s|$)/g, ' ').replace(/(?<=^|\s)(a ?s|aş|inc|ltd|sti|şti|org)(?=\s|$)/g, ' ')
