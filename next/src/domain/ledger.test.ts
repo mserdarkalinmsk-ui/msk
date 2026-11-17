@@ -173,3 +173,16 @@ describe('units are counted in the steps their kind is used in', () => {
     expect(usedUnits(7, 1000, 3000, 'Per diem', 'Per day', undefined, undefined, false, '1.3.1')).toBe(2.25);
   });
 });
+
+describe('PO lines with an amount but no units', () => {
+  it('lists the unpaid ones as commitments to release and the paid ones as cost without units', async () => {
+    const { findErrors } = await import('./ledger');
+    const po = (x: Record<string, unknown>) => ({ po: '1', line: '2.2', description: 'Organisation of the launching event of the project on 27 March 2026 in Ankara', nature: '', supplier: 'An event company', unitType: 'Per Travel', units: 0, amount: 435, spent: 0, sc: 435, date: '2026-03-11', ...x }) as never;
+    const F = findErrors([], { pos: [po({}), po({ po: '2', line: '5.7', unitType: 'Per event', amount: 30, spent: 30, sc: 30 }), po({ po: '3', units: 2, amount: 300, spent: 100, sc: 300 }), po({ po: '4', line: '6.2', unitType: 'Per grant', amount: 900 })], asAt: '2026-11-17' });
+    const open = F.find((f) => f.kind === 'units-missing-open')!, paid = F.find((f) => f.kind === 'units-missing-paid')!;
+    expect(open.rows.map((r) => r.doc)).toEqual(['PO 1']);
+    expect(open.amount).toBe(435);
+    expect(open.text).toContain('before it is invoiced');
+    expect(paid.rows.map((r) => r.doc)).toEqual(['PO 2']);
+  });
+});

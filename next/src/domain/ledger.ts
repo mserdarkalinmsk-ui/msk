@@ -46,7 +46,7 @@ export function presets(today: Date): { key: string; label: string; from: string
 
 /* ---------- entries that look wrong ---------- */
 
-export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over' | 'staff-short' | 'units-typed';
+export type FindingKind = 'no-line' | 'not-in-budget' | 'wrong-line' | 'duplicate' | 'po-over' | 'outside-dates' | 'unposted' | 'other-bh' | 'unit-mismatch' | 'contract-beyond' | 'line-over' | 'head-over' | 'head-near' | 'units-over' | 'staff-short' | 'units-typed' | 'units-missing-open' | 'units-missing-paid';
 /** A staff PO that will not last until its contract end: what is paid a month, the months left and what is missing. */
 export interface StaffShort { po: string; line: string; person: string; to: string; months: number; perMonth: number; need: number; balance: number; ordered: number; spent: number; shortfall: number }
 export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info'; title: string; text: string; amount: number; rows: { date: string; doc: string; line: string; description: string; amount: number; staff?: StaffShort }[] }
@@ -54,7 +54,7 @@ export interface Finding { kind: FindingKind; level: 'error' | 'warning' | 'info
 export const KIND_LABEL: Record<FindingKind, string> = {
   'no-line': 'No reporting line', 'not-in-budget': 'Line not in the budget', 'wrong-line': 'Possibly the wrong line', duplicate: 'Possible duplicate',
   'po-over': 'Invoiced above the PO', 'outside-dates': 'Outside the project dates', unposted: 'Not posted', 'other-bh': 'Mentions another budget head',
-  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification', 'staff-short': 'Staff PO does not cover the remaining months', 'units-typed': 'Amount typed as the number of units',
+  'unit-mismatch': 'Unit differs from the budget', 'contract-beyond': 'Contract runs past the project end', 'line-over': 'Line above its approved budget', 'head-over': 'Heading beyond the flexibility', 'head-near': 'Heading close to the addendum threshold', 'units-over': 'Units above the budget — notification', 'staff-short': 'Staff PO does not cover the remaining months', 'units-typed': 'Amount typed as the number of units', 'units-missing-open': 'Committed on a PO line with no units', 'units-missing-paid': 'Invoiced on a PO line with no units',
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -161,6 +161,17 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
   if (o.bh) {
     const E = entries.filter((e) => { const m = `${e.description} ${e.detail}`.match(/\bBH\s?(\d{4})\b/gi); return m?.some((x) => x.replace(/\D/g, '') !== o.bh); });
     if (E.length) push('other-bh', 'info', `${E.length} entries name a budget head other than ${o.bh} — usually a transfer or a regularisation; check the amount landed on the right project.`, E);
+  }
+
+  // 8a. PO lines with an amount but no units (months of staff, grants and petty cash aside). Not invoiced yet: the
+  // amount is committed and will be spent later, with no units — to set on the PO first. Invoiced: the line's
+  // spending counts with no units, so its cost per unit reads higher than it is.
+  if (o.pos?.length) {
+    const Z = o.pos.filter((p) => !p.units && p.amount > 0.005 && !/month/i.test(p.unitType) && !/petty cash|caisse|avans|advance request/i.test(`${p.description} ${p.supplier}`) && unitStep(p.unitType, p.line, p.description) != null && p.line && p.line !== '0' && p.line !== '10');
+    const open = Z.filter((p) => p.spent < 0.005 && p.sc > 0.005), paid = Z.filter((p) => p.spent >= 0.005);
+    const rows = (L: PO[]) => L.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.supplier ? `${p.supplier.trim()} · ` : ''}${p.description} · 0 units ${p.unitType}, ${eur(p.amount)} ordered, ${eur(p.spent)} invoiced`, amount: p.spent >= 0.005 ? p.spent : p.sc }));
+    if (open.length) out.push({ kind: 'units-missing-open', level: 'warning', title: KIND_LABEL['units-missing-open'], text: `${open.length} PO line${open.length > 1 ? 's are' : ' is'} committed (${eur(open.reduce((a, p) => a + p.sc, 0))}) with 0 units and not invoiced yet. When the invoice comes, its cost will count on the line with no units, so the line's cost per unit will rise. Ask for the number of units to be set on the PO before it is invoiced.`, amount: r2(open.reduce((a, p) => a + p.sc, 0)), rows: rows(open) });
+    if (paid.length) out.push({ kind: 'units-missing-paid', level: 'info', title: KIND_LABEL['units-missing-paid'], text: `${paid.length} PO line${paid.length > 1 ? 's were' : ' was'} invoiced (${eur(paid.reduce((a, p) => a + p.spent, 0))}) with 0 units — usually a small extra (fee, tax, a second leg) on a PO counted elsewhere; the cost per unit of these lines includes it.`, amount: r2(paid.reduce((a, p) => a + p.spent, 0)), rows: rows(paid) });
   }
 
   // 8b. the amount typed again as the number of units (1,100 units for EUR 1,100): not counted as units
