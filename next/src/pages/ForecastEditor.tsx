@@ -2,7 +2,7 @@ import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from '../ui/exportGate';
 import { useState } from 'preact/hooks';
 import { updateProject, upsertCountry, useStore } from '../data/store';
-import { autoLine, autofillStaff, balanceOn, computePlan, effective, resolvedLines, withCountryPolicy, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
+import { autoLine, balanceOn, suggestKind, isChargeBack, isStaffLine, computePlan, effective, resolvedLines, snapUnits, withCountryPolicy, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
 import { costFactor, CPI_LAST, salaryPath, type InflationSettings } from '../domain/salaryProjection';
 import { PolicyFields } from '../ui/SalaryPolicy';
 import type { Country } from '../domain/types';
@@ -24,16 +24,19 @@ const num = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2,
  */
 export function ForecastEditor({ p }: { p: Project }) {
   const countries = useStore((s) => s.ledger.countries);
-  const d0: ForecastDraft = p.forecastDraft ?? { opt: defaultOptions(p), lines: {} };
+  const sug = suggestKind(p, TODAY);
+  const d0: ForecastDraft = p.forecastDraft ?? { opt: { ...defaultOptions(p), kind: sug.kind }, lines: {} };
   // The salary policy and CPI are the country's (Türkiye): the project keeps only whether its forecast uses them.
   const country = countries.find((c) => c.id === p.country), isTR = !!country && (country.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(country.name));
-  const d = withCountryPolicy(p, d0, countries);
+  const d = snapUnits(p, withCountryPolicy(p, d0, countries));
   const save = (x: ForecastDraft) => updateProject(p.id, { forecastDraft: { ...x, ...(country?.salaryPolicy ? { infl: { on: x.infl?.on ?? false } } : {}), updatedAt: new Date().toISOString() } });
   const setOpt = (o: Partial<ForecastOptions>) => { const opt = { ...d.opt, ...o }; if (!FORECAST_KINDS[opt.kind].programmes.includes(opt.programme)) opt.kind = opt.programme === 'JP' ? 'payment' : 'revision'; save({ ...d, opt }); };
   const setCell = (code: string, b: BlockId, k: 'u' | 'r', v: string) => {
     const x = v.trim() === '' ? undefined : Number(v.replace(/,/g, ''));
     if (x != null && !Number.isFinite(x)) return;
-    save({ ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { ...d.lines[code]?.[b], [k]: x } } } });
+    // On a finance line a typed figure is kept over the calculation; emptying the box gives the calculation back.
+    const fin = isStaffLine(code) || isChargeBack(code), flag = k === 'u' ? 'mu' : 'mr';
+    save(snapUnits(p, { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { ...d.lines[code]?.[b], [k]: x, ...(fin ? { [flag]: x != null || undefined } : {}) } } } }));
   };
   const [all, setAll] = useState(false), [note, setNote] = useState(false);
   const plug = autoLine(d), E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), lastB = R.blocks.at(-1)!.id;
@@ -46,7 +49,7 @@ export function ForecastEditor({ p }: { p: Project }) {
   // Units that look like a rate typed in the wrong box: more months than the period has for a monthly line, or far more
   // than the budget has left.
   const odd = (l: (typeof R.lines)[number], b: BlockId): string | null => {
-    const u = d.lines[l.code]?.[b]?.u; if (!u) return null;
+    const u = E.lines[l.code]?.[b]?.u; if (!u) return null;
     const blk = R.blocks.find((x) => x.id === b)!, months = (Date.parse(blk.to) - Date.parse(blk.from)) / (30.44 * 864e5) + 1;
     if (/month/i.test(l.unit) && u > months * (l.staff ? 3 : 2) + 0.5) return `${u} units for about ${Math.round(months)} months — is this a rate typed in the units box?`;
     if (l.bUnits && u > l.bUnits * 3) return `${u} units against ${l.bUnits} in the budget — please check`;
@@ -58,20 +61,22 @@ export function ForecastEditor({ p }: { p: Project }) {
     <div class="fe">
       <section class="card">
         <div class="card-h" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-          <div><h2>Forecast</h2><p>Green: finance (staff, 4.2 / 4.4) · yellow: project team · amounts follow the CoE template formulas</p></div>
+          <div><h2>Forecast</h2><p>Green: finance (staff, 4.2 / 4.4) · yellow: project team · amounts follow the CoE template formulas</p><p class="fe-sug">Template for this project now: <b>{FORECAST_KINDS[sug.kind].label}</b> — {sug.why}</p></div>
           <div class="fe-tools">
             <div class="seg">{(['JP', 'VC'] as const).map((x) => <button aria-pressed={d.opt.programme === x} onClick={() => setOpt({ programme: x })}>{x}</button>)}</div>
             <select aria-label="Forecast template" value={d.opt.kind} onChange={(e) => setOpt({ kind: (e.target as HTMLSelectElement).value as ForecastKind })}>
-              {(Object.keys(FORECAST_KINDS) as ForecastKind[]).filter((k) => FORECAST_KINDS[k].programmes.includes(d.opt.programme)).map((k) => <option value={k}>{FORECAST_KINDS[k].label}</option>)}
+              {(Object.keys(FORECAST_KINDS) as ForecastKind[]).filter((k) => FORECAST_KINDS[k].programmes.includes(d.opt.programme)).map((k) => <option value={k}>{FORECAST_KINDS[k].label}{k === sug.kind ? ' (suggested)' : ''}</option>)}
             </select>
             {d.opt.programme === 'JP' && !twelve && <label class="fe-ext"><select value={d.opt.change ?? ''} onChange={(e) => setOpt({ change: ((e.target as HTMLSelectElement).value || undefined) as ForecastOptions['change'] })}>
               <option value="">{dec === 'addendum' ? 'Addendum (suggested)' : 'Notification (suggested)'}</option><option value="notification">Notification</option><option value="addendum">Addendum</option></select>
               n° <input style={{ width: '56px' }} value={d.opt.changeNo ?? ''} onChange={(e) => setOpt({ changeNo: (e.target as HTMLInputElement).value || undefined })} /></label>}
+            {sug.kind !== d.opt.kind && FORECAST_KINDS[sug.kind].programmes.includes(d.opt.programme) && <button class="btn sm" title={sug.why} onClick={() => setOpt({ kind: sug.kind })}>Suggested: {FORECAST_KINDS[sug.kind].label}</button>}
             {(d.opt.kind === 'revision' || d.opt.kind === 'extension') && <label class="fe-ext">until <input type="date" value={d.opt.extendTo ?? ''} min={p.end} onChange={(e) => setOpt({ extendTo: (e.target as HTMLInputElement).value || undefined })} /></label>}
           </div>
         </div>
         <div class="card-b fe-actions">
-          <button class="btn primary" title="Units from the staff contracts on each line (months in each period × FTE), rates from the latest cost plus the guideline margin; 4.2 / 4.4 on the local staff months" onClick={() => save(autofillStaff(p, TODAY, d))}>✦ Fill staff and 4.2 / 4.4</button>
+          <button class="btn primary" title="Units from the staff contracts on each line (months in each period × FTE), rates from the latest cost plus the guideline margin; 4.2 / 4.4 on the local staff months" onClick={() => save({ ...d, lines: Object.fromEntries(Object.entries(d.lines).map(([c, x]) => [c, isStaffLine(c) || isChargeBack(c) ? {} : x])) })}>↺ Recalculate staff and 4.2 / 4.4</button>
+          <span class="muted fe-live">Calculated live from the contracts and the latest report{Object.entries(d.lines).some(([c, x]) => (isStaffLine(c) || isChargeBack(c)) && Object.values(x ?? {}).some((y) => y?.mu || y?.mr)) ? ' · cells with a dashed border were typed by hand (empty one to recalculate)' : ''}</span>
           <label class="fe-rate">4.2 rate <input type="number" value={d.rates?.r42 ?? ''} placeholder="per month" onChange={(e) => save({ ...d, rates: { ...d.rates, r42: Number((e.target as HTMLInputElement).value) || undefined } })} /></label>
           <label class="fe-rate">4.4 rate <input type="number" value={d.rates?.r44 ?? ''} placeholder="per month" onChange={(e) => save({ ...d, rates: { ...d.rates, r44: Number((e.target as HTMLInputElement).value) || undefined } })} /></label>
           {!twelve && <label class="fe-ext" title="Guidelines step 8: the total of the agreement does not change — the remainder of the direct costs goes to one line, in its last planned period">
@@ -142,7 +147,7 @@ export function ForecastEditor({ p }: { p: Project }) {
                       <td class="r num">{l.bUnits ? +l.bUnits.toFixed(2) : ''}</td><td class="r num">{l.rate ? num(l.rate) : ''}</td><td class="r num">{l.budget ? num(l.budget) : ''}</td>
                       <td class={`r num${l.bUnits && l.aUnits > l.bUnits ? ' bad' : ''}`} title={l.bUnits ? `${+(l.bUnits - l.aUnits).toFixed(2)} units left in the budget` : ''}>{l.aUnits ? +l.aUnits.toFixed(2) : ''}</td><td class={`r num${l.rate && l.aRate > l.rate * 1.15 ? ' warn' : ''}`}>{l.aRate ? num(l.aRate) : ''}</td>
                       <td class="r num">{l.sc ? num(l.sc) : ''}</td>
-                      {R.blocks.map((b) => { const c = d.lines[l.code]?.[b.id], cls = l.staff || l.cb ? 'fe-in g' : 'fe-in y'; return <>
+                      {R.blocks.map((b) => { const c = E.lines[l.code]?.[b.id], mine = !!(d.lines[l.code]?.[b.id]?.mu || d.lines[l.code]?.[b.id]?.mr), cls = l.staff || l.cb ? `fe-in g${mine ? ' typed' : ''}` : 'fe-in y'; return <>
                         <td>{plug === l.code && b.id === lastB ? <span class="fe-auto" title="Calculated so the direct costs stay equal to the budget">{E.lines[l.code]?.[b.id]?.u ?? 0} <small>auto</small></span> : <input class={`${cls}${odd(l, b.id) ? ' odd' : ''}`} title={odd(l, b.id) ?? ''} inputMode="decimal" value={c?.u ?? ''} onChange={(e) => setCell(l.code, b.id, 'u', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} units`} />}</td>
                         <td><input class={cls} inputMode="decimal" value={c?.r ?? ''} placeholder={(l.defRates?.[b.id] ?? l.defRate) ? String(Math.round((l.defRates?.[b.id] ?? l.defRate)!)) : ''} onChange={(e) => setCell(l.code, b.id, 'r', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} rate`} /></td>
                         <td class="r num">{l.cells[b.id]?.cost ? num(l.cells[b.id]!.cost) : ''}</td></>; })}

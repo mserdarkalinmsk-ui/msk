@@ -12,7 +12,7 @@ import { costFactor, type InflationSettings } from './salaryProjection';
  * version; variation), with the 25% check per heading that decides between a notification and an addendum.
  */
 export type BlockId = 'p' | 'r' | 'e';
-export interface PlanCell { u?: number; r?: number }
+export interface PlanCell { u?: number; r?: number; /** typed by hand on a finance line (staff, 4.2 / 4.4): kept over the calculation */ mu?: boolean; mr?: boolean }
 export interface ForecastDraft { /** keep the total fixed: the remainder goes to this line (default on, 5.7) */ auto?: { on?: boolean; line?: string }; /** local salary projection (Türkiye raise policy) */ infl?: InflationSettings; opt: ForecastOptions; lines: Record<string, Partial<Record<BlockId, PlanCell>>>; rates?: { r42?: number; r44?: number }; updatedAt?: string; notes?: string[]; /** revision note: justification per heading, and who prepares / approves */ just?: Record<string, string>; sign?: { by?: string; ok?: string }; /** notification letter: reference and the text per changed line */ letter?: { ref?: string; no?: string; lines?: Record<string, string> } }
 
 export { averageRate } from './rates';
@@ -55,6 +55,19 @@ export function planLines(p: Project): { code: string; description: string; unit
   return codes.map((c) => { const l = mine.get(c), s = STANDARD_LINES.find(([x]) => x === c); return { code: c, description: l?.description || s?.[1] || '', unit: l?.unit || s?.[2] || '', empty: !l }; });
 }
 
+/** Planned units in the step of each line's unit (months in quarters, days and trips in halves, per diem in quarters):
+ * a forecast never plans 32.88 months, whatever was typed or saved before. */
+export function snapUnits(p: Project, d: ForecastDraft): ForecastDraft {
+  const L = new Map(planLines(p).map((x) => [x.code, x])); let changed = false;
+  const lines: ForecastDraft['lines'] = {};
+  for (const [code, cells] of Object.entries(d.lines ?? {})) {
+    const x = L.get(code), step = x ? unitStep(x.unit, code, x.description) : 1, o: any = {};
+    for (const [b, c] of Object.entries(cells ?? {})) { const u = c?.u == null ? c?.u : roundUnits(c.u, step); if (u !== c?.u) changed = true; o[b] = { ...c, u }; }
+    lines[code] = o;
+  }
+  return changed ? { ...d, lines } : d;
+}
+
 export function computePlan(p: Project, today: Date, d: ForecastDraft | undefined): PlanResult {
   const o = d?.opt ?? defaultOptions(p), blocks = planBlocks(p, today, o), L = lines(p), byCode = new Map(L.map((l) => [l.code, l]));
   const per0 = forecastPeriod(p, today, o);
@@ -71,7 +84,7 @@ export function computePlan(p: Project, today: Date, d: ForecastDraft | undefine
     let planned = 0, pu = 0;
     for (const b of blocks) {
       const c = d?.lines[x.code]?.[b.id]; if (!c) continue;
-      const u = n(c.u), r = c.r != null ? n(c.r) : n(defRates[b.id] ?? defRate), cost = u * r; cells[b.id] = { u, r, cost }; planned += cost; pu += u;
+      const u = roundUnits(n(c.u), unitStep(x.unit, x.code, x.description)), r = c.r != null ? n(c.r) : n(defRates[b.id] ?? defRate), cost = u * r; cells[b.id] = { u, r, cost }; planned += cost; pu += u;
     }
     // As in the template: staff build on what is spent, charging back on its units and spent + committed, others on spent + committed.
     const u0 = staff || cb ? aUnits : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0, c0 = staff ? actual : sc;
@@ -187,9 +200,43 @@ export function withCountryPolicy(p: Project, d: ForecastDraft, countries: { id:
   const c = countries.find((x) => x.id === p.country)?.salaryPolicy; if (!c) return d;
   return { ...d, infl: { ...c, on: d.infl?.on ?? c.on } };
 }
-export function effective(p: Project, today: Date, d: ForecastDraft): ForecastDraft {
-  const code = autoLine(d); if (!code) return d;
+/** The finance lines (staff, 4.2 / 4.4) are always calculated from the contracts and the latest report — never read from a
+ * saved draft — except a unit or rate typed by hand on them. */
+export function liveFinance(p: Project, today: Date, d: ForecastDraft): ForecastDraft {
+  const fin = (c: string) => isStaffLine(c) || isChargeBack(c);
+  const kept: ForecastDraft['lines'] = {};
+  for (const [c, cells] of Object.entries(d.lines ?? {})) {
+    if (!fin(c)) { kept[c] = cells; continue; }
+    const o: any = {};
+    for (const [b, x] of Object.entries(cells ?? {})) if (x?.mu || x?.mr) o[b] = { ...(x.mu ? { u: x.u, mu: true } : {}), ...(x.mr ? { r: x.r, mr: true } : {}) };
+    kept[c] = o;
+  }
+  const a = autofillStaff(p, today, { ...d, lines: kept });
+  for (const [c, cells] of Object.entries(kept)) {
+    if (!fin(c)) continue;
+    const o: any = { ...a.lines[c] };
+    for (const [b, x] of Object.entries(cells ?? {})) o[b] = { ...o[b], ...x };
+    a.lines[c] = o;
+  }
+  return { ...a, updatedAt: d.updatedAt };
+}
+
+export function effective(p: Project, today: Date, d0: ForecastDraft): ForecastDraft {
+  const d = snapUnits(p, liveFinance(p, today, d0)), code = autoLine(d); if (!code) return d;
   const b = planBlocks(p, today, d.opt).at(-1)!.id, keep = d.lines[code]?.[b]?.r;
   const cleared: ForecastDraft = { ...d, lines: { ...d.lines, [code]: { ...d.lines[code], [b]: { r: keep } } } };
   return balanceOn(p, today, cleared, code);
 }
+
+/** The template that fits the project now: an extension when the end is near and much of the budget is still free (the
+ * savings carry the extra months), otherwise the usual one of the programme (JP: revision with the payment; VC: revision). */
+export function suggestKind(p: Project, today: Date): { kind: ForecastOptions['kind']; why: string } {
+  const L = lines(p).filter((l) => l.code !== '10' && !/^8(\.|$)/.test(l.code) && !L0(l.code, p));
+  const budget = L.reduce((a, l) => a + n(l.approved), 0), sc = L.reduce((a, l) => a + lineExposure(l), 0);
+  const free = budget > 0 ? (budget - sc) / budget : 0, left = (parseDate(p.end).getTime() - today.getTime()) / MONTH;
+  const jp = defaultOptions(p).programme === 'JP';
+  if (left <= 12 && free > 0.15) return { kind: 'extension', why: `${left <= 0 ? 'the end date has passed' : `${Math.max(0, Math.round(left))} months to the end`} and ${Math.round(free * 100)}% of the direct budget is not yet spent or committed — an extension with details shows the savings to the current end, then the extra period` };
+  if (jp) return { kind: 'payment', why: 'JP: the next instalment needs the 12-month forecast, with the budget revision to the end' };
+  return { kind: 'revision', why: 'planned expenditure to the end of the project' };
+}
+const L0 = (code: string, p: Project) => lines(p).some((o) => o.code !== code && o.code.startsWith(code + '.'));

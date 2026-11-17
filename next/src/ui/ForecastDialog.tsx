@@ -1,3 +1,4 @@
+import { effective, resolvedLines, withCountryPolicy } from '../domain/forecastPlan';
 import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from './exportGate';
 import { useState } from 'preact/hooks';
@@ -28,7 +29,7 @@ export function ForecastDialog({ p, close }: { p: Project; close: () => void }) 
     const opt = { ...o, change: o.programme === 'JP' && o.kind !== 'twelve' ? o.change ?? suggest : undefined };
     try { localStorage.setItem(KEY(p.id), JSON.stringify(opt)); } catch { /* storage blocked */ }
     if (!exportOk(p, 'the forecast')) return;
-    download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt), forecastSheets(p, TODAY, opt, p.forecastDraft?.lines)); close();
+    download(forecastFileName(p, countries.find((c) => c.id === p.country)?.name ?? '', TODAY, opt), forecastSheets(p, TODAY, opt, p.forecastDraft ? resolvedLines(p, TODAY, effective(p, TODAY, { ...withCountryPolicy(p, p.forecastDraft, countries), opt: { ...p.forecastDraft.opt, ...o } })) : undefined)); close();
   };
   return (
     <>

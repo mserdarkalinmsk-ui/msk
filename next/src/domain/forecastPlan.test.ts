@@ -87,3 +87,29 @@ describe('balance line keeps the total', () => {
     expect(Math.abs(R.lines.reduce((x, l) => x + l.propCost, 0) - R.direct.budget)).toBeLessThan(0.01);
   });
 });
+
+import { snapUnits as snap2 } from './forecastPlan';
+describe('planned units in the step of their unit', () => {
+  it('a saved 32.88 months reads 33, 65.76 reads 65.75, 164.4 reads 164.5 (quarters of a month)', () => {
+    const p: any = { id: 'x', lines: [{ code: '1.1.1.2', description: 'Officer', unit: 'Per month', approved: 1 }, { code: '4.2', description: 'Rent', unit: 'Per month', approved: 1 }, { code: '2.1', description: 'Flights', unit: 'Per return flight', approved: 1 }], entries: [] };
+    const d: any = { opt: {}, lines: { '1.1.1.2': { p: { u: 32.88 }, e: { u: 65.76 } }, '4.2': { p: { u: 164.4 } }, '2.1': { p: { u: 3.3 } } } };
+    const s = snap2(p, d);
+    expect([s.lines['1.1.1.2'].p!.u, s.lines['1.1.1.2'].e!.u, s.lines['4.2'].p!.u, s.lines['2.1'].p!.u]).toEqual([33, 65.75, 164.5, 3.5]);
+  });
+});
+
+import { liveFinance, suggestKind } from './forecastPlan';
+describe('finance lines are calculated, not saved', () => {
+  it('a saved unit on a staff line without a hand mark is recalculated; a typed one is kept', () => {
+    const p: any = { id: 'x', start: '2025-01-01', end: '2027-12-31', lines: [{ code: '1.1.1.2', description: 'Officer', unit: 'Per month', approved: 1000 }], entries: [], staff: [] };
+    const d: any = { opt: { kind: 'revision', programme: 'VC' }, lines: { '1.1.1.2': { p: { u: 32.88, r: 10 } } } };
+    expect(liveFinance(p, new Date('2026-11-17'), d).lines['1.1.1.2']?.p?.u).not.toBe(32.88);
+    d.lines['1.1.1.2'].p = { u: 12, mu: true };
+    expect(liveFinance(p, new Date('2026-11-17'), d).lines['1.1.1.2']?.p?.u).toBe(12);
+  });
+  it('suggests an extension when the end is near and much of the budget is free', () => {
+    const p: any = { id: 'x', start: '2024-01-01', end: '2027-06-30', approvedBudget: { lines: [{ code: '2.1', description: 'Flights', unit: 'Per flight', approved: 1000, actual: 200 }] }, entries: [] };
+    expect(suggestKind(p, new Date('2026-11-17')).kind).toBe('extension');
+    expect(suggestKind({ ...p, end: '2029-06-30' }, new Date('2026-11-17')).kind).not.toBe('extension');
+  });
+});
