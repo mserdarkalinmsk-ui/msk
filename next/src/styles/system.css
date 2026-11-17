@@ -529,3 +529,4 @@ body .pcard-add:hover { border-color: var(--accent); color: var(--accent-text); 
 .fe-in.g.typed { border-style: dashed; border-color: color-mix(in srgb, var(--good) 70%, var(--ink-3)); }
 .fe-live { font-size: 12px; }
 .fe-sug { font-size: 12px; margin-top: 4px; color: var(--ink-2); }
+.fe-sav { background: color-mix(in srgb, var(--c1) 6%, transparent); }

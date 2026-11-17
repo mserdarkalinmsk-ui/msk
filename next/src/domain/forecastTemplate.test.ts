@@ -120,3 +120,19 @@ describe('final financial report', () => {
     expect(text).not.toMatch(/11\. Total eligible/); expect(text).toContain('Action Plan-level funding');
   });
 });
+
+import { reportFileName, ifrSheet as ifr2 } from './forecastTemplate';
+describe('as the official templates and layouts', () => {
+  const q: any = { ...(p as any), approvedBudget: { ...(p as any).approvedBudget, lines: [] } };
+  it('grants keep the units of their reports (F + J), VC forecast sheets have no variation column', () => {
+    const [S] = forecastSheets(q, new Date('2026-07-15'), { kind: 'revision', programme: 'VC' });
+    const head = S.rows.slice(0, 4).flat().map((c) => String(c && typeof c === 'object' ? (c as XCell).v ?? '' : c ?? ''));
+    expect(head.some((x) => /Indicative/.test(x))).toBe(false);
+  });
+  it('report: certification wording by programme, file name of the layouts', () => {
+    const t = (S: any) => S.rows.flat().map((c: any) => String(c && typeof c === 'object' ? c.v ?? '' : c ?? '')).join(' ');
+    expect(t(ifr2(q, new Date('2026-07-15'), { kind: 'twelve', programme: 'VC' }))).toMatch(/set out in the Partnership Agreement\./);
+    expect(t(ifr2(q, new Date('2026-07-15'), { kind: 'twelve', programme: 'JP' }))).toMatch(/set out in the agreement\./);
+    expect(reportFileName({ ...q, pmm: '3405', bh: '8514' }, 'AZE', new Date('2026-07-15'), { kind: 'twelve', programme: 'VC' })).toBe('BH8514 – VC 3405 - AZE IFR 30.06.2026.xlsx');
+  });
+});

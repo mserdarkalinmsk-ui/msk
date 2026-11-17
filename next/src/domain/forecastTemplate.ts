@@ -132,6 +132,9 @@ export type DraftLines = Record<string, Partial<Record<string, { u?: number; r?:
 export type ForecastMode = 'working' | 'team' | 'donor';
 export function forecastSheets(p: Project, today: Date, o: ForecastOptions = defaultOptions(p), draft?: DraftLines, mode: ForecastMode = 'working'): SheetSpec[] {
   const per = forecastPeriod(p, today, o), L = lines(p);
+  // "Contractual", replaced by the addendum in force when the budget was amended (template note on the column).
+  const amended = [...(p.budgetVersions ?? [])].reverse().find((v) => v.kind === 'addendum');
+  const budTitle = o.programme === 'JP' ? `Budget for all Years\n${amended ? `Addendum n°${amended.no ?? '…'}` : 'Contractual'}` : 'Budget for all Years';
   const monthsLeft = Math.max(0, (parseDate(per.extTo ?? p.end).getTime() - parseDate(per.from).getTime()) / MONTH);
   const names = p.approvedBudget?.names ?? {};
   const isSpecial = (c: string) => c === '10' || /^8(\.|$)/.test(c);
@@ -148,7 +151,7 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
   const B = blocksFor(o, per, revised ? `\n${revised}` : '');
   const at = new Map<string, number>(); B.forEach((b, i) => at.set(b.id, 9 + i * 3));
   const roundB = B.find((b) => b.type === 'round');
-  const vari = roundB && (jp || o.kind !== 'revision') ? 9 + B.length * 3 : -1; // VC "budget revision and extension" has no variation column
+  const vari = roundB && jp ? 9 + B.length * 3 : -1; // the VC forecast sheets have no variation column (it is on the "variation" sheet)
   const W = 9 + B.length * 3 + (vari >= 0 ? 1 : 0);
   const costCols = [C.cost, C.actual, C.sc, ...B.map((b) => at.get(b.id)! + 2)];
   const inputs = B.filter((b) => b.type === 'input');
@@ -174,7 +177,7 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
   }
   push(band, 'band', o.kind === 'payment' ? 115 : 15);
   const g = blank('rHead');
-  g[C.units] = { v: jp ? 'Budget for all Years\nContractual' : 'Budget for all Years', st: 'rHead' };
+  g[C.units] = { v: budTitle, st: 'rHead' };
   g[C.aUnits] = { v: `Actual expenditure\nas at ${dmy(per.asAt)}`, st: 'rHead' };
   g[C.sc] = { v: 'Spent and\ncommitted(2)\n(in EUR)', st: 'rHead' };
   for (const b of B) { const c = at.get(b.id)!; g[c] = { v: b.head, st: 'rHead' }; merges.push(`${col(c)}3:${col(c + 2)}3`); }
@@ -187,6 +190,9 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
 
   // Headings 1–6 with their group rows and lines, each closed by its sub-total.
   const subRow = new Map<string, number>(), lineRow = new Map<string, number>();
+  // Local staff months typed per block, and the SUM over the local staff rows (1.1.1.x) of a column (4.2 in the template).
+  const localU = new Map<string, number>();
+  const localRange = (c: number): string | null => { const R = [...lineRow].filter(([k]) => /^1\.1\.1\./.test(k)).map(([, v]) => v); return R.length ? `SUM(${col(c)}${Math.min(...R)}:${col(c)}${Math.max(...R)})` : null; };
   for (const h of ['1', '2', '3', '4', '5', '6']) {
     // The template's lines and groups plus the project's own lines; a parent of project lines is shown as a group row only
     // when the template has it, so e.g. 5.5 never appears and no template line is put under a project line.
@@ -208,6 +214,8 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
       const aUnits = usedUnitsOf(p, l), actual = n(l.actual), sc = lineExposure(l);
       const aRate = aUnits ? actual / aUnits : l.reportedUnitRate ?? 0;
       const staff = isStaff(code), cb = isChargeBack(code), inSt = staff || cb ? 'rIn' : 'rInY';
+      // Grants keep the units of their reports (a tranche of a grant), as in the template: F + J, not spent ÷ rate.
+      const grant = /^6\.[12](\.|$)/.test(code), byUnits = staff || cb || grant;
       row[C.unit] = { v: l.unit ?? '', st: 'rUnit' };
       if (empty) for (const c of [C.units, C.rate, C.cost, C.aUnits, C.aRate, C.actual, C.sc]) row[c] = { st: 'rNum' };
       else {
@@ -225,16 +233,19 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
         const c = at.get(b.id)!, U = F(c), R = F(c + 1), K = F(c + 2);
         if (b.type === 'input') {
           const dc = draft?.[code]?.[b.id], du = dc?.u || undefined, dr = dc?.r ?? pr;
-          row[c] = { v: du, st: inSt }; row[c + 1] = { v: dr, st: inSt }; row[c + 2] = { f: `+${R}*${U}`, v: (du ?? 0) * (dr ?? 0), st: 'rNum' }; cv.set(b.id, { u: du ?? 0, c: (du ?? 0) * (dr ?? 0) });
+          // Revision block of the payment template: 4.2 counts the local staff months of the block, 4.4 follows 4.2.
+          const link = o.kind === 'payment' && b.id === 'r' && cb && !draft?.[code]?.[b.id]?.u ? (code === '4.2' ? localRange(c) : code === '4.4' && lineRow.has('4.2') ? `+${col(c)}${lineRow.get('4.2')}` : null) : null;
+          if (/^1\.1\.1\./.test(code)) localU.set(b.id, (localU.get(b.id) ?? 0) + (du ?? 0));
+          row[c] = link ? { f: link, v: localU.get(b.id) ?? 0, st: inSt } : { v: du, st: inSt }; row[c + 1] = { v: dr, st: inSt }; row[c + 2] = { f: `+${R}*${U}`, v: (du ?? 0) * (dr ?? 0), st: 'rNum' }; cv.set(b.id, { u: du ?? 0, c: (du ?? 0) * (dr ?? 0) });
         } else if (b.type === 'calc') {
           // Staff build on what is spent; charging back on its units and spent + committed; others on spent and committed.
           const add = (b.of ?? []).map((id) => at.get(id)!);
           const plusU = add.map((x) => `+${col(x)}${r}`).join(''), plusC = add.map((x) => `+${col(x + 2)}${r}`).join('');
           const ins = (b.of ?? []).map((id) => cv.get(id) ?? { u: 0, c: 0 });
-          const u0 = (staff || cb ? (aUnits ?? 0) : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0) + ins.reduce((a, x) => a + x.u, 0);
+          const u0 = (byUnits ? (aUnits ?? 0) : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0) + ins.reduce((a, x) => a + x.u, 0);
           const c0 = (staff ? actual : sc) + ins.reduce((a, x) => a + x.c, 0);
-          row[c] = staff || cb ? { f: `${F(C.aUnits)}${plusU}`, v: u0, st: 'rNum' }
-            : { f: `+IF(${F(C.aRate)}<>0,ROUND(${F(C.sc)}/${F(C.aRate)},0)${plusU},IF(AND(${F(C.rate)}>0,${F(C.sc)}<>0),ROUND(${F(C.sc)}/${F(C.rate)},0)${plusU},0${plusU}))`, v: u0, st: 'rNum' };
+          row[c] = byUnits ? { f: `${F(C.aUnits)}${plusU}`, v: u0, st: 'rNum' }
+            : { f: `+IF(${F(C.aRate)}<>0,ROUND(${F(C.sc)}/${F(C.aRate)},0)${plusU},IF(AND(${F(C.rate)}>0,${F(C.sc)}<>0),ROUND(${F(C.sc)}/${F(C.rate)},0)${plusU},${plusU ? plusU.slice(1) : '0'}))`, v: u0, st: 'rNum' };
           row[c + 2] = { f: `${staff ? F(C.actual) : F(C.sc)}${plusC}`, v: c0, st: 'rNum' };
           row[c + 1] = { f: `+IF(${U}>0,${K}/${U},0)`, v: u0 > 0 ? c0 / u0 : 0, st: 'rNum' };
           cv.set(b.id, { u: u0, c: c0 });
@@ -274,6 +285,8 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
     if (v >= 0 && Math.abs(v - old) <= slack) {
       row[rc] = { v, st: 'rNum' }; row[rc - 1] = { f: `+IF(${U}>0,${K}/${U},0)`, v: val(plugRow, rc - 2) > 0 ? v / val(plugRow, rc - 2) : 0, st: 'rNum' };
       if (vari >= 0) row[vari] = variation(plugRow, 'rPct');
+      // The template's note on this line: the cost is set as a value to match the total envelope, the unit rate = cost ÷ units.
+      row[(vari >= 0 ? vari : rc) + 1] = { v: 'Cost changed to match the total envelope (set as a value); unit rate = cost ÷ number of units' };
       const h = o.balance!.split('.')[0], sr = subRow.get(h); if (sr) { (rows[sr - 1][rc] as XCell).v = val(sr, rc) - old + v; if (vari >= 0) rows[sr - 1][vari] = variation(sr, 'rPctB'); }
     }
   }
@@ -359,7 +372,7 @@ export function forecastSheets(p: Project, today: Date, o: ForecastOptions = def
     const w = variation ? (just ? 11 : 10) : 8, bl = (st?: XCell['st']): Row => Array.from({ length: w }, () => (st ? { st } : ''));
     const tt = bl(); tt[0] = { v: titleLines.join('\n'), st: 'rTitle' }; out.push(tt); hh[1] = 18 * titleLines.length; mm.push(`A1:${col(w - 1)}1`);
     out.push(bl());
-    const g2 = bl('rHead'); g2[2] = { v: jp ? 'Budget for all Years\nContractual' : 'Budget for all Years', st: 'rHead' };
+    const g2 = bl('rHead'); g2[2] = { v: budTitle, st: 'rHead' };
     if (variation) { g2[5] = { v: 'Variation\n(in EUR)', st: 'rHead' }; g2[6] = { v: prop, st: 'rHead' }; g2[9] = { v: 'Variation', st: 'rHead' }; mm.push('C3:E3', 'F3:F4', 'G3:I3', 'J3:J4'); if (just) { g2[10] = { v: 'Justification', st: 'rHead' }; mm.push('K3:K4'); } }
     else { g2[5] = { v: prop, st: 'rHead' }; mm.push('C3:E3', 'F3:H3'); }
     out.push(g2); hh[3] = 48;
@@ -407,6 +420,13 @@ export function forecastFileName(p: Project, country: string, today: Date, o: Fo
   const what = o.kind === 'twelve' ? '12-month forecast' : o.kind === 'payment' ? 'Forecast request' : o.kind === 'extension' ? 'Extension request' : 'Budget revision request';
   return `${[p.bh && `BH${p.bh}`, id, country, 'IFR', what, d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase(), d.getUTCFullYear()].filter(Boolean).join('-')}.xlsx`;
 }
+/** Layouts file name of the official report: "BH8514 – VC 3405 - AZE IFR 31.12.2023" (FFR for a final report). */
+export function reportFileName(p: Project, iso3: string, today: Date, o: ForecastOptions = defaultOptions(p), final = false): string {
+  const per = forecastPeriod(p, today, { ...o, kind: 'twelve' });
+  const id = o.programme === 'JP' ? (p.jp ? `JP ${p.jp}` : p.code) : (p.pmm ? `VC ${p.pmm}` : p.code);
+  const head = [p.bh ? `BH${p.bh}` : '', id].filter(Boolean).join(' – ');
+  return `${[head, [iso3, final ? 'FFR' : 'IFR', dmy(final ? p.end : per.asAt).replace(/\//g, '.')].filter(Boolean).join(' ')].join(' - ')}.xlsx`;
+}
 export type { BudgetLine };
 
 export interface ReportLook {
@@ -433,7 +453,8 @@ export function ifrSheet(p: Project, today: Date, o: ForecastOptions = defaultOp
   const width = look.logo ? Math.min(880, 75 * look.logo.w / look.logo.h) : 0; // a banner spans the page, a plain logo stays ~75 pt high
   const band = look.logo ? Math.ceil(width * look.logo.h / look.logo.w / 15) + 1 : 0;
   for (let i = 0; i < band; i++) rows.push(blank());
-  for (const t of txt(f.rows[0][0]).split('\n').filter(Boolean)) { const r = blank(); r[0] = { v: t, st: 'rTitle' }; rows.push(r); merges.push(`A${rows.length}:${last}${rows.length}`); heights[rows.length] = 20; }
+  // Layouts: the project title in 14 bold, the contract and VC/JP – BH numbers in 12, merged across the table.
+  txt(f.rows[0][0]).split('\n').filter(Boolean).forEach((t, i) => { const r = blank(); r[0] = { v: t, st: i ? 'rTitle2' : 'rTitle' }; rows.push(r); merges.push(`A${rows.length}:${last}${rows.length}`); heights[rows.length] = i ? 17 : 20; });
   rows.push(blank());
 
   // Body: the forecast rows from the column headers to 11 (and the footnotes of an interim report), values only.
@@ -479,6 +500,9 @@ export function ifrSheet(p: Project, today: Date, o: ForecastOptions = defaultOp
     rows.push(row);
   }
   const hdr = top, sub = top + 1;
+  // Layouts: budget figures without decimals (custom format 0), expenditure with two.
+  { const B0 = orig ? [2, 3, 4, 5, 6, 7] : [2, 3, 4];
+    for (let i = sub; i < rows.length; i++) for (const c of B0) { const x = rows[i][c]; if (x && typeof x === 'object') { if (x.st === 'rNum') x.st = 'rNum0'; else if (x.st === 'rSubN') x.st = 'rSubN0'; } } }
   rows[hdr - 1][0] = { v: `${final ? 'Final' : 'Interim'} financial report covering ${final ? 'the ' : ''}period from ${dmy(p.start)} to ${dmy(final ? p.end : per.asAt)}`, st: 'rHead' };
   const bud = orig ? 5 : 2, act = bud + 3;
   rows[hdr - 1][bud] = { v: orig ? (jp ? `Budget All Years\n${o.change === 'addendum' ? 'Addendum' : 'Notification'} n°${o.changeNo ?? '…'}` : `Budget for all Years\nRevised (${monYY(today)})`) : jp ? 'Budget for all Years\nContractual' : 'Budget for all Years', st: 'rHead' };
@@ -524,15 +548,21 @@ export function ifrSheet(p: Project, today: Date, o: ForecastOptions = defaultOp
 
   rows.push(blank(), blank());
   const half = Math.floor(W / 2), cert = blank(), r0 = rows.length + 1;
-  cert[0] = { v: 'Expenditure incurred is in accordance with the Council of Europe Financial Regulations, the costs are eligible under and have been incurred in line with the project budget set out in the Agreement.', st: 'rNote' };
+  // Layouts: "…in the Partnership Agreement" for VCs, "…in the agreement" for JPs.
+  cert[0] = { v: `Expenditure incurred is in accordance with the Council of Europe Financial Regulations, the costs are eligible under and have been incurred in line with the project budget set out in the ${jp ? 'agreement' : 'Partnership Agreement'}.`, st: 'rNote' };
   cert[half] = { v: 'The total eligible costs presented in this financial report match expenditure accounted for in the Council of Europe financial records.', st: 'rNote' };
   rows.push(cert); heights[r0] = 48; merges.push(`A${r0}:${col(half - 2)}${r0}`, `${col(half)}${r0}:${last}${r0}`);
   rows.push(blank());
   const d = blank(); d[0] = 'Date:'; d[half] = 'Date:'; rows.push(d); rows.push(blank());
   const s1 = (look.sign1 ?? '').split('\n'), s2 = (look.sign2 ?? '').split('\n');
   for (let i = 0; i < Math.max(s1.length, s2.length, 4); i++) { const r = blank(); r[0] = i ? s1[i] ?? '' : { v: s1[0], st: 'bold' }; r[half] = i ? s2[i] ?? '' : { v: s2[0], st: 'bold' }; rows.push(r); }
-  const widths = [75, 15, ...Array.from({ length: W - 2 }, (_, i) => [10, 11.2, 12.5][i % 3])], across = widths.reduce((a, w) => a + (w * 7 + 5) * 0.75, 0);
+  // Layouts column widths: description 69–75, unit 14–16; interim: budget units and rate 8–9, cost 9 (wider so 7-digit
+  // amounts show), expenditure units and rate 9–10, spent and committed 11–12; final: the number columns 12.
+  const widths = [72, 15, ...(final ? Array.from({ length: W - 2 }, () => 12) : orig ? Array.from({ length: W - 2 }, () => 11) : [9, 9, 11, 9.5, 10, 11, 12])], across = widths.reduce((a, w) => a + (w * 7 + 5) * 0.75, 0);
   // One printed page; the logo centred above the title.
-  return { name: 'REPORT', rows, freeze: 0, merges, heights, portrait: true, onePage: true, widths,
+  // Layouts printing: A4, one page, margins top/bottom 0.9 cm (2 cm on top for a JP with its logo), left/right 0.8 cm.
+  const cm = (x: number) => Math.round((x / 2.54) * 1000) / 1000;
+  return { name: 'REPORT', rows, freeze: 0, merges, heights, portrait: true, onePage: true, widths, printArea: `A1:${last}${rows.length}`,
+    margins: [cm(jp && look.logo ? 2 : 0.9), cm(0.9), cm(0.8), cm(0.8)],
     ...(look.logo ? { image: { ...look.logo, width, x: Math.max(0, (across - width) / 2) } } : {}) };
 }

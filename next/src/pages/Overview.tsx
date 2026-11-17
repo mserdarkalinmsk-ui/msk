@@ -5,7 +5,8 @@ import { MoneyFlow } from '../ui/Visuals';
 import { OfficeSummary } from './OfficeSummary';
 import { BudgetHealth } from './BudgetHealth';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
-import { asOf, burnGap, elapsed, groupBy, money, portfolioSeries, totals } from '../domain/calc';
+import { asOf, burnGap, elapsed, groupBy, money, portfolioSeries, portfolioSoFar, totals } from '../domain/calc';
+import { dmy } from '../domain/dt';
 import { SECTORS, validUrl, type Project } from '../domain/types';
 import { alerts } from '../domain/insights';
 import { TODAY } from '../today';
@@ -147,10 +148,12 @@ export function Overview() {
             <Chart height={300} label="Spending over time" onAxisClick={(x) => {
               if (sm === 'remaining') return;
               const A = S.filter((v) => v.actual != null);
+              const so = sm === 'monthly' ? portfolioSoFar(P) : null;
+              if (so && Math.round(x) + 1 >= A.length) { set({ drawer: { kind: 'period', t: so.t, from: so.from, ids: P.map((p) => p.id) } }); return; }
               const tt = sm === 'monthly' ? A[Math.round(x) + 1]?.t : A.reduce((b, v) => Math.abs(v.t - x) < Math.abs(b.t - x) ? v : b, A[0])?.t;
               const i = S.findIndex((v) => v.t === tt);
               if (i > 0) set({ drawer: { kind: 'period', t: S[i].t, from: S[i - 1].t, ids: P.map((p) => p.id) } });
-            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget, endMarks(P)) : sm === 'remaining' ? remainingOption(t, S, T.budget, endMarks(P)) : sm === 'monthly' ? monthlyOption(t, S) : byCountryOption(t, P, countries)} />
+            }} option={(t) => sm === 'cumulative' ? spendOption(t, S, T.budget, endMarks(P)) : sm === 'remaining' ? remainingOption(t, S, T.budget, endMarks(P)) : sm === 'monthly' ? monthlyOption(t, S, portfolioSoFar(P)) : byCountryOption(t, P, countries)} />
           </div>
         </section>
 
@@ -263,16 +266,18 @@ export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cnam
 }
 
 /* ---------------- chart options ---------------- */
-function monthlyOption(t: Tokens, S: ReturnType<typeof portfolioSeries>) {
+function monthlyOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, so?: ReturnType<typeof portfolioSoFar>) {
   const A = S.filter((x) => x.actual != null);
-  const M = A.map((x, i) => ({ t: x.t, v: i ? x.actual! - A[i - 1].actual! : 0, plan: i ? x.plan - A[i - 1].plan : 0 })).slice(1);
+  const M: { t: number; v: number; plan: number; to?: number }[] = A.map((x, i) => ({ t: x.t, v: i ? x.actual! - A[i - 1].actual! : 0, plan: i ? x.plan - A[i - 1].plan : 0 })).slice(1);
+  // The month in progress, to the latest report: shown "so far" (lighter) rather than left out.
+  if (so && (!M.length || so.t > M.at(-1)!.t)) M.push({ t: so.t, v: so.actual, plan: so.plan, to: so.t });
   return {
     ...base(t), grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = M[ps[0].dataIndex]; return `<b>${month(x.t)}</b><br/>Spent ${full(x.v)}<br/><span style="color:${t.ink3}">plan ${full(x.plan)}</span>`; } },
-    xAxis: { type: 'category', data: M.map((x) => month(x.t)), ...axisX(t) },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = M[ps[0].dataIndex]; return `<b>${month(x.t)}${x.to ? ` · so far, to ${dmy(new Date(x.to).toISOString())}` : ''}</b><br/>Spent ${full(x.v)}<br/><span style="color:${t.ink3}">plan ${full(x.plan)}</span>`; } },
+    xAxis: { type: 'category', data: M.map((x) => (x.to ? `${month(x.t)} (so far)` : month(x.t))), ...axisX(t) },
     yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
     series: [
-      { type: 'bar', data: M.map((x) => ({ value: x.v, itemStyle: { color: x.v < x.plan * 0.7 ? t.warn : t.c[0], borderRadius: [3, 3, 0, 0] } })), barWidth: '62%' },
+      { type: 'bar', data: M.map((x) => ({ value: x.v, itemStyle: { color: x.v < x.plan * 0.7 ? t.warn : t.c[0], opacity: x.to ? 0.55 : 1, borderRadius: [3, 3, 0, 0] } })), barWidth: '62%' },
       { type: 'line', data: M.map((x) => x.plan), symbol: 'none', lineStyle: { color: t.plan, type: 'dashed', width: 1.5 } },
     ],
   };

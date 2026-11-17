@@ -41,6 +41,10 @@ export function ForecastEditor({ p }: { p: Project }) {
   const [all, setAll] = useState(false), [note, setNote] = useState(false);
   const plug = autoLine(d), E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), lastB = R.blocks.at(-1)!.id;
   const twelve = d.opt.kind === 'twelve';
+  // Extension with details: what each line costs to the current end (spent / spent + committed + planned to the end) and
+  // the savings against its budget — the template's "Budget proposal (savings)" block, before the extension period.
+  const sav = d.opt.kind === 'extension';
+  const savOf = (l: { base: { c: number }; cells: Partial<Record<BlockId, { cost: number }>> }) => l.base.c + (l.cells.p?.cost ?? 0);
   const shown = R.lines.filter((l) => all || !l.empty || Object.keys(l.cells).length);
   // Nothing typed yet: what the balancing line (5.7) takes in is no plan, so no notification or addendum is suggested.
   const blank = R.lines.filter((l) => l.code !== plug).reduce((a, l) => a + l.planned, 0) < 0.5, dec = blank ? 'none' : R.decision;
@@ -130,16 +134,16 @@ export function ForecastEditor({ p }: { p: Project }) {
           <table class="mini fe-t">
             <thead>
               <tr><th rowSpan={2}>Line</th><th rowSpan={2}>Unit</th><th colSpan={3} class="c">Budget for all years</th><th colSpan={2} class="c">Actual</th><th rowSpan={2} class="r">Spent + committed</th>
-                {R.blocks.map((b) => <th colSpan={3} class="c">{b.label}<small>{date(b.from)} → {date(b.to)}</small></th>)}
+                {R.blocks.map((b) => <><th colSpan={3} class="c">{b.label}<small>{date(b.from)} → {date(b.to)}</small></th>{sav && b.id === 'p' && <th colSpan={2} class="c fe-sav">Budget proposal (savings)<small>to the current end</small></th>}</>)}
                 {!twelve && <><th rowSpan={2} class="r">Proposal (rounded)</th><th rowSpan={2} class="r">Variation</th></>}</tr>
-              <tr><th class="r">Units</th><th class="r">Rate</th><th class="r">Cost</th><th class="r">Units</th><th class="r">Rate</th>{R.blocks.map(() => <><th class="r">Units</th><th class="r">Rate</th><th class="r">Cost</th></>)}</tr>
+              <tr><th class="r">Units</th><th class="r">Rate</th><th class="r">Cost</th><th class="r">Units</th><th class="r">Rate</th>{R.blocks.map((b) => <><th class="r">Units</th><th class="r">Rate</th><th class="r">Cost</th>{sav && b.id === 'p' && <><th class="r fe-sav">Cost</th><th class="r fe-sav">Savings</th></>}</>)}</tr>
             </thead>
             <tbody>
               {['1', '2', '3', '4', '5', '6'].map((h) => {
                 const ls = shown.filter((l) => l.code.split('.')[0] === h), hd = R.heads.find((x) => x.code === h)!;
                 if (!ls.length) return null;
                 return <>
-                  <tr class="fe-hr"><td colSpan={2}><b>{h} {hd.label}</b></td><td /><td /><td class="r num">{num(hd.budget)}</td><td /><td /><td />{R.blocks.map(() => <><td /><td /><td /></>)}
+                  <tr class="fe-hr"><td colSpan={2}><b>{h} {hd.label}</b></td><td /><td /><td class="r num">{num(hd.budget)}</td><td /><td /><td />{R.blocks.map((b) => <><td /><td /><td />{sav && b.id === 'p' && (() => { const c = ls.reduce((a, l) => a + savOf(l), 0); return <><td class="r num fe-sav"><b>{num(c)}</b></td><td class={`r num fe-sav${hd.budget - c < 0 ? ' bad' : ''}`}><b>{num(hd.budget - c)}</b></td></>; })()}</>)}
                     {!twelve && <><td class="r num"><b>{num(hd.rounded)}</b></td><td class={`r num ${hd.beyond ? 'bad' : ''}`}>{pc(hd.change)}</td></>}</tr>
                   {ls.map((l) => (
                     <tr class={l.empty ? 'fe-empty' : ''}>
@@ -150,7 +154,8 @@ export function ForecastEditor({ p }: { p: Project }) {
                       {R.blocks.map((b) => { const c = E.lines[l.code]?.[b.id], mine = !!(d.lines[l.code]?.[b.id]?.mu || d.lines[l.code]?.[b.id]?.mr), cls = l.staff || l.cb ? `fe-in g${mine ? ' typed' : ''}` : 'fe-in y'; return <>
                         <td>{plug === l.code && b.id === lastB ? <span class="fe-auto" title="Calculated so the direct costs stay equal to the budget">{E.lines[l.code]?.[b.id]?.u ?? 0} <small>auto</small></span> : <input class={`${cls}${odd(l, b.id) ? ' odd' : ''}`} title={odd(l, b.id) ?? ''} inputMode="decimal" value={c?.u ?? ''} onChange={(e) => setCell(l.code, b.id, 'u', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} units`} />}</td>
                         <td><input class={cls} inputMode="decimal" value={c?.r ?? ''} placeholder={(l.defRates?.[b.id] ?? l.defRate) ? String(Math.round((l.defRates?.[b.id] ?? l.defRate)!)) : ''} onChange={(e) => setCell(l.code, b.id, 'r', (e.target as HTMLInputElement).value)} aria-label={`${l.code} ${b.label} rate`} /></td>
-                        <td class="r num">{l.cells[b.id]?.cost ? num(l.cells[b.id]!.cost) : ''}</td></>; })}
+                        <td class="r num">{l.cells[b.id]?.cost ? num(l.cells[b.id]!.cost) : ''}</td>
+                        {sav && b.id === 'p' && <><td class="r num fe-sav" title={`${+(l.base.u + (l.cells.p?.u ?? 0)).toFixed(2)} units`}>{savOf(l) ? num(savOf(l)) : ''}</td><td class={`r num fe-sav${l.budget - savOf(l) < -0.5 ? ' bad' : ''}`}>{l.budget || savOf(l) ? num(l.budget - savOf(l)) : ''}</td></>}</>; })}
                       {!twelve && <><td class="r num">{l.rounded ? num(l.rounded) : ''}</td><td class={`r num ${l.variation != null && l.variation > flexOf(p) ? 'warn' : ''}`}>{pc(l.variation)}</td></>}
                     </tr>))}
                 </>;

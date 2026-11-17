@@ -3,7 +3,7 @@ import { ADMIN_LINE } from '../domain/terms';
 import { enrichExtraction } from '../domain/extraction';
 import { useState } from 'preact/hooks';
 import { set, useStore } from '../data/store';
-import { forecastFileName } from '../domain/forecastTemplate';
+import { reportFileName } from '../domain/forecastTemplate';
 import { reportPack, type PackExtra } from '../domain/reportPack';
 import { exportOk } from '../ui/exportGate';
 import { download, pngData } from '../ui/xlsxwrite';
@@ -48,7 +48,7 @@ const checkText = (c: { level: string; text: string }) => { const m = c.level !=
 export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' | 'diff' }) {
   const rep = latestWorkbook(p);
   const [extra, setExtra] = useState<PackExtra>('none');
-  const brand = useStore((s) => s.ledger.brand), countryName = useStore((s) => s.ledger.countries).find((c) => c.id === p.country)?.name ?? '';
+  const brand = useStore((s) => s.ledger.brand), countryRec = useStore((s) => s.ledger.countries).find((c) => c.id === p.country);
   const [view, setView] = useState<'lines' | 'rates' | 'pos' | 'range' | 'checks' | 'budget' | 'wp' | 'diff'>(v0 ?? 'lines');
   if (!rep) return (
     <div class="card empty-page"><div><h2>No financial report workbook yet</h2>
@@ -83,7 +83,8 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
             if (!exportOk(p, 'the financial report')) return;
             const kind = p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim';
             const no = extra === 'notification' || extra === 'addendum' ? prompt(`${extra === 'addendum' ? 'Addendum' : 'Notification'} number`, '') ?? undefined : undefined;
-            const name = forecastFileName(p, countryName, TODAY).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${kind === 'final' ? 'Final' : 'Interim'} financial report${extra === 'none' ? '' : extra === 'twelve' ? ' and forecast' : ` and ${extra} ${no ?? ''}`.trimEnd()}-$1`);
+            // Layouts file name (BH… – JP/VC … - ISO IFR/FFR dd.mm.yyyy), with what the workbook adds to the report.
+            const name = reportFileName(p, countryRec?.iso3 ?? '', TODAY, undefined, kind === 'final').replace(/\.xlsx$/, `${extra === 'none' ? '' : extra === 'twelve' ? ' and forecast' : ` and ${extra} ${no ?? ''}`.trimEnd()}.xlsx`);
             download(name, reportPack(p, wb, TODAY, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind }, extra, no));
           }}>⬇ Report workbook</button></span>}
         <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import newer workbook</button>

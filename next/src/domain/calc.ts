@@ -203,6 +203,18 @@ function buildSeries(ps: Project[], today: Date): SeriesPoint[] {
   return out;
 }
 
+/** The month in progress up to the latest report (the series counts whole months only): spend and plan from the
+ * last month end to the report date, so the current month shows "so far" instead of disappearing. */
+export function portfolioSoFar(ps: Project[]): { from: number; t: number; actual: number; plan: number } | null {
+  ps = ps.filter((p) => !p.datesTbc);
+  if (!ps.length) return null;
+  const last = Math.max(...ps.map((p) => spendPoints(p).at(-1)!.t)), d = new Date(last);
+  const from = monthEnd(d.getUTCFullYear(), d.getUTCMonth() - 1);
+  if (last >= monthEnd(d.getUTCFullYear(), d.getUTCMonth()) || last - from < DAY) return null;
+  const at = (t: number) => sum(ps, (p) => spendAt(p, t)), pl = (t: number) => sum(ps, (p) => n(p.budget) * elapsed(p, new Date(t)));
+  return { from, t: last, actual: at(last) - at(from), plan: pl(last) - pl(from) };
+}
+
 export interface Totals { budget: number; spent: number; committed: number; exposure: number; remaining: number; elapsed: number; burn: number; projects: number }
 
 export function totals(ps: Project[], today: Date): Totals {

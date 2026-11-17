@@ -182,3 +182,16 @@ describe('latest report', () => {
     expect(_latest(p)?.id).toBe('a');
   });
 });
+
+import { portfolioSoFar } from './calc';
+describe('the month in progress', () => {
+  it('counts the spend from the last month end to a report dated mid-month', () => {
+    const p: any = { id: 'm', start: '2026-01-01', end: '2027-12-31', budget: 2400, reportingPeriods: [
+      { id: 'a', date: '2026-10-31', snapshot: { lines: [{ code: '1', actual: 1000 }] } },
+      { id: 'b', date: '2026-11-15', snapshot: { lines: [{ code: '1', actual: 1300 }] } }] };
+    const s = portfolioSoFar([p])!;
+    expect(s.actual).toBeCloseTo(300, 0);
+    expect(new Date(s.t).toISOString().slice(0, 10)).toBe('2026-11-15');
+    expect(portfolioSoFar([{ ...p, reportingPeriods: p.reportingPeriods.slice(0, 1) }])).toBeNull();
+  });
+});

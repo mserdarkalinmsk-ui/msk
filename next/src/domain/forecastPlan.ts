@@ -37,6 +37,7 @@ export interface PlanLine {
   budget: number; bUnits?: number; actual: number; sc: number; aUnits: number; aRate: number; rate?: number; /** rate used when none is typed (as in the Excel) */ defRate?: number; /** per planned block, when it differs (local salaries under the inflation projection) */ defRates?: Partial<Record<BlockId, number>>;
   cells: Partial<Record<BlockId, { u: number; r: number; cost: number }>>; planned: number;
   propUnits: number; propCost: number; rounded: number; variation: number | null;
+  /** what is already counted before the planned blocks (template: staff F / H, others units from spent + committed and I) */ base: { u: number; c: number };
 }
 export interface PlanHeading { code: string; label: string; baseline: number; budget: number; rounded: number; planned: number; change: number; beyond: boolean; isNew: boolean }
 export interface PlanResult {
@@ -87,10 +88,10 @@ export function computePlan(p: Project, today: Date, d: ForecastDraft | undefine
       const u = roundUnits(n(c.u), unitStep(x.unit, x.code, x.description)), r = c.r != null ? n(c.r) : n(defRates[b.id] ?? defRate), cost = u * r; cells[b.id] = { u, r, cost }; planned += cost; pu += u;
     }
     // As in the template: staff build on what is spent, charging back on its units and spent + committed, others on spent + committed.
-    const u0 = staff || cb ? aUnits : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0, c0 = staff ? actual : sc;
+    const u0 = staff || cb || /^6\.[12](\.|$)/.test(x.code) ? aUnits : aRate ? Math.round(sc / aRate) : rate && sc ? Math.round(sc / rate) : 0, c0 = staff ? actual : sc;
     const propUnits = u0 + pu, propCost = c0 + planned;
     const rounded = propUnits > 0 ? Math.round(propCost / propUnits) * propUnits : propCost;
-    return { ...x, staff, cb, budget, bUnits: l?.approvedUnits ?? undefined, actual, sc, aUnits, aRate, rate, defRate, defRates, cells, planned, propUnits, propCost, rounded, variation: budget > 0 ? (rounded - budget) / budget : null };
+    return { ...x, staff, cb, budget, bUnits: l?.approvedUnits ?? undefined, actual, sc, aUnits, aRate, rate, defRate, defRates, cells, planned, propUnits, propCost, rounded, base: { u: u0, c: c0 }, variation: budget > 0 ? (rounded - budget) / budget : null };
   });
   // Keep the total fixed: the balance line takes the rounding of the others, so the rounded proposal equals the budget.
   const plug = d ? autoLine(d) : null, pl = plug ? out.find((x) => x.code === plug) : undefined;

@@ -2,7 +2,7 @@ import { exportOk } from './exportGate';
 import { useRef, useState } from 'preact/hooks';
 import { setBrand, updateProject, useStore } from '../data/store';
 import { withCountryPolicy, computePlan, effective, type ForecastDraft } from '../domain/forecastPlan';
-import { FORECAST_KINDS, forecastFileName, forecastPeriod, ifrSheet, type ForecastOptions } from '../domain/forecastTemplate';
+import { FORECAST_KINDS, forecastFileName, reportFileName, forecastPeriod, ifrSheet, type ForecastOptions } from '../domain/forecastTemplate';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { shrink } from './Appearance';
@@ -48,7 +48,7 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
   const [rk, setRk] = useState<'interim' | 'final'>(() => (p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim')), [withOrig, setWithOrig] = useState(!!opt.change);
-  const ifr = () => exportOk(p, 'the financial report') && download(forecastFileName(p, country, TODAY, opt).replace(/-IFR-.*?-([A-Z]{3}-\d{4}\.xlsx)$/, `-${rk === 'final' ? 'Final' : 'Interim'} financial report-$1`),
+  const ifr = () => exportOk(p, 'the financial report') && download(reportFileName(p, countries.find((c) => c.id === p.country)?.iso3 ?? '', TODAY, opt, rk === 'final'),
     [ifrSheet(p, TODAY, opt, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind: rk, withOriginal: rk === 'final' && withOrig })]);
   const just = (code: string) => E.just?.[code] ?? '';
   return (
