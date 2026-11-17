@@ -175,6 +175,15 @@ export function resolvedLines(p: Project, today: Date, d: ForecastDraft): Foreca
  * equal to the budget. Off for the 12-month forecast, which is not a budget revision.
  */
 export function autoLine(d: ForecastDraft): string | null { return d.opt.kind !== 'twelve' && d.auto?.on !== false ? d.auto?.line ?? '5.7' : null; }
+/**
+ * The local salary projection is the country's (Türkiye's salary scale follows CPI): its policy and CPI apply to every
+ * project there, each project only choosing whether its forecast uses it. Projects that set their own before keep it
+ * until the country has one.
+ */
+export function withCountryPolicy(p: Project, d: ForecastDraft, countries: { id: string; salaryPolicy?: InflationSettings }[]): ForecastDraft {
+  const c = countries.find((x) => x.id === p.country)?.salaryPolicy; if (!c) return d;
+  return { ...d, infl: { ...c, on: d.infl?.on ?? c.on } };
+}
 export function effective(p: Project, today: Date, d: ForecastDraft): ForecastDraft {
   const code = autoLine(d); if (!code) return d;
   const b = planBlocks(p, today, d.opt).at(-1)!.id, keep = d.lines[code]?.[b]?.r;

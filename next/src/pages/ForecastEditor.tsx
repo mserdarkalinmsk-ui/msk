@@ -1,9 +1,11 @@
 import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from '../ui/exportGate';
 import { useState } from 'preact/hooks';
-import { toast, updateProject, useStore } from '../data/store';
-import { autoLine, autofillStaff, balanceOn, computePlan, effective, resolvedLines, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
-import { costFactor, CPI_LAST, recentCpi, salaryPath, type InflationSettings } from '../domain/salaryProjection';
+import { updateProject, upsertCountry, useStore } from '../data/store';
+import { autoLine, autofillStaff, balanceOn, computePlan, effective, resolvedLines, withCountryPolicy, type BlockId, type ForecastDraft } from '../domain/forecastPlan';
+import { costFactor, CPI_LAST, salaryPath, type InflationSettings } from '../domain/salaryProjection';
+import { PolicyFields } from '../ui/SalaryPolicy';
+import type { Country } from '../domain/types';
 import { forecastPeriod } from '../domain/forecastTemplate';
 import { defaultOptions, FORECAST_KINDS, forecastFileName, forecastSheets, type ForecastKind, type ForecastMode, type ForecastOptions } from '../domain/forecastTemplate';
 import type { Project } from '../domain/types';
@@ -22,8 +24,11 @@ const num = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2,
  */
 export function ForecastEditor({ p }: { p: Project }) {
   const countries = useStore((s) => s.ledger.countries);
-  const d: ForecastDraft = p.forecastDraft ?? { opt: defaultOptions(p), lines: {} };
-  const save = (x: ForecastDraft) => updateProject(p.id, { forecastDraft: { ...x, updatedAt: new Date().toISOString() } });
+  const d0: ForecastDraft = p.forecastDraft ?? { opt: defaultOptions(p), lines: {} };
+  // The salary policy and CPI are the country's (Türkiye): the project keeps only whether its forecast uses them.
+  const country = countries.find((c) => c.id === p.country), isTR = !!country && (country.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(country.name));
+  const d = withCountryPolicy(p, d0, countries);
+  const save = (x: ForecastDraft) => updateProject(p.id, { forecastDraft: { ...x, ...(country?.salaryPolicy ? { infl: { on: x.infl?.on ?? false } } : {}), updatedAt: new Date().toISOString() } });
   const setOpt = (o: Partial<ForecastOptions>) => { const opt = { ...d.opt, ...o }; if (!FORECAST_KINDS[opt.kind].programmes.includes(opt.programme)) opt.kind = opt.programme === 'JP' ? 'payment' : 'revision'; save({ ...d, opt }); };
   const setCell = (code: string, b: BlockId, k: 'u' | 'r', v: string) => {
     const x = v.trim() === '' ? undefined : Number(v.replace(/,/g, ''));
@@ -87,7 +92,7 @@ export function ForecastEditor({ p }: { p: Project }) {
         {d.notes?.length ? <details class="fe-notes"><summary>How the staff lines were filled ({d.notes.length})</summary><ul>{d.notes.map((x) => <li>{x}</li>)}</ul></details> : null}
       </section>
 
-      <Inflation p={p} d={d} save={save} />
+      {(isTR || d0.infl?.on) && <Inflation p={p} d={d} d0={d0} save={save} country={isTR ? country : undefined} />}
 
       {!twelve && <section class={`fe-decision ${tone}`} role="status">
         <div><b>{dec === 'addendum' ? 'Addendum needed' : dec === 'notification' ? 'Notification is enough' : !blank ? 'No change to the budget' : 'Fill in the planned expenditure'}</b>
@@ -154,20 +159,18 @@ export function ForecastEditor({ p }: { p: Project }) {
   );
 }
 
-/** Local salary projection: the Türkiye raise policy on known and assumed CPI, and the EUR/TRY assumption. */
-function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: ForecastDraft) => void }) {
+/** Local salary projection: the country's raise policy on known and assumed CPI (kept for the whole country), applied to this project's local staff. */
+function Inflation({ p, d, d0, save, country }: { p: Project; d: ForecastDraft; d0: ForecastDraft; save: (x: ForecastDraft) => void; country?: Country }) {
   const s: InflationSettings = d.infl ?? { on: false };
-  const set = (x: Partial<InflationSettings>) => save({ ...d, infl: { ...s, ...x } });
+  // Policy and CPI go to the country (seeded from what this project had); "apply" stays with the project.
+  const set = (x: Partial<InflationSettings>) => {
+    const { on, ...rest } = x;
+    if (country && Object.keys(rest).length) upsertCountry({ ...country, salaryPolicy: { ...(country.salaryPolicy ?? { ...(d0.infl ?? {}), on: true }), ...rest, on: true } });
+    if (on !== undefined || !country) save({ ...d0, infl: country ? { on: on ?? s.on } : { ...s, ...x } });
+  };
   const per = forecastPeriod(p, TODAY, d.opt), end = (d.opt.extendTo && d.opt.extendTo > p.end ? d.opt.extendTo : p.end).slice(0, 7);
   const path = salaryPath(end, s), ev = path.events.filter((e) => e.month > per.asAt.slice(0, 7));
   const blocks = computePlan(p, TODAY, d).blocks;
-  // Actual CPI typed in as TurkStat publishes it (around the 3rd of each month): it replaces the assumption for that month.
-  const extra = s.extra ?? {}, lastKnown = path.lastKnown, nextMonth = (() => { const [y, m] = lastKnown.split('-').map(Number); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`; })();
-  const [cpiIn, setCpiIn] = useState(''), [cpiMon, setCpiMon] = useState('');
-  const mon = cpiMon && cpiMon > CPI_LAST ? cpiMon : nextMonth;
-  const addCpi = () => { const v = Number(cpiIn.trim().replace(',', '.')); if (!Number.isFinite(v) || cpiIn.trim() === '' || Math.abs(v) > 50) { toast('Type the monthly CPI in %, e.g. 1,85'); return; } set({ extra: { ...extra, [mon]: v } }); setCpiIn(''); setCpiMon(''); toast(`CPI ${mon}: ${v.toFixed(2)}% saved — raises recalculated`); };
-  const dropCpi = (k: string) => { const e = { ...extra }; delete e[k]; set({ extra: e }); };
-  const numIn = (k: keyof InflationSettings, ph: string, w = 64) => <input type="number" step="0.01" style={{ width: `${w}px` }} value={(s[k] as number | undefined) ?? ''} placeholder={ph} onChange={(e) => set({ [k]: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) })} />;
   return (
     <section class={`card fe-inf${s.on ? ' on' : ''}`}>
       <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
@@ -175,20 +178,8 @@ function Inflation({ p, d, save }: { p: Project; d: ForecastDraft; save: (x: For
         <label class="fe-all" style={{ marginLeft: 'auto' }}><input type="checkbox" checked={s.on} onChange={() => set({ on: !s.on })} /> Apply to local staff rates (1.1.1.x)</label>
       </div>
       {s.on && <div class="card-b fe-inf-b">
-        <div class="fe-inf-in">
-          <label>Monthly CPI after {lastKnown} {numIn('cpi', String(recentCpi(6, s.extra)))} %</label>
-          <label>EUR/TRY change per month {numIn('fx', '0')} %</label>
-          <label>Threshold {numIn('threshold', '7', 52)} %</label>
-          <label>Raise {numIn('raise', '7', 52)} %</label>
-        </div>
-        <div class="fe-inf-cpi">
-          <span>Actual CPI (TurkStat, monthly %) for</span>
-          <input type="month" class="fe-cpi-mon" value={mon} min={`${CPI_LAST.slice(0, 4)}-${String(Number(CPI_LAST.slice(5)) + 1).padStart(2, '0')}`} onInput={(e) => setCpiMon((e.target as HTMLInputElement).value)} />
-          <input type="text" inputMode="decimal" value={cpiIn} placeholder="e.g. 1,85" onInput={(e) => setCpiIn((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === 'Enter' && addCpi()} />
-          <button class="btn" disabled={cpiIn.trim() === ''} onClick={addCpi}>Add</button>
-          {Object.keys(extra).sort().map((k) => <span class="fe-cpi-chip">{k} · {extra[k].toFixed(2)}% <button aria-label={`Remove ${k}`} onClick={() => dropCpi(k)}>✕</button></span>)}
-          <small class="muted">Pick any month after {CPI_LAST} (a month typed again is overwritten). Every month you add replaces the assumption; the raises and the effect above are recalculated at once.</small>
-        </div>
+        {country && <p class="muted" style={{ margin: '0 0 8px', fontSize: '12px' }}>Kept for {country.name}: the CPI and the raise rule below are the same for every {country.name} project (also under Countries → {country.name}).</p>}
+        <PolicyFields s={s} set={set} />
         <div class="fe-inf-g">
           <div><b>Raises expected</b>{ev.length ? <ul>{ev.map((e) => <li class={e.projected ? 'proj' : ''}>{e.month} · {e.kind === 'catch-up' ? 'January catch-up' : e.kind === 'spike' ? 'raise after a spike' : 'raise'} <b>+{e.pct.toFixed(2)}%</b>{e.projected ? ' (projected)' : ''}</li>)}</ul> : <p class="muted">None up to the end date.</p>}</div>
           <div><b>Effect on the monthly cost in euros</b><ul>{blocks.map((b) => { const f = costFactor(per.asAt, b.from, b.to, s); return <li>{b.label}: <b>{f >= 1 ? '+' : ''}{((f - 1) * 100).toFixed(1)}%</b> <small class="muted">({b.from} → {b.to})</small></li>; })}</ul>

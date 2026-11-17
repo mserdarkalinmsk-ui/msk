@@ -1,7 +1,7 @@
 import { exportOk } from './exportGate';
 import { useRef, useState } from 'preact/hooks';
 import { setBrand, updateProject, useStore } from '../data/store';
-import { computePlan, effective, type ForecastDraft } from '../domain/forecastPlan';
+import { withCountryPolicy, computePlan, effective, type ForecastDraft } from '../domain/forecastPlan';
 import { FORECAST_KINDS, forecastFileName, forecastPeriod, ifrSheet, type ForecastOptions } from '../domain/forecastTemplate';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -29,7 +29,7 @@ const pc = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v * 100
 export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraft; opt: ForecastOptions; close: () => void }) {
   const brand = useStore((s) => s.ledger.brand), countries = useStore((s) => s.ledger.countries);
   const country = countries.find((c) => c.id === p.country)?.name ?? '';
-  const E = effective(p, TODAY, d), R = computePlan(p, TODAY, E), per = forecastPeriod(p, TODAY, opt);
+  const E = effective(p, TODAY, withCountryPolicy(p, d, countries)), R = computePlan(p, TODAY, E), per = forecastPeriod(p, TODAY, opt);
   const doc = useRef<HTMLDivElement>(null), [err, setErr] = useState('');
   const [dk, setDk] = useState<'letter' | 'note'>(() => (R.decision === 'notification' || opt.change === 'notification' ? 'letter' : 'note'));
   const save = (x: Partial<ForecastDraft>) => updateProject(p.id, { forecastDraft: { ...d, ...x, updatedAt: new Date().toISOString() } });

@@ -5,6 +5,8 @@ import { deleteCountry, set, upsertCountry, useStore } from '../data/store';
 import type { Country } from '../domain/types';
 import { money } from '../domain/calc';
 import { short } from './format';
+import { PolicyFields } from './SalaryPolicy';
+import { CPI_LAST, salaryPath } from '../domain/salaryProjection';
 export function checkCountry(c: Country, all: Country[], selfId?: string) {
   const e: Partial<Record<'name' | 'iso3', string>> = {};
   if (!c.name.trim()) e.name = 'Required';
@@ -29,7 +31,8 @@ export function CountryPanel({ close, edit: initial }: { close: () => void; edit
     setErr(e as Record<string, string>); if (Object.keys(e).length) return;
     let id = d.id;
     if (!id) { const b = (d.iso3 || d.name).toLowerCase().replace(/[^a-z]/g, '').slice(0, 3) || 'c'; id = b; let i = 2; while (countries.some((c) => c.id === id)) id = b + i++; }
-    upsertCountry({ id, name: d.name.trim(), region: d.region?.trim() || undefined, iso3: d.iso3?.toUpperCase() || undefined, ccm: d.ccm?.trim() || undefined });
+    // Keep what the form does not show (the salary scale of the country).
+    upsertCountry({ ...countries.find((x) => x.id === id), id, name: d.name.trim(), region: d.region?.trim() || undefined, iso3: d.iso3?.toUpperCase() || undefined, ccm: d.ccm?.trim() || undefined });
     setEdit(null);
   };
   return (
@@ -81,9 +84,26 @@ export function CountryPanel({ close, edit: initial }: { close: () => void; edit
             })}
           </ul>
         </section>
+        {countries.filter((c) => c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)).map((c) => <SalaryScale c={c} />)}
       </div>
     </>
   );
+}
+
+/** Türkiye's local salary scale: raises follow CPI. Kept once for the country; every project there uses it in its forecast. */
+function SalaryScale({ c }: { c: Country }) {
+  const projects = useStore((s) => s.ledger.projects);
+  // Seeded from what a project had set before the policy moved to the country.
+  const seed = projects.find((p) => p.country === c.id && p.forecastDraft?.infl && Object.keys(p.forecastDraft.infl).length > 1)?.forecastDraft?.infl;
+  const s = c.salaryPolicy ?? { ...(seed ?? {}), on: true };
+  const ev = salaryPath(`${new Date().getUTCFullYear() + 3}-12`, s).events.filter((e) => e.month > CPI_LAST).slice(0, 6);
+  return <section class="card fe-inf on" style={{ marginTop: '16px' }}>
+    <div class="card-h"><div><h2>📈 {c.name} — local salary scale</h2><p>Raises follow CPI: compounded since the last raise above {s.threshold ?? 7}% → {s.raise ?? 7}% raise from the next month; June triggers and the gap of the financial year go to the January catch-up · used by the forecast of every {c.name} project</p></div></div>
+    <div class="card-b fe-inf-b">
+      <PolicyFields s={s} set={(x) => upsertCountry({ ...c, salaryPolicy: { ...s, ...x, on: true } })} />
+      {ev.length > 0 && <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Next raises: {ev.map((e) => `${e.month} +${e.pct.toFixed(2)}%${e.projected ? ' (projected)' : ''}`).join(' · ')}</p>}
+    </div>
+  </section>;
 }
 
 /** Plans every dropped workbook against the ledger and applies them in one undoable step. */

@@ -1,4 +1,4 @@
-export interface Country { id: string; name: string; region?: string; iso3?: string; /** Default CCM (cost centre) for projects in this country */ ccm?: string }
+export interface Country { id: string; name: string; region?: string; iso3?: string; /** Default CCM (cost centre) for projects in this country */ ccm?: string; /** local salary scale raised with inflation (Türkiye): the policy and the CPI typed in, shared by every project of the country */ salaryPolicy?: import('./salaryProjection').InflationSettings }
 
 export interface BudgetLine {
   code: string; description?: string; approved?: number | null; actual?: number | null;
