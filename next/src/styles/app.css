@@ -479,7 +479,9 @@ tr.click td.click { text-decoration: none; }
 /* keyboard users see where they are */
 .click:focus-visible, .chip:focus-visible, .btn:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
-.chip.on:hover, .chip[aria-pressed="true"]:hover { color: inherit; }
+.chip.on:hover { color: inherit; }
+/* A chosen chip keeps its light text when the pointer rests on it (it is dark). */
+.chip[aria-pressed="true"]:hover { color: var(--surface); border-color: var(--ink); }
 @media print { tr.click > td:last-child::after { display: none; } td.click, th.click, span.click, div.click, b.click { text-decoration: none; } }
 /* lists that open a project: hover and a chevron, like table rows */
 .att li, .dg-s li { position: relative; transition: background .12s; }

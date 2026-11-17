@@ -409,3 +409,10 @@ body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="
 .studio-pre { display: flex; flex-wrap: wrap; gap: 6px; }
 .studio-pre .btn { height: 28px; font-size: 12px; padding: 0 10px; }
 .studio-pre .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); font-weight: 600; }
+/* Report studio: budget detail */
+.studio-det { display: flex; } .studio-det button { flex: 1; font-size: 12px; }
+.sd-det tr.sd-head td { background: #eef2f9; font-weight: 700; }
+.sd-det tr.sd-total td { background: #e3eaf6; font-weight: 700; }
+.sd-det tr.sd-line td:first-child { padding-left: 16px; }
+.sd-det tr.sd-po td { font-size: 11px; color: #555; }
+.sd-det tr.sd-po td:first-child { padding-left: 28px; }

@@ -31,10 +31,10 @@ const SECTIONS = [
   ['workplan', 'Work Plan delivery'], ['indicators', 'Indicators'], ['activities', 'Activities'], ['risks', 'Risks'], ['staff', 'Staff'], ['invoices', 'Annex: invoices in the period'],
 ] as const;
 /** Ready sets of sections: what a donor report, the monthly internal review and an audit each need. */
-const PRESETS: { k: string; label: string; secs: string[] }[] = [
-  { k: 'donor', label: 'Donor report', secs: ['summary', 'headings', 'changes', 'years', 'period', 'lines', 'variance', 'indicators', 'activities'] },
-  { k: 'internal', label: 'Internal monthly', secs: ['summary', 'ontrack', 'headings', 'ahead', 'orders', 'workplan', 'risks', 'staff'] },
-  { k: 'audit', label: 'Audit pack', secs: ['summary', 'headings', 'changes', 'lines', 'orders', 'invoices'] },
+const PRESETS: { k: string; label: string; secs: string[]; detail: 'headings' | 'lines' | 'orders' }[] = [
+  { k: 'donor', label: 'Donor report', secs: ['summary', 'headings', 'changes', 'years', 'period', 'lines', 'variance', 'indicators', 'activities'], detail: 'lines' },
+  { k: 'internal', label: 'Internal monthly', secs: ['summary', 'ontrack', 'headings', 'ahead', 'orders', 'workplan', 'risks', 'staff'], detail: 'headings' },
+  { k: 'audit', label: 'Audit pack', secs: ['summary', 'headings', 'changes', 'lines', 'orders', 'invoices'], detail: 'orders' },
 ];
 type Sec = (typeof SECTIONS)[number][0];
 const tx = (s?: string) => (s ?? '').replace(/[\uE000-\uF8FF]/g, '').replace(/\s*·\s*·\s*/g, ' · ').replace(/\s+/g, ' ').replace(/^[\s·]+|[\s·]+$/g, '');
@@ -56,7 +56,9 @@ export function Studio() {
   const toggle = (k: Sec) => keep({ ...on, [k]: !isOn(k) });
   const preset = (secs: string[]) => keep(Object.fromEntries(SECTIONS.map(([k]) => [k, secs.includes(k)])) as Record<Sec, boolean>);
   const presetOn = PRESETS.find((x) => SECTIONS.every(([k]) => isOn(k) === x.secs.includes(k)))?.k;
-  const D = build(p, end, start);
+  const [detail, setDetailS] = useState<Detail>(() => (['headings', 'lines', 'orders'].includes(pref('pl-studio-d', '')) ? pref('pl-studio-d', '') : 'headings') as Detail);
+  const setDetail = (d: Detail) => { setDetailS(d); try { localStorage.setItem('pl-studio-d', d); } catch { /* */ } };
+  const D = build(p, end, start, detail);
   const docx = () => { const el = document.querySelector('.studio-doc') as HTMLElement | null; if (el && exportOk(p, 'the report')) void downloadDocx(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.docx`, el, `${p.code} progress report`); };
   const xlsx = () => exportOk(p, 'the report') && download(`${p.code}-report-${end?.date ?? TODAY.toISOString().slice(0, 10)}.xlsx`, D.sheets.filter((x) => isOn(x.sec)).map(({ sec: _, ...x }) => x));
   return (
@@ -70,7 +72,9 @@ export function Studio() {
           <label class="studio-l">To report<select class="select" value={end?.id} onChange={(e) => setTo((e.target as HTMLSelectElement).value)}>{R.map((r) => <option value={r.id}>{date(r.date)}</option>)}</select></label>
         </> : <p class="muted">No financial reports yet — figures use the budget only.</p>}
         <h3>Ready-made</h3>
-        <div class="studio-pre">{PRESETS.map((x) => <button class="btn" aria-pressed={presetOn === x.k} onClick={() => preset(x.secs)}>{x.label}</button>)}</div>
+        <div class="studio-pre">{PRESETS.map((x) => <button class="btn" aria-pressed={presetOn === x.k} onClick={() => { preset(x.secs); setDetail(x.detail); }}>{x.label}</button>)}</div>
+        <h3>Budget detail</h3>
+        <div class="seg studio-det" role="group" aria-label="Budget detail">{([['headings', 'Headings'], ['lines', '+ lines'], ['orders', '+ POs']] as const).map(([k, l]) => <button aria-pressed={detail === k} onClick={() => setDetail(k)}>{l}</button>)}</div>
         <h3>Sections</h3>
         {SECTIONS.map(([k, l]) => <label class="studio-ck"><input type="checkbox" checked={isOn(k)} onChange={() => toggle(k)} />{l}</label>)}
         <div class="studio-b"><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={docx}>⤓ Word</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
@@ -90,7 +94,8 @@ export function Studio() {
 }
 
 type R_ = ReturnType<typeof reportsByDate>[number];
-function build(p: Project, end?: R_, start?: R_) {
+type Detail = 'headings' | 'lines' | 'orders';
+function build(p: Project, end?: R_, start?: R_, detail: Detail = 'headings') {
   const m = money(p), o = outcome(p, TODAY), H = headings(p), el = elapsed(p, TODAY);
   const tEnd = end ? reportTotals(end) : { approved: m.budget, actual: m.spent, committed: m.committed, exposure: m.exposure };
   const tStart = start ? reportTotals(start) : null;
@@ -143,6 +148,23 @@ function build(p: Project, end?: R_, start?: R_) {
   const wbE = latestWorkbook(p)?.snapshot?.workbook?.entries ?? [], eFrom = start?.date ?? p.start, eTo = end?.date ?? TODAY.toISOString().slice(0, 10);
   const inv = wbE.filter((e) => e.date > eFrom && e.date <= eTo).sort((a, b) => a.date.localeCompare(b.date));
   const invRows: Cell[][] = inv.map((e) => [date(e.date), e.src === 'gl' ? `GL ${e.doc}` : e.doc, e.po ?? '', (e.supplier || e.detail || '').slice(0, 60), e.line, (e.description || '').slice(0, 90), e.amount]);
+  // Budget detail: each heading, then its lines (approved, in force, spent + committed), then the POs on each line.
+  const allPos = latestWorkbook(p)?.snapshot?.workbook?.pos ?? [];
+  const dRows: DRow[] = [];
+  if (detail !== 'headings') {
+    for (const h of H.rows) {
+      dRows.push({ k: 'head', code: h.code, d: h.label, a: h.baseline, c: h.approved, sc: h.exposure, u: h.baseline ? pct(h.exposure / h.baseline) : '' });
+      for (const l of leaf.filter((x) => x.code.split('.')[0] === h.code)) {
+        const b = base.get(l.code), sc = lineExposure(l), ap = b?.approved ?? l.approved ?? 0;
+        dRows.push({ k: 'line', code: l.code, d: l.description ?? b?.description ?? '', a: ap, c: l.approved ?? 0, sc, u: ap ? pct(sc / ap) : '' });
+        if (detail === 'orders') for (const x of allPos.filter((q) => q.line === l.code && (q.sc || q.amount)).sort((q, r) => (r.sc || r.amount) - (q.sc || q.amount))) {
+          const open = Math.max(0, (x.sc ?? 0) - x.spent);
+          dRows.push({ k: 'po', code: x.po, d: `${x.supplier.trim()}${x.description ? ` — ${x.description}` : ''}`.slice(0, 120), a: null, c: x.amount, sc: x.sc || x.spent, u: open > 0.5 ? `${full(open)} open` : 'closed' });
+        }
+      }
+    }
+    dRows.push({ k: 'total', code: 'Total direct costs', d: '', a: H.direct.baseline, c: H.direct.approved, sc: H.direct.exposure, u: H.direct.baseline ? pct(H.direct.exposure / H.direct.baseline) : '' });
+  }
   const blocks: { sec: Sec; title: string; body: preact.JSX.Element }[] = [
     { sec: 'summary', title: '1. Summary', body: <><p>{story}</p><div class="sd-kpi"><div><span>Budget</span><b class="num">{full(m.budget)}</b></div><div><span>Spent</span><b class="num">{full(tEnd.actual)}</b></div><div><span>Committed</span><b class="num">{full(tEnd.committed)}</b></div><div><span>Forecast at end</span><b class="num">{full(o.projected)}</b></div></div></> },
     { sec: 'ontrack', title: 'Is spending on track?', body: <><p>Against a plan that spreads the budget evenly over the project period: {C.fei == null ? 'too early to compare.' : `${pct(C.fei)} of what was planned by ${date(C.asAt)} is spent${C.tcpiRate != null ? `; using the whole budget by ${date(p.end)} needs ${C.tcpiRate.toFixed(2)}× today's monthly spending` : ''}.`}</p>{tbl(['Figure', 'Amount'], cRows, [1])}</> },
@@ -151,7 +173,7 @@ function build(p: Project, end?: R_, start?: R_) {
     { sec: 'ahead', title: 'Month by month ahead', body: mRows.length ? <><p>At each heading's monthly spending so far: where it ends and the month it passes its budget (a notification) and the {pctOf(fx)}% flexibility (an addendum).</p>{tbl(['Heading', 'Budget', 'Spent + committed now', 'A month', 'At the end', 'Notification from', 'Addendum from'], mRows, [1, 2, 3, 4], [5, 6])}</> : <p class="muted">No months left in the project period.</p> },
     { sec: 'orders', title: 'Open purchase orders', body: oRows.length ? <><p>{OP.length} open purchase order lines, {full(OP.reduce((a, x) => a + x.balance, 0))} still open{OP.some((x) => x.flags.length) ? ` — ${OP.filter((x) => x.flags.length).length} to review first` : ''} (staff contracts aside).</p>{tbl(['PO', 'Line', 'Supplier — description', 'Raised', 'Amount', 'Paid', 'Open', 'To review'], oRows.slice(0, 25), [4, 5, 6], [0, 1, 3])}{oRows.length > 25 && <p class="muted">The {oRows.length - 25} smaller ones are in the Excel file.</p>}</> : <p class="muted">No open purchase orders.</p> },
     { sec: 'workplan', title: 'Work Plan delivery', body: wRows.length ? tbl(['Work Plan', 'Period', 'Planned', 'Planned value of what was done', 'Spent on it', 'Done of the plan', 'Activities'], wRows, [2, 3, 4, 5]) : <p class="muted">Delivery is measured once the activities of an ended Work Plan carry a status (done / postponed / cancelled).</p> },
-    { sec: 'headings', title: '2. Budget by heading', body: tbl(['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], hRows, [1, 2, 3, 4]) },
+    { sec: 'headings', title: detail === 'headings' ? 'Budget by heading' : detail === 'lines' ? 'Budget by heading and line' : 'Budget by heading, line and purchase order', body: detail === 'headings' ? tbl(['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], hRows, [1, 2, 3, 4]) : <DetailTable rows={dRows} /> },
     { sec: 'period', title: `3. Spending in the period${start ? ` (${date(start.date)} – ${end ? date(end.date) : ''})` : ''}`, body: start ? <><p>{full(periodSpend)} spent in the period{Math.abs(admDelta) > 0.5 ? `, of which ${full(admDelta)} administrative costs (7% of the direct costs)` : ''}. Largest movements on the direct-cost lines:</p>{tbl(['Line', 'Description', 'Spent in period'], pRows, [2])}</> : <p class="muted">Choose a “from” report to show movements in the period.</p> },
     { sec: 'lines', title: '4. Budget lines — units, unit costs and variances', body: LA.length ? <LineTable rows={LA} el={el} /> : <p class="muted">No report lines.</p> },
     { sec: 'variance', title: '4a. Explanation of variances', body: <VarianceBlock p={p} V={V} k={end?.id ?? 'now'} /> },
@@ -163,7 +185,7 @@ function build(p: Project, end?: R_, start?: R_) {
   ];
   const sheets: (SheetSpec & { sec: Sec })[] = [
     { sec: 'summary', name: 'Summary', rows: [['Project', p.name], ['Code', p.code], ['Period to', end?.date ?? ''], ['Budget', m.budget], ['Spent', tEnd.actual], ['Committed', tEnd.committed], ['Forecast at end', o.projected], ['Narrative', story]] },
-    { sec: 'headings', name: 'Headings', rows: [['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], ...hRows], money: [1, 2, 3] },
+    { sec: 'headings', name: 'Headings', rows: detail === 'headings' ? [['Heading', 'Approved', 'Current', 'Spent + committed', 'Use'], ...hRows] : [['Heading / line / PO', 'Description', 'Approved', 'Current', 'Spent + committed', 'Use / open'], ...dRows.map((r) => [r.k === 'po' ? `  PO ${r.code}` : r.k === 'line' ? ` ${r.code}` : r.code, r.d, r.a ?? '', r.c ?? '', r.sc, r.u ?? ''])], money: detail === 'headings' ? [1, 2, 3] : [2, 3, 4] },
     { sec: 'period', name: 'Period', rows: [['Line', 'Description', 'Spent in period'], ...dDirect.map((d) => [d.code, d.description, (d.actual[1] - d.actual[0])])], money: [2] },
     { sec: 'lines', name: 'Lines', rows: [['Line', 'Description', 'Unit', 'Approved units', 'Approved unit cost', 'Approved amount', 'Actual units', 'Actual unit cost', 'Actual amount', 'Unit variance (+/−)', 'Unit cost variance %', 'Remaining', 'Use'], ...lRows], money: [4, 5, 7, 8, 11] },
     { sec: 'variance', name: 'Variances', rows: [['Line', 'Description', 'Type', 'Facts', 'Explanation'], ...V.map((v) => [v.code, v.d, v.kind, v.facts, vn[`${end?.id ?? 'now'}:${v.code}`] ?? v.draft])] },
@@ -182,6 +204,12 @@ function build(p: Project, end?: R_, start?: R_) {
   return { blocks, sheets };
 }
 
+type DRow = { k: 'head' | 'line' | 'po' | 'total'; code: string; d: string; a: number | null; c: number | null; sc: number; u: string };
+/** Headings with their lines (and the purchase orders on each line, when chosen) in one table. */
+function DetailTable({ rows }: { rows: DRow[] }) {
+  return <table class="sd-t sd-det"><thead><tr><th>Line</th><th>Description</th><th class="r">Approved</th><th class="r">Current</th><th class="r">Spent + committed</th><th class="r">Use</th></tr></thead>
+    <tbody>{rows.map((r) => <tr class={`sd-${r.k}`}><td class="nw">{r.k === 'po' ? `PO ${r.code}` : r.code}</td><td>{r.d}</td><td class="r num">{r.a == null ? '' : full(r.a)}</td><td class="r num">{r.c == null ? '' : full(r.c)}</td><td class="r num">{full(r.sc)}</td><td class="r num">{r.u}</td></tr>)}</tbody></table>;
+}
 type LA = { code: string; d: string; unit: string; aU: number | null; aR: number | null; aA: number; rU: number | null; rR: number | null; act: number; dU: number | null; dR: number | null; dRp: number | null; left: number; use: number | null };
 const nf = (v: number | null, d = 0) => v == null ? '—' : v.toLocaleString('en-GB', { maximumFractionDigits: d });
 const sg = (v: number | null, d = 0) => v == null ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toLocaleString('en-GB', { maximumFractionDigits: d })}`;
