@@ -2,6 +2,7 @@ import { burnGap, elapsed, forecastRate, HEADINGS, latestReport, lineCommitted, 
 import { isExtraction } from './extraction';
 import { outcome } from './insights';
 import { costPerf } from './costPerf';
+import { unitsDiffer } from './ledger';
 import type { BudgetLine, Project, ReportingPeriod } from './types';
 import type { WorkbookSummary } from './workbook';
 
@@ -146,6 +147,8 @@ export function traceLine(p: Project, code: string, f: LineField): Trace | null 
     const settled = w?.last ? (Date.now() - Date.parse(w.last)) / 864e5 > 60 : !!x.date && (Date.now() - Date.parse(x.date)) / 864e5 > 90;
     if (x.spent < 0.005 && openAmt > 0.5 && w && w.paid > 0.5 && settled && !/petty cash|caisse|avans/i.test(`${x.description} ${x.supplier}`)) flags.push(`nothing paid on this line, while the PO was paid ${fmt2(w.paid)} on its other lines${w.last ? ` (last on ${w.last.split('-').reverse().join('/')})` : ''}: check it and have this line closed to release ${fmt2(openAmt)}`);
     if (x.spent > x.amount + 0.5) flags.push(`invoiced ${fmt2(x.spent - x.amount)} above what the PO ordered`);
+    const bUnit = p.approvedBudget?.lines.find((l) => l.code === x.line)?.unit || own?.unit || '';
+    if (bUnit && unitsDiffer(x.unitType, bUnit)) flags.push(`unit "${x.unitType}" but the line is budgeted ${bUnit.toLowerCase()}: correct it on the PO (at the latest when closing it)`);
     if (!x.units && x.amount > 0.005 && !/month/i.test(x.unitType)) flags.push(x.spent > 0.005 ? 'invoiced with 0 units: the cost counts on the line without units' : 'committed with 0 units: set the units before it is invoiced');
     if (x.units && x.spent > 0.005 && own?.unitRate && x.units <= 2 && x.spent / x.units > n(own.unitRate) * 2) flags.push(`${fmt2(x.spent / x.units)} per ${x.unitType.replace(/^per\s+/i, '') || 'unit'} against ${fmt2(n(own.unitRate))} budgeted — one unit for several`);
     return { po: x.po, supplier: x.supplier?.trim() ?? '', text: x.description || x.nature, units: x.units ?? 0, unitType: x.unitType ?? '', ordered: r2(x.amount), spent: r2(x.spent), open: openAmt, date: x.date, flags };

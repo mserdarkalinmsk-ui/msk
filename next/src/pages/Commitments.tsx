@@ -7,6 +7,7 @@ import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { latestWorkbook } from './FinancialReport';
 import { plabel } from '../domain/label';
+import { unitsDiffer } from '../domain/ledger';
 
 const DAY = 864e5;
 const BUCKETS = [
@@ -27,6 +28,8 @@ export function openPOs(P: Project[]): OpenPO[] {
     const W = new Map<string, { paid: number; last: string | null; lines: number }>();
     for (const x of wb.pos) { const w = W.get(x.po) ?? { paid: 0, last: null, lines: 0 }; w.paid += x.spent; w.lines++; W.set(x.po, w); }
     for (const e of wb.entries ?? []) if (e.po && e.src === 'invoice') { const w = W.get(e.po); if (w && (!w.last || e.date > w.last)) w.last = e.date; }
+    // The unit each budget line is counted in (the approved budget's, else the report's).
+    const bu = new Map<string, string>([...wb.lines.map((l) => [l.code, l.unit ?? ''] as [string, string]), ...(p.approvedBudget?.lines ?? []).map((l) => [l.code, l.unit ?? ''] as [string, string])].filter(([, u]) => u));
     return wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5).map((x) => {
       const whole = W.get(x.po) ?? { paid: x.spent, last: null, lines: 1 };
       const age = x.date ? Math.max(0, Math.round((TODAY.getTime() - Date.parse(x.date)) / DAY)) : 0;
@@ -39,6 +42,7 @@ export function openPOs(P: Project[]): OpenPO[] {
       // Nothing paid on the whole PO for six months.
       else if (age > 183 && whole.paid < 0.5) flags.push('nothing paid on the PO in 6+ months');
       else if (age > 365 && x.balance > 0.5 * x.amount) flags.push('over half unpaid after a year');
+      if (!staff && bu.get(x.line) && unitsDiffer(x.unitType, bu.get(x.line)!)) flags.push(`unit "${x.unitType}" but the line is budgeted ${bu.get(x.line)!.toLowerCase()}: correct it on the PO (at the latest when closing it)`);
       if (staff) { /* */ } else if (p.end && p.end < TODAY.toISOString().slice(0, 10)) flags.push('project already ended');
       else if (p.end && (Date.parse(p.end) - TODAY.getTime()) / DAY < 90) flags.push('project ends within 90 days');
       return { ...x, p, age, bucket: BUCKETS.findIndex((b) => age <= b.max), flags, staff, whole, close: !staff && x.spent < 0.5 && whole.paid > 0.5 && settled(whole.last, age) && !petty(x) };

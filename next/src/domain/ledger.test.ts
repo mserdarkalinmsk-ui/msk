@@ -186,3 +186,20 @@ describe('PO lines with an amount but no units', () => {
     expect(paid.rows.map((r) => r.doc)).toEqual(['PO 2']);
   });
 });
+
+describe('a PO unit that does not count what its budget line counts', () => {
+  it('flags real differences and lets synonyms through', async () => {
+    const { unitsDiffer } = await import('./ledger');
+    expect(unitsDiffer('Per Travel', 'Per month')).toBe(true); // rent line given a travel unit
+    expect(unitsDiffer('Per month', 'Per day')).toBe(true);
+    expect(unitsDiffer('Per Travel', 'Per return flight')).toBe(false);
+    expect(unitsDiffer('Per Travel', 'Per trip')).toBe(false);
+    expect(unitsDiffer('Per unit', 'Per item')).toBe(false);
+    expect(unitsDiffer('Per Day', 'Per diem')).toBe(false);
+    expect(unitsDiffer('Per Day', 'Per person/day')).toBe(false);
+    expect(unitsDiffer('Per contract', 'Per event')).toBe(false);
+    expect(unitsDiffer('Per grant', 'Per item')).toBe(false);
+    expect(unitsDiffer('Per unit', 'Per 250 words')).toBe(false);
+    expect(unitsDiffer('Per unit', 'Per month')).toBe(true);
+  });
+});

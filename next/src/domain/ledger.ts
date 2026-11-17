@@ -61,13 +61,28 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 const row = (e: Entry) => ({ date: e.date, doc: e.src === 'invoice' ? `${e.doc}${e.po ? ` (PO ${e.po})` : ''}` : `GL ${e.doc}`, line: e.line, description: [e.description, e.detail !== e.description ? e.detail : ''].filter(Boolean).join(' · '), amount: e.amount });
 const eur = (v: number) => '€' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const unitWord = (u: string) => u.toLowerCase().replace(/^per\s+/, '').replace(/[^a-z ]/g, '').replace(/s\b/g, '').trim();
+/**
+ * A PO's unit that does not count the same thing as its budget line ("Per Travel" on a rent line budgeted per month):
+ * the units and unit costs of the line come out wrong. Units written differently but meaning the same ("Per return
+ * flight" / "Per Travel", "Per item" / "Per unit" or "Per grant", "Per event" / "Per contract") are not a difference;
+ * a generic unit (item, unit) goes with anything that is not counted in time or trips.
+ */
+export function unitsDiffer(poUnit: string, budgetUnit: string): boolean {
+  if (!poUnit?.trim() || !budgetUnit?.trim()) return false;
+  // For this check only: an event bought as one contract, a grant or a page counted as an item.
+  const fam = (u: string) => { const f = unitFamily(u), w = unitWord(u); return /event|contract|conference|seminar|workshop|meeting|training/.test(w) ? 'event' : /^(grant|lump ?sum|package|lot)$|word|page/.test(w) ? 'item' : f; };
+  const a = fam(poUnit), b = fam(budgetUnit);
+  if (a === b || unitWord(poUnit).includes(unitWord(budgetUnit)) || unitWord(budgetUnit).includes(unitWord(poUnit))) return false;
+  const timed = ['month', 'day', 'travel'];
+  return !((a === 'item' && !timed.includes(b)) || (b === 'item' && !timed.includes(a)));
+}
 /** Units written differently but counted the same way ("per return flight" and "Per Travel", "per personday" and "Per Day"). */
 export function unitFamily(u: string): string {
   const w = unitWord(u).replace(/\s+/g, ' ');
   if (/travel|trip|flight|journey|ticket/.test(w)) return 'travel';
   if (/diem|day|night/.test(w)) return 'day';
-  if (/^(item|unit|piece|pc)$/.test(w)) return 'item';
   if (/month/.test(w)) return 'month';
+  if (/^(item|unit|piece|pc)$/.test(w)) return 'item';
   return w;
 }
 const dmy = (s: string) => { const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
@@ -184,11 +199,11 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
 
   // 9. PO unit differs from the budget line unit
   if (budget.length && o.pos?.length) {
-    const unit = new Map(budget.filter((b) => b.unit).map((b) => [b.code, unitWord(b.unit!)]));
-    const bad = o.pos.filter((p) => p.unitType && unit.get(p.line) && unitWord(p.unitType) && !unitWord(p.unitType).includes(unit.get(p.line)!) && !unit.get(p.line)!.includes(unitWord(p.unitType)) && unitFamily(p.unitType) !== unitFamily(unit.get(p.line)!));
+    const raw = new Map(budget.filter((b) => b.unit).map((b) => [b.code, b.unit!.trim()]));
+    const bad = o.pos.filter((p) => p.unitType && raw.get(p.line) && unitsDiffer(p.unitType, raw.get(p.line)!));
     const by = new Map<string, PO[]>(); for (const p of bad) by.set(p.line, [...(by.get(p.line) ?? []), p]);
-    for (const [l, P] of by) out.push({ kind: 'unit-mismatch', level: 'info', title: KIND_LABEL['unit-mismatch'], text: `Line ${l} is budgeted per ${unit.get(l)}; ${P.length} PO${P.length > 1 ? 's' : ''} use "${[...new Set(P.map((p) => p.unitType))].join('", "')}" — unit counts on this line will not compare with the budget.`, amount: r2(P.reduce((a, p) => a + p.sc, 0)),
-      rows: P.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.description} · ${p.units ?? ''} ${p.unitType}`, amount: p.sc })) });
+    for (const [l, P] of by) out.push({ kind: 'unit-mismatch', level: 'warning', title: KIND_LABEL['unit-mismatch'], text: `Line ${l} is budgeted ${raw.get(l)!.toLowerCase()}; ${P.length} PO line${P.length > 1 ? 's use' : ' uses'} "${[...new Set(P.map((p) => p.unitType))].join('", "')}" — the units and the cost per unit of this line come out wrong. Have the unit corrected on the PO (at the latest when it is closed).`, amount: r2(P.reduce((a, p) => a + p.sc, 0)),
+      rows: P.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.supplier ? `${p.supplier.trim()} · ` : ''}${p.description} · PO unit "${p.unitType}" (${p.units ?? 0}), budget unit "${raw.get(l)}"`, amount: p.sc })) });
   }
 
   // 10. contract period past the project end ("from 01/01/2026 to 31/12/2027")
