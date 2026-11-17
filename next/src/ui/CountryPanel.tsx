@@ -7,6 +7,7 @@ import { money } from '../domain/calc';
 import { short } from './format';
 import { PolicyFields } from './SalaryPolicy';
 import { CPI_LAST, salaryPath } from '../domain/salaryProjection';
+import { CCR_2027, CCR_SOURCE, ccrOf } from '../domain/ccr';
 export function checkCountry(c: Country, all: Country[], selfId?: string) {
   const e: Partial<Record<'name' | 'iso3', string>> = {};
   if (!c.name.trim()) e.name = 'Required';
@@ -85,6 +86,11 @@ export function CountryPanel({ close, edit: initial }: { close: () => void; edit
           </ul>
         </section>
         {countries.filter((c) => c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)).map((c) => <SalaryScale c={c} />)}
+        <details class="card ccr-all" style={{ marginTop: '16px' }}><summary>Salary adjustment indices at 1 January 2027 — Council of Europe member States ({CCR_2027.length})</summary>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Country</th><th class="r">CPI</th><th class="r">PPP effect</th><th class="r">Index</th><th class="r">Special granted</th><th class="r">Applied 1 Jan 2027</th></tr></thead>
+            <tbody>{CCR_2027.map((x) => <tr><td>{x.country}</td><td class="r num">{x.cpi.toFixed(1)}</td><td class="r num">{x.ppp == null ? '' : `${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}`}</td><td class="r num">{x.index.toFixed(1)}</td><td class="r num">{x.special?.toFixed(1) ?? ''}</td><td class="r num"><b>{x.net > 100 ? '+' : x.net < 100 ? '−' : ''}{Math.abs(x.net - 100).toFixed(1)}%</b></td></tr>)}</tbody></table>
+            <p class="muted" style={{ fontSize: '12px' }}>{CCR_SOURCE} (Annexes 1 and 1a), member States of the Council of Europe only. Index 100 = no change.</p></div>
+        </details>
       </div>
     </>
   );
@@ -101,7 +107,12 @@ function SalaryScale({ c }: { c: Country }) {
     <div class="card-h"><div><h2>📈 {c.name} — local salary scale</h2><p>Raises follow CPI: compounded since the last raise above {s.threshold ?? 7}% → {s.raise ?? 7}% raise from the next month; June triggers and the gap of the financial year go to the January catch-up · used by the forecast of every {c.name} project</p></div></div>
     <div class="card-b fe-inf-b">
       <PolicyFields s={s} set={(x) => upsertCountry({ ...c, salaryPolicy: { ...s, ...x, on: true } })} />
-      {ev.length > 0 && <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Next raises: {ev.map((e) => `${e.month} +${e.pct.toFixed(2)}%${e.projected ? ' (projected)' : ''}`).join(' · ')}</p>}
+      {ev.length > 0 && <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Next raises: {ev.map((e) => `${e.month} +${e.pct.toFixed(2)}%${e.kind === 'official' ? ' (decided, CCR)' : e.projected ? ' (projected)' : ''}`).join(' · ')}</p>}
+      {(() => { const x = ccrOf(c.iso3, c.name); return x && <div class="ccr-box">
+        <b>Decided: annual adjustment at 1 January 2027</b>
+        <span>Adjustment index {x.index.toFixed(1)} (CPI {x.cpi.toFixed(1)}{x.ppp ? `, PPP effect ${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}` : ''}){x.special ? ` less the special adjustments already granted (${x.special.toFixed(1)}: 1 Oct 2025, 1 Feb 2026, 1 May 2026)` : ''} → <b>{x.net > 100 ? '+' : ''}{(x.net - 100).toFixed(1)}%</b> on the scale in force at 31 Dec 2026. The projection uses it in place of the January catch-up.</span>
+        <small>{CCR_SOURCE}.</small>
+      </div>; })()}
     </div>
   </section>;
 }

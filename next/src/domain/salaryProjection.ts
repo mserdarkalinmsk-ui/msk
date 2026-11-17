@@ -1,3 +1,4 @@
+import { OFFICIAL_TR } from './ccr';
 /**
  * Local salary projection (Türkiye): the raise policy of the Inflation & FX Monitor — July–June financial year; when CPI
  * compounded since the last reset passes the threshold (7%) a raise (7%, or the cumulative rate when a single month alone
@@ -16,8 +17,8 @@ export const CPI_TR: Record<string, number> = {
 };
 export const CPI_LAST = Object.keys(CPI_TR).sort().at(-1)!;
 
-export interface InflationSettings { on: boolean; cpi?: number; fx?: number; threshold?: number; raise?: number; /** months typed by the user after the embedded series */ extra?: Record<string, number> }
-export interface RaiseEvent { month: string; pct: number; kind: 'raise' | 'spike' | 'catch-up'; projected: boolean }
+export interface InflationSettings { on: boolean; cpi?: number; fx?: number; threshold?: number; raise?: number; /** months typed by the user after the embedded series */ extra?: Record<string, number>; /** adjustments decided (CCR / Committee of Ministers), by month, % — they replace what the rule projects */ official?: Record<string, { pct: number; ref?: string }> }
+export interface RaiseEvent { month: string; pct: number; kind: 'raise' | 'spike' | 'catch-up' | 'official'; projected: boolean; ref?: string }
 
 const key = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}`;
 const next = (k: string) => { const [y, m] = k.split('-').map(Number); return m === 12 ? key(y + 1, 1) : key(y, m + 1); };
@@ -31,14 +32,17 @@ export function recentCpi(n = 6, extra: Record<string, number> = {}): number {
 /** Salary index by month (1 = July 2022) under the policy, with the raises applied and whether they are projected. */
 export function salaryPath(until: string, s: InflationSettings): { index: Map<string, number>; events: RaiseEvent[]; lastKnown: string } {
   const threshold = s.threshold ?? 7, raise = s.raise ?? 7, known = { ...CPI_TR, ...(s.extra ?? {}) }, assumed = s.cpi ?? recentCpi(6, s.extra);
-  const lastKnown = Object.keys(known).sort().at(-1)!;
+  const lastKnown = Object.keys(known).sort().at(-1)!, official = { ...OFFICIAL_TR, ...(s.official ?? {}) };
   let cpiIndex = 100, raiseIndex = 100, monitor = 100, pending = false, pendingPct = raise, pendingSpike = false, knownInFY = 0, sal = 1;
   const completed = new Map<number, number>(), index = new Map<string, number>(), events: RaiseEvent[] = [];
   for (let k = '2022-07'; k <= until; k = next(k)) {
     const [y, m] = k.split('-').map(Number), proj = !(k in known), inf = known[k] ?? assumed;
     if (m === 7) { pending = false; pendingPct = raise; cpiIndex = 100; raiseIndex = 100; monitor = 100; knownInFY = 0; }
     if (pending) { raiseIndex *= 1 + pendingPct / 100; sal *= 1 + pendingPct / 100; events.push({ month: k, pct: pendingPct, kind: pendingSpike ? 'spike' : 'raise', projected: proj }); monitor = 100; pending = false; pendingPct = raise; }
-    if (m === 1) { const gap = completed.get(y - 2); if (gap != null && gap > 0.005) { sal *= 1 + gap / 100; events.push({ month: k, pct: gap, kind: 'catch-up', projected: proj }); } }
+    // A decided adjustment (the CCR's annual adjustment at 1 January) replaces what the rule would give that month.
+    const off = official[k];
+    if (off) { if (pending) { /* the decided figure covers it */ } sal *= 1 + off.pct / 100; events.push({ month: k, pct: off.pct, kind: 'official', projected: false, ref: off.ref }); if (m !== 1) { monitor = 100; } }
+    else if (m === 1) { const gap = completed.get(y - 2); if (gap != null && gap > 0.005) { sal *= 1 + gap / 100; events.push({ month: k, pct: gap, kind: 'catch-up', projected: proj }); } }
     cpiIndex *= 1 + inf / 100; knownInFY++; monitor *= 1 + inf / 100;
     const cum = (monitor / 100 - 1) * 100;
     if (cum > threshold + 1e-10) { pending = m !== 6; pendingSpike = inf > threshold + 1e-10; pendingPct = pendingSpike ? cum : raise; }

@@ -20,3 +20,12 @@ describe('local salary projection', () => {
     expect(costFactor('2026-09-30', '2026-10-01', '2027-09-30', { ...s, fx: 2 })).toBeLessThan(f);
   });
 });
+
+import { salaryPath as path2 } from './salaryProjection';
+describe('decided adjustments', () => {
+  it('the CCR annual adjustment at 1 January 2027 (+10.0% for Türkiye) replaces the projected January catch-up', () => {
+    const ev = path2('2027-03', { on: true }).events.filter((e) => e.month === '2027-01');
+    expect(ev.some((e) => e.kind === 'official' && e.pct === 10)).toBe(true);
+    expect(ev.some((e) => e.kind === 'catch-up')).toBe(false);
+  });
+});

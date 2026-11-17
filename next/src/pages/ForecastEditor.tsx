@@ -181,7 +181,7 @@ function Inflation({ p, d, d0, save, country }: { p: Project; d: ForecastDraft; 
         {country && <p class="muted" style={{ margin: '0 0 8px', fontSize: '12px' }}>Kept for {country.name}: the CPI and the raise rule below are the same for every {country.name} project (also under Countries → {country.name}).</p>}
         <PolicyFields s={s} set={set} />
         <div class="fe-inf-g">
-          <div><b>Raises expected</b>{ev.length ? <ul>{ev.map((e) => <li class={e.projected ? 'proj' : ''}>{e.month} · {e.kind === 'catch-up' ? 'January catch-up' : e.kind === 'spike' ? 'raise after a spike' : 'raise'} <b>+{e.pct.toFixed(2)}%</b>{e.projected ? ' (projected)' : ''}</li>)}</ul> : <p class="muted">None up to the end date.</p>}</div>
+          <div><b>Raises expected</b>{ev.length ? <ul>{ev.map((e) => <li class={e.projected ? 'proj' : ''}>{e.month} · {e.kind === 'official' ? <span title={e.ref}>CCR annual adjustment (decided)</span> : e.kind === 'catch-up' ? 'January catch-up' : e.kind === 'spike' ? 'raise after a spike' : 'raise'} <b>+{e.pct.toFixed(2)}%</b>{e.projected ? ' (projected)' : ''}</li>)}</ul> : <p class="muted">None up to the end date.</p>}</div>
           <div><b>Effect on the monthly cost in euros</b><ul>{blocks.map((b) => { const f = costFactor(per.asAt, b.from, b.to, s); return <li>{b.label}: <b>{f >= 1 ? '+' : ''}{((f - 1) * 100).toFixed(1)}%</b> <small class="muted">({b.from} → {b.to})</small></li>; })}</ul>
             <p class="muted" style={{ fontSize: '12px' }}>Against the average cost per unit of the latest report; leave the EUR/TRY change at 0 when salaries are paid in euros. Known CPI: TurkStat to {CPI_LAST}; the assumption is the average of the last six months unless typed.</p></div>
         </div>
