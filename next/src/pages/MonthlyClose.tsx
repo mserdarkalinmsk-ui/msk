@@ -81,7 +81,7 @@ export function MonthlyClose() {
                     {r.since && <><dt>Spent {r.since.label}</dt><dd class="num">{short(r.since.spent)}</dd></>}{r.report && <><dt>Report</dt><dd>{r.report.name}</dd></>}</dl></div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  <button class="btn" onClick={() => go(`project/${r.p.id}`)}>Open project →</button>
+                  <button class="btn" onClick={() => go(`project/${r.p.id}/finance`)}>Open its financial report →</button>
                   {r.status !== 'clean' && <button class="btn" onClick={() => go('reports/health')}>Data health →</button>}
                   <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: r.p.id } })}>Import report</button>
                 </div>

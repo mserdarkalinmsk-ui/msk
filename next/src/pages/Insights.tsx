@@ -16,6 +16,8 @@ type WTab = 'open' | 'snoozed' | 'done' | 'log';
 const SNOOZE: [string, number][] = [['1 week', 7], ['2 weeks', 14], ['1 month', 30], ['3 months', 91]];
 
 /** The alerts as a work list: open ones first; each can be marked handled or snoozed with a note, and reopened. */
+/** The project tab where an alert of each kind is looked into. */
+const ALERT_TAB: Record<string, string> = { line: 'statement', forecast: 'summary', ending: 'summary', contract: 'staff', deadline: 'reports', plan: 'plan', setup: 'docs' };
 export function AlertCentre({ projects }: { projects: Project[] }) {
   const marks = useStore((s) => s.ledger.alertMarks), log = useStore((s) => s.ledger.alertLog) ?? [];
   const A = useMemo(() => alerts(projects, TODAY), [projects]);
@@ -63,7 +65,7 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
               return (
                 <li class={`sev-${a.severity}${ed ? ' ed' : ''}`}>
                   <span class={`badge ${a.severity}`}>{a.severity}</span>
-                  <button class="wl-main" onClick={() => go(`project/${a.projectId}`)} title="Open the project">
+                  <button class="wl-main" onClick={() => go(`project/${a.projectId}/${ALERT_TAB[a.kind] ?? 'summary'}`)} title="Open where this is">
                     <span class="t"><b class="num">{proj(a)?.code ?? ''}</b> · {a.title}{back && <em class="wl-back">{back}</em>}</span>
                     <span class="d">{ALERT_KINDS[a.kind] ?? a.kind} · {a.detail}{a.due ? ` · due ${date(a.due)}` : ''}</span>
                     {tab !== 'open' && m && <span class="wl-note">{tab === 'done' ? `Handled ${date(m.at.slice(0, 10))}` : `Snoozed until ${m.until ? date(m.until) : '—'}`}{m.note ? ` — ${m.note}` : ''}</span>}
@@ -116,7 +118,7 @@ export function Changes({ projects }: { projects: Project[] }) {
         <table class="mini chg-t">
           <thead><tr><th>Project</th><th>Period</th><th class="r">Spent before</th><th class="r">Spent now</th><th>Change</th><th class="r">Spent + committed change</th><th class="r">Lines</th><th>Notes</th></tr></thead>
           <tbody>{C.map((c) => { const d = c.spent[1] - c.spent[0]; return (
-            <tr class="click" onClick={() => go(`project/${c.project.id}`)}>
+            <tr class="click" onClick={() => go(`project/${c.project.id}/diff`)}>
               <td><b class="num">{c.project.code}</b> <span class="muted">{c.project.name}</span></td>
               <td class="num" style={{ whiteSpace: 'nowrap' }}>{c.from ? date(c.from) : '—'} → {c.to ? date(c.to) : '—'}</td>
               <td class="r num">{full(c.spent[0])}</td><td class="r num">{full(c.spent[1])}</td>
@@ -312,7 +314,7 @@ export function Compliance({ projects }: { projects: Project[] }) {
           <table class="mini chg-t">
             <thead><tr><th>Project</th><th>Project file</th><th>Missing</th><th class="r">Headings</th><th>Results</th></tr></thead>
             <tbody>{rows.map((r) => (
-              <tr class="click" onClick={() => go(`project/${r.p.id}`)}>
+              <tr class="click" onClick={() => go(`project/${r.p.id}/docs`)}>
                 <td><b class="num">{r.p.code}</b> <span class="muted">{r.p.name}</span></td>
                 <td style={{ minWidth: '150px' }}><div class="delta-bar"><span style={{ width: `${r.ready * 100}%`, background: r.ready >= 0.8 ? 'var(--good)' : r.ready >= 0.5 ? 'var(--c1)' : 'var(--warn)' }} /><b class="num">{Math.round(r.ready * 100)}%</b></div></td>
                 <td class="muted" style={{ fontSize: '12px' }}>{r.missing.slice(0, 4).join(', ')}{r.missing.length > 4 ? ` +${r.missing.length - 4}` : ''}</td>

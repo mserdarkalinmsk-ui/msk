@@ -62,7 +62,7 @@ export function Budget() {
         </section>
         <section class="card span-5">
           <div class="card-h"><div><h2>Report history</h2><p>Cumulative reported spend per project, one point per report</p></div></div>
-          <div class="card-b"><Chart height={Math.max(260, C.length * 46 + 40)} label="Cumulative spend per project by report" onClick={(e) => e.seriesId && go(`project/${e.seriesId}`)} option={(t) => historyOption(t, P)} /></div>
+          <div class="card-b"><Chart height={Math.max(260, C.length * 46 + 40)} label="Cumulative spend per project by report" onClick={(e) => e.seriesId && go(`project/${e.seriesId}/statement`)} option={(t) => historyOption(t, P)} /></div>
         </section>
         <section class="card span-12" style={{ overflow: 'hidden' }}>
           <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Portfolio financial statement</h2><p>All filtered projects summed by budget line, in the layout of the official report{(() => { const nf = P.filter((p) => lines(p).some((l) => l.forecast != null)).length, np = P.filter((p) => lines(p).some((l) => (l.roundedBudget ?? l.proposedBudget) != null)).length; return nf < P.length || np < P.length ? ` · Planned 12 months from ${nf} of ${P.length} projects, budget proposal from ${np} — “vs budget” compares only those` : ''; })()}</p></div></div>

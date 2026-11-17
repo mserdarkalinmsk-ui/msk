@@ -140,7 +140,7 @@ export function MonthlyPack() {
         <table class="mini pack-t">
           <thead><tr><th>Project</th><th>Country</th><th>Reports</th><th class="r">Spend added</th><th class="r">Performance</th><th class="r">Change</th><th>Band</th></tr></thead>
           <tbody>{M.map((x) => { const d = x.prev == null ? null : x.perf - x.prev; return (
-            <tr class="click" onClick={() => go(`project/${x.p.id}`)} style={{ borderLeft: `4px solid ${BAND_C[x.now]}` }}>
+            <tr class="click" onClick={() => go(`project/${x.p.id}/diff`)} style={{ borderLeft: `4px solid ${BAND_C[x.now]}` }}>
               <td><b class="num">{lab(x.p)}</b> <span class="muted">{x.p.name}</span></td>
               <td>{cname(x.p.country)}</td>
               <td class="num muted" style={{ whiteSpace: 'nowrap' }}>{x.from ? `${date(x.from)} → ${date(x.to!)}` : x.to ? date(x.to) : '—'}</td>

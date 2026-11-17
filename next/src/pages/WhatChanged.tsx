@@ -40,7 +40,7 @@ export function WhatChanged() {
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Changes by project</h2><p>Compared with the data as it was at the start of the chosen day (restore points are kept 30 days)</p></div>
           <label class="muted" style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>Since<select class="sp-sel" value={key} onChange={(e) => setKey((e.target as HTMLSelectElement).value)}>{pts.map((x) => <option value={x.key}>{date(x.at.slice(0, 10))}</option>)}</select></label></div>
         <div class="card-b wc-list">
-          {C.projects.map((c) => <article class="wc" onClick={() => go(`project/${c.p.id}`)}>
+          {C.projects.map((c) => <article class="wc" onClick={() => go(`project/${c.p.id}/diff`)}>
             <header><b>{lab(c.p)}</b><small class="muted"> {cname(c.p.country)} · {c.p.name.slice(0, 70)}</small>{c.added && <span class="badge good" style={{ marginLeft: '8px' }}>new project</span>}
               <span class="wc-n" style={{ color: c.spent > 0 ? 'var(--accent)' : undefined }}>{Math.abs(c.spent) > 1 ? `${signed(c.spent)} spent` : ''}</span></header>
             <ul>

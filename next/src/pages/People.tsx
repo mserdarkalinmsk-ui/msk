@@ -88,7 +88,7 @@ export function StaffBoard({ people: A, showProject }: { people: Person[]; showP
 function PeopleTable({ rows, showProject }: { rows: Person[]; showProject?: boolean }) {
   const cols: Column<Person>[] = [
     { key: 'name', label: 'Name', width: 180, pin: true, value: (a) => a.display, render: (a) => <span style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><span class={`avatar ${a.base === 'HQ' ? 'hq' : ''}`}>{a.display.split(/\s+/).filter((_, i, x) => i === 0 || i === x.length - 1).map((x) => x[0]).join('')}</span>{a.display}</span> },
-    ...(showProject ? [{ key: 'project', label: 'Project', width: 96, value: (a: Person) => a.project.code, render: (a: Person) => <a class="num" href={`#/project/${a.project.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); go(`project/${a.project.id}`); }}>{a.project.code}</a> }] : []),
+    ...(showProject ? [{ key: 'project', label: 'Project', width: 96, value: (a: Person) => a.project.code, render: (a: Person) => <a class="num" href={`#/project/${a.project.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); go(`project/${a.project.id}/staff`); }}>{a.project.code}</a> }] : []),
     { key: 'position', label: 'Position', width: 180, value: (a) => a.position },
     { key: 'base', label: 'Base', width: 96, value: (a) => (a.base === 'HQ' ? 'SxB / HQ' : a.base) },
     { key: 'fte', label: 'FTE', width: 70, align: 'r', value: (a) => a.fte, render: (a) => (a.fte == null ? '—' : pct(a.fte)) },

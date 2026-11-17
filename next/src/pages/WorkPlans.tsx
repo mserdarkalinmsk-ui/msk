@@ -91,7 +91,7 @@ export function WorkPlans() {
             <span class="muted" style={{ fontSize: '12px', alignSelf: 'center' }}>Existing Work Plans with the same period are updated; D and E become the recorded delivery of the previous WP; the table's staff + office deduction is kept when the project has none.</span></div></div>}
         {R.length ? <div class="table-wrap"><table class="wp-t" style={{ width: '100%', margin: 0 }}>
           <thead><tr><th>Project</th><th>WP</th><th class="num">Planned</th><th>Previous WP delivered</th><th>Activity used vs time</th><th class="num">Left after WP</th><th class="num">Carried</th><th>Status</th></tr></thead>
-          <tbody>{R.map((r) => <tr class="click" style={{ cursor: 'pointer', borderLeft: `4px solid var(--${r.V.level === 'serious' ? 'critical' : r.V.level})` }} onClick={() => go(`project/${r.p.id}`)}>
+          <tbody>{R.map((r) => <tr class="click" style={{ cursor: 'pointer', borderLeft: `4px solid var(--${r.V.level === 'serious' ? 'critical' : r.V.level})` }} onClick={() => go(`project/${r.p.id}/wp`)}>
             <td><b>{r.p.bh ? `${r.p.bh} · ` : ''}</b>{r.p.name}{!r.hasReport && <div class="muted" style={{ fontSize: '11px' }}>no report loaded — figures from the follow-up table</div>}</td>
             <td>{wpName(r.wp)}<div class="muted" style={{ fontSize: '11px' }}>{r.wp.from ? `${date(r.wp.from)} – ${date(r.wp.to)}` : ''}</div></td>
             <td class="num">{full(r.wp.planned)}</td>

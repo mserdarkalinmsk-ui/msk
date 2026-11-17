@@ -59,6 +59,7 @@ export const SLUG: Record<string, { tab: Tab; view?: 'lines' | 'checks' | 'budge
   summary: { tab: 'Summary' }, wp: { tab: 'Work Plan' }, finance: { tab: 'Financial report' }, statement: { tab: 'Financial report', view: 'lines' }, checks: { tab: 'Financial report', view: 'checks' },
   budget: { tab: 'Financial report', view: 'budget' }, bydate: { tab: 'Financial report', view: 'range' }, pos: { tab: 'Financial report', view: 'pos' }, diff: { tab: 'Financial report', view: 'diff' }, lines: { tab: 'Budget lines' }, staff: { tab: 'Staff' },
   docs: { tab: 'Results & documents' }, revision: { tab: 'Revision' }, forecast: { tab: 'Forecast' }, reports: { tab: 'Reports' }, risks: { tab: 'Risks' },
+  rates: { tab: 'Financial report', view: 'rates' }, plan: { tab: 'Activity plan' }, indicators: { tab: 'Indicators' }, scenario: { tab: 'Scenario' }, closure: { tab: 'Closure' }, annual: { tab: 'Annual plan' }, justification: { tab: 'Justification' }, history: { tab: 'History' },
 };
 export const openProject = (id: string, slug = 'summary') => go(`project/${id}/${slug}`);
 

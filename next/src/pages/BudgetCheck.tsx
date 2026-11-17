@@ -41,7 +41,7 @@ export function BudgetCheck() {
                 <span class="bc-n">{c.bad > 0 && <span class="badge critical">{c.bad} error{c.bad > 1 ? 's' : ''}</span>}{c.warn > 0 && <span class="badge warning">{c.warn} to check</span>}{!c.bad && !c.warn && <span class="badge good">clean</span>}<span class="muted">{o ? '▾' : '▸'}</span></span></header>
               {o && (F.length ? <div class="table-scroll"><table class="mini"><thead><tr><th style={{ width: '70px' }} /><th>Where</th><th>Line</th><th>Finding</th><th class="r">Should be</th></tr></thead>
                 <tbody>{F.map((f) => <tr><td><span class={`badge ${TAG[f.level].c}`}>{TAG[f.level].t}</span></td><td class="muted" style={{ whiteSpace: 'nowrap' }}>{f.where}</td><td class="num">{f.code ?? '—'}</td><td>{f.text}</td><td class="r num">{f.expected != null ? full(f.expected) : ''}</td></tr>)}</tbody></table>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}><button class="btn ghost" onClick={() => go(`project/${c.p.id}`)}>Open project →</button></div></div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}><button class="btn ghost" onClick={() => go(`project/${c.p.id}/lines`)}>Open the budget lines →</button></div></div>
                 : <p class="muted" style={{ margin: '6px 0 0' }}>{c.p.approvedBudget || c.p.reportingPeriods?.length ? 'Nothing found.' : 'No approved budget or report loaded yet — nothing to check.'}</p>)}
             </article>; })}
           {!C.length && <p class="muted">No projects in the selection.</p>}

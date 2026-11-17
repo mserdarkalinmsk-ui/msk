@@ -33,7 +33,7 @@ export function EndingSoon() {
           <div class="seg" style={{ marginLeft: 'auto' }}>{[6, 12, 18].map((m) => <button aria-pressed={within === m} onClick={() => setWithin(m)}>{m} months</button>)}</div>
           <button class="btn" onClick={xlsx}>⤓ Excel</button></div>
         <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Ends</th><th class="r">Months left</th><th class="r">Left to use</th><th style={{ width: '22%' }}>Needed vs pace (per month)</th><th class="r">Unspent at the end</th></tr></thead>
-          <tbody>{R.map((r) => { const mx = Math.max(r.need, r.pace, 1); return <tr class="click" onClick={() => go(`project/${r.p.id}`)} style={{ borderLeft: `4px solid ${TONE[r.level]}` }}>
+          <tbody>{R.map((r) => { const mx = Math.max(r.need, r.pace, 1); return <tr class="click" onClick={() => go(`project/${r.p.id}/summary`)} style={{ borderLeft: `4px solid ${TONE[r.level]}` }}>
             <td><b>{lab(r.p)}</b><small class="muted"> {cname(r.p.country)}</small><div class="muted" style={{ fontSize: '12px' }}>{r.p.name.slice(0, 70)}</div></td>
             <td class="num" style={{ whiteSpace: 'nowrap' }}>{date(r.p.end)}</td><td class="r num">{r.monthsLeft.toFixed(1)}</td><td class="r num"><b>{full(r.remaining)}</b><small class="muted" style={{ display: 'block' }}>of {short(r.budget)}</small></td>
             <td><div class="es-bars"><span><i style={{ width: `${r.need / mx * 100}%`, background: TONE[r.level] }} /><em>needed {short(r.need)}</em></span><span><i style={{ width: `${r.pace / mx * 100}%`, background: 'var(--ink-3, #888)' }} /><em>pace {short(r.pace)}</em></span></div></td>
