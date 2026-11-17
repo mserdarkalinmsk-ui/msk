@@ -55,7 +55,9 @@ export function ForecastEditor({ p }: { p: Project }) {
   const odd = (l: (typeof R.lines)[number], b: BlockId): string | null => {
     const u = E.lines[l.code]?.[b]?.u; if (!u) return null;
     const blk = R.blocks.find((x) => x.id === b)!, months = (Date.parse(blk.to) - Date.parse(blk.from)) / (30.44 * 864e5) + 1;
-    if (/month/i.test(l.unit) && u > months * (l.staff ? 3 : 2) + 0.5) return `${u} units for about ${Math.round(months)} months — is this a rate typed in the units box?`;
+    // 4.2 / 4.4 carry the months of every local staff member: one unit per person and month.
+    const heads = l.cb ? Math.max(1, R.lines.filter((x) => /^1\.1\.1\./.test(x.code) && (E.lines[x.code]?.[b]?.u ?? 0) > 0).length) : 1;
+    if (/month/i.test(l.unit) && u > months * heads * (l.staff || l.cb ? 3 : 2) + 0.5) return `${u} units for about ${Math.round(months)} months — is this a rate typed in the units box?`;
     if (l.bUnits && u > l.bUnits * 3) return `${u} units against ${l.bUnits} in the budget — please check`;
     return null;
   };

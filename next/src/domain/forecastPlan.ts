@@ -142,13 +142,20 @@ export function autofillStaff(p: Project, today: Date, d: ForecastDraft): Foreca
     for (const b of blocks) {
       // A contract ending before the project end is assumed renewed to the end (the post stays); the guidelines ask to
       // check the fiche staff — the note below lists who was counted.
-      const u = who.reduce((a, s) => a + (s.start ? monthsIn(b.from, b.to, s.start, end) * (s.fte ?? 1) : 0), 0);
+      // The running contract's purchase order is already in spent + committed up to its end date: only the months after
+      // it are planned, so November–December are not counted twice when the latest report has them committed.
+      // The months the report already counts on the line (its units since the project start, at the FTE of the people on
+      // it) are not planned again either: 12 months reported on a full-time post started in January cover to December.
+      const fteSum = who.reduce((a, s) => a + (s.fte ?? 1), 0), iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+      const counted = fteSum && x.aUnits ? iso(parseDate(p.start).getTime() + (x.aUnits / fteSum) * MONTH) : '';
+      const after = (s: (typeof who)[number]) => [s.start, counted, x.sc - x.actual > 0.5 && s.end && s.end >= s.start ? iso(parseDate(s.end).getTime() + 864e5) : ''].reduce((m, v) => (v > m ? v : m), '');
+      const u = who.reduce((a, s) => a + (s.start ? monthsIn(b.from, b.to, after(s), end) * (s.fte ?? 1) : 0), 0);
       if (!who.length && !x.budget) continue;
       // Staff months in quarters, as a contract is counted (32.88 → 33): never 32.88 months on a forecast.
       cell[b.id] = { u: roundUnits(u, 0.25), r: cell[b.id]?.r ?? (d.infl?.on && /^1\.1\./.test(x.code) ? undefined : rate) };
       if (/^1\.1\./.test(x.code)) localMonths[b.id] = (localMonths[b.id] ?? 0) + u;
     }
-    if (who.length) notes.push(`${x.code}: ${who.map((s) => `${s.display}${s.fte != null && s.fte !== 1 ? ` (${Math.round(s.fte * 100)}%)` : ''}${s.end && s.end < end ? `, contract to ${dmy(s.end)} carried on` : ''}`).join('; ')}`);
+    if (who.length) notes.push(`${x.code}: ${who.map((s) => `${s.display}${s.fte != null && s.fte !== 1 ? ` (${Math.round(s.fte * 100)}%)` : ''}${s.end && s.end < end ? `, contract to ${dmy(s.end)} ${x.sc - x.actual > 0.5 ? 'already committed, ' : ''}carried on${x.sc - x.actual > 0.5 ? ' after it' : ''}` : ''}`).join('; ')}`);
     else if (x.budget) notes.push(`${x.code}: no contract on file — fill in by hand`);
     next.lines[x.code] = cell;
   }

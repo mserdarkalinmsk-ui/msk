@@ -37,6 +37,15 @@ describe('forecast in the app', () => {
     expect(d.lines['4.4'].p!.u).toBe(d.lines['4.2'].p!.u);
     expect(d.notes!.some((x) => x.includes('Jane Doe'))).toBe(true);
   });
+  it('does not plan again the months a staff purchase order already commits', () => {
+    // Ann's contract to 31 Dec 2026 is committed in the report (spent + committed above spent): Jul–Dec are in spent +
+    // committed, so only Jan–Dec 2027 at 50% = 6 months are planned, not 9.
+    const L2 = lines.map((l) => (l.code === '1.2.1.2' ? { ...l, spentCommitted: 55000 } : l));
+    const q = { ...(p as any), reportingPeriods: [{ ...(p as any).reportingPeriods[0], snapshot: { lines: L2, staffRecords } }] } as never;
+    const d = autofillStaff(q, today, { opt: { kind: 'revision', programme: 'JP' }, lines: {} });
+    expect(d.lines['1.2.1.2'].p!.u).toBeCloseTo(6, 0);
+    expect(d.notes!.join(' ')).toMatch(/already committed/);
+  });
   it('balances on 5.7 and decides between notification and addendum', () => {
     let d: ForecastDraft = autofillStaff(p, today, { opt: { kind: 'revision', programme: 'JP' }, lines: {} });
     d = balanceOn(p, today, d);
