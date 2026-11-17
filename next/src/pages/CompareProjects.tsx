@@ -32,7 +32,7 @@ export function CompareProjects() {
   return (
     <section class="card">
       <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Compare projects</h2><p>Choose two or three projects</p></div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>{[0, 1, 2].map((i) => <select class="sp-sel" style={{ borderLeft: `4px solid ${COL[i]}` }} value={ids[i] ?? ''} onChange={(e) => { const v = (e.target as HTMLSelectElement).value, n = [...ids]; n[i] = v; setIds(n.filter((x, j) => x && n.indexOf(x) === j)); }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>{[0, 1, 2].map((i) => <select class="sp-sel" aria-label={`Project ${i + 1}`} style={{ borderLeft: `4px solid ${COL[i]}` }} value={ids[i] ?? ''} onChange={(e) => { const v = (e.target as HTMLSelectElement).value, n = [...ids]; n[i] = v; setIds(n.filter((x, j) => x && n.indexOf(x) === j)); }}>
           <option value="">{i < 2 ? 'Choose a project' : '— third project (optional)'}</option>{P.map((p) => <option value={p.id}>{lab(p)} · {p.name.slice(0, 40)}</option>)}</select>)}</div></div>
       {D.length < 2 ? <div class="card-b"><p class="muted">Choose at least two projects.</p></div> :
       <div class="card-b table-scroll"><table class="mini cpj">

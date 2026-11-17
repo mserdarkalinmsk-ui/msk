@@ -293,7 +293,7 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
 .br-more, .br-ok { margin: 4px 0 0; font-size: 10px; color: #666; }
 .br-wp { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 10.5px; }
 .br-wp th { text-align: left; font-weight: 500; color: #555; padding: 4px 0; border-bottom: 1px solid #eee; } .br-wp td { text-align: right; padding: 4px 0; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.br-f { margin-top: auto; display: flex; justify-content: space-between; gap: 12px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 9px; color: #777; }
+.br-f { margin-top: auto; display: flex; justify-content: space-between; gap: 12px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 9px; color: #5f5f5f; }
 @page brief { size: A4 portrait; margin: 0; }
 @media print {
   .side, .top, .pstat, .brief-bar { display: none !important; }
@@ -364,3 +364,33 @@ tr.click:focus-visible > td { background: color-mix(in srgb, var(--accent) 7%, v
   .sd-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 @media screen and (max-width: 900px) { .studio { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Readable in both themes (WCAG AA contrast) ---------- */
+:root { --accent-text: var(--accent); --fund-ob: #1d5fa8; --fund-ls: #7b2d8e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent-text: #79aff0; --c2: #e8713f; --fund-ob: #6aa5e6; --fund-ls: #c08ad8; } }
+:root[data-theme="dark"] { --accent-text: #79aff0; --c2: #e8713f; --fund-ob: #6aa5e6; --fund-ls: #c08ad8; }
+body .subtabs button[aria-selected="true"], body .subtabs button[aria-selected="true"]:hover, body .subtabs button[aria-selected="true"] .tab-n, .avatar { color: var(--accent-text); }
+/* A count on a red dot: a red deep enough for white figures. */
+.bell-n { background: #c6302d; }
+/* Bright status pills carry dark text in the dark theme. */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.sl-pill, .ag-n span, .hl-pill, .rd-list li.ok .rd-dot, .hl-ok > i, .hl-warn > i, .sl-verdict span, .sl-stack span) { color: #121211; } }
+:root[data-theme="dark"] :is(.sl-pill, .ag-n span, .hl-pill, .rd-list li.ok .rd-dot, .hl-ok > i, .hl-warn > i, .sl-verdict span, .sl-stack span) { color: #121211; }
+/* The A4 brief is paper in either theme: it keeps the light status colours. */
+.brief { --ink: #111; --ink-2: #444; --ink-3: #5f5f5f; --line: #ddd; --surface: #fff; --surface-2: #f4f4f2; --good: #16743f; --warn: #976200; --serious: #a8450b; --critical: #b02a28; --accent-text: #1d68c4; }
+
+/* Chart colours are tuned for marks, not for type: text in a chart colour uses its readable step. */
+:root { --c1-text: #1d64b8; --c2-text: #b4471a; --c3-text: #12805a; --c4-text: #8a5d00; --c5-text: #b03a6a; --c6-text: #006b00; --c7-text: #5a48c8; --c8-text: #b02a28; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c1-text: #79aff0; --c2-text: #f08a5d; --c3-text: #43c995; --c4-text: #e8b443; --c5-text: #e57aa0; --c6-text: #4cc04c; --c7-text: #aaa0f2; --c8-text: #f08080; } }
+:root[data-theme="dark"] { --c1-text: #79aff0; --c2-text: #f08a5d; --c3-text: #43c995; --c4-text: #e8b443; --c5-text: #e57aa0; --c6-text: #4cc04c; --c7-text: #aaa0f2; --c8-text: #f08080; }
+[style^="color: var(--c1)"], [style*="; color: var(--c1)"] { color: var(--c1-text) !important; }
+[style^="color: var(--c2)"], [style*="; color: var(--c2)"] { color: var(--c2-text) !important; }
+[style^="color: var(--c3)"], [style*="; color: var(--c3)"] { color: var(--c3-text) !important; }
+[style^="color: var(--c4)"], [style*="; color: var(--c4)"] { color: var(--c4-text) !important; }
+[style^="color: var(--c5)"], [style*="; color: var(--c5)"] { color: var(--c5-text) !important; }
+[style^="color: var(--c6)"], [style*="; color: var(--c6)"] { color: var(--c6-text) !important; }
+[style^="color: var(--c7)"], [style*="; color: var(--c7)"] { color: var(--c7-text) !important; }
+[style^="color: var(--c8)"], [style*="; color: var(--c8)"] { color: var(--c8-text) !important; }
+/* Amber pills carry dark type (white on amber cannot be read). */
+:is(.sl-pill, .hl-pill, .ag-n span, .sl-verdict span, [class^="hl-"] > i)[style*="background: var(--c4)"] { color: #1f1600 !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sp-kind { filter: brightness(1.55) saturate(.9); } }
+:root[data-theme="dark"] .sp-kind { filter: brightness(1.55) saturate(.9); }

@@ -10,7 +10,7 @@ import type { PO } from './workbook';
 export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
 export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
   { k: 'events', label: 'Event management', color: 'var(--ink-3)' },
-  { k: 'interp', label: 'Translation / interpretation', color: '#0891b2' },
+  { k: 'interp', label: 'Translation / interpretation', color: '#0e7490' },
   { k: 'consult', label: 'Consultant — national', color: 'var(--c1)' },
   { k: 'intl', label: 'Consultant — international', color: 'var(--c7)' },
   { k: 'visibility', label: 'Visibility', color: 'var(--critical)' },

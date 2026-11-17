@@ -46,7 +46,7 @@ export function Studio() {
     <div class="studio">
       <aside class="card studio-c no-print">
         <h3>Project</h3>
-        <select class="select" value={p.id} onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setPid(v); setTo(''); setFrom(''); try { localStorage.setItem('pl-studio-p', v); } catch { /* */ } }}>{P.map((x) => <option value={x.id}>{x.code} · {x.name}</option>)}</select>
+        <select class="select" aria-label="Project" value={p.id} onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setPid(v); setTo(''); setFrom(''); try { localStorage.setItem('pl-studio-p', v); } catch { /* */ } }}>{P.map((x) => <option value={x.id}>{x.code} · {x.name}</option>)}</select>
         <h3>Period</h3>
         {R.length ? <>
           <label class="studio-l">From report<select class="select" value={start?.id ?? ''} onChange={(e) => setFrom((e.target as HTMLSelectElement).value)}><option value="">Project start</option>{R.filter((r) => !end || r.date < end.date).map((r) => <option value={r.id}>{date(r.date)}</option>)}</select></label>
@@ -396,6 +396,6 @@ function VarianceBlock({ p, V, k }: { p: Project; V: ReturnType<typeof variances
   const save = (code: string, v: string) => updateProject(p.id, { varianceNotes: { ...notes, [`${k}:${code}`]: v } } as Partial<Project>);
   return <div class="sd-var">{V.map((v) => { const key = `${k}:${v.code}`, txt = notes[key] ?? v.draft, draft = notes[key] == null;
     return <div class="sd-v"><h3>{v.code} {v.d} <small class={`badge ${v.kind === 'overspent' ? 'danger' : 'warning'} no-print`}>{v.kind}</small></h3><p><b>{v.facts}</b></p>
-      <textarea class="no-print-border" rows={3} value={txt} onChange={(e) => save(v.code, (e.target as HTMLTextAreaElement).value)} />
+      <textarea class="no-print-border" aria-label={`Comment on ${v.code}`} rows={3} value={txt} onChange={(e) => save(v.code, (e.target as HTMLTextAreaElement).value)} />
       <p class="print-only">{txt}</p>{draft && <small class="muted no-print">Draft — text in [brackets] to complete; saved with the report when edited.</small>}</div>; })}</div>;
 }

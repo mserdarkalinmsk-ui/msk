@@ -61,7 +61,7 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
       ['Total', '', T.ob.budget, T.ob.sc, T.ob.planned, T.ob.left, T.ls.budget, T.ls.sc, T.ls.planned, T.ls.left]] },
     { name: 'Entries', money: [4, 5, 6], rows: [['Line', 'Document', 'Description', 'Supplier', 'Amount', 'Spent', 'Committed', 'Status', 'Date', 'Fund'], ...r.entries.map((e) => [e.line, e.doc, e.description, e.supplier, e.amount, e.spent, e.committed, e.status, e.date, FUND[e.fund].label])] }]);
   const Kpi = ({ f }: { f: Fund }) => { const t = T[f]; return (
-    <div class="kpi of-kpi" style={{ borderTop: `3px solid ${FUND[f].color}` }}><span class="label" style={{ color: FUND[f].color }}>{FUND[f].label} {r.year}</span>
+    <div class="kpi of-kpi" style={{ borderTop: `3px solid ${FUND[f].color}` }}><span class="label" style={{ color: `var(--fund-${f})` }}>{FUND[f].label} {r.year}</span>
       <span class="value">{short(t.budget)}</span>
       <dl class="of-dl sm"><dt>Spent + committed</dt><dd class="num">{full(t.sc)} <small class="muted">({pc(t.budget ? t.sc / t.budget : 0)})</small></dd>
         <dt>{r.hasPlan ? 'Foreseen to year end' : 'Foreseen'}</dt><dd class="num">{r.hasPlan ? full(t.planned) : '—'}</dd>

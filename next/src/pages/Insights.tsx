@@ -139,7 +139,7 @@ export function History({ project }: { project?: string }) {
   return (
     <section class="card">
       <div class="card-h"><div><h2>Change history</h2><p>Every saved change, newest first · kept in this browser with the data</p></div>
-        <input class="input" placeholder="Filter…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} style={{ marginLeft: 'auto', width: '180px', height: '30px' }} /></div>
+        <input class="input" aria-label="Filter the history" placeholder="Filter…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} style={{ marginLeft: 'auto', width: '180px', height: '30px' }} /></div>
       <ol class="hist">
         {shown.map((e, i) => (
           <li>

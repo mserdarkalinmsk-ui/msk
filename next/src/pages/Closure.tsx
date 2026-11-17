@@ -94,7 +94,7 @@ export function Revision({ p }: { p: Project }) {
           <thead><tr><th>Heading</th><th class="r">Approved baseline</th><th class="r">Current</th><th class="r">Spent</th><th class="r">Need at end</th><th class="r">Proposed</th><th class="r">Transfer</th><th class="r">vs baseline</th><th /></tr></thead>
           <tbody>{rows.map((r) => <tr>
             <td><b>{r.code}</b> {HEADINGS[r.code]}</td><td class="r num">{full(r.baseline)}</td><td class="r num">{full(r.approved)}</td><td class="r num">{full(r.spent)}</td><td class="r num">{full(r.need)}</td>
-            <td class="r"><input class="input num cl-in" style={{ width: '120px', textAlign: 'right' }} value={String(Math.round(r.proposed))} onChange={(e) => setEdit({ ...edit, [r.code]: Number((e.target as HTMLInputElement).value.replace(/[^\d.-]/g, '')) || 0 })} /></td>
+            <td class="r"><input class="input num cl-in" aria-label={`Proposed budget for line ${r.code}`} style={{ width: '120px', textAlign: 'right' }} value={String(Math.round(r.proposed))} onChange={(e) => setEdit({ ...edit, [r.code]: Number((e.target as HTMLInputElement).value.replace(/[^\d.-]/g, '')) || 0 })} /></td>
             <td class="r num" style={{ color: r.change < 0 ? 'var(--good)' : r.change > 0 ? 'var(--serious)' : undefined }}>{Math.abs(r.change) < 1 ? '—' : `${r.change > 0 ? '+' : '−'}${full(Math.abs(r.change))}`}</td>
             <td class="r num">{Math.abs(r.vs) < 0.0005 ? '—' : `${r.vs > 0 ? '+' : ''}${(r.vs * 100).toFixed(1)}%`}</td>
             <td>{r.breach ? <span class="badge serious">amendment</span> : <span class="badge good">within</span>}</td>

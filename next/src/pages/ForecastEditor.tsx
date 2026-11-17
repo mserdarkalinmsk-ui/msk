@@ -56,7 +56,7 @@ export function ForecastEditor({ p }: { p: Project }) {
           <div><h2>Forecast</h2><p>Green: finance (staff, 4.2 / 4.4) · yellow: project team · amounts follow the CoE template formulas</p></div>
           <div class="fe-tools">
             <div class="seg">{(['JP', 'VC'] as const).map((x) => <button aria-pressed={d.opt.programme === x} onClick={() => setOpt({ programme: x })}>{x}</button>)}</div>
-            <select value={d.opt.kind} onChange={(e) => setOpt({ kind: (e.target as HTMLSelectElement).value as ForecastKind })}>
+            <select aria-label="Forecast template" value={d.opt.kind} onChange={(e) => setOpt({ kind: (e.target as HTMLSelectElement).value as ForecastKind })}>
               {(Object.keys(FORECAST_KINDS) as ForecastKind[]).filter((k) => FORECAST_KINDS[k].programmes.includes(d.opt.programme)).map((k) => <option value={k}>{FORECAST_KINDS[k].label}</option>)}
             </select>
             {d.opt.programme === 'JP' && !twelve && <label class="fe-ext"><select value={d.opt.change ?? ''} onChange={(e) => setOpt({ change: ((e.target as HTMLSelectElement).value || undefined) as ForecastOptions['change'] })}>
