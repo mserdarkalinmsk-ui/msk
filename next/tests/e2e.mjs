@@ -651,6 +651,21 @@ async function page(opts) {
   await ctx.close();
 }
 
+// A shared copy carries its data compressed and opens with every project in it
+{
+  const { p, ctx } = await page({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  await p.goto(url + '#/projects'); await p.waitForSelector('.pcard'); const n = await p.locator('.pcard:not(.pcard-add)').count();
+  await p.click('text=Share a copy'); await p.waitForTimeout(400);
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.drawer-f .btn.primary')]);
+  const file = resolve(shots, 'shared-copy.html'); await dl.saveAs(file);
+  const html = (await import('node:fs')).readFileSync(file, 'utf8');
+  const emb = JSON.parse(html.match(/<script id="pl-embed" type="application\/json">(.*?)<\/script>/s)?.[1] ?? '{}');
+  check(typeof emb.z === 'string' && !emb.ledger, 'shared copy: data stored compressed');
+  const q = await ctx.newPage(); await q.goto('file://' + file + '#/projects'); await q.waitForSelector('.pcard');
+  check(await q.locator('.pcard:not(.pcard-add)').count() === n && await q.locator('.sh-banner').count() === 1, 'shared copy opens with every project');
+  await ctx.close();
+}
+
 // Dark + mobile
 {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
