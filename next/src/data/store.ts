@@ -29,9 +29,21 @@ export interface State {
 }
 
 /** A shared copy carries its data inside the file (see ui/Share): read once, before anything renders. */
-export interface Embed { id: string; at: string; mode: 'view' | 'edit'; from?: string; scope: string; ledger?: Ledger; /** password-protected data */ enc?: import('../ui/crypto').Sealed; /** donor version: internal detail removed */ audience?: 'donor' }
+export interface Embed { id: string; at: string; mode: 'view' | 'edit'; from?: string; scope: string; ledger?: Ledger; /** the ledger as gzip, base64: a large copy opens faster and is a fraction of the size */ z?: string; /** password-protected data */ enc?: import('../ui/crypto').Sealed; /** donor version: internal detail removed */ audience?: 'donor' }
 export const EMBED: Embed | null = (() => { try { const t = document.getElementById('pl-embed')?.textContent; return t ? JSON.parse(t) as Embed : null; } catch { return null; } })();
 export const READONLY = EMBED?.mode === 'view';
+/** Unpacks a compressed shared copy (`z`). Done only when the data is needed: a copy opened before reads its own saved data. */
+async function gunzipText(b64: string): Promise<string> {
+  const a = atob(b64), u = new Uint8Array(a.length); for (let i = 0; i < a.length; i++) u[i] = a.charCodeAt(i);
+  return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
+let embedOpened = false;
+async function openEmbed() {
+  if (!EMBED?.z || EMBED.ledger || embedOpened) return;
+  embedOpened = true;
+  try { const l = JSON.parse(await gunzipText(EMBED.z)) as Ledger; state = { ...state, ledger: { ...l, projects: (l.projects ?? []).map(normalizeProject) } }; }
+  catch { toast('The data inside this copy could not be opened in this browser. Open it in an up-to-date Edge or Chrome.'); }
+}
 /** The page as it was served (before rendering), so a shared copy can be written out with data inside. */
 export const SOURCE = (() => { const h = document.documentElement.cloneNode(true) as HTMLElement; h.querySelector('#pl-embed')?.remove(); for (const a of [...h.attributes]) if (a.name.startsWith('data-')) h.removeAttribute(a.name); return '<!doctype html>\n' + h.outerHTML; })();
 // A shared copy keeps its own storage slot, so opening it never mixes with the recipient's own ledger.
@@ -210,12 +222,14 @@ export async function load() {
   // Ask the browser to keep this data even when disk space runs low (otherwise it may be cleared silently).
   try { void navigator.storage?.persist?.(); } catch { /* not supported */ }
   if (EMBED?.enc && !EMBED.ledger) { set({ ready: true, locked: true }); return; }
-  if (READONLY) { set({ ready: true }); return; }
+  if (READONLY) { await openEmbed(); set({ ready: true }); return; }
   const db = await open();
+  let stored = false;
   if (db) {
     const { l, legacy } = await readStored(db);
     if (!l && !DEMO && !EMBED) state = { ...state, fresh: true };
     if (l && Array.isArray(l.projects)) {
+      stored = true;
       // Never fall back to the start data when stored data has a problem — that silently lost work before.
       if (validateLedger(l).length) { const db2 = await open(); db2?.transaction(STORE, 'readwrite').objectStore(STORE).put({ at: new Date().toISOString(), ledger: l }, `${KEY}:rescued`); }
       prevSaved = l;
@@ -225,6 +239,7 @@ export async function load() {
       if (legacy) { void write(state.ledger).then((ok) => (ok ? open() : null)).then((d) => d?.transaction(STORE, 'readwrite').objectStore(STORE).delete(KEY)); }
     }
   }
+  if (!stored) await openEmbed();
   set({ ready: true });
 }
 

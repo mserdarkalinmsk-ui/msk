@@ -8,10 +8,17 @@ import { donorLedger } from '../domain/donor';
 
 export { donorLedger };
 
+/** gzip, then base64: a copy with many reports is a fraction of the size and opens faster. */
+async function gzipBase64(text: string): Promise<string> {
+  const u = new Uint8Array(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
 /** Writes the app out as one HTML file with (part of) the ledger inside, so a colleague sees the data offline. */
 export async function shareHtml(ledger: Ledger, mode: 'view' | 'edit', scope: string, from?: string, o: { password?: string; donor?: boolean } = {}) {
   const head = { id: Math.random().toString(36).slice(2, 10), at: new Date().toISOString(), mode, from, scope, ...(o.donor ? { audience: 'donor' as const } : {}) };
-  const embed = o.password ? { ...head, enc: await seal(JSON.stringify(ledger), o.password) } : { ...head, ledger };
+  const embed = o.password ? { ...head, enc: await seal(JSON.stringify(ledger), o.password) } : typeof CompressionStream === 'function' ? { ...head, z: await gzipBase64(JSON.stringify(ledger)) } : { ...head, ledger };
   // `<` escaped so report text can never close the script tag early.
   const tag = `<script id="pl-embed" type="application/json">${JSON.stringify(embed).replace(/</g, '\\u003c')}</script>`;
   // Placed just before the app's own script (first occurrence: the bundle itself only comes after it).

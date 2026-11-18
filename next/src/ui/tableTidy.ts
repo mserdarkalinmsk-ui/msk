@@ -36,7 +36,8 @@ function tidyTable(t: HTMLTableElement) {
     let n = 0, f = 0;
     for (const r of flat) {
       const c = r.cells[i]; if (!c) continue;
-      const s = c.innerText.trim(); if (EMPTY.test(s)) continue;
+      // textContent, not innerText: innerText makes the browser lay the page out again for every cell read
+      const s = (c.textContent ?? '').trim(); if (EMPTY.test(s)) continue;
       n++; if (isFigure(s) && plain(c)) f++;
     }
     figures[i] = n > 0 && f / n >= 0.6;

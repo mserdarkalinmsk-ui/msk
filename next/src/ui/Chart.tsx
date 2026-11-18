@@ -12,8 +12,12 @@ export const loadCharts = () => (lib ??= import('./echartsSetup').then((m) => (m
 
 /** Charts below the fold are drawn when they come near the screen; printing draws them all first. */
 const waiting = new Map<Element, () => void>();
-const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { io!.unobserve(e.target); waiting.get(e.target)?.(); waiting.delete(e.target); } }, { rootMargin: '300px' }) : null;
-const drawAll = () => { for (const [el, go] of waiting) { io?.unobserve(el); go(); } waiting.clear(); };
+// Charts that come into view together are drawn one per task, so the page shows (and stays responsive) while they draw.
+const turn: (() => void)[] = [];
+const next = () => { const go = turn.shift(); go?.(); if (turn.length) setTimeout(next, 0); };
+const later = (go: () => void) => { turn.push(go); if (turn.length === 1) setTimeout(next, 0); };
+const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { io!.unobserve(e.target); const go = waiting.get(e.target); waiting.delete(e.target); if (go) later(() => go()); } }, { rootMargin: '300px' }) : null;
+const drawAll = () => { while (turn.length) turn.shift()!(); for (const [el, go] of waiting) { io?.unobserve(el); go(); } waiting.clear(); };
 if (typeof window !== 'undefined') addEventListener('beforeprint', drawAll);
 const whenVisible = (el: Element, go: () => void) => { if (!io || (typeof matchMedia === 'function' && matchMedia('print').matches)) return go(); waiting.set(el, go); io.observe(el); return () => { io.unobserve(el); waiting.delete(el); }; };
 /** Charts on the page: resized to the paper before printing and back after, so none is cut at the page edge. */

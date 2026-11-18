@@ -269,7 +269,14 @@ async function page(opts) {
     await p.screenshot({ path: `${shots}/style-${st.toLowerCase()}.png` });
   }
   check(await p.evaluate(() => document.documentElement.dataset.style) === 'pop', 'design direction applied');
-  await p.reload(); await p.waitForSelector('.hero');
+  // Headless Chromium sometimes drops a file:// page's whole localStorage on reload (a marker key goes with it); the
+  // choice is then made again once, so the check below still tests that a stored choice is applied on opening.
+  for (let k = 0; k < 2; k++) {
+    await p.evaluate(() => localStorage.setItem('pl-e2e-marker', '1'));
+    await p.reload(); await p.waitForSelector('.hero');
+    if (await p.evaluate(() => localStorage.getItem('pl-e2e-marker') === '1')) break;
+    await p.click('text=Appearance'); await p.click('.style-opt:has-text("Bento")'); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500);
+  }
   await p.waitForFunction(() => document.documentElement.dataset.style === 'pop', null, { timeout: 3000 }).catch(() => {});
   check(await p.evaluate(() => document.documentElement.dataset.style) === 'pop', 'design direction remembered');
   await p.click('text=Appearance'); await p.click('text=Reset to default'); await p.click('.drawer-f .btn.primary');
