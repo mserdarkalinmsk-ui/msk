@@ -474,6 +474,33 @@ async function page(opts) {
   await ctx.close();
 }
 
+// A save the browser refuses (storage full) is reported and written again with the next save, never taken as done
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => {
+    localStorage.setItem('pl-digest-seen', 'off');
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (...a) { const r = put.apply(this, a); if (window.__full) { const t = this.transaction; queueMicrotask(() => { try { t.abort(); } catch { /* done */ } }); } return r; };
+  });
+  const p = await ctx.newPage();
+  const rename = async (id, name) => {
+    await p.goto(url + '#/project/' + id); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
+    await p.click('text=Edit details'); await p.waitForTimeout(300);
+    if (!(await p.locator('#f-name').count())) { await p.click('.drawer-f button:text-is("Edit")'); await p.waitForTimeout(300); }
+    await p.fill('#f-name', name); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(800); await p.keyboard.press('Escape');
+  };
+  await p.goto(url); await p.waitForSelector('.hero'); await p.waitForTimeout(700);
+  await p.evaluate(() => { window.__full = true; });
+  await rename('lang', 'Alpha renamed');
+  check(await p.locator('.toast:has-text("could not be saved")').count() === 1, 'a refused save is reported');
+  await p.evaluate(() => { window.__full = false; });
+  await rename('tsk', 'Beta renamed'); await p.waitForTimeout(500);
+  const st = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const s = r.result.transaction('kv').objectStore('kv'), m = s.get('demo:m'), l = s.get('demo:p:lang'); s.transaction.oncomplete = () => res({ ids: m.result?.ids?.length, lang: l.result?.name }); }; }));
+  const n = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const k = r.result.transaction('kv').objectStore('kv').getAllKeys(); k.onsuccess = () => res(k.result.filter((x) => String(x).startsWith('demo:p:')).length); }; }));
+  check(st.ids === n && n >= 6 && st.lang === 'Alpha renamed', `after a refused save every project is stored (${n}/${st.ids}, lang “${st.lang}”)`);
+  await ctx.close();
+}
+
 // Dark + mobile
 {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
