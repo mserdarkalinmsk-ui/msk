@@ -23,14 +23,17 @@ export function parseAmount(s: string): number | null {
   if (!t) return null;
   const neg = /^\(.*\)$/.test(t) || t.startsWith('-') || t.startsWith('−');
   t = t.replace(/^[(\-−]|\)$/g, '');
+  // Excel writes very large or tiny values (rounding residues) in scientific notation: 1.1368683772161603E-13.
+  if (/^\d+(\.\d+)?e[+-]?\d+$/i.test(t)) { const v = Number(t); return neg ? -v : v; }
   const dots = (t.match(/\./g) ?? []).length, commas = (t.match(/,/g) ?? []).length;
   if (dots && commas) {
     const dec = t.lastIndexOf('.') > t.lastIndexOf(',') ? '.' : ',';
     t = t.split(dec === '.' ? ',' : '.').join('').replace(',', '.');
   } else if (dots + commas) {
     const sep = dots ? '.' : ',', count = dots || commas;
-    // Repeated separator, or a single one followed by exactly 3 digits, is a thousands separator.
-    t = count > 1 || new RegExp(`\\${sep}\\d{3}$`).test(t) ? t.split(sep).join('') : t.replace(sep, '.');
+    // Repeated separator, or a single one followed by exactly 3 digits, is a thousands separator —
+    // unless what stands before it cannot be a first group (1234.567, 0.125 are decimals).
+    t = count > 1 || new RegExp(`^[1-9]\\d{0,2}\\${sep}\\d{3}$`).test(t) ? t.split(sep).join('') : t.replace(sep, '.');
   }
   if (!/^\d+(\.\d+)?$/.test(t)) return null;
   const v = Number(t);

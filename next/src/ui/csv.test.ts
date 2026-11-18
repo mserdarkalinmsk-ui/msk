@@ -18,6 +18,15 @@ describe('csv', () => {
     expect(parseAmount('abc')).toBeNull();
     expect(parseAmount('')).toBeNull();
   });
+  it('reads raw Excel numbers: decimals after a long integer part and scientific notation', () => {
+    expect(parseAmount('1234.567')).toBe(1234.567);
+    expect(parseAmount('0.125')).toBe(0.125);
+    expect(parseAmount('0,500')).toBe(0.5);
+    expect(parseAmount('-1.1368683772161603E-13')).toBeCloseTo(0);
+    expect(parseAmount('1.5E+7')).toBe(15000000);
+    expect(parseAmount('1.000')).toBe(1000);
+    expect(parseAmount('12.345')).toBe(12345);
+  });
   it('parses and rejects dates', () => {
     expect(parseDay('2026-02-03')).toBe('2026-02-03');
     expect(parseDay('03.02.2026')).toBe('2026-02-03');

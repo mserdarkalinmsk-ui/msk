@@ -32,6 +32,12 @@ describe('project documents', () => {
     expect(amount('5,580,000')).toBe(5580000);
     expect(anyDate('on 15 January 2025')).toBe('2025-01-15');
   });
+  it('reads a dot after a long integer part, or after 0, as decimals (raw Excel values)', () => {
+    expect(amount('1234.567')).toBe(1234.567);
+    expect(amount('0.125')).toBe(0.125);
+    expect(amount('1.234')).toBe(1234);
+    expect(amount('12.345.678')).toBe(12345678);
+  });
 });
 
 describe('approved budget', () => {

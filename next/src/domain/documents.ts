@@ -33,7 +33,8 @@ export function amount(s: string): number | null {
   if (!/\d/.test(t)) return null;
   let v = t;
   if (/,\d{1,2}$/.test(v)) v = v.replace(/\./g, '').replace(',', '.');
-  else if (/\.\d{3}(\.|$)/.test(v) && !/\.\d{1,2}$/.test(v)) v = v.replace(/\./g, '');
+  // dots group thousands only after a first group of 1–3 digits (1234.567 and 0.125 are decimals)
+  else if (/\.\d{3}(\.|$)/.test(v) && !/\.\d{1,2}$/.test(v) && /^[1-9]\d{0,2}\./.test(v)) v = v.replace(/\./g, '');
   v = v.replace(/,/g, '');
   const x = parseFloat(v);
   return Number.isFinite(x) ? x : null;
