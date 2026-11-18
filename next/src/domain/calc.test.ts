@@ -195,3 +195,13 @@ describe('the month in progress', () => {
     expect(portfolioSoFar([{ ...p, reportingPeriods: p.reportingPeriods.slice(0, 1) }])).toBeNull();
   });
 });
+
+describe('portfolio exposure', () => {
+  it('portfolio spent + committed and remaining follow the report S&C column, as each project card does', () => {
+    // The report's spent + committed column is 151 while actual + committed is 150 (a rounding gap in the report).
+    const p: Project = { ...base, reportingPeriods: [{ id: 'r', name: 'R', type: 'Q', date: '2026-01-01', snapshot: { lines: [{ code: '1', approved: 1000, actual: 100, committed: 50, spentCommitted: 151 }] } }] };
+    const t = totals([p], T), m = money(p);
+    expect(t.exposure).toBe(m.exposure);
+    expect(t.remaining).toBe(m.remaining);
+  });
+});

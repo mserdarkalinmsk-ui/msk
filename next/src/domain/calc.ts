@@ -222,7 +222,9 @@ export function totals(ps: Project[], today: Date): Totals {
   const budget = sum(M, (m) => m.budget), spent = sum(M, (m) => m.spent), committed = sum(M, (m) => m.committed);
   // budget-weighted elapsed time
   const el = budget ? sum(ps, (p) => n(p.budget) * elapsed(p, asOf(p, today))) / budget : 0;
-  return { budget, spent, committed, exposure: spent + committed, remaining: budget - spent - committed, elapsed: el, burn: budget ? spent / budget : 0, projects: ps.length };
+  // Spent + committed as each project card reads it (the report's S&C column), so the portfolio equals the sum of the cards.
+  const exposure = sum(M, (m) => m.exposure);
+  return { budget, spent, committed, exposure, remaining: budget - exposure, elapsed: el, burn: budget ? spent / budget : 0, projects: ps.length };
 }
 
 export function groupBy(ps: Project[], key: (p: Project) => string) {

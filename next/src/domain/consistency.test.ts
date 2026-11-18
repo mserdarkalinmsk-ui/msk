@@ -42,7 +42,8 @@ describe.each(sets)('cross-screen consistency (%s)', (_, P) => {
   });
   it('portfolio totals equal the sum of project cards', () => {
     const T = totals(P, new Date('2026-10-12')) as unknown as Record<string, number>;
-    const sum = (k: 'budget' | 'spent' | 'committed') => P.reduce((s, p) => s + money(p)[k], 0);
+    const sum = (k: 'budget' | 'spent' | 'committed' | 'exposure') => P.reduce((s, p) => s + money(p)[k], 0);
+    if ('exposure' in T) near(T.exposure, sum('exposure'));
     if ('budget' in T) near(T.budget, sum('budget'));
     if ('spent' in T) near(T.spent, sum('spent'));
     if ('committed' in T) near(T.committed, sum('committed'));
