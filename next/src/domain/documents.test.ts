@@ -154,3 +154,19 @@ describe('payment terms', () => {
     expect(f.prefinancing).toBe(40); expect(f.firstPayment).toBe(1200000); expect(f.instalments).toBe(3); expect(f.payThreshold).toBe(70);
   });
 });
+
+describe('Word tables', () => {
+  const p = (t: string) => `<w:p><w:r><w:t>${t}</w:t></w:r></w:p>`;
+  const tc = (...ps: string[]) => `<w:tc>${ps.map(p).join('')}</w:tc>`;
+  const docx = async (body: string) => {
+    const { zip } = await import('../ui/xlsxwrite');
+    const z = zip([{ name: 'word/document.xml', data: `<w:document><w:body>${body}</w:body></w:document>` }]);
+    return readDocx(z.buffer.slice(z.byteOffset, z.byteOffset + z.byteLength) as ArrayBuffer, 't.docx');
+  };
+  it('keeps the paragraphs of one cell apart, so a code cell "1.1.1" + "Alpha manager" is a budget line', async () => {
+    const row = (c: string, d: string) => `<w:tr>${tc(c, d)}${tc('Per month')}${tc('12')}${tc('1,000')}${tc('12,000')}</w:tr>`;
+    const d = await docx(`<w:tbl>${row('1.1.1', 'Alpha manager')}${row('1.1.2', 'Beta officer')}${row('1.1.3', 'Gamma assistant')}</w:tbl>`);
+    expect(d.tables[0][0][0]).toBe('1.1.1\nAlpha manager');
+    expect(analyse(d).budget?.lines.map((l) => [l.code, l.description, l.approved])).toEqual([['1.1.1', 'Alpha manager', 12000], ['1.1.2', 'Beta officer', 12000], ['1.1.3', 'Gamma assistant', 12000]]);
+  });
+});
