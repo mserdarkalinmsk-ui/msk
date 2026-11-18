@@ -71,6 +71,18 @@ describe('roster', () => {
   });
 });
 
+describe('Turkish names', () => {
+  const rec = (name: string, po: string): StaffRecord => ({ name, code: '1.1.1.4', position: 'Project officer', recordKind: 'Contract', base: 'Local', po, start: '2026-01-01', end: '2026-12-31', fte: 1 });
+  const proj = (over: Record<string, unknown> = {}) => ({ id: 'p', code: 'P', name: 'P', country: 'tr', start: '2025-01-01', end: '2027-12-31', budget: 1, staffOverrides: over,
+    reportingPeriods: [{ id: 'a', name: 'R1', type: 'Q', date: '2026-06-30', snapshot: { lines: [], staffRecords: [rec('Işıkalpha, One', '1'), rec('IŞIKALPHA, ONE', '2'), rec('ISIKALPHA, ONE', '3')] } }] }) as unknown as Project;
+  it('is one person whether written Işık, IŞIK or ISIK', () => {
+    expect(roster(proj(), T).map((x) => x.contracts.length)).toEqual([3]);
+  });
+  it('keeps a correction saved under the key used before', () => {
+    expect(roster(proj({ 'iskalphaone|1.1.1.4': { leaveDate: '2026-03-31' } }), T)[0].end).toBe('2026-03-31');
+  });
+});
+
 describe('names read from GL texts', () => {
   it('drops day counts before the name and merges a typo in the first name', async () => {
     const { cleanGlName, roster } = await import('./staff');

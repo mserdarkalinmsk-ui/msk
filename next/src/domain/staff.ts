@@ -21,7 +21,8 @@ export interface StaffGroup { label: string; sheet: string; row: number }
 export interface StaffOverride { start?: string; end?: string; fte?: number | null; leaveDate?: string; note?: string; verified?: boolean; updatedAt?: string }
 export interface Sheet { name: string; R: string[][] }
 
-export const n2 = (s: unknown) => String(s ?? '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]/g, '');
+// Turkish dotless ı folds to i, as İ does, so ISIK, Işık and ışık are one name.
+export const n2 = (s: unknown) => String(s ?? '').toLowerCase().replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]/g, '');
 
 const POSITIONS: Record<string, string> = {
   '1': 'Senior project manager', '2': 'Project manager', '3': 'Senior project officer', '4': 'Project officer',
@@ -153,7 +154,8 @@ export function roster(p: StaffProject, today: Date): Person[] {
   const t = today.toISOString().slice(0, 10);
   return [...map.values()].map((a) => {
     const C = a.contracts.filter((c) => c.recordKind !== 'Payroll observation' && c.start && c.end).sort((x, y) => x.start!.localeCompare(y.start!));
-    const ov = p.staffOverrides?.[a.key];
+    // corrections saved before ı was folded sit under the old key (the ı dropped)
+    const ov = p.staffOverrides?.[a.key] ?? p.staffOverrides?.[`${String(a.name).toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]/g, '')}|${a.code}`];
     const current = C.filter((c) => c.start! <= t && c.end! >= t);
     const pick = current.at(-1) ?? C.filter((c) => c.start! > t)[0] ?? C.at(-1);
     let start = pick?.start ?? '', end = (current.length ? current.map((c) => c.end!).sort().at(-1) : pick?.end) ?? '';

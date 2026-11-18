@@ -9,7 +9,7 @@ import { checkpoint, get, go, replaceLedger, resetDemo, restorePoints, set, upse
 import { validateLedger } from '../domain/calc';
 import { normalizeSector, validUrl, type Ledger } from '../domain/types';
 
-import { parseAmount, parseCSV, parseDay } from './csv';
+import { headKey, parseAmount, parseCSV, parseDay, sheetDay } from './csv';
 import { short } from './format';
 import { readCoe, readTable } from './ReportImport';
 import { migrateBackup } from '../domain/insights';
@@ -68,9 +68,9 @@ export function ImportPanel({ close }: { close: () => void }) {
     let R: string[][];
     try { R = /\.xlsx?$/i.test(file.name) ? (await readTable(file)).rows : parseCSV(text); } catch (e) { setErr((e as Error).message); return; }
     if (R.length < 2) { setErr('The CSV needs a header row and at least one data row.'); return; }
-    const head = R[0].map((h) => h.trim().toLowerCase());
+    const head = R[0].map(headKey);
     const m: Record<string, number> = {};
-    for (const f of FIELDS) { const i = head.findIndex((h) => (f.alias as readonly string[]).includes(h)); if (i >= 0) m[f.key] = i; }
+    for (const f of FIELDS) { const i = head.findIndex((h) => (f.alias as readonly string[]).some((a) => headKey(a) === h)); if (i >= 0) m[f.key] = i; }
     setMap(m); setRows(R);
   }
 
@@ -85,7 +85,7 @@ export function ImportPanel({ close }: { close: () => void }) {
     const keep = (k: string, v: string) => (map[k] == null && existing ? String((existing as unknown as Record<string, unknown>)[k] ?? '') : v);
     const d: Draft = {
       code: g('code'), name: keep('name', g('name')), country: keep('country', countryId(g('country')) ?? ''), sector: keep('sector', normalizeSector(g('sector')) ?? ''),
-      funding: keep('funding', g('funding')), start: keep('start', parseDay(g('start')) ?? g('start')), end: keep('end', parseDay(g('end')) ?? g('end')),
+      funding: keep('funding', g('funding')), start: keep('start', sheetDay(g('start')) ?? g('start')), end: keep('end', sheetDay(g('end')) ?? g('end')),
       budget: keep('budget', g('budget')), status: existing?.status ?? 'Active',
       mae: keep('mae', g('mae')), pmm: keep('pmm', g('pmm')), bh: keep('bh', g('bh')), ccm: keep('ccm', g('ccm')), pmmUrl: keep('pmmUrl', g('pmmUrl')),
     };

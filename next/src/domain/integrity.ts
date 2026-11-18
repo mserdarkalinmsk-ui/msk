@@ -13,7 +13,7 @@ export interface Detail { title: string; cols: string[]; rows: (string | number)
 export type Tab = 'Summary' | 'Financial report' | 'Budget lines' | 'Reports' | 'Staff';
 export interface Integrity { level: 'info' | 'warn' | 'bad'; text: string; where: string; tab?: Tab; detail?: Detail }
 const eur = (v: number) => `€${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const n2 = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z]/g, '');
+const n2 = (s: string) => s.toLowerCase().replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z]/g, '');
 
 export function integrity(p: Project, today: Date): Integrity[] {
   const out: Integrity[] = [], add = (level: Integrity['level'], text: string, where: string, tab?: Tab, detail?: Detail) => out.push({ level, text, where, tab, detail });

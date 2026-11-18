@@ -1,3 +1,4 @@
+import { excelDate } from './xlsx';
 /** RFC-4180 CSV parser; detects ; or , delimiter from the header line. */
 export function parseCSV(text: string): string[][] {
   text = text.replace(/^﻿/, '');
@@ -19,33 +20,43 @@ export function parseCSV(text: string): string[][] {
 
 /** Parses "1.234.567,89", "1,234,567.89", "1.000.000", "€ 1 234" → number; null when not numeric. */
 export function parseAmount(s: string): number | null {
-  let t = s.replace(/[€$£\s\u00a0']/g, '');
+  let t = s.replace(/(?<![a-z])(?:EUR|TRY|TL|USD|GBP|CHF)(?![a-z])/gi, '').replace(/[€$£₺\s\u00a0']/g, '');
   if (!t) return null;
-  const neg = /^\(.*\)$/.test(t) || t.startsWith('-') || t.startsWith('−');
-  t = t.replace(/^[(\-−]|\)$/g, '');
+  // Accounting exports also write negatives with a trailing minus: 1.234,56-
+  const neg = /^\(.*\)$/.test(t) || /^[-−]|\d[-−]$/.test(t);
+  t = t.replace(/^[(\-−]|\)$|(?<=\d)[-−]$/g, '');
+  // Excel writes very large or tiny values (rounding residues) in scientific notation: 1.1368683772161603E-13.
+  if (/^\d+(\.\d+)?e[+-]?\d+$/i.test(t)) { const v = Number(t); return neg ? -v : v; }
   const dots = (t.match(/\./g) ?? []).length, commas = (t.match(/,/g) ?? []).length;
   if (dots && commas) {
     const dec = t.lastIndexOf('.') > t.lastIndexOf(',') ? '.' : ',';
     t = t.split(dec === '.' ? ',' : '.').join('').replace(',', '.');
   } else if (dots + commas) {
     const sep = dots ? '.' : ',', count = dots || commas;
-    // Repeated separator, or a single one followed by exactly 3 digits, is a thousands separator.
-    t = count > 1 || new RegExp(`\\${sep}\\d{3}$`).test(t) ? t.split(sep).join('') : t.replace(sep, '.');
+    // Repeated separator, or a single one followed by exactly 3 digits, is a thousands separator —
+    // unless what stands before it cannot be a first group (1234.567, 0.125 are decimals).
+    t = count > 1 || new RegExp(`^[1-9]\\d{0,2}\\${sep}\\d{3}$`).test(t) ? t.split(sep).join('') : t.replace(sep, '.');
   }
   if (!/^\d+(\.\d+)?$/.test(t)) return null;
   const v = Number(t);
   return neg ? -v : v;
 }
 
-/** Accepts YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY → YYYY-MM-DD or null. */
+/** Accepts YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY → YYYY-MM-DD or null. */
 export function parseDay(s: string): string | null {
   s = s.trim();
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   let y: number, mo: number, d: number;
   if (m) [y, mo, d] = [+m[1], +m[2], +m[3]];
-  else if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
+  else if ((m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
   else return null;
   const dt = new Date(Date.UTC(y, mo - 1, d));
   if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
   return dt.toISOString().slice(0, 10);
 }
+
+/** A column header for matching: case, Turkish İ/ı and accents folded (AÇIKLAMA = açıklama = aciklama, BİTİŞ = bitiş). */
+export const headKey = (s: string) => s.trim().toLowerCase().replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '');
+
+/** A date cell of a sheet: what parseDay accepts, or an Excel date serial (a date-formatted cell read raw). */
+export const sheetDay = (s: string): string | null => parseDay(s) ?? (/^\d{5}(\.0+)?$/.test(s.trim()) && +s >= 20000 && +s <= 80000 ? excelDate(+s) : null);

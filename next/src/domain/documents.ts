@@ -33,7 +33,8 @@ export function amount(s: string): number | null {
   if (!/\d/.test(t)) return null;
   let v = t;
   if (/,\d{1,2}$/.test(v)) v = v.replace(/\./g, '').replace(',', '.');
-  else if (/\.\d{3}(\.|$)/.test(v) && !/\.\d{1,2}$/.test(v)) v = v.replace(/\./g, '');
+  // dots group thousands only after a first group of 1–3 digits (1234.567 and 0.125 are decimals)
+  else if (/\.\d{3}(\.|$)/.test(v) && !/\.\d{1,2}$/.test(v) && /^[1-9]\d{0,2}\./.test(v)) v = v.replace(/\./g, '');
   v = v.replace(/,/g, '');
   const x = parseFloat(v);
   return Number.isFinite(x) ? x : null;
@@ -221,7 +222,8 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   let admin = 0, contingency = 0, direct = 0, total = 0;
   const subs = new Map<string, number>(), names: Record<string, string> = {};
   for (const T of doc.tables) for (const raw of T) {
-    const r = raw.map((c) => clean(c ?? '')).filter(Boolean);
+    // amounts written with the currency ("€ 1,000.00", "1.000,00 EUR") are amounts too
+    const r = raw.map((c) => clean(c ?? '').replace(/^(?:€|EUR)\s*(?=\d)|(?<=\d)\s*(?:€|EUR)$/i, '')).filter(Boolean);
     if (!r.length) continue;
     let head = r[0], rest = r.slice(1);
     // code may be its own cell ("1.1.2" | "Project manager")
@@ -328,6 +330,8 @@ export function notesFromLayout(items: PdfItem[], prev?: NoteColumns): { notes: 
 /* ---------- narrative risks & assumptions ("The risks are as follows: - … (medium)") ---------- */
 // Word symbol-font bullets come through as private-use characters (\uF0A7, \uF0B7 …): they count as bullets too.
 const BULLET = /^\s*(?:(?:[-–—•▪◦●]|\d{1,2}[.)])\s+|[\uE000-\uF8FF]\s*(?=\S))/;
+/** A page number line between pages: "40", "Page 3", "Page 3 of 10", "3/10". */
+const PAGE_NO = /^(?:page\s*)?\d{1,3}(?:\s*(?:of|\/)\s*\d{1,3})?$/i;
 /** Bulleted items under a lead-in like "The risks are as follows:"; wrapped lines are joined, the list ends at the next prose line. */
 function listAfter(paras: string[], lead: RegExp): string[] {
   const out: string[] = [];
@@ -337,7 +341,7 @@ function listAfter(paras: string[], lead: RegExp): string[] {
     const first = paras.slice(i + 1).find((x) => x.trim());
     if (first && !BULLET.test(first)) { // Word lists carry no bullet character: one paragraph per item
       for (let j = i + 1; j < paras.length && j < i + 40; j++) {
-        const l = paras[j].trim(); if (!l) continue;
+        const l = paras[j].trim(); if (!l || PAGE_NO.test(l)) continue;
         if (/:\s*$/.test(l) || /^\d+(\.\d+)*\s+[A-Z]/.test(l) || /^As regards/i.test(l) || l.length > 400) break;
         // a line that starts in lower case continues the item above (a sentence wrapped over several lines)
         if (out.length && /^[a-z(]/.test(l) && !/[.;]$/.test(out[out.length - 1])) { out[out.length - 1] = joinLines([out[out.length - 1], l]); continue; }
@@ -348,7 +352,7 @@ function listAfter(paras: string[], lead: RegExp): string[] {
     for (let j = i + 1; j < paras.length && j < i + 80; j++) {
       const l = paras[j].trim(); if (!l) continue;
       if (BULLET.test(l)) { if (cur) out.push(cur); cur = l.replace(BULLET, ''); continue; }
-      if (/^\d{1,3}$/.test(l)) continue; // page number between pages
+      if (PAGE_NO.test(l)) continue; // page number between pages
       if (cur && !/[.;:]$/.test(cur) && /^[a-z(]/.test(l)) { cur = joinLines([cur, l]); continue; } // wrapped line
       if (cur && /^[a-z]/.test(l)) { cur = joinLines([cur, l]); continue; }
       break;

@@ -32,6 +32,12 @@ describe('project documents', () => {
     expect(amount('5,580,000')).toBe(5580000);
     expect(anyDate('on 15 January 2025')).toBe('2025-01-15');
   });
+  it('reads a dot after a long integer part, or after 0, as decimals (raw Excel values)', () => {
+    expect(amount('1234.567')).toBe(1234.567);
+    expect(amount('0.125')).toBe(0.125);
+    expect(amount('1.234')).toBe(1234);
+    expect(amount('12.345.678')).toBe(12345678);
+  });
 });
 
 describe('approved budget', () => {
@@ -50,6 +56,16 @@ describe('approved budget', () => {
     const B = approvedBudget({ name: 'b.pdf', kind: 'pdf', paragraphs: [], tables: [T] })!;
     expect(B.lines.map((l) => [l.code, l.approvedUnits, l.unitRate, l.approved])).toEqual([['1.1.1.2', 60, 5850, 351000], ['2.1', 142, 650, 92300], ['5.4', 1, 50000, 50000], ['10', undefined, undefined, 34531]]);
     expect(B.direct).toBe(493300); expect(B.linesSum).toBe(493300); expect(B.total).toBe(527831);
+  });
+  it('reads amounts written with the currency in the cells', async () => {
+    const { approvedBudget } = await import('./documents');
+    const T = [
+      ['1.1.1 Alpha manager', 'Per month', '12', '€ 1,000.00', '€ 12,000.00'],
+      ['1.1.2 Beta officer', 'Per month', '10', '500,00 €', '5.000,00 €'],
+      ['2.1 Gamma travel', 'Per trip', '4', 'EUR 250', 'EUR 1,000'],
+    ];
+    const B = approvedBudget({ name: 'b.docx', kind: 'docx', paragraphs: [], tables: [T] })!;
+    expect(B.lines.map((l) => [l.code, l.approvedUnits, l.unitRate, l.approved])).toEqual([['1.1.1', 12, 1000, 12000], ['1.1.2', 10, 500, 5000], ['2.1', 4, 250, 1000]]);
   });
 });
 
@@ -128,6 +144,13 @@ describe('narrative risks', () => {
     const N = narrativeRisks({ name: 'd.docx', kind: 'docx', paragraphs: ['The risks are as follows:', 'Workload of the partner (low).', 'Restrictions imposed by', 'national authorities pose a risk to meetings (medium).', 'Mitigation measures are as follows:'], tables: [] });
     expect(N.risks.map((r) => r.title)).toEqual(['Workload of the partner', 'Restrictions imposed by national authorities pose a risk to meetings']);
   });
+  it('skips a "Page 3 of 10" footer between the items of a list', async () => {
+    const { narrativeRisks } = await import('./documents');
+    const read = (items: string[]) => narrativeRisks({ name: 'd.pdf', kind: 'pdf', tables: [], paragraphs: ['The risks are as follows:', ...items, 'Mitigation measures are as follows:'] }).risks.map((r) => r.title);
+    expect(read(['- Alpha risk one (low).', 'Page 3 of 10', '- Beta risk two (high).'])).toEqual(['Alpha risk one', 'Beta risk two']);
+    expect(read(['Alpha risk one (low).', 'Page 3 of 10', 'Beta risk two (high).'])).toEqual(['Alpha risk one', 'Beta risk two']);
+    expect(read(['Alpha risk one (low).', '3/10', 'Beta risk two (high).'])).toEqual(['Alpha risk one', 'Beta risk two']);
+  });
 });
 
 import { contractFacts as cf2 } from './documents';
@@ -136,5 +159,28 @@ describe('payment terms', () => {
     const doc = { paragraphs: ['The pre-financing rate is 40 %.', 'The first pre-financing payment of EUR 1.200.000 shall be paid within 30 days.', 'The contribution will be paid in three instalments.', 'A further payment may be requested when at least 70 % of the previous payment has been used.'], tables: [] } as never;
     const f = cf2(doc);
     expect(f.prefinancing).toBe(40); expect(f.firstPayment).toBe(1200000); expect(f.instalments).toBe(3); expect(f.payThreshold).toBe(70);
+  });
+});
+
+describe('Word tables', () => {
+  const p = (t: string) => `<w:p><w:r><w:t>${t}</w:t></w:r></w:p>`;
+  const tc = (...ps: string[]) => `<w:tc>${ps.map(p).join('')}</w:tc>`;
+  const docx = async (body: string) => {
+    const { zip } = await import('../ui/xlsxwrite');
+    const z = zip([{ name: 'word/document.xml', data: `<w:document><w:body>${body}</w:body></w:document>` }]);
+    return readDocx(z.buffer.slice(z.byteOffset, z.byteOffset + z.byteLength) as ArrayBuffer, 't.docx');
+  };
+  it('keeps the paragraphs of one cell apart, so a code cell "1.1.1" + "Alpha manager" is a budget line', async () => {
+    const row = (c: string, d: string) => `<w:tr>${tc(c, d)}${tc('Per month')}${tc('12')}${tc('1,000')}${tc('12,000')}</w:tr>`;
+    const d = await docx(`<w:tbl>${row('1.1.1', 'Alpha manager')}${row('1.1.2', 'Beta officer')}${row('1.1.3', 'Gamma assistant')}</w:tbl>`);
+    expect(d.tables[0][0][0]).toBe('1.1.1\nAlpha manager');
+    expect(analyse(d).budget?.lines.map((l) => [l.code, l.description, l.approved])).toEqual([['1.1.1', 'Alpha manager', 12000], ['1.1.2', 'Beta officer', 12000], ['1.1.3', 'Gamma assistant', 12000]]);
+  });
+  it('keeps columns after a cell merged across columns under their own headers', async () => {
+    const span = (n: number, t: string) => `<w:tc><w:tcPr><w:gridSpan w:val="${n}"/></w:tcPr>${p(t)}</w:tc>`;
+    const d = await docx(`<w:tbl><w:tr>${tc('Risk')}${tc('Category')}${tc('Likelihood')}${tc('Impact')}${tc('Mitigation')}</w:tr>
+      <w:tr>${span(2, 'Alpha risk')}${tc('High')}${tc('Low')}${tc('Beta measure')}</w:tr>
+      <w:tr>${tc('Gamma risk')}${tc('External')}${tc('Low')}${tc('Medium')}${tc('Delta measure')}</w:tr></w:tbl>`);
+    expect(analyse(d).risks.map((r) => [r.title, r.likelihood, r.impact, r.mitigation])).toEqual([['Alpha risk', '4', '2', 'Beta measure'], ['Gamma risk', '2', '3', 'Delta measure']]);
   });
 });
