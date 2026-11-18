@@ -1,7 +1,7 @@
 import { programmeOf } from '../domain/flex';
 import { FlexPanel } from '../ui/Visuals';
 import { useState } from 'preact/hooks';
-import { filtered, upsertProject, useStore } from '../data/store';
+import { filtered, isAdmin, upsertProject, useStore } from '../data/store';
 import { adviseChanges, VERDICT, type Verdict } from '../domain/budgetchange';
 import { lineExposure, lines, n } from '../domain/calc';
 import { portfolioWarnings, STAGE } from '../domain/earlywarn';
@@ -82,7 +82,7 @@ export function BudgetChanges() {
           {planned.length > 0 && <table class="mini"><thead><tr><th>From</th><th>To</th><th class="r">Amount</th><th>Reason</th><th>Needs</th><th /></tr></thead>
             <tbody>{A.per.map((x, i) => <tr><td><b class="num">{x.t.from}</b> <span class="muted">{desc(x.t.from).slice(0, 34)}</span></td><td><b class="num">{x.t.to}</b> <span class="muted">{desc(x.t.to).slice(0, 34)}</span></td><td class="r num">{full(x.t.amount)}</td><td>{planned[i].reason ?? ''}</td>
               <td><span class={`badge ${VERDICT[x.verdict].tone}`} title={x.why}>{VERDICT[x.verdict].label}</span><div class="muted" style={{ fontSize: '12px' }}>{x.why}</div></td>
-              <td><button class="btn ghost danger" onClick={() => save(all.filter((y) => y.id !== planned[i].id))}>Remove</button></td></tr>)}</tbody></table>}
+              <td><button class="btn ghost danger" onClick={() => isAdmin() && save(all.filter((y) => y.id !== planned[i].id))}>Remove</button></td></tr>)}</tbody></table>}
           {planned.length > 0 && <div class={`bt-verdict ${V.tone}`}><b>{V.label}</b><span>{V.what}</span>{A.reasons.filter((r) => r !== V.what).map((r) => <small>{r}</small>)}
             <div class="bt-act"><button class="btn primary" onClick={word}>⤓ {DOC[A.verdict]} (Word)</button>
               <button class="btn" onClick={() => save(all.map((y) => (y.status === 'planned' ? { ...y, status: A.verdict === 'addendum' ? 'addendum' : 'notified' } : y)))}>Mark as {A.verdict === 'addendum' ? 'requested' : 'notified'}</button></div></div>}
@@ -111,7 +111,7 @@ export function BudgetChanges() {
 
       {done.length > 0 && <details class="card sp-fold" style={{ marginTop: '16px' }}><summary><b>Earlier changes</b> <span class="muted">{done.length} transfers · {full(done.reduce((a, x) => a + x.amount, 0))}</span></summary>
         <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Date</th><th>From</th><th>To</th><th class="r">Amount</th><th>Reason</th><th>Handled as</th><th /></tr></thead>
-          <tbody>{done.map((x) => <tr><td class="num">{date(x.date)}</td><td class="num">{x.from}</td><td class="num">{x.to}</td><td class="r num">{full(x.amount)}</td><td>{x.reason ?? ''}</td><td>{x.status === 'addendum' ? 'Addendum requested' : 'Notified'}</td><td><button class="btn ghost danger" onClick={() => save(all.filter((y) => y.id !== x.id))}>Remove</button></td></tr>)}</tbody></table>
+          <tbody>{done.map((x) => <tr><td class="num">{date(x.date)}</td><td class="num">{x.from}</td><td class="num">{x.to}</td><td class="r num">{full(x.amount)}</td><td>{x.reason ?? ''}</td><td>{x.status === 'addendum' ? 'Addendum requested' : 'Notified'}</td><td><button class="btn ghost danger" onClick={() => isAdmin() && save(all.filter((y) => y.id !== x.id))}>Remove</button></td></tr>)}</tbody></table>
           <p class="muted" style={{ fontSize: '12px' }}>Once a report with the new budget column is loaded, the changes appear in "Now" above and count towards the limit.</p></div></details>}
     </>
   );

@@ -474,6 +474,25 @@ async function page(opts) {
   await ctx.close();
 }
 
+// Removing a payment or resetting all data needs the admin password
+{
+  const { p, ctx } = await page({ viewport: { width: 1440, height: 900 } });
+  let pw = 'wrong'; const asked = [];
+  p.on('dialog', (d) => { if (d.type() === 'prompt') asked.push(d.message()); d.accept(d.type() === 'prompt' ? pw : undefined); });
+  await p.goto(url + '#/reports/cash'); await p.waitForTimeout(1000);
+  await p.locator('table tbody tr').first().locator('button, td').first().click(); await p.waitForTimeout(300);
+  await p.fill('.cp-pay input[type=number]', '1000'); await p.click('.cp-pay button:has-text("Add payment")'); await p.waitForTimeout(300);
+  await p.click('.cp-pay button:text-is("Remove")'); await p.waitForTimeout(300);
+  check(asked.length === 1 && await p.locator('.cp-pay tbody tr').count() === 1, 'removing a payment asks the admin password and keeps it on a wrong one');
+  await p.click('text=Import / backup'); await p.waitForTimeout(300);
+  await p.click('button:has-text("Reset to start data")'); await p.waitForTimeout(300);
+  check(asked.length === 2 && await p.locator('.toast:has-text("Start data restored")').count() === 0, 'reset to start data asks the admin password');
+  pw = 'MSK'; await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  await p.click('.cp-pay button:text-is("Remove")'); await p.waitForTimeout(300);
+  check(await p.locator('.cp-pay tbody tr').count() === 0, 'the admin can remove a payment');
+  await ctx.close();
+}
+
 // A save the browser refuses (storage full) is reported and written again with the next save, never taken as done
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
