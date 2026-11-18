@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { headKey, parseAmount, parseCSV, parseDay } from './csv';
+import { headKey, parseAmount, parseCSV, parseDay, sheetDay } from './csv';
 
 describe('csv', () => {
   it('handles quotes, escaped quotes, CRLF and semicolons', () => {
@@ -46,5 +46,12 @@ describe('csv', () => {
     expect(parseDay('2026-02-03')).toBe('2026-02-03');
     expect(parseDay('03.02.2026')).toBe('2026-02-03');
     expect(parseDay('31/02/2026')).toBeNull();
+  });
+  it('reads dd-mm-yyyy and Excel date serials of a project list', () => {
+    expect(parseDay('03-02-2026')).toBe('2026-02-03');
+    expect(sheetDay('46056')).toBe('2026-02-03');
+    expect(sheetDay('03.02.2026')).toBe('2026-02-03');
+    expect(sheetDay('12')).toBeNull();
+    expect(sheetDay('abc')).toBeNull();
   });
 });

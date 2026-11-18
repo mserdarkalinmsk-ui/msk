@@ -1,3 +1,4 @@
+import { excelDate } from './xlsx';
 /** RFC-4180 CSV parser; detects ; or , delimiter from the header line. */
 export function parseCSV(text: string): string[][] {
   text = text.replace(/^﻿/, '');
@@ -41,13 +42,13 @@ export function parseAmount(s: string): number | null {
   return neg ? -v : v;
 }
 
-/** Accepts YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY → YYYY-MM-DD or null. */
+/** Accepts YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY → YYYY-MM-DD or null. */
 export function parseDay(s: string): string | null {
   s = s.trim();
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   let y: number, mo: number, d: number;
   if (m) [y, mo, d] = [+m[1], +m[2], +m[3]];
-  else if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
+  else if ((m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
   else return null;
   const dt = new Date(Date.UTC(y, mo - 1, d));
   if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
@@ -56,3 +57,6 @@ export function parseDay(s: string): string | null {
 
 /** A column header for matching: case, Turkish İ/ı and accents folded (AÇIKLAMA = açıklama = aciklama, BİTİŞ = bitiş). */
 export const headKey = (s: string) => s.trim().toLowerCase().replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '');
+
+/** A date cell of a sheet: what parseDay accepts, or an Excel date serial (a date-formatted cell read raw). */
+export const sheetDay = (s: string): string | null => parseDay(s) ?? (/^\d{5}(\.0+)?$/.test(s.trim()) && +s >= 20000 && +s <= 80000 ? excelDate(+s) : null);
