@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAmount, parseCSV, parseDay } from './csv';
+import { headKey, parseAmount, parseCSV, parseDay } from './csv';
 
 describe('csv', () => {
   it('handles quotes, escaped quotes, CRLF and semicolons', () => {
@@ -37,6 +37,10 @@ describe('csv', () => {
     expect(parseAmount('-')).toBeNull();
     expect(parseAmount('TL')).toBeNull();
     expect(parseAmount('1-2')).toBeNull();
+  });
+  it('matches column headers written in Turkish capitals', () => {
+    for (const [cap, alias] of [['AÇIKLAMA', 'açıklama'], ['ONAYLI', 'onaylı'], ['BAŞLANGIÇ', 'başlangıç'], ['BİTİŞ', 'bitiş'], ['ÜLKE', 'ülke'], ['SEKTÖR', 'sektör'], [' Line Code ', 'line code']]) expect(headKey(cap)).toBe(headKey(alias));
+    expect(headKey('LINE')).toBe('line');
   });
   it('parses and rejects dates', () => {
     expect(parseDay('2026-02-03')).toBe('2026-02-03');

@@ -53,3 +53,6 @@ export function parseDay(s: string): string | null {
   if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
   return dt.toISOString().slice(0, 10);
 }
+
+/** A column header for matching: case, Turkish İ/ı and accents folded (AÇIKLAMA = açıklama = aciklama, BİTİŞ = bitiş). */
+export const headKey = (s: string) => s.trim().toLowerCase().replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '');

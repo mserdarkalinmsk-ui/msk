@@ -8,7 +8,7 @@ import { budgetOnly } from '../domain/calc';
 import { docType, formatKey } from '../domain/doctype';
 import { checkReport, compareReports, reportsByDate, reportTotals } from '../domain/calc';
 import type { BudgetLine, Project, ReportingPeriod, Risk } from '../domain/types';
-import { parseAmount, parseCSV, parseDay } from './csv';
+import { headKey, parseAmount, parseCSV, parseDay } from './csv';
 import { date, full, short } from './format';
 import { readXlsx, type Workbook } from './xlsx';
 import { extractStaff } from '../domain/staff';
@@ -54,9 +54,9 @@ type LK = (typeof LF)[number]['key'];
 /** Finds the first row (within 15) that looks like a header: ≥2 known column names. */
 export function detectHeader(rows: string[][]) {
   for (let i = 0; i < Math.min(15, rows.length); i++) {
-    const h = rows[i].map((x) => x.trim().toLowerCase());
+    const h = rows[i].map(headKey);
     const map: Partial<Record<LK, number>> = {};
-    for (const f of LF) { const j = h.findIndex((x) => (f.alias as readonly string[]).includes(x)); if (j >= 0) map[f.key] = j; }
+    for (const f of LF) { const j = h.findIndex((x) => (f.alias as readonly string[]).some((a) => headKey(a) === x)); if (j >= 0) map[f.key] = j; }
     if (Object.keys(map).length >= 2) return { at: i, map };
   }
   return { at: 0, map: {} as Partial<Record<LK, number>> };
