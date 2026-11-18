@@ -133,7 +133,7 @@ export function Deck() {
     where: C[0] ? `${cname(C[0].key)} carries ${pq(T.budget ? C[0].budget / T.budget : 0)} of the budget across ${C[0].count} project${C[0].count > 1 ? "s" : ""}` : "Budget by country",
     project: behind.length ? `${behind.length} of ${M.length} projects are behind plan — ${behind.slice(0, 3).map((x) => lab(x.p)).join(", ")} first` : `All ${M.length} projects are on or ahead of plan`,
     risks: R.length ? `${allR.length} open risk${allR.length === 1 ? '' : 's'}${allR.length > R.length ? ` (top ${R.length} shown)` : ''}; the highest is “${cut(R[0].r.title, 60)}” (${lab(R[0].p)})` : "No open risks recorded",
-    upcoming: E.length ? `${E.length} milestones in the next 90 days, the first on ${date(E[0].day)}` : "No milestones in the next 90 days",
+    upcoming: E.length ? `${E.length} milestone${E.length === 1 ? '' : 's'} in the next 90 days, the first on ${date(E[0].day)}` : "No milestones in the next 90 days",
     next: CU.length ? `${CU.length} project${CU.length > 1 ? "s need" : " needs"} a faster monthly pace to be back on plan in three months` : "Keep the current pace",
     results: I.length ? `${I.filter((r) => r.state === 'reached' || r.state === 'on track').length} of ${I.length} measured indicators are reached or on track` : 'Indicators are not measured yet',
   };

@@ -599,7 +599,7 @@ button.linkish:hover { text-decoration: underline; }
 .st-dots button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); font: 600 12px var(--mono); cursor: pointer; }
 .st-dots button[aria-selected="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .st-slide h2 { font-size: 27px; line-height: 1.2; letter-spacing: -.01em; max-width: 95%; }
-.st-big { display: grid; gap: 26px; margin-top: 24px; }
+.st-big { display: grid; gap: 26px; margin-top: 34px; }
 .st-stack { position: relative; display: flex; height: 54px; border-radius: 10px; background: var(--surface-2); overflow: visible; }
 .st-stack > span:first-child { border-radius: 10px 0 0 10px; }
 .st-stack i { position: absolute; top: -10px; bottom: -10px; width: 3px; margin-left: -1.5px; background: var(--ink); border-radius: 2px; }
