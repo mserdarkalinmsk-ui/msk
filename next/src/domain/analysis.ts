@@ -7,6 +7,7 @@
  */
 import { asOf, elapsed, forecastRate, lines, money, n, parseDate, reportsByDate } from './calc';
 import { perfTrend } from './monitor';
+import { outcome } from './insights';
 import { ADMIN_LINE } from './terms';
 import type { Project } from './types';
 
@@ -57,7 +58,8 @@ export function capacity(p: Project, today: Date): Capacity {
   const ratio = best > 0 ? need / best : need > 0 ? Infinity : 0;
   const early = m.spent < 0.5 && elapsed(p, asOf(p, today)) < 0.1;
   const verdict: CapacityVerdict = early ? 'too early' : remaining < 0.5 ? 'done' : need <= avg * 1.1 ? 'on pace' : need <= best ? 'reached before' : need <= best * 1.5 ? 'stretch' : 'out of reach';
-  return { remaining, monthsLeft, need, avg, best, bestFrom, bestTo, ratio, verdict, early, unspent: early ? 0 : Math.max(0, remaining - avg * monthsLeft) };
+  // Left unspent as the end-of-project forecast says (spending at the pace, never below spent + committed).
+  return { remaining, monthsLeft, need, avg, best, bestFrom, bestTo, ratio, verdict, early, unspent: early ? 0 : outcome(p, today).unused };
 }
 
 export interface TrendPoint { date: string; perf: number; staff: number | null; spent: number }
@@ -76,8 +78,9 @@ export function trendOf(p: Project): { points: TrendPoint[]; dPerf: number | nul
 }
 
 /** Where each project ends at its current pace: spent at the end and what stays unspent (capped at the budget). */
+// The end-of-project forecast's projection, so the Analysis and the story read the same as the project page and Ending soon.
 export function endOf(p: Project, today: Date) {
-  const m = money(p), c = capacity(p, today), atEnd = Math.min(m.budget, m.spent + c.avg * c.monthsLeft);
+  const m = money(p), atEnd = Math.min(m.budget, outcome(p, today).projected);
   return { budget: m.budget, spent: m.spent, atEnd, unspent: Math.max(0, m.budget - atEnd), share: m.budget ? atEnd / m.budget : 0 };
 }
 

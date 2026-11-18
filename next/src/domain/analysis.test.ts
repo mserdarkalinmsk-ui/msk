@@ -48,4 +48,14 @@ describe('analysis', () => {
     expect(W.lead?.heading).toBe('5');
     expect(W.steps.reduce((a, x) => a + x.gap, 0)).toBeCloseTo(W.gap, 2);
   });
+  it('spent at the end is never below spent + committed, as the end-of-project forecast says', () => {
+    // 100 spent, 800 committed in open contracts: at least 900 is used by the end, whatever the pace.
+    const q = { id: 'q', code: 'Q', name: 'Q', country: 'tr', start: '2025-01-01', end: '2027-01-01', budget: 1000,
+      reportingPeriods: [{ id: 'r', name: 'R', type: 'Interim', date: '2026-01-01', snapshot: { lines: [{ code: '1.1', approved: 1000, actual: 100, committed: 800, spentCommitted: 900 }] } }] } as never;
+    const E = endOf(q, today), o = outcome(q, today);
+    expect(E.atEnd).toBeGreaterThanOrEqual(900);
+    expect(E.unspent).toBeCloseTo(o.unused, 6);
+    expect(capacity(q, today).unspent).toBeCloseTo(o.unused, 6); // the Excel column of the same table
+  });
 });
+import { outcome } from './insights';
