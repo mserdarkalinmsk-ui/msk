@@ -807,6 +807,7 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .wp-kpi .k span{display:block;font-size:12px;color:var(--muted)}.wp-kpi .k b{font-size:20px}
 .wp-kpi .k i{position:absolute;left:0;bottom:0;height:4px;background:var(--c1)}
 .wp-kpi .k.good i{background:var(--good)}.wp-kpi .k.warning i{background:var(--warning)}.wp-kpi .k.serious i{background:var(--critical)}.wp-kpi .k.serious b{color:var(--critical)}
+.table-wrap{overflow-x:auto}
 .wp-t{width:calc(100% - 40px);margin:0 20px;border-collapse:collapse;font-size:13px}
 .wp-t th,.wp-t td{border:1px solid var(--border);padding:7px 10px;text-align:left}.wp-t td.num{text-align:right;white-space:nowrap}
 .wp-t thead th{text-align:center;font-size:14px;background:color-mix(in srgb,var(--c1) 10%,transparent)}
