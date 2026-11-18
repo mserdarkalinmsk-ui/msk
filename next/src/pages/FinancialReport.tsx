@@ -13,7 +13,7 @@ import type { WbLine, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
-import { date, full, month, pct, short } from '../ui/format';
+import { date, esc, full, month, pct, short } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { Statement } from '../ui/Statement';
 import { LedgerPanel } from './LedgerPanel';
@@ -228,7 +228,7 @@ export function headingOption(t: Tokens, H: { name: string; budget: number; actu
     ...base(t),
     grid: { left: 8, right: 8, top: 26, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: t.surface2, opacity: 0.6 } }, formatter: (ps: any[]) => { const h = H[ps[0].dataIndex];
-      return `<b>${h.name}</b><br/>Budget <b>${full(h.budget)}</b><br/>Spent ${full(h.actual)} (${pct(h.budget ? h.actual / h.budget : 0)})<br/>Committed ${full(h.sc - h.actual)}<br/>Spent + committed <b>${full(h.sc)}</b> (${pct(h.budget ? h.sc / h.budget : 0)})${h.planned ? `<br/>Planned next 12 months ${full(h.planned)}` : ''}<br/><span style="color:${t.ink3}">time gone ${pct(el)} · flexibility up to ${pct(1 + flex)}</span>`; } },
+      return `<b>${esc(h.name)}</b><br/>Budget <b>${full(h.budget)}</b><br/>Spent ${full(h.actual)} (${pct(h.budget ? h.actual / h.budget : 0)})<br/>Committed ${full(h.sc - h.actual)}<br/>Spent + committed <b>${full(h.sc)}</b> (${pct(h.budget ? h.sc / h.budget : 0)})${h.planned ? `<br/>Planned next 12 months ${full(h.planned)}` : ''}<br/><span style="color:${t.ink3}">time gone ${pct(el)} · flexibility up to ${pct(1 + flex)}</span>`; } },
     xAxis: { type: 'value', min: 0, max: Math.ceil(top / 10) * 10, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => `${v}%` } },
     // the figures sit in their own right-hand column, aligned, off the bars
     yAxis: [{ type: 'category', inverse: true, data: H.map((h) => h.name), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },

@@ -21,7 +21,7 @@ import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { parseAmount } from '../ui/csv';
 import { DataTable, type Column } from '../ui/DataTable';
-import { date, full, month, pct, period, short, signedPct } from '../ui/format';
+import { date, esc, full, month, pct, period, short, signedPct } from '../ui/format';
 import { axisMoney, axisX, axisY } from './Overview';
 import { usedTone } from './Budget';
 import { StaffBoard } from './People';
@@ -261,7 +261,7 @@ function deltaOption(t: Tokens, D: ReturnType<typeof compareReports>) {
   return {
     ...base(t),
     grid: { left: 8, right: 64, top: 4, bottom: 4, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const d = D[x.dataIndex]; return `<b>${d.code} ${d.description}</b><br/>${full(d.actual[0])} → <b>${full(d.actual[1])}</b>`; } },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const d = D[x.dataIndex]; return `<b>${esc(d.code)} ${esc(d.description)}</b><br/>${full(d.actual[0])} → <b>${full(d.actual[1])}</b>`; } },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
     yAxis: { type: 'category', inverse: true, data: D.map((d) => `${d.code} ${d.description}`.slice(0, 26)), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [{ type: 'bar', barWidth: 14, data: D.map((d) => { const v = d.actual[1] - d.actual[0]; return { value: v, itemStyle: { color: v < 0 ? t.critical : t.c[0], borderRadius: v < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } }; }),

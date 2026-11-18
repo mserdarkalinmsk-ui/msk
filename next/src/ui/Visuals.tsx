@@ -5,7 +5,7 @@ import { headings } from '../domain/insights';
 import type { Country, Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from './Chart';
-import { full, short } from './format';
+import { esc, full, short } from './format';
 import { plabel } from '../domain/label';
 
 const lab = (p: Project) => (plabel(p));
@@ -30,7 +30,7 @@ export function MoneyFlow({ P, countries }: { P: Project[]; countries: Country[]
   const merged = [...links.reduce((m, l) => { const k = `${l.source}|${l.target}`; m.set(k, { ...l, value: (m.get(k)?.value ?? 0) + l.value }); return m; }, new Map<string, (typeof links)[number]>()).values()];
   const option = (t: Tokens): EChartsCoreOption => ({
     ...base(t),
-    tooltip: { ...(base(t).tooltip as object), formatter: (q: { dataType: string; data: { source?: string; target?: string; value?: number; name?: string }; value: number }) => q.dataType === 'edge' ? `${q.data.source} → ${q.data.target}<br/><b>${full(q.data.value!)}</b>` : `<b>${q.data.name}</b><br/>${full(q.value)}` },
+    tooltip: { ...(base(t).tooltip as object), formatter: (q: { dataType: string; data: { source?: string; target?: string; value?: number; name?: string }; value: number }) => q.dataType === 'edge' ? `${esc(q.data.source)} → ${esc(q.data.target)}<br/><b>${full(q.data.value!)}</b>` : `<b>${esc(q.data.name)}</b><br/>${full(q.value)}` },
     series: [{ type: 'sankey', left: 8, right: 150, top: 10, bottom: 10, nodeGap: 12, nodeWidth: 10, draggable: false, layoutIterations: 32,
       data: [...nodes.values()].map((n) => ({ ...n, itemStyle: { borderWidth: 0, borderRadius: 2, color: n.name === 'Spent' ? t.c[0] : n.name === 'Committed' ? t.committed : n.name === 'Still available' ? t.plan : n.depth === 0 ? t.ink2 : t.c[0] } })),
       links: merged, lineStyle: { color: 'gradient', opacity: 0.2, curveness: 0.55 }, emphasis: { focus: 'adjacency', lineStyle: { opacity: 0.45 } },
@@ -60,7 +60,7 @@ export function FlexPanel({ p }: { p: Project }) {
     legend: { top: 0, right: 0, textStyle: { color: t.ink2 }, itemWidth: 12, itemHeight: 10, data: ['Allowed without addendum', 'Agreement', 'Now', 'Expected at end'] },
     xAxis: { type: 'value', min: 0, max: top, axisLabel: { formatter: '{value}%', color: t.ink3 }, splitLine: { lineStyle: { color: t.line } } },
     yAxis: { type: 'category', data: cats, inverse: true, axisLabel: { color: t.ink, fontSize: 12 } },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (q: { dataIndex: number }[]) => { const { r, w } = rows[q[0].dataIndex]; return `<b>${r.code} ${r.label}</b><br/>Agreement ${full(r.baseline)}<br/>Allowed ${full(r.baseline * (1 - f))} – ${full(r.baseline * (1 + f))}<br/>Now ${full(r.approved)} (${pc(r.approved, r)}%) · spent + committed ${full(r.exposure)}<br/>Expected at end ${full(w?.projected ?? r.exposure)} (${pc(w?.projected ?? r.exposure, r)}%)${w && w.stage !== 'ok' ? `<br/><b>${STAGE[w.stage].label}</b>` : ''}`; } },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (q: { dataIndex: number }[]) => { const { r, w } = rows[q[0].dataIndex]; return `<b>${esc(r.code)} ${esc(r.label)}</b><br/>Agreement ${full(r.baseline)}<br/>Allowed ${full(r.baseline * (1 - f))} – ${full(r.baseline * (1 + f))}<br/>Now ${full(r.approved)} (${pc(r.approved, r)}%) · spent + committed ${full(r.exposure)}<br/>Expected at end ${full(w?.projected ?? r.exposure)} (${pc(w?.projected ?? r.exposure, r)}%)${w && w.stage !== 'ok' ? `<br/><b>${STAGE[w.stage].label}</b>` : ''}`; } },
     series: [
       { type: 'bar', stack: 'band', silent: true, itemStyle: { color: 'transparent' }, data: rows.map(() => 100 - f * 100), barWidth: 18 },
       { name: 'Allowed without addendum', type: 'bar', stack: 'band', itemStyle: { color: t.c[0], opacity: 0.16, borderRadius: 4 }, data: rows.map(() => 2 * f * 100), barWidth: 18 },

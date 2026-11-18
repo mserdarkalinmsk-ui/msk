@@ -442,6 +442,25 @@ async function page(opts) {
   await ctx.close();
 }
 
+// Text the user typed or imported never runs as HTML inside a chart tooltip
+{
+  const { p, ctx } = await page({ viewport: { width: 1440, height: 900 } });
+  await p.click('text=New project');
+  await p.fill('#f-code', 'GE-ALPHA'); await p.fill('#f-name', 'Alpha <img src=x onerror="window.__xss=1">'); await p.fill('#f-budget', '1.000.000,00');
+  await p.fill('#f-start', '2025-01-01'); await p.fill('#f-end', '2027-12-31');
+  await p.selectOption('#f-country', 'ge'); await p.selectOption('#f-sector', 'Democracy');
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500); await p.keyboard.press('Escape');
+  const c = p.locator('[aria-label="Pacing by project"]').first();
+  await c.scrollIntoViewIfNeeded(); await p.click('.seg button:text-is("Gap")'); await p.waitForTimeout(600);
+  const bx = await c.boundingBox(); let seen = false;
+  for (let k = 0; k < 120 && !seen; k++) {
+    await p.mouse.move(bx.x + 60 + Math.floor(k / 12) * 50, bx.y + 10 + (k % 12) * (bx.height / 12), { steps: 2 }); await p.waitForTimeout(60);
+    seen = await p.evaluate(() => [...document.querySelectorAll('div')].some((d) => d.style.position === 'absolute' && d.textContent.includes('Alpha <img')));
+  }
+  check(seen && !(await p.evaluate(() => window.__xss)), 'chart tooltip shows a project name with markup as plain text');
+  await ctx.close();
+}
+
 // Dark + mobile
 {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });

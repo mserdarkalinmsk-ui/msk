@@ -12,7 +12,7 @@ import { alerts } from '../domain/insights';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
-import { cents, date, full, month, pct, short, signedPct } from '../ui/format';
+import { cents, date, esc, full, month, pct, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
 import { Count } from '../ui/Count';
 import { MapView, type MapMode } from '../ui/MapView';
@@ -306,7 +306,7 @@ function gapOption(t: Tokens, P: Project[]) {
   const R = P.map((p) => ({ p, g: burnGap(p, TODAY) })).sort((a, b) => a.g - b.g);
   return {
     ...base(t), grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${R[x.dataIndex].p.code}</b> ${R[x.dataIndex].p.name}<br/>${signedPct(R[x.dataIndex].g)}` },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${esc(R[x.dataIndex].p.code)}</b> ${esc(R[x.dataIndex].p.name)}<br/>${signedPct(R[x.dataIndex].g)}` },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => signedPct(v) } },
     yAxis: { type: 'category', data: R.map((r) => plabel(r.p)), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
     series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: paceTone(r.g) === 'serious' ? t.serious : paceTone(r.g) === 'warning' ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
@@ -358,7 +358,7 @@ function pacingOption(t: Tokens, P: Project[], exposure = false) {
   return {
     ...base(t),
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const r = R[x.dataIndex]; return `<b>${r.p.code}</b> ${r.p.name}<br/>Spent <b>${pct(r.b)}</b> · committed ${pct(r.c)}<br/>Time elapsed <b>${pct(r.el)}</b> → ${signedPct(r.g)}`; } },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const r = R[x.dataIndex]; return `<b>${esc(r.p.code)}</b> ${esc(r.p.name)}<br/>Spent <b>${pct(r.b)}</b> · committed ${pct(r.c)}<br/>Time elapsed <b>${pct(r.el)}</b> → ${signedPct(r.g)}`; } },
     xAxis: { type: 'value', max: 1, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => pct(v) } },
     yAxis: { type: 'category', inverse: true, data: R.map((r) => plabel(r.p)), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
     series: [
@@ -407,7 +407,7 @@ function waterfallOption(t: Tokens, T: ReturnType<typeof totals>) {
   return {
     ...base(t),
     grid: { left: 8, right: 8, top: 24, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `${steps[x.dataIndex].name}<br/><b style="font-family:${t.mono}">${full(steps[x.dataIndex].v)}</b>` },
+    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `${esc(steps[x.dataIndex].name)}<br/><b style="font-family:${t.mono}">${full(steps[x.dataIndex].v)}</b>` },
     xAxis: { type: 'category', data: steps.map((s) => s.name), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12, interval: 0 } },
     yAxis: { type: 'value', ...axisY(t) },
     series: [
