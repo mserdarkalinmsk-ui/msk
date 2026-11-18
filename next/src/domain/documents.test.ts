@@ -144,6 +144,13 @@ describe('narrative risks', () => {
     const N = narrativeRisks({ name: 'd.docx', kind: 'docx', paragraphs: ['The risks are as follows:', 'Workload of the partner (low).', 'Restrictions imposed by', 'national authorities pose a risk to meetings (medium).', 'Mitigation measures are as follows:'], tables: [] });
     expect(N.risks.map((r) => r.title)).toEqual(['Workload of the partner', 'Restrictions imposed by national authorities pose a risk to meetings']);
   });
+  it('skips a "Page 3 of 10" footer between the items of a list', async () => {
+    const { narrativeRisks } = await import('./documents');
+    const read = (items: string[]) => narrativeRisks({ name: 'd.pdf', kind: 'pdf', tables: [], paragraphs: ['The risks are as follows:', ...items, 'Mitigation measures are as follows:'] }).risks.map((r) => r.title);
+    expect(read(['- Alpha risk one (low).', 'Page 3 of 10', '- Beta risk two (high).'])).toEqual(['Alpha risk one', 'Beta risk two']);
+    expect(read(['Alpha risk one (low).', 'Page 3 of 10', 'Beta risk two (high).'])).toEqual(['Alpha risk one', 'Beta risk two']);
+    expect(read(['Alpha risk one (low).', '3/10', 'Beta risk two (high).'])).toEqual(['Alpha risk one', 'Beta risk two']);
+  });
 });
 
 import { contractFacts as cf2 } from './documents';
