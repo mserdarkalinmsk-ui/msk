@@ -106,10 +106,12 @@ export function spendPoints(p: Project): { t: number; v: number }[] {
   return v;
 }
 function readSpendPoints(p: Project): { t: number; v: number }[] {
-  const pts = (p.reportingPeriods ?? [])
-    .filter((r) => r.snapshot?.lines?.length)
-    .map((r) => ({ t: parseDate(r.date).getTime(), v: sum(r.snapshot!.lines, (l) => n(l.actual)) }))
-    .sort((a, b) => a.t - b.t);
+  // A budget saved as a report is not spending; two reports of the same date give one point, the one the latest-report
+  // rule keeps (the one loaded last), so the curve never drops to zero nor has a zero-length step.
+  const at = new Map<number, number>();
+  for (const r of (p.reportingPeriods ?? []).filter((r) => r.snapshot?.lines?.length && !budgetOnly(r)).sort(byUpload))
+    at.set(parseDate(r.date).getTime(), sum(r.snapshot!.lines, (l) => n(l.actual)));
+  const pts = [...at].map(([t, v]) => ({ t, v })).sort((a, b) => a.t - b.t);
   const s = parseDate(p.start).getTime();
   if (!pts.length || pts[0].t > s) pts.unshift({ t: s, v: 0 });
   return pts;

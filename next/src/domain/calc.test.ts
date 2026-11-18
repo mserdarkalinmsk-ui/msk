@@ -205,3 +205,19 @@ describe('portfolio exposure', () => {
     expect(t.remaining).toBe(m.remaining);
   });
 });
+
+import { spendPoints } from './calc';
+describe('spending curve', () => {
+  const rep = (id: string, date: string, actual: number, type = 'Interim', at?: string) => ({ id, name: id, type, date, registeredAt: at, snapshot: { lines: [{ code: '1', approved: 1000, actual }] } });
+  it('an approved budget saved as a report does not pull the curve back to zero', () => {
+    const p: Project = { ...base, reportingPeriods: [rep('a', '2025-07-01', 300), rep('b', '2025-10-01', 0, 'Approved budget')] };
+    expect(spendAt(p, Date.parse('2026-01-01'))).toBe(money(p).spent);
+    expect(spendAt(p, Date.parse('2026-01-01'))).toBe(300);
+  });
+  it('two reports with the same date give one point: the one loaded last, as the latest report', () => {
+    const p: Project = { ...base, reportingPeriods: [rep('b', '2025-07-01', 350, 'Interim', '2025-08-02T10:00:00Z'), rep('a', '2025-07-01', 300, 'Interim', '2025-08-01T10:00:00Z')] };
+    expect(spendPoints(p).filter((x) => x.t === Date.parse('2025-07-01'))).toHaveLength(1);
+    expect(spendAt(p, Date.parse('2026-01-01'))).toBe(money(p).spent);
+    expect(Number.isFinite(recentRate(p))).toBe(true);
+  });
+});
