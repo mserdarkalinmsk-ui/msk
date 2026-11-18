@@ -82,9 +82,10 @@ export async function exportPptx(m: DeckModel) {
     s.background = { color: '0E1A2B' };
     if (m.logo?.startsWith('data:')) { const im = new Image(); im.src = m.logo; await im.decode().catch(() => {}); const h = 0.9, w = im.naturalHeight ? Math.min(3.5, (h * im.naturalWidth) / im.naturalHeight) : h;
       s.addShape('roundRect', { x: 0.65, y: 0.45, w: w + 0.3, h: h + 0.2, fill: { color: 'FFFFFF' }, line: { color: 'FFFFFF' }, rectRadius: 0.08 }); s.addImage({ data: m.logo, x: 0.8, y: 0.55, w, h }); }
+    const nc = new Set(m.P.map((p) => p.country)).size;
     s.addText(`${mg ? 'Management review' : 'Progress report to the donor'} · ${date(today)}`.toUpperCase(), { x: 0.8, y: 1.6, w: 11, h: 0.4, fontFace: F, fontSize: 13, color: '9FB0C8', bold: true, charSpacing: 1 });
     s.addText(m.scope === 'Portfolio' ? 'Joint programme portfolio' : m.scope, { x: 0.8, y: 2.1, w: 11.5, h: 1.2, fontFace: F, fontSize: 40, bold: true, color: 'FFFFFF' });
-    s.addText(`Financial and operational status of ${m.P.length} projects in ${new Set(m.P.map((p) => p.country)).size} countries`, { x: 0.8, y: 3.3, w: 11, h: 0.5, fontFace: F, fontSize: 16, color: 'C9D4E3' });
+    s.addText(`Financial and operational status of ${m.P.length} project${m.P.length > 1 ? 's' : ''} in ${nc} countr${nc > 1 ? 'ies' : 'y'}`, { x: 0.8, y: 3.3, w: 11, h: 0.5, fontFace: F, fontSize: 16, color: 'C9D4E3' });
     [[short(T.budget), 'total budget'], [short(T.spent), 'spent to date'], [pct(m.perf), 'of planned spending']].forEach(([v, l], i) => {
       s.addText(v, { x: 0.8 + i * 3.4, y: 4.6, w: 3.2, h: 0.7, fontFace: F, fontSize: 32, bold: true, color: i === 2 ? COL[m.band] : 'FFFFFF' });
       s.addText(l, { x: 0.8 + i * 3.4, y: 5.3, w: 3.2, h: 0.4, fontFace: F, fontSize: 12, color: '9FB0C8' });
