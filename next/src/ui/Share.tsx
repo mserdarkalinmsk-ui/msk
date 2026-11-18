@@ -4,11 +4,9 @@ import type { Ledger } from '../domain/types';
 import { saveFile } from './save';
 import { seal } from './crypto';
 import { plabel } from '../domain/label';
+import { donorLedger } from '../domain/donor';
 
-/** The donor version: staff names and contracts, office budgets, change history and the trash are left out. */
-export function donorLedger(L: Ledger): Ledger {
-  return { countries: L.countries, projects: L.projects.map((p) => ({ ...p, reportingPeriods: p.reportingPeriods?.map((r) => (r.snapshot ? { ...r, snapshot: { ...r.snapshot, staffRecords: undefined, staffGroups: undefined } } : r)) })), audit: [] };
-}
+export { donorLedger };
 
 /** Writes the app out as one HTML file with (part of) the ledger inside, so a colleague sees the data offline. */
 export async function shareHtml(ledger: Ledger, mode: 'view' | 'edit', scope: string, from?: string, o: { password?: string; donor?: boolean } = {}) {
