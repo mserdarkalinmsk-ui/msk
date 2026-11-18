@@ -1,3 +1,4 @@
+import { SalarySection } from '../ui/CountryPanel';
 import { StaffPlanTable } from './StaffPlan';
 import { useState } from 'preact/hooks';
 import { filtered, go, set, useStore } from '../data/store';
@@ -31,6 +32,7 @@ export function People() {
       {!everyone.length
         ? <div class="card empty-page"><div><h2>No staff records yet</h2><p>Staff are read from the “Purchase Orders” sheet of imported financial reports (lines 1.x.1.y).</p></div></div>
         : <><StaffBoard people={A} showProject /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffPlanTable projects={P} /><StaffReport projects={P} /></div></>}
+      <SalarySection countryIds={[...new Set(P.map((p) => p.country))]} />
     </>
   );
 }

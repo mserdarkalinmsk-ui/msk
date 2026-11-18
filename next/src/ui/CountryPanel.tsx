@@ -86,19 +86,13 @@ export function CountryPanel({ close, edit: initial }: { close: () => void; edit
             })}
           </ul>
         </section>
-        {countries.filter((c) => c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)).map((c) => <SalaryScale c={c} />)}
-        <details class="card ccr-all" style={{ marginTop: '16px' }}><summary>Salary adjustment indices at 1 January 2027 — Council of Europe member States ({CCR_2027.length})</summary>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Country</th><th class="r">CPI</th><th class="r">PPP effect</th><th class="r">Index</th><th class="r">Special granted</th><th class="r">Applied 1 Jan 2027</th></tr></thead>
-            <tbody>{CCR_2027.map((x) => <tr><td>{x.country}</td><td class="r num">{x.cpi.toFixed(1)}</td><td class="r num">{x.ppp == null ? '' : `${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}`}</td><td class="r num">{x.index.toFixed(1)}</td><td class="r num">{x.special?.toFixed(1) ?? ''}</td><td class="r num"><b>{x.net > 100 ? '+' : x.net < 100 ? '−' : ''}{Math.abs(x.net - 100).toFixed(1)}%</b></td></tr>)}</tbody></table>
-            <p class="muted" style={{ fontSize: '12px' }}>{CCR_SOURCE} (Annexes 1 and 1a), member States of the Council of Europe only. Index 100 = no change.</p></div>
-        </details>
       </div>
     </>
   );
 }
 
 /** Türkiye's local salary scale: raises follow CPI. Kept once for the country; every project there uses it in its forecast. */
-function SalaryScale({ c }: { c: Country }) {
+export function SalaryScale({ c }: { c: Country }) {
   const projects = useStore((s) => s.ledger.projects);
   // Seeded from what a project had set before the policy moved to the country.
   const seed = projects.find((p) => p.country === c.id && p.forecastDraft?.infl && Object.keys(p.forecastDraft.infl).length > 1)?.forecastDraft?.infl;
@@ -131,6 +125,21 @@ function TrScale() {
     </table></div>
     <small class="muted">{TR_SCALE_2027.source}. A grades: the second step value applies from step 7. Grades A 6 and A 7 have no Türkiye scale.</small>
   </details>;
+}
+
+
+/** Local salaries of the countries shown: the CPI raise policy, the CCR adjustment and scale at 1 January 2027 (Staff page). */
+export function SalarySection({ countryIds }: { countryIds?: string[] }) {
+  const countries = useStore((s) => s.ledger.countries);
+  const C = countries.filter((c) => (!countryIds || countryIds.includes(c.id)) && (c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)));
+  return <>
+        {C.map((c) => <SalaryScale c={c} />)}
+        <details class="card ccr-all" style={{ marginTop: '16px' }}><summary>Salary adjustment indices at 1 January 2027 — Council of Europe member States ({CCR_2027.length})</summary>
+          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Country</th><th class="r">CPI</th><th class="r">PPP effect</th><th class="r">Index</th><th class="r">Special granted</th><th class="r">Applied 1 Jan 2027</th></tr></thead>
+            <tbody>{CCR_2027.map((x) => <tr><td>{x.country}</td><td class="r num">{x.cpi.toFixed(1)}</td><td class="r num">{x.ppp == null ? '' : `${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}`}</td><td class="r num">{x.index.toFixed(1)}</td><td class="r num">{x.special?.toFixed(1) ?? ''}</td><td class="r num"><b>{x.net > 100 ? '+' : x.net < 100 ? '−' : ''}{Math.abs(x.net - 100).toFixed(1)}%</b></td></tr>)}</tbody></table>
+            <p class="muted" style={{ fontSize: '12px' }}>{CCR_SOURCE} (Annexes 1 and 1a), member States of the Council of Europe only. Index 100 = no change.</p></div>
+        </details>
+  </>;
 }
 
 /** Plans every dropped workbook against the ledger and applies them in one undoable step. */

@@ -1,3 +1,4 @@
+import { plabel } from '../domain/label';
 import { filtered, go, useStore } from '../data/store';
 import { latestReport } from '../domain/calc';
 import { programmeOf } from '../domain/flex';
@@ -34,7 +35,7 @@ export function Gaps() {
   const byNeed = NEEDS.map((n, i) => ({ n, c: rows.filter((r) => r.v[i] === false).length })).filter((x) => x.c).sort((a, b) => b.c - a.c);
   const xlsx = () => download(`missing-data-${TODAY.toISOString().slice(0, 10)}.xlsx`, [{ name: 'Missing data', widths: [12, 50, 10, ...NEEDS.map(() => 14)], rows: [
     ['BH', 'Project', 'Missing', ...NEEDS.map((n) => n.label)].map((v) => ({ v, st: 'head' as const })),
-    ...rows.map((r) => [r.p.bh ?? '', r.p.name, r.miss, ...r.v.map((x) => (x === 'n/a' ? '—' : x ? 'yes' : 'MISSING'))])] }]);
+    ...rows.map((r) => [plabel(r.p), r.p.name, r.miss, ...r.v.map((x) => (x === 'n/a' ? '—' : x ? 'yes' : 'MISSING'))])] }]);
   return (
     <>
       <section class="hero" aria-label="Missing data">
@@ -47,7 +48,7 @@ export function Gaps() {
         <div class="table-scroll"><table class="gap-t">
           <thead><tr><th>Project</th><th class="r">Missing</th>{NEEDS.map((n) => <th title={n.hint}>{n.label}</th>)}</tr></thead>
           <tbody>{rows.map((r) => <tr>
-            <td><b>{r.p.bh ? `${r.p.bh} · ` : r.p.code + ' · '}</b><span class="gap-n">{r.p.name}</span><small>{programmeOf(r.p) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'}{latestReport(r.p) ? ` · report ${date(latestReport(r.p)!.date)}` : ''}</small></td>
+            <td><b>{plabel(r.p)} · </b><span class="gap-n">{r.p.name}</span><small>{programmeOf(r.p) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'}{latestReport(r.p) ? ` · report ${date(latestReport(r.p)!.date)}` : ''}</small></td>
             <td class="r num"><b style={{ color: r.miss ? 'var(--serious)' : 'var(--good)' }}>{r.miss}</b></td>
             {r.v.map((x, i) => <td class={`gap-c ${x === 'n/a' ? 'na' : x ? 'yes' : 'no'}`}><button title={`${NEEDS[i].label}: ${x === 'n/a' ? 'does not apply' : x ? 'on file' : `missing — ${NEEDS[i].hint}`}`} onClick={() => go(`project/${r.p.id}/${NEEDS[i].slug}`)}>{x === 'n/a' ? '—' : x ? '✓' : '✕'}</button></td>)}
           </tr>)}</tbody>
