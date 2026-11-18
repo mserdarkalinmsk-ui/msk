@@ -14,7 +14,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, month, short } from '../ui/format';
 import { Compare } from './Studio';
-import { decisions, type Decision } from '../domain/decisions';
+import { decisions, type Decision, KIND_INFO, kindUnit } from '../domain/decisions';
 import { plabel } from '../domain/label';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
@@ -102,9 +102,9 @@ function DecisionGroups({ D }: { D: Decision[] }) {
     const byP = projects.map((id) => ({ p: L.find((x) => (x.p?.id ?? '') === id)?.p, L: L.filter((x) => (x.p?.id ?? '') === id) }));
     const strip = (x: Decision) => (x.p ? x.text.replace(new RegExp(`^${plabel(x.p).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:?\\s*`), '') : x.text);
     return <details class={`dec-k t-${tone}`} open={L.length <= 4}>
-      <summary><span class="badge">{kind}</span><b>{L.length}</b><span class="muted">{projects.filter(Boolean).length > 1 ? `across ${projects.filter(Boolean).length} projects` : L[0].p ? plabel(L[0].p) : ''}</span></summary>
+      <summary title={KIND_INFO[kind]?.note}><span class="badge">{kind}</span><b>{L.length} {kindUnit(kind, L.length)}</b><span class="muted">{projects.filter(Boolean).length > 1 ? `across ${projects.filter(Boolean).length} projects` : L[0].p ? plabel(L[0].p) : ''}</span></summary>
       <ul>{L.length <= 4 ? L.map((x) => <li class={x.p ? 'click' : ''} onClick={() => x.p && go(`project/${x.p.id}/${DEC_TAB[kind] ?? 'summary'}`)}>{x.text}</li>)
-        : byP.map(({ p, L: Q }) => <li class={p ? 'click' : ''} onClick={() => p && go(`project/${p.id}/${DEC_TAB[kind] ?? 'summary'}`)}><b>{p ? plabel(p) : 'Portfolio'}</b> <span class="muted">· {Q.length}</span><span class="dec-sub">{Q.map(strip).join(' · ')}</span></li>)}</ul>
+        : byP.map(({ p, L: Q }) => <li class={p ? 'click' : ''} onClick={() => p && go(`project/${p.id}/${DEC_TAB[kind] ?? 'summary'}`)}><b>{p ? plabel(p) : 'Portfolio'}</b> <span class="muted">· {Q.length} {kindUnit(kind, Q.length)}</span><span class="dec-sub">{Q.map(strip).join(' · ')}</span></li>)}</ul>
     </details>; })}</div>;
 }
 

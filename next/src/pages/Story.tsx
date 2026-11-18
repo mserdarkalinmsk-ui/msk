@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { capacity, endOf, gapDrivers, HEAD_LABEL, portfolioWalk, trendOf } from '../domain/analysis';
 import { asOf, elapsed, money, portfolioSeries, totals } from '../domain/calc';
-import { decisions } from '../domain/decisions';
+import { decisions, KIND_INFO, kindSay, kindUnit } from '../domain/decisions';
 import { plabel } from '../domain/label';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -114,7 +114,7 @@ export function Story() {
     behind.length ? `${behind.length === RL.length ? `All ${RL.length}` : `${behind.length} of ${RL.length}`} projects are behind plan${RL.filter((r) => r.band === 'red').length ? `, ${RL.filter((r) => r.band === 'red').length} well behind` : ''}` : `All ${RL.length} projects are on or ahead of plan`,
     W.gap < -0.5 && lead ? `Direct costs ${short(-W.gap)} behind plan — ${(HEAD_LABEL[lead.heading] ?? lead.label).toLowerCase()} carries ${pct(lead.share)} of the shortfall` : `Direct costs are on or ahead of plan`,
     unspent > 0.5 ? `At this pace ${short(unspent)} (${pct(budgetT ? unspent / budgetT : 0)}) stays unspent${hard.length ? `; ${hard.length} project${hard.length > 1 ? 's need' : ' needs'} a pace above anything reached so far` : ''}` : 'At this pace every budget is used by its end date',
-    D.length || revise.length ? `${D.length + revise.length} decision${D.length + revise.length === 1 ? '' : 's'} this month${kinds.length ? `: ${kinds.slice(0, 3).join(', ').toLowerCase()}` : ''}${revise.length ? `${kinds.length ? ', ' : ': '}revision or extension` : ''}` : 'Nothing needs a decision this month',
+    D.length || revise.length ? `To decide this month: ${[...kinds.map((k) => kindSay(k, D.filter((d) => d.kind === k).length)), ...(revise.length ? [`${revise.length} revision or extension`] : [])].join(', ')}` : 'Nothing needs a decision this month',
   ];
   const CR = [...new Set(RL.map((r) => r.p.country))].map((c) => { const X = RL.filter((r) => r.p.country === c), b = X.reduce((a, r) => a + money(r.p).budget, 0), sp = X.reduce((a, r) => a + r.spent, 0), pl = X.reduce((a, r) => a + r.planned, 0), un = X.reduce((a, r) => a + r.e.unspent, 0);
     return { c, name: cname(c), n: X.length, b, sp, pl, perf: pl ? sp / pl : 0, behind: X.filter((r) => r.band === 'red' || r.band === 'amber').length, un, X }; }).sort((a, b) => a.perf - b.perf);
@@ -194,8 +194,8 @@ export function Story() {
 
         <Slide i={5+o} n={N} scope={scope} kicker="What to decide" msg={msg[4+o]} sub="From the figures: addenda, notifications, staff contracts, reports — and the projects that cannot spend their budget at any pace reached so far">
           <div class="st-dec">
-            {revise.length > 0 && <div class="st-dk bad"><h3>Revision or extension to consider <span>{revise.length}</span></h3><ul>{revise.map((r) => <li><b>{lab(r.p)}</b> needs {short(r.c.need)} a month to the end; the best it reached is {short(r.c.best)}{r.c.bestFrom ? ` (${date(r.c.bestFrom)} → ${date(r.c.bestTo!)})` : ''}.</li>)}</ul></div>}
-            {kinds.map((k) => { const X = D.filter((d) => d.kind === k); return <div class={`st-dk ${X.some((d) => d.tone === 'bad') ? 'bad' : 'warn'}`}><h3>{k} <span>{X.length}</span></h3><ul>{X.length <= 5 ? X.map((d) => <li>{d.text}</li>) : [...new Set(X.map((d) => d.p))].map((q) => { const Y = X.filter((d) => d.p === q); return <li><b>{q ? lab(q) : 'Portfolio'}</b> · {Y.length} {/contract/i.test(k) ? (Y.length === 1 ? 'contract' : 'contracts') : Y.length === 1 ? 'item' : 'items'}{Y.length === 1 ? ` — ${Y[0].text.replace(/^[^:]*:\s*/, '')}` : ''}</li>; })}</ul></div>; })}
+            {revise.length > 0 && <div class="st-dk bad"><h3>Revision or extension to consider <span>{revise.length} {revise.length === 1 ? 'project' : 'projects'}</span></h3><p class="st-dk-n">The monthly spending needed to use the budget by the end date is above the best monthly pace reached so far</p><ul>{revise.map((r) => <li><b>{lab(r.p)}</b>: must spend {short(r.c.need)} a month until the end; its best so far was {short(r.c.best)} a month{r.c.bestFrom ? ` (${date(r.c.bestFrom)} → ${date(r.c.bestTo!)})` : ''}.</li>)}</ul></div>}
+            {kinds.map((k) => { const X = D.filter((d) => d.kind === k); return <div class={`st-dk ${X.some((d) => d.tone === 'bad') ? 'bad' : 'warn'}`}><h3>{k} <span>{X.length} {kindUnit(k, X.length)}</span></h3>{KIND_INFO[k] && <p class="st-dk-n">{KIND_INFO[k].note}</p>}<ul>{X.length <= 5 ? X.map((d) => <li>{d.text}</li>) : [...new Set(X.map((d) => d.p))].map((q) => { const Y = X.filter((d) => d.p === q); return <li><b>{q ? lab(q) : 'Portfolio'}</b> · {Y.length} {kindUnit(k, Y.length)}{(() => { const at = Y.map((d) => d.at!).filter(Boolean).sort(); return Y.length === 1 ? ` — ${Y[0].text.replace(/^[^:]*:\s*/, '')}` : !at.length ? '' : at[0] === at[at.length - 1] ? `, all ending ${date(at[0])}` : `, ending ${date(at[0])} – ${date(at[at.length - 1])}`; })()}</li>; })}</ul></div>; })}
             {!D.length && !revise.length && <p class="muted">Nothing needs a decision this month.</p>}
           </div>
         </Slide>
