@@ -16,4 +16,8 @@ describe('scenarios', () => {
     const t = new Date('2026-01-01');
     expect(runScenario(p, { ...PRESETS[0], pacePct: 20 }, t).projected).toBeGreaterThan(runScenario(p, PRESETS[0], t).projected);
   });
+  it('an extension from a month end stays on the month end (31 Aug + 6 months = 28 Feb)', () => {
+    const q = { ...p, end: '2026-08-31' } as Project;
+    expect(runScenario(q, PRESETS[1], new Date('2026-01-01')).end).toBe('2027-02-28');
+  });
 });

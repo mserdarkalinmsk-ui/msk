@@ -1,4 +1,4 @@
-import { asOf, forecastRate, lineCommitted, lines, money, parseDate } from './calc';
+import { addMonths, asOf, forecastRate, lineCommitted, lines, money, parseDate } from './calc';
 import type { Project } from './types';
 import { dmy } from './dt';
 
@@ -14,8 +14,6 @@ export const PRESETS: ScenarioIn[] = [
   { name: '6-month extension', extend: 6, budgetPct: 0, pacePct: 0, staffPct: 0 },
   { name: 'Budget −10 %', extend: 0, budgetPct: -10, pacePct: 0, staffPct: 0 },
 ];
-
-const addMonths = (iso: string, m: number) => { const d = parseDate(iso); d.setUTCMonth(d.getUTCMonth() + m); return d.toISOString().slice(0, 10); };
 
 /**
  * Projects each scenario to the (new) end date as the end-of-project forecast does: spent + the monthly forecast rate ×
