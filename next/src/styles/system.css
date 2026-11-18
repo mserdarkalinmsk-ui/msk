@@ -138,9 +138,11 @@ body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick em { position: absolute; bot
 
 /* pace: a taller trend */
 body :is(.hero, .ph-tiles) > .kpi .spark { margin-top: auto; padding-top: 6px; }
+/* A narrow tile puts the status badge under its label rather than past the tile edge. */
+body :is(.hero, .ph-tiles) > .kpi .label:has(> .badge) { flex-wrap: wrap; row-gap: 4px; }
 
 /* committed: figure beside a ring */
-.sc-row { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+.sc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; }
 .sc-row > div:first-child { display: grid; gap: 6px; min-width: 0; }
 .sc-ring { position: relative; width: 64px; height: 64px; flex: none; }
 .sc-ring > span { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
