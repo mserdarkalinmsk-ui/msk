@@ -1,3 +1,4 @@
+import { BAND_COLOR, bandOf } from '../ui/viz';
 import { OfficeSummary } from './OfficeSummary';
 import { ProviderBrief } from './Providers';
 import { filtered, get, go, set, useStore } from '../data/store';
@@ -17,8 +18,8 @@ import { decisions, type Decision } from '../domain/decisions';
 import { plabel } from '../domain/label';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
-const band = (v: number) => (v >= 1 ? 'blue' : v >= 0.9 ? 'green' : v >= 0.7 ? 'amber' : 'red');
-const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
+const band = bandOf;
+const BAND_C: Record<string, string> = BAND_COLOR;
 const p0 = (v: number) => `${Math.round(v * 100)}%`;
 const lab = (p: Project) => (plabel(p));
 const pts = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))} pts`;

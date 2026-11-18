@@ -1,3 +1,4 @@
+import { capacity, endOf } from '../domain/analysis';
 import { CostCard } from '../ui/CostPanel';
 import { paceTone, paceWord } from '../domain/rules';
 import { BudgetVersions } from '../ui/BudgetVersions';
@@ -159,8 +160,11 @@ function Summary({ p }: { p: Project }) {
           yAxis: { type: 'value', max: m.budget, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
           series: [
             { name: 'Plan', type: 'line', data: [[s, 0], [e, m.budget]], symbol: 'none', lineStyle: { color: t.plan, type: 'dashed', width: 1.5 },
-              markLine: { silent: true, symbol: 'none', label: { formatter: 'Today', color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'solid', width: 1 }, data: [{ xAxis: TODAY.getTime() }] } },
-            { name: 'Actual', type: 'line', data: pts.map((x) => [x.t, x.v]), symbolSize: 8, lineStyle: { width: 2.5, color: t.c[0] }, itemStyle: { color: t.c[0], borderColor: t.surface, borderWidth: 2 }, areaStyle: { color: t.c[0], opacity: 0.08 } },
+              markLine: { silent: true, symbol: 'none', label: { formatter: () => { const pl = m.budget * elapsed(p, asOf(p, TODAY)); return pl ? `Today · ${pct(m.spent / pl)} of plan` : 'Today'; }, color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'solid', width: 1 }, data: [{ xAxis: TODAY.getTime() }] } },
+            { name: 'Actual', type: 'line', data: pts.map((x, i) => (i === pts.length - 1 ? { value: [x.t, x.v], label: { show: true, position: 'top', formatter: () => short(x.v), color: t.c[0], fontFamily: t.mono, fontSize: 11 } } : [x.t, x.v])), symbolSize: 8, lineStyle: { width: 2.5, color: t.c[0] }, itemStyle: { color: t.c[0], borderColor: t.surface, borderWidth: 2 }, areaStyle: { color: t.c[0], opacity: 0.08 } },
+            // Where the project ends at its current pace: a dashed line from the last report to the end date, labelled.
+            ...((() => { const E = endOf(p, TODAY), c = capacity(p, TODAY), last = pts.at(-1); if (!last || c.early || last.t >= e) return []; return [{ name: 'At this pace', type: 'line', data: [[last.t, last.v], [e, E.atEnd]], symbol: 'none', lineStyle: { color: t.serious, type: 'dashed', width: 1.6 },
+              endLabel: { show: true, formatter: () => `${pct(E.share)} at the end${E.unspent > 0.5 ? ` · ${short(E.unspent)} left` : ''}`, color: t.serious, fontSize: 11, align: 'right', offset: [-4, -12] } }]; })()),
           ],
         })} /></div>
       </section>

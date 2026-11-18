@@ -1,3 +1,4 @@
+import { BAND_COLOR, BAND_WORD } from '../ui/viz';
 import { wpRow } from './WorkPlans';
 import { wpName } from '../domain/workplan';
 import { OfficeSummary, officeRows } from './OfficeSummary';
@@ -24,8 +25,8 @@ import { endMarks, spendOption } from './Overview';
 import { moves, narrative } from './Pack';
 import { plabel } from '../domain/label';
 
-const BAND_C: Record<string, string> = { blue: 'var(--c1)', green: 'var(--good)', amber: 'var(--c4)', red: 'var(--critical)' };
-const BAND_W: Record<string, string> = { blue: 'Ahead', green: 'On track', amber: 'Behind', red: 'Well behind' };
+const BAND_C: Record<string, string> = BAND_COLOR;
+const BAND_W: Record<string, string> = BAND_WORD;
 const KIND_C: Record<string, string> = { report: 'var(--critical)', contract: 'var(--c7)', activity: 'var(--c4)', project: 'var(--c1)' };
 const lab = (p: Project) => (plabel(p));
 /** Percent for headlines: small shares keep one decimal so 0.4% never reads as 0%. */
