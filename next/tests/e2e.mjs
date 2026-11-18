@@ -423,6 +423,62 @@ async function page(opts) {
   await ctx.close();
 }
 
+// Outputs: every deck and story slide keeps its content inside the slide body (nothing past the footer, nothing clipped),
+// in screen and print media; chart labels stay inside their chart; the PowerPoint cover counts agree with the screen.
+{
+  const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  /** Slides whose content leaves the body box, and chart labels that leave their chart. */
+  const outside = () => p.evaluate(() => {
+    const bad = [];
+    const svgText = (root, where) => root.querySelectorAll('svg').forEach((sv) => {
+      const R = sv.getBoundingClientRect();
+      sv.querySelectorAll('text').forEach((t) => { const r = t.getBoundingClientRect(); if (!r.width || !t.textContent.trim()) return;
+        const d = Math.max(r.right - R.right, R.left - r.left, R.top - r.top, r.bottom - R.bottom); if (d > 1) bad.push(`${where}: chart label "${t.textContent.slice(0, 30)}" ${Math.round(d)}px outside`); });
+    });
+    document.querySelectorAll('.slide').forEach((sl, i) => {
+      if (getComputedStyle(sl).display === 'none') return;
+      const b = sl.querySelector(':scope > .sl-body'); if (!b) return;
+      const B = b.getBoundingClientRect(), where = `slide ${i + 1} "${(sl.querySelector('h2, h1')?.textContent ?? '').slice(0, 40)}"`;
+      if (!b.textContent.trim() && !b.querySelector('svg, canvas, img')) bad.push(`${where}: empty`);
+      b.querySelectorAll('*').forEach((e) => {
+        if (e.closest('svg') && e.tagName.toLowerCase() !== 'svg') return;
+        const r = e.getBoundingClientRect(); if (!r.width || !r.height || getComputedStyle(e).visibility === 'hidden') return;
+        const d = Math.max(r.bottom - B.bottom, r.right - B.right, B.left - r.left, B.top - r.top);
+        if (d > 1) bad.push(`${where}: ${e.tagName.toLowerCase()} "${(e.textContent ?? '').trim().slice(0, 30)}" ${Math.round(d)}px outside the body`);
+      });
+      svgText(b, where);
+    });
+    document.querySelectorAll('.pack').forEach((pk) => svgText(pk, 'monthly pack'));
+    return [...new Set(bad)].slice(0, 6);
+  });
+  const both = async (what) => {
+    for (const media of ['screen', 'print']) { await p.emulateMedia({ media }); await p.waitForTimeout(900); const bad = await outside(); check(!bad.length, `${what} (${media}): content stays inside every slide and chart${bad.length ? ': ' + bad.join(' | ') : ''}`); }
+    await p.emulateMedia({ media: 'screen' });
+  };
+  for (const aud of ['Management', 'Donor']) {
+    await p.goto(url + '#/reports/deck'); await p.waitForSelector('.slide'); await p.waitForTimeout(600);
+    await p.click(`.seg[aria-label=Audience] button:has-text("${aud}")`);
+    const cb = p.locator('label:has-text("One page per project") input'); if (!(await cb.isChecked())) await cb.check();
+    await p.click('.seg[aria-label=View] button:has-text("All slides")'); await p.waitForTimeout(1200);
+    await both(`${aud} presentation`);
+  }
+  await p.goto(url + '#/reports/story'); await p.waitForSelector('.slide'); await p.waitForTimeout(1200);
+  await both('portfolio story');
+  await p.goto(url + '#/reports/pack'); await p.waitForSelector('.pack'); await p.waitForTimeout(1200);
+  await both('monthly pack');
+  // PowerPoint cover with one project in one country reads in the singular, as the slide on screen does
+  await p.goto(url + '#/overview'); await p.waitForSelector('.hero'); await p.click('.chip:has-text("Georgia")'); await p.waitForTimeout(300);
+  await p.evaluate(() => { location.hash = '#/reports/deck'; }); await p.waitForSelector('.slide'); await p.waitForTimeout(600);
+  const lead = (await p.locator('.sl-cover .sl-lead').textContent()) ?? '';
+  const [px] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('button:has-text("PowerPoint")')]);
+  const { readFileSync } = await import('node:fs'); const { default: JSZip } = await import('jszip');
+  const cover = await (await JSZip.loadAsync(readFileSync(await px.path()))).file('ppt/slides/slide1.xml').async('string');
+  check(lead.includes('1 project in 1 country') && cover.includes('1 project in 1 country'), `PowerPoint cover agrees with the slide (${lead})`);
+  await p.click('.chip:has-text("All countries")').catch(() => {});
+  check(errors.length === 0, 'outputs: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 // Start data (no demo): real project, empty other countries
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
