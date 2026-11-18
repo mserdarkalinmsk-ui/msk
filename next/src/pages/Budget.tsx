@@ -124,7 +124,7 @@ function categoryOption(t: Tokens, C: ReturnType<typeof byCategory>) {
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
     yAxis: { type: 'category', inverse: true, data: C.map((c) => c.key), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
-      { name: 'Approved', type: 'bar', barWidth: 22, barGap: '-100%', data: C.map((c) => c.approved), itemStyle: { color: t.surface2, borderColor: t.ink3, borderWidth: 0.5, borderRadius: 4 }, z: 1,
+      { name: 'Approved', type: 'bar', barWidth: 22, barGap: '-100%', data: C.map((c) => c.approved), __flat: true, itemStyle: { color: t.surface2, borderColor: t.line, borderWidth: 1, borderRadius: 4 }, z: 1,
         label: { show: true, position: 'right', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => pct(C[x.dataIndex].approved ? C[x.dataIndex].exposure / C[x.dataIndex].approved : 0) } },
       { name: 'Spent', type: 'bar', stack: 'u', barWidth: 10, data: C.map((c) => c.actual), itemStyle: { color: t.c[0], borderRadius: [3, 0, 0, 3] }, z: 2 },
       { name: 'Committed', type: 'bar', stack: 'u', barWidth: 10, data: C.map((c) => c.committed), itemStyle: { color: t.committed, borderRadius: [0, 3, 3, 0] }, z: 2 },
@@ -137,8 +137,8 @@ function historyOption(t: Tokens, P: ReturnType<typeof filtered>) {
   const all = get().ledger.projects, colorOf = (id: string) => t.c[Math.max(0, all.findIndex((q) => q.id === id)) % 8];
   return {
     ...base(t),
-    grid: { left: 8, right: 16, top: 44, bottom: 8, containLabel: true },
-    legend: { type: 'scroll', top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
+    grid: { left: 8, right: 16, top: 64, bottom: 8, containLabel: true },
+    legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => {
       const p = P.find((q) => q.id === x.seriesId)!; const r = reportsByDate(p).find((q) => parseDate(q.date).getTime() === x.value[0]);
       return `<b>${plabel(p)}</b> · ${r?.name ?? ''}<br/>${month(x.value[0])}: <b>${full(x.value[1])}</b>${r ? `<br/><span style="color:${t.ink3}">approved ${short(reportTotals(r).approved)}</span>` : ''}`;

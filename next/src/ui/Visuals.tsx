@@ -31,10 +31,10 @@ export function MoneyFlow({ P, countries }: { P: Project[]; countries: Country[]
   const option = (t: Tokens): EChartsCoreOption => ({
     ...base(t),
     tooltip: { ...(base(t).tooltip as object), formatter: (q: { dataType: string; data: { source?: string; target?: string; value?: number; name?: string }; value: number }) => q.dataType === 'edge' ? `${q.data.source} → ${q.data.target}<br/><b>${full(q.data.value!)}</b>` : `<b>${q.data.name}</b><br/>${full(q.value)}` },
-    series: [{ type: 'sankey', left: 8, right: 110, top: 10, bottom: 10, nodeGap: 10, nodeWidth: 12, draggable: false, layoutIterations: 32, emphasis: { focus: 'adjacency' },
-      data: [...nodes.values()].map((n) => ({ ...n, itemStyle: { color: n.name === 'Spent' ? t.c[0] : n.name === 'Committed' ? t.committed : n.name === 'Still available' ? t.ink3 : n.depth === 0 ? t.ink2 : n.depth === 1 ? t.c[6] : t.c[0] } })),
-      links: merged, lineStyle: { color: 'gradient', opacity: 0.28, curveness: 0.5 },
-      label: { color: t.ink, fontSize: 12, formatter: (q: { name: string; value: number }) => `${q.name}  ${short(q.value)}` } }],
+    series: [{ type: 'sankey', left: 8, right: 150, top: 10, bottom: 10, nodeGap: 12, nodeWidth: 10, draggable: false, layoutIterations: 32,
+      data: [...nodes.values()].map((n) => ({ ...n, itemStyle: { borderWidth: 0, borderRadius: 2, color: n.name === 'Spent' ? t.c[0] : n.name === 'Committed' ? t.committed : n.name === 'Still available' ? t.plan : n.depth === 0 ? t.ink2 : t.c[0] } })),
+      links: merged, lineStyle: { color: 'gradient', opacity: 0.2, curveness: 0.55 }, emphasis: { focus: 'adjacency', lineStyle: { opacity: 0.45 } },
+      label: { color: t.ink, fontSize: 12, formatter: (q: { name: string; value: number }) => `{n|${q.name}}  {v|${short(q.value)}}`, rich: { n: { fontWeight: 600, color: t.ink, fontSize: 12 }, v: { color: t.ink3, fontSize: 12 } } } }],
   });
   return (
     <section class="card span-12">

@@ -337,7 +337,7 @@ export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, bu
     },
     xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
     yAxis: { type: 'value', max: Math.ceil(budget / 1e6) * 1e6, ...axisY(t) },
-    dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6, borderColor: t.line, fillerColor: 'rgba(127,127,127,.12)', handleStyle: { color: t.surface, borderColor: t.ink3 }, textStyle: { color: t.ink3 }, dataBackground: { lineStyle: { color: t.line }, areaStyle: { color: t.surface2 } }, labelFormatter: (v: number) => month(v) }],
+    dataZoom: [{ type: 'inside' }, { type: 'slider', bottom: 6, labelFormatter: (v: number) => month(v) }],
     series: [
       { name: 'Plan', type: 'line', data: pick('plan'), symbol: 'none', lineStyle: { color: t.plan, width: 1.5, type: 'dashed' }, z: 1,
         markLine: { silent: true, symbol: 'none', label: { formatter: 'Today', color: t.ink3, fontSize: 11 }, lineStyle: { color: t.ink3, type: 'solid', width: 1 }, data: [{ xAxis: TODAY.getTime() },
@@ -392,14 +392,14 @@ function countryOption(t: Tokens, G: { key: string; budget: number; spent: numbe
     series: [
       mk('Spent', (g) => g.spent, t.c[0], [4, 0, 0, 4]),
       mk('Committed', (g) => g.committed, t.committed, [0, 0, 0, 0]),
-      { ...mk('Uncommitted', (g) => Math.max(0, g.budget - g.spent - g.committed), t.surface2, [0, 4, 4, 0]), itemStyle: { color: t.surface2, borderColor: t.ink3, borderWidth: 0.5, borderRadius: [0, 4, 4, 0] } },
+      { ...mk('Uncommitted', (g) => Math.max(0, g.budget - g.spent - g.committed), t.surface2, [0, 4, 4, 0]), __flat: true, itemStyle: { color: t.surface2, borderColor: t.line, borderWidth: 1, borderRadius: [0, 4, 4, 0] } },
     ],
   };
 }
 
 function waterfallOption(t: Tokens, T: ReturnType<typeof totals>) {
   const steps = [
-    { name: 'Budget', base: 0, v: T.budget, c: t.ink3 },
+    { name: 'Budget', base: 0, v: T.budget, c: t.plan },
     { name: 'Spent', base: T.budget - T.spent, v: T.spent, c: t.c[0] },
     { name: 'Committed', base: T.budget - T.spent - T.committed, v: T.committed, c: t.committed },
     { name: 'Balance', base: 0, v: T.remaining, c: T.remaining < 0 ? t.critical : t.left },

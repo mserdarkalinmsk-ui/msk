@@ -36,7 +36,7 @@ export function tokens() {
     /** the money series, the same in every chart: spent, committed (a light step of spent), what is left */
     spent: c1, committed: mixHex(c1, surface, 0.42), left: v('--plan'),
     ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), line: v('--line'), surface: v('--surface'), surface2: v('--surface-2'),
-    plan: v('--plan'), mono: v('--mono'), font: v('--font'),
+    plan: v('--plan'), mono: v('--font'), font: v('--font'),
     good: v('--good'), warn: v('--warn'), serious: v('--serious'), critical: v('--critical'),
     c: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => v(`--c${i}`)),
   };
@@ -51,7 +51,7 @@ export function base(t: Tokens): EChartsCoreOption {
     tooltip: {
       backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, padding: [10, 12], transitionDuration: 0.15, hideDelay: 0,
       textStyle: { color: t.ink, fontSize: 13, fontFamily: t.font },
-      extraCssText: 'border-radius:12px;box-shadow:0 12px 32px rgb(15 23 42 / .16),0 2px 6px rgb(15 23 42 / .08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);line-height:1.55;',
+      extraCssText: 'border-radius:12px;box-shadow:0 12px 32px rgb(15 23 42 / .16),0 2px 6px rgb(15 23 42 / .08);line-height:1.55;',
     },
   };
 }
@@ -63,7 +63,9 @@ export function base(t: Tokens): EChartsCoreOption {
    a chart that sets something itself keeps it. */
 const HEX = /^#[0-9a-f]{6}$/i;
 const shade = (hex: string, a: string) => (HEX.test(hex) ? hex + a : hex);
-const vWash = (c: string) => ({ type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: shade(c, '33') }, { offset: 1, color: shade(c, '05') }] });
+const vWash = (c: string) => ({ type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: shade(c, '4d') }, { offset: .7, color: shade(c, '0f') }, { offset: 1, color: shade(c, '00') }] });
+/** A bar fill with a little depth: full colour at the data end, a touch lighter toward the baseline. */
+const bDepth = (c: string, horizontal: boolean) => ({ type: 'linear', x: 0, y: 0, x2: horizontal ? 1 : 0, y2: horizontal ? 0 : 1, colorStops: horizontal ? [{ offset: 0, color: shade(c, 'c7') }, { offset: 1, color: c }] : [{ offset: 0, color: c }, { offset: 1, color: shade(c, 'c7') }] });
 const arr = (v: any) => (Array.isArray(v) ? v : v ? [v] : []);
 function axis(a: any, t: Tokens | undefined) {
   if (!a || typeof a !== 'object' || !t) return a;
@@ -74,7 +76,7 @@ function axis(a: any, t: Tokens | undefined) {
     axisTick: { show: false, ...a.axisTick },
     // value labels in the text face; a fixed top (the budget) does not print a second, colliding top label
     axisLabel: { color: t.ink3, fontSize: 11, ...(typeof a.max === 'number' ? { showMaxLabel: false } : {}), ...a.axisLabel, ...(value ? { fontFamily: t.font } : { fontFamily: a.axisLabel?.fontFamily ?? t.font }) },
-    splitLine: { ...a.splitLine, lineStyle: { color: t.line, width: 1, ...a.splitLine?.lineStyle, type: 'solid' } },
+    splitLine: { ...a.splitLine, lineStyle: { color: t.line, width: 1, opacity: .7, ...a.splitLine?.lineStyle, type: 'solid' } },
     nameTextStyle: { color: t.ink3, fontSize: 11, ...a.nameTextStyle },
   };
 }
@@ -92,11 +94,20 @@ export function polish(o: any, t?: Tokens, narrow = false): any {
       if (x.itemStyle.borderRadius == null) x.itemStyle.borderRadius = x.stack ? 0 : yCat ? [0, 4, 4, 0] : [4, 4, 0, 0];
       // touching parts of a stack are told apart by a 2px gap in the surface colour, never by a drawn border
       if (x.stack && t && x.itemStyle.borderWidth == null) Object.assign(x.itemStyle, { borderColor: t.surface, borderWidth: 1 });
+      if (!x.stack && c && HEX.test(c) && !x.__flat) x.itemStyle.color = bDepth(c, yCat);
       x.emphasis = { focus: 'series', ...x.emphasis };
     } else if (x.type === 'line') {
       x.lineStyle = { width: 2, cap: 'round', join: 'round', ...x.lineStyle };
       const lc = typeof x.lineStyle.color === 'string' ? x.lineStyle.color : c;
       if (x.areaStyle && lc && HEX.test(lc) && (x.areaStyle.color == null || typeof x.areaStyle.color === 'string')) x.areaStyle = { ...x.areaStyle, color: vWash(lc), opacity: 1 };
+      // filled points with a surface ring, never the library's hollow default
+      if (x.symbol == null) x.symbol = 'circle';
+      const len = Array.isArray(x.data) ? x.data.length : 0;
+      if (x.showSymbol == null && x.symbol === 'circle' && x.symbolSize == null && len > 4) {
+        x.showSymbol = false; x.symbol = 'circle'; x.symbolSize = 8;
+        const last = x.data[len - 1];
+        if (last != null && last !== '-' && !x.stack && !x.markPoint && lc && x.lineStyle.type !== 'dashed') x.markPoint = { silent: true, symbol: 'circle', symbolSize: 9, itemStyle: { color: lc, borderColor: t?.surface ?? '#fff', borderWidth: 2 }, label: { show: false }, data: [{ coord: Array.isArray(last) ? last : last?.value ?? [len - 1, last] }] };
+      }
       if (x.symbolSize == null && x.showSymbol !== false && x.symbol !== 'none') x.symbolSize = 8;
       if (t) x.itemStyle = { borderColor: t.surface, borderWidth: 2, ...x.itemStyle };
       x.emphasis = { focus: 'series', ...x.emphasis, lineStyle: { width: 2.5, ...x.emphasis?.lineStyle } };
@@ -114,6 +125,12 @@ export function polish(o: any, t?: Tokens, narrow = false): any {
       if (out.xAxis) out.xAxis = Array.isArray(out.xAxis) ? out.xAxis.map(small) : small(out.xAxis);
       if (out.yAxis) out.yAxis = Array.isArray(out.yAxis) ? out.yAxis.map(small) : small(out.yAxis);
     }
+    const dz = (z: any) => (z?.type === 'slider' ? { height: 14, borderColor: 'transparent', backgroundColor: t.surface2, fillerColor: shade(t.c[0], '26'), borderRadius: 7,
+      handleIcon: 'path://M-2,-7 a2,2 0 0 1 4,0 v14 a2,2 0 0 1 -4,0 z', handleSize: '120%', handleStyle: { color: t.surface, borderColor: t.line, shadowBlur: 4, shadowColor: 'rgba(0,0,0,.18)' },
+      moveHandleSize: 0, showDetail: true, textStyle: { color: t.ink3, fontSize: 11 }, dataBackground: { lineStyle: { opacity: 0 }, areaStyle: { color: t.c[0], opacity: .12 } },
+      selectedDataBackground: { lineStyle: { opacity: 0 }, areaStyle: { color: t.c[0], opacity: .25 } }, emphasis: { handleStyle: { borderColor: t.c[0] } }, ...z,
+    } : z);
+    if (o.dataZoom) out.dataZoom = arr(o.dataZoom).map(dz);
     if (o.tooltip && (o.tooltip.trigger === 'axis') && hasLine) out.tooltip = { ...o.tooltip, axisPointer: { type: 'line', lineStyle: { color: t.ink3, width: 1, type: [3, 3] }, ...o.tooltip.axisPointer } };
   }
   return out;

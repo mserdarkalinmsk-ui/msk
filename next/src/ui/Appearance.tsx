@@ -16,8 +16,8 @@ export const PREFS = {
 } as const;
 type Key = 'style' | 'accent' | 'density' | 'numbers';
 const get = (k: Key) => { try { return localStorage.getItem('pl-' + k) ?? ''; } catch { return ''; } };
-/** The editorial direction is the default; Studio is the earlier neutral look. */
-export const DEFAULT_STYLE = 'editorial';
+/** Studio is the default look; Editorial stays available as a direction. */
+export const DEFAULT_STYLE = 'studio';
 export function applyPrefs() { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { const v = get(k) || (k === 'style' ? DEFAULT_STYLE : ''); if (v && v !== 'studio') document.documentElement.dataset[k] = v; else if (k === 'style') delete document.documentElement.dataset.style; } }
 function setPref(k: Key, v: string) {
   try { localStorage.setItem('pl-' + k, v); } catch { /* ignore */ }

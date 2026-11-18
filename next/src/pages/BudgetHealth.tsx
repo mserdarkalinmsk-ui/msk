@@ -90,7 +90,7 @@ function accuracyOption(t: Tokens, P: Project[]) {
     tooltip: { ...tip(t), axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = A[ps[0].dataIndex]; return x ? head(q(x.t)) + row(t.ink3, 'Planned', x.planned) + row(t.c[0], 'Spent', x.spent) + `<div style="margin-top:4px">Used <b>${x.planned ? Math.round(x.spent / x.planned * 100) : 0}%</b> of the plan · ${x.projects.join(', ')}</div>` : ''; } },
     xAxis: { type: 'category', data: A.map((x) => q(x.t)), ...axisX(t) }, yAxis: money(t),
     series: [
-      { name: 'Planned', type: 'bar', barGap: '10%', data: A.map((x) => x.planned), itemStyle: { color: t.line, borderColor: t.ink3, borderWidth: 1, borderRadius: [3, 3, 0, 0] } },
+      { name: 'Planned', type: 'bar', barGap: '10%', data: A.map((x) => x.planned), itemStyle: { color: t.surface2, borderColor: t.line, borderWidth: 1, borderRadius: [3, 3, 0, 0] } },
       { name: 'Spent', type: 'bar', data: A.map((x) => ({ value: x.spent, itemStyle: { color: x.spent < x.planned * 0.7 ? t.warn : t.c[0], borderRadius: [3, 3, 0, 0] } })) },
     ] };
 }
