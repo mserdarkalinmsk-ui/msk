@@ -6,7 +6,7 @@ import { plabel } from '../domain/label';
 import { byCategory, category, latestReport, parseDate, lineRows, reportsByDate, reportTotals, spendPoints, type LineRow } from '../domain/calc';
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
-import { full, month, pct, short } from '../ui/format';
+import { esc, full, month, pct, short } from '../ui/format';
 import { parseAmount } from '../ui/csv';
 import { axisMoney, axisX, axisY, Filters } from './Overview';
 import { Statement } from '../ui/Statement';
@@ -120,7 +120,7 @@ function categoryOption(t: Tokens, C: ReturnType<typeof byCategory>) {
     ...base(t),
     grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' },
-      formatter: (ps: any[]) => { const c = C[ps[0].dataIndex]; return `<b>${c.key}</b> · ${c.lines} lines<br/>Approved <b>${full(c.approved)}</b><br/>Spent ${full(c.actual)} · committed ${full(c.committed)}<br/>Used <b>${pct(c.approved ? c.exposure / c.approved : 0)}</b>`; } },
+      formatter: (ps: any[]) => { const c = C[ps[0].dataIndex]; return `<b>${esc(c.key)}</b> · ${c.lines} lines<br/>Approved <b>${full(c.approved)}</b><br/>Spent ${full(c.actual)} · committed ${full(c.committed)}<br/>Used <b>${pct(c.approved ? c.exposure / c.approved : 0)}</b>`; } },
     xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
     yAxis: { type: 'category', inverse: true, data: C.map((c) => c.key), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
@@ -141,7 +141,7 @@ function historyOption(t: Tokens, P: ReturnType<typeof filtered>) {
     legend: { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => {
       const p = P.find((q) => q.id === x.seriesId)!; const r = reportsByDate(p).find((q) => parseDate(q.date).getTime() === x.value[0]);
-      return `<b>${plabel(p)}</b> · ${r?.name ?? ''}<br/>${month(x.value[0])}: <b>${full(x.value[1])}</b>${r ? `<br/><span style="color:${t.ink3}">approved ${short(reportTotals(r).approved)}</span>` : ''}`;
+      return `<b>${esc(plabel(p))}</b> · ${esc(r?.name)}<br/>${month(x.value[0])}: <b>${full(x.value[1])}</b>${r ? `<br/><span style="color:${t.ink3}">approved ${short(reportTotals(r).approved)}</span>` : ''}`;
     } },
     xAxis: { type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } },
     yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },

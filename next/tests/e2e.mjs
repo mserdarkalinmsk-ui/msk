@@ -498,6 +498,99 @@ async function page(opts) {
   await ctx.close();
 }
 
+// Text the user typed or imported never runs as HTML inside a chart tooltip
+{
+  const { p, ctx } = await page({ viewport: { width: 1440, height: 900 } });
+  await p.click('text=New project');
+  await p.fill('#f-code', 'GE-ALPHA'); await p.fill('#f-name', 'Alpha <img src=x onerror="window.__xss=1">'); await p.fill('#f-budget', '1.000.000,00');
+  await p.fill('#f-start', '2025-01-01'); await p.fill('#f-end', '2027-12-31');
+  await p.selectOption('#f-country', 'ge'); await p.selectOption('#f-sector', 'Democracy');
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500); await p.keyboard.press('Escape');
+  const c = p.locator('[aria-label="Pacing by project"]').first();
+  await c.scrollIntoViewIfNeeded(); await p.click('.seg button:text-is("Gap")'); await p.waitForTimeout(600);
+  const bx = await c.boundingBox(); let seen = false;
+  for (let k = 0; k < 120 && !seen; k++) {
+    await p.mouse.move(bx.x + 60 + Math.floor(k / 12) * 50, bx.y + 10 + (k % 12) * (bx.height / 12), { steps: 2 }); await p.waitForTimeout(60);
+    seen = await p.evaluate(() => [...document.querySelectorAll('div')].some((d) => d.style.position === 'absolute' && d.textContent.includes('Alpha <img')));
+  }
+  check(seen && !(await p.evaluate(() => window.__xss)), 'chart tooltip shows a project name with markup as plain text');
+  // The revision note printed as PDF carries the project code in its window title
+  p.on('dialog', (d) => d.accept());
+  await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(400);
+  await p.click('text=Edit details'); await p.waitForTimeout(300);
+  if (!(await p.locator('#f-code').count())) { await p.click('.drawer-f button:text-is("Edit")'); await p.waitForTimeout(300); }
+  await p.fill('#f-code', 'TR-ALPHA</title><img src=x onerror="opener.__xss=2">');
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  await p.click('.tabs button:has-text("Plan & revise")'); await p.waitForTimeout(400);
+  await p.click('.subtabs button:has-text("Forecast"), .tabs button:has-text("Forecast")'); await p.waitForTimeout(800);
+  await p.click('button:has-text("Reports")'); await p.waitForTimeout(500);
+  const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 5000 }).catch(() => null), p.click('button:text-is("⎙ PDF") >> nth=-1')]);
+  await p.waitForTimeout(800);
+  check(!!pop && (await pop.title()).includes('</title>') && !(await p.evaluate(() => window.__xss)), 'PDF print window keeps a project code with markup in its title as text');
+  await ctx.close();
+}
+
+// Removing a payment or resetting all data needs the admin password
+{
+  const { p, ctx } = await page({ viewport: { width: 1440, height: 900 } });
+  let pw = 'wrong'; const asked = [];
+  p.on('dialog', (d) => { if (d.type() === 'prompt') asked.push(d.message()); d.accept(d.type() === 'prompt' ? pw : undefined); });
+  await p.goto(url + '#/reports/cash'); await p.waitForTimeout(1000);
+  await p.locator('table tbody tr').first().locator('button, td').first().click(); await p.waitForTimeout(300);
+  await p.fill('.cp-pay input[type=number]', '1000'); await p.click('.cp-pay button:has-text("Add payment")'); await p.waitForTimeout(300);
+  await p.click('.cp-pay button:text-is("Remove")'); await p.waitForTimeout(300);
+  check(asked.length === 1 && await p.locator('.cp-pay tbody tr').count() === 1, 'removing a payment asks the admin password and keeps it on a wrong one');
+  await p.click('text=Import / backup'); await p.waitForTimeout(300);
+  await p.click('button:has-text("Reset to start data")'); await p.waitForTimeout(300);
+  check(asked.length === 2 && await p.locator('.toast:has-text("Start data restored")').count() === 0, 'reset to start data asks the admin password');
+  pw = 'MSK'; await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  await p.click('.cp-pay button:text-is("Remove")'); await p.waitForTimeout(300);
+  check(await p.locator('.cp-pay tbody tr').count() === 0, 'the admin can remove a payment');
+  await ctx.close();
+}
+
+// A save the browser refuses (storage full) is reported and written again with the next save, never taken as done
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => {
+    localStorage.setItem('pl-digest-seen', 'off');
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (...a) { const r = put.apply(this, a); if (window.__full) { const t = this.transaction; queueMicrotask(() => { try { t.abort(); } catch { /* done */ } }); } return r; };
+  });
+  const p = await ctx.newPage();
+  const rename = async (id, name) => {
+    await p.goto(url + '#/project/' + id); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
+    await p.click('text=Edit details'); await p.waitForTimeout(300);
+    if (!(await p.locator('#f-name').count())) { await p.click('.drawer-f button:text-is("Edit")'); await p.waitForTimeout(300); }
+    await p.fill('#f-name', name); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(800); await p.keyboard.press('Escape');
+  };
+  await p.goto(url); await p.waitForSelector('.hero'); await p.waitForTimeout(700);
+  await p.evaluate(() => { window.__full = true; });
+  await rename('lang', 'Alpha renamed');
+  check(await p.locator('.toast:has-text("could not be saved")').count() === 1, 'a refused save is reported');
+  await p.evaluate(() => { window.__full = false; });
+  await rename('tsk', 'Beta renamed'); await p.waitForTimeout(500);
+  const st = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const s = r.result.transaction('kv').objectStore('kv'), m = s.get('demo:m'), l = s.get('demo:p:lang'); s.transaction.oncomplete = () => res({ ids: m.result?.ids?.length, lang: l.result?.name }); }; }));
+  const n = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const k = r.result.transaction('kv').objectStore('kv').getAllKeys(); k.onsuccess = () => res(k.result.filter((x) => String(x).startsWith('demo:p:')).length); }; }));
+  check(st.ids === n && n >= 6 && st.lang === 'Alpha renamed', `after a refused save every project is stored (${n}/${st.ids}, lang “${st.lang}”)`);
+  await ctx.close();
+}
+{
+  // Browser storage not available at all (blocked site data): changes are not kept, and the user is told
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => {
+    localStorage.setItem('pl-digest-seen', 'off');
+    IDBFactory.prototype.open = function () { const r = {}; setTimeout(() => r.onerror?.(new Event('error')), 0); return r; };
+  });
+  const p = await ctx.newPage();
+  await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(400);
+  await p.click('text=Edit details'); await p.waitForTimeout(300);
+  if (!(await p.locator('#f-name').count())) { await p.click('.drawer-f button:text-is("Edit")'); await p.waitForTimeout(300); }
+  await p.fill('#f-name', 'Alpha renamed'); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(900);
+  check(await p.locator('.toast:has-text("could not be saved")').count() === 1, 'a save without browser storage is reported');
+  await ctx.close();
+}
+
 // Dark + mobile
 {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });

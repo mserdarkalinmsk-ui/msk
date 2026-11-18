@@ -10,7 +10,7 @@ import { TODAY } from '../today';
 const topBar = () => Math.round(document.querySelector<HTMLElement>('.topbar, header.top, .app-top')?.getBoundingClientRect().height ?? 60);
 const chrome = (el: HTMLElement) => topBar() + ((el.previousElementSibling as HTMLElement | null)?.getBoundingClientRect().height ?? 40) + 40;
 import { base, Chart, type Tokens } from '../ui/Chart';
-import { date, month, pct, short } from '../ui/format';
+import { date, esc, month, pct, short } from '../ui/format';
 import { BAND_COLOR, BAND_WORD, BANDS, bandOf, Bullet, Spark, type Band } from '../ui/viz';
 import { axisX, axisY, endMarks, spendOption } from './Overview';
 import { VERDICT } from './Analysis';
@@ -40,7 +40,7 @@ function walkOption(t: Tokens, planned: number, steps: { label: string; v: numbe
       const x = ps.find((q) => q.seriesName && typeof q.value === 'number'); if (!x) return '';
       const v = x.value as number, sign = x.seriesName === 'Behind' ? '−' : x.seriesName === 'Ahead' ? '+' : '';
       const word = x.seriesName === 'Behind' ? 'behind plan' : x.seriesName === 'Ahead' ? 'ahead of plan' : '';
-      return `<b>${ps[0].axisValue}</b><br><span style="color:${x.color};font-weight:600">${sign}${short(v)}</span> ${word}`;
+      return `<b>${esc(ps[0].axisValue)}</b><br><span style="color:${x.color};font-weight:600">${sign}${short(v)}</span> ${word}`;
     } },
     xAxis: { type: 'category', data: cats, ...axisX(t), axisLabel: { ...axisX(t).axisLabel, interval: 0, hideOverlap: false, width: 84, overflow: 'break', fontSize: 11, lineHeight: 13 } },
     yAxis: { type: 'value', ...axisY(t) },

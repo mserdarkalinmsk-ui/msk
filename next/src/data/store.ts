@@ -106,20 +106,27 @@ if (typeof window !== 'undefined') window.addEventListener('pagehide', () => { i
    many reports and workbooks the other projects hold. */
 const META = `${KEY}:m`, PK = `${KEY}:p:`, PRANGE = () => IDBKeyRange.bound(PK, PK + '\uffff');
 const written = new Map<string, Project>();
-async function write(l: Ledger) {
-  const db = await open(); if (!db) return;
-  const st = db.transaction(STORE, 'readwrite').objectStore(STORE);
+let failNoted = 0;
+const noteFail = () => { if (Date.now() - failNoted > 60_000) { failNoted = Date.now(); toast('Your last changes could not be saved in this browser (storage full or blocked). Back up now from Import / backup.'); } };
+/** Resolves false when the browser refused the write (storage full or blocked): nothing of it is then taken as saved. */
+async function write(l: Ledger): Promise<boolean> {
+  const db = await open(); if (!db) { noteFail(); return false; }
+  const tx = db.transaction(STORE, 'readwrite'), st = tx.objectStore(STORE);
   st.put({ ...l, projects: [], ids: l.projects.map((p) => p.id) }, META);
-  const ids = new Set<string>();
-  for (const p of l.projects) { ids.add(p.id); if (written.get(p.id) !== p) { st.put(p, PK + p.id); written.set(p.id, p); } }
-  for (const id of [...written.keys()]) if (!ids.has(id)) { st.delete(PK + id); written.delete(id); }
+  const ids = new Set<string>(), put: Project[] = [], gone: string[] = [];
+  for (const p of l.projects) { ids.add(p.id); if (written.get(p.id) !== p) { st.put(p, PK + p.id); put.push(p); } }
+  for (const id of [...written.keys()]) if (!ids.has(id)) { st.delete(PK + id); gone.push(id); }
   // One restore point per day (the first save of the day keeps the state before that day's changes); 30 days kept.
   const day = new Date().toISOString().slice(0, 10), k = `${KEY}:snap:${day}`;
   const q = st.getKey(k);
   q.onsuccess = () => { if (q.result === undefined) st.put({ at: new Date().toISOString(), ledger: prevSaved ?? l }, k); };
   const keys = st.getAllKeys(IDBKeyRange.bound(`${KEY}:snap:`, `${KEY}:snap:\uffff`));
   keys.onsuccess = () => { const S = (keys.result as string[]).sort(); for (const x of S.slice(0, Math.max(0, S.length - 30))) st.delete(x); };
-  prevSaved = l;
+  // Only a committed write counts: a project whose write was refused is written again with the next save.
+  return new Promise((res) => {
+    tx.oncomplete = () => { for (const p of put) written.set(p.id, p); for (const id of gone) written.delete(id); prevSaved = l; res(true); };
+    tx.onabort = () => { noteFail(); res(false); };
+  });
 }
 /** Reads the stored ledger: the split form, or the older single record (moved to the split form on the next save). */
 function readStored(db: IDBDatabase): Promise<{ l?: Ledger; legacy: boolean }> {
@@ -215,7 +222,7 @@ export async function load() {
       l.projects = l.projects.map(normalizeProject);
       state = { ...state, ledger: EMBED ? l : mergeSeed(validateLedger(l).length ? repair(l) : l) };
       // Move the older single record to the split form once; it is kept as that day's restore point.
-      if (legacy) { void write(state.ledger).then(() => open()).then((d) => d?.transaction(STORE, 'readwrite').objectStore(STORE).delete(KEY)); }
+      if (legacy) { void write(state.ledger).then((ok) => (ok ? open() : null)).then((d) => d?.transaction(STORE, 'readwrite').objectStore(STORE).delete(KEY)); }
     }
   }
   set({ ready: true });
@@ -500,7 +507,7 @@ export const setStaffOverride = (pid: string, key: string, o: import('../domain/
   const O = p.staffOverrides ?? (p.staffOverrides = {});
   if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];
 }, o ? 'Contract details saved' : 'Contract details cleared');
-export function replaceLedger(l: Ledger, message: string) { commit(clone(l), message); }
+export function replaceLedger(l: Ledger, message: string) { const L = clone(l); L.projects = L.projects.map(normalizeProject); commit(L, message); }
 export function resetDemo() { commit(clone(seed as unknown as Ledger), 'Start data restored'); }
 
 /* ---------- navigation & theme ---------- */

@@ -4,7 +4,7 @@ import { accuracyRows, cashSeries, committedSeries, headingBars, mixSeries, need
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { base, Chart, type Tokens } from '../ui/Chart';
-import { date, full, month } from '../ui/format';
+import { date, esc, full, month } from '../ui/format';
 import { axisX, axisY } from './Overview';
 
 type View = 'needed' | 'heading' | 'committed' | 'mix' | 'cash' | 'accuracy';
@@ -20,7 +20,7 @@ const tip = (t: Tokens) => ({ ...(base(t).tooltip as object), trigger: 'axis' as
 const time = (t: Tokens) => ({ type: 'time', ...axisX(t), axisLabel: { ...axisX(t).axisLabel, formatter: (v: number) => month(v) } });
 const money = (t: Tokens) => ({ type: 'value', ...axisY(t) });
 const row = (c: string, name: string, v: number | null | undefined, f = full) => v == null ? '' : `<div style="display:flex;justify-content:space-between;gap:16px"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:6px"></i>${name}</span><b>${f(v)}</b></div>`;
-const head = (t: number | string) => `<div style="font-weight:600;margin-bottom:6px">${typeof t === 'number' ? month(t) : t}</div>`;
+const head = (t: number | string) => `<div style="font-weight:600;margin-bottom:6px">${typeof t === 'number' ? month(t) : esc(t)}</div>`;
 const legend = (t: Tokens) => ({ top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } });
 
 function neededOption(t: Tokens, P: Project[]) {
@@ -39,7 +39,7 @@ function headingOption(t: Tokens, P: Project[]) {
   return { ...base(t), grid: { left: 8, right: 24, top: 30, bottom: 8, containLabel: true }, legend: legend(t),
     tooltip: { ...tip(t), axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const h = H[ps[0].dataIndex];
       return head(`${h.code} ${h.label}`) + row(t.c[0], 'Spent', h.spent) + row(t.committed, 'Committed', h.committed) + row(t.ink3, 'Budget now', h.budget) + row(t.ink3, 'Agreement', h.baseline) + row(bad(h.stage) ? t.serious : t.ink, 'Expected at the end', h.projected)
-        + (h.flagged.length ? `<div style="color:${t.serious};margin-top:4px">Beyond the flexibility: ${h.flagged.join(', ')}</div>` : ''); } },
+        + (h.flagged.length ? `<div style="color:${t.serious};margin-top:4px">Beyond the flexibility: ${esc(h.flagged.join(', '))}</div>` : ''); } },
     xAxis: money(t), yAxis: { type: 'category', data: H.map((h) => `${h.code} ${h.label}`), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
       { name: 'Spent', type: 'bar', stack: 'h', barWidth: 16, data: H.map((h) => h.spent), itemStyle: { color: t.c[0] } },
@@ -87,7 +87,7 @@ function cashOption(t: Tokens, P: Project[]) {
 function accuracyOption(t: Tokens, P: Project[]) {
   const A = accuracyRows(P), q = (x: number) => { const d = new Date(x); return `Q${Math.floor(d.getUTCMonth() / 3) + 1} ${d.getUTCFullYear()}`; };
   return { ...base(t), grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: true }, legend: legend(t),
-    tooltip: { ...tip(t), axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = A[ps[0].dataIndex]; return x ? head(q(x.t)) + row(t.ink3, 'Planned', x.planned) + row(t.c[0], 'Spent', x.spent) + `<div style="margin-top:4px">Used <b>${x.planned ? Math.round(x.spent / x.planned * 100) : 0}%</b> of the plan · ${x.projects.join(', ')}</div>` : ''; } },
+    tooltip: { ...tip(t), axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = A[ps[0].dataIndex]; return x ? head(q(x.t)) + row(t.ink3, 'Planned', x.planned) + row(t.c[0], 'Spent', x.spent) + `<div style="margin-top:4px">Used <b>${x.planned ? Math.round(x.spent / x.planned * 100) : 0}%</b> of the plan · ${esc(x.projects.join(', '))}</div>` : ''; } },
     xAxis: { type: 'category', data: A.map((x) => q(x.t)), ...axisX(t) }, yAxis: money(t),
     series: [
       { name: 'Planned', type: 'bar', barGap: '10%', data: A.map((x) => x.planned), itemStyle: { color: t.surface2, borderColor: t.line, borderWidth: 1, borderRadius: [3, 3, 0, 0] } },

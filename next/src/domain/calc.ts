@@ -293,6 +293,13 @@ export function validateLedger(x: unknown): string[] {
     if (!p?.start || isNaN(parseDate(p.start).getTime())) errs.push(`${at}: invalid start date`);
     if (!p?.end || isNaN(parseDate(p.end).getTime())) errs.push(`${at}: invalid end date`);
     else if (p.start && parseDate(p.end) <= parseDate(p.start)) errs.push(`${at}: end must be after start`);
+    // Reports are placed in time by their date and lines by their code: without them no screen can read the report.
+    if (Array.isArray(p?.reportingPeriods)) p.reportingPeriods.forEach((r, j) => {
+      const rn = r?.name ? `report “${r.name}”` : `report ${j + 1}`;
+      if (!r || typeof r !== 'object') errs.push(`${at}: ${rn} is empty`);
+      else if (typeof r.date !== 'string' || isNaN(parseDate(r.date).getTime())) errs.push(`${at}: ${rn} has no valid date`);
+      else if (Array.isArray(r.snapshot?.lines) && r.snapshot.lines.some((l) => typeof l?.code !== 'string')) errs.push(`${at}: ${rn} has a budget line without a code`);
+    });
   });
   return errs;
 }

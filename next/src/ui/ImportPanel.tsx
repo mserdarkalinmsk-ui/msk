@@ -5,7 +5,7 @@ import { readOfficeFile } from './officeImport';
 import { DataSafety, readBackup } from './Backup';
 
 import { useEffect, useState } from 'preact/hooks';
-import { checkpoint, get, go, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
+import { checkpoint, get, go, isAdmin, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
 import { validateLedger } from '../domain/calc';
 import { normalizeSector, validUrl, type Ledger } from '../domain/types';
 
@@ -159,7 +159,7 @@ export function ImportPanel({ close }: { close: () => void }) {
 
         <DataSafety />
         <RestorePoints close={close} />
-        <button class="btn ghost" style={{ justifySelf: 'start' }} onClick={() => { if (confirm('Replace ALL current data with the start data? Back up first — this removes your reports and documents (undo is possible right after).')) { resetDemo(); close(); } }}>Reset to start data</button>
+        <button class="btn ghost" style={{ justifySelf: 'start' }} onClick={() => { if (confirm('Replace ALL current data with the start data? Back up first — this removes your reports and documents (undo is possible right after).') && isAdmin('replace all data with the start data')) { resetDemo(); close(); } }}>Reset to start data</button>
       </div>
       {rows && (
         <div class="drawer-f">

@@ -1,7 +1,7 @@
 import { Sparkline } from '../ui/Sparkline';
 import { spendPoints } from '../domain/calc';
 import { useState } from 'preact/hooks';
-import { filtered, go, upsertProject, useStore } from '../data/store';
+import { filtered, go, isAdmin, upsertProject, useStore } from '../data/store';
 import { cashRow, type CashRow } from '../domain/cash';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -68,7 +68,7 @@ function Payments({ p }: { p: Project }) {
   return <div class="cp-pay">
     <div class="cp-pay-h"><b>Payments received — {p.code}</b><button class="btn ghost" onClick={() => go(`project/${p.id}`)}>Open project →</button></div>
     {L.length ? <table class="mini"><thead><tr><th>Date</th><th class="r">Amount</th><th>Note</th><th /></tr></thead>
-      <tbody>{L.map((x) => <tr><td class="num">{date(x.date)}</td><td class="r num">{full(x.amount)}</td><td>{x.note ?? ''}</td><td><button class="btn ghost" onClick={() => save(L.filter((y) => y !== x))}>Remove</button></td></tr>)}</tbody>
+      <tbody>{L.map((x) => <tr><td class="num">{date(x.date)}</td><td class="r num">{full(x.amount)}</td><td>{x.note ?? ''}</td><td><button class="btn ghost" onClick={() => isAdmin() && save(L.filter((y) => y !== x))}>Remove</button></td></tr>)}</tbody>
       <tfoot><tr><td><b>Total</b></td><td class="r num"><b>{full(L.reduce((s, x) => s + x.amount, 0))}</b></td><td colSpan={2} /></tr></tfoot></table>
       : <p class="muted" style={{ margin: '4px 0' }}>No payment entered — the contract pre-financing is used if it is on file.</p>}
     <div class="sp-all"><label>date <input type="date" value={d} onChange={(e) => setD((e.target as HTMLInputElement).value)} /></label>

@@ -7,7 +7,7 @@ import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { shrink } from './Appearance';
 import { downloadDocx, projectVars } from './docxwrite';
-import { date, full } from './format';
+import { date, esc, full } from './format';
 import { download, pngData } from './xlsxwrite';
 import { NotificationLetter } from './NotificationLetter';
 
@@ -44,7 +44,7 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
     if (!exportOk(p, 'the revision note')) return;
     const w = window.open('', '_blank'); if (!w || !doc.current) return setErr('Allow pop-ups to print the PDF');
     const shown = logos.filter(Boolean), head = shown.map((u, i) => `<img src="${u}" style="height:15mm;${i ? 'margin-left:auto' : shown.length > 1 ? 'margin-right:auto' : ''}">`).join('');
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${base}</title><style>@page{size:A4;margin:16mm}body{font:10.5pt Calibri,Arial,sans-serif;color:#1f2937}h1{font-size:17pt;margin:0 0 4mm}h2{font-size:12.5pt;color:#1d4e89;border-bottom:1px solid #c9ced6;padding-bottom:1mm;margin:6mm 0 2mm}table{border-collapse:collapse;width:100%;margin:2mm 0 3mm}th,td{border:1px solid #c9ced6;padding:1.2mm 2mm;text-align:left;vertical-align:top}th{background:#e8eef6}.r{text-align:right;white-space:nowrap}.hd{display:flex;align-items:center;justify-content:center;margin-bottom:6mm}.no-print{display:none}p{margin:1.5mm 0}</style>${end('head')}<body><div class="hd">${head}</div>${printable(doc.current)}${end('body')}${end('html')}`);
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(base)}</title><style>@page{size:A4;margin:16mm}body{font:10.5pt Calibri,Arial,sans-serif;color:#1f2937}h1{font-size:17pt;margin:0 0 4mm}h2{font-size:12.5pt;color:#1d4e89;border-bottom:1px solid #c9ced6;padding-bottom:1mm;margin:6mm 0 2mm}table{border-collapse:collapse;width:100%;margin:2mm 0 3mm}th,td{border:1px solid #c9ced6;padding:1.2mm 2mm;text-align:left;vertical-align:top}th{background:#e8eef6}.r{text-align:right;white-space:nowrap}.hd{display:flex;align-items:center;justify-content:center;margin-bottom:6mm}.no-print{display:none}p{margin:1.5mm 0}</style>${end('head')}<body><div class="hd">${head}</div>${printable(doc.current)}${end('body')}${end('html')}`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
   const [rk, setRk] = useState<'interim' | 'final'>(() => (p.end <= TODAY.toISOString().slice(0, 10) ? 'final' : 'interim')), [withOrig, setWithOrig] = useState(!!opt.change);

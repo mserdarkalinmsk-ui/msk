@@ -7,7 +7,7 @@ import { flexOf, pctOf } from '../domain/flex';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { Chart, base, type Tokens } from '../ui/Chart';
-import { date, full, month, short } from '../ui/format';
+import { date, esc, full, month, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { depletion } from './Depletion';
 import { openProject } from './ProjectPage';
@@ -50,7 +50,7 @@ function barsOption(t: Tokens, O: ProjectOutlook[]) {
   return { ...base(t),
     grid: { left: 84, right: 56, top: 34, bottom: 28 },
     legend: { top: 0, left: 0, itemWidth: 12, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 12 } },
-    tooltip: { ...(base(t) as any).tooltip, trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const o = O[ps[0].dataIndex]; return `<b>${lab(o.p)}</b> · ${o.p.name.slice(0, 60)}<br/>Spent ${full(o.spent)} · committed ${full(o.committed)}<br/>At the end at this pace <b>${full(o.atEnd)}</b> of ${full(o.budget)} (<b>${Math.round((o.atEnd / o.budget) * 100)}%</b>)<br/>${o.atEnd > o.budget ? `<span style="color:${t.critical}">≈ ${full(o.atEnd - o.budget)} above the budget</span>` : `≈ ${full(o.budget - o.atEnd)} would stay unused`} · ends ${date(o.p.end)}`; } },
+    tooltip: { ...(base(t) as any).tooltip, trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const o = O[ps[0].dataIndex]; return `<b>${esc(lab(o.p))}</b> · ${esc(o.p.name.slice(0, 60))}<br/>Spent ${full(o.spent)} · committed ${full(o.committed)}<br/>At the end at this pace <b>${full(o.atEnd)}</b> of ${full(o.budget)} (<b>${Math.round((o.atEnd / o.budget) * 100)}%</b>)<br/>${o.atEnd > o.budget ? `<span style="color:${t.critical}">≈ ${full(o.atEnd - o.budget)} above the budget</span>` : `≈ ${full(o.budget - o.atEnd)} would stay unused`} · ends ${date(o.p.end)}`; } },
     xAxis: { type: 'value', max: (v: any) => Math.max(110, Math.ceil(v.max / 10) * 10), axisLabel: { color: t.ink3, fontSize: 11, formatter: '{value}%' }, splitLine: { lineStyle: { color: t.line, type: 'dashed' } } },
     yAxis: { type: 'category', data: y, inverse: true, axisTick: { show: false }, axisLine: { show: false }, axisLabel: { color: t.ink, fontWeight: 600, fontSize: 12, fontFamily: t.mono } },
     series: [
@@ -70,7 +70,7 @@ function timelineOption(t: Tokens, X: Crossing[], O: ProjectOutlook[]) {
   return { ...base(t),
     grid: { left: 84, right: 24, top: 34, bottom: 40 },
     legend: { top: 0, left: 0, textStyle: { color: t.ink2, fontSize: 12 } },
-    tooltip: { ...(base(t) as any).tooltip, trigger: 'item', formatter: (x: any) => { const c: Crossing = x.data.c; if (!c) return x.name; return `<b>${lab(c.p)}</b> · heading ${c.code} ${c.label}<br/>${c.now ? 'Already' : month(c.at)}: spent + committed ${c.kind === 'budget' ? 'passes the budget' : `passes the ${pctOf(c.flex)}% flexibility`} (${full(c.kind === 'budget' ? c.budget : c.budget * (1 + c.flex))})<br/>Now ${full(c.exposure)} · ${full(c.rate)} a month<br/><b>${c.kind === 'budget' ? 'Notification' : 'Addendum'}</b>`; } },
+    tooltip: { ...(base(t) as any).tooltip, trigger: 'item', formatter: (x: any) => { const c: Crossing = x.data.c; if (!c) return esc(x.name); return `<b>${esc(lab(c.p))}</b> · heading ${esc(c.code)} ${esc(c.label)}<br/>${c.now ? 'Already' : month(c.at)}: spent + committed ${c.kind === 'budget' ? 'passes the budget' : `passes the ${pctOf(c.flex)}% flexibility`} (${full(c.kind === 'budget' ? c.budget : c.budget * (1 + c.flex))})<br/>Now ${full(c.exposure)} · ${full(c.rate)} a month<br/><b>${c.kind === 'budget' ? 'Notification' : 'Addendum'}</b>`; } },
     xAxis: { type: 'time', min: now - MS, max: lastEnd, axisLabel: { color: t.ink3, fontSize: 11, formatter: (v: number) => month(v) }, splitLine: { show: true, lineStyle: { color: t.line, type: 'dashed' } } },
     yAxis: { type: 'category', data: y, inverse: true, axisTick: { show: false }, axisLine: { show: false }, axisLabel: { color: t.ink, fontWeight: 600, fontSize: 12, fontFamily: t.mono }, splitArea: { show: true, areaStyle: { color: [t.surface2 + '00', t.surface2] } } },
     series: [
