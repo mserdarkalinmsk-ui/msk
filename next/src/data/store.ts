@@ -509,7 +509,7 @@ export const setStaffOverride = (pid: string, key: string, o: import('../domain/
   const O = p.staffOverrides ?? (p.staffOverrides = {});
   if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];
 }, o ? 'Contract details saved' : 'Contract details cleared');
-export function replaceLedger(l: Ledger, message: string) { commit(clone(l), message); }
+export function replaceLedger(l: Ledger, message: string) { const L = clone(l); L.projects = L.projects.map(normalizeProject); commit(L, message); }
 export function resetDemo() { commit(clone(seed as unknown as Ledger), 'Start data restored'); }
 
 /* ---------- navigation & theme ---------- */

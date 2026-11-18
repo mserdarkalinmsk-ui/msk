@@ -79,6 +79,22 @@ describe('validateLedger', () => {
     expect(e[0]).toMatch(/end must be after start/);
   });
   it('rejects non-ledgers', () => expect(validateLedger(null)).toHaveLength(1));
+  it('reports a report without a valid date and a budget line without a code (screens cannot read them)', () => {
+    const P = (reportingPeriods: unknown) => ({ id: 'a', code: 'A', name: 'n', budget: 1, start: '2025-01-01', end: '2027-01-01', reportingPeriods });
+    const e = validateLedger({ countries: [], projects: [
+      P([{ id: 'r1', name: 'Report one', date: null, snapshot: { lines: [] } }]),
+      P([{ id: 'r2', name: 'Report two', date: '', snapshot: { lines: [] } }]),
+      P([{ id: 'r3', name: 'Report three', date: '2026-03-31', snapshot: { lines: [{ code: '1' }, { code: null, approved: 1 }] } }]),
+      P([null]),
+      P([{ id: 'r4', name: 'Report four', date: '2026-03-31' }, { id: 'r5', name: 'Report five', date: '2026-03-31', snapshot: {} }]),
+    ] });
+    expect(e).toHaveLength(4);
+    expect(e[0]).toMatch(/Report one.*date/); expect(e[1]).toMatch(/Report two.*date/);
+    expect(e[2]).toMatch(/Report three.*without a code/); expect(e[3]).toMatch(/report 1/);
+  });
+  it('accepts the demo and the start data', async () => {
+    for (const f of ['../data/demo.json', '../data/seed.json']) expect(validateLedger((await import(f)).default)).toEqual([]);
+  });
 });
 
 import { byCategory, checkReport, compareReports, lineRows, planStats, reportTotals } from './calc';
