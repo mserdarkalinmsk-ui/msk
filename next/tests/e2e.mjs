@@ -458,6 +458,19 @@ async function page(opts) {
     seen = await p.evaluate(() => [...document.querySelectorAll('div')].some((d) => d.style.position === 'absolute' && d.textContent.includes('Alpha <img')));
   }
   check(seen && !(await p.evaluate(() => window.__xss)), 'chart tooltip shows a project name with markup as plain text');
+  // The revision note printed as PDF carries the project code in its window title
+  p.on('dialog', (d) => d.accept());
+  await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(400);
+  await p.click('text=Edit details'); await p.waitForTimeout(300);
+  if (!(await p.locator('#f-code').count())) { await p.click('.drawer-f button:text-is("Edit")'); await p.waitForTimeout(300); }
+  await p.fill('#f-code', 'TR-ALPHA</title><img src=x onerror="opener.__xss=2">');
+  await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(400); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  await p.click('.tabs button:has-text("Plan & revise")'); await p.waitForTimeout(400);
+  await p.click('.subtabs button:has-text("Forecast"), .tabs button:has-text("Forecast")'); await p.waitForTimeout(800);
+  await p.click('button:has-text("Reports")'); await p.waitForTimeout(500);
+  const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 5000 }).catch(() => null), p.click('button:text-is("⎙ PDF") >> nth=-1')]);
+  await p.waitForTimeout(800);
+  check(!!pop && (await pop.title()).includes('</title>') && !(await p.evaluate(() => window.__xss)), 'PDF print window keeps a project code with markup in its title as text');
   await ctx.close();
 }
 
