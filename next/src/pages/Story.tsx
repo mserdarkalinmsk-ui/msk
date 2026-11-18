@@ -145,7 +145,7 @@ export function Story() {
               <div><span>Planned by now</span><b>{short(PL)}</b><small>budget × time elapsed</small></div>
               <div><span>Against plan</span><b style={{ color: BAND_COLOR[band] }}>{pct(perf)}</b><small>{T.spent >= PL ? `${short(T.spent - PL)} ahead` : `${short(PL - T.spent)} behind`}</small></div>
             </div>
-            {S.length > 1 && <div class="st-chart"><Chart height={210} label="Spending over time" option={(t) => ({ ...spendOption(t, S, T.budget, endMarks(P)), dataZoom: [], legend: { show: false }, grid: { left: 8, right: 70, top: 12, bottom: 8, containLabel: true } })} /></div>}
+            {S.length > 1 && <div class="st-chart"><Chart height={210} label="Spending over time" option={(t) => ({ ...spendOption(t, S, T.budget, endMarks(P)), dataZoom: [], legend: { show: false }, grid: { left: 8, right: 70, top: 22, bottom: 8, containLabel: true } })} /></div>}
           </div>
         </Slide>
 
