@@ -137,7 +137,7 @@ export function MonthlyPack() {
           : <p class="muted">Nothing needs a decision this month.</p>}
       </section>
       {S.length > 1 && <section class="pack-s"><h3>Spending over time</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Cumulative actual spend against the linear plan, with the forecast range</p>
-        <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></section>}
+        <Chart height={260} label="Spending over time" option={(t) => ({ ...spendOption(t, S, totals(P, TODAY).budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 72, top: 16, bottom: 8, containLabel: true } })} /></section>}
       <section class="pack-s">
         <h3>What changed since the previous report <button class="linkish no-print pack-more" onClick={() => go('reports/changed')}>details ›</button></h3>
         <table class="mini pack-t">
