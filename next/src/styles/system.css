@@ -638,3 +638,27 @@ button.linkish:hover { text-decoration: underline; }
 .st-dk ul { margin: 0; padding-left: 16px; display: grid; gap: 4px; font-size: 12.5px; }
 @media screen and (max-width: 900px) { .st-lanes, .st-nums { grid-template-columns: 1fr 1fr; } .st-split { grid-template-columns: 1fr; } .st-end li { grid-template-columns: 1fr 1fr; } }
 @media print { .story { gap: 0; } .st-slide { break-after: page; } }
+/* full presentation on screen: slides at their A4 width, zoomed as a whole */
+.deck-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+@media screen {
+  .deck-pages { zoom: var(--z, 1); display: grid; gap: 24px; justify-content: center; }
+  .deck-pages > .slide { width: 1123px; height: 794px; aspect-ratio: auto; box-sizing: border-box; flex: none; }
+  .deck-pages.one > .slide:not(.on), .deck-pages.one > .sl-notes { display: none; }
+  .deck-pages.one > .slide.on + .sl-notes { display: block; width: 1123px; max-width: none; margin: 0; }
+  .deck-pages.grid { grid-template-columns: repeat(var(--cols, 3), 1123px); gap: 18px; }
+  .deck-pages.grid > .sl-notes { display: none; }
+  .deck-pages.grid > .slide { cursor: zoom-in; }
+  .deck-pages.grid > .slide:hover { outline: 6px solid var(--c1); }
+  .deck:fullscreen { background: var(--bg, var(--surface)); padding: 18px; overflow: auto; align-content: center; }
+  .deck:fullscreen .deck-tools { display: none; }
+}
+@media print { .deck-pages { zoom: 1 !important; display: block; } .deck-pages > .slide { display: flex !important; } .deck-pages > .sl-notes { display: none !important; } }
+@media screen { .deck-pages > .slide:not(.sl-cover) > .sl-body { justify-content: center; } }
+.deck:fullscreen .deck-nav { position: fixed; bottom: 10px; right: 16px; z-index: 3; opacity: .3; background: var(--surface); padding: 6px; border-radius: 10px; }
+.deck:fullscreen .deck-nav:hover { opacity: 1; }
+@media screen {
+  .st-deck { zoom: var(--z, 1); display: grid; justify-content: center; }
+  .st-deck > .st-slide { width: 1123px; height: 794px; aspect-ratio: auto; box-sizing: border-box; }
+}
+@media print { .st-deck { zoom: 1 !important; display: block; } }
+@media screen and (max-width: 1400px) { .st-hint { display: none; } .st-bar .btn.ghost { padding: 0 8px; } }

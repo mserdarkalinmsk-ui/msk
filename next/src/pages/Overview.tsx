@@ -41,6 +41,7 @@ export function Filters() {
       </select>
       <button class="chip" style={{ borderStyle: 'dashed' }} onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })} title="Add a country">+ Country</button>
       <button class="btn ghost" style={{ height: '28px' }} onClick={() => set({ drawer: { kind: 'countries' } })}>Manage countries</button>
+      <button class="btn primary ov-present" style={{ height: '28px', marginLeft: 'auto' }} title="The portfolio story, full screen: five slides, one message each (the filters above apply)" onClick={() => { try { sessionStorage.setItem('pl-present', '1'); } catch { /* */ } go('reports/story'); }}>▶ Present</button>
       {(f.country || f.sector) && <button class="btn ghost" style={{ height: '28px' }} onClick={() => setF({ country: '', sector: '' })}>Clear filters</button>}
     </div>
     </>

@@ -6,7 +6,7 @@ import { ProviderBrief } from './Providers';
 import { providerSummary } from '../domain/providers';
 import { exportPptx } from '../ui/deckPptx';
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { resultRows } from '../domain/results';
 import { EMBED, filtered, get, useStore } from '../data/store';
 import { asOf, byCategory, elapsed, HEADINGS, groupBy, lineRows, money, parseDate, portfolioSeries, riskScore, totals } from '../domain/calc';
@@ -15,6 +15,9 @@ import { catchUp } from '../domain/monitor';
 import { renewals, roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
+/** Height of the app's sticky top bar, and of everything a slide must leave room for: that bar and the slide controls above it. */
+const topBar = () => Math.round(document.querySelector<HTMLElement>('.topbar, header.top, .app-top')?.getBoundingClientRect().height ?? 60);
+const chrome = (el: HTMLElement) => topBar() + ((el.previousElementSibling as HTMLElement | null)?.getBoundingClientRect().height ?? 40) + 40;
 import { Chart } from '../ui/Chart';
 import { Gauge } from '../ui/Gauge';
 import { MapView } from '../ui/MapView';
@@ -60,6 +63,36 @@ export function Deck() {
   const [aud, setAud] = useState<Audience>(() => (forced ? 'donor' : readPref('pl-deck-aud', 'management')));
   const [pages, setPages] = useState<boolean>(() => readPref('pl-deck-pages', true));
   const [notes, setNotes] = useState<boolean>(() => readPref('pl-deck-notes', false));
+  // On screen: one slide at a time, sized to the window, or every slide as a thumbnail. Slides are laid out at their A4
+  // width (1123 px) and zoomed as a whole, so type keeps its proportion on a large screen instead of floating in a big page.
+  const [view, setView] = useState<'one' | 'grid'>(() => readPref('pl-deck-view', 'one'));
+  const [cur, setCur] = useState(0), [count, setCount] = useState(0);
+  const pagesRef = useRef<HTMLDivElement>(null);
+  const fit = () => {
+    const el = pagesRef.current; if (!el) return;
+    const W = el.parentElement!.clientWidth, H = innerHeight - (document.fullscreenElement ? 90 : chrome(el));
+    const cols = W >= 1250 ? 3 : 2, z = view === 'grid' ? (W - (cols - 1) * 18) / cols / 1123 : Math.min(W / 1123, H / 794);
+    el.style.setProperty('--z', String(Math.max(0.2, z))); el.style.setProperty('--cols', String(cols));
+  };
+  useLayoutEffect(() => {
+    const el = pagesRef.current; if (!el) return;
+    const S = [...el.querySelectorAll<HTMLElement>(':scope > .slide')];
+    if (S.length !== count) setCount(S.length);
+    S.forEach((x, i) => { x.classList.toggle('on', i === Math.min(cur, S.length - 1)); x.dataset.n = String(i); });
+    fit();
+  });
+  useEffect(() => { addEventListener('resize', fit); return () => removeEventListener('resize', fit); }, [view]);
+  useEffect(() => { const el = pagesRef.current, bar = el?.previousElementSibling as HTMLElement | null; if (view !== 'one' || !el || !bar || document.fullscreenElement) return; if (el.getBoundingClientRect().bottom > innerHeight + 2) scrollTo({ top: bar.getBoundingClientRect().top + scrollY - topBar() - 8 }); }, [cur, view]);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if (view !== 'one' || (e.target as HTMLElement)?.closest('input, select, textarea')) return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); setCur((c) => Math.min(count - 1, c + 1)); }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); setCur((c) => Math.max(0, c - 1)); }
+    };
+    addEventListener('keydown', k); return () => removeEventListener('keydown', k);
+  }, [view, count]);
+  const pick = (e: MouseEvent) => { if (view !== 'grid') return; const sl = (e.target as HTMLElement).closest<HTMLElement>('.slide'); if (sl?.dataset.n) { setCur(Number(sl.dataset.n)); setView('one'); savePref('pl-deck-view', 'one'); } };
+  const full = () => { const el = pagesRef.current?.parentElement; if (!el) return; if (document.fullscreenElement) void document.exitFullscreen(); else void el.requestFullscreen?.().then(() => setTimeout(fit, 120)).catch(() => undefined); };
   const mg = aud === 'management';
   const P = filtered(s).filter((p) => !p.datesTbc);
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
@@ -130,6 +163,13 @@ export function Deck() {
         <label class="muted" style={{ fontSize: '13px' }}><input type="checkbox" checked={pages} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; setPages(v); savePref('pl-deck-pages', v); }} /> One page per project</label>
         <label class="muted" style={{ fontSize: '13px' }}><input type="checkbox" checked={notes} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; setNotes(v); savePref('pl-deck-notes', v); }} /> Speaker notes</label>
         <p class="muted" style={{ margin: 0, flex: 1 }}>{of} slides · {mg ? 'internal: staff names, office costs and catch-up plans included' : 'for the donor: results and indicators, no internal staff or office detail'} · A4 landscape</p><button class="btn" onClick={pptx}>⤓ PowerPoint</button><button class="btn primary" onClick={() => print()}>⎙ Save as PDF</button></div>
+      <div class="no-print deck-nav">
+        <div class="seg" role="group" aria-label="View">{([['one', 'One slide'], ['grid', 'All slides']] as const).map(([k, l]) => <button aria-pressed={view === k} onClick={() => { setView(k); savePref('pl-deck-view', k); }}>{l}</button>)}</div>
+        {view === 'one' && <><button class="btn" disabled={cur <= 0} onClick={() => setCur(cur - 1)} aria-label="Previous slide">‹</button><span class="num muted">{Math.min(cur, count - 1) + 1} / {count}</span><button class="btn" disabled={cur >= count - 1} onClick={() => setCur(cur + 1)} aria-label="Next slide">›</button><span class="muted" style={{ fontSize: '12px' }}>← → to move</span></>}
+        {view === 'grid' && <span class="muted" style={{ fontSize: '12px' }}>Click a slide to open it</span>}
+        <button class="btn" style={{ marginLeft: 'auto' }} onClick={full}>⛶ Full screen</button>
+      </div>
+      <div class={`deck-pages ${view}`} ref={pagesRef} onClick={pick as never}>
 
       <section class="slide sl-cover">
         <div class="sl-cv">
@@ -165,7 +205,7 @@ export function Deck() {
 
       <Slide n={4} of={of} scope={scope} title="Spending over time" msg={MS.spending} notes={NS.spending} sub="Cumulative actual spend against the linear plan; shaded band = forecast at the recent pace ±20%">
         <div class="sl-split">
-          <div class="sl-chart"><Chart height={360} label="Spending over time" option={(t) => ({ ...spendOption(t, S, T.budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true } })} /></div>
+          <div class="sl-chart"><Chart height={470} label="Spending over time" option={(t) => ({ ...spendOption(t, S, T.budget, endMarks(P)), dataZoom: [], grid: { left: 8, right: 96, top: 22, bottom: 8, containLabel: true } })} /></div>
           <div class="sl-callouts">
             <div><span>Planned by now</span><b>{short(PL)}</b></div>
             <div><span>Actually spent</span><b>{short(T.spent)}</b></div>
@@ -277,6 +317,7 @@ export function Deck() {
           <dt>Source</dt><dd>Financial report workbooks and contract documents loaded in the {s.ledger.brand?.title || 'Portfolio Ledger'}; figures at {date(today)}.</dd>
         </dl>
       </Slide>
+      </div>
     </div>
   );
 }

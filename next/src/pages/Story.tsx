@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { capacity, endOf, gapDrivers, HEAD_LABEL, portfolioWalk, trendOf } from '../domain/analysis';
 import { asOf, elapsed, money, portfolioSeries, totals } from '../domain/calc';
@@ -6,6 +6,9 @@ import { decisions } from '../domain/decisions';
 import { plabel } from '../domain/label';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
+/** Height of the app's sticky top bar, and of everything a slide must leave room for: that bar and the slide controls above it. */
+const topBar = () => Math.round(document.querySelector<HTMLElement>('.topbar, header.top, .app-top')?.getBoundingClientRect().height ?? 60);
+const chrome = (el: HTMLElement) => topBar() + ((el.previousElementSibling as HTMLElement | null)?.getBoundingClientRect().height ?? 40) + 40;
 import { base, Chart, type Tokens } from '../ui/Chart';
 import { date, month, pct, short } from '../ui/format';
 import { BAND_COLOR, BAND_WORD, BANDS, bandOf, Bullet, Spark, type Band } from '../ui/viz';
@@ -60,7 +63,18 @@ export function Story() {
   const s = useStore((x) => x);
   const P = filtered(s).filter((p) => !p.datesTbc && money(p).budget > 0);
   const [cur, setCur] = useState(0);
-  const box = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null), deck = useRef<HTMLDivElement>(null);
+  // The slide is laid out at its A4 width and zoomed to the window, so type keeps its proportion on any screen.
+  const fit = () => { const el = deck.current; if (!el) return; const W = el.parentElement!.clientWidth, H = innerHeight - (document.fullscreenElement ? 40 : chrome(el)); el.style.setProperty('--z', String(Math.max(0.3, Math.min(W / 1123, H / 794)))); };
+  useLayoutEffect(fit);
+  // The slide uses the whole window: when it does not fit under the menus, the page scrolls to the slide bar.
+  useEffect(() => { const el = deck.current, bar = el?.previousElementSibling as HTMLElement | null; if (!el || !bar || document.fullscreenElement) return; if (el.getBoundingClientRect().bottom > innerHeight + 2) scrollTo({ top: bar.getBoundingClientRect().top + scrollY - topBar() - 8 }); }, [cur]);
+  useEffect(() => { const f = () => setTimeout(fit, 120); addEventListener('resize', fit); document.addEventListener('fullscreenchange', f); return () => { removeEventListener('resize', fit); document.removeEventListener('fullscreenchange', f); }; }, []);
+  // Opened with "Present" from the overview: straight to the first slide, full screen (the click still counts as the gesture).
+  useEffect(() => {
+    let go1 = false; try { go1 = sessionStorage.getItem('pl-present') === '1'; sessionStorage.removeItem('pl-present'); } catch { /* */ }
+    if (go1) { setCur(0); void box.current?.requestFullscreen?.().catch(() => undefined); }
+  }, []);
   // With more than one country in view, a slide compares the countries before the projects.
   const multi = new Set(P.map((p) => p.country)).size > 1, N = multi ? 6 : 5, o = multi ? 1 : 0;
   useEffect(() => {
@@ -112,7 +126,7 @@ export function Story() {
         <button class="btn" onClick={full}>⛶ Full screen</button>
         <button class="btn primary" onClick={() => print()}>⎙ PDF</button>
       </div>
-      <div class="st-deck" data-cur={cur}>
+      <div class="st-deck" data-cur={cur} ref={deck}>
         <Slide i={1} n={N} scope={scope} kicker="Where we stand" msg={msg[0]} sub={`${R.length} projects · figures of the latest financial reports to ${date(TODAY.toISOString().slice(0, 10))}`}>
           <div class="st-big">
             <div class="st-stack" role="img" aria-label="Budget used">
