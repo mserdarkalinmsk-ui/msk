@@ -19,10 +19,11 @@ export function parseCSV(text: string): string[][] {
 
 /** Parses "1.234.567,89", "1,234,567.89", "1.000.000", "€ 1 234" → number; null when not numeric. */
 export function parseAmount(s: string): number | null {
-  let t = s.replace(/[€$£\s\u00a0']/g, '');
+  let t = s.replace(/(?<![a-z])(?:EUR|TRY|TL|USD|GBP|CHF)(?![a-z])/gi, '').replace(/[€$£₺\s\u00a0']/g, '');
   if (!t) return null;
-  const neg = /^\(.*\)$/.test(t) || t.startsWith('-') || t.startsWith('−');
-  t = t.replace(/^[(\-−]|\)$/g, '');
+  // Accounting exports also write negatives with a trailing minus: 1.234,56-
+  const neg = /^\(.*\)$/.test(t) || /^[-−]|\d[-−]$/.test(t);
+  t = t.replace(/^[(\-−]|\)$|(?<=\d)[-−]$/g, '');
   // Excel writes very large or tiny values (rounding residues) in scientific notation: 1.1368683772161603E-13.
   if (/^\d+(\.\d+)?e[+-]?\d+$/i.test(t)) { const v = Number(t); return neg ? -v : v; }
   const dots = (t.match(/\./g) ?? []).length, commas = (t.match(/,/g) ?? []).length;

@@ -27,6 +27,17 @@ describe('csv', () => {
     expect(parseAmount('1.000')).toBe(1000);
     expect(parseAmount('12.345')).toBe(12345);
   });
+  it('reads currency codes, the lira sign and a trailing minus', () => {
+    expect(parseAmount('EUR 1,000.00')).toBe(1000);
+    expect(parseAmount('1.000,00 TL')).toBe(1000);
+    expect(parseAmount('₺1.234,50')).toBe(1234.5);
+    expect(parseAmount('TRY 2 500')).toBe(2500);
+    expect(parseAmount('1.234,56-')).toBe(-1234.56);
+    expect(parseAmount('1,234.56−')).toBe(-1234.56);
+    expect(parseAmount('-')).toBeNull();
+    expect(parseAmount('TL')).toBeNull();
+    expect(parseAmount('1-2')).toBeNull();
+  });
   it('parses and rejects dates', () => {
     expect(parseDay('2026-02-03')).toBe('2026-02-03');
     expect(parseDay('03.02.2026')).toBe('2026-02-03');
