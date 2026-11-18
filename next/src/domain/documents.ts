@@ -222,7 +222,8 @@ export function approvedBudget(doc: Doc): ApprovedBudget | null {
   let admin = 0, contingency = 0, direct = 0, total = 0;
   const subs = new Map<string, number>(), names: Record<string, string> = {};
   for (const T of doc.tables) for (const raw of T) {
-    const r = raw.map((c) => clean(c ?? '')).filter(Boolean);
+    // amounts written with the currency ("€ 1,000.00", "1.000,00 EUR") are amounts too
+    const r = raw.map((c) => clean(c ?? '').replace(/^(?:€|EUR)\s*(?=\d)|(?<=\d)\s*(?:€|EUR)$/i, '')).filter(Boolean);
     if (!r.length) continue;
     let head = r[0], rest = r.slice(1);
     // code may be its own cell ("1.1.2" | "Project manager")

@@ -57,6 +57,16 @@ describe('approved budget', () => {
     expect(B.lines.map((l) => [l.code, l.approvedUnits, l.unitRate, l.approved])).toEqual([['1.1.1.2', 60, 5850, 351000], ['2.1', 142, 650, 92300], ['5.4', 1, 50000, 50000], ['10', undefined, undefined, 34531]]);
     expect(B.direct).toBe(493300); expect(B.linesSum).toBe(493300); expect(B.total).toBe(527831);
   });
+  it('reads amounts written with the currency in the cells', async () => {
+    const { approvedBudget } = await import('./documents');
+    const T = [
+      ['1.1.1 Alpha manager', 'Per month', '12', '€ 1,000.00', '€ 12,000.00'],
+      ['1.1.2 Beta officer', 'Per month', '10', '500,00 €', '5.000,00 €'],
+      ['2.1 Gamma travel', 'Per trip', '4', 'EUR 250', 'EUR 1,000'],
+    ];
+    const B = approvedBudget({ name: 'b.docx', kind: 'docx', paragraphs: [], tables: [T] })!;
+    expect(B.lines.map((l) => [l.code, l.approvedUnits, l.unitRate, l.approved])).toEqual([['1.1.1', 12, 1000, 12000], ['1.1.2', 10, 500, 5000], ['2.1', 4, 250, 1000]]);
+  });
 });
 
 describe('budget annex notes & logframe', () => {
