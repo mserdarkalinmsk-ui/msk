@@ -662,3 +662,7 @@ button.linkish:hover { text-decoration: underline; }
 }
 @media print { .st-deck { zoom: 1 !important; display: block; } }
 @media screen and (max-width: 1400px) { .st-hint { display: none; } .st-bar .btn.ghost { padding: 0 8px; } }
+/* Slides: a project code never breaks over two lines; the body never draws over the footer. */
+.sl-t td.nw { white-space: nowrap; }
+.slide > .sl-body { overflow: hidden; }
+.sl-t .sl-mit { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }

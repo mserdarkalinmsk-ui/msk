@@ -34,7 +34,9 @@ const KIND_C: Record<string, string> = { report: 'var(--critical)', contract: 'v
 const lab = (p: Project) => (plabel(p));
 /** Percent for headlines: small shares keep one decimal so 0.4% never reads as 0%. */
 const pq = (x: number) => (x > 0 && x < 0.095 ? `${(x * 100).toFixed(1)}%` : pct(x));
-const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+/** Text pasted from Word can carry symbol-font bullets (private-use characters that show as boxes): dropped, spaces folded. */
+const clean = (s: string) => s.replace(/[\uE000-\uF8FF\u2022\u25AA\u25CF\u00B7]+/g, ' ').replace(/\s*·\s*(?=·|$)/g, '').replace(/\s+/g, ' ').trim();
+const cut = (s: string, n: number) => { const c = clean(s); return c.length > n ? c.slice(0, n - 1).trimEnd() + '…' : c; };
 
 export type Audience = 'management' | 'donor';
 /** Running slide number: slides are counted in the order they render, so hidden slides never leave gaps. */
@@ -104,7 +106,7 @@ export function Deck() {
   const C = groupBy(P, (p) => p.country).sort((a, b) => b.budget - a.budget);
   const H = byCategory(lineRows(P)).filter((h) => h.approved > 0);
   const A = alerts(P, TODAY).filter((a) => a.severity === 'critical' || a.severity === 'serious');
-  const R = P.flatMap((p) => (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open').map((r) => ({ p, r, sc: riskScore(r) }))).sort((a, b) => b.sc - a.sc).slice(0, 8);
+  const allR = P.flatMap((p) => (p.riskRegister ?? []).filter((r) => (r.status ?? 'Open') === 'Open').map((r) => ({ p, r, sc: riskScore(r) }))).sort((a, b) => b.sc - a.sc), R = allR.slice(0, 6);
   const people = P.flatMap((p) => roster(p, TODAY)), active = people.filter((a) => a.status === 'Active'), ren = renewals(people, TODAY, 90);
   const today = TODAY.toISOString().slice(0, 10), in90 = new Date(TODAY); in90.setUTCDate(in90.getUTCDate() + 90);
   const E = events(P).filter((e) => e.day >= today && e.day <= in90.toISOString().slice(0, 10) && e.kind !== 'contract').slice(0, 14);
@@ -130,7 +132,7 @@ export function Deck() {
     budget: topH ? `${topH.key} is the largest heading: ${short(topH.approved)}, ${pq(topH.approved ? topH.exposure / topH.approved : 0)} used` : "Budget by heading",
     where: C[0] ? `${cname(C[0].key)} carries ${pq(T.budget ? C[0].budget / T.budget : 0)} of the budget across ${C[0].count} project${C[0].count > 1 ? "s" : ""}` : "Budget by country",
     project: behind.length ? `${behind.length} of ${M.length} projects are behind plan — ${behind.slice(0, 3).map((x) => lab(x.p)).join(", ")} first` : `All ${M.length} projects are on or ahead of plan`,
-    risks: R.length ? `${R.length} open risks; the highest is “${cut(R[0].r.title, 60)}” (${lab(R[0].p)})` : "No open risks recorded",
+    risks: R.length ? `${allR.length} open risk${allR.length === 1 ? '' : 's'}${allR.length > R.length ? ` (top ${R.length} shown)` : ''}; the highest is “${cut(R[0].r.title, 60)}” (${lab(R[0].p)})` : "No open risks recorded",
     upcoming: E.length ? `${E.length} milestones in the next 90 days, the first on ${date(E[0].day)}` : "No milestones in the next 90 days",
     next: CU.length ? `${CU.length} project${CU.length > 1 ? "s need" : " needs"} a faster monthly pace to be back on plan in three months` : "Keep the current pace",
     results: I.length ? `${I.filter((r) => r.state === 'reached' || r.state === 'on track').length} of ${I.length} measured indicators are reached or on track` : 'Indicators are not measured yet',
@@ -249,8 +251,8 @@ export function Deck() {
 
       <Slide n={8} of={of} scope={scope} title="Risks and issues" msg={MS.risks} notes={NS.risks} sub="Open risks from the registers and the most serious alerts">
         <div class="sl-two">
-          <div><h3 class="sl-h3">Top risks</h3>{R.length ? <table class="mini sl-t"><thead><tr><th>Project</th><th>Risk</th><th class="r">Score</th></tr></thead>
-            <tbody>{R.map((x) => <tr><td><b>{lab(x.p)}</b></td><td>{cut(x.r.title, 70)}{x.r.mitigation && <small class="sl-mit">Mitigation: {cut(x.r.mitigation, 90)}</small>}</td><td class="r num"><span class="sl-pill" style={{ background: x.sc >= 15 ? 'var(--critical)' : x.sc >= 8 ? 'var(--c4)' : 'var(--good)' }}>{x.sc}</span></td></tr>)}</tbody></table> : <p class="sl-empty">No open risks recorded.</p>}</div>
+          <div><h3 class="sl-h3">Top risks{allR.length > R.length ? ` · ${R.length} of ${allR.length}` : ''}</h3>{R.length ? <table class="mini sl-t"><thead><tr><th>Project</th><th>Risk</th><th class="r">Score</th></tr></thead>
+            <tbody>{R.map((x) => <tr><td class="nw"><b>{lab(x.p)}</b></td><td>{cut(x.r.title, 64)}{x.r.mitigation && <small class="sl-mit">Mitigation: {cut(x.r.mitigation, 80)}</small>}</td><td class="r num"><span class="sl-pill" style={{ background: x.sc >= 15 ? 'var(--critical)' : x.sc >= 8 ? 'var(--c4)' : 'var(--good)' }}>{x.sc}</span></td></tr>)}</tbody></table> : <p class="sl-empty">No open risks recorded.</p>}</div>
           <div><h3 class="sl-h3">Alerts</h3>{A.length ? <ul class="sl-al">{A.slice(0, 9).map((a) => { const p = P.find((q) => q.id === a.projectId)!; return <li><span class={`badge ${a.severity}`}>{a.severity}</span><div><b>{lab(p)}</b> {a.title}<small>{a.detail}</small></div></li>; })}</ul> : <p class="sl-empty">No serious alerts.</p>}</div>
         </div>
       </Slide>

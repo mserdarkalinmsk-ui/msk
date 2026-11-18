@@ -326,7 +326,8 @@ export function notesFromLayout(items: PdfItem[], prev?: NoteColumns): { notes: 
 }
 
 /* ---------- narrative risks & assumptions ("The risks are as follows: - … (medium)") ---------- */
-const BULLET = /^\s*(?:[-–—•▪◦●]|\d{1,2}[.)])\s+/;
+// Word symbol-font bullets come through as private-use characters (\uF0A7, \uF0B7 …): they count as bullets too.
+const BULLET = /^\s*(?:(?:[-–—•▪◦●]|\d{1,2}[.)])\s+|[\uE000-\uF8FF]\s*(?=\S))/;
 /** Bulleted items under a lead-in like "The risks are as follows:"; wrapped lines are joined, the list ends at the next prose line. */
 function listAfter(paras: string[], lead: RegExp): string[] {
   const out: string[] = [];
@@ -338,6 +339,8 @@ function listAfter(paras: string[], lead: RegExp): string[] {
       for (let j = i + 1; j < paras.length && j < i + 40; j++) {
         const l = paras[j].trim(); if (!l) continue;
         if (/:\s*$/.test(l) || /^\d+(\.\d+)*\s+[A-Z]/.test(l) || /^As regards/i.test(l) || l.length > 400) break;
+        // a line that starts in lower case continues the item above (a sentence wrapped over several lines)
+        if (out.length && /^[a-z(]/.test(l) && !/[.;]$/.test(out[out.length - 1])) { out[out.length - 1] = joinLines([out[out.length - 1], l]); continue; }
         out.push(l);
       }
       if (out.length) break; else continue;

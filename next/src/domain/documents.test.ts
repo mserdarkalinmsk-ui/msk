@@ -115,6 +115,19 @@ describe('narrative risks', () => {
       ['Any pandemic, similar to the Covid-19 may cause additional limitations imposed by national authorities, pose a potential risk to face-to-face meetings', '3', 'External'], ['Other natural disasters, such as an earthquake', '2', 'External']]);
     expect(N.mitigation.length).toBe(2);
   });
+  it('treats Word symbol-font bullets as bullets and joins a risk wrapped over several lines', async () => {
+    const { narrativeRisks } = await import('./documents');
+    const paragraphs = ['The risks are as follows:', '\uF0A7 Workload of the beneficiary (low).', '\uF0A7 Any pandemic may cause limitations imposed by', 'national authorities across Europe, including Türkiye in order to contain its spread, pose', 'a potential risk to the implementation of project activities which would require travel', 'and face-to-face meetings (medium).',
+      'Mitigation measures are as follows:', '\uF0B7 High-level discussions in the framework of the dialogue.', '\uF0B7 regular consultations between the CoE and the authorities.', 'As regards the risk'];
+    const N = narrativeRisks({ name: 'doa.docx', kind: 'docx', paragraphs, tables: [] });
+    expect(N.risks.map((r) => r.title)).toEqual(['Workload of the beneficiary', 'Any pandemic may cause limitations imposed by national authorities across Europe, including Türkiye in order to contain its spread, pose a potential risk to the implementation of project activities which would require travel and face-to-face meetings']);
+    expect(N.mitigation).toEqual(['High-level discussions in the framework of the dialogue.', 'regular consultations between the CoE and the authorities.']);
+  });
+  it('joins wrapped lines of a list without bullet characters', async () => {
+    const { narrativeRisks } = await import('./documents');
+    const N = narrativeRisks({ name: 'd.docx', kind: 'docx', paragraphs: ['The risks are as follows:', 'Workload of the partner (low).', 'Restrictions imposed by', 'national authorities pose a risk to meetings (medium).', 'Mitigation measures are as follows:'], tables: [] });
+    expect(N.risks.map((r) => r.title)).toEqual(['Workload of the partner', 'Restrictions imposed by national authorities pose a risk to meetings']);
+  });
 });
 
 import { contractFacts as cf2 } from './documents';
