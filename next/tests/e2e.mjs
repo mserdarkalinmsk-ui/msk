@@ -519,6 +519,21 @@ async function page(opts) {
   check(st.ids === n && n >= 6 && st.lang === 'Alpha renamed', `after a refused save every project is stored (${n}/${st.ids}, lang “${st.lang}”)`);
   await ctx.close();
 }
+{
+  // Browser storage not available at all (blocked site data): changes are not kept, and the user is told
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => {
+    localStorage.setItem('pl-digest-seen', 'off');
+    IDBFactory.prototype.open = function () { const r = {}; setTimeout(() => r.onerror?.(new Event('error')), 0); return r; };
+  });
+  const p = await ctx.newPage();
+  await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(400);
+  await p.click('text=Edit details'); await p.waitForTimeout(300);
+  if (!(await p.locator('#f-name').count())) { await p.click('.drawer-f button:text-is("Edit")'); await p.waitForTimeout(300); }
+  await p.fill('#f-name', 'Alpha renamed'); await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(900);
+  check(await p.locator('.toast:has-text("could not be saved")').count() === 1, 'a save without browser storage is reported');
+  await ctx.close();
+}
 
 // Dark + mobile
 {

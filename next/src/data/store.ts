@@ -107,9 +107,10 @@ if (typeof window !== 'undefined') window.addEventListener('pagehide', () => { i
 const META = `${KEY}:m`, PK = `${KEY}:p:`, PRANGE = () => IDBKeyRange.bound(PK, PK + '\uffff');
 const written = new Map<string, Project>();
 let failNoted = 0;
+const noteFail = () => { if (Date.now() - failNoted > 60_000) { failNoted = Date.now(); toast('Your last changes could not be saved in this browser (storage full or blocked). Back up now from Import / backup.'); } };
 /** Resolves false when the browser refused the write (storage full or blocked): nothing of it is then taken as saved. */
 async function write(l: Ledger): Promise<boolean> {
-  const db = await open(); if (!db) return false;
+  const db = await open(); if (!db) { noteFail(); return false; }
   const tx = db.transaction(STORE, 'readwrite'), st = tx.objectStore(STORE);
   st.put({ ...l, projects: [], ids: l.projects.map((p) => p.id) }, META);
   const ids = new Set<string>(), put: Project[] = [], gone: string[] = [];
@@ -124,10 +125,7 @@ async function write(l: Ledger): Promise<boolean> {
   // Only a committed write counts: a project whose write was refused is written again with the next save.
   return new Promise((res) => {
     tx.oncomplete = () => { for (const p of put) written.set(p.id, p); for (const id of gone) written.delete(id); prevSaved = l; res(true); };
-    tx.onabort = () => {
-      if (Date.now() - failNoted > 60_000) { failNoted = Date.now(); toast('Your last changes could not be saved in this browser (storage full or blocked). Back up now from Import / backup.'); }
-      res(false);
-    };
+    tx.onabort = () => { noteFail(); res(false); };
   });
 }
 /** Reads the stored ledger: the split form, or the older single record (moved to the split form on the next save). */
