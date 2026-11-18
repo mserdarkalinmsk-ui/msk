@@ -36,7 +36,12 @@ function walkOption(t: Tokens, planned: number, steps: { label: string; v: numbe
   return {
     ...base(t), animation: false,
     grid: { left: 8, right: 8, top: 28, bottom: 8, containLabel: true },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => (typeof v === 'number' ? short(v) : '') },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: { axisValue: string; seriesName: string; value: unknown; color: string }[]) => {
+      const x = ps.find((q) => q.seriesName && typeof q.value === 'number'); if (!x) return '';
+      const v = x.value as number, sign = x.seriesName === 'Behind' ? '−' : x.seriesName === 'Ahead' ? '+' : '';
+      const word = x.seriesName === 'Behind' ? 'behind plan' : x.seriesName === 'Ahead' ? 'ahead of plan' : '';
+      return `<b>${ps[0].axisValue}</b><br><span style="color:${x.color};font-weight:600">${sign}${short(v)}</span> ${word}`;
+    } },
     xAxis: { type: 'category', data: cats, ...axisX(t), axisLabel: { ...axisX(t).axisLabel, interval: 0, hideOverlap: false, width: 84, overflow: 'break', fontSize: 11, lineHeight: 13 } },
     yAxis: { type: 'value', ...axisY(t) },
     series: [

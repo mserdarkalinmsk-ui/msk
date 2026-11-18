@@ -141,6 +141,16 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     if (dead || !el.current) return;
     const c = echarts.init(el.current, undefined, { renderer: 'svg' });
     inst.current = c; live.add(c);
+    // Inside a slide scaled with CSS zoom the library reads the pointer at the wrong place (the tooltip and the
+    // highlighted bar drift away from the mouse). The pointer is placed here, in the chart's own unzoomed pixels.
+    const host = el.current;
+    const place = (e: any) => {
+      const p = e.touches?.[0] ?? e.changedTouches?.[0] ?? e; if (p?.clientX == null) return;
+      const r = host.getBoundingClientRect(), z = host.offsetWidth ? r.width / host.offsetWidth : 1;
+      if (Math.abs(z - 1) < 0.005) return;
+      e.zrX = (p.clientX - r.left) / z; e.zrY = (p.clientY - r.top) / z;
+    };
+    for (const k of ['mousemove', 'mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'mouseout', 'pointermove', 'pointerdown', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'wheel']) host.addEventListener(k, place, { capture: true, passive: true });
     narrowRef.current = el.current.clientWidth < 520;
     const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current), true);
     setHasTable(chartTable(o) != null);
