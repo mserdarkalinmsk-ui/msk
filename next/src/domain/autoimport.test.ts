@@ -4,7 +4,7 @@ import seed from '../data/demo.json';
 import { readXlsx } from '../ui/xlsx';
 import type { Ledger } from './types';
 import { parseWorkbook } from './workbook';
-import { applyPlans, guessSector, plan } from './autoimport';
+import { applyPlans, guessCountry, guessSector, plan } from './autoimport';
 
 const L = seed as unknown as Ledger;
 async function wb() {
@@ -35,6 +35,14 @@ describe('automatic import', () => {
     expect(msk.budget).toBeCloseTo(398000 * 1.07);
     const again = applyPlans(N, [plan(W, 'coe.xlsx', N)]);
     expect(again.projects.find((p) => p.id === 'msk')!.reportingPeriods!.length).toBe(msk.reportingPeriods!.length);
+  });
+  it('matches Turkish capitals in titles: country and title words', async () => {
+    expect(guessCountry('ALPHA PROJECT IN TÜRKİYE', L)).toBe(guessCountry('Alpha project in Türkiye', L));
+    expect(guessCountry('Alpha project in Türkiye', L)).toBeTruthy();
+    const W = await wb();
+    W.meta = { ...W.meta, bh: undefined, contract: undefined, title: 'ALPHAIX BETAIX GAMMAIX DELTA' };
+    const L2: Ledger = { ...L, projects: [...L.projects, { ...L.projects[0], id: 'tq', code: 'TQ', bh: undefined, name: 'Alphaıx Betaıx Gammaıx' }] };
+    expect(plan(W, 'coe.xlsx', L2).match?.id).toBe('tq');
   });
   it('guesses sectors from titles', () => {
     expect(guessSector('Strengthening the judiciary in Georgia')).toBe('Rule of Law');

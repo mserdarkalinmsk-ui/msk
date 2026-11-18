@@ -15,7 +15,9 @@ export interface AutoPlan {
   project: Project; report: ReportingPeriod; replaces?: string; guessed: string[]; problems: string[];
 }
 
-const words = (s: string) => new Set(s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').split(/[^a-z0-9ıçğöşü]+/).filter((w) => w.length > 3));
+// Capitals lower-case Turkish-blind (İ → i + dot, I → i, never ı): fold so TÜRKİYE, Türkiye, IŞIK, Işık compare equal.
+const fold = (s: string) => s.toLowerCase().replace(/\u0307/g, '').replace(/ı/g, 'i');
+const words = (s: string) => new Set(fold(s).normalize('NFD').replace(/\p{M}/gu, '').split(/[^a-z0-9ıçğöşü]+/).filter((w) => w.length > 3));
 
 export function guessSector(text: string): Sector {
   const t = text.toLowerCase();
@@ -25,8 +27,8 @@ export function guessSector(text: string): Sector {
 }
 
 export function guessCountry(text: string, L: Ledger): string | undefined {
-  const t = text.toLowerCase().replace(/türkiye|turkey/g, 'türkiye');
-  return L.countries.find((c) => t.includes(c.name.toLowerCase().replace('turkey', 'türkiye')))?.id;
+  const t = fold(text).replace(/türkiye|turkey/g, 'türkiye');
+  return L.countries.find((c) => t.includes(fold(c.name).replace('turkey', 'türkiye')))?.id;
 }
 
 const slug = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'project';
