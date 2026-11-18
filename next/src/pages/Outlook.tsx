@@ -68,7 +68,7 @@ function timelineOption(t: Tokens, X: Crossing[], O: ProjectOutlook[]) {
   const pts = (k: Crossing['kind']) => X.filter((c) => c.kind === k).map((c) => ({ value: [c.at, lab(c.p)], c }));
   const lastEnd = Math.max(...O.map((o) => o.end), now + 6 * MS);
   return { ...base(t),
-    grid: { left: 84, right: 24, top: 34, bottom: 40 },
+    grid: { left: 84, right: 24, top: 52, bottom: 40 },
     legend: { top: 0, left: 0, textStyle: { color: t.ink2, fontSize: 12 } },
     tooltip: { ...(base(t) as any).tooltip, trigger: 'item', formatter: (x: any) => { const c: Crossing = x.data.c; if (!c) return esc(x.name); return `<b>${esc(lab(c.p))}</b> · heading ${esc(c.code)} ${esc(c.label)}<br/>${c.now ? 'Already' : month(c.at)}: spent + committed ${c.kind === 'budget' ? 'passes the budget' : `passes the ${pctOf(c.flex)}% flexibility`} (${full(c.kind === 'budget' ? c.budget : c.budget * (1 + c.flex))})<br/>Now ${full(c.exposure)} · ${full(c.rate)} a month<br/><b>${c.kind === 'budget' ? 'Notification' : 'Addendum'}</b>`; } },
     xAxis: { type: 'time', min: now - MS, max: lastEnd, axisLabel: { color: t.ink3, fontSize: 11, formatter: (v: number) => month(v) }, splitLine: { show: true, lineStyle: { color: t.line, type: 'dashed' } } },
@@ -77,7 +77,7 @@ function timelineOption(t: Tokens, X: Crossing[], O: ProjectOutlook[]) {
       { name: 'Project period', type: 'custom', silent: true, itemStyle: { color: t.line }, renderItem: (_: any, api: any) => { const i = api.value(0), s = api.coord([Math.max(now - MS, Date.parse(O[i].p.start)), i]), e = api.coord([O[i].end, i]); return { type: 'rect', shape: { x: s[0], y: s[1] - 3, width: Math.max(0, e[0] - s[0]), height: 6, r: 3 }, style: { fill: t.line } }; }, data: O.map((_, i) => [i]), encode: { x: -1, y: 0 }, z: 1 },
       { name: 'Passes the budget (notification)', type: 'scatter', symbol: 'circle', symbolSize: 15, data: pts('budget'), itemStyle: { color: { type: 'radial', x: 0.35, y: 0.35, r: 0.8, colorStops: [{ offset: 0, color: '#ffe08a' }, { offset: 1, color: t.warn }] }, borderColor: t.surface, borderWidth: 2, shadowBlur: 8, shadowColor: 'rgba(0,0,0,.25)' }, z: 3 },
       { name: 'Passes the flexibility (addendum)', type: 'scatter', symbol: 'diamond', symbolSize: 19, data: pts('flex'), itemStyle: { color: { type: 'radial', x: 0.35, y: 0.35, r: 0.8, colorStops: [{ offset: 0, color: '#ff9b9b' }, { offset: 1, color: t.critical }] }, borderColor: t.surface, borderWidth: 2, shadowBlur: 8, shadowColor: 'rgba(0,0,0,.3)' }, z: 4,
-        markLine: { symbol: 'none', silent: true, lineStyle: { color: t.c[0], width: 2 }, label: { formatter: 'today', color: t.c[0], fontWeight: 700 }, data: [{ xAxis: now }] } },
+        markLine: { symbol: 'none', silent: true, lineStyle: { color: t.c[0], width: 2 }, label: { formatter: 'today', position: 'start', color: t.c[0], fontWeight: 700 }, data: [{ xAxis: now }] } },
     ] };
 }
 
@@ -108,7 +108,7 @@ export function Outlook() {
         </section>
         <section class="card span-12">
           <div class="card-h"><div><h2>When headings will need a letter</h2><p>The month spent + committed passes a heading's budget (notification) and its flexibility — {rules().flexJP}% Joint Programme, {rules().flexVC}% Voluntary Contribution — (addendum), at the current pace · grey bar = project period</p></div></div>
-          <div class="card-b"><Chart height={O.length * 46 + 90} label="Heading crossings over time" onClick={(e) => e.data?.c && openProject(e.data.c.p.id, 'budget')} option={(t) => timelineOption(t, X, O)} /></div>
+          <div class="card-b"><Chart height={O.length * 46 + 108} label="Heading crossings over time" onClick={(e) => e.data?.c && openProject(e.data.c.p.id, 'budget')} option={(t) => timelineOption(t, X, O)} /></div>
         </section>
         <section class="card span-12">
           <div class="card-h"><div><h2>Coming up</h2><p>Headings passing their budget or flexibility within the period chosen</p></div>

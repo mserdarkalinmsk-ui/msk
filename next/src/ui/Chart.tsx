@@ -80,7 +80,7 @@ function axis(a: any, t: Tokens | undefined) {
     nameTextStyle: { color: t.ink3, fontSize: 11, ...a.nameTextStyle },
   };
 }
-export function polish(o: any, t?: Tokens, narrow = false): any {
+export function polish(o: any, t?: Tokens, narrow = false, width = 0): any {
   if (!o || typeof o !== 'object') return o;
   const S = Array.isArray(o.series) ? o.series : o.series ? [o.series] : [];
   const yCat = arr(o.yAxis).some((a: any) => a?.type === 'category');
@@ -120,7 +120,8 @@ export function polish(o: any, t?: Tokens, narrow = false): any {
     if (o.legend) out.legend = Array.isArray(o.legend) ? o.legend : { icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 16, ...o.legend, textStyle: { color: t.ink2, fontSize: 12, fontFamily: t.font, ...o.legend.textStyle } };
     // A phone-width box: the legend scrolls on one line and axis labels step down a size.
     if (narrow) {
-      if (out.legend && !Array.isArray(out.legend)) out.legend = { type: 'scroll', pageIconSize: 10, pageTextStyle: { color: t.ink3 }, ...out.legend, itemGap: 10 };
+      // The page arrows stay clear of the Table switch in the top right corner.
+      if (out.legend && !Array.isArray(out.legend)) out.legend = { type: 'scroll', pageIconSize: 10, pageTextStyle: { color: t.ink3 }, ...out.legend, itemGap: 10, ...(width > 0 && out.legend.width == null && out.legend.orient !== 'vertical' ? { width: width - (typeof out.legend.left === 'number' ? out.legend.left : 0) - 56 } : {}) };
       const small = (a: any) => (a && typeof a === 'object' ? { ...a, axisLabel: { ...a.axisLabel, fontSize: Math.min(10, a.axisLabel?.fontSize ?? 10), hideOverlap: true } } : a);
       if (out.xAxis) out.xAxis = Array.isArray(out.xAxis) ? out.xAxis.map(small) : small(out.xAxis);
       if (out.yAxis) out.yAxis = Array.isArray(out.yAxis) ? out.yAxis.map(small) : small(out.yAxis);
@@ -169,7 +170,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     };
     for (const k of ['mousemove', 'mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'mouseout', 'pointermove', 'pointerdown', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'wheel']) host.addEventListener(k, place, { capture: true, passive: true });
     narrowRef.current = el.current.clientWidth < 520;
-    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current), true);
+    const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current, el.current?.clientWidth), true);
     setHasTable(chartTable(o) != null);
     c.on('click', (p) => clickRef.current?.(p));
     // Clicks anywhere over the plot (not only on a symbol) report the x value under the pointer.
@@ -179,7 +180,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
       const v = c.convertFromPixel({ gridIndex: 0 }, pt) as number[];
       if (v && isFinite(v[0])) axisRef.current(v[0]);
     });
-    const re = () => { if (el.current) narrowRef.current = el.current.clientWidth < 520; const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current), true); };
+    const re = () => { if (el.current) narrowRef.current = el.current.clientWidth < 520; const o = optRef.current(tokens()); lastKey.current = keyOf(o); c.setOption(polish(o, tokens(), narrowRef.current, el.current?.clientWidth), true); };
     // Resized only when the box really changes (the observer also reports the size it starts with).
     let w = el.current.clientWidth, h = el.current.clientHeight;
     const ro = new ResizeObserver(() => { const x = el.current; if (!x || (x.clientWidth === w && x.clientHeight === h)) return; w = x.clientWidth; h = x.clientHeight; c.resize(); if ((w < 520) !== narrowRef.current) re(); });
@@ -192,7 +193,7 @@ export function Chart({ option, height, onClick, onAxisClick, label }: Props) {
     return () => { dead = true; stopWait?.(); off(); };
   }, []);
   // A parent re-render redraws the chart only when its option really changed.
-  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o, tokens(), narrowRef.current), true); } });
+  useEffect(() => { if (!inst.current) return; const o = option(tokens()), k = keyOf(o); if (k !== lastKey.current) { lastKey.current = k; inst.current.dispatchAction({ type: 'hideTip' }); inst.current.setOption(polish(o, tokens(), narrowRef.current, el.current?.clientWidth), true); } });
   void theme;
   // ECharts owns the inner element's inline style; the outer one keeps the size.
   // Leaving the chart hides its tooltip at once (otherwise a faded box can stay behind after switching views).

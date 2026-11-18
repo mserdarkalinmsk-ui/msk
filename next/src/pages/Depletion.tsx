@@ -84,7 +84,7 @@ export function ProjectForesight({ p }: { p: Project }) {
                 <td class="r num">{full(r.budget)}</td><td class="r num">{full(r.exposure)}</td><td class="r num">{full(r.rate)}</td>
                 <td><div class="dep-bar"><span class="now" style={{ width: `${Math.min(100, used / 1.3 * 100)}%` }} /><span class="fut" style={{ left: `${Math.min(100, used / 1.3 * 100)}%`, width: `${Math.max(0, Math.min(100, r.endUse / 1.3 * 100) - Math.min(100, used / 1.3 * 100))}%`, background: col(r.status) }} /><i style={{ left: `${100 / 1.3}%` }} /></div><small class="num" style={{ color: col(r.status) }}>{Math.round(r.endUse * 100)}%</small></td>
                 <td class="num">{r.runOut == null ? '—' : r.runOut <= end ? <b style={{ color: col(r.status) }}>{month(r.runOut)}</b> : <span class="muted">after end</span>}</td>
-                <td><span class="dep-pill" style={{ background: col(r.status) }}>{lab(r.status)}</span></td>
+                <td><span class={`dep-pill${r.status === 'tight' ? ' dk' : ''}`} style={{ background: col(r.status) }}>{lab(r.status)}</span></td>
               </tr>); })}</tbody>
           </table>}
         </div>
@@ -94,7 +94,7 @@ export function ProjectForesight({ p }: { p: Project }) {
         <div class="card-b">
           {!T.list.length ? <p class="muted">No heading is projected to run short — no transfer needed.</p> :
           <ul class="dep-tr">{T.list.map((t) => <li>
-            {t.from ? <><span class="dep-pill" style={{ background: C.idle }}>{t.from}. {HEADINGS[t.from]}</span><span class="arr">→</span></> : <span class="dep-pill" style={{ background: C.warn }}>{t.capped ? 'Above the flexibility limit — needs an amendment' : 'No spare heading — cut or amend'}</span>}
+            {t.from ? <><span class="dep-pill" style={{ background: C.idle }}>{t.from}. {HEADINGS[t.from]}</span><span class="arr">→</span></> : <span class="dep-pill dk" style={{ background: C.warn }}>{t.capped ? 'Above the flexibility limit — needs an amendment' : 'No spare heading — cut or amend'}</span>}
             <span class="dep-pill" style={{ background: C.bad }}>{t.to}. {HEADINGS[t.to]}</span><b class="num">{short(t.amount)}</b></li>)}</ul>}
           <p class="muted" style={{ fontSize: '12px', marginTop: '10px' }}>Projection = spent + committed + (average monthly spend so far × months left). A heading below 85% at the end gives up to 80% of its projected surplus. Check with the Revision tab before submitting.</p>
         </div>

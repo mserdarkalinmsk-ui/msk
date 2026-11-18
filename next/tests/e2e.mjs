@@ -591,6 +591,59 @@ async function page(opts) {
   await ctx.close();
 }
 
+// Smallest desktop width: no sideways page scroll, nothing wider than its card or tile, chart labels apart
+{
+  const { p, errors, ctx } = await page({ viewport: { width: 1280, height: 900 }, colorScheme: 'dark' });
+  const fit = () => {
+    const out = [], de = document.documentElement;
+    if (de.scrollWidth > de.clientWidth) out.push(`page scrolls sideways by ${de.scrollWidth - de.clientWidth}px`);
+    // Content past a card's edge, unless a scrolling or clipping box inside the card holds it.
+    for (const card of document.querySelectorAll('main .card, main .kpi, main .pcard')) {
+      const cr = card.getBoundingClientRect(); if (!cr.width) continue;
+      for (const e of card.querySelectorAll('*')) {
+        if (e.closest('svg') && e.tagName !== 'svg') continue;
+        const r = e.getBoundingClientRect(); if (!r.width || !r.height || getComputedStyle(e).visibility === 'hidden') continue;
+        let held = false; for (let a = e.parentElement; a && a !== card; a = a.parentElement) if (getComputedStyle(a).overflowX !== 'visible') { held = true; break; }
+        if (!held && (r.right > cr.right + 2 || r.left < cr.left - 2)) { out.push(`"${(e.textContent || e.className).trim().slice(0, 30)}" leaves "${card.querySelector('h2, .label')?.textContent?.trim().slice(0, 30)}" by ${Math.round(Math.max(r.right - cr.right, cr.left - r.left))}px`); break; }
+      }
+    }
+    // Chart labels: no two visible texts of one chart on top of each other, none under the Table switch.
+    const box = (e) => e.getBoundingClientRect(), hit = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2;
+    for (const w of document.querySelectorAll('main .chart-wrap')) {
+      const T = [...w.querySelectorAll('svg text')].filter((t) => t.textContent.trim() && box(t).width && !t.closest('[clip-path]'));
+      for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) if (hit(box(T[i]), box(T[j]))) out.push(`chart labels "${T[i].textContent}" and "${T[j].textContent}" overlap`);
+      const wr = box(w); for (const t of T) { const r = box(t); if (r.right > wr.right + 2 || r.left < wr.left - 2) out.push(`chart label "${t.textContent}" cut at the chart edge`); }
+      const b = w.querySelector('.chart-tbl-btn'); if (b) for (const t of T) if (/^\d+\/\d+$/.test(t.textContent.trim()) && hit(box(t), box(b))) out.push('legend page arrows under the Table switch');
+    }
+    // Text contrast in the dark theme: at least 3:1 against the flat background behind it.
+    const cv = document.createElement('canvas').getContext('2d');
+    const rgba = (c) => { cv.fillStyle = '#000'; cv.fillStyle = c; const h = cv.fillStyle; if (h[0] === '#') return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).concat(1); const p = h.match(/[\d.]+/g).map(Number); return h.startsWith('color(') ? [p[0] * 255, p[1] * 255, p[2] * 255, p[3] ?? 1] : [p[0], p[1], p[2], p[3] ?? 1]; };
+    const lum = (c) => c.slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+    const tw = document.createTreeWalker(document.querySelector('main'), NodeFilter.SHOW_TEXT);
+    for (let n; (n = tw.nextNode());) {
+      const e = n.parentElement; if (!n.textContent.trim() || !e || e.closest('svg, [disabled], .soon') || !e.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      let bg = null, layers = [], op = 1, skip = false;
+      for (let a = e; a; a = a.parentElement) { const s = getComputedStyle(a); op *= +s.opacity; if (/absolute|fixed/.test(s.position) || s.backgroundImage !== 'none') { skip = true; break; } const c = rgba(s.backgroundColor); if (c[3] > 0) { layers.push(c); if (c[3] > 0.99) break; } }
+      if (skip || !layers.length) continue;
+      bg = layers.reverse().reduce((o, c) => o.map((v, i) => v * (1 - c[3]) + c[i] * c[3]), [0, 0, 0]);
+      const f = rgba(getComputedStyle(e).color), a = f[3] * op, fg = f.slice(0, 3).map((v, i) => v * a + bg[i] * (1 - a));
+      const r = (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05);
+      if (r < 3) { out.push(`"${n.textContent.trim().slice(0, 30)}" contrast ${r.toFixed(2)}:1`); break; }
+    }
+    return out;
+  };
+  for (const r of ['overview', 'projects', 'budget', 'people', 'offices', 'map', 'reports', 'reports/outlook', 'reports/heat', 'reports/close', 'reports/studio', 'reports/compare', 'project/lang', 'project/lang/finance', 'project/geo/scenario']) {
+    await p.goto(url + '#/' + r); await p.waitForTimeout(500);
+    // Charts draw when they come into view.
+    const H = await p.evaluate(() => document.body.scrollHeight); for (let y = 0; y < H; y += 800) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }
+    await p.waitForTimeout(700);
+    const bad = await p.evaluate(fit);
+    check(bad.length === 0, `1280 px ${r}: fits its cards, labels apart, text readable${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
+  }
+  check(errors.length === 0, '1280 px: no console errors');
+  await ctx.close();
+}
+
 // Dark + mobile
 {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });

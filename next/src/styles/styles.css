@@ -413,6 +413,10 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 @media print{.pack-s{break-inside:avoid;border:none;padding:8px 0}.pack-break{break-before:page;break-inside:auto}.pack-sum{background:none}}
 .dep-t td{vertical-align:middle}.dep-bar{position:relative;height:10px;border-radius:5px;background:var(--surface-2);display:inline-block;width:170px;vertical-align:middle;margin-right:8px}.dep-bar span{position:absolute;top:0;bottom:0}.dep-bar .now{left:0;background:var(--ink-3);border-radius:5px 0 0 5px}.dep-bar .fut{opacity:.85}.dep-bar i{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
 .dep-pill{display:inline-block;color:#fff;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+/* White on the amber pill, and on the lighter dark-theme tones, falls below 3:1: those take dark text. */
+.dep-pill.dk{color:#1a1a19}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .dep-pill{color:var(--bg)}}
+:root[data-theme="dark"] .dep-pill{color:var(--bg)}
 .dep-tr{list-style:none;margin:0;padding:0;display:grid;gap:8px}.dep-tr li{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.dep-tr .arr{font-weight:700;color:var(--ink-2)}.dep-tr b{margin-left:auto}
 .pack-pts{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:8px}.pack-pts li{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:baseline;padding:8px 12px;border-radius:8px;background:var(--surface);border-left:4px solid var(--c2)}
 .pack-pts li span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}.pack-pts li p{margin:0;line-height:1.5}
@@ -565,6 +569,9 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .of-box{display:grid;gap:4px;text-align:left;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
 .of-box:hover{border-color:var(--line-strong)}.of-box.on{border-color:#1d5fa8;box-shadow:0 0 0 2px color-mix(in srgb,#1d5fa8 25%,transparent)}
 .of-box.empty{border-style:dashed;color:var(--muted)}.of-box.empty small{color:#1d5fa8;font-weight:600}
+/* The fixed blue reads too dark on the dark surface (2.7:1); dark mode uses its own accent. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .of-box.empty small{color:var(--accent)}}
+:root[data-theme="dark"] .of-box.empty small{color:var(--accent)}
 .of-c{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .of-k{display:flex;justify-content:space-between;font-size:13px}.of-k span{color:var(--muted)}
 .of-mini{display:flex;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:4px 0 2px}.of-mini i{display:block;height:100%}

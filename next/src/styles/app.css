@@ -570,6 +570,11 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 @media (prefers-reduced-motion: reduce) { .btn, .seg button, .nav a, .pcard, .attn-g li { transition: none; transform: none !important; } }
 /* The expenditure-monitoring sheet is printed paper (always white): its controls use the light colours in every theme. */
 .em { color-scheme: light; --bg: #f5f5f3; --surface: #fcfcfb; --surface-2: #f0f0ed; --surface-hover: #ebebe7; --line: #e3e2de; --line-strong: #cfcdc7; --ink: #1a1a19; --ink-2: #4a4a46; --ink-3: #6b6a65; }
+/* White paper documents keep the light status colours and muted text in the dark theme too (dark-theme amber and grey
+   on white fall to 2.2–2.9:1). */
+.em, .studio-doc { --accent: #1d68c4; --accent-soft: #e6f0fc; --good: #16743f; --good-soft: #e3f3e9; --warn: #976200; --warn-soft: #fbf0d9;
+  --serious: #a8450b; --serious-soft: #fce9dd; --critical: #b02a28; --critical-soft: #fbe3e2; }
+.studio-doc { color-scheme: light; --bg: #f5f5f3; --surface: #fcfcfb; --surface-2: #f0f0ed; --surface-hover: #ebebe7; --line: #e3e2de; --line-strong: #cfcdc7; --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #6b6a65; }
 .em select, .em input { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
 /* Backup: automatic folder copy and the first-opening recovery prompt */
 
@@ -807,6 +812,7 @@ tr.click:hover > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .wp-kpi .k span{display:block;font-size:12px;color:var(--muted)}.wp-kpi .k b{font-size:20px}
 .wp-kpi .k i{position:absolute;left:0;bottom:0;height:4px;background:var(--c1)}
 .wp-kpi .k.good i{background:var(--good)}.wp-kpi .k.warning i{background:var(--warning)}.wp-kpi .k.serious i{background:var(--critical)}.wp-kpi .k.serious b{color:var(--critical)}
+.table-wrap{overflow-x:auto}
 .wp-t{width:calc(100% - 40px);margin:0 20px;border-collapse:collapse;font-size:13px}
 .wp-t th,.wp-t td{border:1px solid var(--border);padding:7px 10px;text-align:left}.wp-t td.num{text-align:right;white-space:nowrap}
 .wp-t thead th{text-align:center;font-size:14px;background:color-mix(in srgb,var(--c1) 10%,transparent)}
