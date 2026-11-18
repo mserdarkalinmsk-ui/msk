@@ -565,6 +565,9 @@ tr.sd-bad td:first-child{box-shadow:inset 3px 0 #b42318}tr.sd-warn td:first-chil
 .of-box{display:grid;gap:4px;text-align:left;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
 .of-box:hover{border-color:var(--line-strong)}.of-box.on{border-color:#1d5fa8;box-shadow:0 0 0 2px color-mix(in srgb,#1d5fa8 25%,transparent)}
 .of-box.empty{border-style:dashed;color:var(--muted)}.of-box.empty small{color:#1d5fa8;font-weight:600}
+/* The fixed blue reads too dark on the dark surface (2.7:1); dark mode uses its own accent. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .of-box.empty small{color:var(--accent)}}
+:root[data-theme="dark"] .of-box.empty small{color:var(--accent)}
 .of-c{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .of-k{display:flex;justify-content:space-between;font-size:13px}.of-k span{color:var(--muted)}
 .of-mini{display:flex;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:4px 0 2px}.of-mini i{display:block;height:100%}
