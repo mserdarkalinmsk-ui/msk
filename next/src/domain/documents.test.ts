@@ -169,4 +169,11 @@ describe('Word tables', () => {
     expect(d.tables[0][0][0]).toBe('1.1.1\nAlpha manager');
     expect(analyse(d).budget?.lines.map((l) => [l.code, l.description, l.approved])).toEqual([['1.1.1', 'Alpha manager', 12000], ['1.1.2', 'Beta officer', 12000], ['1.1.3', 'Gamma assistant', 12000]]);
   });
+  it('keeps columns after a cell merged across columns under their own headers', async () => {
+    const span = (n: number, t: string) => `<w:tc><w:tcPr><w:gridSpan w:val="${n}"/></w:tcPr>${p(t)}</w:tc>`;
+    const d = await docx(`<w:tbl><w:tr>${tc('Risk')}${tc('Category')}${tc('Likelihood')}${tc('Impact')}${tc('Mitigation')}</w:tr>
+      <w:tr>${span(2, 'Alpha risk')}${tc('High')}${tc('Low')}${tc('Beta measure')}</w:tr>
+      <w:tr>${tc('Gamma risk')}${tc('External')}${tc('Low')}${tc('Medium')}${tc('Delta measure')}</w:tr></w:tbl>`);
+    expect(analyse(d).risks.map((r) => [r.title, r.likelihood, r.impact, r.mitigation])).toEqual([['Alpha risk', '4', '2', 'Beta measure'], ['Gamma risk', '2', '3', 'Delta measure']]);
+  });
 });

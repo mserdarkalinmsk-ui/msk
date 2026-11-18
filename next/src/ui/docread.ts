@@ -20,7 +20,11 @@ export async function readDocx(buf: ArrayBuffer, name: string): Promise<Doc> {
   // innermost-first table extraction keeps nested tables from swallowing rows
   for (let guard = 0; guard < 500; guard++) {
     const m = body.match(/<w:tbl>(?:(?!<w:tbl>)[\s\S])*?<\/w:tbl>/); if (!m) break;
-    tables.push([...m[0].matchAll(/<w:tr[\s>][\s\S]*?<\/w:tr>/g)].map((tr) => [...tr[0].matchAll(/<w:tc>[\s\S]*?<\/w:tc>/g)].map((tc) => cellText(tc[0]))));
+    tables.push([...m[0].matchAll(/<w:tr[\s>][\s\S]*?<\/w:tr>/g)].map((tr) => [...tr[0].matchAll(/<w:tc>[\s\S]*?<\/w:tc>/g)].flatMap((tc) => {
+      // a cell merged across columns (gridSpan) keeps the columns after it under their own headers
+      const span = Math.min(50, Math.max(1, +(tc[0].match(/<w:gridSpan\s+w:val="(\d+)"/)?.[1] ?? 1)));
+      return [cellText(tc[0]), ...Array(span - 1).fill('')];
+    })));
     body = body.replace(m[0], '');
   }
   const paragraphs = [...body.matchAll(/<w:p[\s>][\s\S]*?<\/w:p>/g)].map((p) => runs(p[0]).trim()).filter(Boolean);
