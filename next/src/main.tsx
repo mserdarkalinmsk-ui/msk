@@ -6,6 +6,7 @@ import './styles/tokens.css';
 import './styles/app.css';
 import './styles/styles.css';
 import './styles/system.css';
+import './styles/editorial.css';
 import { EMBED, go, load, set, unlock, useStore } from './data/store';
 import { useState } from 'preact/hooks';
 import { Overview } from './pages/Overview';

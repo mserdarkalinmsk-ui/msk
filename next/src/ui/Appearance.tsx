@@ -6,6 +6,7 @@ import { downloadDocx, readTemplate } from './docxwrite';
 /** Visual direction, accent, density and number style — stored per browser, applied as html data-attributes. */
 export const PREFS = {
   style: [
+    { id: 'editorial', label: 'Editorial', hint: 'Report on paper: serif headlines, ink rules, flat figures', side: '#f3eee5', hero: '#fbf8f2', card: '#fbf8f2', bg: '#efe8dc' },
     { id: 'studio', label: 'Studio', hint: 'Neutral, precise, monospace figures', side: '#fcfcfb', hero: '#ffffff', card: '#ffffff', bg: '#f5f5f3' },
     { id: 'executive', label: 'Executive', hint: 'Navy chrome, gradient KPI band', side: '#0e1a2b', hero: 'linear-gradient(135deg,#1d3a64,#0e1a2b)', card: '#ffffff', bg: '#f3f5f9' },
     { id: 'atlas', label: 'Atlas', hint: 'Editorial serif, warm paper, hairlines', side: '#f6f1e8', hero: '#fffdf8', card: '#fffdf8', bg: '#efe7d8' },
@@ -15,7 +16,9 @@ export const PREFS = {
 } as const;
 type Key = 'style' | 'accent' | 'density' | 'numbers';
 const get = (k: Key) => { try { return localStorage.getItem('pl-' + k) ?? ''; } catch { return ''; } };
-export function applyPrefs() { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { const v = get(k); if (v) document.documentElement.dataset[k] = v; } }
+/** The editorial direction is the default; Studio is the earlier neutral look. */
+export const DEFAULT_STYLE = 'editorial';
+export function applyPrefs() { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { const v = get(k) || (k === 'style' ? DEFAULT_STYLE : ''); if (v && v !== 'studio') document.documentElement.dataset[k] = v; else if (k === 'style') delete document.documentElement.dataset.style; } }
 function setPref(k: Key, v: string) {
   try { localStorage.setItem('pl-' + k, v); } catch { /* ignore */ }
   document.documentElement.dataset[k] = v;
@@ -36,7 +39,7 @@ export function AppearancePanel({ close }: { close: () => void }) {
           <h3 style={{ margin: 0, fontSize: '14px' }}>Design direction</h3>
           <div class="style-grid">
             {PREFS.style.map((s) => (
-              <button class="style-opt" aria-pressed={cur('style', 'studio') === s.id} onClick={() => pick('style', s.id)}>
+              <button class="style-opt" aria-pressed={cur('style', DEFAULT_STYLE) === s.id} onClick={() => pick('style', s.id)}>
                 <div class="thumb" style={{ background: s.bg }}>
                   <i style={{ background: s.side }} />
                   <div class="tb"><i style={{ background: s.hero }} /><div><i style={{ background: s.card }} /><i style={{ background: s.card }} /></div></div>
@@ -57,10 +60,10 @@ export function AppearancePanel({ close }: { close: () => void }) {
         </section>
         <section style={{ display: 'grid', gap: '10px' }}>
           <h3 style={{ margin: 0, fontSize: '14px' }}>Figures</h3>
-          <div class="seg"><button aria-pressed={cur('numbers', 'mono') === 'mono'} onClick={() => pick('numbers', 'mono')}>Monospace</button><button aria-pressed={cur('numbers', 'mono') === 'sans'} onClick={() => pick('numbers', 'sans')}>Proportional</button></div>
+          <div class="seg"><button aria-pressed={cur('numbers', cur('style', DEFAULT_STYLE) === 'editorial' ? 'sans' : 'mono') === 'mono'} onClick={() => pick('numbers', 'mono')}>Monospace</button><button aria-pressed={cur('numbers', cur('style', DEFAULT_STYLE) === 'editorial' ? 'sans' : 'mono') === 'sans'} onClick={() => pick('numbers', 'sans')}>Proportional</button></div>
         </section>
       </div>
-      <div class="drawer-f"><button class="btn ghost" onClick={() => { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { try { localStorage.removeItem('pl-' + k); } catch { /* */ } delete document.documentElement.dataset[k]; } dispatchEvent(new Event('pl-prefs')); force((x) => x + 1); }}>Reset to default</button><span style={{ flex: 1 }} /><button class="btn primary" onClick={close}>Done</button></div>
+      <div class="drawer-f"><button class="btn ghost" onClick={() => { for (const k of ['style', 'accent', 'density', 'numbers'] as Key[]) { try { localStorage.removeItem('pl-' + k); } catch { /* */ } delete document.documentElement.dataset[k]; } applyPrefs(); dispatchEvent(new Event('pl-prefs')); force((x) => x + 1); }}>Reset to default</button><span style={{ flex: 1 }} /><button class="btn primary" onClick={close}>Done</button></div>
     </>
   );
 }

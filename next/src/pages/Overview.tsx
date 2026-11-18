@@ -96,7 +96,7 @@ export function Overview() {
           <div class="sc-split" title={`Spent ${pct(T.burn)} · committed ${pct(T.committed / (T.budget || 1))} · free ${pct(Math.max(0, T.budget - T.exposure) / (T.budget || 1))}`}>
             <span style={{ flex: Math.max(0, T.spent) }} class="s" /><span style={{ flex: Math.max(0, T.committed) }} class="c" /><span style={{ flex: Math.max(0, T.budget - T.exposure) }} class="f" />
           </div>
-          {staff.total > 0 && <span class="ctx kpi-staff" title={staff.positions ? "People with a contract running today; projects without staff records count the staff positions of their latest report" : "People with a contract running today (from the staff records of the reports)"}><b>👥 {staff.total} staff</b><span>{staffSplit(staff)}</span></span>}
+          {staff.total > 0 && <span class="ctx kpi-staff" title={staff.positions ? "People with a contract running today; projects without staff records count the staff positions of their latest report" : "People with a contract running today (from the staff records of the reports)"}><b>{staff.total} staff</b><span>{staffSplit(staff)}</span></span>}
         </div>
         <div class="kpi lead">
           <span class="label"><Ico d={I.trend} />Spent to date</span>

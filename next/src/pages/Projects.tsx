@@ -70,7 +70,7 @@ function ProjectCard({ p, cname, i }: { p: Project; cname: (id: string) => strin
         {crit + ser > 0 && <span class={`badge ${crit ? 'critical' : 'serious'}`} title={F.map((f) => f.title).join('\n')} style={{ marginLeft: 'auto' }}>{crit + ser}</span>}
       </header>
       <h3>{p.name}</h3>
-      <div class="pc-meta">{cname(p.country)} · {period(p)}{p.bh && <> · BH <span class="num">{p.bh}</span></>}{(() => { const s = staffCount([p], TODAY).total; return s ? <> · <span title="Staff with a contract running today">👥 {s}</span></> : null; })()}</div>
+      <div class="pc-meta">{cname(p.country)} · {period(p)}{p.bh && <> · BH <span class="num">{p.bh}</span></>}{(() => { const s = staffCount([p], TODAY).total; return s ? <> · <span title="Staff with a contract running today">{s} staff</span></> : null; })()}</div>
       {p.datesTbc ? (
         <div class="pc-setup">
           <b>Set-up · project file {Math.round(readiness(p).score * 100)}%</b>
