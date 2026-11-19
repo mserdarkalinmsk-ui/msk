@@ -434,6 +434,17 @@ async function page(opts) {
   check(/Reports followed\s*3/.test(poKpi ?? ''), `PO review follows the three reports (${poKpi})`);
   if (poRows > 1) { await p.locator('.po-review .dt-row[role=row] .dt-cell[role=gridcell]').nth(1).click(); await p.waitForTimeout(200); check(await p.locator('table.po-hist tbody tr').count() >= 1, 'a PO review row opens the order in every report'); }
   await p.screenshot({ path: `${shots}/po-review.png`, fullPage: true });
+  // project tabs: dragged into another order, kept after a reload, back to the standard order with ↺
+  const tabsNow = async () => (await p.locator('.tabs button[draggable]').allTextContents()).map((t) => t.replace(/\d+$/, '').trim());
+  const t0 = await tabsNow();
+  await p.locator('.tabs button[draggable]:has-text("Staff")').dragTo(p.locator('.tabs button[draggable]').first()); await p.waitForTimeout(200);
+  const t1 = await tabsNow();
+  check(t1[0] === 'Staff' && t1.length === t0.length, `a project tab dragged to the front (${t1.join(', ')})`);
+  await p.reload(); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
+  const t2 = await tabsNow();
+  check(t2[0] === 'Staff', `the tab order is kept after a reload (${t2.join(', ')})`);
+  if (await p.locator('.tabs .tab-reset').count()) { await p.click('.tabs .tab-reset'); await p.waitForTimeout(150); }
+  check((await tabsNow()).join() === t0.join(), 'the standard tab order comes back with ↺');
   check(errors.length === 0, 'bulk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

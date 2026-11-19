@@ -1,3 +1,4 @@
+import { moveTab, orderTabs, readTabOrder, TAB_ORDER } from '../ui/tabOrder';
 import { POReview, poToCheck } from './POReview';
 import { capacity, endOf } from '../domain/analysis';
 import { CostCard } from '../ui/CostPanel';
@@ -70,6 +71,10 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
   const countries = useStore((s) => s.ledger.countries);
   const [tab, setTab] = useState<Tab>(SLUG[sub ?? '']?.tab ?? 'Summary');
+  const [order, setOrder0] = useState<string[]>(readTabOrder);
+  const setOrder = (o: string[]) => { setOrder0(o); try { if (o.length) localStorage.setItem(TAB_ORDER, JSON.stringify(o)); else localStorage.removeItem(TAB_ORDER); } catch { /* not kept: the order still applies on this page */ } };
+  const [drag, setDrag] = useState(''), [over, setOver] = useState('');
+  const groups = orderTabs(GROUPS, order);
   useEffect(() => { const x = SLUG[sub ?? '']; if (x) { setTab(x.tab); setTimeout(() => { const t = document.querySelector('.tabs'); if (x.tab === 'Summary' || !t) scrollTo({ top: 0 }); else scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + scrollY - 72) }); }, 120); } }, [sub]);
   const [fc, setFc] = useState(false);
   useEffect(() => { const h = (e: Event) => setTab((e as CustomEvent).detail as Tab); addEventListener('pl-tab', h); return () => removeEventListener('pl-tab', h); }, []);
@@ -114,7 +119,12 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
         <div class="kpi" data-tone={plan && plan.late > 0 ? 'warn' : undefined}><span class="label">Activities</span><span class="value">{plan ? `${plan.done}/${plan.total}` : '—'}</span><span class="ctx">{plan ? <>{plan.late > 0 ? <b style={{ color: 'var(--serious)' }}>{plan.late} overdue</b> : 'none overdue'} · month {plan.month}</> : 'no plan on file'}</span></div>
       </section>
       <div class="tabs" role="tablist">
-        {GROUPS.map((g) => { const n = g.tabs.reduce((s, t) => s + (counts[t] ?? 0), 0); return <button role="tab" aria-selected={g.tabs.includes(tab)} onClick={() => !g.tabs.includes(tab) && setTab(g.tabs[0])}>{g.label}{n > 0 && <span class="tab-n">{n}</span>}</button>; })}
+        {groups.map((g) => { const n = g.tabs.reduce((s, t) => s + (counts[t] ?? 0), 0); return <button role="tab" aria-selected={g.tabs.includes(tab)} onClick={() => !g.tabs.includes(tab) && setTab(g.tabs[0])}
+          draggable title="Drag to change the order" class={drag && over === g.label && drag !== g.label ? (groups.findIndex((x) => x.label === drag) < groups.indexOf(g) ? 'tab-drop after' : 'tab-drop') : undefined}
+          onDragStart={(e) => { setDrag(g.label); e.dataTransfer?.setData('text/plain', g.label); }} onDragEnd={() => { setDrag(''); setOver(''); }}
+          onDragOver={(e) => { if (drag) { e.preventDefault(); setOver(g.label); } }}
+          onDrop={(e) => { e.preventDefault(); if (drag && drag !== g.label) setOrder(moveTab(groups.map((x) => x.label), drag, g.label)); setDrag(''); setOver(''); }}>{g.label}{n > 0 && <span class="tab-n">{n}</span>}</button>; })}
+        {order.length > 0 && <button class="tab-reset" title="Back to the standard order of the tabs" onClick={() => setOrder([])}>↺</button>}
       </div>
       {(() => { const g = GROUPS.find((x) => x.tabs.includes(tab))!; return g.tabs.length > 1 && (
         <div class="subtabs" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{LABEL[t] ?? t}{counts[t] != null && <span class="tab-n">{counts[t]}</span>}</button>)}</div>); })()}
