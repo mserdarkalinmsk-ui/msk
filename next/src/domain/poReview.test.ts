@@ -27,7 +27,7 @@ describe('PO review', () => {
     expect(kinds([rep('A', [po({ amount: 1100, sc: 1100, units: 1100, unitType: 'Per item', line: '2.1' })])])).toContain('typed');
     expect(kinds([rep('A', [po({ po: '1' }), po({ po: '2' })])])).toContain('dup');
     expect(kinds([rep('A', [po({ po: '1', line: '2.1', description: 'x' }), po({ po: '1', line: '2.1', description: 'x' })])])).not.toContain('dup');
-    expect(kinds([rep('A', [po({ status: 'FINALLY CLOSED', balance: 40, spent: 60 })])])).toContain('closed-balance');
+    expect(kinds([rep('A', [po({ status: 'CLOSED', balance: 40, spent: 60 })])])).toContain('closed-balance');
   });
   it('follows every pair of reports: a move to another line is caught even when it was not in the latest report', () => {
     const F = poReview([rep('A', [po({ line: '2.1' })]), rep('B', [po({ line: '1.1.1', unitType: 'Per month', units: 1, amount: 100 })]), rep('C', [po({ line: '1.1.1', unitType: 'Per month', units: 1, amount: 100 })])]).findings;
@@ -48,6 +48,15 @@ describe('PO review', () => {
     expect(poReview([rep('A', [po({ units: null, spent: 80, balance: 20 })])]).findings[0]).toMatchObject({ kind: 'no-units', level: 'warn' });
     const F = poReview([rep('A', [po({ line: '1.1.1', unitType: 'Per month', units: 2, amount: 6000, spent: 6000 }), po({ units: null, spent: 40, amount: 40 })])]).findings.filter((f) => f.kind === 'no-units');
     expect(F[0].level).toBe('info');
+  });
+  it('finally closed orders are left out: nothing on them can be corrected; petty cash is never counted in units', () => {
+    const V = poReview([rep('A', [po({ po: '1', status: 'FINALLY CLOSED', spent: 160, balance: 0, amount: 100, unitType: 'Per month' }), po({ po: '2', spent: 160, balance: 0, amount: 100 })])]);
+    expect([...new Set(V.findings.map((f) => f.po))]).toEqual(['2']);
+    expect(V.finallyClosed).toBe(1);
+    expect(kinds([rep('A', [po({ units: null, spent: 40, description: 'Petty cash advance request' })])])).toEqual([]);
+  });
+  it('each finding carries the year its order was raised', () => {
+    expect(poReview([rep('A', [po({ date: '2025-03-04', spent: 160, balance: 0 })])]).findings[0].year).toBe('2025');
   });
   it('every kind has a label and a group', () => {
     for (const v of Object.values(PO_KIND)) { expect(v.label).toBeTruthy(); expect(['line', 'unit', 'amount', 'change']).toContain(v.group); }

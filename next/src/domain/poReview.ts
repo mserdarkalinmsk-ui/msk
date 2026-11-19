@@ -11,10 +11,10 @@ export type PoKind =
   | 'over' | 'rate' | 'typed' | 'dup' | 'closed-balance'
   | 'raised' | 'reduced' | 'spent-down' | 'gone' | 'described' | 'new';
 export type PoGroup = 'line' | 'unit' | 'amount' | 'change';
-export interface PoFinding { kind: PoKind; group: PoGroup; level: 'bad' | 'warn' | 'info'; po: string; line: string; supplier: string; description: string; text: string; /** euro amount the finding is about (gap, change, balance) */ amount: number; /** what the order should probably say instead (a line, a unit), when the report itself shows it */ fix?: string }
+export interface PoFinding { kind: PoKind; group: PoGroup; level: 'bad' | 'warn' | 'info'; po: string; line: string; supplier: string; description: string; text: string; /** euro amount the finding is about (gap, change, balance) */ amount: number; /** what the order should probably say instead (a line, a unit), when the report itself shows it */ fix?: string; /** year the order was raised (its PO date), for the view by year */ year: string }
 export interface PoReport { date: string; label: string; wb: WorkbookSummary }
 export interface PoHistoryRow { date: string; label: string; line: string; amount: number; spent: number; balance: number; units: number | null; unitType: string; status: string; description: string }
-export interface PoReview { latest?: PoReport; previous?: PoReport; reports: number; pos: number; findings: PoFinding[]; history: (po: string) => PoHistoryRow[] }
+export interface PoReview { latest?: PoReport; previous?: PoReport; reports: number; pos: number; /** orders finally closed in the latest report: nothing left to correct on them, so left out */ finallyClosed: number; findings: PoFinding[]; history: (po: string) => PoHistoryRow[] }
 /** A line of the approved budget, for the unit when the report leaves it out. */
 export interface PoBudgetLine { code: string; unit?: string; description?: string }
 
@@ -83,6 +83,8 @@ const CLASSES: { what: string; rx: RegExp; heads: string[]; units: string[] }[] 
 ];
 /** A line code named on the order: at the start of its nature ("2.2 - Framework…") or as "BL 5.5.2". */
 const named = (x: PO) => (x.nature.match(/^\s*(\d+(?:\.\d+){1,3})(?=\b|[\s\-/])/) ?? x.nature.match(/\bBL\s?(\d+(?:\.\d+){1,3})/i) ?? x.description.match(/\bBL\s?(\d+(?:\.\d+){1,3})/i))?.[1];
+/** Petty-cash advances and their leftovers: small sums for several lines, never counted in units. */
+const pettyCash = (x: PO) => /petty cash|caisse|avans|advance request/i.test(`${x.description} ${x.nature} ${x.supplier}`);
 const related = (a: string, b: string) => a === b || a.startsWith(b + '.') || b.startsWith(a + '.');
 const under = (code: string, head: string) => code === head || code.startsWith(head + '.');
 /** The grade of a staff contract as the description gives it: "SURNAME,Name - B4/1 - 100% - …" → "B4". */
@@ -102,10 +104,12 @@ export function poReview(reports: PoReport[], budget: PoBudgetLine[] = []): PoRe
   const R = reports.filter((r) => r.wb.pos?.length);
   const latest = R.at(-1), previous = R.at(-2);
   const history = (po: string) => R.flatMap((r) => r.wb.pos.filter((x) => x.po === po).map((x) => ({ date: r.date, label: r.label, line: x.line, amount: r2(x.amount), spent: r2(x.spent), balance: r2(x.balance), units: x.units, unitType: x.unitType, status: x.status, description: x.description })));
-  if (!latest) return { reports: 0, pos: 0, findings: [], history };
+  if (!latest) return { reports: 0, pos: 0, finallyClosed: 0, findings: [], history };
   const out: PoFinding[] = [];
+  // the year an order was raised: its PO date in the latest report that has it
+  const raised = new Map<string, string>(); for (const r of R) for (const x of r.wb.pos) if (x.date) raised.set(x.po, x.date.slice(0, 4));
   const add = (kind: PoKind, level: PoFinding['level'], x: Pick<PO, 'po' | 'line' | 'supplier' | 'description'>, text: string, amount: number, fix?: string) =>
-    out.push({ kind, group: PO_KIND[kind].group, level, po: x.po, line: x.line, supplier: x.supplier, description: x.description, text, amount: r2(amount), ...(fix ? { fix } : {}) });
+    out.push({ kind, group: PO_KIND[kind].group, level, po: x.po, line: x.line, supplier: x.supplier, description: x.description, text, amount: r2(amount), year: raised.get(x.po) ?? '', ...(fix ? { fix } : {}) });
 
   // ---- the latest report, order by order ----
   const wb = latest.wb;
@@ -179,7 +183,7 @@ export function poReview(reports: PoReport[], budget: PoBudgetLine[] = []): PoRe
       if (rate > b * 1.5) add('rate', rate > b * 2 ? 'warn' : 'info', x, `${eur(rate)} per unit (${eur(x.amount)} for ${num(x.units)} ${x.unitType.toLowerCase() || 'units'}); the line is budgeted at ${eur(b)}: ${Math.round((rate / b - 1) * 100)}% more.`, x.amount - x.units * b);
     }
     // units come with the spending: a PO only committed shows none yet; once something is spent it should
-    if (!x.units && x.spent > 0.5 && l.budget.units && k !== 'month') {
+    if (!x.units && x.spent > 0.5 && l.budget.units && k !== 'month' && !pettyCash(x)) {
       const other = wb.pos.some((y) => y.po === x.po && y !== x && (y.units ?? 0) > 0);
       add('no-units', other ? 'info' : 'warn', x, `${eur(x.spent)} spent but no units, though units come with the spending; line ${l.code} counts ${lu?.unit || l.unit || 'units'}, so its cost per unit reads high.${other ? ' Probably an extra cost (a second leg, a fee) on an order counted on its other line.' : ''}`, x.spent);
     }
@@ -221,7 +225,11 @@ export function poReview(reports: PoReport[], budget: PoBudgetLine[] = []): PoRe
     }
     for (const [, al] of A) if (!B.has(al[0].po)) add('gone', 'warn', al[0], `In ${a.label} with ${eur(sum(al, (y) => y.amount))} ordered and ${eur(sum(al, (y) => y.spent))} spent; not in ${b.label}.`, -sum(al, (y) => y.sc));
   }
+  // orders finally closed in the latest report are done: nothing on them can be corrected any more
+  const final = new Set([...byPo(wb.pos)].filter(([, L]) => L.every((y) => /finally/i.test(y.status))).map(([po]) => po));
+  const kept = out.filter((f) => !final.has(f.po));
+  out.length = 0; out.push(...kept);
   const L = { bad: 0, warn: 1, info: 2 };
   out.sort((a, b) => L[a.level] - L[b.level] || Math.abs(b.amount) - Math.abs(a.amount));
-  return { latest, previous, reports: R.length, pos: new Set(wb.pos.map((x) => x.po)).size, findings: out, history };
+  return { latest, previous, reports: R.length, pos: new Set(wb.pos.map((x) => x.po)).size, finallyClosed: final.size, findings: out, history };
 }
