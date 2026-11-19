@@ -442,8 +442,9 @@ async function page(opts) {
   check(t1[0] === 'Staff' && t1.length === t0.length, `a project tab dragged to the front (${t1.join(', ')})`);
   // the same headless quirk as above (a dropped file:// storage): told apart by a marker key, and the drag made once more
   let t2 = [];
-  for (let i = 0; i < 2; i++) {
-    await p.evaluate(() => localStorage.setItem('pl-e2e-marker', '1'));
+  // the drop can repeat (seen twice in a row): up to four tries, each after a pause that lets the storage settle
+  for (let i = 0; i < 4; i++) {
+    await p.evaluate(() => localStorage.setItem('pl-e2e-marker', '1')); await p.waitForTimeout(400);
     await p.reload(); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
     t2 = await tabsNow();
     if (await p.evaluate(() => localStorage.getItem('pl-e2e-marker') === '1')) break;
@@ -613,7 +614,7 @@ async function page(opts) {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 } });
   await p.goto(url + '#/offices'); await p.waitForSelector('.cd-tabs');
   const tabs = await p.locator('.cd-tabs button').allTextContents();
-  check(tabs.join('|') === 'Overview|Finance|Projects|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
+  check(tabs.join('|') === 'Overview|Ordinary budget|Extraordinary budget|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
   for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
   await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);

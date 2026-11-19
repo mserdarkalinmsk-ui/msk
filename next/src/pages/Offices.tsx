@@ -1,6 +1,4 @@
 import { useState } from 'preact/hooks';
-import { money } from '../domain/calc';
-import { TODAY } from '../today';
 import { shapeFor } from '../ui/MapView';
 import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, type DeskTab } from './CountryDesk';
 import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
@@ -42,23 +40,16 @@ export function Offices() {
       return <button role="tab" aria-selected={x === c} class={`ct-chip${x === c ? ' on' : ''}`} onClick={() => { setCtry(x); setOid(''); setRid(''); setLine(''); }}>
         <Outline c={crec(x)} size={30} /><span><b>{cname(x)}</b><small>{n} project{n === 1 ? '' : 's'}{of ? ` · ${of} office${of > 1 ? 's' : ''}` : ''}</small></span></button>; })}</div>);
   const head = (core[c] ?? []).find((m) => /head of (the )?office|head of programme office/i.test(m.position));
-  const Hero = () => { const ps = projects.filter((p) => p.country === c), M = ps.map(money), bud = M.reduce((a, m) => a + m.budget, 0), sp = M.reduce((a, m) => a + m.spent, 0);
-    const run = ps.filter((p) => p.start <= TODAY.toISOString().slice(0, 10) && p.end >= TODAY.toISOString().slice(0, 10)).length;
-    const r = o?.reports.at(-1), T = r ? officeView(r).T : null, ob = T ? T.ob.budget + T.ls.budget : 0, used = T ? T.ob.sc + T.ls.sc : 0;
+  // the hero says who the country is; its figures live once, in the Overview below
+  const Hero = () => { const r = o?.reports.at(-1);
     return <section class="ct-hero">
-      <div class="ct-shape" aria-hidden="true"><Outline c={crec(c)} size={210} fill /></div>
+      <div class="ct-shape" aria-hidden="true"><Outline c={crec(c)} size={150} fill /></div>
       <div class="ct-id">
         <span class="ct-region">{crec(c).region || 'Country'}{crec(c).iso3 ? ` · ${crec(c).iso3}` : ''}</span>
         <h1>{cname(c)}</h1>
         <p class="ct-sub">{here.length ? here.map((x) => <span>{x.name}{x.ccm ? ` · CCM ${x.ccm}` : ''}{x.bh ? ` · BH ${x.bh}` : ''}</span>) : <span>No office budget imported</span>}{head ? <span>Head of office: <b>{head.name}</b></span> : null}</p>
         {here.length > 1 && <select class="select" aria-label="Office" value={o?.id} onChange={(e) => { setOid((e.target as HTMLSelectElement).value); setRid(''); setLine(''); }}>{here.map((x) => <option value={x.id}>{x.name}</option>)}</select>}
-        <div class="ct-facts">
-          <span><b>{run}</b> running project{run === 1 ? '' : 's'}{ps.length > run ? ` of ${ps.length}` : ''}</span>
-          <span><b>{short(bud)}</b> portfolio · <b>{pc(bud ? sp / bud : 0)}</b> spent</span>
-          {T && <span><b>{short(ob)}</b> office budget · <b>{pc(ob ? used / ob : 0)}</b> used</span>}
-          <span><b>{(core[c] ?? []).length}</b> core team</span>
-          {r && <span class="muted">office situation {date(r.date)}</span>}
-        </div>
+        {r && <p class="ct-note">Office situation {date(r.date)}</p>}
       </div>
     </section>; };
   const P = projects.filter((p) => p.country === c);
@@ -68,8 +59,8 @@ export function Offices() {
     <div class="cd-head">
       <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
-    {tab === 'Finance' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
-    {tab === 'Projects' && <CountryProjects name={cname(c)} P={P} />}
+    {tab === 'Ordinary budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
+    {tab === 'Extraordinary budget' && <CountryProjects name={cname(c)} P={P} />}
     {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
     {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
     {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}

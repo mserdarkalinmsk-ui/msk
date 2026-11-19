@@ -19,7 +19,7 @@ import { allPeople, StaffBoard } from './People';
 import { ProviderBrief } from './Providers';
 
 /** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
-export const DESK_TABS = ['Overview', 'Finance', 'Projects', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
+export const DESK_TABS = ['Overview', 'Ordinary budget', 'Extraordinary budget', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
 export type DeskTab = (typeof DESK_TABS)[number];
 
 const now = () => TODAY.toISOString().slice(0, 10);
@@ -43,22 +43,42 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
   const E = events(P).filter((e) => e.day >= now() && daysUntil(e.day, TODAY) <= 90), late = events(P).filter((e) => e.kind === 'report' && e.tone === 'bad');
   const FW = useStore((s) => s.ledger.frameworks) ?? {}, mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
   const due = contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY));
-  const off = offices.map((o) => officeView(o.reports.at(-1)!).T).reduce((a, T) => ({ b: a.b + T.ob.budget + T.ls.budget, sc: a.sc + T.ob.sc + T.ls.sc }), { b: 0, sc: 0 });
+  const Ts = offices.map((o) => ({ r: o.reports.at(-1)!, T: officeView(o.reports.at(-1)!).T }));
+  const ob = Ts.reduce((a, { T }) => ({ b: a.b + T.ob.budget + T.ls.budget, sc: a.sc + T.ob.sc + T.ls.sc, pl: a.pl + T.ob.planned + T.ls.planned, ob: a.ob + T.ob.budget, ls: a.ls + T.ls.budget }), { b: 0, sc: 0, pl: 0, ob: 0, ls: 0 });
+  const committed = M.reduce((a, m) => a + m.committed, 0);
   return <>
-    <div class="po-kpi cd-kpi">
-      <Tile k="fin" color="var(--c1)" icon="€" label="Office budget" value={offices.length ? short(off.b) : '—'} sub={offices.length ? `${pct(off.b ? off.sc / off.b : 0)} used · ${offices.length} office${offices.length > 1 ? 's' : ''}` : 'no office budget imported'} onClick={() => setTab('Finance')} />
-      <Tile k="prj" color="var(--c3)" icon="▦" label="Projects" value={`${A.length}`} sub={P.length ? `${A.length} running of ${P.length} · ${short(spent)} of ${short(budget)} spent` : 'no project in this country'} onClick={() => setTab('Projects')} />
+    <section class="bud2" aria-label={`Budgets in ${name}`}>
+      <button class="bud bud-ob" onClick={() => setTab('Ordinary budget')}>
+        <span class="bud-h">Ordinary budget<small>the office's running costs{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
+        {Ts.length ? <><b class="bud-v">{full(ob.b)}</b>
+          <Bar parts={[[ob.sc, 'var(--c1)'], [ob.pl, 'color-mix(in srgb, var(--c1) 35%, transparent)']]} of={ob.b} />
+          <dl><dt>Ordinary Budget</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
+          : <p class="muted">No office budget imported for {name}.</p>}
+      </button>
+      <button class="bud bud-eb" onClick={() => setTab('Extraordinary budget')}>
+        <span class="bud-h">Extraordinary budget<small>the projects: {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
+        {P.length ? <><b class="bud-v">{full(budget)}</b>
+          <Bar parts={[[spent, 'var(--c3)'], [committed, 'color-mix(in srgb, var(--c3) 40%, transparent)']]} of={budget} />
+          <dl><dt>Spent</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(budget - spent - committed)}</b></dd></dl></>
+          : <p class="muted">No project in {name}.</p>}
+      </button>
+      <div class="bud bud-all"><span class="bud-h">In {name}<small>both budgets together</small></span><b class="bud-v">{full(ob.b + budget)}</b>
+        <Bar parts={[[ob.b, 'var(--c1)'], [budget, 'var(--c3)']]} of={ob.b + budget} />
+        <dl><dt>Ordinary</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
+    </section>
+    <div class="po-kpi cd-kpi cd-kpi3">
       <Tile k="ten" color="var(--c4)" icon="⚑" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />
       <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
       <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
-    <div class="grid g-12" style={{ marginTop: '4px' }}>
-      <section class="card span-12"><div class="card-h"><div><h2>Projects in {name}</h2><p>Spent against budget and against time · click a project to open it</p></div></div>
-        <div class="card-b"><ProjectRows P={P} limit={8} /></div></section>
-      <section class="card span-12"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
-        <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
-    </div>
+    <section class="card"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
+      <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
   </>;
+}
+
+/** A stacked bar: each part's share of the whole. */
+function Bar({ parts, of }: { parts: [number, string][]; of: number }) {
+  return <span class="bud-bar">{parts.map(([v, c]) => <i style={{ width: `${of > 0 ? Math.max(0, Math.min(100, v / of * 100)) : 0}%`, background: c }} />)}</span>;
 }
 
 function EvRow({ e }: { e: Ev }) {
@@ -81,7 +101,7 @@ function ProjectRows({ P, limit }: { P: Project[]; limit?: number }) {
 
 export function CountryProjects({ name, P }: { name: string; P: Project[] }) {
   const M = P.map(money), t = (f: 'budget' | 'spent' | 'committed') => M.reduce((a, m) => a + m[f], 0);
-  return <section class="card"><div class="card-h"><div><h2>Projects in {name}</h2><p>{P.length} project{P.length === 1 ? '' : 's'} · budget {full(t('budget'))} · spent {full(t('spent'))} · committed {full(t('committed'))} · “spent vs time” is spending ahead (+) or behind (−) the time gone</p></div></div>
+  return <section class="card"><div class="card-h"><div><h2>Extraordinary budget: the projects in {name}</h2><p>{P.length} project{P.length === 1 ? '' : 's'} · budget {full(t('budget'))} · spent {full(t('spent'))} · committed {full(t('committed'))} · “spent vs time” is spending ahead (+) or behind (−) the time gone</p></div></div>
     <div class="card-b"><ProjectRows P={P} /></div></section>;
 }
 
