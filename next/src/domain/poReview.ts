@@ -28,7 +28,7 @@ export const PO_KIND: Record<PoKind, { label: string; group: PoGroup }> = {
   generic: { label: 'Generic unit (item) instead of the line\'s unit', group: 'unit' },
   'unit-kind': { label: 'Unit does not fit what is bought', group: 'unit' },
   'unit-count': { label: 'Number of months differs from the contract dates', group: 'unit' },
-  'no-units': { label: 'No units on the order', group: 'unit' },
+  'no-units': { label: 'Spent with no units', group: 'unit' },
   'unit-changed': { label: 'Unit changed', group: 'unit' },
   'units-changed': { label: 'Number of units changed', group: 'unit' },
   over: { label: 'Spent above the order', group: 'amount' },
@@ -178,7 +178,11 @@ export function poReview(reports: PoReport[], budget: PoBudgetLine[] = []): PoRe
       const rate = x.amount / x.units, b = l.budget.rate;
       if (rate > b * 1.5) add('rate', rate > b * 2 ? 'warn' : 'info', x, `${eur(rate)} per unit (${eur(x.amount)} for ${num(x.units)} ${x.unitType.toLowerCase() || 'units'}); the line is budgeted at ${eur(b)}: ${Math.round((rate / b - 1) * 100)}% more.`, x.amount - x.units * b);
     }
-    if (!x.units && x.amount > 0.5 && !closed(x.status) && l.budget.units) add('no-units', 'info', x, `Open order of ${eur(x.amount)} with no units; line ${l.code} is budgeted in units (${l.unit || lu?.unit || 'units'}).`, x.amount);
+    // units come with the spending: a PO only committed shows none yet; once something is spent it should
+    if (!x.units && x.spent > 0.5 && l.budget.units && k !== 'month') {
+      const other = wb.pos.some((y) => y.po === x.po && y !== x && (y.units ?? 0) > 0);
+      add('no-units', other ? 'info' : 'warn', x, `${eur(x.spent)} spent but no units, though units come with the spending; line ${l.code} counts ${lu?.unit || l.unit || 'units'}, so its cost per unit reads high.${other ? ' Probably an extra cost (a second leg, a fee) on an order counted on its other line.' : ''}`, x.spent);
+    }
   }
   // the same order placed twice: other PO numbers, same supplier, description and amount
   const seen = new Map<string, PO>();

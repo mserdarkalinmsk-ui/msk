@@ -27,6 +27,7 @@ export function reviewOf(p: Project): PoReview {
 /** Findings worth a look (not the notes): the count on the tab. */
 export const poToCheck = (p: Project) => reviewOf(p).findings.filter((f) => f.level !== 'info').length;
 
+const ICON: Record<PoGroup, string> = { line: '⇄', unit: '◎', amount: '€', change: '↻' };
 const TONE = { bad: ['critical', 'Check'], warn: ['warning', 'Look'], info: ['neutral', 'Note'] } as const;
 
 export function POReview({ p }: { p: Project }) {
@@ -61,11 +62,15 @@ export function POReview({ p }: { p: Project }) {
         <div class="card-h"><div><h2>PO review</h2>
           <p>{R.pos} purchase orders in {R.latest.label}, each checked against its budget line{R.previous ? <>; every report compared with the one before, back to the first of {R.reports}</> : ' — load the next report to see what changed'}. Click a row for the order's history in every report.</p></div>
           <div class="tools"><button class="btn" onClick={xlsx}>⬇ Excel</button></div></div>
-        <div class="wp-kpi">
-          {(['line', 'unit', 'amount', 'change'] as const).map((x) => (
-            <button class={`k click${g === x ? ' on' : ''}`} aria-pressed={g === x} onClick={() => setG(g === x ? 'all' : x)}>
-              <span>{PO_GROUP[x]}</span><b>{n(x)}</b><em class="muted">{n(x, 'bad') ? `${n(x, 'bad')} to check · ` : ''}{n(x, 'info')} notes</em></button>))}
-          <div class="k"><span>Reports followed</span><b>{R.reports}</b><em class="muted">{R.previous ? `latest: ${R.latest.label}` : 'one report so far'}</em></div>
+        <div class="po-kpi">
+          {(['line', 'unit', 'amount', 'change'] as const).map((x) => { const b = n(x, 'bad'), w = n(x, 'warn'), i = n(x, 'info'), t = b + w + i; return (
+            <button class={`po-k po-${x}${g === x ? ' on' : ''}${b + w ? '' : ' calm'}`} aria-pressed={g === x} onClick={() => setG(g === x ? 'all' : x)}>
+              <span class="po-k-h"><i aria-hidden="true">{ICON[x]}</i>{PO_GROUP[x]}</span>
+              <b>{b + w}</b>
+              <em>{b ? <><strong>{b}</strong> to check · </> : ''}{w ? `${w} to look at · ` : ''}{i} notes</em>
+              <span class="po-k-bar" aria-hidden="true">{t ? <><u class="bad" style={{ flex: b }} /><u class="warn" style={{ flex: w }} /><u class="info" style={{ flex: i }} /></> : <u class="none" style={{ flex: 1 }} />}</span>
+            </button>); })}
+          <div class="po-k po-reports"><span class="po-k-h"><i aria-hidden="true">▤</i>Reports followed</span><b>{R.reports}</b><em>{R.previous ? `latest: ${R.latest.label}` : 'one report so far'}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></div>
         </div>
         <div class="tools" style={{ padding: '0 20px 10px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div class="seg" role="group" aria-label="Show">{(['all', 'line', 'unit', 'amount', 'change'] as const).map((x) => <button aria-pressed={g === x} onClick={() => setG(x)}>{x === 'all' ? 'All' : PO_GROUP[x]}</button>)}</div>
@@ -76,11 +81,11 @@ export function POReview({ p }: { p: Project }) {
           : <p class="muted" style={{ padding: '4px 20px 20px' }}>{R.findings.length ? 'Nothing here at this level. Tick “Include notes” to see the minor ones.' : 'No finding: every order agrees with its budget line and with the previous report.'}</p>}
       </section>
       {open && <section class="card" style={{ marginTop: '16px' }}>
-        <div class="card-h"><div><h2>PO {open} in every report</h2><p>Figures as each report gives them; a changed figure is marked.</p></div><div class="tools"><button class="btn ghost" onClick={() => setOpen('')}>Close</button></div></div>
+        <div class="card-h"><div><h2>PO {open} in every report</h2><p>Figures as each report gives them, one row per line of the order; a figure changed since the previous report is marked. Units show once something is spent.</p></div><div class="tools"><button class="btn ghost" onClick={() => setOpen('')}>Close</button></div></div>
         <ul class="po-says">{R.findings.filter((f) => f.po === open).map((f) => <li><span class={`badge ${TONE[f.level][0]}`}>{TONE[f.level][1]}</span> <b>{PO_KIND[f.kind].label}</b> · line {f.line}: {f.text}{f.fix ? <> <b>Probably: {f.fix}</b></> : null}</li>)}</ul>
         <div class="table-wrap" style={{ padding: '0 20px 16px' }}><table class="mini po-hist"><thead><tr><th>Report</th><th>Line</th><th class="r">Ordered</th><th class="r">Spent</th><th class="r">Open balance</th><th class="r">Units</th><th>Unit</th><th>Status</th><th>Description</th></tr></thead>
-          <tbody>{H.map((h, i) => { const o = H.slice(0, i).reverse().find((y) => y.line === h.line) ?? H[i - 1]; const c = (k: keyof typeof h) => o && o[k] !== h[k] ? 'ch' : ''; return (
-            <tr><td>{h.label}</td><td class={`num ${c('line')}`}>{h.line}</td><td class={`r num ${c('amount')}`}>{full(h.amount)}</td><td class={`r num ${c('spent')}`}>{full(h.spent)}</td><td class={`r num ${c('balance')}`}>{full(h.balance)}</td><td class={`r num ${c('units')}`}>{h.units ?? '—'}</td><td class={c('unitType')}>{h.unitType || '—'}</td><td class={c('status')}>{h.status}</td><td class={c('description')}>{h.description}</td></tr>); })}</tbody></table></div>
+          <tbody>{H.map((h, i) => { const o = H.slice(0, i).reverse().find((y) => y.line === h.line && y.label !== h.label); const c = (k: keyof typeof h) => o && o[k] !== h[k] ? 'ch' : ''; return (
+            <tr><td>{h.label}</td><td class={`num ${c('line')}`}>{h.line}</td><td class={`r num ${c('amount')}`}>{full(h.amount)}</td><td class={`r num ${c('spent')}`}>{full(h.spent)}</td><td class={`r num ${c('balance')}`}>{full(h.balance)}</td><td class={`r num ${c('units')}`} title={!h.units && h.spent < 0.005 ? 'Units come with the spending: none yet while the order is only committed' : undefined}>{h.units ? h.units : h.spent < 0.005 ? <span class="muted" style={{ whiteSpace: 'nowrap' }}>not yet</span> : 0}</td><td class={c('unitType')}>{h.unitType || '—'}</td><td class={c('status')}>{h.status}</td><td class={c('description')}>{h.description}</td></tr>); })}</tbody></table></div>
       </section>}
     </div>
   );

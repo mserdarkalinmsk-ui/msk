@@ -428,7 +428,7 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/reports-heading.png`, fullPage: true });
   // PO review: its own tab on the project, every report followed, a row opens the order's history in every report
   await ptab(p, 'PO review'); await p.waitForSelector('.po-review');
-  const poKpi = await p.locator('.po-review .wp-kpi .k').last().textContent();
+  const poKpi = await p.locator('.po-review .po-kpi .po-k').last().textContent();
   const poRows = await p.locator('.po-review .dt-row:not(.dt-group):not(.dt-total)').count();
   console.log('   PO review:', poKpi, poRows, 'rows');
   check(/Reports followed\s*3/.test(poKpi ?? ''), `PO review follows the three reports (${poKpi})`);

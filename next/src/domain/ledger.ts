@@ -178,15 +178,14 @@ export function findErrors(entries: Entry[], o: FindOptions = {}): Finding[] {
     if (E.length) push('other-bh', 'info', `${E.length} entries name a budget head other than ${o.bh} — usually a transfer or a regularisation; check the amount landed on the right project.`, E);
   }
 
-  // 8a. PO lines with an amount but no units (months of staff, grants and petty cash aside). Not invoiced yet: the
-  // amount is committed and will be spent later, with no units — to set on the PO first. Invoiced: the line's
-  // spending counts with no units, so its cost per unit reads higher than it is.
+  // 8a. PO lines invoiced with no units (months of staff, grants and petty cash aside): the line's spending counts with
+  // no units, so its cost per unit reads higher than it is. A PO only committed shows no units yet — they come with
+  // the spending — so an unspent line without units is not a finding.
   if (o.pos?.length) {
     const Z = o.pos.filter((p) => !p.units && p.amount > 0.005 && !/month/i.test(p.unitType) && !/petty cash|caisse|avans|advance request/i.test(`${p.description} ${p.supplier}`) && unitStep(p.unitType, p.line, p.description) != null && p.line && p.line !== '0' && p.line !== '10');
-    const open = Z.filter((p) => p.spent < 0.005 && p.sc > 0.005), paid = Z.filter((p) => p.spent >= 0.005);
+    const paid = Z.filter((p) => p.spent >= 0.005);
     const poPaid = new Map<string, number>(); for (const p of o.pos) poPaid.set(p.po, (poPaid.get(p.po) ?? 0) + p.spent);
-    const rows = (L: PO[]) => L.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.supplier ? `${p.supplier.trim()} · ` : ''}${p.description} · 0 units ${p.unitType}, ${eur(p.amount)} ordered, ${eur(p.spent)} invoiced${p.spent < 0.005 && (poPaid.get(p.po) ?? 0) > 0.5 ? ` · the PO was paid ${eur(poPaid.get(p.po)!)} on its other lines: check this line and have it closed if it will not be used` : ''}`, amount: p.spent >= 0.005 ? p.spent : p.sc }));
-    if (open.length) out.push({ kind: 'units-missing-open', level: 'warning', title: KIND_LABEL['units-missing-open'], text: `${open.length} PO line${open.length > 1 ? 's are' : ' is'} committed (${eur(open.reduce((a, p) => a + p.sc, 0))}) with 0 units and not invoiced yet. When the invoice comes, its cost will count on the line with no units, so the line's cost per unit will rise. Ask for the number of units to be set on the PO before it is invoiced.`, amount: r2(open.reduce((a, p) => a + p.sc, 0)), rows: rows(open) });
+    const rows = (L: PO[]) => L.map((p) => ({ date: p.date, doc: `PO ${p.po}`, line: p.line, description: `${p.supplier ? `${p.supplier.trim()} · ` : ''}${p.description} · 0 units ${p.unitType}, ${eur(p.amount)} ordered, ${eur(p.spent)} invoiced`, amount: p.spent }));
     if (paid.length) out.push({ kind: 'units-missing-paid', level: 'info', title: KIND_LABEL['units-missing-paid'], text: `${paid.length} PO line${paid.length > 1 ? 's were' : ' was'} invoiced (${eur(paid.reduce((a, p) => a + p.spent, 0))}) with 0 units — usually a small extra (fee, tax, a second leg) on a PO counted elsewhere; the cost per unit of these lines includes it.`, amount: r2(paid.reduce((a, p) => a + p.spent, 0)), rows: rows(paid) });
   }
 

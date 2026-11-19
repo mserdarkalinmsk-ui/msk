@@ -1119,3 +1119,17 @@ dialog.ask::backdrop { background: rgb(15 15 14 / .45); backdrop-filter: blur(2p
 .tabs button.tab-drop{box-shadow:inset 3px 0 0 var(--c1)}
 .tabs button.tab-reset{margin-left:auto;color:var(--ink-3);font-weight:500}
 .tabs button.tab-drop.after{box-shadow:inset -3px 0 0 var(--c1)}
+/* PO review: one colour per group of findings */
+.po-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:2px 20px 16px}
+.po-k{--k:var(--c1);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;font:inherit;color:var(--ink);padding:12px 14px 16px;border-radius:14px;border:1px solid color-mix(in srgb,var(--k) 34%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--k) 20%,var(--surface)) 0%,color-mix(in srgb,var(--k) 6%,var(--surface)) 70%);box-shadow:0 1px 2px rgb(0 0 0/.04),inset 0 1px 0 rgb(255 255 255/.35);transition:transform .12s,box-shadow .12s,border-color .12s}
+button.po-k{cursor:pointer}
+button.po-k:hover{transform:translateY(-1px);box-shadow:0 6px 18px color-mix(in srgb,var(--k) 22%,transparent)}
+.po-k.on{border-color:var(--k);box-shadow:0 0 0 2px color-mix(in srgb,var(--k) 45%,transparent),0 6px 18px color-mix(in srgb,var(--k) 22%,transparent)}
+.po-line{--k:var(--c8)}.po-unit{--k:var(--c7)}.po-amount{--k:var(--c4)}.po-change{--k:var(--c1)}.po-reports{--k:var(--c3)}
+.po-k-h{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:color-mix(in srgb,var(--k) 70%,var(--ink))}
+.po-k-h i{font-style:normal;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--k);color:#fff;font-size:13px;box-shadow:0 2px 6px color-mix(in srgb,var(--k) 40%,transparent)}
+.po-k b{font-size:28px;line-height:1.15;font-weight:750;color:color-mix(in srgb,var(--k) 80%,var(--ink));font-variant-numeric:tabular-nums}
+.po-k.calm b{color:color-mix(in srgb,var(--k) 45%,var(--ink-3))}
+.po-k em{font-style:normal;font-size:12px;color:var(--ink-3)}.po-k em strong{color:var(--critical)}
+.po-k-bar{position:absolute;left:0;right:0;bottom:0;height:5px;display:flex;background:color-mix(in srgb,var(--k) 14%,transparent)}
+.po-k-bar u{display:block;text-decoration:none}.po-k-bar .bad{background:var(--critical)}.po-k-bar .warn{background:var(--k)}.po-k-bar .info{background:color-mix(in srgb,var(--k) 35%,transparent)}.po-k-bar .none{background:color-mix(in srgb,var(--k) 55%,transparent)}

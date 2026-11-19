@@ -43,6 +43,12 @@ describe('PO review', () => {
     expect(k).not.toContain('reduced');
     expect(k).not.toContain('unit-changed'); // "Per Travel" → "Per trip": the same unit written another way
   });
+  it('units come with the spending: a committed order without units is fine, a spent one is flagged', () => {
+    expect(kinds([rep('A', [po({ units: null, spent: 0 })])])).toEqual([]);
+    expect(poReview([rep('A', [po({ units: null, spent: 80, balance: 20 })])]).findings[0]).toMatchObject({ kind: 'no-units', level: 'warn' });
+    const F = poReview([rep('A', [po({ line: '1.1.1', unitType: 'Per month', units: 2, amount: 6000, spent: 6000 }), po({ units: null, spent: 40, amount: 40 })])]).findings.filter((f) => f.kind === 'no-units');
+    expect(F[0].level).toBe('info');
+  });
   it('every kind has a label and a group', () => {
     for (const v of Object.values(PO_KIND)) { expect(v.label).toBeTruthy(); expect(['line', 'unit', 'amount', 'change']).toContain(v.group); }
   });
