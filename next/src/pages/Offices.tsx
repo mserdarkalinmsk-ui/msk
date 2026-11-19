@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
-import { shapeFor } from '../ui/MapView';
+import { MapView, shapeFor, type MapMode } from '../ui/MapView';
+import { mapData, ModeSwitch } from './MapPage';
 import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, type DeskTab } from './CountryDesk';
 import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
 import { LS_BH, OB_BH, type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
@@ -35,10 +36,16 @@ export function Offices() {
   const core = useStore((s) => s.ledger.coreTeam) ?? {};
   const crec = (id: string): { id: string; name: string; iso3?: string; region?: string } => countries.find((x) => x.id === id) ?? { id, name: cname(id) };
   // Countries: one chip each, with its outline; the one open is told in a hero, its desk below.
+  // The map is the way in: a country clicked on it opens its desk below; countries the map cannot draw stay as chips.
+  const [mode, setMode] = useState<MapMode>('budget');
+  const undrawn = boxes.filter((x) => !shapeFor(crec(x)));
   const Boxes = (
-    <div class="ct-strip" role="tablist" aria-label="Countries">{boxes.map((x) => { const n = projects.filter((p) => p.country === x).length, of = O.filter((y) => y.country === x).length;
-      return <button role="tab" aria-selected={x === c} class={`ct-chip${x === c ? ' on' : ''}`} onClick={() => { setCtry(x); setOid(''); setRid(''); setLine(''); }}>
-        <Outline c={crec(x)} size={30} /><span><b>{cname(x)}</b><small>{n} project{n === 1 ? '' : 's'}{of ? ` · ${of} office${of > 1 ? 's' : ''}` : ''}</small></span></button>; })}</div>);
+    <section class="card ct-map"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Countries</h2><p>Click a country on the map to open it below · Ctrl + scroll to zoom</p></div>
+      <div class="tools" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}><ModeSwitch mode={mode} setMode={setMode} only={['budget', 'used', 'pace', 'staff', 'attention']} />
+        <button class="btn ghost" onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })}>+ Country</button></div></div>
+      <div class="card-b"><MapView compact countries={countries} data={mapData(countries, projects)} mode={mode} height={320} selected={c || undefined} onSelect={(id) => { if (id) { setCtry(id); setOid(''); setRid(''); setLine(''); } }} />
+        {undrawn.length > 0 && <div class="ct-strip">{undrawn.map((x) => <button class={`ct-chip${x === c ? ' on' : ''}`} onClick={() => { setCtry(x); setOid(''); }}><Outline c={crec(x)} size={24} /><span><b>{cname(x)}</b><small>not on the map</small></span></button>)}</div>}</div>
+    </section>);
   const head = (core[c] ?? []).find((m) => /head of (the )?office|head of programme office/i.test(m.position));
   // the hero says who the country is; its figures live once, in the Overview below
   const Hero = () => { const r = o?.reports.at(-1);
@@ -60,12 +67,16 @@ export function Offices() {
       <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
     {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
-    {tab === 'Extraordinary budget' && <CountryProjects name={cname(c)} P={P} />}
+    {tab === 'Extraordinary & VC' && <CountryProjects name={cname(c)} P={P} />}
     {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
     {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
     {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}
   </div>;
 }
+
+/** The office budget, one view at a time. */
+const OF_VIEWS = ['Budget lines', 'By heading', 'Year-end estimate', 'Transfers', 'Reconciliation', 'Entries'] as const;
+type OfView = (typeof OF_VIEWS)[number];
 
 function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fund, setFund, cname, countries }: { o: Office; rid: string; setRid: (v: string) => void; line: string; setLine: (v: string) => void; openOnly: boolean; setOpenOnly: (v: boolean) => void; fund: Fund | 'both'; setFund: (v: Fund | 'both') => void; cname: (id: string) => string; countries: string[] }) {
   const r = o.reports.find((x) => x.id === rid) ?? o.reports.at(-1)!;
@@ -84,6 +95,8 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
   const N = o.notes ?? {}, nk = (code: string) => `${r.year}:${code}`, done = (code: string) => !!N[nk(code)]?.resolved;
   const flags = V.lines.filter((l) => !done(l.code)).flatMap((l) => F.filter((f) => l.c[f].flag).map((f) => ({ l, f, flag: l.c[f].flag! })));
   const [edit, setEdit] = useState('');
+  const [view, setViewS] = useState<OfView>(() => { try { const v = localStorage.getItem('pl-of-view') as OfView; return OF_VIEWS.includes(v) ? v : 'Budget lines'; } catch { return 'Budget lines'; } });
+  const setView = (v: OfView) => { setViewS(v); try { localStorage.setItem('pl-of-view', v); } catch { /* the view still changes */ } };
   const E = r.entries.filter((e) => (!line || e.line === line) && (fund === 'both' || e.fund === fund) && (!openOnly || (/open/i.test(e.status) && e.committed > 0.5))).sort((a, b) => b.committed - a.committed || b.amount - a.amount);
   const xlsx = () => download(`${o.name.replace(/\s+/g, '-')}-${r.date}.xlsx`, [
     { name: 'Office budget', money: [2, 3, 4, 5, 6, 7, 8, 9], rows: [['Line', 'Description', 'OB budget', 'OB spent+committed', 'OB foreseen', 'OB leftover', 'LS & Pagoda budget', 'LS spent+committed', 'LS foreseen', 'LS leftover', 'OB flag', 'LS flag', 'Explanation'],
@@ -118,9 +131,10 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
           <small class={flags.length ? '' : 'muted'} style={{ color: flags.length ? AMB : undefined, fontWeight: 600 }}>{flags.length ? `${flags.length} line${flags.length > 1 ? 's' : ''} to look at` : 'No line needs attention'}</small>
           {T.ob.left < -0.5 && <small style={{ color: RED }}>Ordinary Budget short by {full(-T.ob.left)} after the forecast</small>}</div>
       </section>
-      <div class="grid g-12" style={{ marginTop: '16px' }}>
-        <HeadingCard r={r} prev={prev} F={F} skip={done} />
-        <section class="card span-12"><div class="card-h"><div><h2>Budget lines</h2><p>As in the office report: budget · spent + committed · foreseen to year end · leftover, per fund{F.length === 1 ? ' · bar = used, light = foreseen, tick = share of the year' : ''} · click a line for its entries</p></div></div>
+      <div class="seg of-views" role="tablist" aria-label="Office budget">{OF_VIEWS.map((x) => <button role="tab" aria-pressed={view === x} onClick={() => setView(x)}>{x}{x === 'Entries' && line ? ` · line ${line}` : ''}</button>)}</div>
+      <div class="grid g-12" style={{ marginTop: '12px' }}>
+        {view === 'By heading' && <HeadingCard r={r} prev={prev} F={F} skip={done} />}
+        {view === 'Budget lines' && <section class="card span-12"><div class="card-h"><div><h2>Budget lines</h2><p>As in the office report: budget · spent + committed · foreseen to year end · leftover, per fund{F.length === 1 ? ' · bar = used, light = foreseen, tick = share of the year' : ''} · click a line for its entries</p></div></div>
           <div class="card-b table-scroll"><table class="mini of-t"><thead>
             {F.length > 1 && <tr class="of-fh"><th colSpan={2} />{F.map((f) => <th colSpan={4} style={{ background: FUND[f].color }}>{FUND[f].label}</th>)}{pv && <th />}<th /></tr>}
             <tr><th>Line</th><th>Description</th>{F.map(() => <><th class="r">Budget</th><th class="r">Spent + committed</th><th class="r">Foreseen</th><th class="r">Leftover</th></>)}{F.length === 1 && <th style={{ width: '150px' }}>Use</th>}{pv && <th class="r">Spent + committed change{DF.length < F.length ? ' (OB)' : ''} since {date(prev!.date)}</th>}<th>Attention</th></tr></thead>
@@ -128,7 +142,7 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
               const s = (f: Fund) => L.reduce((a, l) => ({ b: a.b + l[f].budget, sc: a.sc + l[f].sc, p: a.p + l[f].planned }), { b: 0, sc: 0, p: 0 });
               return <>{h && <tr class="of-h"><td colSpan={2}><b>{h}</b></td>{F.map((f) => { const x = s(f); return <><td class="r num"><b>{full(x.b)}</b></td><td class="r num"><b>{full(x.sc)}</b></td><td class="r num">{full(x.p)}</td><td class="r num" style={neg(x.b - x.sc - x.p)}><b>{full(x.b - x.sc - x.p)}</b></td></>; })}{F.length === 1 && <td />}{pv && <td />}<td /></tr>}
                 {L.map((l) => { const d = pv ? DF.reduce((a, f) => a + l[f].sc - (pv.get(l.code)?.[f].sc ?? 0), 0) : 0, fl = F.map((f) => l.c[f].flag && { f, t: l.c[f].flag! }).filter(Boolean) as { f: Fund; t: string }[];
-                  return <tr class={`click${line === l.code ? ' sel' : ''}`} onClick={() => setLine(line === l.code ? '' : l.code)}>
+                  return <tr class={`click${line === l.code ? ' sel' : ''}`} onClick={() => { setLine(l.code); setView('Entries'); }}>
                     <td class="num">{l.code}</td><td>{l.description}{l.note && <small class="of-note">{l.note}</small>}</td>
                     {F.map((f) => <><td class="r num">{l[f].budget ? full(l[f].budget) : ''}</td><td class="r num">{l[f].sc ? full(l[f].sc) : ''}</td><td class="r num">{l[f].planned ? full(l[f].planned) : ''}</td><td class="r num" style={neg(l.c[f].leftAfterPlan)}>{l[f].budget || l[f].sc || l[f].planned ? full(l.c[f].leftAfterPlan) : ''}</td></>)}
                     {F.length === 1 && (() => { const f = F[0], a = l[f], w = (v: number) => `${Math.min(1, a.budget ? v / a.budget : v ? 1 : 0) * 100}%`;
@@ -136,10 +150,10 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
                     {pv && <td class="r num" style={{ color: d > 0.5 ? undefined : 'var(--muted)' }}>{Math.abs(d) > 0.5 ? `${d > 0 ? '+' : '−'}${full(Math.abs(d))}` : ''}</td>}
                     <td>{N[nk(l.code)] ? <NoteBadge n={N[nk(l.code)]} /> : fl.map((x) => <span class={`badge ${/over|without|exceeds/.test(x.t) ? 'serious' : 'warning'}`} style={{ marginRight: '4px' }}>{F.length > 1 ? `${FUND[x.f].short}: ` : ''}{x.t}</span>)}
                       {fl.length > 0 && !N[nk(l.code)] && <button class="btn ghost of-nb" onClick={(e) => { e.stopPropagation(); setEdit(l.code); }}>+ note</button>}</td></tr>; })}</>; })}</tbody>
-            <tfoot><tr><td colSpan={2}><b>TOTAL BUDGET</b></td>{F.map((f) => <><td class="r num"><b>{full(T[f].budget)}</b></td><td class="r num"><b>{full(T[f].sc)}</b></td><td class="r num"><b>{full(T[f].planned)}</b></td><td class="r num" style={neg(T[f].left)}><b>{full(T[f].left)}</b></td></>)}{F.length === 1 && <td />}{pv && <td class="r num">{full(DF.reduce((a, f) => a + T[f].sc - prev!.lines.reduce((s, l) => s + l[f].sc, 0), 0))}</td>}<td /></tr></tfoot></table></div></section>
-        <PaceCard r={r} />
-        <TransferCard o={o} r={r} skip={done} />
-        <section class="card span-5"><div class="card-h"><div><h2>Reconciliation with the system</h2><p>Situation Budgétaire (Ordinary Budget, BH {o.bh ?? '0127'}) vs the office report</p></div></div>
+            <tfoot><tr><td colSpan={2}><b>TOTAL BUDGET</b></td>{F.map((f) => <><td class="r num"><b>{full(T[f].budget)}</b></td><td class="r num"><b>{full(T[f].sc)}</b></td><td class="r num"><b>{full(T[f].planned)}</b></td><td class="r num" style={neg(T[f].left)}><b>{full(T[f].left)}</b></td></>)}{F.length === 1 && <td />}{pv && <td class="r num">{full(DF.reduce((a, f) => a + T[f].sc - prev!.lines.reduce((s, l) => s + l[f].sc, 0), 0))}</td>}<td /></tr></tfoot></table></div></section>}
+        {view === 'Year-end estimate' && <PaceCard r={r} />}
+        {view === 'Transfers' && <TransferCard o={o} r={r} skip={done} />}
+        {view === 'Reconciliation' && <section class="card span-12"><div class="card-h"><div><h2>Reconciliation with the system</h2><p>Situation Budgétaire (Ordinary Budget, BH {o.bh ?? '0127'}) vs the office report</p></div></div>
           <div class="card-b">{sit ? <>
             <dl class="of-dl"><dt>Budget in the system</dt><dd class="num">{full(sit.budget)}</dd><dt>Purchase orders (open)</dt><dd class="num">{full(sit.po)}</dd><dt>Invoices not yet paid</dt><dd class="num">{full(sit.invoice)}</dd><dt>Actual expenditure</dt><dd class="num">{full(sit.actual)}</dd>
               <dt><b>System spent + committed</b></dt><dd class="num"><b>{full(sysSC!)}</b></dd><dt>Available in the system</dt><dd class="num">{full(sit.available)}</dd>
@@ -151,12 +165,12 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
                 const n = N[nk(x.l.code)];
                 return <li class={n?.resolved ? 'ok' : ''}><span class="num">{x.l.code}</span><span>{x.l.description}{ls > 0.5 && <small class="muted" style={{ display: 'block' }}>{full(ls)} of entries on this line are posted on LS & Pagoda</small>}
                   {n ? <NoteBadge n={n} onEdit={() => setEdit(x.l.code)} /> : <button class="btn ghost of-nb" onClick={() => setEdit(x.l.code)}>+ note / mark corrected</button>}</span><b class="num">{full(x.l.ob.sc)} vs {full(x.ent)}</b></li>; })}</ul></>}
-          </> : <p class="muted">This file has no Situation Budgétaire sheet.</p>}</div></section>
-        <section class="card span-7"><div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>{line ? `Entries · line ${line}` : 'Entries'}</h2><p>{E.length} shown · purchase orders, invoices and GL postings{fund !== 'both' ? ` · ${FUND[fund].label}` : ''}</p></div>
+          </> : <p class="muted">This file has no Situation Budgétaire sheet.</p>}</div></section>}
+        {view === 'Entries' && <section class="card span-12"><div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>{line ? `Entries · line ${line}` : 'Entries'}</h2><p>{E.length} shown · purchase orders, invoices and GL postings{fund !== 'both' ? ` · ${FUND[fund].label}` : ''}</p></div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>{line && <button class="btn ghost" onClick={() => setLine('')}>All lines</button>}<div class="seg"><button aria-pressed={openOnly} onClick={() => setOpenOnly(true)}>Open</button><button aria-pressed={!openOnly} onClick={() => setOpenOnly(false)}>All</button></div></div></div>
           <div class="card-b table-scroll" style={{ maxHeight: '420px' }}><table class="mini"><thead><tr><th>Line</th><th>Description / supplier</th><th class="r">Spent</th><th class="r">Open</th><th>Date</th></tr></thead>
             <tbody>{E.slice(0, 200).map((e) => <tr style={{ borderLeft: `3px solid ${FUND[e.fund].color}` }}><td class="num">{e.line || '—'}<small class="muted" style={{ display: 'block' }}>{FUND[e.fund].short}</small></td><td><div class="cm-d">{e.description}</div><small class="muted">{e.supplier}{e.doc ? ` · ${e.gl ? 'GL' : 'PO'} ${e.doc}` : ''}</small></td><td class="r num">{full(e.spent)}</td><td class="r num"><b>{e.committed ? full(e.committed) : ''}</b></td><td class="num" style={{ whiteSpace: 'nowrap' }}>{e.date ? date(e.date) : '—'}</td></tr>)}</tbody></table>
-            {!E.length && <p class="muted">No entries in this selection.</p>}</div></section>
+            {!E.length && <p class="muted">No entries in this selection.</p>}</div></section>}
       </div>
       {edit && <NoteEditor code={edit} codes={V.lines.map((l) => l.code)} desc={V.lines.find((l) => l.code === edit)?.description ?? ''} n={N[nk(edit)]} close={() => setEdit('')} save={(v) => { setOfficeNote(o.id, nk(edit), v); setEdit(''); }} />}
     </>

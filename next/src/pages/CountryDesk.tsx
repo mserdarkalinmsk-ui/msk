@@ -4,13 +4,18 @@ import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { coreDue, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
-import { n2 } from '../domain/staff';
-import { burnGap, money } from '../domain/calc';
+import { burnGap, elapsed, latestReport, money } from '../domain/calc';
+import { programmeOf } from '../domain/flex';
+import { alerts } from '../domain/insights';
+import { openAlerts } from '../domain/worklist';
 import { plabel } from '../domain/label';
 import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
 import { providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
 import { paceTone } from '../domain/rules';
-import { daysUntil, renewals } from '../domain/staff';
+import { daysUntil, n2, renewals, roster, type Base } from '../domain/staff';
+import { SalarySection } from '../ui/CountryPanel';
+import { StaffPlanTable } from './StaffPlan';
+import { StaffReport } from './StaffReport';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, pct, short, signedPct } from '../ui/format';
@@ -19,7 +24,7 @@ import { allPeople, StaffBoard } from './People';
 import { ProviderBrief } from './Providers';
 
 /** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
-export const DESK_TABS = ['Overview', 'Office budget', 'Extraordinary budget', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
+export const DESK_TABS = ['Overview', 'Office budget', 'Extraordinary & VC', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
 export type DeskTab = (typeof DESK_TABS)[number];
 
 const now = () => TODAY.toISOString().slice(0, 10);
@@ -55,8 +60,8 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
           <dl><dt>Ordinary Budget · BH {offices[0]?.bh ?? OB_BH}</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda · BH {LS_BH}</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
           : <p class="muted">No office budget imported for {name}.</p>}
       </button>
-      <button class="bud bud-eb" onClick={() => setTab('Extraordinary budget')}>
-        <span class="bud-h">Extraordinary budget<small>the projects: {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
+      <button class="bud bud-eb" onClick={() => setTab('Extraordinary & VC')}>
+        <span class="bud-h">Extraordinary & VC<small>the projects (joint programmes and voluntary contributions): {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
         {P.length ? <><b class="bud-v">{full(budget)}</b>
           <Bar parts={[[spent, 'var(--c3)'], [committed, 'color-mix(in srgb, var(--c3) 40%, transparent)']]} of={budget} />
           <dl><dt>Spent</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(budget - spent - committed)}</b></dd></dl></>
@@ -88,21 +93,45 @@ function EvRow({ e }: { e: Ev }) {
     <span class={`badge ${d < 0 ? 'critical' : d <= 30 ? 'serious' : d <= 60 ? 'warning' : 'neutral'}`}>{d < 0 ? `${-d} d late` : d === 0 ? 'today' : `${d} d`}</span></li>;
 }
 
-function ProjectRows({ P, limit }: { P: Project[]; limit?: number }) {
-  if (!P.length) return <p class="muted">No project in this country.</p>;
-  const L = [...P].sort((a, b) => Number(active(b)) - Number(active(a)) || a.end.localeCompare(b.end)).slice(0, limit);
-  return <div class="table-scroll"><table class="mini cd-t"><thead><tr><th>Project</th><th>Status</th><th>Ends</th><th class="r">Budget</th><th class="r">Spent</th>{!limit && <th class="r">Committed</th>}<th>Spent vs time</th></tr></thead>
-    <tbody>{L.map((p) => { const m = money(p), g = burnGap(p, TODAY), u = m.budget ? m.spent / m.budget : 0;
-      return <tr class="click" onClick={() => open(p)}><td><b>{plabel(p)}</b><small class="muted cd-n">{p.name}</small></td>
-        <td><span class={`badge ${active(p) ? 'good' : 'neutral'}`}>{active(p) ? 'Running' : p.end < now() ? 'Ended' : 'Not started'}</span></td>
-        <td class="num" style={{ whiteSpace: 'nowrap' }}>{date(p.end)}</td><td class="r num">{limit ? short(m.budget) : full(m.budget)}</td><td class="r num">{limit ? short(m.spent) : full(m.spent)}</td>{!limit && <td class="r num">{full(m.committed)}</td>}
-        <td><span class="cd-bar"><i style={{ width: `${Math.min(100, u * 100)}%` }} /></span> <span class={`badge ${paceTone(g)}`}>{p.datesTbc ? 'dates tbc' : signedPct(g)}</span></td></tr>; })}</tbody></table></div>;
+/** The projects of a country, joint programmes and voluntary contributions apart; each opens on a short overview. */
+export function CountryProjects({ name, P }: { name: string; P: Project[] }) {
+  const marks = useStore((s) => s.ledger.alertMarks);
+  const [openId, setOpen] = useState('');
+  const groups = (['JP', 'VC'] as const).map((g) => ({ g, L: P.filter((p) => programmeOf(p) === g).sort((a, b) => Number(active(b)) - Number(active(a)) || a.end.localeCompare(b.end)) })).filter((x) => x.L.length);
+  const sum = (L: Project[], f: 'budget' | 'spent' | 'committed') => L.reduce((a, p) => a + money(p)[f], 0);
+  if (!P.length) return <div class="card empty-page"><div><h2>No project in {name}</h2><p>Projects of this country appear here with their budget, spending and a short overview.</p></div></div>;
+  return <>{groups.map(({ g, L }) => <section class="card pj-g"><div class="card-h"><div><h2>{g === 'JP' ? 'Joint programmes' : 'Voluntary contributions'} · {L.length}</h2>
+      <p>Budget {full(sum(L, 'budget'))} · spent {full(sum(L, 'spent'))} · committed {full(sum(L, 'committed'))} · click a project for its overview</p></div></div>
+    <div class="card-b"><ul class="pj-list">{L.map((p) => { const m = money(p), g2 = burnGap(p, TODAY), u = m.budget ? m.spent / m.budget : 0, on = openId === p.id;
+      return <li class={`pj${on ? ' on' : ''}`}>
+        <button class="pj-row" aria-expanded={on} onClick={() => setOpen(on ? '' : p.id)}>
+          <span class="pj-n"><b>{plabel(p)}</b><small>{p.name}</small></span>
+          <span class={`badge ${active(p) ? 'good' : 'neutral'}`}>{active(p) ? 'Running' : p.end < now() ? 'Ended' : 'Not started'}</span>
+          <span class="num pj-v">{short(m.budget)}</span>
+          <span class="pj-bar"><i style={{ width: `${Math.min(100, u * 100)}%` }} /></span>
+          <span class={`badge ${paceTone(g2)}`}>{p.datesTbc ? 'dates tbc' : signedPct(g2)}</span>
+          <span class="pj-chev" aria-hidden="true">{on ? '▾' : '▸'}</span>
+        </button>
+        {on && <ProjectGlance p={p} marks={marks} />}
+      </li>; })}</ul></div></section>)}</>;
 }
 
-export function CountryProjects({ name, P }: { name: string; P: Project[] }) {
-  const M = P.map(money), t = (f: 'budget' | 'spent' | 'committed') => M.reduce((a, m) => a + m[f], 0);
-  return <section class="card"><div class="card-h"><div><h2>Extraordinary budget: the projects in {name}</h2><p>{P.length} project{P.length === 1 ? '' : 's'} · budget {full(t('budget'))} · spent {full(t('spent'))} · committed {full(t('committed'))} · “spent vs time” is spending ahead (+) or behind (−) the time gone</p></div></div>
-    <div class="card-b"><ProjectRows P={P} /></div></section>;
+/** A project in short: its figures, time, staff, alerts and latest report, with the way into it. */
+function ProjectGlance({ p, marks }: { p: Project; marks: Parameters<typeof openAlerts>[1] }) {
+  const m = money(p), A = openAlerts(alerts([p], TODAY), marks, TODAY), urgent = A.filter((a) => a.severity !== 'warning');
+  const st = roster(p, TODAY).filter((a) => a.status === 'Active').length, rep = latestReport(p), el = elapsed(p, TODAY);
+  return <div class="pj-glance">
+    <dl>
+      <dt>Budget</dt><dd>{full(m.budget)}</dd><dt>Spent</dt><dd>{full(m.spent)} <small>({pct(m.budget ? m.spent / m.budget : 0)})</small></dd>
+      <dt>Committed</dt><dd>{full(m.committed)}</dd><dt>Not yet committed</dt><dd><b>{full(m.remaining)}</b></dd>
+    </dl>
+    <dl>
+      <dt>Runs</dt><dd>{date(p.start)} – {date(p.end)}</dd><dt>Time gone</dt><dd>{pct(el)}</dd>
+      <dt>Staff under contract</dt><dd>{st}</dd><dt>Latest report</dt><dd>{rep ? `${rep.name || rep.type}` : 'none yet'}</dd>
+    </dl>
+    <div class="pj-al">{A.length ? <><b>{A.length} open alert{A.length > 1 ? 's' : ''}{urgent.length ? `, ${urgent.length} urgent` : ''}</b><ul>{A.slice(0, 3).map((a) => <li><span class={`badge ${a.severity === 'warning' ? 'warning' : a.severity}`}>{a.severity}</span> {a.title}</li>)}</ul></> : <span class="muted">No open alert.</span>}</div>
+    <div class="pj-go"><button class="btn primary" onClick={() => open(p)}>Open the project ›</button><button class="btn" onClick={() => open(p, 'finance')}>Financial report</button><button class="btn" onClick={() => open(p, 'poreview')}>PO review</button><button class="btn ghost" onClick={() => go(`brief/${p.id}`)}>One-page brief</button></div>
+  </div>;
 }
 
 export function CountryTenders({ name, cid, P, offices }: { name: string; cid: string; P: Project[]; offices: Office[] }) {
@@ -140,11 +169,16 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
 }
 
 export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
-  const people = allPeople(P);
+  const everyone = allPeople(P);
+  const [b, setB] = useState<'all' | Base>('all');
+  const people = everyone.filter((a) => b === 'all' || a.base === b);
   return <>
     <CoreTeam name={name} cid={cid} P={P} />
-    <section class="card" style={{ marginTop: '16px' }}><div class="card-h"><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div></div></section>
-    {people.length ? <StaffBoard people={people} showProject /> : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}
+    <section class="card" style={{ marginTop: '16px' }}><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div>
+      {everyone.length > 0 && <div class="seg" role="group" aria-label="Base">{(['all', 'Local', 'HQ'] as const).map((x) => <button aria-pressed={b === x} onClick={() => setB(x)}>{x === 'all' ? 'All staff' : x === 'HQ' ? 'SxB / HQ' : 'Local'}</button>)}</div>}</div></section>
+    {everyone.length ? <><StaffBoard people={people} showProject /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffPlanTable projects={P} /><StaffReport projects={P} /></div></>
+      : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}
+    <SalarySection countryIds={[cid]} />
   </>;
 }
 

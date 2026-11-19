@@ -1206,3 +1206,18 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 .ct-note{margin:0;font-size:12.5px;color:var(--ink-3)}
 @media (max-width:1100px){.bud2{grid-template-columns:1fr 1fr}.bud-all{grid-column:1/-1}}
 @media (max-width:700px){.bud2,.cd-kpi3{grid-template-columns:1fr}}
+.ct-map{margin-bottom:14px}.ct-map .ct-strip{margin:10px 0 0}
+/* Extraordinary & VC: projects that open on a short overview */
+.pj-g{margin-bottom:14px}.pj-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pj{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}.pj.on{border-color:color-mix(in srgb,var(--c3) 50%,var(--line));box-shadow:0 4px 14px color-mix(in srgb,var(--c3) 12%,transparent)}
+.pj-row{display:grid;grid-template-columns:minmax(0,1fr) auto 90px 120px 84px 18px;gap:14px;align-items:center;width:100%;padding:10px 14px;border:0;background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.pj-row:hover{background:color-mix(in srgb,var(--c3) 6%,transparent)}
+.pj-n{display:grid;min-width:0}.pj-n small{color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pj-v{text-align:right}.pj-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.pj-bar i{display:block;height:100%;background:var(--c3)}
+.pj-chev{color:var(--ink-3)}
+.pj-glance{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:18px;padding:12px 16px 16px;border-top:1px dashed var(--line);background:color-mix(in srgb,var(--c3) 4%,var(--surface))}
+.pj-glance dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:13px}.pj-glance dt{color:var(--ink-3)}.pj-glance dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.pj-al{font-size:13px}.pj-al ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}
+.pj-go{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.of-views{margin-top:14px;flex-wrap:wrap}
+@media (max-width:900px){.pj-glance{grid-template-columns:1fr}.pj-row{grid-template-columns:minmax(0,1fr) auto 18px}.pj-row .pj-v,.pj-row .pj-bar,.pj-row .badge:nth-of-type(2){display:none}}
