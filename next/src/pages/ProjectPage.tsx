@@ -1,3 +1,4 @@
+import { POReview, poToCheck } from './POReview';
 import { capacity, endOf } from '../domain/analysis';
 import { CostCard } from '../ui/CostPanel';
 import { paceTone, paceWord } from '../domain/rules';
@@ -41,12 +42,13 @@ import { download } from '../ui/xlsxwrite';
 import { ProjectForesight } from './Depletion';
 import { Plan, Risks, ResultsDocs } from './ProjectTabs';
 
-const TABS = ['Summary', 'Work Plan', 'Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
+const TABS = ['Summary', 'Work Plan', 'Financial report', 'Budget lines', 'Forecast', 'Annual plan', 'Scenario', 'Revision', 'Closure', 'Reports', 'PO review', 'Staff', 'Activity plan', 'Indicators', 'Justification', 'Risks', 'Results & documents', 'History'] as const;
 type Tab = (typeof TABS)[number];
 /** Tabs grouped so the bar fits: a group's first tab opens when the group is chosen. */
 const GROUPS: { label: string; tabs: Tab[] }[] = [
   { label: 'Summary', tabs: ['Summary'] },
   { label: 'Finance', tabs: ['Financial report', 'Budget lines', 'Reports'] },
+  { label: 'PO review', tabs: ['PO review'] },
   { label: 'Plan & revise', tabs: ['Scenario', 'Forecast', 'Revision', 'Justification', 'Annual plan', 'Closure'] },
   { label: 'Work Plan', tabs: ['Work Plan'] },
   { label: 'Results', tabs: ['Indicators', 'Activity plan', 'Risks'] },
@@ -59,7 +61,7 @@ const LABEL: Partial<Record<Tab, string>> = { 'Results & documents': 'Documents'
 export const SLUG: Record<string, { tab: Tab; view?: 'lines' | 'checks' | 'budget' | 'range' | 'pos' | 'rates' | 'diff' }> = {
   summary: { tab: 'Summary' }, wp: { tab: 'Work Plan' }, finance: { tab: 'Financial report' }, statement: { tab: 'Financial report', view: 'lines' }, checks: { tab: 'Financial report', view: 'checks' },
   budget: { tab: 'Financial report', view: 'budget' }, bydate: { tab: 'Financial report', view: 'range' }, pos: { tab: 'Financial report', view: 'pos' }, diff: { tab: 'Financial report', view: 'diff' }, lines: { tab: 'Budget lines' }, staff: { tab: 'Staff' },
-  docs: { tab: 'Results & documents' }, revision: { tab: 'Revision' }, forecast: { tab: 'Forecast' }, reports: { tab: 'Reports' }, risks: { tab: 'Risks' },
+  docs: { tab: 'Results & documents' }, revision: { tab: 'Revision' }, forecast: { tab: 'Forecast' }, reports: { tab: 'Reports' }, poreview: { tab: 'PO review' }, risks: { tab: 'Risks' },
   rates: { tab: 'Financial report', view: 'rates' }, plan: { tab: 'Activity plan' }, indicators: { tab: 'Indicators' }, scenario: { tab: 'Scenario' }, closure: { tab: 'Closure' }, annual: { tab: 'Annual plan' }, justification: { tab: 'Justification' }, history: { tab: 'History' },
 };
 export const openProject = (id: string, slug = 'summary') => go(`project/${id}/${slug}`);
@@ -75,7 +77,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
   const m = money(p), el = elapsed(p, asOf(p, TODAY)), gap = burnGap(p, TODAY), pstaff = staffCount([p], TODAY);
   const reports = reportsByDate(p);
   const plan = planStats(p, TODAY);
-  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, Staff: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };
+  const counts: Partial<Record<Tab, number>> = { 'Budget lines': reportsByDate(p).at(-1)?.snapshot?.lines.length, Reports: reports.length, 'PO review': poToCheck(p) || undefined, Staff: roster(p, TODAY).length, 'Activity plan': plan?.total, Risks: p.riskRegister?.length, Indicators: p.indicators?.length, Justification: Object.keys(p.budgetNotes ?? {}).length || undefined, 'Results & documents': p.documents?.length };
   return (
     <>
       {fc && <ForecastDialog p={p} close={() => setFc(false)} />}
@@ -121,6 +123,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
       {tab === 'Work Plan' && <WorkPlanTab p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
       {tab === 'Reports' && <Reports p={p} />}
+      {tab === 'PO review' && <POReview p={p} />}
       {tab === 'Staff' && (roster(p, TODAY).length ? <><StaffBoard people={roster(p, TODAY)} /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffPlanCard p={p} /><StaffReport projects={[p]} /></div></> : <div class="card empty-page"><div><h2>No staff records</h2><p>Import a report workbook with a “Purchase Orders” sheet.</p></div></div>)}
       {tab === 'Activity plan' && <Plan p={p} />}
       {tab === 'Risks' && <Risks p={p} />}

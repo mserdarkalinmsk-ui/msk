@@ -426,6 +426,14 @@ async function page(opts) {
   await p.click('.seg button:has-text("By heading")'); await p.waitForTimeout(150);
   check(rows >= 4 && await p.locator('table.rh tbody tr').count() >= 3, 'reports table and heading view');
   await p.screenshot({ path: `${shots}/reports-heading.png`, fullPage: true });
+  // PO review: its own tab on the project, every report followed, a row opens the order's history in every report
+  await ptab(p, 'PO review'); await p.waitForSelector('.po-review');
+  const poKpi = await p.locator('.po-review .wp-kpi .k').last().textContent();
+  const poRows = await p.locator('.po-review .dt-row:not(.dt-group):not(.dt-total)').count();
+  console.log('   PO review:', poKpi, poRows, 'rows');
+  check(/Reports followed\s*3/.test(poKpi ?? ''), `PO review follows the three reports (${poKpi})`);
+  if (poRows > 1) { await p.locator('.po-review .dt-row[role=row] .dt-cell[role=gridcell]').nth(1).click(); await p.waitForTimeout(200); check(await p.locator('table.po-hist tbody tr').count() >= 1, 'a PO review row opens the order in every report'); }
+  await p.screenshot({ path: `${shots}/po-review.png`, fullPage: true });
   check(errors.length === 0, 'bulk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
