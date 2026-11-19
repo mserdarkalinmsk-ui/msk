@@ -5,6 +5,8 @@ import { contractAlerts, contractsDue, dueText, SEV_BADGE, type ContractDue } fr
 import { go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { coreDue, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { money } from '../domain/calc';
+import { alerts } from '../domain/insights';
+import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
 import { plabel } from '../domain/label';
 import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
@@ -275,4 +277,27 @@ export function ContractCalendar({ name, cid, P, pre }: { name: string; cid: str
       </div> : <p class="muted">No contract with an end date yet for {name}. Add one above: the provider, the reference of the tender or contract, its ceiling and its end date.</p>}
       {noEnd.length > 0 && <p class="muted" style={{ fontSize: '12.5px' }}>Without an end date, so not on the calendar: {noEnd.map(([k]) => names.get(k) ?? k).join(', ')}.</p>}
     </div></section>;
+}
+
+/** The Overview's country rows: each country in one line — office budget, projects, urgent alerts, next deadline — opening its desk. */
+export function OverviewCountries() {
+  const L = useStore((s) => s.ledger);
+  const cs = [...new Set([...(L.offices ?? []).map((o) => o.country), ...L.projects.map((p) => p.country)])];
+  const row = (cid: string) => {
+    const P = L.projects.filter((p) => p.country === cid), M = P.map(money), b = M.reduce((a, m) => a + m.budget, 0), sp = M.reduce((a, m) => a + m.spent, 0);
+    const O = (L.offices ?? []).filter((o) => o.country === cid).map((o) => officeView(o.reports.at(-1)!).T), ob = O.reduce((a, T) => a + T.ob.budget + T.ls.budget, 0), osc = O.reduce((a, T) => a + T.ob.sc + T.ls.sc, 0);
+    const urgent = openAlerts(alerts(P, TODAY), L.alertMarks, TODAY).filter((a) => a.severity !== 'warning').length;
+    const next = events(P).find((e) => e.day >= now() && e.kind !== 'activity');
+    return { cid, name: L.countries.find((c) => c.id === cid)?.name ?? cid, n: P.length, run: P.filter(active).length, b, sp, ob, osc, hasOffice: O.length > 0, urgent, next };
+  };
+  const R = cs.map(row).sort((a, b) => b.b + b.ob - (a.b + a.ob));
+  return <section class="card span-7"><div class="card-h"><div><h2>Countries</h2><p>Each country in one line · click to open it</p></div></div>
+    <div class="card-b table-scroll"><table class="mini ov-ct"><thead><tr><th>Country</th><th class="r">Office budget</th><th class="r">Projects</th><th class="r">Spent</th><th class="r">Urgent</th><th>Next deadline</th></tr></thead>
+      <tbody>{R.map((x) => <tr class="click" onClick={() => go(`countries/${x.cid}/overview`)}>
+        <td><b>{x.name}</b></td>
+        <td class="r num">{x.hasOffice ? <>{short(x.ob)} <small class="muted">{pct(x.ob ? x.osc / x.ob : 0)} used</small></> : <span class="muted">—</span>}</td>
+        <td class="r num">{x.run} <small class="muted">· {short(x.b)}</small></td>
+        <td class="r num">{pct(x.b ? x.sp / x.b : 0)}</td>
+        <td class="r">{x.urgent ? <span class="badge serious">{x.urgent}</span> : <span class="muted">0</span>}</td>
+        <td>{x.next ? <span>{date(x.next.day)} <small class="muted">· {plabel(x.next.p)} {KIND_LABEL[x.next.kind].toLowerCase()}</small></span> : <span class="muted">—</span>}</td></tr>)}</tbody></table></div></section>;
 }

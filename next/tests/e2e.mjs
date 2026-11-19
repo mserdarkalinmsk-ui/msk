@@ -204,8 +204,8 @@ async function page(opts) {
   await p.emulateMedia({ media: 'print' });
   check(!(await p.locator('.side').isVisible()) && await p.locator('.pack').isVisible(), 'print view shows only the pack');
   await p.emulateMedia({ media: 'screen' });
-  await p.click('.tabs button:has-text("Ahead")'); await p.waitForTimeout(200);
-  await p.click('.subtabs button:has-text("Deadlines")'); await p.waitForTimeout(300);
+  // the deadlines of every country: under each country's Deadlines tab, and at their own address for all countries
+  await p.goto(url + '#/reports/calendar'); await p.waitForSelector('.ag-e'); await p.waitForTimeout(300);
   check(await p.locator('.seg.views button[aria-pressed="true"]:has-text("Calendar")').count() === 1, 'deadlines open on the calendar view');
   check(await p.locator('.ag-e').count() >= 6, 'calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });

@@ -51,7 +51,6 @@ const GROUPS: { label: string; tabs: TabDef[] }[] = [
     { label: 'Outlook', views: [['outlook', 'Outlook']] },
     { label: 'Spending on track', views: [['cost', 'Spending on track']] },
     { label: 'Cash plan', views: [['cash', 'Cash plan']] },
-    { label: 'Deadlines', views: [['calendar', 'Calendar'], ['ending', 'Ending soon']] },
     { label: 'Annual plan', views: [['annual', 'Annual plan']] },
   ] },
   { label: 'Budget', tabs: [
@@ -59,7 +58,7 @@ const GROUPS: { label: string; tabs: TabDef[] }[] = [
     { label: 'Compare projects', views: [['heat', 'Headings heat map'], ['vs', 'Side by side']] },
     { label: 'Budget changes', views: [['transfer', 'Budget changes']] },
     { label: 'Purchase orders', views: [['commit', 'Open commitments'], ['staffpo', 'Staff POs']] },
-    { label: 'Unit costs & providers', views: [['units', 'Unit costs'], ['providers', 'Service providers']] },
+    { label: 'Unit costs', views: [['units', 'Unit costs']] },
   ] },
   { label: 'Follow-up', tabs: [
     { label: 'Alerts', views: [['alerts', 'Alerts']] },
@@ -72,7 +71,9 @@ const GROUPS: { label: string; tabs: TabDef[] }[] = [
     { label: 'Change history', views: [['history', 'Change history']] },
   ] },
 ];
-const ALL = GROUPS.flatMap((g) => g.tabs);
+// Each country has these under its own tabs (Deadlines, Tenders & suppliers): out of the Reports bar, their addresses still open them for every country.
+const ACROSS: { label: string; tabs: TabDef[] } = { label: 'All countries', tabs: [{ label: 'Deadlines', views: [['calendar', 'Calendar'], ['ending', 'Ending soon']] }, { label: 'Service providers', views: [['providers', 'Service providers']] }] };
+const ALL = [...GROUPS, ACROSS].flatMap((g) => g.tabs);
 // Old links keep working: the executive brief is now part of the monthly pack.
 const ALIAS: Record<string, Tab> = { brief: 'pack', checklist: 'close' };
 
@@ -80,7 +81,7 @@ export function Reports() {
   const [tab, setTab] = useState<Tab>(() => { const h = location.hash.split('/')[2] ?? ''; return ALIAS[h] ?? (ALL.some((t) => t.views.some(([k]) => k === h)) ? h as Tab : 'pack'); });
   const P = useStore((s) => filtered(s));
   const excel = () => download(`portfolio-${TODAY.toISOString().slice(0, 10)}.xlsx`, portfolioSheets(get().ledger, P, TODAY));
-  const g = GROUPS.find((x) => x.tabs.some((t) => t.views.some(([k]) => k === tab)))!, cur = g.tabs.find((t) => t.views.some(([k]) => k === tab))!;
+  const g = [...GROUPS, ACROSS].find((x) => x.tabs.some((t) => t.views.some(([k]) => k === tab)))!, cur = g.tabs.find((t) => t.views.some(([k]) => k === tab))!;
   return (
     <>
       <div class="no-print"><Filters /></div>

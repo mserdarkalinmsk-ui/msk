@@ -2,7 +2,7 @@ import { plabel } from '../domain/label';
 import { paceBand, paceTone } from '../domain/rules';
 import { staffCount, staffSplit } from '../domain/staff';
 import { MoneyFlow } from '../ui/Visuals';
-import { OfficeSummary } from './OfficeSummary';
+import { OverviewCountries } from './CountryDesk';
 import { BudgetHealth } from './BudgetHealth';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
 import { asOf, burnGap, elapsed, groupBy, money, portfolioSeries, portfolioSoFar, totals } from '../domain/calc';
@@ -15,8 +15,6 @@ import { DataTable, type Column } from '../ui/DataTable';
 import { cents, date, esc, full, month, pct, short, signedPct } from '../ui/format';
 import { Sparkline } from '../ui/Sparkline';
 import { Count } from '../ui/Count';
-import { MapView, type MapMode } from '../ui/MapView';
-import { mapData, ModeSwitch } from './MapPage';
 import { openAlerts } from '../domain/worklist';
 import { useState } from 'preact/hooks';
 
@@ -176,13 +174,11 @@ export function Overview() {
         </section>
         <BudgetHealth P={P} />
 
-        <OverviewMap />
+        <OverviewCountries />
         <section class="card span-5">
           <div class="card-h"><div><h2>Where the budget stands</h2><p>Budget → spent → committed → balance</p></div></div>
           <div class="card-b"><Chart height={300} label="Budget waterfall" option={(t) => waterfallOption(t, T)} /></div>
         </section>
-
-        <OfficeSummary variant="card" />
 
         <section class="card span-7">
           <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Pacing by project</h2><p>{pm === 'gap' ? 'Spend share minus time share — left of zero is behind schedule' : 'Share of budget used; the tick marks time elapsed'} · click a bar for details</p></div>
@@ -217,22 +213,6 @@ export function Overview() {
   );
 }
 
-function OverviewMap() {
-  const L = useStore((s) => s.ledger);
-  const f = useStore((s) => s.filters);
-  const [mode, setMode] = useState<MapMode>('budget');
-  const P = L.projects.filter((p) => !f.sector || p.sector === f.sector);
-  return (
-    <section class="card span-7">
-      <div class="card-h" style={{ alignItems: 'center' }}>
-        <div><h2>Portfolio map</h2><p>Numbers are project counts · select a country to filter the page · Ctrl + scroll to zoom</p></div>
-        <div class="tools"><ModeSwitch mode={mode} setMode={setMode} only={['budget', 'used', 'pace', 'attention']} /></div>
-      </div>
-      <div class="card-b"><MapView compact countries={L.countries} data={mapData(L.countries, P)} mode={mode} height={300} selected={f.country || undefined}
-        onSelect={(id) => set((s) => ({ filters: { ...s.filters, country: id ?? '' } }))} /></div>
-    </section>
-  );
-}
 
 export function ProjectTable({ rows, cname, maxHeight }: { rows: Project[]; cname: (id: string) => string; maxHeight: number }) {
   const cols: Column<Project>[] = [
