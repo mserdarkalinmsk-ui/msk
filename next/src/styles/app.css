@@ -1208,3 +1208,9 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 @media (max-width:700px){.bud2,.cd-kpi3{grid-template-columns:1fr}}
 .ct-map{margin-bottom:14px}.ct-map .ct-strip{margin:10px 0 0}
 .of-views{margin-top:14px;flex-wrap:wrap}
+/* compact country head: outline, name and the desk's tabs in one block */
+.offices .ct-hero{grid-template-columns:96px 1fr;gap:6px 20px;padding:14px 20px 10px}
+.offices .ct-hero .ct-id h1{font-size:30px}
+.offices .ct-hero .cd-tabs{grid-column:1/-1;margin:6px 0 0;background:none;border:0;box-shadow:none;padding:0}
+.ct-fold{align-items:center}.ct-mapbtn{margin-left:auto}
+.ct-sub .ct-note{color:var(--ink-3)}

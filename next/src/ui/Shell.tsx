@@ -58,7 +58,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
         <div class="brand">{ledger.brand?.logo && !logoBad ? <img class="brand-logo" src={ledger.brand.logo} alt={ledger.brand.name ?? "Logo"} onError={() => setLogoBad(true)} /> : <i>{initials(appTitle)}</i>}<span>{ledger.brand?.title || 'Portfolio Ledger'}{ledger.brand?.name && <small class="brand-org">{ledger.brand.name}</small>}</span></div>
         <nav class="nav">
           {ROUTES.filter((r) => !('hidden' in r)).map((r) => (
-            <a href={`#/${r.id}`} aria-current={route === r.id || (r.id === 'projects' && route.startsWith('project/')) ? 'page' : undefined} class={r.ready ? '' : 'soon'} onClick={() => setOpen(false)}>
+            <a href={`#/${r.id}`} aria-current={route === r.id || route.startsWith(r.id + '/') || (r.id === 'countries' && /^(project\/|projects$|offices|people$|map$)/.test(route)) ? 'page' : undefined} class={r.ready ? '' : 'soon'} onClick={() => setOpen(false)}>
               <Icon d={r.icon} />{r.label}
               {r.id === 'overview' && flags > 0 && <span class="badge serious count">{flags}</span>}
 

@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks';
 import { MapView, shapeFor, type MapMode } from '../ui/MapView';
 import { mapData, ModeSwitch } from './MapPage';
-import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, type DeskTab } from './CountryDesk';
-import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
+import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, deskSlug, type DeskTab } from './CountryDesk';
+import { deleteOfficeReport, go, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
 import { LS_BH, OB_BH, type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
 import { downloadDocx } from '../ui/docxwrite';
 import { date, full, short } from '../ui/format';
@@ -22,9 +22,13 @@ export function Offices() {
   const [openOnly, setOpenOnly] = useState(true); const [fund, setFund] = useState<Fund | 'both'>('both');
   const cname = (id: string) => countries.find((c) => c.id === id)?.name ?? officeCountry(id)?.name ?? id.toUpperCase();
   const projects = useStore((s) => s.ledger.projects);
-  const [ctry, setCtry] = useState('');
-  const [tab, setTabS] = useState<DeskTab>(() => { try { const t = localStorage.getItem('pl-desk-tab') as DeskTab; return DESK_TABS.includes(t) ? t : 'Overview'; } catch { return 'Overview'; } });
-  const setTab = (t: DeskTab) => { setTabS(t); try { localStorage.setItem('pl-desk-tab', t); } catch { /* the tab still changes */ } };
+  // The country and its tab are in the address (#/countries/<country>/<tab>): a reload, a link or the back button keep them.
+  const route = useStore((s) => s.route), parts = route.split('/'), ctry = parts[1] ?? '';
+  const lastTab = () => { try { const t = localStorage.getItem('pl-desk-tab') as DeskTab; return DESK_TABS.includes(t) ? t : 'Overview'; } catch { return 'Overview' as DeskTab; } };
+  const tab: DeskTab = DESK_TABS.find((t) => deskSlug(t) === parts[2]) ?? lastTab();
+  const setCtry = (x: string) => go(`countries/${x}/${deskSlug(tab)}`);
+  const setTab = (t: DeskTab) => { try { localStorage.setItem('pl-desk-tab', t); } catch { /* the address still changes */ } go(`countries/${c}/${deskSlug(t)}`); };
+  const [mapOpen, setMapOpen] = useState(!ctry);
   const shown = cf ? O.filter((o) => o.country === cf) : O;
   const picked = shown.find((x) => x.id === oid);
   // Country boxes: every country with an office, plus portfolio countries still without an office budget.
@@ -39,32 +43,34 @@ export function Offices() {
   // The map is the way in: a country clicked on it opens its desk below; countries the map cannot draw stay as chips.
   const [mode, setMode] = useState<MapMode>('budget');
   const undrawn = boxes.filter((x) => !shapeFor(crec(x)));
-  const Boxes = (
+  // once a country is open the map folds into a strip of countries; it opens again on demand
+  const Boxes = !mapOpen ? (
+    <div class="ct-strip ct-fold">{boxes.map((x) => <button class={`ct-chip${x === c ? ' on' : ''}`} onClick={() => { setCtry(x); setOid(''); setRid(''); setLine(''); }}><Outline c={crec(x)} size={22} /><span><b>{cname(x)}</b></span></button>)}
+      <button class="btn ghost ct-mapbtn" onClick={() => setMapOpen(true)}>Show the map</button></div>
+  ) : (
     <section class="card ct-map"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Countries</h2><p>Click a country on the map to open it below · Ctrl + scroll to zoom</p></div>
       <div class="tools" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}><ModeSwitch mode={mode} setMode={setMode} only={['budget', 'used', 'pace', 'staff', 'attention']} />
-        <button class="btn ghost" onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })}>+ Country</button></div></div>
-      <div class="card-b"><MapView compact countries={countries} data={mapData(countries, projects)} mode={mode} height={320} selected={c || undefined} onSelect={(id) => { if (id) { setCtry(id); setOid(''); setRid(''); setLine(''); } }} />
+        <button class="btn ghost" onClick={() => set({ drawer: { kind: 'countries', edit: 'new' } })}>+ Country</button>{c && <button class="btn ghost" onClick={() => setMapOpen(false)}>Fold the map</button>}</div></div>
+      <div class="card-b"><MapView compact countries={countries} data={mapData(countries, projects)} mode={mode} height={320} selected={c || undefined} onSelect={(id) => { if (id) { setCtry(id); setOid(''); setRid(''); setLine(''); setMapOpen(false); } }} />
         {undrawn.length > 0 && <div class="ct-strip">{undrawn.map((x) => <button class={`ct-chip${x === c ? ' on' : ''}`} onClick={() => { setCtry(x); setOid(''); }}><Outline c={crec(x)} size={24} /><span><b>{cname(x)}</b><small>not on the map</small></span></button>)}</div>}</div>
     </section>);
   const head = (core[c] ?? []).find((m) => /head of (the )?office|head of programme office/i.test(m.position));
   // the hero says who the country is; its figures live once, in the Overview below
   const Hero = () => { const r = o?.reports.at(-1);
     return <section class="ct-hero">
-      <div class="ct-shape" aria-hidden="true"><Outline c={crec(c)} size={150} fill /></div>
+      <div class="ct-shape" aria-hidden="true"><Outline c={crec(c)} size={84} fill /></div>
       <div class="ct-id">
         <span class="ct-region">{crec(c).region || 'Country'}{crec(c).iso3 ? ` · ${crec(c).iso3}` : ''}</span>
         <h1>{cname(c)}</h1>
-        <p class="ct-sub">{here.length ? here.map((x) => <span>{x.name}{x.ccm ? ` · CCM ${x.ccm}` : ''}{` · BH ${x.bh ?? OB_BH} and ${LS_BH}`}</span>) : <span>No office budget imported</span>}{head ? <span>Head of office: <b>{head.name}</b></span> : null}</p>
+        <p class="ct-sub">{here.length ? here.map((x) => <span>{x.name}{x.ccm ? ` · CCM ${x.ccm}` : ''}{` · BH ${x.bh ?? OB_BH} and ${LS_BH}`}</span>) : <span>No office budget imported</span>}{head ? <span>Head of office: <b>{head.name}</b></span> : null}{r ? <span class="ct-note">office situation {date(r.date)}</span> : null}</p>
         {here.length > 1 && <select class="select" aria-label="Office" value={o?.id} onChange={(e) => { setOid((e.target as HTMLSelectElement).value); setRid(''); setLine(''); }}>{here.map((x) => <option value={x.id}>{x.name}</option>)}</select>}
-        {r && <p class="ct-note">Office situation {date(r.date)}</p>}
       </div>
+      <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
     </section>; };
   const P = projects.filter((p) => p.country === c);
   const NoOffice = <div class="card empty-page"><div><h2>No office budget for {cname(c)} yet</h2><p>Drop the office's budget workbook (Situation Budgétaire with the report / forecast sheet) into Import. The country is recognised from the office (Bureau ANKARA → Türkiye); each office gets its own box. Office running costs are kept apart from the project figures.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'import' } })}>Import office budget</button></div></div>;
   if (!c) return <>{Boxes}<div style={{ marginTop: '16px' }}>{NoOffice}</div></>;
   return <div class="offices">{Boxes}<Hero />
-    <div class="cd-head">
-      <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
     {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
     {tab === 'Projects' && <CountryProjects name={cname(c)} cid={c} P={P} />}

@@ -614,6 +614,11 @@ async function page(opts) {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 } });
   await p.goto(url + '#/offices'); await p.waitForSelector('.cd-tabs');
   const tabs = await p.locator('.cd-tabs button').allTextContents();
+  await p.click('.cd-tabs button:text-is("Staff")'); await p.waitForTimeout(200);
+  check(/#\/countries\/[^/]+\/staff$/.test(p.url()), `a country's tab is in the address (${p.url().split('#')[1]})`);
+  await p.reload(); await p.waitForSelector('.cd-tabs');
+  check((await p.locator('.cd-tabs [aria-selected=true]').textContent()) === 'Staff', 'the country tab is kept after a reload');
+  await p.goBack(); await p.waitForTimeout(300);
   check(tabs.join('|') === 'Overview|Office budget|Projects|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
   for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
   await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.waitForSelector('.cc-form');
