@@ -5,7 +5,7 @@ import type { OfficeEntry, OfficeReport } from './office';
  * named by what the order descriptions say ("Office Rent" is the rent contract, even on a line that also pays the tax
  * adviser), with the period the orders cover. Petty cash, missions and internal regularisations are not contracts.
  */
-export interface OfficeService { line: string; lineName: string; supplier: string; kind: string; orders: OfficeEntry[]; amount: number; open: number; covers?: string; coverText?: string; last: string }
+export interface OfficeService { line: string; lineName: string; supplier: string; kind: string; orders: OfficeEntry[]; amount: number; open: number; covers?: string; coverText?: string; last: string; /** paid by direct debit: a standing service with no end date */ directDebit: boolean }
 
 const KINDS: [string, RegExp][] = [
   ['Office rent', /\b(office\s+)?rent\b(?!al)|\bkira\b/i],
@@ -49,7 +49,8 @@ export function officeServices(r: OfficeReport): OfficeService[] {
   for (const e of r.entries) {
     if (notContract(e.supplier, e.description)) continue;
     const lineName = name.get(e.line) ?? '', kind = serviceKind(e.description, lineName), k = `${e.line}|${e.supplier.trim().toLowerCase()}|${kind}`;
-    const s = by.get(k) ?? { line: e.line, lineName, supplier: e.supplier.trim(), kind, orders: [], amount: 0, open: 0, last: '' };
+    const s = by.get(k) ?? { line: e.line, lineName, supplier: e.supplier.trim(), kind, orders: [], amount: 0, open: 0, last: '', directDebit: false };
+    if (/direct debit|pr[ée]l[èe]vement/i.test(`${e.description} ${e.supplier}`)) s.directDebit = true;
     s.orders.push(e); s.amount += e.spent + e.committed; s.open += e.committed;
     if (e.date > s.last) s.last = e.date;
     const c = coverEnd(e.description); if (c && (!s.covers || c > s.covers)) { s.covers = c; s.coverText = e.description; }

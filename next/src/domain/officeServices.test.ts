@@ -24,6 +24,7 @@ describe('office services', () => {
       e('1.10', 'Gamma Guards', 'Security guard service from Feb to Dec 2026', 1000, 9000), e('1.10', '', 'DPC REGUL IMPUTATIONS', 50), e('1.10', 'COUNCIL OF EUROPE PROGRAMME OFFICE X', 'Petty cash advance', 20), e('1.10', 'MISSIONS Plan 01 General', 'OM26', 10)] } as unknown as OfficeReport;
     const S = officeServices(r);
     expect(S.map((s) => [s.line, s.supplier, s.kind, s.orders.length])).toEqual([['1.1', 'Alpha Landlord', 'Office rent', 2], ['1.1', 'Beta Advisers', 'Accounting and tax', 1], ['1.10', 'Gamma Guards', 'Security', 1]]);
-    expect(S[0]).toMatchObject({ amount: 18000, open: 9000, covers: '2026-06-30' });
+    expect(S[0]).toMatchObject({ amount: 18000, open: 9000, covers: '2026-06-30', directDebit: false });
+    expect(officeServices({ lines: [], entries: [e('1.3', 'Delta Power (Fournisseur Direct Debit)', 'DIRECT DEBIT_Electricity_Q1 2026')] } as unknown as OfficeReport)[0].directDebit).toBe(true);
   });
 });

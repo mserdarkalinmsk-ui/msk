@@ -13,4 +13,9 @@ describe('contract end warnings', () => {
     expect(D[1]).toMatchObject({ name: 'A', used: 40, severity: 'ok' });
     expect(contractAlerts(D).map((d) => d.key)).toEqual(['b']);
   });
+  it('an open-ended contract (a direct debit) is listed last, without a date and never warned', () => {
+    const D = contractsDue({ a: { openEnded: true, name: 'Water' }, b: { end: '2026-12-01' } }, T);
+    expect(D.map((d) => [d.key, d.severity])).toEqual([['b', 'critical'], ['a', 'ok']]);
+    expect(contractAlerts(D).map((d) => d.key)).toEqual(['b']);
+  });
 });

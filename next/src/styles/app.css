@@ -1171,3 +1171,4 @@ button.po-k:hover{transform:translateY(-1px);box-shadow:0 6px 18px color-mix(in 
 .ct-t td{vertical-align:middle}.ct-t tr.muted td{opacity:.6}.cc-form .select{height:34px}
 .os-t tr.same td{border-top-color:transparent}.os-t td{vertical-align:middle}.os-add{height:28px;padding:0 10px;font-size:12.5px}
 .cc-meta{flex-basis:100%;margin:0;font-size:12.5px;color:var(--ink-3)}
+.cc-row.open .cc-track em{background:linear-gradient(90deg,color-mix(in srgb,var(--c3) 70%,transparent),color-mix(in srgb,var(--c3) 15%,transparent));border-radius:8px 0 0 8px}.cc-form label.cc-open{display:flex;align-items:center;gap:6px;height:34px;font-weight:500}.cc-form label.cc-open input{min-width:0;height:auto}
