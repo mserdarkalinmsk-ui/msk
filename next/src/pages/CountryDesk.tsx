@@ -7,7 +7,7 @@ import { coreDue, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam
 import { n2 } from '../domain/staff';
 import { burnGap, money } from '../domain/calc';
 import { plabel } from '../domain/label';
-import { officeView, type Office } from '../domain/office';
+import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
 import { providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
 import { paceTone } from '../domain/rules';
 import { daysUntil, renewals } from '../domain/staff';
@@ -19,7 +19,7 @@ import { allPeople, StaffBoard } from './People';
 import { ProviderBrief } from './Providers';
 
 /** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
-export const DESK_TABS = ['Overview', 'Ordinary budget', 'Extraordinary budget', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
+export const DESK_TABS = ['Overview', 'Office budget', 'Extraordinary budget', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
 export type DeskTab = (typeof DESK_TABS)[number];
 
 const now = () => TODAY.toISOString().slice(0, 10);
@@ -48,11 +48,11 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
   const committed = M.reduce((a, m) => a + m.committed, 0);
   return <>
     <section class="bud2" aria-label={`Budgets in ${name}`}>
-      <button class="bud bud-ob" onClick={() => setTab('Ordinary budget')}>
-        <span class="bud-h">Ordinary budget<small>the office's running costs{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
+      <button class="bud bud-ob" onClick={() => setTab('Office budget')}>
+        <span class="bud-h">Office budget<small>the office's running costs: Ordinary Budget and LS & Pagoda{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
         {Ts.length ? <><b class="bud-v">{full(ob.b)}</b>
           <Bar parts={[[ob.sc, 'var(--c1)'], [ob.pl, 'color-mix(in srgb, var(--c1) 35%, transparent)']]} of={ob.b} />
-          <dl><dt>Ordinary Budget</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
+          <dl><dt>Ordinary Budget · BH {offices[0]?.bh ?? OB_BH}</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda · BH {LS_BH}</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
           : <p class="muted">No office budget imported for {name}.</p>}
       </button>
       <button class="bud bud-eb" onClick={() => setTab('Extraordinary budget')}>
@@ -62,9 +62,9 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
           <dl><dt>Spent</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(budget - spent - committed)}</b></dd></dl></>
           : <p class="muted">No project in {name}.</p>}
       </button>
-      <div class="bud bud-all"><span class="bud-h">In {name}<small>both budgets together</small></span><b class="bud-v">{full(ob.b + budget)}</b>
+      <div class="bud bud-all"><span class="bud-h">In {name}<small>office and projects together</small></span><b class="bud-v">{full(ob.b + budget)}</b>
         <Bar parts={[[ob.b, 'var(--c1)'], [budget, 'var(--c3)']]} of={ob.b + budget} />
-        <dl><dt>Ordinary</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
+        <dl><dt>Office</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
     </section>
     <div class="po-kpi cd-kpi cd-kpi3">
       <Tile k="ten" color="var(--c4)" icon="⚑" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />

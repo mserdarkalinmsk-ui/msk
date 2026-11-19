@@ -1,5 +1,8 @@
 import type { Workbook } from '../ui/xlsx';
 
+/** Budget holders of an office's two funds: the Ordinary Budget (External Presence) and LS & Pagoda. Both are office budget only, never project money. */
+export const OB_BH = '0127', LS_BH = '0128';
+
 /** Running-cost budget of a programme office (CoE Ordinary Budget "External Presence", plus LS & Pagoda rent). */
 export interface OfficeAmounts { budget: number; sc: number; planned: number }
 export interface OfficeLine { code: string; heading: string; description: string; ob: OfficeAmounts; ls: OfficeAmounts; note?: string; units?: number }

@@ -2,13 +2,13 @@ import { useState } from 'preact/hooks';
 import { shapeFor } from '../ui/MapView';
 import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, type DeskTab } from './CountryDesk';
 import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
-import { type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
+import { LS_BH, OB_BH, type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
 import { downloadDocx } from '../ui/docxwrite';
 import { date, full, short } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 
 const RED = 'var(--critical)', AMB = 'var(--c4)', GRN = 'var(--good)';
-const FUND: Record<Fund, { label: string; short: string; color: string }> = { ob: { label: 'Ordinary Budget', short: 'OB', color: '#1d5fa8' }, ls: { label: 'LS & Pagoda', short: 'LS & Pagoda', color: '#7b2d8e' } };
+const FUND: Record<Fund, { label: string; short: string; color: string }> = { ob: { label: `Ordinary Budget (BH ${OB_BH})`, short: 'OB', color: '#1d5fa8' }, ls: { label: `LS & Pagoda (BH ${LS_BH})`, short: 'LS & Pagoda', color: '#7b2d8e' } };
 const pc = (v: number) => (Number.isFinite(v) ? `${Math.round(v * 100)}%` : '—');
 const neg = (v: number) => (v < -0.5 ? { color: RED } : undefined);
 
@@ -47,7 +47,7 @@ export function Offices() {
       <div class="ct-id">
         <span class="ct-region">{crec(c).region || 'Country'}{crec(c).iso3 ? ` · ${crec(c).iso3}` : ''}</span>
         <h1>{cname(c)}</h1>
-        <p class="ct-sub">{here.length ? here.map((x) => <span>{x.name}{x.ccm ? ` · CCM ${x.ccm}` : ''}{x.bh ? ` · BH ${x.bh}` : ''}</span>) : <span>No office budget imported</span>}{head ? <span>Head of office: <b>{head.name}</b></span> : null}</p>
+        <p class="ct-sub">{here.length ? here.map((x) => <span>{x.name}{x.ccm ? ` · CCM ${x.ccm}` : ''}{` · BH ${x.bh ?? OB_BH} and ${LS_BH}`}</span>) : <span>No office budget imported</span>}{head ? <span>Head of office: <b>{head.name}</b></span> : null}</p>
         {here.length > 1 && <select class="select" aria-label="Office" value={o?.id} onChange={(e) => { setOid((e.target as HTMLSelectElement).value); setRid(''); setLine(''); }}>{here.map((x) => <option value={x.id}>{x.name}</option>)}</select>}
         {r && <p class="ct-note">Office situation {date(r.date)}</p>}
       </div>
@@ -59,7 +59,7 @@ export function Offices() {
     <div class="cd-head">
       <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
-    {tab === 'Ordinary budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
+    {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
     {tab === 'Extraordinary budget' && <CountryProjects name={cname(c)} P={P} />}
     {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
     {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
