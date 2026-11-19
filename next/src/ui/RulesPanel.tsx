@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { saveRules, useStore } from '../data/store';
+import { saveRules, setAdminPassword, useStore } from '../data/store';
 import { alerts } from '../domain/insights';
 import { cleanRules, DEFAULT_RULES, RULE_FIELDS, rules, setRules, type Rules } from '../domain/rules';
 import { TODAY } from '../today';
@@ -43,6 +43,7 @@ export function RulesPanel({ close }: { close: () => void }) {
               ); })}
           </section>
         ))}
+        <AdminPassword />
         {order && <p class="rl-err" role="alert">{order}</p>}
         {preview && dirty && <div class="rl-prev" role="status">
           <b>With these rules</b>
@@ -56,4 +57,17 @@ export function RulesPanel({ close }: { close: () => void }) {
       </div>
     </>
   );
+}
+
+/** Changing the admin password asked before deleting, reopening a month or removing a contract. */
+function AdminPassword() {
+  const [a, setA] = useState(''), [b, setB] = useState(''), [c, setC] = useState(''), [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const change = () => { if (b !== c) return setMsg({ ok: false, t: 'The two new passwords differ.' }); const err = setAdminPassword(a, b); setMsg(err ? { ok: false, t: err } : { ok: true, t: 'Admin password changed.' }); if (!err) { setA(''); setB(''); setC(''); } };
+  return <section class="rl-g rl-pw"><h3>Admin password</h3>
+    <p class="rl-intro">Asked before anything is deleted, a closed month is reopened or a contract is removed. It is kept salted and hashed in your data, never as typed. The file works offline, so this guards against mistakes, not against someone determined.</p>
+    <div class="rl-pwf"><input class="input" type="password" placeholder="Current password" value={a} onInput={(e) => setA((e.target as HTMLInputElement).value)} />
+      <input class="input" type="password" placeholder="New password" value={b} onInput={(e) => setB((e.target as HTMLInputElement).value)} />
+      <input class="input" type="password" placeholder="New password again" value={c} onInput={(e) => setC((e.target as HTMLInputElement).value)} />
+      <button class="btn" disabled={!a || !b || !c} onClick={change}>Change</button></div>
+    {msg && <p class={msg.ok ? 'rl-ok' : 'rl-err'} role="status">{msg.t}</p>}</section>;
 }

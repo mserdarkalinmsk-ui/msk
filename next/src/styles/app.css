@@ -1218,3 +1218,4 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 .ca-i{display:grid;grid-template-columns:80px 110px 1fr;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;border-left:3px solid var(--line);background:var(--surface-2);font-size:13px;cursor:pointer}
 .ca-i:hover{background:color-mix(in srgb,var(--c1) 7%,var(--surface-2))}.ca-i span small{display:block}
 .ca-i.s-critical{border-left-color:var(--critical)}.ca-i.s-serious{border-left-color:var(--serious,var(--c2))}.ca-i.s-warning{border-left-color:var(--c4)}
+.rl-pwf{display:flex;gap:8px;flex-wrap:wrap}.rl-pwf .input{flex:1;min-width:140px}.rl-ok{color:var(--good);font-size:13px}

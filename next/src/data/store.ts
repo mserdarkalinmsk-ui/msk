@@ -1,3 +1,4 @@
+import { adminHash } from '../domain/hash';
 import { normalizeProject } from '../domain/normalize';
 import { useEffect, useState } from 'preact/hooks';
 import real from './seed.json';
@@ -345,10 +346,21 @@ export function setOfficeCountry(officeId: string, country: string) {
   const L = draft(state.ledger), o = ownOffice(L, officeId); if (!o) return;
   o.country = country; commit(L, `${o.name} → ${country.toUpperCase()}`);
 }
+/** The admin password as first set (salted hash; the password itself is not in the code). Changed under Rules & thresholds. */
+const DEFAULT_ADMIN = 'c4a45da4b7dbd3f86a5f95cc7f95b6e93be43dba5446774a844666914ee1b38b';
+/** Changes the admin password: the current one first. Kept salted and hashed in the data, so a shared copy carries it. */
+export function setAdminPassword(current: string, next: string): string {
+  if (adminHash(current) !== (state.ledger.adminHash ?? DEFAULT_ADMIN)) return 'The current password is not right.';
+  if (next.length < 4) return 'The new password needs at least 4 characters.';
+  const L = draft(state.ledger); L.adminHash = adminHash(next); commit(L, 'Admin password changed');
+  try { sessionStorage.removeItem('pl-admin'); } catch { /* asked again next time anyway */ }
+  return '';
+}
 /** Deleting is for the admin: the password is asked once per browser session. Guards mistakes, not a real lock (the file is offline). */
 export function isAdmin(what = 'delete'): boolean {
   try { if (sessionStorage.getItem('pl-admin') === '1') return true; } catch { /* ignore */ }
-  const ok = typeof prompt === 'function' && prompt(`Admin password to ${what}`) === 'MSK';
+  const typed = typeof prompt === 'function' ? prompt(`Admin password to ${what}`) : null;
+  const ok = typed != null && adminHash(typed) === (state.ledger.adminHash ?? DEFAULT_ADMIN);
   if (ok) try { sessionStorage.setItem('pl-admin', '1'); } catch { /* ignore */ }
   else if (typeof alert === 'function') alert(`Only the admin can ${what}.`);
   return ok;

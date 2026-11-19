@@ -640,6 +640,14 @@ async function page(opts) {
   check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
+  // the admin password is changed under Rules & thresholds, kept hashed, and asked from then on
+  await p.click('text=Rules & thresholds'); await p.waitForSelector('.rl-pw');
+  const pw = p.locator('.rl-pw input'); await pw.nth(0).fill('MSK'); await pw.nth(1).fill('NewPass1'); await pw.nth(2).fill('NewPass1'); await p.click('.rl-pw button'); await p.waitForTimeout(300);
+  check(await p.locator('.rl-pw .rl-ok').count() === 1, 'the admin password can be changed');
+  const stored = await p.evaluate(() => JSON.stringify(localStorage) + document.documentElement.outerHTML);
+  check(!stored.includes('NewPass1'), 'the new password is not kept as typed');
+  await pw.nth(0).fill('NewPass1'); await pw.nth(1).fill('MSK'); await pw.nth(2).fill('MSK'); await p.click('.rl-pw button'); await p.waitForTimeout(300);
+  await p.keyboard.press('Escape');
   check(await p.locator('.cc-alerts li:has-text("Alpha, One")').count() === 1, 'the core team contract ending soon is in the alert centre');
   await p.goto(url + '#/countries'); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Overview")'); await p.waitForSelector('.ca');
   if (await p.locator('.ca button:has-text("Show all")').count()) await p.click('.ca button:has-text("Show all")');

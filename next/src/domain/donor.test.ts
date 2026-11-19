@@ -21,6 +21,7 @@ const L = {
   projects: [{
     id: 'lang', code: 'TR-LANG', name: 'Project', country: 'tr', start: '2025-01-01', end: '2027-12-31', budget: 1000,
     staffOverrides: { 'alphaone|1.1.1.2': { note: 'GAMMA Three leaves in May', verified: true } },
+    closure: { notes: 'Internal: DELTA to chase the auditor' }, payments: [{ date: '2026-01-01', amount: 100, note: 'Internal: EPSILON promised' }],
     reportingPeriods: [{ id: 'r1', name: 'Report', type: 'interim', date: '2026-03-31', snapshot: {
       lines: [{ code: '1.1.1.2', description: 'Project manager', approved: 100, actual: 50 }],
       staffRecords: [{ name: 'ALPHA, One', code: '1.1.1.2', position: 'Project manager' }], staffGroups: {}, workbook: wb,
@@ -33,17 +34,21 @@ describe('donor version of a shared copy', () => {
   it('names no staff member anywhere', () => {
     for (const n of ['ALPHA', 'alphaone', 'BETA', 'GAMMA']) expect(text).not.toContain(n);
   });
+  it('names no supplier and carries none of the office\'s own notes', () => {
+    for (const n of ['Venue Ltd', 'DELTA', 'EPSILON']) expect(text).not.toContain(n);
+    expect(D.projects[0].payments?.[0].amount).toBe(100);
+  });
   it('drops offices, history and contract corrections', () => {
     expect(D.offices).toBeUndefined();
     expect(D.audit).toEqual([]);
     expect(D.projects[0].staffOverrides).toBeUndefined();
   });
-  it('keeps the figures and the non-staff lines as they are', () => {
+  it('keeps the figures and the non-staff lines, without their suppliers', () => {
     const w = D.projects[0].reportingPeriods![0].snapshot!.workbook!;
     expect(w.pos.map((x) => [x.line, x.amount, x.spent, x.units])).toEqual(wb.pos.map((x) => [x.line, x.amount, x.spent, x.units]));
     expect(w.pos[1].description).toBe('Venue for workshop');
     expect(w.entries!.map((x) => x.amount)).toEqual([40, 10]);
-    expect(w.entries![1].supplier).toBe('Venue Ltd');
+    expect(w.entries![1].supplier).toBe(''); // suppliers are left out of the donor version
     expect(D.projects[0].reportingPeriods![0].snapshot!.lines).toEqual(L.projects[0].reportingPeriods![0].snapshot!.lines);
   });
 });

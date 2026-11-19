@@ -2,7 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import { downloadDocx } from './docxwrite';
 import { base, Chart } from './Chart';
 import { axisX, axisY } from '../pages/Overview';
-import { useStore } from '../data/store';
+import { isAdmin, useStore } from '../data/store';
 import { updateProject } from '../data/store';
 import { activityLedger, activityUse, overlaps, poMatch, wpChecks, wpName, byLine, carriedFrom, previousActivities, rollover, snapshot, followUp, history, nextPlan, readWorkPlan, type WorkPlan as WP, type WpFollowUp } from '../domain/workplan';
 import type { Project } from '../domain/types';
@@ -63,7 +63,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
           downloadDocx(`${p.bh ?? p.code}-WP${wp.no}-follow-up.docx`, d, `WP ${wp.no} follow-up`, [brand?.logo, brand?.logo2]);
         }}>⬇ Word</button>
         <button class="btn" onClick={() => window.print()}>🖨 Print</button>
-        <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && prompt('Admin password') === 'MSK') { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
+        <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && isAdmin(`delete WP ${wp.no}`)) { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
       </div>
       {msg && <p class="muted" style={{ padding: '0 20px 8px' }}>{msg}</p>}
       {overlaps(plans).map(([a, b]) => <p class="wp-warn"><b>WP {a.no}</b> ({date(a.from)} / {date(a.to)}) and <b>WP {b.no}</b> ({date(b.from)} / {date(b.to)}) overlap. The previous Work Plan is chosen by dates — correct the dates or delete the plan that was added by mistake.</p>)}
