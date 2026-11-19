@@ -24,14 +24,18 @@ const SORTS: { id: string; label: string; f: (a: Project, b: Project) => number 
 
 export function Projects() {
   const s = useStore((x) => x);
-  const P = filtered(s);
+  return <><Filters /><ProjectsBody P={filtered(s)} /></>;
+}
+
+/** The projects as cards or as a list, with their sorting: the Projects page, and a country's Projects tab. */
+export function ProjectsBody({ P, country }: { P: Project[]; country?: string }) {
+  const s = useStore((x) => x);
   const [view, setView] = useState(pref('pl-projects-view', 'cards'));
   const [sort, setSort] = useState(pref('pl-projects-sort', 'attention'));
   const cname = (id: string) => s.ledger.countries.find((c) => c.id === id)?.name ?? id;
   const sorted = [...P].sort(SORTS.find((x) => x.id === sort)!.f);
   return (
     <>
-      <Filters />
       <div class="toolbar">
         <div class="seg" role="group" aria-label="View">
           <button aria-pressed={view === 'cards'} onClick={() => { setView('cards'); save('pl-projects-view', 'cards'); }}>▦ Cards</button>
@@ -44,7 +48,7 @@ export function Projects() {
       {view === 'list'
         ? <section class="card" style={{ overflow: 'hidden' }}><ProjectTable rows={P} cname={cname} maxHeight={Math.max(360, innerHeight - 260)} /></section>
         : <><div class="pgrid">{sorted.map((p, i) => <ProjectCard p={p} cname={cname} i={i} />)}
-            <button class="pcard pcard-add" onClick={() => set({ drawer: { kind: 'new-project' } })}><span>+</span>Add project<small>reports and documents go inside each project</small></button>
+            <button class="pcard pcard-add" onClick={() => set({ drawer: { kind: 'new-project', ...(country ? { country } : {}) } })}><span>+</span>Add project<small>reports and documents go inside each project</small></button>
           </div></>}
     </>
   );

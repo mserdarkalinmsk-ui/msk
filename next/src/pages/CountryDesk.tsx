@@ -4,27 +4,25 @@ import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { coreDue, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
-import { burnGap, elapsed, latestReport, money } from '../domain/calc';
+import { money } from '../domain/calc';
 import { programmeOf } from '../domain/flex';
-import { alerts } from '../domain/insights';
-import { openAlerts } from '../domain/worklist';
 import { plabel } from '../domain/label';
 import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
 import { providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
-import { paceTone } from '../domain/rules';
-import { daysUntil, n2, renewals, roster, type Base } from '../domain/staff';
+import { daysUntil, n2, renewals, type Base } from '../domain/staff';
 import { SalarySection } from '../ui/CountryPanel';
 import { StaffPlanTable } from './StaffPlan';
 import { StaffReport } from './StaffReport';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, full, pct, short, signedPct } from '../ui/format';
+import { date, full, pct, short } from '../ui/format';
 import { events, type Ev } from './Agenda';
 import { allPeople, StaffBoard } from './People';
+import { ProjectsBody } from './Projects';
 import { ProviderBrief } from './Providers';
 
 /** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
-export const DESK_TABS = ['Overview', 'Office budget', 'Extraordinary & VC', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
+export const DESK_TABS = ['Overview', 'Office budget', 'Projects', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
 export type DeskTab = (typeof DESK_TABS)[number];
 
 const now = () => TODAY.toISOString().slice(0, 10);
@@ -60,8 +58,8 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
           <dl><dt>Ordinary Budget · BH {offices[0]?.bh ?? OB_BH}</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda · BH {LS_BH}</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
           : <p class="muted">No office budget imported for {name}.</p>}
       </button>
-      <button class="bud bud-eb" onClick={() => setTab('Extraordinary & VC')}>
-        <span class="bud-h">Extraordinary & VC<small>the projects (joint programmes and voluntary contributions): {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
+      <button class="bud bud-eb" onClick={() => setTab('Projects')}>
+        <span class="bud-h">Projects<small>extraordinary budget: joint programmes and voluntary contributions · {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
         {P.length ? <><b class="bud-v">{full(budget)}</b>
           <Bar parts={[[spent, 'var(--c3)'], [committed, 'color-mix(in srgb, var(--c3) 40%, transparent)']]} of={budget} />
           <dl><dt>Spent</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(budget - spent - committed)}</b></dd></dl></>
@@ -93,45 +91,19 @@ function EvRow({ e }: { e: Ev }) {
     <span class={`badge ${d < 0 ? 'critical' : d <= 30 ? 'serious' : d <= 60 ? 'warning' : 'neutral'}`}>{d < 0 ? `${-d} d late` : d === 0 ? 'today' : `${d} d`}</span></li>;
 }
 
-/** The projects of a country, joint programmes and voluntary contributions apart; each opens on a short overview. */
-export function CountryProjects({ name, P }: { name: string; P: Project[] }) {
-  const marks = useStore((s) => s.ledger.alertMarks);
-  const [openId, setOpen] = useState('');
-  const groups = (['JP', 'VC'] as const).map((g) => ({ g, L: P.filter((p) => programmeOf(p) === g).sort((a, b) => Number(active(b)) - Number(active(a)) || a.end.localeCompare(b.end)) })).filter((x) => x.L.length);
-  const sum = (L: Project[], f: 'budget' | 'spent' | 'committed') => L.reduce((a, p) => a + money(p)[f], 0);
-  if (!P.length) return <div class="card empty-page"><div><h2>No project in {name}</h2><p>Projects of this country appear here with their budget, spending and a short overview.</p></div></div>;
-  return <>{groups.map(({ g, L }) => <section class="card pj-g"><div class="card-h"><div><h2>{g === 'JP' ? 'Joint programmes' : 'Voluntary contributions'} · {L.length}</h2>
-      <p>Budget {full(sum(L, 'budget'))} · spent {full(sum(L, 'spent'))} · committed {full(sum(L, 'committed'))} · click a project for its overview</p></div></div>
-    <div class="card-b"><ul class="pj-list">{L.map((p) => { const m = money(p), g2 = burnGap(p, TODAY), u = m.budget ? m.spent / m.budget : 0, on = openId === p.id;
-      return <li class={`pj${on ? ' on' : ''}`}>
-        <button class="pj-row" aria-expanded={on} onClick={() => setOpen(on ? '' : p.id)}>
-          <span class="pj-n"><b>{plabel(p)}</b><small>{p.name}</small></span>
-          <span class={`badge ${active(p) ? 'good' : 'neutral'}`}>{active(p) ? 'Running' : p.end < now() ? 'Ended' : 'Not started'}</span>
-          <span class="num pj-v">{short(m.budget)}</span>
-          <span class="pj-bar"><i style={{ width: `${Math.min(100, u * 100)}%` }} /></span>
-          <span class={`badge ${paceTone(g2)}`}>{p.datesTbc ? 'dates tbc' : signedPct(g2)}</span>
-          <span class="pj-chev" aria-hidden="true">{on ? '▾' : '▸'}</span>
-        </button>
-        {on && <ProjectGlance p={p} marks={marks} />}
-      </li>; })}</ul></div></section>)}</>;
-}
-
-/** A project in short: its figures, time, staff, alerts and latest report, with the way into it. */
-function ProjectGlance({ p, marks }: { p: Project; marks: Parameters<typeof openAlerts>[1] }) {
-  const m = money(p), A = openAlerts(alerts([p], TODAY), marks, TODAY), urgent = A.filter((a) => a.severity !== 'warning');
-  const st = roster(p, TODAY).filter((a) => a.status === 'Active').length, rep = latestReport(p), el = elapsed(p, TODAY);
-  return <div class="pj-glance">
-    <dl>
-      <dt>Budget</dt><dd>{full(m.budget)}</dd><dt>Spent</dt><dd>{full(m.spent)} <small>({pct(m.budget ? m.spent / m.budget : 0)})</small></dd>
-      <dt>Committed</dt><dd>{full(m.committed)}</dd><dt>Not yet committed</dt><dd><b>{full(m.remaining)}</b></dd>
-    </dl>
-    <dl>
-      <dt>Runs</dt><dd>{date(p.start)} – {date(p.end)}</dd><dt>Time gone</dt><dd>{pct(el)}</dd>
-      <dt>Staff under contract</dt><dd>{st}</dd><dt>Latest report</dt><dd>{rep ? `${rep.name || rep.type}` : 'none yet'}</dd>
-    </dl>
-    <div class="pj-al">{A.length ? <><b>{A.length} open alert{A.length > 1 ? 's' : ''}{urgent.length ? `, ${urgent.length} urgent` : ''}</b><ul>{A.slice(0, 3).map((a) => <li><span class={`badge ${a.severity === 'warning' ? 'warning' : a.severity}`}>{a.severity}</span> {a.title}</li>)}</ul></> : <span class="muted">No open alert.</span>}</div>
-    <div class="pj-go"><button class="btn primary" onClick={() => open(p)}>Open the project ›</button><button class="btn" onClick={() => open(p, 'finance')}>Financial report</button><button class="btn" onClick={() => open(p, 'poreview')}>PO review</button><button class="btn ghost" onClick={() => go(`brief/${p.id}`)}>One-page brief</button></div>
-  </div>;
+/** The country's projects as on the Projects page, opened by a short overview of joint programmes and voluntary contributions. */
+export function CountryProjects({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const part = (g: 'JP' | 'VC' | 'all') => { const L = g === 'all' ? P : P.filter((p) => programmeOf(p) === g), M = L.map(money); return { n: L.length, run: L.filter(active).length, b: M.reduce((a, m) => a + m.budget, 0), s: M.reduce((a, m) => a + m.spent, 0), c: M.reduce((a, m) => a + m.committed, 0) }; };
+  const Card = ({ g, title, k }: { g: 'JP' | 'VC' | 'all'; title: string; k: string }) => { const x = part(g);
+    return <div class="bud" style={{ '--k': k } as never}><span class="bud-h">{title}<small>{x.n} project{x.n === 1 ? '' : 's'} · {x.run} running</small></span><b class="bud-v">{full(x.b)}</b>
+      <Bar parts={[[x.s, k], [x.c, `color-mix(in srgb, ${k} 40%, transparent)`]]} of={x.b} />
+      <dl><dt>Spent</dt><dd>{full(x.s)} <small>({pct(x.b ? x.s / x.b : 0)})</small></dd><dt>Committed</dt><dd>{full(x.c)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(x.b - x.s - x.c)}</b></dd></dl></div>; };
+  return <>
+    <section class="bud2" aria-label={`Extraordinary budget and voluntary contributions in ${name}`}>
+      <Card g="JP" title="Joint programmes" k="var(--c3)" /><Card g="VC" title="Voluntary contributions" k="var(--c2)" /><Card g="all" title={`All projects in ${name}`} k="var(--c7)" />
+    </section>
+    <ProjectsBody P={P} country={cid} />
+  </>;
 }
 
 export function CountryTenders({ name, cid, P, offices }: { name: string; cid: string; P: Project[]; offices: Office[] }) {

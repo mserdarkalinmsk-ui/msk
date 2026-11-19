@@ -67,7 +67,7 @@ export function Offices() {
       <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
     {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
-    {tab === 'Extraordinary & VC' && <CountryProjects name={cname(c)} P={P} />}
+    {tab === 'Projects' && <CountryProjects name={cname(c)} cid={c} P={P} />}
     {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
     {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
     {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}

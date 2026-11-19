@@ -26,7 +26,8 @@ export function Palette() {
     };
     addEventListener('keydown', k); return () => removeEventListener('keydown', k);
   }, []);
-  useEffect(() => { setQ(''); setI(0); }, [open]);
+  // Cleared when it closes, not after it opens: what is typed straight after Ctrl+K must not be wiped by a late reset.
+  useEffect(() => { if (!open) { setQ(''); setI(0); } }, [open]);
 
   const cmds: Cmd[] = useMemo(() => [
     { group: 'Actions', label: 'Add project', hint: 'N', run: () => set({ drawer: { kind: 'new-project' } }) },

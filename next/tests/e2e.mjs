@@ -614,7 +614,7 @@ async function page(opts) {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 } });
   await p.goto(url + '#/offices'); await p.waitForSelector('.cd-tabs');
   const tabs = await p.locator('.cd-tabs button').allTextContents();
-  check(tabs.join('|') === 'Overview|Office budget|Extraordinary & VC|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
+  check(tabs.join('|') === 'Overview|Office budget|Projects|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
   for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
   await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);
