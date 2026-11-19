@@ -691,7 +691,7 @@ async function page(opts) {
     }
     return out;
   };
-  for (const r of ['overview', 'projects', 'budget', 'people', 'offices', 'map', 'reports', 'reports/outlook', 'reports/heat', 'reports/close', 'reports/studio', 'reports/compare', 'project/lang', 'project/lang/finance', 'project/geo/scenario']) {
+  for (const r of ['overview', 'projects', 'budget', 'people', 'offices', 'countries', 'map', 'reports', 'reports/outlook', 'reports/heat', 'reports/close', 'reports/studio', 'reports/compare', 'project/lang', 'project/lang/finance', 'project/geo/scenario']) {
     await p.goto(url + '#/' + r); await p.waitForTimeout(500);
     // Charts draw when they come into view.
     const H = await p.evaluate(() => document.body.scrollHeight); for (let y = 0; y < H; y += 800) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }

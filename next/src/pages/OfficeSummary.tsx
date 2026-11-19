@@ -27,7 +27,7 @@ export function OfficeSummary({ variant }: { variant: 'card' | 'pack' | 'slide' 
   const table = (
     <table class={`mini ${variant === 'slide' ? 'sl-t' : variant === 'pack' ? 'pack-t' : ''}`}>
       <thead><tr><th>Office</th><th class="r">OB budget</th><th class="r">OB used</th><th class="r">OB year-end</th><th class="r">OB short / spare</th><th class="r">Transfers</th><th class="r">To request</th><th class="r">LS & Pagoda</th><th class="r">LS left</th><th class="r">Lines to check</th></tr></thead>
-      <tbody>{R.map((x) => <tr class={variant === 'card' ? 'click' : ''} onClick={() => variant === 'card' && go('offices')}>
+      <tbody>{R.map((x) => <tr class={variant === 'card' ? 'click' : ''} onClick={() => variant === 'card' && go('countries')}>
         <td><b>{x.o.name}</b><small class="muted" style={{ display: 'block' }}>{cname(x.o.country)} · situation {date(x.r.date)}</small></td>
         <td class="r num">{full(x.T.ob.budget)}</td>
         <td class="r num"><span class="of-u"><i style={{ width: `${Math.min(1, x.T.ob.sc / (x.T.ob.budget || 1)) * 100}%`, background: x.T.ob.sc > x.T.ob.budget ? RED : OB }} /><u style={{ left: `${x.ys * 100}%` }} /></span>{pc(x.T.ob.budget ? x.T.ob.sc / x.T.ob.budget : 0)}</td>
@@ -37,6 +37,6 @@ export function OfficeSummary({ variant }: { variant: 'card' | 'pack' | 'slide' 
         <td class="r num">{x.flags || '—'}</td></tr>)}</tbody></table>);
   if (variant === 'slide') return <>{table}<ul class="sl-pts" style={{ marginTop: '14px' }}>{story.map((t) => <li>{t}</li>)}</ul></>;
   if (variant === 'pack') return <><ul class="pack-pts">{story.map((t, i) => <li class={`t-${R[i].short < -0.5 ? 'bad' : 'good'}`}><span>{R[i].o.name}</span><p>{t}</p></li>)}</ul><div class="table-scroll">{table}</div></>;
-  return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Office running costs</h2><p>Programme offices' own budgets (Ordinary Budget and LS & Pagoda) — kept apart from the project figures above · click to open</p></div><button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => go('offices')}>Offices →</button></div>
+  return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Office running costs</h2><p>Programme offices' own budgets (Ordinary Budget and LS & Pagoda) — kept apart from the project figures above · click to open</p></div><button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => go('countries')}>Countries →</button></div>
     <div class="card-b table-scroll">{table}</div></section>;
 }

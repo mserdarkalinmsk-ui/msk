@@ -56,7 +56,7 @@ export function ImportPanel({ close }: { close: () => void }) {
     setBusy(`Reading ${file.name}…`);
     // An office running-cost budget (Ordinary Budget, BH 0127) goes to the Offices page, not to a project.
     const off = await readOfficeFile(file).catch(() => null);
-    if (off) { setBusy(''); upsertOfficeReport(off); close(); go('offices'); return; }
+    if (off) { setBusy(''); upsertOfficeReport(off); close(); go('countries'); return; }
     const wb = await readCoe(file).catch(() => null);
     setBusy('');
     if (wb) { set({ drawer: { kind: 'smart-import', files: [file] } }); return; }

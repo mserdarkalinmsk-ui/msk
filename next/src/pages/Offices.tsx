@@ -1,4 +1,7 @@
 import { useState } from 'preact/hooks';
+import { money } from '../domain/calc';
+import { TODAY } from '../today';
+import { shapeFor } from '../ui/MapView';
 import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, type DeskTab } from './CountryDesk';
 import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
 import { type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
@@ -31,22 +34,38 @@ export function Offices() {
   const c = (ctry && boxes.includes(ctry) ? ctry : '') || picked?.country || shown[0]?.country || boxes[0] || '';
   const here = O.filter((x) => x.country === c);
   const o = picked && picked.country === c ? picked : here[0];
+  const core = useStore((s) => s.ledger.coreTeam) ?? {};
+  const crec = (id: string): { id: string; name: string; iso3?: string; region?: string } => countries.find((x) => x.id === id) ?? { id, name: cname(id) };
+  // Countries: one chip each, with its outline; the one open is told in a hero, its desk below.
   const Boxes = (
-    <div class="of-boxes">{boxes.map((c) => { const of = O.filter((x) => x.country === c);
-      if (!of.length) return <button class={`of-box empty${ctry === c ? ' on' : ''}`} onClick={() => { setCtry(c); setOid(''); }}><span class="of-c">{cname(c)}</span><span class="muted">No office budget yet</span><small>{projects.filter((p) => p.country === c).length} projects · open the country</small></button>;
-      return of.map((x) => { const r = x.reports.at(-1)!, V = officeView(r), T = V.T, tot = T.ob.budget + T.ls.budget, used = T.ob.sc + T.ls.sc, after = T.ob.left + T.ls.left;
-        return <button class={`of-box${o?.id === x.id ? ' on' : ''}`} onClick={() => { setOid(x.id); setCtry(x.country); setRid(''); setLine(''); }}>
-          <span class="of-c">{cname(c)}</span><b>{x.name}</b>
-          <span class="of-k"><span>Budget</span><b class="num">{short(tot)}</b></span>
-          <span class="of-k"><span>Used</span><b class="num">{pc(tot ? used / tot : 0)}</b></span>
-          <span class="of-k"><span>After plan</span><b class="num" style={neg(after)}>{short(after)}</b></span>
-          <span class="of-mini"><i style={{ width: `${Math.min(1, T.ob.sc / (tot || 1)) * 100}%`, background: FUND.ob.color }} /><i style={{ width: `${Math.min(1, T.ls.sc / (tot || 1)) * 100}%`, background: FUND.ls.color }} /></span>
-          <small class="muted">situation {date(r.date)} · {x.reports.length} report{x.reports.length > 1 ? 's' : ''}</small></button>; }); })}</div>);
+    <div class="ct-strip" role="tablist" aria-label="Countries">{boxes.map((x) => { const n = projects.filter((p) => p.country === x).length, of = O.filter((y) => y.country === x).length;
+      return <button role="tab" aria-selected={x === c} class={`ct-chip${x === c ? ' on' : ''}`} onClick={() => { setCtry(x); setOid(''); setRid(''); setLine(''); }}>
+        <Outline c={crec(x)} size={30} /><span><b>{cname(x)}</b><small>{n} project{n === 1 ? '' : 's'}{of ? ` · ${of} office${of > 1 ? 's' : ''}` : ''}</small></span></button>; })}</div>);
+  const head = (core[c] ?? []).find((m) => /head of (the )?office|head of programme office/i.test(m.position));
+  const Hero = () => { const ps = projects.filter((p) => p.country === c), M = ps.map(money), bud = M.reduce((a, m) => a + m.budget, 0), sp = M.reduce((a, m) => a + m.spent, 0);
+    const run = ps.filter((p) => p.start <= TODAY.toISOString().slice(0, 10) && p.end >= TODAY.toISOString().slice(0, 10)).length;
+    const r = o?.reports.at(-1), T = r ? officeView(r).T : null, ob = T ? T.ob.budget + T.ls.budget : 0, used = T ? T.ob.sc + T.ls.sc : 0;
+    return <section class="ct-hero">
+      <div class="ct-shape" aria-hidden="true"><Outline c={crec(c)} size={210} fill /></div>
+      <div class="ct-id">
+        <span class="ct-region">{crec(c).region || 'Country'}{crec(c).iso3 ? ` · ${crec(c).iso3}` : ''}</span>
+        <h1>{cname(c)}</h1>
+        <p class="ct-sub">{here.length ? here.map((x) => <span>{x.name}{x.ccm ? ` · CCM ${x.ccm}` : ''}{x.bh ? ` · BH ${x.bh}` : ''}</span>) : <span>No office budget imported</span>}{head ? <span>Head of office: <b>{head.name}</b></span> : null}</p>
+        {here.length > 1 && <select class="select" aria-label="Office" value={o?.id} onChange={(e) => { setOid((e.target as HTMLSelectElement).value); setRid(''); setLine(''); }}>{here.map((x) => <option value={x.id}>{x.name}</option>)}</select>}
+        <div class="ct-facts">
+          <span><b>{run}</b> running project{run === 1 ? '' : 's'}{ps.length > run ? ` of ${ps.length}` : ''}</span>
+          <span><b>{short(bud)}</b> portfolio · <b>{pc(bud ? sp / bud : 0)}</b> spent</span>
+          {T && <span><b>{short(ob)}</b> office budget · <b>{pc(ob ? used / ob : 0)}</b> used</span>}
+          <span><b>{(core[c] ?? []).length}</b> core team</span>
+          {r && <span class="muted">office situation {date(r.date)}</span>}
+        </div>
+      </div>
+    </section>; };
   const P = projects.filter((p) => p.country === c);
   const NoOffice = <div class="card empty-page"><div><h2>No office budget for {cname(c)} yet</h2><p>Drop the office's budget workbook (Situation Budgétaire with the report / forecast sheet) into Import. The country is recognised from the office (Bureau ANKARA → Türkiye); each office gets its own box. Office running costs are kept apart from the project figures.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'import' } })}>Import office budget</button></div></div>;
   if (!c) return <>{Boxes}<div style={{ marginTop: '16px' }}>{NoOffice}</div></>;
-  return <div class="offices">{Boxes}
-    <div class="cd-head"><h2>{cname(c)}</h2>
+  return <div class="offices">{Boxes}<Hero />
+    <div class="cd-head">
       <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
     {tab === 'Finance' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
@@ -235,4 +254,14 @@ function HeadingCard({ r, prev, F, skip }: { r: Office['reports'][number]; prev?
         {prev && <td class="r num">{full(DF.reduce((a, f) => a + tot(f).sc - prev.lines.reduce((s, l) => s + l[f].sc, 0), 0))}</td>}<td class="r num">0</td>{(() => { const o = tot('ob'), v = o.b - o.sc - o.p; return <td class="r num" style={neg(v)}><b>{full(v)}</b></td>; })()}</tr></tfoot></table>
       {TP.transfers.length > 0 && <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Between headings: {[...new Set(TP.transfers.filter((t) => key(t.from) !== key(t.to)).map((t) => `${key(t.from)} → ${key(t.to)}`))].map((k) => { const a = TP.transfers.filter((t) => `${key(t.from)} → ${key(t.to)}` === k).reduce((s, t) => s + t.amount, 0); return `${k}: ${full(a)}`; }).join(' · ') || 'all transfers stay within their heading'}.</p>}
     </div></section>;
+}
+
+/** A country's outline from the map, drawn alone and fitted to its own box. */
+function Outline({ c, size, fill }: { c: { name: string; iso3?: string }; size: number; fill?: boolean }) {
+  const sh = shapeFor(c);
+  if (!sh) return <svg width={size} height={size} viewBox="0 0 10 10" class="ct-ol none"><circle cx="5" cy="5" r="4" /></svg>;
+  const [x, y, w, h] = sh.b, pad = Math.max(w, h) * 0.06;
+  return <svg width={size} height={size} viewBox={`${x - pad} ${y - pad} ${w + 2 * pad} ${h + 2 * pad}`} preserveAspectRatio="xMidYMid meet" class={`ct-ol${fill ? ' big' : ''}`}>
+    {fill && <defs><linearGradient id="ct-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--c1)" /><stop offset="1" stop-color="var(--c7)" /></linearGradient></defs>}
+    <path d={sh.d} vector-effect="non-scaling-stroke" /></svg>;
 }

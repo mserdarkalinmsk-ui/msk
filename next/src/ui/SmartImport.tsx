@@ -151,7 +151,7 @@ export function SmartImport({ files, close }: { files: File[]; close: () => void
     if (msgs.length) toast(msgs.length > 3 ? `${msgs.length} projects updated — ${msgs.slice(0, 2).join(' · ')}…` : msgs.join(' · '));
     markSeen([...ok, ...(rows ?? []).filter((x) => x.kind === 'office')].map((r) => r.file));
     close();
-    if (nOff && !ok.length) go('offices');
+    if (nOff && !ok.length) go('countries');
   };
   const lab = (p: Project) => `${plabel(p)} · ${p.name.slice(0, 50)}`;
   const nFiles = fresh.length;
