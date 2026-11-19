@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, type DeskTab } from './CountryDesk';
 import { deleteOfficeReport, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
 import { type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
 import { downloadDocx } from '../ui/docxwrite';
@@ -18,23 +19,42 @@ export function Offices() {
   const [oid, setOid] = useState(''); const [rid, setRid] = useState(''); const [line, setLine] = useState('');
   const [openOnly, setOpenOnly] = useState(true); const [fund, setFund] = useState<Fund | 'both'>('both');
   const cname = (id: string) => countries.find((c) => c.id === id)?.name ?? officeCountry(id)?.name ?? id.toUpperCase();
+  const projects = useStore((s) => s.ledger.projects);
+  const [ctry, setCtry] = useState('');
+  const [tab, setTabS] = useState<DeskTab>(() => { try { const t = localStorage.getItem('pl-desk-tab') as DeskTab; return DESK_TABS.includes(t) ? t : 'Overview'; } catch { return 'Overview'; } });
+  const setTab = (t: DeskTab) => { setTabS(t); try { localStorage.setItem('pl-desk-tab', t); } catch { /* the tab still changes */ } };
   const shown = cf ? O.filter((o) => o.country === cf) : O;
-  const o = shown.find((x) => x.id === oid) ?? shown[0];
+  const picked = shown.find((x) => x.id === oid);
   // Country boxes: every country with an office, plus portfolio countries still without an office budget.
   const boxes = [...new Set([...O.map((x) => x.country), ...countries.map((c) => c.id)])].filter((c) => !cf || c === cf);
+  // the country shown: the one clicked, else the office picked, else the first country with an office
+  const c = (ctry && boxes.includes(ctry) ? ctry : '') || picked?.country || shown[0]?.country || boxes[0] || '';
+  const here = O.filter((x) => x.country === c);
+  const o = picked && picked.country === c ? picked : here[0];
   const Boxes = (
     <div class="of-boxes">{boxes.map((c) => { const of = O.filter((x) => x.country === c);
-      if (!of.length) return <button class="of-box empty" onClick={() => set({ drawer: { kind: 'import' } })}><span class="of-c">{cname(c)}</span><span class="muted">No office budget yet</span><small>+ Import the office workbook</small></button>;
+      if (!of.length) return <button class={`of-box empty${ctry === c ? ' on' : ''}`} onClick={() => { setCtry(c); setOid(''); }}><span class="of-c">{cname(c)}</span><span class="muted">No office budget yet</span><small>{projects.filter((p) => p.country === c).length} projects · open the country</small></button>;
       return of.map((x) => { const r = x.reports.at(-1)!, V = officeView(r), T = V.T, tot = T.ob.budget + T.ls.budget, used = T.ob.sc + T.ls.sc, after = T.ob.left + T.ls.left;
-        return <button class={`of-box${o?.id === x.id ? ' on' : ''}`} onClick={() => { setOid(x.id); setRid(''); setLine(''); }}>
+        return <button class={`of-box${o?.id === x.id ? ' on' : ''}`} onClick={() => { setOid(x.id); setCtry(x.country); setRid(''); setLine(''); }}>
           <span class="of-c">{cname(c)}</span><b>{x.name}</b>
           <span class="of-k"><span>Budget</span><b class="num">{short(tot)}</b></span>
           <span class="of-k"><span>Used</span><b class="num">{pc(tot ? used / tot : 0)}</b></span>
           <span class="of-k"><span>After plan</span><b class="num" style={neg(after)}>{short(after)}</b></span>
           <span class="of-mini"><i style={{ width: `${Math.min(1, T.ob.sc / (tot || 1)) * 100}%`, background: FUND.ob.color }} /><i style={{ width: `${Math.min(1, T.ls.sc / (tot || 1)) * 100}%`, background: FUND.ls.color }} /></span>
           <small class="muted">situation {date(r.date)} · {x.reports.length} report{x.reports.length > 1 ? 's' : ''}</small></button>; }); })}</div>);
-  if (!o) return <>{Boxes}<div class="card empty-page" style={{ marginTop: '16px' }}><div><h2>No office budget{cf ? ` for ${cname(cf)}` : ''} yet</h2><p>Drop the office's budget workbook (Situation Budgétaire with the report / forecast sheet) into Import. The country is recognised from the office (Bureau ANKARA → Türkiye); each office gets its own box. Office running costs are kept apart from the project figures.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'import' } })}>Import office budget</button></div></div></>;
-  return <div class="offices">{Boxes}<OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((c) => c.id)} /></div>;
+  const P = projects.filter((p) => p.country === c);
+  const NoOffice = <div class="card empty-page"><div><h2>No office budget for {cname(c)} yet</h2><p>Drop the office's budget workbook (Situation Budgétaire with the report / forecast sheet) into Import. The country is recognised from the office (Bureau ANKARA → Türkiye); each office gets its own box. Office running costs are kept apart from the project figures.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'import' } })}>Import office budget</button></div></div>;
+  if (!c) return <>{Boxes}<div style={{ marginTop: '16px' }}>{NoOffice}</div></>;
+  return <div class="offices">{Boxes}
+    <div class="cd-head"><h2>{cname(c)}</h2>
+      <div class="tabs cd-tabs" role="tablist" aria-label={`${cname(c)} desk`}>{DESK_TABS.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div></div>
+    {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
+    {tab === 'Finance' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
+    {tab === 'Projects' && <CountryProjects name={cname(c)} P={P} />}
+    {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
+    {tab === 'Staff' && <CountryStaff name={cname(c)} P={P} />}
+    {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} P={P} />}
+  </div>;
 }
 
 function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fund, setFund, cname, countries }: { o: Office; rid: string; setRid: (v: string) => void; line: string; setLine: (v: string) => void; openOnly: boolean; setOpenOnly: (v: boolean) => void; fund: Fund | 'both'; setFund: (v: Fund | 'both') => void; cname: (id: string) => string; countries: string[] }) {

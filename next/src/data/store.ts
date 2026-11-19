@@ -439,9 +439,9 @@ export function setPoKind(key: string, kind: string) {
   L.poKinds = m; commit(L, kind ? 'PO kind set' : 'PO kind back to automatic');
 }
 /** Sets or clears a service provider's framework contract (ceiling, end date, reference). */
-export function setFramework(key: string, f: { cap?: number; end?: string; ref?: string } | null) {
+export function setFramework(key: string, f: import('../domain/contracts').Contract | null) {
   const L = draft(state.ledger), m = { ...(L.frameworks ?? {}) };
-  if (f && (f.cap || f.end || f.ref)) m[key] = f; else delete m[key];
+  if (f && (f.cap || f.end || f.ref || f.start)) m[key] = f; else delete m[key];
   L.frameworks = m; commit(L, f ? 'Framework contract saved' : 'Framework contract removed');
 }
 /** Ticks or unticks a task of the monthly checklist. */

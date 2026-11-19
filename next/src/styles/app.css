@@ -1134,3 +1134,37 @@ button.po-k:hover{transform:translateY(-1px);box-shadow:0 6px 18px color-mix(in 
 .po-k-bar{position:absolute;left:0;right:0;bottom:0;height:5px;display:flex;background:color-mix(in srgb,var(--k) 14%,transparent)}
 .po-k-bar u{display:block;text-decoration:none}.po-k-bar .bad{background:var(--critical)}.po-k-bar .warn{background:var(--k)}.po-k-bar .info{background:color-mix(in srgb,var(--k) 35%,transparent)}.po-k-bar .none{background:color-mix(in srgb,var(--k) 55%,transparent)}
 .po-year{height:34px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:600}
+/* Offices: a country's desk */
+.cd-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:18px 0 12px}.cd-head h2{margin:0;font-size:22px}
+.cd-head .cd-tabs{margin:0;flex:1;min-width:0}
+.cd-kpi{padding:0 0 16px}
+.cd-ev{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.cd-e{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;border-left:3px solid var(--line);background:var(--surface-2);cursor:pointer;font-size:13px}
+.cd-e:hover{background:color-mix(in srgb,var(--c1) 8%,var(--surface-2))}
+.cd-e.t-bad{border-left-color:var(--critical)}.cd-e.t-warn{border-left-color:var(--c4)}.cd-e.t-info{border-left-color:var(--c1)}
+.cd-d{color:var(--ink-3);font-size:12px}
+.cd-t td{vertical-align:middle}.cd-n{display:block;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd-bar{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--line);vertical-align:middle;overflow:hidden}.cd-bar i{display:block;height:100%;background:var(--c1)}
+.cd-m h3{font-size:13px;margin:14px 0 6px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.cd-fw{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px}
+/* contract calendar */
+.cc-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:12px;border:1px dashed var(--line);border-radius:12px;margin-bottom:14px;background:var(--surface-2)}
+.cc-form label{display:grid;gap:4px;font-size:12px;color:var(--ink-3);font-weight:600}
+.cc-form input{height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;min-width:120px}
+.cc-form label:first-child input{min-width:260px}
+.cc-cal{display:grid;gap:6px}
+.cc-row{display:grid;grid-template-columns:minmax(200px,26%) 1fr 250px;gap:12px;align-items:center}
+.cc-n{display:grid;font-size:13px;min-width:0}.cc-n b,.cc-n small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-track{position:relative;height:30px;border-radius:8px;background:color-mix(in srgb,var(--line) 35%,transparent)}
+.cc-track i{position:absolute;top:0;bottom:0;border-left:1px solid color-mix(in srgb,var(--line) 80%,transparent);font-style:normal;font-size:10.5px;color:var(--ink-3);padding-left:3px;line-height:30px}
+.cc-head .cc-track{background:none;height:22px}.cc-head .cc-track i{line-height:22px}
+.cc-track u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--critical);border-radius:2px;z-index:2}
+.cc-track em{position:absolute;top:7px;height:16px;border-radius:8px;background:linear-gradient(90deg,color-mix(in srgb,var(--c1) 55%,transparent),var(--c1));overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.15)}
+.cc-track em s{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(135deg,var(--c4) 0 6px,color-mix(in srgb,var(--c4) 70%,#fff) 6px 12px)}
+.s-serious .cc-track em,.s-critical .cc-track em{background:linear-gradient(90deg,color-mix(in srgb,var(--critical) 50%,transparent),var(--critical))}
+.s-serious .cc-track em s,.s-critical .cc-track em s{background:repeating-linear-gradient(135deg,var(--critical) 0 6px,color-mix(in srgb,var(--critical) 65%,#fff) 6px 12px)}
+.s-ended .cc-track em{background:color-mix(in srgb,var(--ink-3) 40%,transparent)}
+.cc-s{display:flex;align-items:center;gap:6px;justify-content:flex-end}.cc-s .btn{padding:0 8px;height:28px}
+.cc-al{padding:8px 20px;font-size:13px;list-style:none}
+.cd-ev.two{grid-template-columns:repeat(auto-fit,minmax(440px,1fr))}
+.cc-al-l{list-style:none;margin:0;padding:0 0 10px}.cc-al{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 20px;border-top:1px solid var(--line)}

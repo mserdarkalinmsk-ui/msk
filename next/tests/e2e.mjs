@@ -440,8 +440,15 @@ async function page(opts) {
   await p.locator('.tabs button[draggable]:has-text("Staff")').dragTo(p.locator('.tabs button[draggable]').first()); await p.waitForTimeout(200);
   const t1 = await tabsNow();
   check(t1[0] === 'Staff' && t1.length === t0.length, `a project tab dragged to the front (${t1.join(', ')})`);
-  await p.reload(); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
-  const t2 = await tabsNow();
+  // the same headless quirk as above (a dropped file:// storage): told apart by a marker key, and the drag made once more
+  let t2 = [];
+  for (let i = 0; i < 2; i++) {
+    await p.evaluate(() => localStorage.setItem('pl-e2e-marker', '1'));
+    await p.reload(); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
+    t2 = await tabsNow();
+    if (await p.evaluate(() => localStorage.getItem('pl-e2e-marker') === '1')) break;
+    if (t2[0] !== 'Staff') { await p.locator('.tabs button[draggable]:has-text("Staff")').dragTo(p.locator('.tabs button[draggable]').first()); await p.waitForTimeout(200); }
+  }
   check(t2[0] === 'Staff', `the tab order is kept after a reload (${t2.join(', ')})`);
   if (await p.locator('.tabs .tab-reset').count()) { await p.click('.tabs .tab-reset'); await p.waitForTimeout(150); }
   check((await tabsNow()).join() === t0.join(), 'the standard tab order comes back with ↺');
@@ -599,6 +606,24 @@ async function page(opts) {
   const st = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const s = r.result.transaction('kv').objectStore('kv'), m = s.get('demo:m'), l = s.get('demo:p:lang'); s.transaction.oncomplete = () => res({ ids: m.result?.ids?.length, lang: l.result?.name }); }; }));
   const n = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const k = r.result.transaction('kv').objectStore('kv').getAllKeys(); k.onsuccess = () => res(k.result.filter((x) => String(x).startsWith('demo:p:')).length); }; }));
   check(st.ids === n && n >= 6 && st.lang === 'Alpha renamed', `after a refused save every project is stored (${n}/${st.ids}, lang “${st.lang}”)`);
+  await ctx.close();
+}
+{
+  // Offices: a country's desk with its tabs; a contract entered on the calendar is warned before its end, there and in the alert centre
+  const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 } });
+  await p.goto(url + '#/offices'); await p.waitForSelector('.cd-tabs');
+  const tabs = await p.locator('.cd-tabs button').allTextContents();
+  check(tabs.join('|') === 'Overview|Finance|Projects|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
+  for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
+  await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.waitForSelector('.cc-form');
+  const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);
+  await f(1, 'Gamma Events Ltd'); await f(2, 'FWC-T1'); await f(3, '50000'); await f(4, '2025-01-01'); await f(5, '2026-10-31');
+  await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
+  check(await p.locator('.cc-row.s-critical:has-text("Gamma Events Ltd") .badge:has-text("20 d left")').count() === 1, 'a contract ending in 20 days is on the calendar as critical');
+  await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
+  await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
+  check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
+  check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 {
