@@ -450,6 +450,14 @@ export function setCoreMember(country: string, m: import('../domain/coreTeam').C
   if (i >= 0) M[i] = m; else M.push(m);
   all[country] = M; L.coreTeam = all; commit(L, `Core team: ${m.name} ${i >= 0 ? 'changed' : 'added'}`);
 }
+/** Adds the members read from a list to a country's core team, leaving out a name already on it. */
+export function addCoreMembers(country: string, add: import('../domain/coreTeam').CoreMember[]): number {
+  const M = state.ledger.coreTeam?.[country] ?? [], k = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fresh = add.filter((m) => !M.some((x) => k(x.name) === k(m.name)));
+  if (!fresh.length) return 0;
+  const L = draft(state.ledger); L.coreTeam = { ...(L.coreTeam ?? {}), [country]: [...M, ...fresh] }; commit(L, `Core team: ${fresh.length} added from a list`);
+  return fresh.length;
+}
 /** Removes a member of a core team (the admin password is asked). */
 export function removeCoreMember(country: string, id: string) {
   const M = state.ledger.coreTeam?.[country] ?? [], m = M.find((x) => x.id === id);

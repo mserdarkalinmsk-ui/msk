@@ -2,8 +2,9 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, SEV_BADGE, type ContractDue } from '../domain/contracts';
-import { go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
-import { coreDue, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
+import { readXlsx } from '../ui/xlsx';
+import { coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { money } from '../domain/calc';
 import { alerts } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
@@ -172,10 +173,17 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
       ...(f.fund === 'project' && f.project ? { project: f.project, ...(+f.share > 0 ? { share: Math.min(100, +f.share) } : {}) } : {}), ...(f.note.trim() ? { note: f.note.trim() } : {}) };
     setCoreMember(cid, m); setF(EMPTY); setEdit('');
   };
+  const importList = async (e: Event) => {
+    const inp = e.target as HTMLInputElement, file = inp.files?.[0]; inp.value = ''; if (!file) return;
+    try { const wb = await readXlsx(await file.arrayBuffer()), found = wb.sheets.map((sh) => coreFromRows(wb.read(sh))).find((L) => L.length) ?? [];
+      const n = found.length ? addCoreMembers(cid, found) : 0;
+      alert(found.length ? `${n} added to the core team of ${name}${found.length > n ? `; ${found.length - n} already on it` : ''}.` : 'No heading row with a name and a position column was found in this file.');
+    } catch { alert('This file could not be read as an Excel workbook.'); }
+  };
   const load = (m: CoreMember) => { setF({ name: m.name, position: m.position, grade: m.grade ?? '', start: m.start ?? '', end: m.end ?? '', fund: m.fund ?? 'ob', project: m.project ?? '', share: m.share ? String(m.share) : '', note: m.note ?? '' }); setEdit(m.id); };
   // a post charged to a project: is the person on that project's staff list?
   const onProject = (m: CoreMember) => { const p = P.find((x) => x.id === m.project); if (!p) return null; const k = n2(m.name); return allPeople([p]).some((a) => n2(a.name) === k || n2(a.display) === k); };
-  return <section class="card cc"><div class="card-h"><div><h2>Core Team</h2><p>The office's own team in {name}, outside the projects: {on.length} on the team today. Contract ends are warned 90, 60 and 30 days ahead, here, under Deadlines and in the bell's count.</p></div></div>
+  return <section class="card cc"><div class="card-h"><div><h2>Core Team</h2><p>The office's own team in {name}, outside the projects: {on.length} on the team today. Contract ends are warned 90, 60 and 30 days ahead, here, under Deadlines and in the bell's count.</p></div><div class="tools"><label class="btn ghost" title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by">⤒ Import from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label></div></div>
     <div class="card-b">
       <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <label>Name<input {...v('name')} placeholder="Surname, Name" required /></label>
@@ -233,7 +241,7 @@ export function ContractCalendar({ name, cid, P, pre }: { name: string; cid: str
   const [f, setF] = useState({ sup: '', ref: '', cap: '', start: '', end: '', open: false });
   const [edit, setEdit] = useState(''), [meta, setMeta] = useState<{ line?: string; kind?: string }>({});
   // an office service chosen in the table: its supplier, budget line and kind; the end its orders cover, to confirm
-  useEffect(() => { if (pre) { setF({ sup: pre.sup, ref: '', cap: '', start: '', end: '', open: false }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
+  useEffect(() => { if (pre) { setF({ sup: pre.sup, ref: '', cap: '', start: '', end: pre.end, open: false }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
   const save = () => {
     const name = f.sup.trim(); if (!name || (!f.end && !f.open)) return;
     const k = edit || supKey(name);
@@ -260,7 +268,7 @@ export function ContractCalendar({ name, cid, P, pre }: { name: string; cid: str
         <label class="cc-open"><input type="checkbox" checked={f.open} onChange={(e) => setF({ ...f, open: (e.target as HTMLInputElement).checked })} /> Open-ended (no end date)</label>
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
         {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF({ sup: '', ref: '', cap: '', start: '', end: '', open: false }); }}>Cancel</button>}
-        {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · its orders cover to {date(pre.end)}: enter the contract's own end date</> : null}</p>}
+        {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
       </form>
       {D.length ? <div class="cc-cal">
         <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : m.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>

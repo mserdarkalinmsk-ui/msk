@@ -634,6 +634,9 @@ async function page(opts) {
   await f(1, 'Alpha, One'); await f(2, 'Office assistant'); await f(5, '2026-11-25');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.ct-t tr:has-text("Alpha, One") .badge:has-text("45 d left")').count() === 1 && await p.locator('h2:has-text("Project staff in")').count() === 1, 'core team member added, with the days left, above the project staff');
+  p.once('dialog', (d) => d.accept());
+  await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForTimeout(800);
+  check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
   check(await p.locator('.cc-alerts li:has-text("Alpha, One")').count() === 1, 'the core team contract ending soon is in the alert centre');
