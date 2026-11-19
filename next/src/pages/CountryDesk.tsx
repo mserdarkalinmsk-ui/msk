@@ -79,9 +79,28 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
       <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
       <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
+    <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} />
     <section class="card"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
       <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
   </>;
+}
+
+/** Everything open in the country in one list: the projects' alerts, contracts with providers and core team contracts ending. */
+function CountryAlerts({ name, cid, P, setTab }: { name: string; cid: string; P: Project[]; setTab: (t: DeskTab) => void }) {
+  const marks = useStore((s) => s.ledger.alertMarks), FW = useStore((s) => s.ledger.frameworks) ?? {}, core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], set = useStore((s) => s.ledger.poKinds) ?? {};
+  const mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
+  const rank = { critical: 0, serious: 1, warning: 2 } as const;
+  type Item = { sev: keyof typeof rank; who: string; what: string; detail: string; go: () => void };
+  const items: Item[] = [
+    ...openAlerts(alerts(P, TODAY), marks, TODAY).map((a) => { const p = P.find((x) => x.id === a.projectId)!; return { sev: a.severity, who: plabel(p), what: a.title, detail: a.detail, go: () => open(p) }; }),
+    ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}ends ${date(d.end)}`, go: () => setTab('Tenders & suppliers') })),
+    ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('Staff') })),
+  ].sort((a, b) => rank[a.sev] - rank[b.sev]);
+  const [all, setAll] = useState(false);
+  const n = (k: keyof typeof rank) => items.filter((x) => x.sev === k).length;
+  return <section class="card ca"><div class="card-h"><div><h2>Needs attention in {name}</h2><p>{items.length ? `${n('critical')} critical · ${n('serious')} serious · ${n('warning')} to watch — projects, contracts with providers and the core team in one list` : 'Nothing open: no project alert, no contract or core team contract ending soon.'}</p></div></div>
+    {items.length > 0 && <div class="card-b"><ul class="ca-l">{(all ? items : items.slice(0, 8)).map((x) => <li class={`ca-i s-${x.sev}`} onClick={x.go}><span class={`badge ${x.sev}`}>{x.sev}</span><b>{x.who}</b><span>{x.what}<small class="muted">{x.detail}</small></span></li>)}</ul>
+      {items.length > 8 && <button class="btn ghost" onClick={() => setAll(!all)}>{all ? 'Show fewer' : `Show all ${items.length}`}</button>}</div>}</section>;
 }
 
 /** A stacked bar: each part's share of the whole. */

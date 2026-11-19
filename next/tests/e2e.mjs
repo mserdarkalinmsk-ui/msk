@@ -50,7 +50,8 @@ async function page(opts) {
   // Command palette
   await p.keyboard.press('Control+k');
   check(await p.locator('.palette').isVisible(), 'Ctrl+K opens palette');
-  await p.keyboard.type('UA-DR'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+  await p.locator('.palette input:focus').waitFor(); // typed once the box has the focus, as a person would
+  await p.keyboard.type('UA-DR'); await p.waitForSelector('.palette li:has-text("Democratic Resilience")'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
   check((await p.locator('.ph-title').textContent()).includes('Democratic Resilience'), 'palette opens project page');
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero'); await p.waitForTimeout(400);
   await p.locator('.dt-row:not(.dt-head)').nth(0).locator('.dt-cell').nth(2).click(); await p.waitForTimeout(300);
@@ -640,6 +641,9 @@ async function page(opts) {
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
   check(await p.locator('.cc-alerts li:has-text("Alpha, One")').count() === 1, 'the core team contract ending soon is in the alert centre');
+  await p.goto(url + '#/countries'); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Overview")'); await p.waitForSelector('.ca');
+  if (await p.locator('.ca button:has-text("Show all")').count()) await p.click('.ca button:has-text("Show all")');
+  check(await p.locator('.ca-i:has-text("Gamma Events Ltd")').count() === 1 && await p.locator('.ca-i:has-text("Alpha, One")').count() === 1, 'the country lists its own alerts, contracts and core team in one place');
   check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

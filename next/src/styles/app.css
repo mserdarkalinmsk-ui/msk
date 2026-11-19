@@ -1214,3 +1214,7 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 .offices .ct-hero .cd-tabs{grid-column:1/-1;margin:6px 0 0;background:none;border:0;box-shadow:none;padding:0}
 .ct-fold{align-items:center}.ct-mapbtn{margin-left:auto}
 .ct-sub .ct-note{color:var(--ink-3)}
+.ca{margin-bottom:14px}.ca-l{list-style:none;margin:0 0 6px;padding:0;display:grid;gap:4px}
+.ca-i{display:grid;grid-template-columns:80px 110px 1fr;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;border-left:3px solid var(--line);background:var(--surface-2);font-size:13px;cursor:pointer}
+.ca-i:hover{background:color-mix(in srgb,var(--c1) 7%,var(--surface-2))}.ca-i span small{display:block}
+.ca-i.s-critical{border-left-color:var(--critical)}.ca-i.s-serious{border-left-color:var(--serious,var(--c2))}.ca-i.s-warning{border-left-color:var(--c4)}
