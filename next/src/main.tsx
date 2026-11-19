@@ -1,4 +1,5 @@
 import { contractsDue } from './domain/contracts';
+import { coreDue } from './domain/coreTeam';
 import { Brief } from './pages/Brief';
 import { SelfCheck } from './ui/SelfCheck';
 import { WeekDigest } from './ui/WeekDigest';
@@ -29,8 +30,8 @@ import { TODAY } from './today';
 
 let memo: [unknown, unknown, number, unknown] = [null, null, 0, null];
 /** Urgent alerts still open (handled and snoozed ones are not counted). */
-// urgent alerts of the projects, and contracts with providers ending within 60 days (or ended this month)
-const urgent = (L: import('./domain/types').Ledger) => memo[0] === L.projects && memo[1] === L.alertMarks && memo[3] === L.frameworks ? memo[2] : (memo = [L.projects, L.alertMarks, openAlerts(alerts(L.projects, TODAY), L.alertMarks, TODAY).filter((a) => a.severity !== 'warning').length + contractsDue(L.frameworks ?? {}, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious').length, L.frameworks])[2];
+// urgent alerts of the projects, and contracts (providers, core team) ending within 60 days or ended this month
+const urgent = (L: import('./domain/types').Ledger) => memo[0] === L.projects && memo[1] === L.alertMarks && (memo[3] as unknown[] | null)?.[0] === L.frameworks && (memo[3] as unknown[])[1] === L.coreTeam ? memo[2] : (memo = [L.projects, L.alertMarks, openAlerts(alerts(L.projects, TODAY), L.alertMarks, TODAY).filter((a) => a.severity !== 'warning').length + contractsDue(L.frameworks ?? {}, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious').length + Object.values(L.coreTeam ?? {}).flatMap((M) => coreDue(M, TODAY)).filter((d) => d.severity === 'critical' || d.severity === 'serious').length, [L.frameworks, L.coreTeam]])[2];
 
 /** Password screen of a protected shared copy. */
 function Gate() {

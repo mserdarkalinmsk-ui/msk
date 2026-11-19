@@ -52,8 +52,8 @@ export function Offices() {
     {tab === 'Finance' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
     {tab === 'Projects' && <CountryProjects name={cname(c)} P={P} />}
     {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
-    {tab === 'Staff' && <CountryStaff name={cname(c)} P={P} />}
-    {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} P={P} />}
+    {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
+    {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}
   </div>;
 }
 

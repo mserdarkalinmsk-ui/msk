@@ -46,6 +46,8 @@ export function applyMerge(mine: Ledger, theirs: Ledger, plan: MergePlan, choice
     // Settings made by hand: the current data wins where both have one.
     poKinds: { ...(theirs.poKinds ?? {}), ...(mine.poKinds ?? {}) },
     frameworks: { ...(theirs.frameworks ?? {}), ...(mine.frameworks ?? {}) },
+    // core teams: every member of both, the current data winning for the same person
+    coreTeam: Object.fromEntries([...new Set([...Object.keys(theirs.coreTeam ?? {}), ...Object.keys(mine.coreTeam ?? {})])].map((c) => { const M = mine.coreTeam?.[c] ?? []; return [c, [...M, ...(theirs.coreTeam?.[c] ?? []).filter((x) => !M.some((y) => y.id === x.id))]]; })),
     checklist: { ...(theirs.checklist ?? {}), ...(mine.checklist ?? {}) },
     audit: [...(mine.audit ?? []), ...(theirs.audit ?? [])].sort((a, b) => b.at.localeCompare(a.at)).filter((x, i, a) => i === 0 || x.at !== a[i - 1].at || x.message !== a[i - 1].message).slice(0, 300),
   };

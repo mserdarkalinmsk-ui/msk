@@ -1,8 +1,8 @@
 import type { Severity } from './calc';
 
 /** A contract with a provider (a framework contract or a tender's award), as the user entered it: ceiling, dates, reference. */
-export interface Contract { cap?: number; start?: string; end?: string; ref?: string; name?: string; /** country it was entered for, when its provider has no order there yet */ country?: string }
-export interface ContractDue { key: string; country?: string; name: string; ref?: string; start?: string; end: string; days: number; severity: Severity | 'ok' | 'ended'; cap?: number; used: number }
+export interface Contract { cap?: number; start?: string; end?: string; ref?: string; name?: string; /** country it was entered for, when its provider has no order there yet */ country?: string; /** an office contract: the office budget line it is paid from, and what it is (rent, security…) */ line?: string; kind?: string }
+export interface ContractDue { key: string; country?: string; line?: string; kind?: string; name: string; ref?: string; start?: string; end: string; days: number; severity: Severity | 'ok' | 'ended'; cap?: number; used: number }
 
 const day = 864e5;
 /** Days from today to the end date (negative once ended). */
@@ -24,7 +24,7 @@ export function contractSeverity(days: number): ContractDue['severity'] {
 export function contractsDue(C: Record<string, Contract>, today: Date, use: (key: string) => { name?: string; used: number } = () => ({ used: 0 })): ContractDue[] {
   return Object.entries(C).filter(([, c]) => c.end).map(([key, c]) => {
     const u = use(key), days = daysTo(c.end!, today);
-    return { key, country: c.country, name: c.name || u.name || key, ref: c.ref, start: c.start, end: c.end!, days, severity: contractSeverity(days), cap: c.cap, used: u.used };
+    return { key, country: c.country, line: c.line, kind: c.kind, name: c.name || u.name || key, ref: c.ref, start: c.start, end: c.end!, days, severity: contractSeverity(days), cap: c.cap, used: u.used };
   }).sort((a, b) => a.end.localeCompare(b.end));
 }
 /** The ones that need a decision now (warning, serious, critical). */

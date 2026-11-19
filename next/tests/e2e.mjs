@@ -621,8 +621,14 @@ async function page(opts) {
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.cc-row.s-critical:has-text("Gamma Events Ltd") .badge:has-text("20 d left")').count() === 1, 'a contract ending in 20 days is on the calendar as critical');
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
+  // Staff: the office's core team, then the project staff; a core team contract ending soon is warned
+  await p.click('.cd-tabs button:text-is("Staff")'); await p.waitForSelector('.cc-form');
+  await f(1, 'Alpha, One'); await f(2, 'Office assistant'); await f(5, '2026-11-25');
+  await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
+  check(await p.locator('.ct-t tr:has-text("Alpha, One") .badge:has-text("45 d left")').count() === 1 && await p.locator('h2:has-text("Project staff in")').count() === 1, 'core team member added, with the days left, above the project staff');
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
+  check(await p.locator('.cc-alerts li:has-text("Alpha, One")').count() === 1, 'the core team contract ending soon is in the alert centre');
   check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

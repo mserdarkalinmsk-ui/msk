@@ -1168,3 +1168,6 @@ button.po-k:hover{transform:translateY(-1px);box-shadow:0 6px 18px color-mix(in 
 .cc-al{padding:8px 20px;font-size:13px;list-style:none}
 .cd-ev.two{grid-template-columns:repeat(auto-fit,minmax(440px,1fr))}
 .cc-al-l{list-style:none;margin:0;padding:0 0 10px}.cc-al{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 20px;border-top:1px solid var(--line)}
+.ct-t td{vertical-align:middle}.ct-t tr.muted td{opacity:.6}.cc-form .select{height:34px}
+.os-t tr.same td{border-top-color:transparent}.os-t td{vertical-align:middle}.os-add{height:28px;padding:0 10px;font-size:12.5px}
+.cc-meta{flex-basis:100%;margin:0;font-size:12.5px;color:var(--ink-3)}

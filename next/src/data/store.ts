@@ -442,7 +442,19 @@ export function setPoKind(key: string, kind: string) {
 export function setFramework(key: string, f: import('../domain/contracts').Contract | null) {
   const L = draft(state.ledger), m = { ...(L.frameworks ?? {}) };
   if (f && (f.cap || f.end || f.ref || f.start)) m[key] = f; else delete m[key];
-  L.frameworks = m; commit(L, f ? 'Framework contract saved' : 'Framework contract removed');
+  L.frameworks = m; commit(L, f ? `Contract saved${f.name ? `: ${f.name}` : ''}` : 'Contract removed');
+}
+/** Adds or changes a member of a country office's core team. */
+export function setCoreMember(country: string, m: import('../domain/coreTeam').CoreMember) {
+  const L = draft(state.ledger), all = { ...(L.coreTeam ?? {}) }, M = [...(all[country] ?? [])], i = M.findIndex((x) => x.id === m.id);
+  if (i >= 0) M[i] = m; else M.push(m);
+  all[country] = M; L.coreTeam = all; commit(L, `Core team: ${m.name} ${i >= 0 ? 'changed' : 'added'}`);
+}
+/** Removes a member of a core team (the admin password is asked). */
+export function removeCoreMember(country: string, id: string) {
+  const M = state.ledger.coreTeam?.[country] ?? [], m = M.find((x) => x.id === id);
+  if (!m || !isAdmin('remove a core team member')) return;
+  const L = draft(state.ledger); L.coreTeam = { ...(L.coreTeam ?? {}), [country]: M.filter((x) => x.id !== id) }; commit(L, `Core team: ${m.name} removed`);
 }
 /** Ticks or unticks a task of the monthly checklist. */
 export function setCheck(month: string, key: string, done: boolean) {

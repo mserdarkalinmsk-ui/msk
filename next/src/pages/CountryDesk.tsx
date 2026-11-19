@@ -1,7 +1,10 @@
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
+import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, SEV_BADGE, type ContractDue } from '../domain/contracts';
-import { go, isAdmin, setFramework, useStore } from '../data/store';
+import { go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
+import { coreDue, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { n2 } from '../domain/staff';
 import { burnGap, money } from '../domain/calc';
 import { plabel } from '../domain/label';
 import { officeView, type Office } from '../domain/office';
@@ -35,6 +38,7 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
   const A = P.filter(active), M = P.map(money);
   const budget = M.reduce((a, m) => a + m.budget, 0), spent = M.reduce((a, m) => a + m.spent, 0);
   const people = allPeople(P).filter((a) => a.status === 'Active'), ending = renewals(people, TODAY, 60);
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], coreOn = core.filter((m) => onTeam(m, TODAY)), coreEnd = coreDue(core, TODAY).filter((d) => d.days != null && d.days >= 0 && d.days <= 60);
   const S = providerSummary(P, set, 3);
   const E = events(P).filter((e) => e.day >= now() && daysUntil(e.day, TODAY) <= 90), late = events(P).filter((e) => e.kind === 'report' && e.tone === 'bad');
   const FW = useStore((s) => s.ledger.frameworks) ?? {}, mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
@@ -45,7 +49,7 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
       <Tile k="fin" color="var(--c1)" icon="€" label="Office budget" value={offices.length ? short(off.b) : '—'} sub={offices.length ? `${pct(off.b ? off.sc / off.b : 0)} used · ${offices.length} office${offices.length > 1 ? 's' : ''}` : 'no office budget imported'} onClick={() => setTab('Finance')} />
       <Tile k="prj" color="var(--c3)" icon="▦" label="Projects" value={`${A.length}`} sub={P.length ? `${A.length} running of ${P.length} · ${short(spent)} of ${short(budget)} spent` : 'no project in this country'} onClick={() => setTab('Projects')} />
       <Tile k="ten" color="var(--c4)" icon="⚑" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />
-      <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${people.length}`} sub={people.length ? `${ending.length} contract${ending.length === 1 ? '' : 's'} ending within 60 days` : 'no staff contract on file'} onClick={() => setTab('Staff')} />
+      <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
       <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
     <div class="grid g-12" style={{ marginTop: '4px' }}>
@@ -84,32 +88,88 @@ export function CountryProjects({ name, P }: { name: string; P: Project[] }) {
 export function CountryTenders({ name, cid, P, offices }: { name: string; cid: string; P: Project[]; offices: Office[] }) {
   const set = useStore((s) => s.ledger.poKinds) ?? {};
   const L = providerPOs(P, set), S = suppliers(L).slice(0, 25);
-  const oe = offices.flatMap((o) => o.reports.at(-1)!.entries.filter((e) => e.supplier));
-  const os = [...oe.reduce((m, e) => { const g = m.get(e.supplier) ?? { s: e.supplier, a: 0, c: 0, n: 0 }; g.a += e.spent + e.committed; g.c += e.committed; g.n++; return m.set(e.supplier, g); }, new Map<string, { s: string; a: number; c: number; n: number }>()).values()].sort((a, b) => b.a - a.a).slice(0, 15);
+  const FW = useStore((s) => s.ledger.frameworks) ?? {};
+  const rep = offices[0]?.reports.at(-1), OS = rep ? officeServices(rep) : [];
+  const [pre, setPre] = useState<Prefill | null>(null);
+  const okey = (line: string, sup: string) => `office:${cid}:${line}:${supKey(sup)}`;
   const kl = (k: string) => KINDS.find((x) => x.k === k)?.label ?? k;
   const cname = () => name;
   return <div class="grid g-12">
     <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
       <div class="card-b"><ProviderBrief P={P} cname={cname} rows={6} /></div></section>
-    <ContractCalendar name={name} cid={cid} P={P} />
-    <section class="card span-12"><div class="card-h"><div><h2>Office suppliers</h2><p>The office's own running-cost orders, latest office report</p></div></div>
-      <div class="card-b">{os.length ? <table class="mini"><thead><tr><th>Supplier</th><th class="r">Orders</th><th class="r">Spent + committed</th><th class="r">Still open</th></tr></thead>
-        <tbody>{os.map((x) => <tr><td>{x.s}</td><td class="r num">{x.n}</td><td class="r num">{full(x.a)}</td><td class="r num">{x.c > 0.5 ? full(x.c) : ''}</td></tr>)}</tbody></table>
-        : <p class="muted">{offices.length ? 'The office report names no supplier.' : 'No office budget imported for this country.'}</p>}</div></section>
+    <ContractCalendar name={name} cid={cid} P={P} pre={pre} />
+    <section class="card span-12"><div class="card-h"><div><h2>Office contracts</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
+      {OS.length > 0 && <div class="card-b table-scroll"><table class="mini os-t"><thead><tr><th>Budget line</th><th>Service</th><th>Supplier</th><th class="r">Orders</th><th>Orders cover to</th><th class="r">Spent + committed</th><th class="r">Still open</th><th>Contract</th></tr></thead>
+        <tbody>{OS.map((x, i) => { const k = okey(x.line, x.supplier), c = FW[k] ?? FW[supKey(x.supplier)], due = c?.end ? contractsDue({ [k]: c }, TODAY)[0] : undefined;
+          return <tr class={i && OS[i - 1].line === x.line ? 'same' : ''}><td>{i && OS[i - 1].line === x.line ? '' : <><span class="num">{x.line}</span> <span class="muted">{x.lineName}</span></>}</td>
+            <td><b>{x.kind}</b></td><td>{x.supplier}</td>
+            <td class="r num" title={[...new Set(x.orders.map((o) => o.description))].join('\n')}>{x.orders.length}</td>
+            <td class="num" title={x.coverText}>{x.covers ? date(x.covers) : '—'}</td>
+            <td class="r num">{full(x.amount)}</td><td class="r num">{x.open > 0.5 ? full(x.open) : ''}</td>
+            <td>{due ? <span class={`badge ${SEV_BADGE[due.severity]}`} title={`${c!.ref ?? ''} ends ${date(due.end)}`}>{dueText(due)}</span>
+              : <button class="btn ghost os-add" onClick={() => { setPre({ n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
+    </section>
     {S.length > 0 && <section class="card span-12"><div class="card-h"><div><h2>Largest providers</h2><p>By spent + committed, every project of {name}</p></div></div>
       <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Provider</th><th>Kind</th><th class="r">Orders</th><th class="r">Projects</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
         <tbody>{S.map((x) => <tr><td>{x.supplier}</td><td class="muted">{kl(x.kind)}</td><td class="r num">{x.pos}</td><td class="r num">{x.projects.size}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc)}</td></tr>)}</tbody></table></div></section>}
   </div>;
 }
 
-export function CountryStaff({ name, P }: { name: string; P: Project[] }) {
+export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const people = allPeople(P);
-  if (!people.length) return <div class="card empty-page"><div><h2>No staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>;
-  return <StaffBoard people={people} showProject />;
+  return <>
+    <CoreTeam name={name} cid={cid} P={P} />
+    <section class="card" style={{ marginTop: '16px' }}><div class="card-h"><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div></div></section>
+    {people.length ? <StaffBoard people={people} showProject /> : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}
+  </>;
 }
 
-export function CountryDeadlines({ name, P }: { name: string; P: Project[] }) {
+const EMPTY = { name: '', position: '', grade: '', start: '', end: '', fund: 'ob', project: '', share: '', note: '' };
+/** The office's own team: entered by hand, with contract ends warned like contracts with providers. */
+function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const M = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
+  const [f, setF] = useState(EMPTY), [edit, setEdit] = useState('');
+  const D = coreDue(M, TODAY), on = M.filter((m) => onTeam(m, TODAY));
+  const v = (k: keyof typeof EMPTY) => ({ value: f[k], onInput: (e: Event) => setF({ ...f, [k]: (e.target as HTMLInputElement).value }) });
+  const save = () => {
+    if (!f.name.trim() || !f.position.trim()) return;
+    const m: CoreMember = { id: edit || `ct${Date.now().toString(36)}`, name: f.name.trim(), position: f.position.trim(), fund: f.fund as CoreMember['fund'],
+      ...(f.grade.trim() ? { grade: f.grade.trim() } : {}), ...(f.start ? { start: f.start } : {}), ...(f.end ? { end: f.end } : {}),
+      ...(f.fund === 'project' && f.project ? { project: f.project, ...(+f.share > 0 ? { share: Math.min(100, +f.share) } : {}) } : {}), ...(f.note.trim() ? { note: f.note.trim() } : {}) };
+    setCoreMember(cid, m); setF(EMPTY); setEdit('');
+  };
+  const load = (m: CoreMember) => { setF({ name: m.name, position: m.position, grade: m.grade ?? '', start: m.start ?? '', end: m.end ?? '', fund: m.fund ?? 'ob', project: m.project ?? '', share: m.share ? String(m.share) : '', note: m.note ?? '' }); setEdit(m.id); };
+  // a post charged to a project: is the person on that project's staff list?
+  const onProject = (m: CoreMember) => { const p = P.find((x) => x.id === m.project); if (!p) return null; const k = n2(m.name); return allPeople([p]).some((a) => n2(a.name) === k || n2(a.display) === k); };
+  return <section class="card cc"><div class="card-h"><div><h2>Core Team</h2><p>The office's own team in {name}, outside the projects: {on.length} on the team today. Contract ends are warned 90, 60 and 30 days ahead, here, under Deadlines and in the bell's count.</p></div></div>
+    <div class="card-b">
+      <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
+        <label>Name<input {...v('name')} placeholder="Surname, Name" required /></label>
+        <label>Position<input {...v('position')} placeholder="e.g. Head of Office" required /></label>
+        <label>Grade<input {...v('grade')} style={{ minWidth: '70px', width: '80px' }} /></label>
+        <label>Starts<input type="date" {...v('start')} /></label>
+        <label>Ends<input type="date" {...v('end')} /></label>
+        <label>Paid from<select class="select" value={f.fund} onChange={(e) => setF({ ...f, fund: (e.target as HTMLSelectElement).value })}>{Object.entries(FUND_LABEL).map(([k, l]) => <option value={k}>{l}</option>)}</select></label>
+        {f.fund === 'project' && <><label>Project<select class="select" value={f.project} onChange={(e) => setF({ ...f, project: (e.target as HTMLSelectElement).value })}><option value="">—</option>{P.map((p) => <option value={p.id}>{plabel(p)}</option>)}</select></label>
+          <label>Share %<input type="number" min="0" max="100" {...v('share')} style={{ minWidth: '70px', width: '80px' }} /></label></>}
+        <label>Note<input {...v('note')} /></label>
+        <button class="btn primary" type="submit" disabled={!f.name.trim() || !f.position.trim()}>{edit ? 'Save changes' : '+ Add to the team'}</button>
+        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setF(EMPTY); }}>Cancel</button>}
+      </form>
+      {D.length ? <div class="table-scroll"><table class="mini ct-t"><thead><tr><th>Name</th><th>Position</th><th>Grade</th><th>Paid from</th><th>Contract</th><th>Ends</th><th /></tr></thead>
+        <tbody>{D.map(({ m, days, severity }) => { const p = P.find((x) => x.id === m.project), seen = m.fund === 'project' ? onProject(m) : null;
+          return <tr class={onTeam(m, TODAY) ? '' : 'muted'}><td><b>{m.name}</b>{m.note && <small class="muted cd-n">{m.note}</small>}</td><td>{m.position}</td><td class="num">{m.grade ?? '—'}</td>
+            <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : FUND_LABEL[m.fund ?? 'ob']}</td>
+            <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {m.end ? date(m.end) : 'open-ended'}</td>
+            <td>{days == null ? <span class="muted">no end date</span> : <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</td>
+            <td style={{ whiteSpace: 'nowrap' }}><button class="btn ghost" title="Change" onClick={() => load(m)}>✎</button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
+        : <p class="muted">No one on the core team of {name} yet. Add the office's own staff above: name, position, contract dates and what pays for the post.</p>}
+    </div></section>;
+}
+
+export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const core = coreDue(useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], TODAY).filter((d) => d.days != null && d.days >= -30 && d.days <= 365);
   const FW = useStore((s) => s.ledger.frameworks) ?? {}, set = useStore((s) => s.ledger.poKinds) ?? {};
   const E = events(P).filter((e) => (e.day >= now() && daysUntil(e.day, TODAY) <= 365) || (e.kind === 'report' && e.tone === 'bad'));
   const names = new Map(providerPOs(P, set).map((x) => [supKey(x.supplier), x.supplier.trim()]));
@@ -118,6 +178,7 @@ export function CountryDeadlines({ name, P }: { name: string; P: Project[] }) {
   const months = [...new Set(E.map((e) => e.day.slice(0, 7)))].sort();
   return <section class="card"><div class="card-h"><div><h2>Deadlines in {name}</h2><p>Overdue reports and the next 12 months: report deadlines, staff contract ends, planned activity ends and project ends · click a line to open the project</p></div></div>
     <div class="card-b">
+      {core.length > 0 && <p class="cd-fw">Core team contracts ending: {core.map((d) => <span class={`badge ${SEV_BADGE[d.severity as ContractDue['severity']]}`}>{d.m.name} · {date(d.m.end!)}</span>)}</p>}
       {fw.length > 0 && <p class="cd-fw">Framework contracts ending: {fw.map(([k, f]) => <span class="badge warning">{names.get(k) ?? k} · {date(f.end!)}</span>)}</p>}
       {E.length ? months.map((m) => <div class="cd-m"><h3>{date(m + '-01').replace(/^\d+\s/, '')}</h3><ul class="cd-ev">{E.filter((e) => e.day.startsWith(m)).map((e) => <EvRow e={e} />)}</ul></div>)
         : <p class="muted">Nothing dated in the next 12 months.</p>}
@@ -126,7 +187,9 @@ export function CountryDeadlines({ name, P }: { name: string; P: Project[] }) {
 
 
 /** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
-export function ContractCalendar({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+/** A contract to add, filled in from an office service. */
+export interface Prefill { n: number; key: string; sup: string; line: string; kind: string; end: string }
+export function ContractCalendar({ name, cid, P, pre }: { name: string; cid: string; P: Project[]; pre?: Prefill | null }) {
   const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
   const L = providerPOs(P, set);
   const names = new Map<string, string>(); for (const x of L) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
@@ -135,14 +198,16 @@ export function ContractCalendar({ name, cid, P }: { name: string; cid: string; 
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end);
   const [f, setF] = useState({ sup: '', ref: '', cap: '', start: '', end: '' });
-  const [edit, setEdit] = useState('');
+  const [edit, setEdit] = useState(''), [meta, setMeta] = useState<{ line?: string; kind?: string }>({});
+  // an office service chosen in the table: its supplier, budget line and kind; the end its orders cover, to confirm
+  useEffect(() => { if (pre) { setF({ sup: pre.sup, ref: '', cap: '', start: '', end: '' }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
   const save = () => {
     const name = f.sup.trim(); if (!name || !f.end) return;
-    const k = supKey(name);
-    setFramework(k, { name, ...(names.has(k) ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), end: f.end });
-    setF({ sup: '', ref: '', cap: '', start: '', end: '' }); setEdit('');
+    const k = edit || supKey(name);
+    setFramework(k, { name, ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), end: f.end });
+    setF({ sup: '', ref: '', cap: '', start: '', end: '' }); setEdit(''); setMeta({});
   };
-  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '' }); setEdit(d.key); };
+  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
   // the calendar: three months back, fifteen ahead
   const t0 = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 3, 1)), months = Array.from({ length: 18 }, (_, i) => new Date(Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + i, 1)));
   const t1 = Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + 18, 1), span = t1 - t0.getTime();
@@ -160,13 +225,14 @@ export function ContractCalendar({ name, cid, P }: { name: string; cid: string; 
         <label>Starts<input type="date" value={f.start} onInput={(e) => setF({ ...f, start: (e.target as HTMLInputElement).value })} /></label>
         <label>Ends<input type="date" value={f.end} onInput={(e) => setF({ ...f, end: (e.target as HTMLInputElement).value })} required /></label>
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || !f.end}>{edit ? 'Save changes' : '+ Add contract'}</button>
-        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setF({ sup: '', ref: '', cap: '', start: '', end: '' }); }}>Cancel</button>}
+        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF({ sup: '', ref: '', cap: '', start: '', end: '' }); }}>Cancel</button>}
+        {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · its orders cover to {date(pre.end)}: enter the contract's own end date</> : null}</p>}
       </form>
       {D.length ? <div class="cc-cal">
         <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : m.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
         {D.map((d) => { const a = x(d.start ?? t0.toISOString()), b = x(d.end), w90 = x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
           return <div class={`cc-row s-${d.severity}`}>
-            <span class="cc-n"><b>{d.name}</b><small class="muted">{[d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small></span>
+            <span class="cc-n"><b>{d.name}</b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small></span>
             <div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }} />)}
               {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
               <u style={{ left: `${x(TODAY.toISOString())}%` }} /></div>

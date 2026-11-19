@@ -1,4 +1,5 @@
 import { contractAlerts, contractsDue, dueText, SEV_BADGE } from '../domain/contracts';
+import { coreDue } from '../domain/coreTeam';
 import { flexOf } from '../domain/flex';
 import { useMemo, useState } from 'preact/hooks';
 import { go, markAlerts, set, useStore } from '../data/store';
@@ -20,7 +21,7 @@ const SNOOZE: [string, number][] = [['1 week', 7], ['2 weeks', 14], ['1 month', 
 /** The project tab where an alert of each kind is looked into. */
 const ALERT_TAB: Record<string, string> = { line: 'statement', forecast: 'summary', ending: 'summary', contract: 'staff', deadline: 'reports', plan: 'plan', setup: 'docs' };
 export function AlertCentre({ projects }: { projects: Project[] }) {
-  const FW = useStore((s) => s.ledger.frameworks) ?? {};
+  const FW = useStore((s) => s.ledger.frameworks) ?? {}, CT = useStore((s) => s.ledger.coreTeam) ?? {};
   const marks = useStore((s) => s.ledger.alertMarks), log = useStore((s) => s.ledger.alertLog) ?? [];
   const A = useMemo(() => alerts(projects, TODAY), [projects]);
   const G = useMemo(() => splitAlerts(A, marks, TODAY), [A, marks]);
@@ -52,7 +53,7 @@ export function AlertCentre({ projects }: { projects: Project[] }) {
           </button>
         ))}
       </section>
-      {(() => { const D = contractAlerts(contractsDue(FW, TODAY)); return D.length > 0 && <section class="card cc-alerts"><div class="card-h"><div><h2>Contracts ending</h2><p>Framework contracts and tender awards with providers: warned 90 days before the end, serious at 60, critical at 30 · set and changed under Offices › Tenders & suppliers</p></div>
+      {(() => { const D = [...contractAlerts(contractsDue(FW, TODAY)), ...Object.values(CT).flatMap((M) => coreDue(M, TODAY)).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ key: 'core:' + d.m.id, name: `${d.m.name} — core team, ${d.m.position}`, end: d.m.end!, days: d.days!, severity: d.severity as 'critical', used: 0, ref: undefined as string | undefined, cap: undefined as number | undefined }))].sort((a, b) => a.end.localeCompare(b.end)); return D.length > 0 && <section class="card cc-alerts"><div class="card-h"><div><h2>Contracts ending</h2><p>Framework contracts and tender awards with providers, and the office core teams: warned 90 days before the end, serious at 60, critical at 30 · set and changed under Offices › Tenders & suppliers</p></div>
         <button class="btn" onClick={() => { try { localStorage.setItem('pl-desk-tab', 'Tenders & suppliers'); } catch { /* the page opens on its last tab */ } go('offices'); }}>Open the contract calendar ›</button></div>
         <ul class="cc-al-l">{D.map((d) => <li class="cc-al"><span class={`badge ${SEV_BADGE[d.severity]}`}>{dueText(d)}</span> <b>{d.name}</b>{d.ref ? <span class="muted"> · {d.ref}</span> : null} · ends {date(d.end)}{d.cap ? <span class="muted"> · ceiling {full(d.cap)}</span> : null}</li>)}</ul></section>; })()}
       <section class="card wl">
