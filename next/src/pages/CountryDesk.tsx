@@ -196,7 +196,7 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
   <div class="grid g-12">
     {v === 'Providers' && <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
-      <div class="card-b"><ProviderBrief P={P} cname={cname} rows={6} /></div></section>}
+      <div class="card-b"><CountryProviders P={P} cname={cname} /></div></section>}
     {v === 'Contracts' && <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />}
     {v === 'Office contracts' && <section class="card span-12"><div class="card-h"><div><h2>Office contracts</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
       {OS.length > 0 && <div class="card-b table-scroll"><table class="mini os-t"><thead><tr><th>Budget line</th><th>Service</th><th>Supplier</th><th class="r">Orders</th><th>Orders cover to</th><th class="r">Spent + committed</th><th class="r">Still open</th><th>Contract</th></tr></thead>
@@ -246,6 +246,21 @@ export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: P
 }
 
 /** Everyone working for the country once: core team and project contracts of the same person together. */
+/** The country's providers in total, with what each project placed, or one project's alone. */
+function CountryProviders({ P, cname }: { P: Project[]; cname: (id: string) => string }) {
+  const set = useStore((x) => x.ledger.poKinds) ?? {};
+  const [pj, setPj] = useState('all');
+  const R = P.map((p) => ({ p, S: providerSummary([p], set, 1) })).filter((x) => x.S.total > 0).sort((a, b) => b.S.total - a.S.total);
+  const T = R.reduce((a, x) => a + x.S.total, 0), one = R.find((x) => x.p.id === pj);
+  return <>
+    {R.length > 1 && <div class="seg sp-scope" role="group" aria-label="Projects">{[['all', 'All projects'], ...R.map((x) => [x.p.id, plabel(x.p)])].map(([k, l]) => <button aria-pressed={(one ? pj : 'all') === k} onClick={() => setPj(k)}>{l}</button>)}</div>}
+    {!one && R.length > 1 && <table class="mini sp-proj"><thead><tr><th>Project</th><th class="r">POs</th><th class="r">Providers</th><th class="r">Amount</th><th class="r">Share</th><th>Largest provider</th></tr></thead>
+      <tbody>{R.map(({ p, S }) => <tr class="click" onClick={() => setPj(p.id)}><td><b>{plabel(p)}</b></td><td class="r num">{S.pos}</td><td class="r num">{S.providers}</td><td class="r num">{full(S.total)}</td><td class="r num">{Math.round(S.total / T * 100)}%</td><td class="muted">{S.top[0]?.supplier ?? '—'}</td></tr>)}
+        <tr class="tot"><td><b>Total</b></td><td class="r num">{R.reduce((a, x) => a + x.S.pos, 0)}</td><td /><td class="r num"><b>{full(T)}</b></td><td class="r num">100%</td><td /></tr></tbody></table>}
+    <ProviderBrief P={one ? [one.p] : P} cname={cname} rows={6} lab={one ? undefined : (id) => plabel(P.find((q) => q.id === id) ?? ({ code: '?' } as Project))} />
+  </>;
+}
+
 const NO_END = { open: 'Open-ended', sxb: 'SxB staff', missing: 'Dates missing' } as const;
 function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];

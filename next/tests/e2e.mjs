@@ -623,7 +623,14 @@ async function page(opts) {
   await p.goBack(); await p.waitForTimeout(300);
   check(tabs.join('|') === 'Overview|Office budget|Projects|Budget lines|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
   for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
-  await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.waitForSelector('.cc-form');
+  await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.click('.cd-views button:has-text("Providers")'); await p.waitForSelector('.sp-mini, .card-b p.muted');
+  if (await p.locator('.sp-proj').count()) {
+    const tot = await p.locator('.sp-mini-k b').first().textContent(), rows = await p.locator('.sp-proj tbody tr:not(.tot)').count();
+    check(rows > 1 && (await p.locator('.sp-proj tr.tot').textContent()).includes(tot), `providers: each project's share, and the total (${rows} projects)`);
+    await p.locator('.sp-proj tbody tr:not(.tot)').first().click();
+    check(await p.locator('.sp-proj').count() === 0 && await p.locator('.sp-scope button[aria-pressed=true]:not(:text-is("All projects"))').count() === 1 && (await p.locator('.sp-mini-k b').first().textContent()) !== tot, 'providers of one project alone');
+  } else check(await p.locator('.sp-scope').count() === 0 && await p.locator('.sp-mini, .card-b p.muted').count() > 0, 'providers of a country with one project: no project split');
+  await p.click('.cd-views button:has-text("Contracts")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);
   await f(1, 'Gamma Events Ltd'); await f(2, 'FWC-T1'); await f(3, '50000'); await f(4, '2025-01-01'); await f(5, '2026-10-31');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);

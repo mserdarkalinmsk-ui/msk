@@ -206,7 +206,7 @@ export function Providers() {
 }
 
 /** Service providers in short — for the monthly pack and the presentation (main kinds only). */
-export function ProviderBrief({ P, cname, rows = 8 }: { P: Project[]; cname: (id: string) => string; rows?: number }) {
+export function ProviderBrief({ P, cname, rows = 8, lab }: { P: Project[]; cname: (id: string) => string; rows?: number; /** names the projects of each provider when given */ lab?: (id: string) => string }) {
   const set = useStore((x) => x.ledger.poKinds) ?? {};
   const S = providerSummary(P, set, rows);
   if (!S.total) return <p class="muted">No service-provider purchase orders in the latest report workbooks.</p>;
@@ -216,6 +216,6 @@ export function ProviderBrief({ P, cname, rows = 8 }: { P: Project[]; cname: (id
       <table class="mini"><thead><tr><th>Kind</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
         <tbody>{S.kinds.map((k) => <tr><td><Dot k={k.k} />{k.label}</td><td class="r num">{k.n}</td><td class="r num">{full(k.v)}</td><td class="r num">{Math.round(k.v / S.total * 100)}%</td></tr>)}</tbody></table>
       <table class="mini"><thead><tr><th>Largest providers</th><th>Kind</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
-        <tbody>{S.top.map((x) => <tr><td>{x.supplier}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
+        <tbody>{S.top.map((x) => <tr><td>{x.supplier}{lab && S.projects > 1 && <small class="muted sp-pj">{[...x.projects.keys()].map(lab).join(', ')}</small>}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
     </div></div>;
 }
