@@ -414,8 +414,8 @@ export function Compare({ only }: { only?: boolean } = {}) {
           <tbody>{rows.map((r) => <tr><td class="em-title em-g">{r.p.name}</td><td class="em-g">{r.p.bh}</td><td class="r">{n0(r.sp.monthly)}</td><td class="r">{n0(r.sp.projected)}</td>
             <td class="em-sr">{dot(r.sp.share)}{p0(r.sp.share)}</td><td>{r.sp.active}</td><td class={r.sp.endingEarly ? 'em-up' : ''}>{r.sp.endingEarly}</td></tr>)}</tbody></table>
       </section>
-      <section class="em-method">
-        <h3>How the figures are calculated</h3>
+      <details class="em-method">
+        <summary><h3>How the figures are calculated</h3><span class="muted no-print">definitions of every column — click to read</span></summary>
         <ol>
           <li><b>Planned</b> = project amount × share of the implementation period elapsed at today (T): (today − start date) ÷ (end date − start date).</li>
           <li><b>Performance</b> = spent (actual, T) ÷ planned.</li>
@@ -429,7 +429,7 @@ export function Compare({ only }: { only?: boolean } = {}) {
           <li><b>Commitment risk</b> = {riskPct}% of committed (excluding staff) — the share of open commitments that may not be spent; <b>adjusted S&C vs planned</b> = (S&C − at risk) ÷ planned.</li>
           <li><b>Colour codes</b> — spending rates: ≥100% blue, 90–100% green, 70–90% amber, &lt;70% red. Staff ratios: ≤35% green, 35–50% amber, ≥50% red. <b>Notes</b>: “Risk of overspending” when S&C vs planned &gt; 100%; “Risk of underspending” when the report's forecast leaves at least 5% of the budget unspent at the end date; without such a forecast, when a quarter of the project has run, S&C is below 90% of plan and at least 10% would stay unspent at the current pace.</li>
         </ol>
-      </section>
+      </details>
       
     </article>
   );

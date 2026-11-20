@@ -8,6 +8,9 @@ import './styles/tokens.css';
 import './styles/app.css';
 import './styles/styles.css';
 import './styles/system.css';
+import './styles/premium.css';
+// what is folded on screen is printed in full
+addEventListener('beforeprint', () => document.querySelectorAll<HTMLDetailsElement>('details.em-method').forEach((d) => { d.open = true; }));
 import './styles/editorial.css';
 import { EMBED, go, load, set, unlock, useStore } from './data/store';
 import { useState } from 'preact/hooks';

@@ -16,6 +16,7 @@ export function HealthPage() {
   const s = useStore((x) => x);
   const H = filtered(s).map((p) => health(p, TODAY)).sort((a, b) => ['bad', 'warn', 'ok'].indexOf(a.level) - ['bad', 'warn', 'ok'].indexOf(b.level));
   const n = (l: Level) => H.filter((h) => h.level === l).length;
+  const [allTrash, setAllTrash] = useState(false);
   const [open, setOpen] = useState<{ p: Project; f: Finding } | null>(null);
   const tabOf = (f: Finding) => f.tab ?? (f.fix === 'reports' ? 'Financial report' : undefined);
   const goTab = (id: string, tab: string) => { setOpen(null); go(`project/${id}`); setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: tab })), 60); };
@@ -45,8 +46,9 @@ export function HealthPage() {
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>Deleted items</h2><p>Projects, countries, reports, documents, risks and office reports that were deleted — put any of them back</p></div>
           {!!s.ledger.trash?.length && <div class="tools"><button class="btn ghost danger" onClick={() => confirm('Empty the trash for good?') && emptyTrash()}>Empty trash</button></div>}</div>
-        <ul class="att" style={{ marginTop: '8px' }}>{(s.ledger.trash ?? []).map((t) => <li style={{ cursor: 'default' }}><span class="badge neutral">{t.kind}</span><div><div class="t">{t.label}</div><div class="d">deleted {date(t.at.slice(0, 10))} {t.at.slice(11, 16)}{t.projects?.length ? ` · with ${t.projects.length} project${t.projects.length > 1 ? 's' : ''}` : ''}</div></div><button class="btn ghost" onClick={() => restoreTrash(t.id)}>Restore</button></li>)}
+        <ul class="att" style={{ marginTop: '8px' }}>{(s.ledger.trash ?? []).slice(0, allTrash ? undefined : 8).map((t) => <li style={{ cursor: 'default' }}><span class="badge neutral">{t.kind}</span><div><div class="t">{t.label}</div><div class="d">deleted {date(t.at.slice(0, 10))} {t.at.slice(11, 16)}{t.projects?.length ? ` · with ${t.projects.length} project${t.projects.length > 1 ? 's' : ''}` : ''}</div></div><button class="btn ghost" onClick={() => restoreTrash(t.id)}>Restore</button></li>)}
           {!s.ledger.trash?.length && <li style={{ cursor: 'default' }}><span /><div class="d">Nothing deleted</div><span /></li>}</ul>
+        {(s.ledger.trash?.length ?? 0) > 8 && <div class="ll-more"><button onClick={() => setAllTrash(!allTrash)}>{allTrash ? 'Show the latest 8' : `Show all ${s.ledger.trash!.length}`}</button></div>}
       </section>
       <p class="muted" style={{ fontSize: '12px', marginTop: '12px' }}>Checks: system extractions reconcile entry by entry, template rows recognised (direct · admin · total), lines add up to the totals, direct + admin = total, admin ≤ 7%, report and approved budget equal the project budget, admin not counted twice, heading flexibility, duplicate reports in one month, documents uploaded twice, report age, dates.</p>
     </>
