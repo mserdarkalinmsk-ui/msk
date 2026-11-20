@@ -84,3 +84,55 @@ details.em-method[open] > summary::before { content: '▾'; }
 /* cards that stay in view keep their own positioning (the premium edge needs a positioned card, sticky is one) */
 .studio-c { position: sticky; }
 .studio-c { grid-template-columns: minmax(0, 1fr); } .studio-b { flex-wrap: wrap; }
+
+/* ---------- Everyone in a country: people as a directory, grouped, with one colour per project ---------- */
+.ev-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ev-tools .input { width: 220px; }
+.ev-sum { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 0 20px 12px; }
+.ev-sum > div, .ev-soon { display: grid; gap: 1px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-width: 92px; text-align: left; font: inherit; color: inherit; }
+.ev-sum b { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.ev-sum span { font-size: 12px; color: var(--ink-3); }
+.ev-soon { cursor: pointer; border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
+.ev-soon b { color: var(--warn); }
+.ev-soon.on { background: color-mix(in srgb, var(--warn) 10%, var(--surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 35%, transparent); }
+.ev-chk b { color: var(--critical); }
+.ev-bar { flex: 1 1 200px; align-self: center; display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; min-width: 160px; }
+.ev-bar i { display: block; min-width: 4px; }
+.ev-g + .ev-g { margin-top: 14px; }
+.ev-g h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13px; font-weight: 650; color: var(--ink-2); }
+.ev-g h3 small { font-weight: 600; color: var(--ink-3); background: var(--surface-2); border-radius: 999px; padding: 0 8px; font-size: 11.5px; }
+.ev-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.ev-l { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.ev-l li { display: grid; grid-template-columns: 36px minmax(180px, 1.4fr) minmax(160px, 1fr) 170px; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); transition: background .12s; }
+.ev-l li:last-child { border-bottom: 0; }
+.ev-l li:hover { background: color-mix(in srgb, var(--c1) 5%, transparent); }
+.ev-l li.chk { background: color-mix(in srgb, var(--critical) 5%, transparent); }
+.ev-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+.ev-who { display: grid; min-width: 0; }
+.ev-who b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-who small { color: var(--ink-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-who em { font-style: normal; font-size: 12px; color: var(--critical); }
+.ev-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.ev-chip { --k: var(--ink-3); font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--k) 12%, transparent); border: 1px solid color-mix(in srgb, var(--k) 35%, transparent); white-space: nowrap; }
+.ev-chip.core { --k: var(--ink-2); }
+.ev-end { display: flex; align-items: center; justify-content: flex-end; gap: 8px; white-space: nowrap; }
+@media (max-width: 900px) { .ev-l li { grid-template-columns: 36px 1fr; } .ev-chips, .ev-end { grid-column: 2; justify-content: flex-start; } }
+@media print { .ev-tools, .ev-soon { display: none; } }
+/* the card view: each person a card, the ring around the initials is the time left on the contract */
+.ev-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.ev-card { --k: var(--ink-3); position: relative; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 16px 12px 12px; text-align: center; border: 1px solid var(--line); border-top: 3px solid var(--k); border-radius: 14px; background: var(--surface); transition: transform .12s, box-shadow .12s; }
+.ev-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -10px rgb(16 24 40 / .25); }
+.ev-card.chk { background: color-mix(in srgb, var(--critical) 5%, var(--surface)); }
+.ev-ring { --p: 1; --rc: var(--good); width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 4px; background: conic-gradient(var(--rc) calc(var(--p) * 360deg), color-mix(in srgb, var(--line) 80%, transparent) 0); }
+.ev-ring .ev-av { width: 44px; height: 44px; background: var(--k); font-size: 14px; box-shadow: 0 0 0 2px var(--surface); }
+.ev-card.t-warning .ev-ring { --rc: var(--warn); } .ev-card.t-serious .ev-ring { --rc: var(--serious); } .ev-card.t-critical .ev-ring { --rc: var(--critical); }
+.ev-card.t-ended .ev-ring { --rc: var(--ink-3); } .ev-card.t-open .ev-ring { --rc: color-mix(in srgb, var(--k) 60%, transparent); }
+.ev-n { font-weight: 650; font-size: 14px; line-height: 1.25; }
+.ev-r { color: var(--ink-3); font-size: 12px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+.ev-card .ev-chips { justify-content: center; margin-top: 2px; }
+.ev-c { font-style: normal; font-size: 12px; color: var(--critical); }
+.ev-f { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--line); width: 100%; font-size: 12.5px; white-space: nowrap; }
+@media print { .ev-card { break-inside: avoid; } .ev-card:hover { transform: none; } }
+.ev-f .num { font-family: inherit; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.ev-board { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.ev-card .ev-chips:empty { display: none; }

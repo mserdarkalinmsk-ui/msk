@@ -641,8 +641,9 @@ async function page(opts) {
   p.once('dialog', (d) => d.accept());
   await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForTimeout(800);
   check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
-  await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.cp-t');
-  check(await p.locator('.cp-t tr:has-text("Alpha, One")').count() === 1 && await p.locator('.cp-t tr:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
+  await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.ev-card');
+  check(await p.locator('.ev-card:has-text("Alpha, One")').count() === 1 && await p.locator('.ev-card:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
+  await p.click('.ev-tools button:text-is("List")'); check(await p.locator('.ev-l li:has-text("Alpha, One")').count() === 1, 'everyone also shown as a list');
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
   // the admin password is changed under Rules & thresholds, kept hashed, and asked from then on

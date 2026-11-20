@@ -7,7 +7,7 @@ import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeveri
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
-import { countryPeople, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
 import { alerts, outcome } from '../domain/insights';
@@ -249,16 +249,57 @@ export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: P
 function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
   const L = countryPeople(core, allPeople(P).filter((a) => a.status !== 'Ended'), (p) => plabel(p as Project));
+  const [by, setBy] = useState<'project' | 'end' | 'name'>('project'), [mode, setMode] = useState<'cards' | 'list'>('cards'), [q, setQ] = useState(''), [soon, setSoon] = useState(false);
   if (!L.length) return null;
-  const checks = L.filter((x) => x.check).length;
-  return <section class="card cp" style={{ marginBottom: '16px' }}><div class="card-h"><div><h2>Everyone in {name} · {L.length}</h2><p>Each person once: the core team and the project contracts of the same person together, what pays for them and the nearest contract end{checks ? <> · <b style={{ color: 'var(--serious)' }}>{checks} to check</b></> : null}</p></div></div>
-    <div class="card-b table-scroll"><table class="mini cp-t"><thead><tr><th>Name</th><th>Role</th><th>Paid from</th><th>Nearest end</th><th /></tr></thead>
-      <tbody>{L.map((x) => { const d = x.ends ? daysUntil(x.ends, TODAY) : null;
-        return <tr class={x.check ? 'chk' : ''}><td><b>{x.name}</b>{x.check && <small class="cp-chk">{x.check}</small>}</td>
-          <td>{[x.core && `${x.core.position} (core team)`, ...x.roles.map((r) => `${r.position} · ${r.project}`)].filter(Boolean).join('; ')}</td>
-          <td>{[x.core && (x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']), ...[...new Set(x.roles.map((r) => r.project))]].filter(Boolean).join(' · ')}</td>
-          <td class="num" style={{ whiteSpace: 'nowrap' }}>{x.ends ? date(x.ends) : 'open-ended'}</td>
-          <td>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} d</span> : null}</td></tr>; })}</tbody></table></div></section>;
+  // each project its own colour, the same on the avatar, the chip and the bar
+  const projs = [...new Set(L.flatMap((x) => x.roles.map((r) => r.project)))].sort();
+  const col = (pr: string) => `var(--c${(projs.indexOf(pr) % 8) + 1})`;
+  const days = (x: CountryPerson) => (x.ends ? daysUntil(x.ends, TODAY) : null);
+  const ending = L.filter((x) => { const d = days(x); return d != null && d >= 0 && d <= 90; });
+  const shown = L.filter((x) => (!soon || ending.includes(x)) && (!q || `${x.name} ${x.core?.position ?? ''} ${x.roles.map((r) => `${r.position} ${r.project}`).join(' ')}`.toLowerCase().includes(q.toLowerCase())));
+  const key = (x: CountryPerson) => by === 'project' ? (x.core ? 'Core team' : x.roles[0]?.project ?? '—') : by === 'end' ? (x.ends ? (days(x)! < 0 ? 'Ended' : days(x)! <= 90 ? 'Ending within 90 days' : days(x)! <= 365 ? 'Ending within a year' : 'Later') : 'Open-ended') : x.name.replace(/^[^A-Za-zÇĞİÖŞÜçğıöşü]*/, '').charAt(0).toUpperCase();
+  const order = by === 'end' ? ['Ended', 'Ending within 90 days', 'Ending within a year', 'Later', 'Open-ended'] : null;
+  const groups = [...new Set(shown.map(key))].sort((a, b2) => order ? order.indexOf(a) - order.indexOf(b2) : a === 'Core team' ? -1 : b2 === 'Core team' ? 1 : a.localeCompare(b2));
+  const initials = (n: string) => n.replace(/,/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const checks = L.filter((x) => x.check).length, open = L.filter((x) => !x.ends).length;
+  return <section class="card ev">
+    <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Everyone in {name}</h2><p>Each person once — the core team and the project contracts of the same person together</p></div>
+      <div class="tools ev-tools"><input class="input" type="search" placeholder="Find a person or a role" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Find a person" />
+        <div class="seg" role="group" aria-label="Group by">{([['project', 'By project'], ['end', 'By contract end'], ['name', 'A–Z']] as const).map(([k, l]) => <button aria-pressed={by === k} onClick={() => setBy(k)}>{l}</button>)}</div>
+        <div class="seg" role="group" aria-label="Show as">{([['cards', 'Cards'], ['list', 'List']] as const).map(([k, l]) => <button aria-pressed={mode === k} onClick={() => setMode(k)}>{l}</button>)}</div></div></div>
+    <div class="ev-sum">
+      <div><b>{L.length}</b><span>people</span></div>
+      <div><b>{core.length}</b><span>core team</span></div>
+      <div><b>{L.filter((x) => x.roles.length).length}</b><span>on projects</span></div>
+      <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><b>{ending.length}</b><span>contracts ending within 90 days{soon ? ' · showing' : ''}</span></button>
+      <div><b>{open}</b><span>open-ended</span></div>
+      {checks > 0 && <div class="ev-chk"><b>{checks}</b><span>to check</span></div>}
+      <span class="ev-bar" aria-label="People by project">{projs.map((pr) => { const n = L.filter((x) => x.roles.some((r) => r.project === pr)).length; return <i style={{ flex: n, background: col(pr) }} title={`${pr}: ${n}`} />; })}</span>
+    </div>
+    <div class="card-b">{groups.map((g) => { const R = shown.filter((x) => key(x) === g).sort((a, b2) => by === 'end' ? (a.ends || '9').localeCompare(b2.ends || '9') : a.name.localeCompare(b2.name));
+      return <div class="ev-g"><h3><span class="ev-dot" style={{ background: by === 'project' && g !== 'Core team' ? col(g) : 'var(--ink-3)' }} />{g}<small>{R.length}</small></h3>
+        {mode === 'cards' ? <div class="ev-board">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project, tone = d == null ? 'open' : d < 0 ? 'ended' : d <= 30 ? 'critical' : d <= 60 ? 'serious' : d <= 90 ? 'warning' : 'ok';
+          // the ring fills as the contract runs out: a full ring is a year or more left
+          const left = d == null ? 1 : Math.max(0, Math.min(1, d / 365));
+          return <article class={`ev-card t-${tone}${x.check ? ' chk' : ''}`} style={{ '--k': x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' } as never}>
+            <span class="ev-ring" style={{ '--p': String(left) } as never} title={x.ends ? `Contract ends ${date(x.ends)}` : 'Open-ended'}><span class="ev-av">{initials(x.name)}</span></span>
+            <b class="ev-n">{x.name}</b>
+            <small class="ev-r">{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ') || '—'}</small>
+            <span class="ev-chips">{x.core && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
+              {[...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g).map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
+            {x.check && <em class="ev-c">{x.check}</em>}
+            <span class="ev-f">{x.ends ? <><span class="num">until {date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">open-ended</span>}</span>
+          </article>; })}</div>
+        : <ul class="ev-l">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project;
+          return <li class={x.check ? 'chk' : ''}>
+            <span class="ev-av" style={{ background: x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' }}>{initials(x.name)}</span>
+            <span class="ev-who"><b>{x.name}</b><small>{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ')}</small>{x.check && <em>{x.check}</em>}</span>
+            <span class="ev-chips">{x.core && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
+              {[...new Set(x.roles.map((r) => r.project))].map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
+            <span class="ev-end">{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">open-ended</span>}</span>
+          </li>; })}</ul>}</div>; })}
+      {!shown.length && <p class="muted">No one matches.</p>}</div>
+  </section>;
 }
 
 const EMPTY = { name: '', position: '', grade: '', start: '', end: '', fund: 'ob', project: '', share: '', note: '' };
