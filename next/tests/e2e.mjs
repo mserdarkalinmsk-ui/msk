@@ -632,14 +632,15 @@ async function page(opts) {
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
-  // Staff: the office's core team, then the project staff; a core team contract ending soon is warned
-  await p.click('.cd-tabs button:text-is("Staff")'); await p.waitForSelector('.cc-form');
+  // Staff: everyone, the core team, the project staff… one view at a time; a core team contract ending soon is warned
+  await p.click('.cd-tabs button:text-is("Staff")'); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.cc-form');
   await f(1, 'Alpha, One'); await f(2, 'Office assistant'); await f(5, '2026-11-25');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
-  check(await p.locator('.ct-t tr:has-text("Alpha, One") .badge:has-text("45 d left")').count() === 1 && await p.locator('h2:has-text("Project staff in")').count() === 1, 'core team member added, with the days left, above the project staff');
+  check(await p.locator('.ct-t tr:has-text("Alpha, One") .badge:has-text("45 d left")').count() === 1, 'core team member added, with the days left');
   p.once('dialog', (d) => d.accept());
   await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForTimeout(800);
   check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
+  await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.cp-t');
   check(await p.locator('.cp-t tr:has-text("Alpha, One")').count() === 1 && await p.locator('.cp-t tr:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
@@ -652,6 +653,11 @@ async function page(opts) {
   await pw.nth(0).fill('NewPass1'); await pw.nth(1).fill('MSK'); await pw.nth(2).fill('MSK'); await p.click('.rl-pw button'); await p.waitForTimeout(300);
   await p.keyboard.press('Escape');
   check(await p.locator('.cc-alerts li:has-text("Alpha, One")').count() === 1, 'the core team contract ending soon is in the alert centre');
+  // a long page lists its sections at the bottom right, and one click takes you to a section
+  await p.goto(url + '#/overview'); await p.waitForTimeout(1500);
+  if (await p.locator('.pidx-b').count()) { await p.click('.pidx-b'); const n = await p.locator('.pidx-l li').count(); await p.locator('.pidx-l li').nth(Math.max(0, n - 2)).click(); await p.waitForTimeout(700);
+    check(await p.evaluate(() => scrollY) > 300, 'the page index takes you down to a section'); }
+  else check(false, 'a long page offers its list of sections');
   await p.goto(url + '#/countries'); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Overview")'); await p.waitForSelector('.ca');
   if (await p.locator('.ca button:has-text("Show all")').count()) await p.click('.ca button:has-text("Show all")');
   check(await p.locator('.ca-i:has-text("Gamma Events Ltd")').count() === 1 && await p.locator('.ca-i:has-text("Alpha, One")').count() === 1, 'the country lists its own alerts, contracts and core team in one place');

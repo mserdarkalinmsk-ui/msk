@@ -1,3 +1,4 @@
+import { PageIndex } from './PageIndex';
 import { BackupBanner, BackupStatus, FreshStart } from './Backup';
 import { SharedBanner } from './Share';
 import { READONLY } from '../data/store';
@@ -90,6 +91,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           {actions}
         </header>
         <main class="page" id="content"><div class="pstat"><OldCopyBanner /><SharedBanner />{!READONLY && <BackupBanner />}</div>{!READONLY && <FreshStart />}{children}</main>
+        <PageIndex route={route} />
       </div>
     </div>
   );

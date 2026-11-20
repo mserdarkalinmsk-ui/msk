@@ -1229,3 +1229,15 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 @media (max-width:1000px){.la-g{grid-template-columns:1fr 1fr}.la-l{grid-column:1/-1}}
 .att-c{display:inline-flex;gap:2px}.att-c .btn{padding:0 7px;height:28px}
 .sl{margin-bottom:14px}
+.cd-two{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start;margin-bottom:14px}.cd-two>.card{margin:0}
+.cd-two .ca-i{grid-template-columns:76px 96px 1fr}
+.cd-views{margin:0 0 12px}
+@media (max-width:1100px){.cd-two{grid-template-columns:1fr}}
+/* On this page: a floating list of the page's sections */
+.pidx{position:fixed;right:22px;bottom:22px;z-index:30;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.pidx-b{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:999px;box-shadow:0 6px 20px rgb(0 0 0/.12);cursor:pointer}
+.pidx-b:hover{border-color:var(--c1)}
+.pidx-l{list-style:none;margin:0;padding:6px;max-height:60vh;overflow:auto;width:300px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgb(0 0 0/.16)}
+.pidx-l li{padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer}.pidx-l li:hover{background:color-mix(in srgb,var(--c1) 9%,transparent)}
+.pidx-l .pidx-top{color:var(--ink-3);border-top:1px solid var(--line);margin-top:4px}
+@media print{.pidx{display:none}}

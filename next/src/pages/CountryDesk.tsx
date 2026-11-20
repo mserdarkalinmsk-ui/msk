@@ -91,10 +91,12 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
       <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
     <LookingAhead name={name} P={P} officeLeft={Ts.length ? ob.b - ob.sc - ob.pl : null} year={Y} setTab={setTab} />
-    <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
+    <div class="cd-two">
+      <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
+      <section class="card cu"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days</p></div>{E.length > 6 && <div class="tools"><button class="btn ghost" onClick={() => setTab('Deadlines')}>All {E.length} ›</button></div>}</div>
+        <div class="card-b">{E.length ? <ul class="cd-ev">{E.slice(0, 6).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
+    </div>
     <SinceLastReports name={name} P={P} offices={offices} />
-    <section class="card"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
-      <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
   </>;
 }
 
@@ -187,12 +189,14 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
   const okey = (line: string, sup: string) => `office:${cid}:${line}:${supKey(sup)}`;
   const kl = (k: string) => KINDS.find((x) => x.k === k)?.label ?? k;
   const cname = () => name;
-  return <div class="grid g-12">
-    <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
+  const [v, setV] = useView('pl-tender-view', TENDER_VIEWS);
+  return <><ViewBar views={TENDER_VIEWS} v={v} set={setV} label="Tenders and suppliers" />
+  <div class="grid g-12">
+    {v === 'Providers' && <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
-      <div class="card-b"><ProviderBrief P={P} cname={cname} rows={6} /></div></section>
-    <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />
-    <section class="card span-12"><div class="card-h"><div><h2>Office contracts</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
+      <div class="card-b"><ProviderBrief P={P} cname={cname} rows={6} /></div></section>}
+    {v === 'Contracts' && <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />}
+    {v === 'Office contracts' && <section class="card span-12"><div class="card-h"><div><h2>Office contracts</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
       {OS.length > 0 && <div class="card-b table-scroll"><table class="mini os-t"><thead><tr><th>Budget line</th><th>Service</th><th>Supplier</th><th class="r">Orders</th><th>Orders cover to</th><th class="r">Spent + committed</th><th class="r">Still open</th><th>Contract</th></tr></thead>
         <tbody>{OS.map((x, i) => { const k = okey(x.line, x.supplier), c = FW[k] ?? FW[supKey(x.supplier)], due = c?.end || c?.openEnded ? contractsDue({ [k]: c }, TODAY)[0] : undefined;
           return <tr class={i && OS[i - 1].line === x.line ? 'same' : ''}><td>{i && OS[i - 1].line === x.line ? '' : <><span class="num">{x.line}</span> <span class="muted">{x.lineName}</span></>}</td>
@@ -202,26 +206,40 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
             <td class="r num">{full(x.amount)}</td><td class="r num">{x.open > 0.5 ? full(x.open) : ''}</td>
             <td>{due ? <span class={`badge ${due.openEnded ? 'neutral' : SEV_BADGE[due.severity]}`} title={due.openEnded ? 'No end date: nothing to warn' : `${c!.ref ?? ''} ends ${date(due.end)}`}>{dueText(due)}</span>
               : x.directDebit ? <span class="badge neutral" title="Paid by direct debit: a standing service with no end date, so nothing to warn">open-ended · direct debit</span>
-              : <button class="btn ghost os-add" onClick={() => { setPre({ n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
-    </section>
-    {S.length > 0 && <section class="card span-12"><div class="card-h"><div><h2>Largest providers</h2><p>By spent + committed, every project of {name} · staff salaries, mission per diems and travel, and petty cash are not procurement and are left out</p></div></div>
+              : <button class="btn ghost os-add" onClick={() => { setPre({ n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }); setV('Contracts'); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
+    </section>}
+    {v === 'Providers' && S.length > 0 && <section class="card span-12"><div class="card-h"><div><h2>Largest providers</h2><p>By spent + committed, every project of {name} · staff salaries, mission per diems and travel, and petty cash are not procurement and are left out</p></div></div>
       <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Provider</th><th>Kind</th><th class="r">Orders</th><th class="r">Projects</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
         <tbody>{S.map((x) => <tr><td>{x.supplier}</td><td class="muted">{kl(x.kind)}</td><td class="r num">{x.pos}</td><td class="r num">{x.projects.size}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc)}</td></tr>)}</tbody></table></div></section>}
-  </div>;
+  </div></>;
 }
+
+/** A tab split into views opened one at a time, the last one remembered (long pages stay short). */
+function useView<T extends string>(key: string, views: readonly T[]): [T, (v: T) => void] {
+  const [v, setV] = useState<T>(() => { try { const x = localStorage.getItem(key) as T; return views.includes(x) ? x : views[0]; } catch { return views[0]; } });
+  return [v, (x: T) => { setV(x); try { localStorage.setItem(key, x); } catch { /* the view still changes */ } }];
+}
+function ViewBar<T extends string>({ views, v, set, label, counts = {} }: { views: readonly T[]; v: T; set: (x: T) => void; label: string; counts?: Partial<Record<T, number>> }) {
+  return <div class="seg of-views cd-views" role="tablist" aria-label={label}>{views.map((x) => <button role="tab" aria-pressed={v === x} onClick={() => set(x)}>{x}{counts[x] != null ? <span class="tab-n">{counts[x]}</span> : null}</button>)}</div>;
+}
+const STAFF_VIEWS = ['Everyone', 'Core team', 'Project staff', 'Staff plan', 'Salary scale'] as const;
+const TENDER_VIEWS = ['Contracts', 'Office contracts', 'Providers'] as const;
 
 export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const everyone = allPeople(P);
   const [b, setB] = useState<'all' | Base>('all');
   const people = everyone.filter((a) => b === 'all' || a.base === b);
+  const [v, setV] = useView('pl-staff-view', STAFF_VIEWS);
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
   return <>
-    <PeopleOfCountry name={name} cid={cid} P={P} />
-    <CoreTeam name={name} cid={cid} P={P} />
-    <section class="card" style={{ marginTop: '16px' }}><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div>
+    <ViewBar views={STAFF_VIEWS} v={v} set={setV} label="Staff" counts={{ 'Core team': core.length, 'Project staff': everyone.filter((a) => a.status === 'Active').length }} />
+    {v === 'Everyone' && (core.length || everyone.length ? <PeopleOfCountry name={name} cid={cid} P={P} /> : <div class="card empty-page"><div><h2>No one recorded in {name} yet</h2><p>Add the core team under “Core team”; project staff come from the reports.</p></div></div>)}
+    {v === 'Core team' && <CoreTeam name={name} cid={cid} P={P} />}
+    {v === 'Project staff' && <><section class="card"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div>
       {everyone.length > 0 && <div class="seg" role="group" aria-label="Base">{(['all', 'Local', 'HQ'] as const).map((x) => <button aria-pressed={b === x} onClick={() => setB(x)}>{x === 'all' ? 'All staff' : x === 'HQ' ? 'SxB / HQ' : 'Local'}</button>)}</div>}</div></section>
-    {everyone.length ? <><StaffBoard people={people} showProject /><div class="grid g-12" style={{ marginTop: '16px' }}><StaffPlanTable projects={P} /><StaffReport projects={P} /></div></>
-      : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}
-    <SalarySection countryIds={[cid]} />
+      {everyone.length ? <StaffBoard people={people} showProject /> : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}</>}
+    {v === 'Staff plan' && <div class="grid g-12"><StaffPlanTable projects={P} /><StaffReport projects={P} /></div>}
+    {v === 'Salary scale' && <SalarySection countryIds={[cid]} />}
   </>;
 }
 
