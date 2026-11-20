@@ -1220,3 +1220,4 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 .ca-i.s-critical{border-left-color:var(--critical)}.ca-i.s-serious{border-left-color:var(--serious,var(--c2))}.ca-i.s-warning{border-left-color:var(--c4)}
 .rl-pwf{display:flex;gap:8px;flex-wrap:wrap}.rl-pwf .input{flex:1;min-width:140px}.rl-ok{color:var(--good);font-size:13px}
 .cd-year{display:flex;align-items:center;gap:10px;margin:0 0 10px}.cd-year>span{font-size:12px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.cp-t tr.chk td{background:color-mix(in srgb,var(--serious) 6%,transparent)}.cp-chk{display:block;color:var(--serious);font-size:12px}

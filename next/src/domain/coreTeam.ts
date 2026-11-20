@@ -51,3 +51,32 @@ export function coreFromRows(rows: string[][]): CoreMember[] {
     return { id: `ct${Date.now().toString(36)}${n}`, name: get(r, 'name'), position: get(r, 'position') || '—', fund: fundOf(get(r, 'fund')), ...(g ? { grade: g } : {}), ...(s ? { start: s } : {}), ...(e ? { end: e } : {}), ...(note ? { note } : {}) };
   });
 }
+
+/* ---------- one list of the people of a country ---------- */
+/** Who a name is, whatever the order or the accents: "YILMAZ, Ayse" and "Ayşe Yılmaz" are the same person. */
+export const personKeyOf = (name: string) => name.toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '').split(/[^a-z0-9]+/).filter(Boolean).sort().join(' ');
+export interface ProjectRole { project: string; projectId: string; position: string; end: string; status: string }
+export interface CountryPerson { key: string; name: string; core?: CoreMember; roles: ProjectRole[]; ends: string; check?: string }
+/**
+ * Each person once: the core team member and the project contracts of the same name together, with what pays for them,
+ * the nearest contract end, and a check when the two disagree (paid by the office yet on a project's staff list).
+ */
+export function countryPeople(core: CoreMember[], staff: { name: string; display: string; position: string; end: string; status: string; project: { id: string; code: string; bh?: string } }[], label: (p: { id: string; code: string; bh?: string }) => string): CountryPerson[] {
+  const by = new Map<string, CountryPerson>();
+  for (const m of core) { const k = personKeyOf(m.name); by.set(k, { key: k, name: m.name, core: m, roles: [], ends: m.end ?? '' }); }
+  for (const a of staff) {
+    const k = personKeyOf(a.name), x = by.get(k) ?? { key: k, name: a.display || a.name, roles: [], ends: '' };
+    x.roles.push({ project: label(a.project), projectId: a.project.id, position: a.position, end: a.end, status: a.status });
+    by.set(k, x);
+  }
+  for (const x of by.values()) {
+    const ends = [x.core?.end, ...x.roles.filter((r) => r.status === 'Active').map((r) => r.end)].filter(Boolean) as string[];
+    x.ends = ends.sort()[0] ?? '';
+    if (x.core && x.roles.length) {
+      const on = x.roles.map((r) => r.projectId);
+      if (x.core.fund !== 'project') x.check = `On the core team paid by the office, and on the staff list of ${[...new Set(x.roles.map((r) => r.project))].join(', ')}: check how the post is charged.`;
+      else if (x.core.project && !on.includes(x.core.project)) x.check = 'Charged to another project than the one whose staff list names this person.';
+    }
+  }
+  return [...by.values()].sort((a, b) => a.name.localeCompare(b.name));
+}

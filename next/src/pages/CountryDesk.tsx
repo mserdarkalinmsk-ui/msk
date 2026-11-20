@@ -4,7 +4,7 @@ import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
-import { coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { countryPeople, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { money } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
 import { alerts } from '../domain/insights';
@@ -180,6 +180,7 @@ export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: P
   const [b, setB] = useState<'all' | Base>('all');
   const people = everyone.filter((a) => b === 'all' || a.base === b);
   return <>
+    <PeopleOfCountry name={name} cid={cid} P={P} />
     <CoreTeam name={name} cid={cid} P={P} />
     <section class="card" style={{ marginTop: '16px' }}><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div>
       {everyone.length > 0 && <div class="seg" role="group" aria-label="Base">{(['all', 'Local', 'HQ'] as const).map((x) => <button aria-pressed={b === x} onClick={() => setB(x)}>{x === 'all' ? 'All staff' : x === 'HQ' ? 'SxB / HQ' : 'Local'}</button>)}</div>}</div></section>
@@ -187,6 +188,22 @@ export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: P
       : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}
     <SalarySection countryIds={[cid]} />
   </>;
+}
+
+/** Everyone working for the country once: core team and project contracts of the same person together. */
+function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
+  const L = countryPeople(core, allPeople(P).filter((a) => a.status !== 'Ended'), (p) => plabel(p as Project));
+  if (!L.length) return null;
+  const checks = L.filter((x) => x.check).length;
+  return <section class="card cp" style={{ marginBottom: '16px' }}><div class="card-h"><div><h2>Everyone in {name} · {L.length}</h2><p>Each person once: the core team and the project contracts of the same person together, what pays for them and the nearest contract end{checks ? <> · <b style={{ color: 'var(--serious)' }}>{checks} to check</b></> : null}</p></div></div>
+    <div class="card-b table-scroll"><table class="mini cp-t"><thead><tr><th>Name</th><th>Role</th><th>Paid from</th><th>Nearest end</th><th /></tr></thead>
+      <tbody>{L.map((x) => { const d = x.ends ? daysUntil(x.ends, TODAY) : null;
+        return <tr class={x.check ? 'chk' : ''}><td><b>{x.name}</b>{x.check && <small class="cp-chk">{x.check}</small>}</td>
+          <td>{[x.core && `${x.core.position} (core team)`, ...x.roles.map((r) => `${r.position} · ${r.project}`)].filter(Boolean).join('; ')}</td>
+          <td>{[x.core && (x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']), ...[...new Set(x.roles.map((r) => r.project))]].filter(Boolean).join(' · ')}</td>
+          <td class="num" style={{ whiteSpace: 'nowrap' }}>{x.ends ? date(x.ends) : 'open-ended'}</td>
+          <td>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} d</span> : null}</td></tr>; })}</tbody></table></div></section>;
 }
 
 const EMPTY = { name: '', position: '', grade: '', start: '', end: '', fund: 'ob', project: '', share: '', note: '' };

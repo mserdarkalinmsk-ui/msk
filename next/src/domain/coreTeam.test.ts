@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coreDue, coreFromRows, onTeam, sheetDate } from './coreTeam';
+import { countryPeople, coreDue, coreFromRows, onTeam, personKeyOf, sheetDate } from './coreTeam';
 
 const T = new Date(Date.UTC(2026, 10, 19));
 describe('core team', () => {
@@ -17,5 +17,12 @@ describe('core team', () => {
     expect(M.map((m) => [m.name, m.position, m.grade, m.start, m.end, m.fund])).toEqual([['Alpha, One', 'Head of Office', 'A3', '2025-01-01', '2026-12-31', 'ob'], ['Beta, Two', 'Driver', undefined, '2025-03-01', undefined, 'ls']]);
     expect(coreFromRows([['Amount', 'Line']])).toEqual([]);
     expect(sheetDate('31.12.2026')).toBe('2026-12-31');
+  });
+  it('lists each person once, core team and project contracts together, and flags a post paid twice', () => {
+    expect(personKeyOf('ALPHA, Öne')).toBe(personKeyOf('One Alpha'));
+    const prj = { id: 'p1', code: 'P1' };
+    const L = countryPeople([{ id: 'c1', name: 'Alpha, One', position: 'Office assistant', fund: 'ob', end: '2027-01-31' }, { id: 'c2', name: 'Beta, Two', position: 'Driver', fund: 'project', project: 'p1', share: 50 }],
+      [{ name: 'ALPHA,One', display: 'One ALPHA', position: 'Project assistant', end: '2026-12-31', status: 'Active', project: prj }, { name: 'BETA,Two', display: 'Two BETA', position: 'Driver', end: '2026-12-31', status: 'Active', project: prj }, { name: 'GAMMA,Three', display: 'Three GAMMA', position: 'Officer', end: '2027-06-30', status: 'Active', project: prj }], (p) => p.code);
+    expect(L.map((x) => [x.name, x.roles.length, x.ends, !!x.check])).toEqual([['Alpha, One', 1, '2026-12-31', true], ['Beta, Two', 1, '2026-12-31', false], ['Three GAMMA', 1, '2027-06-30', false]]);
   });
 });
