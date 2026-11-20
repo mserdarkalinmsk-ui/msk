@@ -8,13 +8,18 @@ import { short } from './format';
 import type { Project } from '../domain/types';
 import { plabel } from '../domain/label';
 import { dmy } from '../domain/dt';
+import { providerIndex } from '../domain/entity';
+import { providerPOs } from '../domain/providers';
+import { personKeyOf } from '../domain/coreTeam';
+import { openPerson, openProvider } from './EntityPanel';
 
-interface Cmd { group: string; label: string; hint?: string; run: () => void }
+interface Cmd { group: string; label: string; hint?: string; run: () => void; /** the same person met twice (core team and a project) is listed once */ id?: string }
 
 export function Palette() {
   const open = useStore((s) => s.palette);
   const projects = useStore((s) => s.ledger.projects);
   const countries = useStore((s) => s.ledger.countries);
+  const poKinds = useStore((s) => s.ledger.poKinds), FW = useStore((s) => s.ledger.frameworks), core = useStore((s) => s.ledger.coreTeam);
   const [q, setQ] = useState('');
   const [i, setI] = useState(0);
 
@@ -28,6 +33,8 @@ export function Palette() {
   }, []);
   // Cleared when it closes, not after it opens: what is typed straight after Ctrl+K must not be wiped by a late reset.
   useEffect(() => { if (!open) { setQ(''); setI(0); } }, [open]);
+  // autofocus is honoured only once per page load: the box is focused as soon as it is in the page, or the first keys are lost
+  const box = (el: HTMLInputElement | null) => { if (el && document.activeElement !== el) el.focus(); };
 
   const cmds: Cmd[] = useMemo(() => [
     { group: 'Actions', label: 'Add project', hint: 'N', run: () => set({ drawer: { kind: 'new-project' } }) },
@@ -58,13 +65,20 @@ export function Palette() {
       ...projects.flatMap((p) => (p.workPlans ?? []).map((w) => ({ group: 'Work Plans', label: `${lab(p)} · ${w.label && w.no <= 0 ? `WP ${w.label}` : `WP ${w.no}`} ${dmy(w.from)} – ${dmy(w.to)}`, hint: short(w.planned), run: () => go(`project/${p.id}/wp`) }))),
       ...projects.flatMap((p) => { const w = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).at(-1)?.snapshot?.workbook; return (w?.pos ?? []).map((o) => ({ group: 'Purchase orders', label: `${lab(p)} · PO ${o.po} ${o.line} ${o.description} ${o.supplier}`, hint: short(o.sc), run: () => go(`project/${p.id}/pos`) })); }),
       ...projects.flatMap((p) => lines(p).map((l) => ({ group: 'Budget lines', label: `${plabel(p)} · ${l.code} ${l.description ?? ''}`, hint: short(l.approved ?? 0), run: tab(p.id, 'Budget lines') }))),
-      ...projects.flatMap((p) => roster(p, TODAY).map((a) => ({ group: 'Staff', label: `${a.display} — ${a.position} · ${plabel(p)}`, hint: a.status, run: tab(p.id, 'People') }))),
+      ...Object.entries(core ?? {}).flatMap(([c, M]) => M.map((m) => ({ group: 'People', label: `${m.name} — ${m.position} · core team ${countries.find((x) => x.id === c)?.name ?? c}`, hint: m.end ? `until ${dmy(m.end)}` : 'open-ended', id: personKeyOf(m.name), run: () => openPerson(personKeyOf(m.name)) }))),
+      ...projects.flatMap((p) => roster(p, TODAY).map((a) => ({ group: 'People', label: `${a.display} — ${a.position} · ${plabel(p)}`, hint: a.status, id: personKeyOf(a.name), run: () => openPerson(personKeyOf(a.name)) }))),
     ];
-  }, [projects, open]);
+  }, [projects, open, core]);
+  // providers and contracts come first among the deep results: a firm's card gathers its orders, projects and contract
+  const firms: Cmd[] = useMemo(() => !open ? [] : [
+    ...providerIndex(providerPOs(projects, poKinds ?? {}, true)).map((x) => ({ group: 'Providers', label: x.name, hint: `${x.n} orders · ${short(x.sc)}`, run: () => openProvider(x.key) })),
+    ...Object.entries(FW ?? {}).map(([k, c]) => ({ group: 'Contracts', label: `${c.name ?? k}${c.ref ? ` · ${c.ref}` : ''}${c.kind ? ` · ${c.kind}` : ''}`, hint: c.end ? `ends ${dmy(c.end)}` : c.openEnded ? 'open-ended' : '', run: () => openProvider(k.startsWith('office:') ? k.split(':').slice(3).join(':') : k) })),
+  ], [projects, poKinds, FW, open]);
 
   const qq = q.trim().toLowerCase();
   const match = (c: Cmd) => qq.split(/\s+/).every((w) => c.label.toLowerCase().includes(w));
-  const list = qq ? [...cmds.filter(match), ...(qq.length >= 2 ? deep.filter(match).slice(0, 40) : [])] : cmds;
+  const people = (L: Cmd[]) => L.filter((c, i) => !c.id || L.findIndex((x) => x.id === c.id) === i);
+  const list = qq ? [...cmds.filter(match), ...(qq.length >= 2 ? [...firms.filter(match).slice(0, 12), ...people(deep.filter(match)).slice(0, 40)] : [])] : cmds;
   if (!open) return null;
   const run = (c?: Cmd) => { if (!c) return; set({ palette: false }); c.run(); };
   let lastGroup = '';
@@ -72,7 +86,7 @@ export function Palette() {
     <>
       <div class="scrim" style={{ zIndex: 50 }} onClick={() => set({ palette: false })} />
       <div class="palette" role="dialog" aria-label="Command palette">
-        <input autoFocus placeholder="Search projects, BH, budget lines, people, pages…" value={q} role="combobox" aria-expanded="true" aria-controls="pal-list"
+        <input ref={box} autoFocus placeholder="Search projects, providers, people, POs, contracts, budget lines, pages…" value={q} role="combobox" aria-expanded="true" aria-controls="pal-list"
           onInput={(e) => { setQ((e.target as HTMLInputElement).value); setI(0); }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') { e.preventDefault(); setI((x) => Math.min(list.length - 1, x + 1)); }

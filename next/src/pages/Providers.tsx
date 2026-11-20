@@ -1,3 +1,4 @@
+import { Firm } from '../ui/EntityPanel';
 import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, setFramework, setPoKind, useStore } from '../data/store';
@@ -173,7 +174,7 @@ export function Providers() {
         {hand.length > 0 && <details class="card span-12 sp-fold"><summary><b>Set by hand</b> <span class="muted">{hand.length} POs whose kind you chose · {full(sum(hand))} · check them after loading new files</span></summary>
           <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Service provider</th><th>Automatic</th><th>Chosen</th><th class="r">Spent + committed</th><th /></tr></thead>
             <tbody>{hand.map((x) => { const own = set[x.key], sup = set[`sup|${supKey(x.supplier)}`], u = own ?? sup; return <tr>
-              <td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td>{x.supplier}</td>
+              <td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td><Firm name={x.supplier} /></td>
               <td class="muted">{x.auto ? kl(x.auto).label : 'not a service'}</td><td><b>{u === 'none' ? 'Not a service provider' : kl(u as Kind)?.label ?? u}</b>{!own && <small class="muted"> (whole provider)</small>}</td>
               <td class="r num">{full(x.value)}</td><td><button class="btn ghost" onClick={() => setPoKind(own ? x.key : `sup|${supKey(x.supplier)}`, '')}>Back to automatic</button></td></tr>; })}</tbody></table></div>
         </details>}
@@ -185,7 +186,7 @@ export function Providers() {
           <div class="card-b">{off.filter((k) => k.L.length).map((k) => <div style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Dot k={k.k} /><b>{k.label}</b><span class="muted">{k.L.length} POs · {full(sum(k.L))}</span><button class="btn" style={{ marginLeft: 'auto' }} onClick={() => toggle(k.k)}>+ Add to the totals</button></div>
             <div class="table-scroll"><table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th>Date</th><th class="r">Spent + committed</th></tr></thead>
-              <tbody>{k.L.slice(0, 100).map((x) => <tr><td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td>{x.supplier}</td><td class="num">{x.date ? date(x.date) : '—'}</td><td class="r num">{full(x.value)}</td></tr>)}</tbody></table></div></div>)}</div>
+              <tbody>{k.L.slice(0, 100).map((x) => <tr><td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td><Firm name={x.supplier} /></td><td class="num">{x.date ? date(x.date) : '—'}</td><td class="r num">{full(x.value)}</td></tr>)}</tbody></table></div></div>)}</div>
         </details>}
       </div>
       {(() => { const base = ALL, T = sum(base), top = suppliers(base).slice(0, 10), C = [...new Set(base.map((x) => x.p.country))].map((c) => ({ c, t: sum(base.filter((x) => x.p.country === c)) })).sort((a, b) => b.t - a.t);
@@ -199,7 +200,7 @@ export function Providers() {
             <tfoot><tr><td>Total</td><td class="r">{base.length}</td><td class="r">{suppliers(base).length}</td><td class="r">{full(T)}</td><td class="r">100%</td></tr></tfoot></table>
           <h2>Ten largest providers</h2>
           <table><thead><tr><th>#</th><th>Service provider</th><th>Kind</th><th>Projects</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
-            <tbody>{top.map((x, i) => <tr><td>{i + 1}</td><td>{x.supplier}</td><td>{kl(x.kind).label}</td><td>{[...x.projects.keys()].map((id) => lab(P.find((q) => q.id === id)!)).join(', ')}</td><td class="r">{x.pos}</td><td class="r">{full(x.sc)}</td><td class="r">{T ? Math.round(x.sc / T * 100) : 0}%</td></tr>)}</tbody></table>
+            <tbody>{top.map((x, i) => <tr><td>{i + 1}</td><td><Firm name={x.supplier} /></td><td>{kl(x.kind).label}</td><td>{[...x.projects.keys()].map((id) => lab(P.find((q) => q.id === id)!)).join(', ')}</td><td class="r">{x.pos}</td><td class="r">{full(x.sc)}</td><td class="r">{T ? Math.round(x.sc / T * 100) : 0}%</td></tr>)}</tbody></table>
         </section>; })()}
     </>
   );
@@ -216,6 +217,6 @@ export function ProviderBrief({ P, cname, rows = 8, lab }: { P: Project[]; cname
       <table class="mini"><thead><tr><th>Kind</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
         <tbody>{S.kinds.map((k) => <tr><td><Dot k={k.k} />{k.label}</td><td class="r num">{k.n}</td><td class="r num">{full(k.v)}</td><td class="r num">{Math.round(k.v / S.total * 100)}%</td></tr>)}</tbody></table>
       <table class="mini"><thead><tr><th>Largest providers</th><th>Kind</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
-        <tbody>{S.top.map((x) => <tr><td>{x.supplier}{lab && S.projects > 1 && <small class="muted sp-pj">{[...x.projects.keys()].map(lab).join(', ')}</small>}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
+        <tbody>{S.top.map((x) => <tr><td><Firm name={x.supplier} />{lab && S.projects > 1 && <small class="muted sp-pj">{[...x.projects.keys()].map(lab).join(', ')}</small>}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
     </div></div>;
 }

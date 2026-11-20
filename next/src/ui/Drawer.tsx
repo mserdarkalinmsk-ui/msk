@@ -44,6 +44,7 @@ function PointsPanel({ title, text, items, close }: { title: string; text: strin
   </>;
 }
 import { RulesPanel } from './RulesPanel';
+import { PersonPanel, ProviderPanel } from './EntityPanel';
 
 export function Drawer() {
   const d = useStore((s) => s.drawer);
@@ -74,6 +75,8 @@ export function Drawer() {
         {d.kind === 'portfolio-import' && <PortfolioImport files={d.files} close={close} />}
         {d.kind === 'alert' && <AlertPanel projectId={d.projectId} kind={d.alertKind} ids={d.ids} close={close} />}
         {d.kind === 'period' && <PeriodPanel t={d.t} from={d.from} ids={d.ids} close={close} />}
+        {d.kind === 'provider' && <ProviderPanel k={d.key} close={close} />}
+        {d.kind === 'person' && <PersonPanel k={d.key} close={close} />}
         {d.kind === 'points' && <PointsPanel title={d.title} text={d.text} items={d.items} close={close} />}
       </div>
     </>

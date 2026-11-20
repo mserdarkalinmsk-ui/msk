@@ -682,6 +682,20 @@ async function page(opts) {
   if (await p.locator('.ca button:has-text("Show all")').count()) await p.click('.ca button:has-text("Show all")');
   check(await p.locator('.ca-i:has-text("Gamma Events Ltd")').count() === 1 && await p.locator('.ca-i:has-text("Alpha, One")').count() === 1, 'the country lists its own alerts, contracts and core team in one place');
   check(await p.locator('.la').count() === 1 && await p.locator('.sl tbody tr').count() >= 1, 'the country looks ahead and says what its latest reports brought');
+  // search reaches providers, contracts and people, and opens their card
+  await p.keyboard.press('Control+k'); await p.waitForSelector('.palette input'); await p.keyboard.type('Gamma Events'); await p.waitForTimeout(300);
+  check(await p.locator('.palette .grp:text-is("Contracts")').count() === 1, 'search finds a contract by its provider');
+  await p.locator('.palette li:has-text("Gamma Events Ltd")').first().click(); await p.waitForSelector('.drawer .en');
+  check((await p.locator('.drawer h2').first().textContent()).includes('Gamma Events Ltd') && /Renewable until/.test(await p.locator('.drawer .en-c').first().innerText()) && /1,000\.00 TRY/.test(await p.locator('.drawer .en-c').first().innerText()), 'the provider card shows its contract: period, renewal limit and fee');
+  await p.click('.drawer-h button'); await p.waitForTimeout(200);
+  await p.keyboard.press('Control+k'); await p.waitForSelector('.palette input'); await p.keyboard.type('Alpha One'); await p.waitForTimeout(300);
+  await p.locator('.palette li:has-text("core team")').first().click(); await p.waitForSelector('.drawer .en');
+  check(/Core team/i.test(await p.locator('.drawer .en').innerText()) && (await p.locator('.drawer h2').first().textContent()).includes('Alpha'), 'the person card shows the core team post');
+  await p.click('.drawer-h button'); await p.waitForTimeout(200);
+  // what needs you now: the first page lists what is due, and a line takes you there
+  await p.goto(url + '#/overview'); await p.waitForSelector('.td li');
+  const groups = await p.locator('.td-s').count(), before = p.url(); await p.locator('.td li').first().click(); await p.waitForTimeout(400);
+  check(groups > 0 && p.url() !== before, 'what needs you now: listed on the first page, a line opens its screen');
   check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
