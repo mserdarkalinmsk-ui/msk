@@ -7,7 +7,7 @@ import { readXlsx } from '../ui/xlsx';
 import { countryPeople, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { money } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
-import { alerts } from '../domain/insights';
+import { alerts, outcome } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
 import { plabel } from '../domain/label';
@@ -87,10 +87,23 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
       <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
       <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
+    <LookingAhead name={name} P={P} officeLeft={Ts.length ? ob.b - ob.sc - ob.pl : null} year={Y} setTab={setTab} />
     <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
     <section class="card"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
       <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
   </>;
+}
+
+/** Where the country is heading: the office's result at the year end, and each running project's use of its budget at its current pace. */
+function LookingAhead({ name, P, officeLeft, year, setTab }: { name: string; P: Project[]; officeLeft: number | null; year: number; setTab: (t: DeskTab) => void }) {
+  const R = P.filter(active).filter((p) => !p.datesTbc).map((p) => ({ p, o: outcome(p, TODAY) })).filter((x) => x.o.basis !== 'no data').sort((a, b) => a.o.utilisation - b.o.utilisation);
+  const unused = R.reduce((a, x) => a + x.o.unused, 0), over = R.reduce((a, x) => a + x.o.overrun, 0);
+  return <section class="card la"><div class="card-h"><div><h2>Looking ahead in {name}</h2><p>The office at the end of {year}, and each running project at its end if it keeps its current pace of spending</p></div></div>
+    <div class="card-b la-g">
+      <button class="la-k" onClick={() => setTab('Office budget')}><span>Office at the end of {year}</span>{officeLeft == null ? <b class="muted">—</b> : <b style={{ color: officeLeft < -0.5 ? 'var(--critical)' : 'var(--good)' }}>{officeLeft < -0.5 ? `short by ${full(-officeLeft)}` : `${full(officeLeft)} left`}</b>}<small>after what is foreseen to the year end</small></button>
+      <div class="la-k"><span>Projects at their end</span><b style={{ color: unused > 0.5 ? 'var(--serious)' : 'var(--good)' }}>{unused > 0.5 ? `${short(unused)} may stay unused` : 'budgets used in full'}</b><small>{over > 0.5 ? `and ${short(over)} above budget on others · ` : ''}at the current pace</small></div>
+      <ul class="la-l">{R.map(({ p, o }) => <li onClick={() => open(p)}><b>{plabel(p)}</b><span class="la-bar"><i style={{ width: `${Math.min(100, o.utilisation * 100)}%`, background: o.utilisation < 0.85 ? 'var(--serious)' : o.utilisation > 1 ? 'var(--critical)' : 'var(--good)' }} /></span><span class="num">{pct(o.utilisation)}</span><small class="muted">{o.unused > 0.5 ? `${short(o.unused)} unused` : o.overrun > 0.5 ? `${short(o.overrun)} over` : 'on track'}</small></li>)}</ul>
+    </div></section>;
 }
 
 /** Everything open in the country in one list: the projects' alerts, contracts with providers and core team contracts ending. */
