@@ -440,8 +440,10 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     setF(EMPTY_C); setEdit(''); setMeta({}); setDoc(null); setReadMsg('');
   };
   // the terms read from the contract itself (a PDF or Word with text); a scan is attached and its terms typed
-  const readContract = async (e: Event) => {
-    const inp = e.target as HTMLInputElement, file = inp.files?.[0]; inp.value = ''; if (!file) return;
+  const [over, setOver] = useState(false);
+  const readContract = async (file?: File) => {
+    if (!file) return;
+    if (!/\.(pdf|docx)$/i.test(file.name)) { setReadMsg(`${file.name}: drop the contract as PDF or Word (.docx).`); return; }
     const att = await readAttachment(file); if (typeof att === 'string') { setReadMsg(att); return; }
     setDoc(att); setReadMsg('Reading…');
     let t: ContractTerms = {};
@@ -478,7 +480,10 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         {+f.fee > 0 && f.start && f.end && !f.open && <p class="cc-meta">{f.fee} {f.cur} a month over {monthsOf(f.start, f.end)} months = <b>{amt(+f.fee * monthsOf(f.start, f.end), f.cur)}</b>{+f.total > 0 && Math.abs(+f.total - +f.fee * monthsOf(f.start, f.end)) > 0.5 ? <> · the total typed differs ({amt(+f.total, f.cur)}): fees that change during the period</> : null}</p>}
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
         {(edit || doc) && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF(EMPTY_C); setDoc(null); setReadMsg(''); }}>Cancel</button>}
-        <label class="btn ghost cc-read" title="The contract as PDF or Word: its reference, provider, end, renewal limit and total are read; a scan is attached"><Ico n="upload" />Read from the contract<input type="file" accept=".pdf,.docx" hidden onChange={readContract} /></label>
+        <label class={`drop cc-read${over ? ' on' : ''}`} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }} onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); readContract(e.dataTransfer?.files?.[0]); }}>
+          <input type="file" accept=".pdf,.docx" hidden onChange={(e) => { const i = e.target as HTMLInputElement; readContract(i.files?.[0]); i.value = ''; }} />
+          <Ico n="upload" /><span><strong>Drop the contract here</strong> or click to choose it (PDF or Word) · its terms fill the form below</span></label>
         {readMsg && <p class="cc-meta">{readMsg}</p>}
         {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
       </form>
