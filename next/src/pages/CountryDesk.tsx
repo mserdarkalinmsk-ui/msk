@@ -6,6 +6,7 @@ import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramew
 import { readXlsx } from '../ui/xlsx';
 import { coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { money } from '../domain/calc';
+import { spentInYear } from '../domain/yearSpend';
 import { alerts } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
@@ -51,28 +52,35 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
   const E = events(P).filter((e) => e.day >= now() && daysUntil(e.day, TODAY) <= 90), late = events(P).filter((e) => e.kind === 'report' && e.tone === 'bad');
   const FW = useStore((s) => s.ledger.frameworks) ?? {}, mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
   const due = contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY));
-  const Ts = offices.map((o) => ({ r: o.reports.at(-1)!, T: officeView(o.reports.at(-1)!).T }));
+  // the year looked at: the office budget is yearly, the projects run over years — both read for the same calendar year
+  const thisYear = TODAY.getUTCFullYear();
+  const years = [...new Set([...offices.flatMap((o) => o.reports.map((r) => r.year)), ...P.flatMap((p) => { const a = +p.start.slice(0, 4), b = Math.min(+p.end.slice(0, 4), thisYear); return Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i); })])].filter((y) => y <= thisYear).sort();
+  const [yr, setYr] = useState(thisYear);
+  const Y = years.includes(yr) ? yr : years.at(-1) ?? thisYear;
+  const Ts = offices.flatMap((o) => { const r = [...o.reports].filter((x) => x.year === Y).sort((a, b) => a.date.localeCompare(b.date)).at(-1); return r ? [{ r, T: officeView(r).T }] : []; });
+  const inYear = P.map((p) => spentInYear(p, Y)), spentY = inYear.reduce((a, x) => a + x.v, 0), basis = inYear.some((x) => x.basis === 'reports') ? 'from the reports around the year' : 'from the dated postings';
   const ob = Ts.reduce((a, { T }) => ({ b: a.b + T.ob.budget + T.ls.budget, sc: a.sc + T.ob.sc + T.ls.sc, pl: a.pl + T.ob.planned + T.ls.planned, ob: a.ob + T.ob.budget, ls: a.ls + T.ls.budget }), { b: 0, sc: 0, pl: 0, ob: 0, ls: 0 });
   const committed = M.reduce((a, m) => a + m.committed, 0);
   return <>
+    {years.length > 1 && <div class="cd-year"><span>Year</span><div class="seg" role="group" aria-label="Year">{years.slice(-4).map((y) => <button aria-pressed={Y === y} onClick={() => setYr(y)}>{y}</button>)}</div></div>}
     <section class="bud2" aria-label={`Budgets in ${name}`}>
       <button class="bud bud-ob" onClick={() => setTab('Office budget')}>
         <span class="bud-h">Office budget<small>the office's running costs: Ordinary Budget and LS & Pagoda{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
         {Ts.length ? <><b class="bud-v">{full(ob.b)}</b>
           <Bar parts={[[ob.sc, 'var(--c1)'], [ob.pl, 'color-mix(in srgb, var(--c1) 35%, transparent)']]} of={ob.b} />
           <dl><dt>Ordinary Budget · BH {offices[0]?.bh ?? OB_BH}</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda · BH {LS_BH}</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
-          : <p class="muted">No office budget imported for {name}.</p>}
+          : <p class="muted">{offices.length ? `No office report for ${Y}.` : `No office budget imported for ${name}.`}</p>}
       </button>
       <button class="bud bud-eb" onClick={() => setTab('Projects')}>
         <span class="bud-h">Projects<small>extraordinary budget: joint programmes and voluntary contributions · {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
         {P.length ? <><b class="bud-v">{full(budget)}</b>
           <Bar parts={[[spent, 'var(--c3)'], [committed, 'color-mix(in srgb, var(--c3) 40%, transparent)']]} of={budget} />
-          <dl><dt>Spent</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(budget - spent - committed)}</b></dd></dl></>
+          <dl><dt><b>Spent in {Y}</b></dt><dd title={basis}><b>{full(spentY)}</b></dd><dt>Spent to date</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt>Not yet committed</dt><dd>{full(budget - spent - committed)}</dd></dl></>
           : <p class="muted">No project in {name}.</p>}
       </button>
       <div class="bud bud-all"><span class="bud-h">In {name}<small>office and projects together</small></span><b class="bud-v">{full(ob.b + budget)}</b>
         <Bar parts={[[ob.b, 'var(--c1)'], [budget, 'var(--c3)']]} of={ob.b + budget} />
-        <dl><dt>Office</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
+        <dl><dt>Used in {Y}</dt><dd title="office spent + committed, and the projects' spending of the year">{full(ob.sc + spentY)}</dd><dt>Office</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
     </section>
     <div class="po-kpi cd-kpi cd-kpi3">
       <Tile k="ten" color="var(--c4)" icon="⚑" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />
