@@ -6,7 +6,7 @@ import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramew
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { countryPeople, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
-import { money } from '../domain/calc';
+import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
 import { alerts, outcome } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
@@ -24,6 +24,8 @@ import { date, full, pct, short } from '../ui/format';
 import { events, type Ev } from './Agenda';
 import { allPeople, StaffBoard } from './People';
 import { ProjectsBody } from './Projects';
+import { poReports, reviewOf } from './POReview';
+import { reportDiff } from '../domain/reportDiff';
 import { ProviderBrief } from './Providers';
 
 /** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
@@ -90,6 +92,7 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
     </div>
     <LookingAhead name={name} P={P} officeLeft={Ts.length ? ob.b - ob.sc - ob.pl : null} year={Y} setTab={setTab} />
     <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
+    <SinceLastReports name={name} P={P} offices={offices} />
     <section class="card"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
       <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
   </>;
@@ -105,6 +108,24 @@ function LookingAhead({ name, P, officeLeft, year, setTab }: { name: string; P: 
       <div class="la-k"><span>Projects at their end</span><b style={{ color: unused > 0.5 ? 'var(--serious)' : 'var(--good)' }}>{unused > 0.5 ? `${short(unused)} may stay unused` : 'budgets used in full'}</b><small>{over > 0.5 ? `and ${short(over)} above budget on others · ` : ''}at the current pace</small></div>
       <ul class="la-l">{R.map(({ p, o }) => <li onClick={() => open(p)}><b>{plabel(p)}</b><span class="la-bar"><i style={{ width: `${Math.min(100, o.utilisation * 100)}%`, background: o.utilisation < 0.85 ? 'var(--serious)' : o.utilisation > 1 ? 'var(--critical)' : 'var(--good)' }} /></span><span class="num">{pct(o.utilisation)}</span><small class="muted">{o.unused > 0.5 ? `${short(o.unused)} unused` : o.overrun > 0.5 ? `${short(o.overrun)} over` : 'on track'}</small></li>)}</ul>
     </div></section>;
+}
+
+/** What the latest report of each project brought, against the one before: spending, orders, and the lines and units to check. */
+function SinceLastReports({ name, P, offices }: { name: string; P: Project[]; offices: Office[] }) {
+  // every report counts for the dates and the spending; the orders come from the reports that carry a purchase-order sheet
+  const R = P.map((p) => { const L = reportsByDate(p).filter((r) => r.snapshot?.lines?.length && !budgetOnly(r)), a = L.at(-2), b = L.at(-1); if (!b) return null;
+    const W = poReports(p), D = W.length > 1 ? reportDiff(W.at(-2)!.wb, W.at(-1)!.wb) : null, F = reviewOf(p).findings.filter((f) => (f.group === 'line' || f.group === 'unit') && f.level !== 'info');
+    return { p, to: b.name || date(b.date), from: a ? a.name || date(a.date) : undefined, spent: a ? reportTotals(b).actual - reportTotals(a).actual : null, d: D, flags: F.length, n: (k: string) => D?.pos.filter((x) => x.kind === k).length ?? 0 }; })
+    .filter(Boolean) as { p: Project; to: string; from?: string; spent: number | null; d: ReturnType<typeof reportDiff> | null; flags: number; n: (k: string) => number }[];
+  const off = offices.map((o) => { const a = o.reports.at(-2), b = o.reports.at(-1)!; // a system export carries no LS & Pagoda figures: then only the Ordinary Budget, which both reports carry, is compared
+    const both = !!a && a.hasPlan && b.hasPlan, sc = (r: typeof b) => officeView(r).T.ob.sc + (both ? officeView(r).T.ls.sc : 0); return { o, b, d: a ? sc(b) - sc(a) : null, from: a, both }; });
+  if (!R.length && !off.length) return null;
+  return <section class="card sl"><div class="card-h"><div><h2>Since the last reports in {name}</h2><p>Each project's latest report against the one before it · click a project for its PO review</p></div></div>
+    <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Latest report</th><th class="r" title="As the reports total it: administrative costs (line 10) included">Spent since the one before</th><th class="r">New orders</th><th class="r">Orders with more committed</th><th class="r">Lines and units to check</th></tr></thead>
+      <tbody>{R.map((x) => <tr class="click" onClick={() => open(x.p, 'poreview')}><td><b>{plabel(x.p)}</b></td><td>{x.to}{x.from ? <small class="muted"> · after {x.from}</small> : <small class="muted"> · the first</small>}</td>
+        <td class="r num">{x.spent != null ? full(x.spent) : '—'}</td><td class="r num">{x.d ? x.n('new') : '—'}</td><td class="r num">{x.d ? x.n('raised') : '—'}</td>
+        <td class="r">{x.flags ? <span class="badge warning">{x.flags}</span> : <span class="muted">0</span>}</td></tr>)}
+        {off.map((x) => <tr><td><b>{x.o.name}</b> <small class="muted">office</small></td><td>situation {date(x.b.date)}{x.from ? <small class="muted"> · after {date(x.from.date)}</small> : null}</td><td class="r num" title={x.both ? 'office spent + committed, both funds' : 'Ordinary Budget only: one of the two reports is a system export without LS & Pagoda'}>{x.d != null ? full(x.d) : '—'}{x.d != null && !x.both ? <small class="muted"> OB</small> : null}</td><td /><td /><td /></tr>)}</tbody></table></div></section>;
 }
 
 /** Everything open in the country in one list: the projects' alerts, contracts with providers and core team contracts ending. */

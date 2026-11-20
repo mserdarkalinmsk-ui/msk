@@ -1228,3 +1228,4 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 .la-bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden}.la-bar i{display:block;height:100%}
 @media (max-width:1000px){.la-g{grid-template-columns:1fr 1fr}.la-l{grid-column:1/-1}}
 .att-c{display:inline-flex;gap:2px}.att-c .btn{padding:0 7px;height:28px}
+.sl{margin-bottom:14px}
