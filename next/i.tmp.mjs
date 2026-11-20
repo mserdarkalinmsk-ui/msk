@@ -1,0 +1,12 @@
+import { chromium } from 'playwright-core';
+import { resolve } from 'node:path';
+const S = process.argv[2], F = process.argv[3];
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 } }); await ctx.addInitScript(() => localStorage.setItem('pl-digest-seen', 'off'));
+const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+await p.goto('file://' + resolve('dist/index.html') + '?today=2026-11-11&demo#/project/ukr'); await p.waitForSelector('.ph-title');
+await p.click('.ph-actions button:has-text("Import report")');
+await p.setInputFiles('.drawer input[type=file]', resolve('tests/fixtures/' + F)); await p.waitForTimeout(1500);
+const c = p.locator('.irv'); console.log(await c.count() ? await c.innerText() : 'NO CARD');
+if (await c.count()) await c.screenshot({ path: `${S}/irv.png` });
+console.log(errs.join('\n') || 'no errors'); await b.close();

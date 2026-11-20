@@ -1,0 +1,344 @@
+{
+ "countries": [
+  {
+   "id": "tr",
+   "name": "Türkiye",
+   "region": "South-East Europe",
+   "iso3": "TUR",
+   "ccm": "00901"
+  },
+  {
+   "id": "ge",
+   "name": "Georgia",
+   "region": "Eastern Partnership",
+   "iso3": "GEO"
+  },
+  {
+   "id": "ua",
+   "name": "Ukraine",
+   "region": "Eastern Partnership",
+   "iso3": "UKR"
+  }
+ ],
+ "projects": [
+  {
+   "id": "jp3220",
+   "code": "JP3220",
+   "name": "Enhancing Foreign Language Education Quality in Türkiye",
+   "country": "tr",
+   "sector": "Human Rights",
+   "funding": "EU",
+   "start": "2024-07-12",
+   "end": "2029-07-11",
+   "budget": 5403333,
+   "status": "Active",
+   "contractNo": "700001964",
+   "jp": "3220",
+   "bh": "5235",
+   "reportingPeriods": [],
+   "riskRegister": [],
+   "approvedBudget": {
+    "lines": [
+     {
+      "code": "1.1.1.2",
+      "description": "Project manager (100%)",
+      "unit": "Per month",
+      "approvedUnits": 60,
+      "unitRate": 5850,
+      "approved": 351000
+     },
+     {
+      "code": "1.1.1.3",
+      "description": "Senior project officer (80%)",
+      "unit": "Per month",
+      "approvedUnits": 48,
+      "unitRate": 3300,
+      "approved": 158400
+     },
+     {
+      "code": "1.1.1.4",
+      "description": "Project officer (100%)",
+      "unit": "Per month",
+      "approvedUnits": 60,
+      "unitRate": 2750,
+      "approved": 165000
+     },
+     {
+      "code": "1.1.1.5",
+      "description": "Linguistic assistant (40%)",
+      "unit": "Per month",
+      "approvedUnits": 24,
+      "unitRate": 2500,
+      "approved": 60000
+     },
+     {
+      "code": "1.1.1.6",
+      "description": "Financial assistant (10%)",
+      "unit": "Per month",
+      "approvedUnits": 6,
+      "unitRate": 2500,
+      "approved": 15000
+     },
+     {
+      "code": "1.1.1.7",
+      "description": "Project assistant (2 persons - 1 person 60 months and 1 person 48 months)",
+      "unit": "Per month",
+      "approvedUnits": 108,
+      "unitRate": 2200,
+      "approved": 237600
+     },
+     {
+      "code": "1.1.3",
+      "description": "Local short-term consultant",
+      "unit": "Per day",
+      "approvedUnits": 1449,
+      "unitRate": 200,
+      "approved": 289800
+     },
+     {
+      "code": "1.2.1.2",
+      "description": "Project manager (100%)",
+      "unit": "Per month",
+      "approvedUnits": 60,
+      "unitRate": 9600,
+      "approved": 576000
+     },
+     {
+      "code": "1.2.1.5",
+      "description": "Junior professional (50%)",
+      "unit": "Per month",
+      "approvedUnits": 30,
+      "unitRate": 5800,
+      "approved": 174000
+     },
+     {
+      "code": "1.2.3",
+      "description": "International short-term consultant",
+      "unit": "Per day",
+      "approvedUnits": 967,
+      "unitRate": 350,
+      "approved": 338450
+     },
+     {
+      "code": "1.3.1",
+      "description": "International",
+      "unit": "Per diem",
+      "approvedUnits": 850,
+      "unitRate": 186,
+      "approved": 158100
+     },
+     {
+      "code": "1.3.2",
+      "description": "Local",
+      "unit": "Per diem",
+      "approvedUnits": 782,
+      "unitRate": 186,
+      "approved": 145452
+     },
+     {
+      "code": "2.1",
+      "description": "International travel",
+      "unit": "Per return flight",
+      "approvedUnits": 142,
+      "unitRate": 650,
+      "approved": 92300
+     },
+     {
+      "code": "2.2",
+      "description": "Local transportation (within the beneficiary country of the project)",
+      "unit": "Per trip",
+      "approvedUnits": 125,
+      "unitRate": 150,
+      "approved": 18750
+     },
+     {
+      "code": "4.2",
+      "description": "Office rent and related charges",
+      "unit": "Per month",
+      "approvedUnits": 306,
+      "unitRate": 313,
+      "approved": 95778
+     },
+     {
+      "code": "4.3",
+      "description": "Consumables - office supplies",
+      "unit": "Per month",
+      "approvedUnits": 60,
+      "unitRate": 45,
+      "approved": 2700
+     },
+     {
+      "code": "4.4",
+      "description": "Office furniture and expenses",
+      "unit": "Per month",
+      "approvedUnits": 306,
+      "unitRate": 197,
+      "approved": 60282
+     },
+     {
+      "code": "4.5",
+      "description": "Other services",
+      "unit": "Per month",
+      "approvedUnits": 60,
+      "unitRate": 45,
+      "approved": 2700
+     },
+     {
+      "code": "5.1",
+      "description": "Publications",
+      "unit": "Per item",
+      "approvedUnits": 2090,
+      "unitRate": 9,
+      "approved": 18810
+     },
+     {
+      "code": "5.4",
+      "description": "Evaluation costs",
+      "unit": "Per item",
+      "approvedUnits": 1,
+      "unitRate": 50000,
+      "approved": 50000
+     },
+     {
+      "code": "5.5.1",
+      "description": "Translation",
+      "unit": "Per 250 words",
+      "approvedUnits": 1275,
+      "unitRate": 21,
+      "approved": 26775
+     },
+     {
+      "code": "5.5.2",
+      "description": "Interpretation",
+      "unit": "Per person/day",
+      "approvedUnits": 65,
+      "unitRate": 500,
+      "approved": 32500
+     },
+     {
+      "code": "5.7",
+      "description": "Cost of conferences/seminars",
+      "unit": "Per event",
+      "approvedUnits": 59,
+      "unitRate": 32344,
+      "approved": 1908319
+     },
+     {
+      "code": "5.8",
+      "description": "Visibility actions",
+      "unit": "Per item",
+      "approvedUnits": 7026,
+      "unitRate": 10,
+      "approved": 72128
+     },
+     {
+      "code": "10",
+      "description": "Administrative costs",
+      "unit": "7%",
+      "approved": 353489
+     }
+    ],
+    "direct": 5049844,
+    "admin": 353489,
+    "contingency": 0,
+    "total": 5403333,
+    "source": "Budget for all years - Enhancing Foreign Language Education Quality in Türkiye.pdf",
+    "linesSum": 5049844,
+    "importedAt": "2026-10-11T00:00:00Z"
+   },
+   "pmm": "3220",
+   "mae": "DG II",
+   "ccm": "00901"
+  },
+  {
+   "id": "bh5210",
+   "code": "BH5210",
+   "name": "Strengthening Rights and Conditions of Women in Prisons in Türkiye in line with International and EU Standards",
+   "country": "tr",
+   "sector": "Rule of Law",
+   "funding": "EU",
+   "start": "2026-01-01",
+   "end": "2029-09-30",
+   "budget": 4444450,
+   "status": "Active",
+   "bh": "5210",
+   "reportingPeriods": [],
+   "riskRegister": [],
+   "pmm": "3653",
+   "mae": "DG I",
+   "ccm": "00901"
+  },
+  {
+   "id": "bh9413",
+   "code": "BH9413",
+   "name": "Strengthening the protection of unaccompanied migrant children in Türkiye",
+   "country": "tr",
+   "sector": "Human Rights",
+   "funding": "Sweden",
+   "start": "2026-01-01",
+   "end": "2027-06-30",
+   "budget": 454773,
+   "status": "Active",
+   "bh": "9413",
+   "reportingPeriods": [],
+   "riskRegister": [],
+   "pmm": "4415",
+   "mae": "DG I",
+   "ccm": "00901"
+  },
+  {
+   "id": "bh5212",
+   "code": "BH5212",
+   "name": "Fostering civil society's support for women's access to justice in Türkiye",
+   "country": "tr",
+   "sector": "Rule of Law",
+   "funding": "EU",
+   "start": "2025-12-22",
+   "end": "2028-12-21",
+   "budget": 1482000,
+   "status": "Active",
+   "bh": "5212",
+   "reportingPeriods": [],
+   "riskRegister": [],
+   "pmm": "4036",
+   "mae": "DG II",
+   "ccm": "00901"
+  },
+  {
+   "id": "bh5260",
+   "code": "BH5260",
+   "name": "ROMA INTEGRATION – PHASE III",
+   "country": "tr",
+   "sector": "Human Rights",
+   "funding": "Joint Programme",
+   "start": "2025-01-01",
+   "end": "2027-12-31",
+   "budget": 0,
+   "status": "Active",
+   "bh": "5260",
+   "datesTbc": true,
+   "reportingPeriods": [],
+   "riskRegister": [],
+   "mae": "DGII"
+  },
+  {
+   "id": "bh5213",
+   "code": "BH5213",
+   "name": "Fostering Civil Society Participation in Access to Justice in Türkiye: Enhancing Human Rights in the Context of Migration and Environmental Justice",
+   "country": "tr",
+   "sector": "Rule of Law",
+   "funding": "EU",
+   "start": "2025-12-22",
+   "end": "2028-12-21",
+   "budget": 2963000,
+   "status": "Active",
+   "bh": "5213",
+   "reportingPeriods": [],
+   "riskRegister": [],
+   "pmm": "4037",
+   "mae": "DG I",
+   "ccm": "00901"
+  }
+ ],
+ "seedVersion": 3
+}

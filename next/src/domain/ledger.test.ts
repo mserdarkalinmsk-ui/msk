@@ -1,0 +1,202 @@
+import { describe, expect, it } from 'vitest';
+import { parseWorkbook } from './workbook';
+import { findErrors, oneOff, spendBetween, spendByYear } from './ledger';
+import { organisedSheets } from './organised';
+import type { Project } from './types';
+
+const PO_H = ['Budget', 'Budget Head', 'Nature', 'Reporting line', 'Unit Type', 'Nbre of Units', 'PO Number', 'Description PO', 'Description PO Line', 'PO Amount in EUR', 'Spent in EUR', 'Balance on PO in EUR', 'Spent and Committed in EUR', 'Closure Status', 'Supplier', 'Encumbered Date'];
+const INV_H = ['Budget', 'Nature', 'Date GL', 'Period', 'Invoice No', 'Description', 'Posted Flag', 'Montant Ligne', '', 'Montant Engagé €', 'Numero PO'];
+const GL_H = ['Budget', 'Nature', 'Reporting Line', 'Unit Type', 'Nbre of Units', 'GL Number', 'Description', 'Line Description', 'SPENT €', 'Period', 'Accounting Date', 'Posting Flag'];
+const sheets = [
+  { name: 'Purchase Orders', R: [['All Purchase Orders'], PO_H,
+    ['0189', '5260', '622000004', '5.5.2', 'Per day', '2', '900001', 'Interpretation workshop', 'Interpretation', '1000', '1000', '0', '1000', 'CLOSED', 'ETA', '2026-01-10'],
+    ['0189', '5260', '618500100', '5.7', 'Per contract', '1', '900002', 'Event management conference', 'Contracts', '10000', '12000', '0', '12000', 'CLOSED', 'EVENTCO', '2026-02-01'],
+    ['0189', '5260', '640210000', '1.1.1', 'Per month', '12', '900003', 'ALPHA,One - B2 - from 01/01/2026 to 31/12/2028', 'Personnel', '30000', '5000', '25000', '30000', 'OPEN', 'PAIE', '2026-01-01']] },
+  { name: 'Factures a date', R: [['Factures'], INV_H,
+    ['0189', '622000004', '2026-01-31', 'JAN-26', 'A1', 'Interp', 'Y', '1000', '', '1000', '900001'],
+    ['0189', '618500100', '2026-02-28', 'FEB-26', 'B1', 'Event', 'Y', '6000', '', '6000', '900002'],
+    ['0189', '618500100', '2026-02-28', 'FEB-26', 'B2', 'Event', 'Y', '6000', '', '6000', '900002'],
+    ['0189', '640210000', '2026-03-31', 'MAR-26', 'S1', 'Salary', 'N', '5000', '', '5000', '900003']] },
+  { name: 'Ecriture GL', R: [['Ecriture GL'], GL_H,
+    ['0189', '681000012', '0', '0', '0', '1', 'TRANCHE ET PRELEV 7% EU', '', '700', 'JAN-26', '2026-01-05', 'Y'],
+    ['0189', '640110000', '9.9', 'Per month', '1', '2', 'PAIE PERM BH5048 vers BH5260', 'X', '300', 'APR-26', '2026-04-30', 'Y'],
+    ['0189', '622000004', '5.5.2', 'Per day', '1', '3', 'Interp regul', '', '80', 'MAY-26', '2026-05-02', 'Y'],
+    ['0189', '622000004', '5.5.2', 'Per day', '1', '4', 'Interp regul', '', '80', 'MAY-26', '2026-05-03', 'Y'],
+    ['0189', '622000004', '5.5.2', 'Per day', '1', '5', 'Interp regul', '', '80', 'MAY-26', '2026-05-04', 'Y'],
+    ['0189', '622000004', '5.5.2', 'Per day', '1', '6', 'Interp regul', '', '80', 'MAY-26', '2026-05-05', 'Y'],
+    ['0189', '622000004', '5.5.2', 'Per day', '1', '7', 'Interp regul', '', '80', 'MAY-26', '2026-05-06', 'Y'],
+    ['0189', '622000004', '5.5.2', 'Per day', '1', '8', 'Interp regul', '', '80', 'MAY-26', '2026-05-07', 'Y'],
+    ['0189', '622000004', '1.1.1', 'Per month', '1', '9', 'Interp on salary line', '', '400', 'JUN-26', '2026-06-30', 'Y'],
+    ['0189', '640110000', '1.1.1', 'Per month', '1', '10', 'Late salary', '', '200', 'AUG-27', '2027-08-31', 'Y']] },
+];
+const budget = [{ code: '1.1.1', description: 'Expert', unit: 'month' }, { code: '5.5.2', description: 'Interpretation', unit: 'day' }, { code: '5.7', description: 'Events', unit: 'contract' }];
+
+describe('dated ledger of a system extraction', () => {
+  const wb = parseWorkbook(sheets);
+  it('keeps every invoice (line and supplier from its PO) and GL entry with its date', () => {
+    const E = wb.entries!;
+    expect(E).toHaveLength(14);
+    expect(E.find((e) => e.doc === 'B1')).toMatchObject({ src: 'invoice', line: '5.7', supplier: 'EVENTCO', date: '2026-02-28', amount: 6000 });
+    expect(E.find((e) => e.doc === 'S1')!.posted).toBe(false);
+  });
+  it('sums what was spent between two dates by line and month', () => {
+    const R = spendBetween(wb.entries!, '2026-02-01', '2026-03-31', budget);
+    expect(R.total).toBe(17000);
+    expect(R.lines.map((l) => [l.line, l.description, l.amount])).toEqual([['1.1.1', 'Expert', 5000], ['5.7', 'Events', 12000]]);
+    expect(R.months).toEqual([{ month: '2026-02', amount: 12000 }, { month: '2026-03', amount: 5000 }]);
+    expect(spendBetween(wb.entries!, '', '').total).toBe(wb.entries!.reduce((a, e) => a + e.amount, 0));
+  });
+  it('splits each line\'s spending by year with units: months on staff POs, spent share elsewhere', () => {
+    const Y = spendByYear(wb.entries!, wb);
+    expect(Y.years).toEqual(['2026', '2027']);
+    const staff = Y.lines.find((l) => l.code === '1.1.1')!;
+    expect(staff.years['2026'].amount).toBe(5400);
+    expect(staff.years['2027'].amount).toBe(200);
+    expect(staff.amount).toBe(5600);
+    // months on a staff PO are capped at the units ordered: 0.25 month ordered counts 0.25, not a whole month
+    const cap = spendByYear([{ ...wb.entries!.find((e) => e.po === '900003')!, date: '2026-03-31' }, { ...wb.entries!.find((e) => e.po === '900003')!, date: '2026-04-30' }], { lines: wb.lines, pos: wb.pos.map((x) => (x.po === '900003' ? { ...x, units: 1.25 } : x)) });
+    expect(cap.lines.find((l) => l.code === '1.1.1')!.units).toBe(1.25);
+    const ev = Y.lines.find((l) => l.code === '5.7')!;
+    expect(ev.years['2026'].units).toBe(1); // events are counted whole, never 1.2 events
+    expect(Y.lines.reduce((a, l) => a + l.amount, 0)).toBe(wb.entries!.filter((e) => e.line && e.line !== '0' && e.line !== '10').reduce((a, e) => a + e.amount, 0));
+  });
+  it('leaves grants out of the pace projections: a grant paid early is not a risk of more units', () => {
+    expect(oneOff('Grants to civil society organisations', 'Per grant')).toBe(true);
+    expect(oneOff('Interpretation', 'Per day')).toBe(false);
+    const U = (description: string, unit: string) => findErrors([], { elapsed: 0.25, units: [{ code: '6.1', description, unit, budget: 10, used: 6 }] });
+    expect(U('Interpretation', 'Per day').some((f) => f.kind === 'units-over')).toBe(true);
+    expect(U('Grants', 'Per grant').some((f) => f.kind === 'units-over')).toBe(false);
+  });
+  it('finds the entries that look entered in error, and does not flag split POs', () => {
+    const F = findErrors(wb.entries!, { budget, start: '2026-01-01', end: '2027-06-30', bh: '5260', pos: wb.pos });
+    const k = (kind: string) => F.filter((f) => f.kind === kind);
+    expect(k('not-in-budget')[0]).toMatchObject({ level: 'error', amount: 300 });
+    expect(k('duplicate')[0].rows.map((r) => r.doc)).toEqual(['B1 (PO 900002)', 'B2 (PO 900002)']);
+    expect(k('po-over')[0].rows[0]).toMatchObject({ doc: 'PO 900002', amount: 2000 });
+    expect(k('wrong-line')[0].rows[0]).toMatchObject({ line: '1.1.1', amount: 400 });
+    expect(k('outside-dates')[0].rows[0].date).toBe('2027-08-31');
+    expect(k('unposted')).toHaveLength(1);
+    expect(k('other-bh')[0].rows).toHaveLength(1);
+    expect(k('contract-beyond')[0].rows[0].doc).toBe('PO 900003');
+    expect(wb.entries!.find((e) => e.doc === '1')!.line).toBe('10');
+    expect(F[0].level).toBe('error');
+  });
+  it('lays the extraction out as a tidy workbook, with the chosen range', () => {
+    const p = { id: 'p', code: 'JP1', name: 'Test', start: '2026-01-01', end: '2027-06-30', bh: '5260' } as unknown as Project;
+    const S = organisedSheets(p, { ...wb, fileName: 'x.xlsx' }, { from: '2026-02-01', to: '2026-03-31' });
+    expect(S.map((s) => s.name)).toEqual(['Summary', 'Selected period', 'Statement', 'Postings', 'By month', 'Purchase orders', 'Checks']);
+    expect(S.find((s) => s.name === 'Postings')!.rows).toHaveLength(15);
+    const tot = S.find((s) => s.name === 'Selected period')!.rows.find((r) => (r[0] as { v?: string })?.v === 'Total')!;
+    expect((tot[4] as { v: number }).v).toBe(17000);
+  });
+});
+
+describe('against the approved budget', () => {
+  it('compares lines and headings, with the 25% flexibility', async () => {
+    const { compareBudget, findErrors } = await import('./ledger');
+    const wb = parseWorkbook(sheets);
+    const B = [{ code: '1.1.1', description: 'Expert', approved: 30000 }, { code: '5.5.2', description: 'Interp', approved: 2000 }, { code: '5.7', description: 'Events', approved: 8000 }];
+    const sc = new Map([['1.1.1', 30600], ['5.5.2', 1480], ['5.7', 12000]]);
+    const C = compareBudget(wb.entries!, B, sc, '2026-02-01', '2026-02-28');
+    expect(C.lines.map((l) => [l.code, l.inRange, l.status])).toEqual([['1.1.1', 0, 'over'], ['5.5.2', 0, 'ok'], ['5.7', 12000, 'over']]);
+    expect(C.heads.map((h) => [h.h, h.status])).toEqual([['1', 'within-flex'], ['5', 'over-flex']]);
+    const F = findErrors(wb.entries!, { budget: B, sc });
+    expect(F[0]).toMatchObject({ kind: 'head-over', level: 'error' });
+    expect(F.find((f) => f.kind === 'line-over')!.rows).toHaveLength(2);
+  });
+});
+
+describe('units used, not just ordered', () => {
+  it('counts the months gone of a staff PO and the invoiced share of others', async () => {
+    const { usedUnits } = await import('./workbook');
+    expect(usedUnits(12, 50000, 60000, 'ALPHA,One - B2 - Ankara from 01/01/2026 to 31/12/2026', 'Per month', '2026-06-30')).toBeCloseTo(6, 0);
+    expect(usedUnits(10, 500, 1000, 'Consultancy', 'Per day', '2026-06-30')).toBe(5);
+    expect(usedUnits(45, 760, 8550, 'Consultancy', 'Per Day')).toBe(4);
+    expect(usedUnits(45, 760, 8550, 'Consultancy', 'Per Day', undefined, undefined, true)).toBe(45);
+    expect(usedUnits(12, 1, 1, 'ALPHA from 01/01/2026 to 31/12/2026', 'Per month', '2026-10-14', 9)).toBe(9);
+    expect(usedUnits(4, 800, 800, 'Interpretation', 'Per day')).toBe(4);
+    expect(usedUnits(17, 0, 2720, 'Consultancy', 'Per day')).toBe(0);
+  });
+});
+
+import { unitFamily } from './ledger';
+describe('units written differently', () => {
+  it('count as the same unit', () => {
+    expect(unitFamily('per return flight')).toBe(unitFamily('Per Travel'));
+    expect(unitFamily('per trip')).toBe(unitFamily('Per Travel'));
+    expect(unitFamily('per personday')).toBe(unitFamily('Per person per day'));
+    expect(unitFamily('per diem')).toBe(unitFamily('Per Day'));
+    expect(unitFamily('per item')).toBe(unitFamily('Per unit'));
+    expect(unitFamily('per event')).not.toBe(unitFamily('Per contract'));
+  });
+});
+
+import { lineTransfers } from './transfers';
+describe('transfers that bring every line back within its budget', () => {
+  const l = (code: string, budget: number, sc: number) => ({ code, description: '', budget, inRange: 0, toDate: 0, sc, available: budget - sc, used: 0, status: 'ok' as const });
+  it('take from the same heading first, then from the line with the most left', () => {
+    const T = lineTransfers([l('2.1', 2800, 5477.51), l('2.2', 6150, 4034.67), l('5.7', 141595.35, 59580.36), l('1.1.1.3', 70470, 51282.58)], 0.15);
+    expect(T.moves).toEqual([{ from: '2.2', to: '2.1', amount: 2115 }, { from: '5.7', to: '2.1', amount: 563 }]);
+    expect(T.heads.find((h) => h.h === '2')!.change).toBeCloseTo(563 / 8950, 6);
+    expect(T.beyond).toBe(false);
+  });
+});
+
+import { poPurpose } from './reasons';
+describe('what a purchase order was for', () => {
+  const P = (description: string, nature = '') => poPurpose({ description, nature });
+  it('never names a person', () => {
+    expect(P('OM26_599988- Mrs ZETA Seven-Nr - Agent').label).toBe('missions of project staff');
+    expect(P('ETA THETA,Eight - B4/1 - 100% - Ankara from 01/01/2026 to 31/12/2026').label).toBe('the salary of the B4/1 post (100%, Ankara) from 01/01/2026 to 31/12/2026');
+  });
+  it('reads events and experts', () => {
+    expect(P('Event Management_Focus Group Meeting_Ankara_8-10 June 2026').label).toBe('the Focus Group Meeting (Ankara, 8-10 June 2026)');
+    expect(P('EXPERT01_SxB_28-30 Apr 2026').label).toBe('the participation of experts in Strasbourg (28-30 Apr 2026)');
+  });
+});
+
+describe('units are counted in the steps their kind is used in', () => {
+  it('per diem in quarters, travel and days in halves, events whole', async () => {
+    const { unitStep, roundUnits, usedUnits } = await import('./workbook');
+    expect(unitStep('Per diem', '1.3.1')).toBe(0.25);
+    expect(unitStep('Per trip', '2.1')).toBe(0.5);
+    expect(unitStep('Per day', '1.1.2')).toBe(0.5);
+    expect(unitStep('Per event', '5.7')).toBe(1);
+    expect(unitStep('Per grant', '6.2')).toBeNull(); // a grant keeps its PO's units (0.33 of a grant)
+    expect(roundUnits(0.53, unitStep('Per month', '1.2.1.2'))).toBe(0.5);
+    expect(unitStep('Per month', '4.1')).toBe(0.25);
+    expect(roundUnits(26.53, 0.5)).toBe(26.5);
+    expect(roundUnits(0.67, 1)).toBe(1);
+    expect(roundUnits(0.2, 1, 100)).toBe(1); // something spent counts at least one unit
+    expect(usedUnits(3, 2000, 3000, 'Workshop', 'Per event', undefined, undefined, false, '5.7')).toBe(2);
+    expect(usedUnits(30, 1000, 3000, 'Per diem', 'Per day', undefined, undefined, false, '1.3.1')).toBe(10);
+    expect(usedUnits(7, 1000, 3000, 'Per diem', 'Per day', undefined, undefined, false, '1.3.1')).toBe(2.25);
+  });
+});
+
+describe('PO lines with an amount but no units', () => {
+  it('flags the invoiced ones only: a PO that is only committed shows no units yet, they come with the spending', async () => {
+    const { findErrors } = await import('./ledger');
+    const po = (x: Record<string, unknown>) => ({ po: '1', line: '2.2', description: 'Organisation of the launching event of the project on 27 March 2026 in Ankara', nature: '', supplier: 'An event company', unitType: 'Per Travel', units: 0, amount: 435, spent: 0, sc: 435, date: '2026-03-11', ...x }) as never;
+    const F = findErrors([], { pos: [po({}), po({ po: '2', line: '5.7', unitType: 'Per event', amount: 30, spent: 30, sc: 30 }), po({ po: '3', units: 2, amount: 300, spent: 100, sc: 300 }), po({ po: '4', line: '6.2', unitType: 'Per grant', amount: 900 })], asAt: '2026-11-17' });
+    expect(F.find((f) => f.kind === 'units-missing-open')).toBeUndefined();
+    expect(F.find((f) => f.kind === 'units-missing-paid')!.rows.map((r) => r.doc)).toEqual(['PO 2']);
+  });
+});
+
+describe('a PO unit that does not count what its budget line counts', () => {
+  it('flags real differences and lets synonyms through', async () => {
+    const { unitsDiffer } = await import('./ledger');
+    expect(unitsDiffer('Per Travel', 'Per month')).toBe(true); // rent line given a travel unit
+    expect(unitsDiffer('Per month', 'Per day')).toBe(true);
+    expect(unitsDiffer('Per Travel', 'Per return flight')).toBe(false);
+    expect(unitsDiffer('Per Travel', 'Per trip')).toBe(false);
+    expect(unitsDiffer('Per unit', 'Per item')).toBe(false);
+    expect(unitsDiffer('Per Day', 'Per diem')).toBe(false);
+    expect(unitsDiffer('Per Day', 'Per person/day')).toBe(false);
+    expect(unitsDiffer('Per contract', 'Per event')).toBe(false);
+    expect(unitsDiffer('Per grant', 'Per item')).toBe(false);
+    expect(unitsDiffer('Per unit', 'Per 250 words')).toBe(false);
+    expect(unitsDiffer('Per unit', 'Per month')).toBe(true);
+  });
+});

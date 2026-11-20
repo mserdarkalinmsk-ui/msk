@@ -1,0 +1,154 @@
+/* ==========================================================================
+   Editorial — the default direction. A printed financial report on screen: warm paper, serif headlines, ink rules
+   above each section, flat tiles separated by hairlines, colour kept for status only. No glows, no gradients.
+   Everything is scoped to html[data-style="editorial"], so the other directions stay as they were.
+   ========================================================================== */
+:root[data-style="editorial"] {
+  --serif: "Iowan Old Style", "Charter", "Source Serif 4", "Source Serif Pro", Georgia, Cambria, "Times New Roman", serif;
+  --bg: #f3eee5; --surface: #fbf8f2; --surface-2: #efe8dc; --surface-hover: #ebe3d4;
+  --line: #ddd4c3; --line-strong: #c4b8a2;
+  --ink: #15130f; --ink-2: #48423a; --ink-3: #6a6256;
+  --r-sm: 3px; --r-md: 4px; --r-lg: 4px;
+  --shadow-1: none; --shadow-2: 0 18px 40px rgb(40 30 15 / .16), 0 2px 6px rgb(40 30 15 / .08); --shadow-3: 0 24px 60px rgb(40 30 15 / .24);
+  --c1: #1f5a96; --plan: #9c9486;
+}
+:root[data-style="editorial"]:not([data-accent]) { --accent: #1f4f82; --accent-soft: #e3ebf4; --focus: #1f4f82; }
+:root[data-theme="dark"][data-style="editorial"] {
+  --bg: #141210; --surface: #1b1916; --surface-2: #24211d; --surface-hover: #2b2823; --line: #34302a; --line-strong: #4a443b;
+  --ink: #f1ece2; --ink-2: #c9c1b3; --ink-3: #a0978a; --c1: #5b93d1; --plan: #7b7468;
+}
+:root[data-theme="dark"][data-style="editorial"]:not([data-accent]) { --accent: #6b9fd8; --accent-soft: #1d2a3a; --focus: #6b9fd8; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-style="editorial"] {
+    --bg: #141210; --surface: #1b1916; --surface-2: #24211d; --surface-hover: #2b2823; --line: #34302a; --line-strong: #4a443b;
+    --ink: #f1ece2; --ink-2: #c9c1b3; --ink-3: #a0978a; --c1: #5b93d1; --plan: #7b7468;
+  }
+  :root:not([data-theme="light"])[data-style="editorial"]:not([data-accent]) { --accent: #6b9fd8; --accent-soft: #1d2a3a; --focus: #6b9fd8; }
+}
+
+/* ---------- type: serif headlines, small-caps labels ---------- */
+:root[data-style="editorial"] :is(.top h1, .card-h h2, .ph-title, .drawer-h h2, .map-side-h h2, .sl-head h2, .empty-page h2) { font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; }
+:root[data-style="editorial"] .top h1 { font-size: 21px; }
+:root[data-style="editorial"] .top .crumb { font-family: var(--font); font-size: 14px; }
+:root[data-style="editorial"] .card-h h2 { font-size: 19px; line-height: 1.25; }
+:root[data-style="editorial"] .card-h p { font-size: 13px; }
+:root[data-style="editorial"] .ph-title { font-size: 28px; line-height: 1.15; }
+:root[data-style="editorial"] .brand { font-family: var(--serif); }
+
+/* ---------- chrome: paper sidebar, an ink line for the current page ---------- */
+:root[data-style="editorial"] .side { background: var(--bg); border-right: 1px solid var(--line); }
+:root[data-style="editorial"] .nav a { border-radius: 0; }
+:root[data-style="editorial"] .nav a:hover { background: var(--surface-hover); }
+:root[data-style="editorial"] .nav a[aria-current="page"] { background: none; color: var(--ink); font-weight: 700; box-shadow: inset 3px 0 0 var(--ink); }
+:root[data-style="editorial"] .top { background: color-mix(in srgb, var(--bg) 94%, transparent); border-bottom: 1px solid var(--line); }
+
+/* ---------- sections: flat paper with an ink rule on top ---------- */
+:root[data-style="editorial"] .card { border-radius: 2px; box-shadow: none; border-color: var(--line); border-top: 2px solid var(--ink); }
+:root[data-style="editorial"] .card .card { border-top-width: 1px; border-top-color: var(--line); }
+
+/* ---------- controls ---------- */
+:root[data-style="editorial"] .btn { border-radius: 3px; }
+:root[data-style="editorial"] .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+:root[data-style="editorial"] .chip { border-radius: 3px; }
+:root[data-style="editorial"] .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+:root[data-style="editorial"] .badge { background: none; padding: 0; height: auto; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+:root[data-style="editorial"] .badge.count { padding: 0 6px; height: 18px; border-radius: 2px; background: var(--surface-2); letter-spacing: 0; }
+:root[data-style="editorial"] .nav a .badge.count, :root[data-style="editorial"] .nav a .badge { background: var(--surface-2); padding: 0 6px; border-radius: 2px; }
+
+/* tabs: words on a rule, the current one underlined in ink */
+:root[data-style="editorial"] .tabs { background: none; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; box-shadow: none; padding: 0; gap: 6px; }
+:root[data-style="editorial"] .tabs button { border-radius: 0; padding: 0 14px; color: var(--ink-3); font-size: 14px; }
+:root[data-style="editorial"] .tabs button:hover { background: none; color: var(--ink); transform: none; box-shadow: none; }
+:root[data-style="editorial"] .tabs button::after { left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 0; background: var(--ink); }
+:root[data-style="editorial"] .tabs button:hover::after { left: 0; right: 0; opacity: .25; }
+:root[data-style="editorial"] .tabs button[aria-selected="true"] { background: none; color: var(--ink); box-shadow: none; }
+:root[data-style="editorial"] .tabs button[aria-selected="true"]::after { left: 0; right: 0; opacity: 1; }
+:root[data-style="editorial"] .tabs button[aria-selected="true"] .tab-n { background: var(--ink); color: var(--surface); }
+:root[data-style="editorial"] body .subtabs button { border-radius: 3px; }
+:root[data-style="editorial"] body .subtabs button[aria-selected="true"], :root[data-style="editorial"] body .subtabs button[aria-selected="true"]:hover { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+:root[data-style="editorial"] body .subtabs button[aria-selected="true"] .tab-n { background: var(--surface); color: var(--ink); }
+
+/* ---------- the headline band: one strip of figures between two rules ---------- */
+:root[data-style="editorial"] body :is(.hero, .ph-tiles):not(.ph-tiles-tab) { gap: 0; background: var(--surface); border: 0; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--line-strong); border-radius: 0; box-shadow: none; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi,
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi:hover { background: none; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 18px 22px 18px; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi:first-child { border-left: 0; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .label { flex-wrap: wrap; row-gap: 4px; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .label .badge { margin-left: 0; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .sc-ico { display: none; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .label[data-ico] { padding-left: 0; min-height: 0; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .label[data-ico]::before,
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .label[data-ico]::after { display: none; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi .value { font-size: 32px; font-weight: 700; letter-spacing: -.03em; color: var(--ink); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi[data-tone="good"] .value { color: var(--good); }
+/* the lead figure: larger, marked by a short accent tab instead of a coloured card */
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead { position: relative; color: var(--ink); background: none; box-shadow: none; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead::before { content: ""; position: absolute; left: 22px; top: -3px; width: 44px; height: 3px; background: var(--critical); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead:first-child::before { left: 22px; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .label, :root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .ctx { color: var(--ink-3); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .label { color: var(--ink); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .ctx b { color: var(--ink); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .value { color: var(--ink); font-size: 42px; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter { height: 6px; background: var(--surface-2) !important; box-shadow: inset 0 0 0 1px var(--line); border-radius: 0; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter > span:first-of-type,
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter .m-s { background: var(--ink) !important; box-shadow: none; border-radius: 0; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter > span:not(:first-of-type),
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter .m-c { background: color-mix(in srgb, var(--ink) 30%, var(--surface)) !important; border-radius: 0; }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick { background: var(--critical); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .meter .tick em { color: var(--ink-3); }
+:root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead .ctx i[style] { filter: none; }
+:root[data-style="editorial"] .sc-key .k-s { background: var(--ink); } :root[data-style="editorial"] .sc-key .k-c { background: color-mix(in srgb, var(--ink) 30%, var(--surface)); } :root[data-style="editorial"] .sc-key .k-t { background: var(--critical); }
+:root[data-style="editorial"] .sc-split, :root[data-style="editorial"] .sc-fc-bar, :root[data-style="editorial"] .sc-fc-bar span { border-radius: 0; }
+:root[data-style="editorial"] .sc-split .s { background: var(--ink); } :root[data-style="editorial"] .sc-split .c { background: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
+:root[data-style="editorial"] .sc-fc-bar span { background: var(--ink-2); }
+:root[data-style="editorial"] body .hero.ph-tiles.ph-tiles-tab { border-radius: 2px; }
+
+/* ---------- project cards: a page from a report, a thin sector rule on top ---------- */
+:root[data-style="editorial"] body .pcard { border-radius: 2px; background: var(--surface); border: 1px solid var(--line); box-shadow: none; }
+:root[data-style="editorial"] body .pcard::before { height: 3px; background: var(--sc, var(--ink)); }
+:root[data-style="editorial"] body .pcard::after { display: none; }
+:root[data-style="editorial"] body .pcard:hover, :root[data-style="editorial"] body .pcard:focus-visible { transform: none; border-color: var(--ink); box-shadow: none; }
+:root[data-style="editorial"] body .pcard h3 { font-family: var(--serif); font-size: 18px; font-weight: 600; line-height: 1.25; }
+:root[data-style="editorial"] body .pcard .pc-bars i { height: 6px; border-radius: 0; box-shadow: none; }
+:root[data-style="editorial"] body .pcard .pc-bars > div:first-child i b:first-child { background: var(--ink) !important; border-radius: 0; }
+:root[data-style="editorial"] body .pcard .pc-bars > div:last-child i b { background: color-mix(in srgb, var(--ink) 30%, transparent) !important; border-radius: 0; }
+:root[data-style="editorial"] body .pcard .pc-bars i > u { background: var(--critical); opacity: 1; }
+:root[data-style="editorial"] body .pcard footer { border-top: 1px solid var(--line); }
+:root[data-style="editorial"] body .pcard footer > span { background: none; padding: 0 10px 0 0; border-radius: 0; color: var(--ink-3); }
+:root[data-style="editorial"] body .pcard footer > span.stale { background: none; color: var(--serious); }
+:root[data-style="editorial"] body .pcard-add { border: 1px dashed var(--line-strong); }
+
+/* ---------- alerts: a list on rules, the severity as a thin mark ---------- */
+:root[data-style="editorial"] .attn-g { gap: 0 24px; }
+:root[data-style="editorial"] .attn-g li { background: none; border-radius: 0; border-left: 0; border-bottom: 1px solid var(--line); padding: 12px 4px 12px 14px; position: relative; }
+:root[data-style="editorial"] .attn-g li::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px; background: var(--t); }
+:root[data-style="editorial"] .attn-g li:hover { transform: none; box-shadow: none; background: var(--surface-hover); }
+
+/* ---------- notices at the top: one quiet line each ---------- */
+:root[data-style="editorial"] .bk-banner { border-radius: 2px; background: var(--surface); border: 1px solid var(--line); }
+
+/* ---------- other tinted panels become flat ---------- */
+:root[data-style="editorial"] :is(.cockpit, .wp-hero-h, .desk-col header, .qa-tile.serious, .qa-tile.warning, .mc-doc, .sim) { background: var(--surface); border-radius: 2px; box-shadow: none; }
+:root[data-style="editorial"] .sp-tile.lead { background: var(--ink); color: var(--surface); }
+:root[data-style="editorial"] .tabs + *, :root[data-style="editorial"] .seg { border-radius: 3px; }
+:root[data-style="editorial"] .seg button { border-radius: 2px; }
+
+/* ---------- slides ---------- */
+:root[data-style="editorial"] .slide { border-radius: 0; }
+:root[data-style="editorial"] .sl-cover { background: var(--surface); border-top: 6px solid var(--ink); }
+:root[data-style="editorial"] .sl-cover::before { background: var(--critical); }
+:root[data-style="editorial"] .sl-head { border-bottom: 1px solid var(--line-strong); }
+:root[data-style="editorial"] .sl-k { letter-spacing: .1em; text-transform: uppercase; }
+
+@media print {
+  :root[data-style="editorial"] body :is(.hero, .ph-tiles) > .kpi.lead::before { background: #000; }
+  :root[data-style="editorial"] .card { border-top-color: #000; }
+}
+
+/* figures: proportional face with even-width digits (Monospace stays available under Appearance) */
+:root[data-style="editorial"]:not([data-numbers="mono"]) { --mono: var(--font); }
+:root[data-style="editorial"] :is(.num, td, .value, .pc-money b) { font-variant-numeric: tabular-nums lining-nums; }
+:root[data-style="editorial"] body .pcard .pc-money b { letter-spacing: -.03em; }
+:root[data-style="editorial"] .pc-sector { background: none !important; padding: 0 !important; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+:root[data-style="editorial"] .slide::before { width: 4px; background: var(--ink); }
+:root[data-style="editorial"] .cockpit { border-left-width: 2px; }
