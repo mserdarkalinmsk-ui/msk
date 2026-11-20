@@ -1227,3 +1227,4 @@ button.bud{cursor:pointer;transition:transform .12s,box-shadow .12s}button.bud:h
 .la-l{list-style:none;margin:0;padding:0;display:grid;gap:4px}.la-l li{display:grid;grid-template-columns:90px 1fr 48px 110px;gap:10px;align-items:center;font-size:13px;cursor:pointer;padding:3px 6px;border-radius:8px}.la-l li:hover{background:var(--surface-2)}
 .la-bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden}.la-bar i{display:block;height:100%}
 @media (max-width:1000px){.la-g{grid-template-columns:1fr 1fr}.la-l{grid-column:1/-1}}
+.att-c{display:inline-flex;gap:2px}.att-c .btn{padding:0 7px;height:28px}

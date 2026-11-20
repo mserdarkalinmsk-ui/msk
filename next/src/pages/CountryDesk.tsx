@@ -4,6 +4,7 @@ import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
+import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { countryPeople, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { money } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
@@ -264,7 +265,7 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
             <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : FUND_LABEL[m.fund ?? 'ob']}</td>
             <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {m.end ? date(m.end) : 'open-ended'}</td>
             <td>{days == null ? <span class="muted">no end date</span> : <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</td>
-            <td style={{ whiteSpace: 'nowrap' }}><button class="btn ghost" title="Change" onClick={() => load(m)}>✎</button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
+            <td style={{ whiteSpace: 'nowrap' }}><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}>✎</button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
         : <p class="muted">No one on the core team of {name} yet. Add the office's own staff above: name, position, contract dates and what pays for the post.</p>}
     </div></section>;
 }
@@ -343,6 +344,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
               {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
               <u style={{ left: `${x(TODAY.toISOString())}%` }} /></div>
             <span class="cc-s"><span class={`badge ${d.openEnded ? 'neutral' : SEV_BADGE[d.severity]}`} title={d.openEnded ? 'No end date: nothing to warn' : `ends ${date(d.end)}`}>{dueText(d)}</span><small class="num muted">{d.openEnded ? 'no end date' : date(d.end)}</small>
+              <Attach doc={FW[d.key]?.doc} label={`the contract with ${d.name}`} save={(doc) => setFramework(d.key, { ...FW[d.key], doc })} />
               <button class="btn ghost" title="Change" onClick={() => load(d)}>✎</button>
               <button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove the contract with ${d.name}?`) && isAdmin('remove a contract')) setFramework(d.key, null); }}>✕</button></span>
           </div>; })}
@@ -372,4 +374,15 @@ export function OverviewCountries() {
         <td class="r num">{pct(x.b ? x.sp / x.b : 0)}</td>
         <td class="r">{x.urgent ? <span class="badge serious">{x.urgent}</span> : <span class="muted">0</span>}</td>
         <td>{x.next ? <span>{date(x.next.day)} <small class="muted">· {plabel(x.next.p)} {KIND_LABEL[x.next.kind].toLowerCase()}</small></span> : <span class="muted">—</span>}</td></tr>)}</tbody></table></div></section>;
+}
+
+/** A paper clip: opens the attached document, or attaches one (replacing one asks for the admin password). */
+function Attach({ doc, label, save }: { doc?: Attachment; label: string; save: (d: Attachment) => void }) {
+  const pick = async (e: Event) => {
+    const inp = e.target as HTMLInputElement, f = inp.files?.[0]; inp.value = ''; if (!f) return;
+    if (doc && !isAdmin(`replace ${label}`)) return;
+    const a = await readAttachment(f); if (typeof a === 'string') return alert(a); save(a);
+  };
+  return <span class="att-c">{doc && <button class="btn ghost att-open" title={`Open ${doc.name} (${Math.round(doc.size / 1024)} KB, attached ${date(doc.at.slice(0, 10))})`} onClick={() => openAttachment(doc)}>📄</button>}
+    <label class="btn ghost" title={doc ? `Replace ${label}` : `Attach ${label} (PDF, Word, scan — kept in this browser and in backups)`}>📎<input type="file" hidden onChange={pick} /></label></span>;
 }

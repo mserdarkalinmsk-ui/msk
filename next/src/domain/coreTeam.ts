@@ -6,6 +6,7 @@ export interface CoreMember {
   /** what pays for the post: Ordinary Budget, LS & Pagoda, or a project (then `project` and its share) */
   fund?: 'ob' | 'ls' | 'project' | 'other';
   project?: string; share?: number; note?: string;
+  /** the employment contract, attached by the user */ doc?: import('../ui/attach').Attachment;
 }
 export const FUND_LABEL: Record<NonNullable<CoreMember['fund']>, string> = { ob: 'Ordinary Budget', ls: 'LS & Pagoda', project: 'Charged to a project', other: 'Other' };
 
