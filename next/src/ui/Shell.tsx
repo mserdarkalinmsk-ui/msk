@@ -7,6 +7,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { watchTables } from './tableTidy';
 import { keyClicks } from './uiPass';
+import { tableTools } from './tableExport';
 import { get, go, set, setTheme, useStore } from '../data/store';
 import { attention } from '../domain/calc';
 import { alertStatus } from '../domain/worklist';
@@ -37,6 +38,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
   // Every table, on the page and in side panels, gets the same figure alignment and sticky header.
   useEffect(() => watchTables(document.body), []);
   useEffect(() => keyClicks(), []);
+  useEffect(() => tableTools(), []);
   const appTitle = ledger.brand?.title || 'Portfolio Ledger';
   useEffect(() => { document.title = appTitle; }, [appTitle]);
   // The browser tab shows the organisation's logo when one is set.

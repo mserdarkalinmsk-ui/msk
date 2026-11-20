@@ -696,6 +696,13 @@ async function page(opts) {
   await p.goto(url + '#/overview'); await p.waitForSelector('.td li');
   const groups = await p.locator('.td-s').count(), before = p.url(); await p.locator('.td li').first().click(); await p.waitForTimeout(400);
   check(groups > 0 && p.url() !== before, 'what needs you now: listed on the first page, a line opens its screen');
+  // every figure says where it comes from; words have their meaning on hover; any small table goes to Excel
+  await p.goto(url + '#/overview'); await p.waitForSelector('.src-l');
+  check(/latest report of each project/.test(await p.locator('.src-l').innerText()) && await p.locator('[data-gl][title]').count() > 0, 'the source of the figures is told, and the words of the app explained on hover');
+  await p.goto(url + `#/countries/${deskOf}/staff`); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.ct-t');
+  await p.locator('.ct-t').hover(); await p.waitForSelector('.tt-bar:not([hidden])', { timeout: 3000 }).catch(() => {});
+  const [xl] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).catch(() => null), p.click('.tt-bar button[data-k=x]').catch(() => {})]);
+  check(!!xl && /\.xlsx$/.test(xl.suggestedFilename()), 'a small table goes to Excel from its hover button');
   check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

@@ -1,3 +1,4 @@
+import { SourceLine } from '../ui/SourceLine';
 import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { BudgetBody } from './Budget';
@@ -73,6 +74,7 @@ export function Offices() {
   const NoOffice = <div class="card empty-page"><div><h2>No office budget for {cname(c)} yet</h2><p>Drop the office's budget workbook (Situation Budgétaire with the report / forecast sheet) into Import. The country is recognised from the office (Bureau ANKARA → Türkiye); each office gets its own box. Office running costs are kept apart from the project figures.</p><button class="btn primary" onClick={() => set({ drawer: { kind: 'import' } })}>Import office budget</button></div></div>;
   if (!c) return <>{Boxes}<div style={{ marginTop: '16px' }}>{NoOffice}</div></>;
   return <div class="offices">{Boxes}<Hero />
+    {tab === 'Overview' && <SourceLine P={P} />}
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
     {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
     {tab === 'Projects' && <CountryProjects name={cname(c)} cid={c} P={P} />}

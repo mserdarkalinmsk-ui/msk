@@ -196,3 +196,15 @@ details.em-method[open] > summary::before { content: '▾'; }
 .td-d { color: var(--ink-2); font-size: 12px; white-space: nowrap; font-family: inherit; }
 .td-s .linkish { margin-top: 6px; font-size: 12.5px; }
 @media print { .td { display: none; } }
+/* words with a meaning on hover */
+[data-gl] { text-decoration: underline dotted color-mix(in srgb, var(--ink-3) 55%, transparent); text-underline-offset: 3px; cursor: help; }
+/* the floating Excel / Print of a small table */
+.tt-bar { position: fixed; z-index: 45; display: flex; gap: 4px; padding: 3px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-2, 0 2px 8px rgb(0 0 0/.12)); }
+.tt-bar button { font: inherit; font-size: 12px; padding: 3px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink-2); cursor: pointer; }
+.tt-bar button:hover { background: var(--surface-2); color: var(--ink); }
+@media print { .tt-bar, [data-gl] { text-decoration: none; } .tt-bar { display: none; } }
+/* where the figures come from */
+.src-l { margin: 0 0 12px; font-size: 12.5px; color: var(--ink-2); line-height: 1.7; }
+.src-l .badge { margin-left: 6px; }
+.src-l .linkish + .linkish { margin-left: 6px; }
+.src-l .linkish { font-size: 12.5px; }

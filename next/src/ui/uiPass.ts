@@ -1,4 +1,5 @@
 import { dayMonYear } from '../domain/dt';
+import { glossaryPass } from './glossary';
 /* Small finishing pass run with the table tidy on every change of the page: what a page writes plainly gets the
    house treatment, so every screen behaves the same without each page repeating it.
    - Download buttons (⤓ ⬇ ⎙ 🖨) that are not the page's main action are quiet (data-dl).
@@ -17,6 +18,7 @@ function isoText(root: ParentNode) {
 
 export function uiPass(root: ParentNode) {
   isoText(root);
+  glossaryPass(root);
   root.querySelectorAll<HTMLElement>('.btn:not(.primary)').forEach((b) => {
     const dl = DL.test(b.textContent ?? '');
     if (dl !== b.hasAttribute('data-dl')) { if (dl) b.setAttribute('data-dl', ''); else b.removeAttribute('data-dl'); }

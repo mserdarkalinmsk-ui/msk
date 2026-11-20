@@ -1,3 +1,4 @@
+import { SourceLine } from '../ui/SourceLine';
 import { Ico } from '../ui/Ico';
 import { moveTab, orderTabs, readTabOrder, TAB_ORDER } from '../ui/tabOrder';
 import { POReview, poToCheck } from './POReview';
@@ -129,7 +130,7 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
       </div>
       {(() => { const g = GROUPS.find((x) => x.tabs.includes(tab))!; return g.tabs.length > 1 && (
         <div class="subtabs" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{LABEL[t] ?? t}{counts[t] != null && <span class="tab-n">{counts[t]}</span>}</button>)}</div>); })()}
-      {tab === 'Summary' && <Summary p={p} />}
+      {tab === 'Summary' && <><SourceLine P={[p]} /><Summary p={p} /></>}
       {tab === 'Financial report' && <FinancialReport p={p} view={SLUG[sub ?? '']?.view} key={sub} />}
       {tab === 'Work Plan' && <WorkPlanTab p={p} />}
       {tab === 'Budget lines' && <Lines p={p} />}
