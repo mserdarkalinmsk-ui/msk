@@ -635,6 +635,7 @@ async function page(opts) {
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
   // Staff: everyone, the core team, the project staff… one view at a time; a core team contract ending soon is warned
   await p.click('.cd-tabs button:text-is("Staff")'); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.cc-form');
+  const deskOf = new URL(p.url()).hash.split('/')[2]; // this country, by its address: a country saved later moves in the list
   await f(1, 'Alpha, One'); await f(2, 'Office assistant'); await f(5, '2026-11-25');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.ct-t tr:has-text("Alpha, One") .badge:has-text("45 d left")').count() === 1, 'core team member added, with the days left');
@@ -644,6 +645,12 @@ async function page(opts) {
   await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.ev-card');
   check(await p.locator('.ev-card:has-text("Alpha, One")').count() === 1 && await p.locator('.ev-card:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
   await p.click('.ev-tools button:text-is("List")'); check(await p.locator('.ev-l li:has-text("Alpha, One")').count() === 1, 'everyone also shown as a list');
+  check(await p.locator('.ev-l li:has-text("Delta, Four") .ev-end:has-text("Open-ended")').count() === 1, 'a core team post with no end date reads open-ended');
+  // the salary scale is read from a newer document: the page of the country, not the other one
+  await p.click('.cd-views button:has-text("Salary scale")'); await p.click('.tr-scale summary');
+  await p.setInputFiles('.tr-load input[type=file]', resolve('tests/fixtures/scale.pdf'));
+  await p.waitForFunction(() => /grades read/.test(document.querySelector('.tr-load')?.textContent ?? ''), null, { timeout: 15000 }).catch(() => {});
+  check(/5 grades read/.test(await p.locator('.tr-load').textContent()) && await p.locator('.tr-scale tbody tr').count() === 5 && /9,000\.00/.test(await p.locator('.tr-scale tbody tr').first().textContent()) && /2028/.test(await p.locator('.tr-scale summary').textContent()), 'a newer salary scale loaded from a PDF, the Türkiye page read');
   await p.goto(url + '#/reports/alerts'); await p.waitForSelector('.cc-alerts');
   check(await p.locator('.cc-alerts li:has-text("Gamma Events Ltd")').count() === 1, 'the contract ending soon is in the alert centre');
   // the admin password is changed under Rules & thresholds, kept hashed, and asked from then on
@@ -660,7 +667,7 @@ async function page(opts) {
   if (await p.locator('.pidx-b').count()) { await p.click('.pidx-b'); const n = await p.locator('.pidx-l li').count(); await p.locator('.pidx-l li').nth(Math.max(0, n - 2)).click(); await p.waitForTimeout(700);
     check(await p.evaluate(() => scrollY) > 300, 'the page index takes you down to a section'); }
   else check(false, 'a long page offers its list of sections');
-  await p.goto(url + '#/countries'); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Overview")'); await p.waitForSelector('.ca');
+  await p.goto(url + `#/countries/${deskOf}/overview`); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Overview")'); await p.waitForSelector('.ca');
   if (await p.locator('.ca button:has-text("Show all")').count()) await p.click('.ca button:has-text("Show all")');
   check(await p.locator('.ca-i:has-text("Gamma Events Ltd")').count() === 1 && await p.locator('.ca-i:has-text("Alpha, One")').count() === 1, 'the country lists its own alerts, contracts and core team in one place');
   check(await p.locator('.la').count() === 1 && await p.locator('.sl tbody tr').count() >= 1, 'the country looks ahead and says what its latest reports brought');

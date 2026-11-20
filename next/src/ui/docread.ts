@@ -96,6 +96,35 @@ export async function readPdf(buf: ArrayBuffer, name: string): Promise<Doc> {
   return { name, kind: 'pdf', paragraphs, tables, ...(Object.keys(notes).length ? { notes } : {}), ...(G.acts.length || G.indicators.length || G.risks.length ? { geometry: G } : {}) };
 }
 
+/** A document as pages of rows of cells, for readers that need to know which page a table is on (the salary scale of one country). */
+export async function readPages(f: File): Promise<{ text: string; lines: string[][] }[]> {
+  const buf = await f.arrayBuffer();
+  if (/\.xlsx$/i.test(f.name)) { const wb = await readXlsx(buf); return wb.sheets.map((sh) => { const L = wb.read(sh).map((r) => r.map((c) => String(c ?? ''))); return { text: `${sh} ${L.flat().join(' ')}`, lines: L }; }); }
+  if (/\.docx$/i.test(f.name)) { const d = await readDocx(buf, f.name); const P = d.paragraphs.join(' '); return d.tables.length ? d.tables.map((t) => ({ text: `${P} ${t.flat().join(' ')}`, lines: t })) : [{ text: P, lines: [] }]; }
+  if (!/\.pdf$/i.test(f.name)) throw new Error(`${f.name}: load a PDF, Word (.docx) or Excel (.xlsx) file`);
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false, useSystemFonts: false }).promise;
+  const out: { text: string; lines: string[][] }[] = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const tc = await (await doc.getPage(n)).getTextContent();
+    const rows = new Map<number, { x: number; w: number; s: string }[]>();
+    for (const it of tc.items as { str: string; transform: number[]; width: number }[]) {
+      if (!it.str.trim()) continue;
+      const y = Math.round(it.transform[5] / 3) * 3;
+      rows.set(y, [...(rows.get(y) ?? []), { x: it.transform[4], w: it.width, s: it.str }]);
+    }
+    const lines = [...rows].sort((a, b) => b[0] - a[0]).map(([, items]) => {
+      items.sort((a, b) => a.x - b.x); const cells: string[] = []; let end = -1e9;
+      for (const it of items) { if (it.x - end > 6 || !cells.length) cells.push(it.s); else cells[cells.length - 1] += (it.x - end > 1.5 ? ' ' : '') + it.s; end = it.x + it.w; }
+      return cells.map((c) => c.trim());
+    });
+    out.push({ text: lines.map((l) => l.join(' ')).join(' '), lines });
+  }
+  await doc.destroy();
+  return out;
+}
+
 export async function readDocument(f: File): Promise<Doc> {
   const buf = await f.arrayBuffer();
   if (/\.pdf$/i.test(f.name)) return readPdf(buf, f.name);

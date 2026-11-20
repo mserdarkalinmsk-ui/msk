@@ -1,4 +1,8 @@
 import { TR_SCALE_2027 } from '../domain/ccrScaleTR';
+import { readScale } from '../domain/salaryScaleRead';
+import { readPages } from './docread';
+import { Ico } from './Ico';
+import { date } from './format';
 import { X } from './CloseX';
 import { COUNTRY_LIST, countryInfo } from '../domain/countries';
 import { useEffect, useState } from 'preact/hooks';
@@ -8,7 +12,7 @@ import { money } from '../domain/calc';
 import { short } from './format';
 import { PolicyFields } from './SalaryPolicy';
 import { CPI_LAST, salaryPath } from '../domain/salaryProjection';
-import { CCR_2027, CCR_SOURCE, ccrOf } from '../domain/ccr';
+import { CCR_SOURCE, ccrOf } from '../domain/ccr';
 export function checkCountry(c: Country, all: Country[], selfId?: string) {
   const e: Partial<Record<'name' | 'iso3', string>> = {};
   if (!c.name.trim()) e.name = 'Required';
@@ -108,37 +112,50 @@ export function SalaryScale({ c }: { c: Country }) {
         <span>Adjustment index {x.index.toFixed(1)} (CPI {x.cpi.toFixed(1)}{x.ppp ? `, PPP effect ${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}` : ''}){x.special ? ` less the special adjustments already granted (${x.special.toFixed(1)}: 1 Oct 2025, 1 Feb 2026, 1 May 2026)` : ''} → <b>{x.net > 100 ? '+' : ''}{(x.net - 100).toFixed(1)}%</b> on the scale in force at 31 Dec 2026. The projection uses it in place of the January catch-up.</span>
         <small>{CCR_SOURCE}.</small>
       </div>; })()}
-      {(c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)) && <TrScale />}
+      {(c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)) && <TrScale c={c} />}
     </div>
   </section>;
 }
 
-/** The TRY scale at 1 January 2027 as published in CM(2026)136, grade by step, with the step values. */
-function TrScale() {
-  const R = TR_SCALE_2027.rows, n = Math.max(...R.map((r) => r.s.length));
+/** The TRY salary scale, grade by step, with the step values: the one loaded from the newest CCR document, else the
+ *  proposal at 1 January 2027 kept in the app (CM(2026)136). A newer document (the adopted scale, next year's) is loaded here. */
+function TrScale({ c }: { c: Country }) {
+  const S = c.salaryScale ?? { ...TR_SCALE_2027, asOf: '2027-01-01', proposal: true };
+  const R = S.rows, n = Math.max(...R.map((r) => r.s.length));
+  const [msg, setMsg] = useState('');
   const f = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const load = async (e: Event) => {
+    const inp = e.target as HTMLInputElement, file = inp.files?.[0]; inp.value = ''; if (!file) return;
+    setMsg('Reading…');
+    try {
+      const got = readScale(await readPages(file), /t[üu]rkiye|turkey/i, /\bTRY\b|turkish lira/i, file.name);
+      if ('error' in got) { setMsg(got.error); return; }
+      // how the new scale compares with the one it replaces, on the first step of the grades both have
+      const ch = got.rows.map((r) => { const o = R.find((x) => x.g === r.g); return o?.s[0] ? r.s[0] / o.s[0] - 1 : null; }).filter((x): x is number => x != null);
+      const avg = ch.length ? ch.reduce((a, b) => a + b, 0) / ch.length : null;
+      upsertCountry({ ...c, salaryScale: { ...got, currency: got.currency || 'TRY', at: new Date().toISOString().slice(0, 10) } });
+      setMsg(`${got.rows.length} grades read from ${file.name}${got.asOf ? `, scale as of ${date(got.asOf)}` : ''}${got.proposal ? ' (proposal)' : ''}${avg != null ? `; step 1 ${avg >= 0 ? '+' : '−'}${Math.abs(avg * 100).toFixed(1)}% on average against the scale it replaces` : ''}.`);
+    } catch (x) { setMsg(`${file.name} could not be read: ${(x as Error).message}`); }
+  };
   return <details class="ccr-all tr-scale">
-    <summary>Monthly basic salary scale at 1 January 2027 (TRY, proposal) — {R.length} grades</summary>
+    <summary>Monthly basic salary scale{S.asOf ? ` at ${date(S.asOf)}` : ''} ({S.currency || 'TRY'}{S.proposal ? ', proposal' : ''}) — {R.length} grades</summary>
+    <div class="tr-load"><label class="btn ghost" title="The CCR annex with the Türkiye scale, as PDF, Word or Excel: the Türkiye page is found and read"><Ico n="upload" />Load a newer scale<input type="file" accept=".pdf,.docx,.xlsx" hidden onChange={load} /></label>
+      <span class="muted">{msg || (c.salaryScale ? `Loaded from ${c.salaryScale.file ?? 'a file'}${c.salaryScale.at ? ` on ${date(c.salaryScale.at)}` : ''}.` : 'The proposal kept in the app. Load the adopted scale, or next year\'s, when it is published.')}</span></div>
     <div class="table-scroll"><table class="mini">
       <thead><tr><th>Grade</th>{Array.from({ length: n }, (_, i) => <th class="r">{i + 1}</th>)}<th class="r">Step value</th></tr></thead>
-      <tbody>{R.map((r) => <tr class={r.g === 'B 6' || r.g === 'C 6' || r.g === 'L 5' ? 'tr-g' : ''}><th scope="row">{r.g}</th>{Array.from({ length: n }, (_, i) => <td class="r num">{r.s[i] != null ? f(r.s[i]) : ''}</td>)}<td class="r num muted">{r.step.map(f).join(' / ')}</td></tr>)}</tbody>
+      <tbody>{R.map((r) => <tr class={/^(B|C) 6$|^L 5$/.test(r.g) ? 'tr-g' : ''}><th scope="row">{r.g}</th>{Array.from({ length: n }, (_, i) => <td class="r num">{r.s[i] != null ? f(r.s[i]) : ''}</td>)}<td class="r num muted">{r.step.map(f).join(' / ')}</td></tr>)}</tbody>
     </table></div>
-    <small class="muted">{TR_SCALE_2027.source}. A grades: the second step value applies from step 7. Grades A 6 and A 7 have no Türkiye scale.</small>
+    <small class="muted">{S.source}.{R.some((r) => r.step.length > 1) ? ' A grades: the second step value applies from step 7.' : ''}</small>
   </details>;
 }
 
 
-/** Local salaries of the countries shown: the CPI raise policy, the CCR adjustment and scale at 1 January 2027 (Staff page). */
+/** Local salaries of the countries shown: the CPI raise policy, the CCR adjustment and the salary scale (Staff page). */
 export function SalarySection({ countryIds }: { countryIds?: string[] }) {
   const countries = useStore((s) => s.ledger.countries);
   const C = countries.filter((c) => (!countryIds || countryIds.includes(c.id)) && (c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)));
   return <>
         {C.map((c) => <SalaryScale c={c} />)}
-        <details class="card ccr-all" style={{ marginTop: '16px' }}><summary>Salary adjustment indices at 1 January 2027 — Council of Europe member States ({CCR_2027.length})</summary>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Country</th><th class="r">CPI</th><th class="r">PPP effect</th><th class="r">Index</th><th class="r">Special granted</th><th class="r">Applied 1 Jan 2027</th></tr></thead>
-            <tbody>{CCR_2027.map((x) => <tr><td>{x.country}</td><td class="r num">{x.cpi.toFixed(1)}</td><td class="r num">{x.ppp == null ? '' : `${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}`}</td><td class="r num">{x.index.toFixed(1)}</td><td class="r num">{x.special?.toFixed(1) ?? ''}</td><td class="r num"><b>{x.net > 100 ? '+' : x.net < 100 ? '−' : ''}{Math.abs(x.net - 100).toFixed(1)}%</b></td></tr>)}</tbody></table>
-            <p class="muted" style={{ fontSize: '12px' }}>{CCR_SOURCE} (Annexes 1 and 1a), member States of the Council of Europe only. Index 100 = no change.</p></div>
-        </details>
   </>;
 }
 

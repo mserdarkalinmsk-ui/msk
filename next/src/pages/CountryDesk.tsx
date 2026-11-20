@@ -246,6 +246,7 @@ export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: P
 }
 
 /** Everyone working for the country once: core team and project contracts of the same person together. */
+const NO_END = { open: 'Open-ended', sxb: 'SxB staff', missing: 'Dates missing' } as const;
 function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
   const L = countryPeople(core, allPeople(P).filter((a) => a.status !== 'Ended'), (p) => plabel(p as Project));
@@ -257,11 +258,13 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
   const days = (x: CountryPerson) => (x.ends ? daysUntil(x.ends, TODAY) : null);
   const ending = L.filter((x) => { const d = days(x); return d != null && d >= 0 && d <= 90; });
   const shown = L.filter((x) => (!soon || ending.includes(x)) && (!q || `${x.name} ${x.core?.position ?? ''} ${x.roles.map((r) => `${r.position} ${r.project}`).join(' ')}`.toLowerCase().includes(q.toLowerCase())));
-  const key = (x: CountryPerson) => by === 'project' ? (x.core ? 'Core team' : x.roles[0]?.project ?? '—') : by === 'end' ? (x.ends ? (days(x)! < 0 ? 'Ended' : days(x)! <= 90 ? 'Ending within 90 days' : days(x)! <= 365 ? 'Ending within a year' : 'Later') : 'Open-ended') : x.name.replace(/^[^A-Za-zÇĞİÖŞÜçğıöşü]*/, '').charAt(0).toUpperCase();
-  const order = by === 'end' ? ['Ended', 'Ending within 90 days', 'Ending within a year', 'Later', 'Open-ended'] : null;
+  const key = (x: CountryPerson) => by === 'project' ? (x.core ? 'Core team' : x.roles[0]?.project ?? '—') : by === 'end' ? (x.ends ? (days(x)! < 0 ? 'Ended' : days(x)! <= 90 ? 'Ending within 90 days' : days(x)! <= 365 ? 'Ending within a year' : 'Later') : NO_END[x.noEnd ?? 'missing']) : x.name.replace(/^[^A-Za-zÇĞİÖŞÜçğıöşü]*/, '').charAt(0).toUpperCase();
+  const order = by === 'end' ? ['Ended', 'Ending within 90 days', 'Ending within a year', 'Later', NO_END.open, NO_END.sxb, NO_END.missing] : null;
   const groups = [...new Set(shown.map(key))].sort((a, b2) => order ? order.indexOf(a) - order.indexOf(b2) : a === 'Core team' ? -1 : b2 === 'Core team' ? 1 : a.localeCompare(b2));
   const initials = (n: string) => n.replace(/,/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-  const checks = L.filter((x) => x.check).length, open = L.filter((x) => !x.ends).length;
+  const checks = L.filter((x) => x.check).length, nn = (k: CountryPerson['noEnd']) => L.filter((x) => x.noEnd === k).length;
+  // when every contract in the window ends the same day (yearly contracts), say so: the count is one renewal, not twenty surprises
+  const endDays = [...new Set(ending.map((x) => x.ends))];
   return <section class="card ev">
     <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Everyone in {name}</h2><p>Each person once — the core team and the project contracts of the same person together</p></div>
       <div class="tools ev-tools"><input class="input" type="search" placeholder="Find a person or a role" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Find a person" />
@@ -269,10 +272,12 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
         <div class="seg" role="group" aria-label="Show as">{([['cards', 'Cards'], ['list', 'List']] as const).map(([k, l]) => <button aria-pressed={mode === k} onClick={() => setMode(k)}>{l}</button>)}</div></div></div>
     <div class="ev-sum">
       <div><b>{L.length}</b><span>people</span></div>
-      <div><b>{core.length}</b><span>core team</span></div>
+      <div><b>{L.filter((x) => x.core).length}</b><span>core team</span></div>
       <div><b>{L.filter((x) => x.roles.length).length}</b><span>on projects</span></div>
-      <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><b>{ending.length}</b><span>contracts ending within 90 days{soon ? ' · showing' : ''}</span></button>
-      <div><b>{open}</b><span>open-ended</span></div>
+      <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><b>{ending.length}</b><span>contracts ending within 90 days{endDays.length === 1 ? `, all on ${date(endDays[0])}` : ''}{soon ? ' · showing' : ''}</span></button>
+      {nn('open') > 0 && <div title="Core team posts with no end date"><b>{nn('open')}</b><span>open-ended</span></div>}
+      {nn('sxb') > 0 && <div title="Staff seconded by SxB / HQ: the reports carry no contract dates for them"><b>{nn('sxb')}</b><span>SxB staff</span></div>}
+      {nn('missing') > 0 && <div title="On a project's staff list with no contract dates: add them on the project's Staff tab"><b>{nn('missing')}</b><span>dates missing</span></div>}
       {checks > 0 && <div class="ev-chk"><b>{checks}</b><span>to check</span></div>}
       <span class="ev-bar" aria-label="People by project">{projs.map((pr) => { const n = L.filter((x) => x.roles.some((r) => r.project === pr)).length; return <i style={{ flex: n, background: col(pr) }} title={`${pr}: ${n}`} />; })}</span>
     </div>
@@ -282,13 +287,13 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
           // the ring fills as the contract runs out: a full ring is a year or more left
           const left = d == null ? 1 : Math.max(0, Math.min(1, d / 365));
           return <article class={`ev-card t-${tone}${x.check ? ' chk' : ''}`} style={{ '--k': x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' } as never}>
-            <span class="ev-ring" style={{ '--p': String(left) } as never} title={x.ends ? `Contract ends ${date(x.ends)}` : 'Open-ended'}><span class="ev-av">{initials(x.name)}</span></span>
+            <span class="ev-ring" style={{ '--p': String(left) } as never} title={x.ends ? `Contract ends ${date(x.ends)}` : NO_END[x.noEnd ?? 'missing']}><span class="ev-av">{initials(x.name)}</span></span>
             <b class="ev-n">{x.name}</b>
             <small class="ev-r">{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ') || '—'}</small>
             <span class="ev-chips">{x.core && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
               {[...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g).map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
             {x.check && <em class="ev-c">{x.check}</em>}
-            <span class="ev-f">{x.ends ? <><span class="num">until {date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">open-ended</span>}</span>
+            <span class="ev-f">{x.ends ? <><span class="num">until {date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
           </article>; })}</div>
         : <ul class="ev-l">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project;
           return <li class={x.check ? 'chk' : ''}>
@@ -296,7 +301,7 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
             <span class="ev-who"><b>{x.name}</b><small>{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ')}</small>{x.check && <em>{x.check}</em>}</span>
             <span class="ev-chips">{x.core && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
               {[...new Set(x.roles.map((r) => r.project))].map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
-            <span class="ev-end">{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">open-ended</span>}</span>
+            <span class="ev-end">{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
           </li>; })}</ul>}</div>; })}
       {!shown.length && <p class="muted">No one matches.</p>}</div>
   </section>;
