@@ -1,5 +1,4 @@
 import { SourceLine } from '../ui/SourceLine';
-import { Today } from '../ui/Today';
 import { paceBand, paceTone } from '../domain/rules';
 import { staffCount, staffSplit } from '../domain/staff';
 import { OverviewCountries } from './CountryDesk';
@@ -85,7 +84,6 @@ export function Overview() {
   return (
     <>
       <Filters />
-      <div class="grid g-12" style={{ marginBottom: '16px' }}><Today P={P} /></div>
       <SourceLine P={P} />
       <section class="hero showcase" aria-label="Key figures">
         <div class="kpi">

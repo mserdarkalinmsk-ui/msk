@@ -692,10 +692,6 @@ async function page(opts) {
   await p.locator('.palette li:has-text("core team")').first().click(); await p.waitForSelector('.drawer .en');
   check(/Core team/i.test(await p.locator('.drawer .en').innerText()) && (await p.locator('.drawer h2').first().textContent()).includes('Alpha'), 'the person card shows the core team post');
   await p.click('.drawer-h button'); await p.waitForTimeout(200);
-  // what needs you now: the first page lists what is due, and a line takes you there
-  await p.goto(url + '#/overview'); await p.waitForSelector('.td li');
-  const groups = await p.locator('.td-s').count(), before = p.url(); await p.locator('.td li').first().click(); await p.waitForTimeout(400);
-  check(groups > 0 && p.url() !== before, 'what needs you now: listed on the first page, a line opens its screen');
   // every figure says where it comes from; words have their meaning on hover; any small table goes to Excel
   await p.goto(url + '#/overview'); await p.waitForSelector('.src-l');
   check(/latest report of each project/.test(await p.locator('.src-l').innerText()) && await p.locator('[data-gl][title]').count() > 0, 'the source of the figures is told, and the words of the app explained on hover');

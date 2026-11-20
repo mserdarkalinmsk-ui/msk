@@ -179,23 +179,6 @@ details.em-method[open] > summary::before { content: '▾'; }
 .en .mini td, .en .mini th { white-space: nowrap; }
 .en .mini td.wrap { white-space: normal; min-width: 220px; }
 .en-k b { font-size: 15px; }
-/* what needs you now */
-.td-n { display: flex; gap: 6px; }
-.td-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-.td-s h3 { display: flex; align-items: baseline; gap: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); margin: 0 0 6px; }
-.td-s h3 small { font-weight: 600; color: var(--ink-2); }
-.td-overdue h3 { color: var(--critical); }
-.td-s ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.td-s li { display: grid; grid-template-columns: 8px 1fr auto; gap: 10px; align-items: start; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 13px; }
-.td-s li:hover { border-color: color-mix(in srgb, var(--c1) 45%, var(--line)); }
-.td-s li i { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; background: var(--ink-3); }
-.td-s li.t-bad i { background: var(--critical); }
-.td-s li.t-warn i { background: var(--warn); }
-.td-w { display: grid; gap: 1px; min-width: 0; }
-.td-w small { color: var(--ink-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.td-d { color: var(--ink-2); font-size: 12px; white-space: nowrap; font-family: inherit; }
-.td-s .linkish { margin-top: 6px; font-size: 12.5px; }
-@media print { .td { display: none; } }
 /* words with a meaning on hover */
 [data-gl] { text-decoration: underline dotted color-mix(in srgb, var(--ink-3) 55%, transparent); text-underline-offset: 3px; cursor: help; }
 /* the floating Excel / Print of a small table */
