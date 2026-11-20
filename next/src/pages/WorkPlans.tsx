@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, get, go, updateProject, useStore } from '../data/store';
 import { enrichExtraction } from '../domain/extraction';
@@ -65,8 +66,8 @@ export function WorkPlans() {
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>Work Plan follow-up — all projects</h2><p>Current Work Plan of each project, the delivery of the previous one and whether the plan keeps pace with the activity budget left · click a row to open the project</p></div>
           <div class="tools" style={{ display: 'flex', gap: '8px' }}>
-            <label class="btn">⬆ Import follow-up table<input type="file" accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) void load(f); (e.target as HTMLInputElement).value = ''; }} /></label>
-            <button class="btn" onClick={xlsx}>⤓ Excel</button>
+            <label class="btn"><Ico n="upload" />Import follow-up table<input type="file" accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) void load(f); (e.target as HTMLInputElement).value = ''; }} /></label>
+            <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button>
             <button class="btn" title="One-page summary for the Head of Operations: every project's Work Plan status, delivery, the issues and the FOMA notes (Word)" onClick={() => {
               const e = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
               const fill = (l: string) => (l === 'serious' ? 'F8D7DA' : l === 'warning' ? 'FFF3CD' : 'D4EDDA');
@@ -75,12 +76,12 @@ export function WorkPlans() {
                 <table><thead><tr><th>Project</th><th>Work Plan</th><th>Planned</th><th>Previous WP delivered</th><th>Activity used / time</th><th>Left after WP</th><th>Status</th></tr></thead><tbody>${R.map((r) => `<tr><td>${e(`${r.p.bh ? `${r.p.bh} · ` : ''}${r.p.name}`)}</td><td>${e(wpName(r.wp))}<br/>${e(r.wp.from ? `${date(r.wp.from)} – ${date(r.wp.to)}` : '')}</td><td class="r">${e(full(r.wp.planned))}</td><td class="r">${r.dPct == null ? '—' : pct(r.dPct)}</td><td class="r">${r.hasReport ? `${pct(r.V.used)} / ${pct(r.V.timeUsed)}` : '—'}</td><td class="r">${r.hasReport ? e(full(r.f.remaining)) : '—'}</td><td data-fill="${fill(r.V.level)}" class="c"><b>${e(r.V.label)}</b></td></tr>`).join('')}</tbody></table>
                 ${R.map((r) => `<h2>${e(`${r.p.bh ? `${r.p.bh} · ` : ''}${r.p.name} — ${wpName(r.wp)} · ${r.V.label}`)}</h2>${r.V.flags.length ? `<ul>${r.V.flags.map((x) => `<li>${e(x)}</li>`).join('')}</ul>` : '<p>On track.</p>'}${r.wp.notes ? `<h3>FOMA notes</h3>${r.wp.notes.split('\n').map((x) => `<p>${e(x)}</p>`).join('')}` : ''}${r.wp.hoo ? `<h3>Head of Operations</h3><p>${e(r.wp.hoo)}</p>` : ''}`).join('')}`;
               downloadDocx(`WP-summary-${today}.docx`, d, 'Work Plan follow-up', [s.ledger.brand?.logo, s.ledger.brand?.logo2]);
-            }}>⬇ Summary (Word)</button>
+            }}><Ico n="download" />Summary (Word)</button>
             <button class="btn primary" title="Every project's current follow-up in the FOMA table layout, one sheet per project" onClick={() => {
               if (!R.length) return;
               const used = new Set<string>();
               download(`WP-follow-up-all-projects-${today}.xlsx`, R.map((r) => { const sh = wpSheet(r.p, r.f); let n = `${r.p.bh ? `BH${r.p.bh.replace(/\D/g, '')}` : r.p.code} - ${wpName(r.wp)}`.slice(0, 31).replace(/[\\/?*:[\]]/g, '-'); while (used.has(n)) n = n.slice(0, 29) + Math.random().toString(36).slice(2, 4); used.add(n); return { ...sh, name: n }; }));
-            }}>⬇ All follow-ups</button></div></div>
+            }}><Ico n="download" />All follow-ups</button></div></div>
         {prev && <div class="wp-sec" style={{ paddingBottom: '12px' }}><h3>{prev.file}: {prev.items.length} WP sheets (2023–2026 layouts) · {prev.items.filter((i) => i.p).length} matched to a project</h3>
           {(() => { const C = tableChecks(prev.items); return C.length ? <ul class="irv-l" style={{ padding: '4px 0 12px' }}>{C.map((c) => <li><span class="badge warning">check the table</span>{c.text}</li>)}</ul> : null; })()}
           <table class="wp-t"><thead><tr><th>Sheet</th><th>WP</th><th>Period</th><th class="num">Planned</th><th>Previous WP (C · D · E)</th><th>Project</th></tr></thead>

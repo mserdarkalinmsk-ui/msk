@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { filtered, go, useStore } from '../data/store';
 import { capacity, endOf, gapDrivers, HEAD_LABEL, portfolioWalk, trendOf, type CapacityVerdict } from '../domain/analysis';
 import { asOf, elapsed, money } from '../domain/calc';
@@ -57,7 +58,7 @@ export function Analysis() {
       </section>
 
       <section class="card">
-        <div class="card-h"><div><h2>Why behind plan — heading by heading</h2><p>Spent against budget × time elapsed for each heading; red to the left = behind, blue to the right = ahead · all bars on one scale ({short(scale)} = full half)</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <div class="card-h"><div><h2>Why behind plan — heading by heading</h2><p>Spent against budget × time elapsed for each heading; red to the left = behind, blue to the right = ahead · all bars on one scale ({short(scale)} = full half)</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="card-b table-scroll"><table class="mini an-t">
           <thead><tr><th>Project</th><th class="r">Planned to date</th><th class="r">Spent</th><th class="r">Gap</th>{heads.map((h) => <th class="c">{h} {HEAD_LABEL[h] ?? ''}</th>)}</tr></thead>
           <tbody>{rows.map((r) => <tr class="click" onClick={() => go(`project/${r.p.id}/statement`)}>

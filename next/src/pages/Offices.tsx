@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { BudgetBody } from './Budget';
 import { MapView, shapeFor, type MapMode } from '../ui/MapView';
@@ -128,7 +129,7 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div class="seg"><button aria-pressed={fund === 'both'} onClick={() => setFund('both')}>Both</button><button aria-pressed={fund === 'ob'} onClick={() => setFund('ob')}>Ordinary Budget</button><button aria-pressed={fund === 'ls'} onClick={() => setFund('ls')}>LS & Pagoda</button></div>
           <select class="select" aria-label="Report" value={r.id} onChange={(e) => setRid((e.target as HTMLSelectElement).value)}>{[...o.reports].reverse().map((x) => <option value={x.id}>Situation {date(x.date)}{x.hasPlan ? '' : ' (system export)'}</option>)}</select>
-          <button class="btn" onClick={() => set({ drawer: { kind: 'import' } })}>+ Import</button><button class="btn" onClick={xlsx}>⤓ Excel</button>
+          <button class="btn" onClick={() => set({ drawer: { kind: 'import' } })}>+ Import</button><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button>
           <button class="btn ghost" title="Remove this report" onClick={() => { if (confirm('Remove this office report?')) deleteOfficeReport(o.id, r.id); }}>✕</button>
         </div>
       </div>
@@ -187,7 +188,7 @@ function OfficeDetail({ o, rid, setRid, line, setLine, openOnly, setOpenOnly, fu
 
 function NoteBadge({ n, onEdit }: { n: OfficeNote; onEdit?: () => void }) {
   return <span class={`of-note-b${n.resolved ? ' ok' : ''}`} onClick={(e) => { if (onEdit) { e.stopPropagation(); onEdit(); } }} title={onEdit ? 'Edit note' : n.text}>
-    {n.resolved ? '✓ corrected' : '✎ note'}{n.moveTo ? ` → line ${n.moveTo}` : ''}{n.text ? `: ${n.text}` : ''}</span>;
+    {n.resolved ? '✓ corrected' : <><Ico n="edit" size={12} />note</>}{n.moveTo ? ` → line ${n.moveTo}` : ''}{n.text ? `: ${n.text}` : ''}</span>;
 }
 
 /** Explains a line's problem: free text, the line it really belongs to, and whether it has been corrected. */
@@ -229,7 +230,7 @@ function TransferCard({ o, r, skip }: { o: Office; r: Office['reports'][number];
   let el: HTMLElement | null = null;
   if (!T.needs.length) return <section class="card span-12"><div class="card-b"><b>No line is short after the forecast</b> — no transfer needed.</div></section>;
   const word = () => { if (el) void downloadDocx(`${o.name.replace(/\s+/g, '-')}-budget-transfer-${r.date}.docx`, el, `${o.name} budget transfer request`, [], { letter: true }); };
-  return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Transfer proposal</h2><p>Room left on other lines after their own forecast and pace covers the shortages; the rest is the additional budget to request · lines marked corrected are left out</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={word}>⤓ Word draft</button></div>
+  return <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Transfer proposal</h2><p>Room left on other lines after their own forecast and pace covers the shortages; the rest is the additional budget to request · lines marked corrected are left out</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={word}><Ico n="download" />Word draft</button></div>
     <div class="card-b" ref={(x) => { el = x; }}>
       <h3 class="of-doc-t">{o.name} — Ordinary Budget {r.year}: budget transfer request</h3>
       <p>Based on the budget situation of {date(r.date)}, {T.needs.length} budget line{T.needs.length > 1 ? 's' : ''} of the {o.name} Ordinary Budget {r.year} will be short by <b>{full(short)}</b> after the foreseen expenditure to year end. {T.transfers.length ? <>We propose to cover <b>{full(short - T.request)}</b> by transfers from lines with remaining room{T.request > 0.5 ? <>, and request an additional <b>{full(T.request)}</b></> : ''}.</> : <>No line has room left: an additional <b>{full(T.request)}</b> is requested.</>}</p>

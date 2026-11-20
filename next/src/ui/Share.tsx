@@ -1,3 +1,5 @@
+import { MON } from '../domain/dt';
+import { Ico } from './Ico';
 import { useState } from 'preact/hooks';
 import { EMBED, READONLY, SOURCE, useStore } from '../data/store';
 import type { Ledger } from '../domain/types';
@@ -76,7 +78,7 @@ export function SharePanel({ close }: { close: () => void }) {
         </section>
         <p class="muted" style={{ margin: 0, fontSize: '13px' }}>⚠ The file contains financial data: share it only through channels approved for it.</p>
       </div>
-      <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!P.length || pwBad} onClick={make}>⤓ Save shareable file</button></div>
+      <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!P.length || pwBad} onClick={make}><Ico n="download" />Save shareable file</button></div>
     </>
   );
 }
@@ -88,7 +90,7 @@ export function SharedBanner() {
   return (
     <div class="bk-banner sh-banner no-print" role="status">
       <span class="bk-i">⇪</span>
-      <span><b>Shared copy</b>{EMBED.from ? ` from ${EMBED.from}` : ''} · {EMBED.scope} · data as of {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+      <span><b>Shared copy</b>{EMBED.from ? ` from ${EMBED.from}` : ''} · {EMBED.scope} · data as of {`${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`} {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
         {EMBED.audience === 'donor' ? ' · donor version' : ''}{EMBED.enc ? ' · password-protected' : ''}{' · '}{READONLY ? 'view only' : 'editable copy — your changes stay in this browser'}</span>
     </div>
   );

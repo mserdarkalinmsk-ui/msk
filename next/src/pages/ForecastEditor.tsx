@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from '../ui/exportGate';
 import { useState } from 'preact/hooks';
@@ -99,12 +100,12 @@ export function ForecastEditor({ p }: { p: Project }) {
               {R.lines.filter((l) => !l.staff && !l.cb && (l.budget || l.code === (d.auto?.line ?? '5.7'))).map((l) => <option value={l.code}>{l.code} {l.description.slice(0, 32)}</option>)}
             </select></label>}
           {!twelve && !plug && <button class="btn" title="Puts the difference with the budget on 5.7 once (guidelines, step 8)" onClick={() => save(balanceOn(p, TODAY, d))}>⚖ Balance on 5.7</button>}
-          <button class="btn" title="Working file for the project team: the rounded proposal and variation columns hidden (guidelines, step 7)" onClick={() => xlsx('team')}>⤓ Excel for the project team</button>
-          <button class="btn" title="Every sheet and column visible — the finance working file" onClick={() => xlsx('working')}>⤓ Working file</button>
+          <button class="btn" title="Working file for the project team: the rounded proposal and variation columns hidden (guidelines, step 7)" onClick={() => xlsx('team')}><Ico n="download" />Excel for the project team</button>
+          <button class="btn" title="Every sheet and column visible — the finance working file" onClick={() => xlsx('working')}><Ico n="download" />Working file</button>
           {!twelve && <button class="btn primary" title="Donor version (guidelines, steps 9–10): Budget presentation and variation with values only, the forecast sheet hidden, named as a revised budget proposal" onClick={() => {
             if (d.opt.programme === 'JP' && !d.opt.changeNo && !confirm(`No ${opt.change} number yet (PMM → Documents → Contract, or the RFO). Download without it?`)) return;
             xlsx('donor');
-          }}>⤓ Donor version</button>}
+          }}><Ico n="download" />Donor version</button>}
           <button class="btn ghost danger" onClick={() => { if (confirm('Clear every planned unit and rate of this forecast?')) save({ opt: d.opt, lines: {}, rates: d.rates }); }}>Clear</button>
           <label class="fe-all"><input type="checkbox" checked={all} onChange={() => setAll(!all)} /> All template lines</label>
         </div>
@@ -129,13 +130,13 @@ export function ForecastEditor({ p }: { p: Project }) {
 
       <div class="fe-dl" role="toolbar" aria-label="Download the forecast">
         <span><b>Download</b> · {d.opt.programme} · {FORECAST_KINDS[d.opt.kind].label}{opt.change ? ` · ${opt.change} n°${d.opt.changeNo ?? '…'}` : ''}</span>
-        <button class="btn" title="Working file for the project team: the rounded proposal and variation columns hidden (guidelines, step 7)" onClick={() => xlsx('team')}>⤓ For the project team</button>
-        <button class="btn" title="Every sheet and column visible" onClick={() => xlsx('working')}>⤓ Working file</button>
+        <button class="btn" title="Working file for the project team: the rounded proposal and variation columns hidden (guidelines, step 7)" onClick={() => xlsx('team')}><Ico n="download" />For the project team</button>
+        <button class="btn" title="Every sheet and column visible" onClick={() => xlsx('working')}><Ico n="download" />Working file</button>
         {!twelve && <button class="btn primary" title="Budget presentation and variation with values only, the forecast sheet hidden (guidelines, steps 9–10)" onClick={() => {
           if (d.opt.programme === 'JP' && !d.opt.changeNo && !confirm(`No ${opt.change} number yet (PMM → Documents → Contract, or the RFO). Download without it?`)) return;
           xlsx('donor');
-        }}>⤓ Donor version</button>}
-        <button class="btn" title="Revision note (Word / PDF) and the interim financial report (Excel), with your logos" onClick={() => setNote(true)}>📄 Reports</button>
+        }}><Ico n="download" />Donor version</button>}
+        <button class="btn" title="Revision note (Word / PDF) and the interim financial report (Excel), with your logos" onClick={() => setNote(true)}><Ico n="doc" />Reports</button>
         {note && <ForecastNote p={p} d={d} opt={opt} close={() => setNote(false)} />}
         {bad.length > 0 && <span class="fe-dl-warn" title={bad.join('\n')}>⚠ {bad.length} unit{bad.length > 1 ? 's' : ''} to check</span>}
       </div>

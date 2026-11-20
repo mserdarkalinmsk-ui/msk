@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { flexOf, pctOf } from '../domain/flex';
 import { plabel } from '../domain/label';
@@ -34,7 +35,7 @@ export function MonthsAhead({ p }: { p: Project }) {
         <div class="tools" style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span class="muted">Activities slip</span><div class="seg">{SLIPS.map((s) => <button aria-pressed={slip === s} onClick={() => setSlip(s)}>{s ? `${s} mo` : 'none'}</button>)}</div>
           <span class="muted">Pace</span><div class="seg">{PACES.map((v) => <button aria-pressed={pace === v} onClick={() => setPace(v)}>{v === 1 ? 'as so far' : `${v > 1 ? '+' : '−'}${Math.round(Math.abs(v - 1) * 100)}%`}</button>)}</div>
-          <button class="btn" onClick={xlsx}>⤓ Excel</button>
+          <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button>
         </div>
       </div>
       <div class="card-b">

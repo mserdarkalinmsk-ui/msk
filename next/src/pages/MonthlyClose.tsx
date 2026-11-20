@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useMemo, useState } from 'preact/hooks';
 import { filtered, go, reopenClose, saveClose, set, useStore } from '../data/store';
 import { closeDrift, closeRecord, closeRows, generalDecisions, type CloseRecord, type CloseRow, type CloseStatus } from '../domain/close';
@@ -102,7 +103,7 @@ export function MonthlyClose() {
         <div style={{ flex: 1 }}><h2>Download the pack and close the month</h2>
           <p class="muted">One ZIP: the close summary (every project, the decisions, the problems) and the workbook of each project that is not blocked, each with its source report in the file properties. Closing records the figures as they stand today and locks the reports behind them — next month shows the changes since.</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-            <button class="btn primary" disabled={busy || !rows.length} onClick={pack}>{busy ? 'Preparing…' : `⤓ Close pack · ${rows.length - n('blocked')} project${rows.length - n('blocked') === 1 ? '' : 's'}`}</button>
+            <button class="btn primary" disabled={busy || !rows.length} onClick={pack}>{busy ? 'Preparing…' : <><Ico n="download" />{`Close pack · ${rows.length - n('blocked')} project${rows.length - n('blocked') === 1 ? '' : 's'}`}</>}</button>
             <button class="btn" disabled={!rows.length} onClick={() => { if (!n('blocked') || confirm(`${n('blocked')} project${n('blocked') > 1 ? 's are' : ' is'} blocked. Close ${MONTH(month)} anyway? Their figures are recorded as they are.`)) saveClose(closeRecord(rows, TODAY)); }}>{done ? `Close ${MONTH(month)} again` : `Close and lock ${MONTH(month)}`}</button>
           </div>
           {locked && <p class="mc-lock"><Lock /> {MONTH(month)} is closed: the report behind each project's figures is locked. Changing or deleting one asks for the admin and shows up above as “changed after the close”.</p>}

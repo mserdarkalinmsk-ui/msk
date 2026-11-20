@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { moveTab, orderTabs, readTabOrder, TAB_ORDER } from '../ui/tabOrder';
 import { POReview, poToCheck } from './POReview';
 import { capacity, endOf } from '../domain/analysis';
@@ -97,11 +98,11 @@ export function ProjectPage({ id, sub }: { id: string; sub?: string }) {
           <button class="btn" onClick={() => set({ drawer: { kind: 'project', id: p.id } })}>Edit details</button>
           {validUrl(p.pmmUrl) && <a class="btn" href={validUrl(p.pmmUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`Open PMM for ${p.name}`}>PMM ↗</a>}
           <span class="ph-dl" role="group" aria-label="Downloads">
-          <button class="btn ghost" title="The project on one A4 page: figures, headings, what needs attention and the Work Plan" onClick={() => go(`brief/${p.id}`)}>⎙ One-page brief</button>
-          <button class="btn ghost" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => exportOk(p, 'the Excel') && download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}>⤓ Excel</button>
-          <button class="btn ghost" title="Forecast request in the CoE templates: choose JP or VC and the template (revision with payment, 12-month, revision and extension, extension with details). Load it back through Import report." onClick={() => setFc(true)}>⤓ Forecast Excel</button>
-          <button class="btn ghost" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => exportOk(p, 'the audit pack') && download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}>⤓ Audit pack</button>
-          <button class="btn ghost" onClick={() => exportOk(p, 'the PDF') && print()}>⎙ PDF</button>
+          <button class="btn ghost" title="The project on one A4 page: figures, headings, what needs attention and the Work Plan" onClick={() => go(`brief/${p.id}`)}><Ico n="print" />One-page brief</button>
+          <button class="btn ghost" title="Project summary, lines, staff, risks and activities as Excel" onClick={() => exportOk(p, 'the Excel') && download(`${p.code}-${TODAY.toISOString().slice(0, 10)}.xlsx`, projectSheets(p, TODAY))}><Ico n="download" />Excel</button>
+          <button class="btn ghost" title="Forecast request in the CoE templates: choose JP or VC and the template (revision with payment, 12-month, revision and extension, extension with details). Load it back through Import report." onClick={() => setFc(true)}><Ico n="download" />Forecast Excel</button>
+          <button class="btn ghost" title="Every budget line with its purchase orders, the part not covered by POs, reports and documents — ready for the auditors" onClick={() => exportOk(p, 'the audit pack') && download(`${p.code}-audit-pack-${TODAY.toISOString().slice(0, 10)}.xlsx`, auditSheets(p, TODAY))}><Ico n="download" />Audit pack</button>
+          <button class="btn ghost" onClick={() => exportOk(p, 'the PDF') && print()}><Ico n="print" />PDF</button>
           </span>
           <button class="btn ghost danger ph-del" onClick={() => { if (confirm(`Delete ${p.code}? You can undo right after.`)) { deleteProjects([p.id]); go('projects'); } }}>Delete</button>
         </div>

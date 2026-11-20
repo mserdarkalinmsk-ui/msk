@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { flexOf, nearOf, pctOf } from '../domain/flex';
 import { lineTransfers } from '../domain/transfers';
 import { transferLetterDocx } from '../ui/TransferLetter';
@@ -67,8 +68,8 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
         <label>From <input type="date" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} /></label>
         <label>To <input type="date" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} /></label>
         <span class="grow" />
-        <button class="btn" onClick={() => save(true)}>⬇ Excel for this range</button>
-        <button class="btn primary" onClick={() => save(false)}>⬇ Organised report (Excel)</button>
+        <button class="btn" onClick={() => save(true)}><Ico n="download" />Excel for this range</button>
+        <button class="btn primary" onClick={() => save(false)}><Ico n="download" />Organised report (Excel)</button>
       </div>
       <div class="range-sum">
         <div><span>Spent in range</span><b class="num">{full(R.total)}</b></div>
@@ -96,7 +97,7 @@ function Checks({ F, onSave }: { F: Finding[]; onSave: () => void }) {
   const n = F.filter((f) => f.level !== 'info').length;
   return (
     <div class="ledger">
-      <div class="range-bar"><p class="muted" style={{ margin: 0 }}>{n ? `${n} kinds of entry to check` : 'No entry needs a second look'} · each rule can be checked line by line in the source file. Purchase orders split over several lines are not flagged.</p><span class="grow" /><button class="btn primary" onClick={onSave}>⬇ Organised report (Excel)</button></div>
+      <div class="range-bar"><p class="muted" style={{ margin: 0 }}>{n ? `${n} kinds of entry to check` : 'No entry needs a second look'} · each rule can be checked line by line in the source file. Purchase orders split over several lines are not flagged.</p><span class="grow" /><button class="btn primary" onClick={onSave}><Ico n="download" />Organised report (Excel)</button></div>
       <ul class="findings">{F.map((f, i) => (
         <li class={f.level}>
           <button class="f-h" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
@@ -132,7 +133,7 @@ function BudgetCompare({ C, from, to, hasBudget, p }: { C: ReturnType<typeof com
       {over.length ? <div class={`rev-callout ${addendum ? 'serious' : 'warning'}`}>
         <div><b>{addendum ? 'Addendum needed' : 'Notification needed'}</b> — {over.length} heading{over.length > 1 ? 's' : ''} above the approved budget by {full(need)}{spare.length ? `; ${full(Math.min(need, -spare.reduce((a, h) => a + h.diff, 0)))} can come from ${spare.map((h) => `${h.h}. ${HEAD[h.h] ?? ''}`).join(', ')}` : ''}.
           {moves.length ? <ul>{moves.map((m) => <li>{full(m.amount)} from {m.from}. {HEAD[m.from] ?? ''} → {m.to}. {HEAD[m.to] ?? ''}</li>)}</ul> : null}</div>
-        <div class="rev-actions">{(() => { const T = lineTransfers(C.lines, fx); return T.moves.length ? <button class="btn primary" title={T.beyond ? `The transfers take a heading beyond ${FX}% — an addendum, not a notification; the letter is still drafted` : 'Every line back within its budget: from the same heading first, then from the lines with the most left (Word)'} onClick={() => transferLetterDocx(p, T, fx, get().ledger)}>⬇ {T.beyond ? 'Draft letter (addendum needed)' : 'Notification letter (Word)'}</button> : null; })()}<button class="btn" onClick={proposal}>⬇ Revision proposal</button><button class="btn" title="Forecast and budget revision in the CoE template, with the notification letter" onClick={() => go(`project/${p.id}/forecast`)}>Prepare the {addendum ? 'addendum' : 'notification'} →</button></div>
+        <div class="rev-actions">{(() => { const T = lineTransfers(C.lines, fx); return T.moves.length ? <button class="btn primary" title={T.beyond ? `The transfers take a heading beyond ${FX}% — an addendum, not a notification; the letter is still drafted` : 'Every line back within its budget: from the same heading first, then from the lines with the most left (Word)'} onClick={() => transferLetterDocx(p, T, fx, get().ledger)}><Ico n="download" />{T.beyond ? 'Draft letter (addendum needed)' : 'Notification letter (Word)'}</button> : null; })()}<button class="btn" onClick={proposal}><Ico n="download" />Revision proposal</button><button class="btn" title="Forecast and budget revision in the CoE template, with the notification letter" onClick={() => go(`project/${p.id}/forecast`)}>Prepare the {addendum ? 'addendum' : 'notification'} →</button></div>
       </div> : null}
       <h3 style={{ margin: '4px 0 0' }}>By heading — {FX}% flexibility</h3>
       <table class="range-lines"><thead><tr><th>Heading</th><th class="r">Approved budget</th><th class="r">Spent + committed</th><th class="r">Difference</th><th class="r">%</th><th>Status</th></tr></thead>
@@ -216,7 +217,7 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   };
   return (
     <>
-      <div class="range-sum"><div><span>Budget (incl. 7%)</span><b class="num">{full(db + ab)}</b></div>{years.map((y) => <div><span>{yn(y)} · spent<small style={{ display: 'block', fontSize: '11px' }}>{yd(y)}</small></span><b class="num">{full(r2(sum(all, (l) => ya(l, y)) * 1.07))}</b></div>)}<div><span>Total spent (incl. 7%)</span><b class="num">{full(r2(da * 1.07))}</b></div><div><span>Spent + committed (incl. 7%)</span><b class="num">{full(r2(ds * 1.07))}</b></div><span class="grow" style={{ flex: 1 }} /><button class="btn primary" onClick={xlsx}>⬇ Excel</button></div>
+      <div class="range-sum"><div><span>Budget (incl. 7%)</span><b class="num">{full(db + ab)}</b></div>{years.map((y) => <div><span>{yn(y)} · spent<small style={{ display: 'block', fontSize: '11px' }}>{yd(y)}</small></span><b class="num">{full(r2(sum(all, (l) => ya(l, y)) * 1.07))}</b></div>)}<div><span>Total spent (incl. 7%)</span><b class="num">{full(r2(da * 1.07))}</b></div><div><span>Spent + committed (incl. 7%)</span><b class="num">{full(r2(ds * 1.07))}</b></div><span class="grow" style={{ flex: 1 }} /><button class="btn primary" onClick={xlsx}><Ico n="download" />Excel</button></div>
       <Chart height={260} label="Spending by year and heading" option={(t) => ({
         ...base(t), grid: { left: 8, right: 16, top: 34, bottom: 8, containLabel: true },
         legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: t.ink2, fontSize: 11 } },

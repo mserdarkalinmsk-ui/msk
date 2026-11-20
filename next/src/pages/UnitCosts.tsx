@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { unitCosts, type UnitGroup, type UnitPoint } from '../domain/unitcost';
@@ -57,7 +58,7 @@ export function UnitCosts() {
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <select class="select" value={h} onChange={(e) => setH((e.target as HTMLSelectElement).value)} aria-label="Heading"><option value="">All headings</option>{heads.map((x) => <option>{x}</option>)}</select>
             <div class="seg"><button aria-pressed={!only} onClick={() => setOnly(false)}>All</button><button aria-pressed={only} onClick={() => setOnly(true)}>Outliers ({G.filter((g) => g.flags).length})</button></div>
-            <button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
+            <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
         <div class="uc-leg">{ids.map((id) => { const p = P.find((x) => x.id === id)!; return <span><i style={{ background: color(id) }} />{plabel(p)}</span>; })}</div>
         <div class="card-b uc-list">{shown.map((g) => (
           <article class={`uc-g${g.flags ? ' flag' : ''}`}>

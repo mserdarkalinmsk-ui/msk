@@ -1,3 +1,4 @@
+import { Ico } from './Ico';
 import { exportOk } from './exportGate';
 import { useRef, useState } from 'preact/hooks';
 import { setBrand, updateProject, useStore } from '../data/store';
@@ -75,7 +76,7 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
             {rk === 'final' && <label class="fe-all"><input type="checkbox" checked={withOrig} onChange={() => setWithOrig(!withOrig)} /> After a notification / addendum: show the contractual budget beside the revised one</label>}
             {rk === 'final' && opt.programme === 'JP' && !(p.payments?.length) && <span class="fe-over" style={{ margin: 0 }}>No payments recorded — add them in Reports → Cash plan for the payments table.</span>}
             <div class="fn-sign">{(['sign1', 'sign2'] as const).map((k, i) => <textarea rows={4} placeholder={i ? 'Right signature: name\ntitle\nunit\norganisation' : 'Left signature: name\ntitle\nunit\norganisation'} value={brand?.[k] ?? ''} onChange={(e) => setBrand({ ...(brand ?? {}), [k]: (e.target as HTMLTextAreaElement).value || undefined })} />)}</div>
-            <button class="btn" onClick={ifr}>⤓ {rk === 'interim' ? 'Interim' : 'Final'} financial report</button>
+            <button class="btn" onClick={ifr}><Ico n="download" />{rk === 'interim' ? 'Interim' : 'Final'} financial report</button>
           </div>
 
           <div class="seg fn-dk" style={{ justifySelf: 'start' }}><button aria-pressed={dk === 'letter'} onClick={() => setDk('letter')}>Notification letter</button><button aria-pressed={dk === 'note'} onClick={() => setDk('note')}>Revision note</button></div>
@@ -122,8 +123,8 @@ export function ForecastNote({ p, d, opt, close }: { p: Project; d: ForecastDraf
         </div>
         <div class="fe-dl" style={{ position: 'sticky', bottom: 0 }}>
           <span class="muted">{base}</span>
-          <button class="btn" onClick={pdf}>⎙ PDF</button>
-          <button class="btn primary" onClick={word}>⤓ Word</button>
+          <button class="btn" onClick={pdf}><Ico n="print" />PDF</button>
+          <button class="btn primary" onClick={word}><Ico n="download" />Word</button>
         </div>
       </div>
     </>

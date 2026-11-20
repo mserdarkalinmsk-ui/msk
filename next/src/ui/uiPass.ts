@@ -1,3 +1,4 @@
+import { dayMonYear } from '../domain/dt';
 /* Small finishing pass run with the table tidy on every change of the page: what a page writes plainly gets the
    house treatment, so every screen behaves the same without each page repeating it.
    - Download buttons (⤓ ⬇ ⎙ 🖨) that are not the page's main action are quiet (data-dl).
@@ -6,13 +7,12 @@
      opened with Enter or Space. */
 const DL = /^\s*(⤓|⬇|⎙|🖨|↓)/u;
 const ISO = /\b(20\d\d)-(\d\d)-(\d\d)\b/g;
-const df = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 /** Dates written in data as 2026-10-15 (report names, notes, file facts) read as every other date on screen. */
 function isoText(root: ParentNode) {
   const el = root instanceof Element ? root : (root as Document).body; if (!el) return;
   const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.nodeValue && /20\d\d-\d\d-\d\d/.test(n.nodeValue) && !n.parentElement?.closest('input, textarea, code, pre, [contenteditable], [data-raw], .side') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT) });
   const hit: Text[] = []; let n: Node | null; while ((n = w.nextNode())) hit.push(n as Text);
-  for (const t of hit) t.nodeValue = t.nodeValue!.replace(ISO, (m) => { const d = new Date(m + 'T00:00:00Z'); return isNaN(d.getTime()) ? m : df.format(d); });
+  for (const t of hit) t.nodeValue = t.nodeValue!.replace(ISO, (m) => { const d = new Date(m + 'T00:00:00Z'); return isNaN(d.getTime()) ? m : dayMonYear(d); });
 }
 
 export function uiPass(root: ParentNode) {

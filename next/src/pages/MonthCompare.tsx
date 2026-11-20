@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { HEADINGS, compareReports, reportsByDate } from '../domain/calc';
 import type { Project, ReportingPeriod } from '../domain/types';
@@ -44,7 +45,7 @@ export function MonthCompare({ projects }: { projects: Project[] }) {
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
           <select class="select" value={a} onChange={(e) => setA((e.target as HTMLSelectElement).value)} aria-label="From month">{months.map((m) => <option value={m}>{month(m + '-01')}</option>)}</select><span class="muted">→</span>
           <select class="select" value={b} onChange={(e) => setB((e.target as HTMLSelectElement).value)} aria-label="To month">{months.map((m) => <option value={m}>{month(m + '-01')}</option>)}</select>
-          <button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
+          <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
       <div class="card-b table-scroll">
         {a >= b ? <p class="muted">Choose a later “to” month.</p> : <table class="mini mc-t">
           <thead><tr><th>Project</th><th class="r">Spent added</th><th class="r">Committed change</th><th class="r">Budget change</th>{H.map((h) => <th class="r" title={HEADINGS[h]}>{h}. {SHORT[h] ?? HEADINGS[h]}</th>)}</tr></thead>

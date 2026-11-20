@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { exportOk } from '../ui/exportGate';
 import { ending } from '../domain/cash';
 import { useState } from 'preact/hooks';
@@ -77,7 +78,7 @@ export function Studio() {
         <div class="seg studio-det" role="group" aria-label="Budget detail">{([['headings', 'Headings'], ['lines', '+ lines'], ['orders', '+ POs']] as const).map(([k, l]) => <button aria-pressed={detail === k} onClick={() => setDetail(k)}>{l}</button>)}</div>
         <h3>Sections</h3>
         {SECTIONS.map(([k, l]) => <label class="studio-ck"><input type="checkbox" checked={isOn(k)} onChange={() => toggle(k)} />{l}</label>)}
-        <div class="studio-b"><button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={docx}>⤓ Word</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+        <div class="studio-b"><button class="btn primary" onClick={() => print()}><Ico n="print" />PDF</button><button class="btn" onClick={docx}><Ico n="download" />Word</button><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
         <p class="muted" style={{ fontSize: '12px', margin: '6px 0 0' }}>Word gives an editable donor report draft: complete the variance explanations here or in Word.</p>
       </aside>
       <article class="studio-doc">
@@ -344,8 +345,8 @@ export function Compare({ only }: { only?: boolean } = {}) {
         <div class="seg"><button aria-pressed={group === 'overall'} onClick={() => { setGroup('overall'); keep('pl-em-group', 'overall'); }}>Overall</button><button aria-pressed={group === 'country'} onClick={() => { setGroup('country'); keep('pl-em-group', 'country'); }}>By country</button></div>
         <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); keep('pl-em-sort', v); }}>
           <option value="perf">Sort: Performance</option><option value="scp">Sort: S&C vs planned</option><option value="amount">Sort: Project amount</option><option value="title">Sort: Title</option><option value="end">Sort: End date</option><option value="bh">Sort: BH</option></select>
-        <label class="btn" title="Drop this month's report workbooks for all projects">⤒ Monthly update<input type="file" multiple accept=".xlsx,.xlsm,.pdf,.docx" hidden onChange={(e) => { const f = [...((e.target as HTMLInputElement).files ?? [])]; (e.target as HTMLInputElement).value = ''; if (f.length) set({ drawer: { kind: 'smart-import', files: f } }); }} /></label>
-        <button class="btn primary" onClick={() => print()}>⎙ PDF</button><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+        <label class="btn" title="Drop this month's report workbooks for all projects"><Ico n="upload" />Monthly update<input type="file" multiple accept=".xlsx,.xlsm,.pdf,.docx" hidden onChange={(e) => { const f = [...((e.target as HTMLInputElement).files ?? [])]; (e.target as HTMLInputElement).value = ''; if (f.length) set({ drawer: { kind: 'smart-import', files: f } }); }} /></label>
+        <button class="btn primary" onClick={() => print()}><Ico n="print" />PDF</button><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
       <div class="gauges">
         <Gauge value={tp} label="Spent vs planned" sub={`${n0(T.s)} of ${n0(T.pl)} planned`} />
         <Gauge value={tsc} label="S&C vs planned" sub="staff commitments excluded" />

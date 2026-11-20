@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { rules } from '../domain/rules';
 import { outcome } from '../domain/insights';
 import { useState } from 'preact/hooks';
@@ -103,7 +104,7 @@ export function Outlook() {
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
         <section class="card span-12">
-          <div class="card-h"><div><h2>Where each project ends at its current pace</h2><p>Spent, committed and what the rest of the period adds at each heading's monthly spending so far · green band = 85–100% of the budget · click a bar to open the project</p></div><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+          <div class="card-h"><div><h2>Where each project ends at its current pace</h2><p>Spent, committed and what the rest of the period adds at each heading's monthly spending so far · green band = 85–100% of the budget · click a bar to open the project</p></div><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
           <div class="card-b"><Chart height={O.length * 40 + 80} label="Projected use of the budget at the end date" onClick={(e) => e.dataIndex != null && openProject(O[e.dataIndex].p.id, 'summary')} option={(t) => barsOption(t, O)} /></div>
         </section>
         <section class="card span-12">

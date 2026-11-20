@@ -1,3 +1,5 @@
+import { MON } from '../domain/dt';
+import { Ico, type IcoName } from '../ui/Ico';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
@@ -40,9 +42,9 @@ const KIND_LABEL: Record<Ev['kind'], string> = { report: 'Report due', contract:
 const open = (p: Project, slug = '') => go(`project/${p.id}${slug ? '/' + slug : ''}`);
 
 /** One coloured tile; a click opens its tab. */
-function Tile({ k, color, icon, label, value, sub, onClick }: { k: string; color: string; icon: string; label: string; value: ComponentChildren; sub: ComponentChildren; onClick?: () => void }) {
+function Tile({ k, color, icon, label, value, sub, onClick }: { k: string; color: string; icon: IcoName; label: string; value: ComponentChildren; sub: ComponentChildren; onClick?: () => void }) {
   return <button class={`po-k cd-k cd-${k}`} style={{ '--k': color } as never} onClick={onClick}>
-    <span class="po-k-h"><i aria-hidden="true">{icon}</i>{label}</span><b>{value}</b><em>{sub}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></button>;
+    <span class="po-k-h"><i aria-hidden="true"><Ico n={icon} size={14} /></i>{label}</span><b>{value}</b><em>{sub}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></button>;
 }
 
 export function CountryOverview({ name, cid, P, offices, setTab }: { name: string; cid: string; P: Project[]; offices: Office[]; setTab: (t: DeskTab) => void }) {
@@ -69,26 +71,26 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
     <section class="bud2" aria-label={`Budgets in ${name}`}>
       <button class="bud bud-ob" onClick={() => setTab('Office budget')}>
         <span class="bud-h">Office budget<small>the office's running costs: Ordinary Budget and LS & Pagoda{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
-        {Ts.length ? <><b class="bud-v">{full(ob.b)}</b>
+        {Ts.length ? <><b class="bud-v" title={full(ob.b)}>{short(ob.b)}</b>
           <Bar parts={[[ob.sc, 'var(--c1)'], [ob.pl, 'color-mix(in srgb, var(--c1) 35%, transparent)']]} of={ob.b} />
           <dl><dt>Ordinary Budget · BH {offices[0]?.bh ?? OB_BH}</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda · BH {LS_BH}</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
           : <p class="muted">{offices.length ? `No office report for ${Y}.` : `No office budget imported for ${name}.`}</p>}
       </button>
       <button class="bud bud-eb" onClick={() => setTab('Projects')}>
         <span class="bud-h">Projects<small>extraordinary budget: joint programmes and voluntary contributions · {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
-        {P.length ? <><b class="bud-v">{full(budget)}</b>
+        {P.length ? <><b class="bud-v" title={full(budget)}>{short(budget)}</b>
           <Bar parts={[[spent, 'var(--c3)'], [committed, 'color-mix(in srgb, var(--c3) 40%, transparent)']]} of={budget} />
           <dl><dt><b>Spent in {Y}</b></dt><dd title={basis}><b>{full(spentY)}</b></dd><dt>Spent to date</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt>Not yet committed</dt><dd>{full(budget - spent - committed)}</dd></dl></>
           : <p class="muted">No project in {name}.</p>}
       </button>
-      <div class="bud bud-all"><span class="bud-h">In {name}<small>office and projects together</small></span><b class="bud-v">{full(ob.b + budget)}</b>
+      <div class="bud bud-all"><span class="bud-h">In {name}<small>office and projects together</small></span><b class="bud-v" title={full(ob.b + budget)}>{short(ob.b + budget)}</b>
         <Bar parts={[[ob.b, 'var(--c1)'], [budget, 'var(--c3)']]} of={ob.b + budget} />
         <dl><dt>Used in {Y}</dt><dd title="office spent + committed, and the projects' spending of the year">{full(ob.sc + spentY)}</dd><dt>Office</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
     </section>
     <div class="po-kpi cd-kpi cd-kpi3">
-      <Tile k="ten" color="var(--c4)" icon="⚑" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />
-      <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
-      <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
+      <Tile k="ten" color="var(--c4)" icon="flag" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />
+      <Tile k="stf" color="var(--c7)" icon="people" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
+      <Tile k="dl" color="var(--c8)" icon="clock" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
     <LookingAhead name={name} P={P} officeLeft={Ts.length ? ob.b - ob.sc - ob.pl : null} year={Y} setTab={setTab} />
     <div class="cd-two">
@@ -167,7 +169,7 @@ function EvRow({ e }: { e: Ev }) {
 export function CountryProjects({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const part = (g: 'JP' | 'VC' | 'all') => { const L = g === 'all' ? P : P.filter((p) => programmeOf(p) === g), M = L.map(money); return { n: L.length, run: L.filter(active).length, b: M.reduce((a, m) => a + m.budget, 0), s: M.reduce((a, m) => a + m.spent, 0), c: M.reduce((a, m) => a + m.committed, 0) }; };
   const Card = ({ g, title, k }: { g: 'JP' | 'VC' | 'all'; title: string; k: string }) => { const x = part(g);
-    return <div class="bud" style={{ '--k': k } as never}><span class="bud-h">{title}<small>{x.n} project{x.n === 1 ? '' : 's'} · {x.run} running</small></span><b class="bud-v">{full(x.b)}</b>
+    return <div class="bud" style={{ '--k': k } as never}><span class="bud-h">{title}<small>{x.n} project{x.n === 1 ? '' : 's'} · {x.run} running</small></span><b class="bud-v" title={full(x.b)}>{short(x.b)}</b>
       <Bar parts={[[x.s, k], [x.c, `color-mix(in srgb, ${k} 40%, transparent)`]]} of={x.b} />
       <dl><dt>Spent</dt><dd>{full(x.s)} <small>({pct(x.b ? x.s / x.b : 0)})</small></dd><dt>Committed</dt><dd>{full(x.c)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(x.b - x.s - x.c)}</b></dd></dl></div>; };
   return <>
@@ -283,7 +285,7 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
   const load = (m: CoreMember) => { setF({ name: m.name, position: m.position, grade: m.grade ?? '', start: m.start ?? '', end: m.end ?? '', fund: m.fund ?? 'ob', project: m.project ?? '', share: m.share ? String(m.share) : '', note: m.note ?? '' }); setEdit(m.id); };
   // a post charged to a project: is the person on that project's staff list?
   const onProject = (m: CoreMember) => { const p = P.find((x) => x.id === m.project); if (!p) return null; const k = n2(m.name); return allPeople([p]).some((a) => n2(a.name) === k || n2(a.display) === k); };
-  return <section class="card cc"><div class="card-h"><div><h2>Core Team</h2><p>The office's own team in {name}, outside the projects: {on.length} on the team today. Contract ends are warned 90, 60 and 30 days ahead, here, under Deadlines and in the bell's count.</p></div><div class="tools"><label class="btn ghost" title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by">⤒ Import from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label></div></div>
+  return <section class="card cc"><div class="card-h"><div><h2>Core Team</h2><p>The office's own team in {name}, outside the projects: {on.length} on the team today. Contract ends are warned 90, 60 and 30 days ahead, here, under Deadlines and in the bell's count.</p></div><div class="tools"><label class="btn ghost" title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by"><Ico n="upload" />Import from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label></div></div>
     <div class="card-b">
       <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <label>Name<input {...v('name')} placeholder="Surname, Name" required /></label>
@@ -304,7 +306,7 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
             <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : FUND_LABEL[m.fund ?? 'ob']}</td>
             <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {m.end ? date(m.end) : 'open-ended'}</td>
             <td>{days == null ? <span class="muted">no end date</span> : <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</td>
-            <td style={{ whiteSpace: 'nowrap' }}><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}>✎</button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
+            <td style={{ whiteSpace: 'nowrap' }}><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}><Ico n="edit" /></button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
         : <p class="muted">No one on the core team of {name} yet. Add the office's own staff above: name, position, contract dates and what pays for the post.</p>}
     </div></section>;
 }
@@ -375,7 +377,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
       </form>
       {D.length ? <div class="cc-cal">
-        <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : m.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
+        <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : MON[m.getUTCMonth()]}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
         {D.map((d) => { const a = x(d.start ?? t0.toISOString()), b = d.openEnded ? 100 : x(d.end), w90 = d.openEnded ? 101 : x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
           return <div class={`cc-row s-${d.severity}${d.openEnded ? ' open' : ''}`}>
             <span class="cc-n"><b>{d.name}</b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small></span>
@@ -384,7 +386,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
               <u style={{ left: `${x(TODAY.toISOString())}%` }} /></div>
             <span class="cc-s"><span class={`badge ${d.openEnded ? 'neutral' : SEV_BADGE[d.severity]}`} title={d.openEnded ? 'No end date: nothing to warn' : `ends ${date(d.end)}`}>{dueText(d)}</span><small class="num muted">{d.openEnded ? 'no end date' : date(d.end)}</small>
               <Attach doc={FW[d.key]?.doc} label={`the contract with ${d.name}`} save={(doc) => setFramework(d.key, { ...FW[d.key], doc })} />
-              <button class="btn ghost" title="Change" onClick={() => load(d)}>✎</button>
+              <button class="btn ghost" title="Change" onClick={() => load(d)}><Ico n="edit" /></button>
               <button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove the contract with ${d.name}?`) && isAdmin('remove a contract')) setFramework(d.key, null); }}>✕</button></span>
           </div>; })}
       </div> : <p class="muted">No contract with an end date yet for {name}. Add one above: the provider, the reference of the tender or contract, its ceiling and its end date.</p>}
@@ -422,6 +424,6 @@ function Attach({ doc, label, save }: { doc?: Attachment; label: string; save: (
     if (doc && !isAdmin(`replace ${label}`)) return;
     const a = await readAttachment(f); if (typeof a === 'string') return alert(a); save(a);
   };
-  return <span class="att-c">{doc && <button class="btn ghost att-open" title={`Open ${doc.name} (${Math.round(doc.size / 1024)} KB, attached ${date(doc.at.slice(0, 10))})`} onClick={() => openAttachment(doc)}>📄</button>}
-    <label class="btn ghost" title={doc ? `Replace ${label}` : `Attach ${label} (PDF, Word, scan — kept in this browser and in backups)`}>📎<input type="file" hidden onChange={pick} /></label></span>;
+  return <span class="att-c">{doc && <button class="btn ghost att-open" title={`Open ${doc.name} (${Math.round(doc.size / 1024)} KB, attached ${date(doc.at.slice(0, 10))})`} onClick={() => openAttachment(doc)}><Ico n="doc" /></button>}
+    <label class="btn ghost" title={doc ? `Replace ${label}` : `Attach ${label} (PDF, Word, scan — kept in this browser and in backups)`}><Ico n="attach" /><input type="file" hidden onChange={pick} /></label></span>;
 }

@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { go, useStore } from '../data/store';
 import { burnGap, elapsed, money } from '../domain/calc';
 import { flexOf, pctOf } from '../domain/flex';
@@ -37,7 +38,7 @@ export function Brief({ id }: { id: string }) {
         <button class="btn" onClick={() => go(`project/${p.id}/summary`)}>← {plabel(p)}</button>
         <span class="grow" />
         <span class="muted">One A4 page · print or save as PDF</span>
-        <button class="btn primary" onClick={print}>⎙ Print / save as PDF</button>
+        <button class="btn primary" onClick={print}><Ico n="print" />Print / save as PDF</button>
       </div>
       <article class="brief">
         <header class="br-h">

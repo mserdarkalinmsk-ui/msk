@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { budgetCheck, rateMedians, type Level } from '../domain/budgetcheck';
@@ -33,7 +34,7 @@ export function BudgetCheck() {
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Findings by project</h2><p>Approved budget and every report, line by line · units × rate, heading sums, codes, descriptions, line budgets and rates against the portfolio</p></div>
           <div class="seg" style={{ marginLeft: 'auto' }}>{(['all', 'bad', 'warn'] as const).map((k) => <button aria-pressed={show === k} onClick={() => setShow(k)}>{k === 'all' ? 'All' : k === 'bad' ? `Errors (${tot.bad})` : `To check (${tot.warn})`}</button>)}</div>
-          <button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+          <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="card-b" style={{ display: 'grid', gap: '10px' }}>
           {C.map((c) => { const F = c.findings.filter((f) => keep(f.level)), o = open.has(c.p.id) !== (c.bad > 0); // projects with errors open by default
             return <article class={`bc${c.bad ? ' bad' : c.warn ? ' warn' : ' ok'}`}>

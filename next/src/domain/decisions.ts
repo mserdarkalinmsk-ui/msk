@@ -1,3 +1,4 @@
+import { dayMonYear } from './dt';
 import { cashRow, ending } from './cash';
 import { portfolioWarnings } from './earlywarn';
 import { health } from './health';
@@ -20,7 +21,7 @@ export const kindUnit = (k: string, n: number) => (KIND_INFO[k]?.unit ?? ['item'
 export const kindSay = (k: string, n: number) => `${n} ${(KIND_INFO[k]?.say ?? [k.toLowerCase(), k.toLowerCase()])[n === 1 ? 0 : 1]}`;
 const eur = (v: number) => `€${Math.round(v).toLocaleString('en-GB')}`;
 const lab = (p: Project) => (plabel(p));
-const d = (s: string) => new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const d = (s: string) => dayMonYear(new Date(s + 'T00:00:00Z'));
 
 export function decisions(P: Project[], today: Date): Decision[] {
   const out: Decision[] = [], live = P.filter((p) => !p.datesTbc);

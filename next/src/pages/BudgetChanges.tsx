@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { programmeOf } from '../domain/flex';
 import { FlexPanel } from '../ui/Visuals';
 import { useState } from 'preact/hooks';
@@ -84,7 +85,7 @@ export function BudgetChanges() {
               <td><span class={`badge ${VERDICT[x.verdict].tone}`} title={x.why}>{VERDICT[x.verdict].label}</span><div class="muted" style={{ fontSize: '12px' }}>{x.why}</div></td>
               <td><button class="btn ghost danger" onClick={() => isAdmin() && save(all.filter((y) => y.id !== planned[i].id))}>Remove</button></td></tr>)}</tbody></table>}
           {planned.length > 0 && <div class={`bt-verdict ${V.tone}`}><b>{V.label}</b><span>{V.what}</span>{A.reasons.filter((r) => r !== V.what).map((r) => <small>{r}</small>)}
-            <div class="bt-act"><button class="btn primary" onClick={word}>⤓ {DOC[A.verdict]} (Word)</button>
+            <div class="bt-act"><button class="btn primary" onClick={word}><Ico n="download" />{DOC[A.verdict]} (Word)</button>
               <button class="btn" onClick={() => save(all.map((y) => (y.status === 'planned' ? { ...y, status: A.verdict === 'addendum' ? 'addendum' : 'notified' } : y)))}>Mark as {A.verdict === 'addendum' ? 'requested' : 'notified'}</button></div></div>}
           {!planned.length && <p class="muted" style={{ margin: 0 }}>No transfer planned. {A.heads.some((h) => Math.abs(h.baseline ? (h.current - h.baseline) / h.baseline : 0) > A.flex) ? 'Note: some headings are already beyond the limit — see the table above.' : ''}</p>}
         </div>

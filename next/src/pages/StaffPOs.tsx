@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { filtered, go, useStore } from '../data/store';
 import { findErrors } from '../domain/ledger';
 import type { Ledger, Project } from '../domain/types';
@@ -30,7 +31,7 @@ export function StaffPOs() {
         <div class="kpi"><span class="label">Staff POs to top up</span><span class="value">{R.length}</span><span class="ctx">in {projects} project{projects === 1 ? '' : 's'}</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
-        <div class="card-h"><div><h2>Staff POs that do not cover the remaining months</h2><p>From each project's latest system extraction · committed and spent + committed are understated until these POs are topped up · click a row to open the project</p></div><span style={{ display: 'flex', gap: '8px' }}><button class="btn primary" disabled={!R.length} title="One request per project: each PO, the months left, the monthly cost and the increase needed (Word)" onClick={request}>⬇ Increase request (Word)</button><button class="btn" onClick={xlsx}>⤓ Excel</button></span></div>
+        <div class="card-h"><div><h2>Staff POs that do not cover the remaining months</h2><p>From each project's latest system extraction · committed and spent + committed are understated until these POs are topped up · click a row to open the project</p></div><span style={{ display: 'flex', gap: '8px' }}><button class="btn primary" disabled={!R.length} title="One request per project: each PO, the months left, the monthly cost and the increase needed (Word)" onClick={request}><Ico n="download" />Increase request (Word)</button><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></span></div>
         {R.length ? <table class="wp-t" style={{ width: '100%', margin: 0 }}><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Detail</th><th class="num">Shortfall</th><th>As at</th></tr></thead>
           <tbody>{R.map((r) => <tr class="click" style={{ cursor: 'pointer' }} onClick={() => go(`project/${r.p.id}/checks`)}><td><b>{r.p.bh ? `${r.p.bh} · ` : ''}</b>{r.p.name}</td><td class="num">{r.doc}</td><td class="num">{r.line}</td><td style={{ fontSize: '12px' }}>{r.description}</td><td class="num serious">{full(r.amount)}</td><td>{r.asAt ? date(r.asAt) : ''}</td></tr>)}</tbody></table>
           : <div class="empty-page" style={{ padding: '32px' }}><div><h2>No shortfall found</h2><p>Every running staff PO covers the months to come — or no system extraction with purchase orders and invoices is loaded yet.</p></div></div>}

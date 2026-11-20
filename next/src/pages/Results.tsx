@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { tidy } from '../domain/logframe';
@@ -37,7 +38,7 @@ export function Results() {
         <div class="kpi"><span class="label">Spending ahead of results</span><span class="value">{rows.filter((r) => r.flag === 'spending ahead of results').length}</span><span class="ctx">projects where spend runs 25 pp+ ahead</span></div>
       </section>
       <div class="grid g-12" style={{ marginTop: '16px' }}>
-        <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Time, money and results by project</h2><p>Results = average progress of measured indicators (baseline → target) · flagged first · click to open the indicators</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <section class="card span-12"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Time, money and results by project</h2><p>Results = average progress of measured indicators (baseline → target) · flagged first · click to open the indicators</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}><Ico n="download" />Excel</button></div>
           <div class="card-b table-scroll"><table class="mini rs-t"><thead><tr><th>Project</th><th style={{ width: '38%' }}>Time · spent + committed · results</th><th class="r">Gap</th><th class="r">Indicators</th><th class="r">Reached</th><th class="r">Behind</th><th>Attention</th></tr></thead>
             <tbody>{rows.map((r) => <tr class="click" onClick={() => openInd(r.p)}>
               <td><b>{lab(r.p)}</b><small class="muted" style={{ display: 'block', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.p.name}</small></td>

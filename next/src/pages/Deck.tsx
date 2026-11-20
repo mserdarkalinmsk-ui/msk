@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { BAND_COLOR, BAND_WORD } from '../ui/viz';
 import { wpRow } from './WorkPlans';
 import { wpName } from '../domain/workplan';
@@ -164,7 +165,7 @@ export function Deck() {
       <div class="no-print deck-tools">{!forced && <div class="seg" role="group" aria-label="Audience">{(['management', 'donor'] as const).map((a) => <button aria-pressed={aud === a} onClick={() => { setAud(a); savePref('pl-deck-aud', a); }}>{a === 'management' ? 'Management' : 'Donor'}</button>)}</div>}
         <label class="muted" style={{ fontSize: '13px' }}><input type="checkbox" checked={pages} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; setPages(v); savePref('pl-deck-pages', v); }} /> One page per project</label>
         <label class="muted" style={{ fontSize: '13px' }}><input type="checkbox" checked={notes} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; setNotes(v); savePref('pl-deck-notes', v); }} /> Speaker notes</label>
-        <p class="muted" style={{ margin: 0, flex: 1 }}>{of} slides · {mg ? 'internal: staff names, office costs and catch-up plans included' : 'for the donor: results and indicators, no internal staff or office detail'} · A4 landscape</p><button class="btn" onClick={pptx}>⤓ PowerPoint</button><button class="btn primary" onClick={() => print()}>⎙ Save as PDF</button></div>
+        <p class="muted" style={{ margin: 0, flex: 1 }}>{of} slides · {mg ? 'internal: staff names, office costs and catch-up plans included' : 'for the donor: results and indicators, no internal staff or office detail'} · A4 landscape</p><button class="btn" onClick={pptx}><Ico n="download" />PowerPoint</button><button class="btn primary" onClick={() => print()}><Ico n="print" />Save as PDF</button></div>
       <div class="no-print deck-nav">
         <div class="seg" role="group" aria-label="View">{([['one', 'One slide'], ['grid', 'All slides']] as const).map(([k, l]) => <button aria-pressed={view === k} onClick={() => { setView(k); savePref('pl-deck-view', k); }}>{l}</button>)}</div>
         {view === 'one' && <><button class="btn" disabled={cur <= 0} onClick={() => setCur(cur - 1)} aria-label="Previous slide">‹</button><span class="num muted">{Math.min(cur, count - 1) + 1} / {count}</span><button class="btn" disabled={cur >= count - 1} onClick={() => setCur(cur + 1)} aria-label="Next slide">›</button><span class="muted" style={{ fontSize: '12px' }}>← → to move</span></>}

@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { updateProject } from '../data/store';
 import { deadlines, HEADINGS, lineExposure, lines, money, n, parseDate } from '../domain/calc';
@@ -88,7 +89,7 @@ export function Revision({ p }: { p: Project }) {
   return (
     <section class="card span-12">
       <div class="card-h"><div><h2>Budget revision draft</h2><p>Need at end = spent × the project's forecast ratio ({ratio.toFixed(2)}), never below spent + committed · the proposal shares the current total in proportion to need, so transfers net to zero · edit “Proposed” to adjust · flexibility {Math.round(H.flex * 100)}% per heading</p></div>
-        <button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}><Ico n="download" />Excel</button></div>
       <div class="card-b table-scroll">
         <table class="mini hd">
           <thead><tr><th>Heading</th><th class="r">Approved baseline</th><th class="r">Current</th><th class="r">Spent</th><th class="r">Need at end</th><th class="r">Proposed</th><th class="r">Transfer</th><th class="r">vs baseline</th><th /></tr></thead>

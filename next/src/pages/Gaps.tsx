@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { plabel } from '../domain/label';
 import { filtered, go, useStore } from '../data/store';
 import { latestReport } from '../domain/calc';
@@ -44,7 +45,7 @@ export function Gaps() {
         <div class="kpi"><span class="label">Most often missing</span><span class="value" style={{ fontSize: '24px' }}>{byNeed[0]?.n.label ?? '—'}</span><span class="ctx">{byNeed[0] ? `${byNeed[0].c} project${byNeed[0].c > 1 ? 's' : ''} · ${byNeed[0].n.hint}` : 'every file complete'}</span></div>
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
-        <div class="card-h"><div><h2>What each project file is missing</h2><p>✕ missing · ✓ on file · — does not apply · click a cell to open the screen where it is added</p></div><button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+        <div class="card-h"><div><h2>What each project file is missing</h2><p>✕ missing · ✓ on file · — does not apply · click a cell to open the screen where it is added</p></div><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="table-scroll"><table class="gap-t">
           <thead><tr><th>Project</th><th class="r">Missing</th>{NEEDS.map((n) => <th title={n.hint}>{n.label}</th>)}</tr></thead>
           <tbody>{rows.map((r) => <tr>

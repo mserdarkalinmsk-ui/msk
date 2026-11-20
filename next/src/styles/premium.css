@@ -66,3 +66,21 @@ details.em-method > summary::-webkit-details-marker { display: none; }
 details.em-method > summary h3 { margin: 0; }
 details.em-method > summary::before { content: '▸'; color: var(--ink-3); }
 details.em-method[open] > summary::before { content: '▾'; }
+.ico{display:inline-block;vertical-align:-2.5px;flex:none}.btn .ico,button .ico,label .ico{margin-right:6px}.btn .ico:only-child,.att-c .ico{margin-right:0}
+
+/* ---------- the copy's status in the top bar ---------- */
+.st-tray { position: relative; display: flex; align-items: center; }
+.st-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.st-btn:hover { border-color: var(--line-strong, var(--ink-3)); }
+.st-chip { display: inline-flex; align-items: center; gap: 6px; }
+.st-chip + .st-chip { padding-left: 8px; border-left: 1px solid var(--line); }
+.st-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--c1); }
+.st-chip.warn i { background: var(--critical); box-shadow: 0 0 0 3px color-mix(in srgb, var(--critical) 18%, transparent); }
+.st-car { color: var(--ink-3); font-size: 10px; }
+.st-panel { display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: min(680px, calc(100vw - 32px)); padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 16px 40px rgb(0 0 0 / .18); }
+.st-panel.on { display: grid; gap: 8px; }
+.st-panel .bk-banner { margin: 0; }
+@media (max-width: 760px) { .st-btn .st-chip:not(:first-child) { display: none; } }
+/* cards that stay in view keep their own positioning (the premium edge needs a positioned card, sticky is one) */
+.studio-c { position: sticky; }
+.studio-c { grid-template-columns: minmax(0, 1fr); } .studio-b { flex-wrap: wrap; }

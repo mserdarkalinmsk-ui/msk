@@ -1,3 +1,4 @@
+import { StatusTray } from './StatusTray';
 import { PageIndex } from './PageIndex';
 import { BackupBanner, BackupStatus, FreshStart } from './Backup';
 import { SharedBanner } from './Share';
@@ -88,9 +89,10 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
           <button class="search hide-sm" onClick={() => set({ palette: true })}>
             <Icon d="m21 21-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" /><span>Search or run a command</span><kbd>Ctrl K</kbd>
           </button>
+          <StatusTray><OldCopyBanner /><SharedBanner />{!READONLY && <BackupBanner />}</StatusTray>
           {actions}
         </header>
-        <main class="page" id="content"><div class="pstat"><OldCopyBanner /><SharedBanner />{!READONLY && <BackupBanner />}</div>{!READONLY && <FreshStart />}{children}</main>
+        <main class="page" id="content">{!READONLY && <FreshStart />}{children}</main>
         <PageIndex route={route} />
       </div>
     </div>

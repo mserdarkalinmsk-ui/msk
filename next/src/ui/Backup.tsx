@@ -1,3 +1,4 @@
+import { MON } from '../domain/dt';
 import { useEffect, useState } from 'preact/hooks';
 import { get, kv, onSaved, replaceLedger, set, toast, useStore } from '../data/store';
 import { migrateBackup } from '../domain/insights';
@@ -118,7 +119,7 @@ export function useFolder() {
 }
 
 const when = (iso: string) => { const d = new Date(iso), t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 86_400_000);
-  return days <= 0 ? `today ${t}` : days === 1 ? `yesterday ${t}` : days < 7 ? `${days} days ago` : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
+  return days <= 0 ? `today ${t}` : days === 1 ? `yesterday ${t}` : days < 7 ? `${days} days ago` : `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
 export type SafetyLevel = 'safe' | 'due' | 'risk';
 /** Where the data stands: saved outside the browser (and how recently), or only here. */
 export function useSafety() {

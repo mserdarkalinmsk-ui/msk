@@ -1,3 +1,4 @@
+import { Ico, type IcoName } from '../ui/Ico';
 import { useMemo, useState } from 'preact/hooks';
 import { set } from '../data/store';
 import { byPeriodThenImport } from '../domain/calc';
@@ -27,7 +28,7 @@ export function reviewOf(p: Project): PoReview {
 /** Findings worth a look (not the notes): the count on the tab. */
 export const poToCheck = (p: Project) => reviewOf(p).findings.filter((f) => f.level !== 'info').length;
 
-const ICON: Record<PoGroup, string> = { line: '⇄', unit: '◎', amount: '€', change: '↻' };
+const ICON: Record<PoGroup, IcoName> = { line: 'swap', unit: 'target', amount: 'euro', change: 'cycle' };
 const TONE = { bad: ['critical', 'Check'], warn: ['warning', 'Look'], info: ['neutral', 'Note'] } as const;
 
 export function POReview({ p }: { p: Project }) {
@@ -65,16 +66,16 @@ export function POReview({ p }: { p: Project }) {
       <section class="card">
         <div class="card-h"><div><h2>PO review</h2>
           <p>{R.pos} purchase orders in {R.latest.label}, each checked against its budget line{R.previous ? <>; every report compared with the one before, back to the first of {R.reports}</> : ' — load the next report to see what changed'}. Orders finally closed are left out{R.finallyClosed ? ` (${R.finallyClosed})` : ''}: nothing on them can be corrected. Click a row for the order's history in every report.</p></div>
-          <div class="tools"><button class="btn" onClick={xlsx}>⬇ Excel</button></div></div>
+          <div class="tools"><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
         <div class="po-kpi">
           {(['line', 'unit', 'amount', 'change'] as const).map((x) => { const b = n(x, 'bad'), w = n(x, 'warn'), i = n(x, 'info'), t = b + w + i; return (
             <button class={`po-k po-${x}${g === x ? ' on' : ''}${b + w ? '' : ' calm'}`} aria-pressed={g === x} onClick={() => setG(g === x ? 'all' : x)}>
-              <span class="po-k-h"><i aria-hidden="true">{ICON[x]}</i>{PO_GROUP[x]}</span>
+              <span class="po-k-h"><i aria-hidden="true"><Ico n={ICON[x]} size={14} /></i>{PO_GROUP[x]}</span>
               <b>{b + w}</b>
               <em>{b ? <><strong>{b}</strong> to check · </> : ''}{w ? `${w} to look at · ` : ''}{i} notes</em>
               <span class="po-k-bar" aria-hidden="true">{t ? <><u class="bad" style={{ flex: b }} /><u class="warn" style={{ flex: w }} /><u class="info" style={{ flex: i }} /></> : <u class="none" style={{ flex: 1 }} />}</span>
             </button>); })}
-          <div class="po-k po-reports"><span class="po-k-h"><i aria-hidden="true">▤</i>Reports followed</span><b>{R.reports}</b><em>{R.previous ? `latest: ${R.latest.label}` : 'one report so far'}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></div>
+          <div class="po-k po-reports"><span class="po-k-h"><i aria-hidden="true"><Ico n="reports" size={14} /></i>Reports followed</span><b>{R.reports}</b><em>{R.previous ? `latest: ${R.latest.label}` : 'one report so far'}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></div>
         </div>
         <div class="tools" style={{ padding: '0 20px 10px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* years come from the orders themselves; past three they go into a list so the bar does not grow */}

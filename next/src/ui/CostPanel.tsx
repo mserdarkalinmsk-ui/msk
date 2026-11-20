@@ -1,3 +1,4 @@
+import { Ico } from './Ico';
 import { filtered, go, useStore } from '../data/store';
 import { band, costPerf, type CostPerf } from '../domain/costPerf';
 import { plabel } from '../domain/label';
@@ -68,7 +69,7 @@ export function CostPortfolio() {
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>Is spending on track — by project</h2><p>Each project's latest report against a plan that spreads its budget evenly over its period · the total at the end follows the report's own plan where there is one, else today's pace · click a project to open it</p></div>
-          <div class="tools"><button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
+          <div class="tools"><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
         <div class="card-b table-scroll"><table class="mini cpf-t"><thead><tr><th>Project</th><th class="r">Total budget</th><th class="r">Planned by now</th><th class="r">Spent</th><th class="r">Spent against plan</th><th class="r">Total at the end</th><th class="r">At the end</th><th class="r">Pace needed</th><th class="r">Last Work Plan done</th></tr></thead>
           <tbody>{R.map(({ p, c }) => { const ev = c.ev.at(-1); return (
             <tr class="click" onClick={() => go(`project/${p.id}/summary`)}><td><b>{plabel(p)}</b><small class="muted"> · report of {date(c.asAt)}</small></td><td class="r num">{full(c.bac)}</td><td class="r num">{full(c.pv)}</td><td class="r num">{full(c.ac)}</td>

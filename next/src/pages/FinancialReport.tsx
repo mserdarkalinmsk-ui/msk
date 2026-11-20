@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { flexOf, pctOf } from '../domain/flex';
 import { ADMIN_LINE } from '../domain/terms';
 import { enrichExtraction } from '../domain/extraction';
@@ -86,7 +87,7 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
             // Layouts file name (BH… – JP/VC … - ISO IFR/FFR dd.mm.yyyy), with what the workbook adds to the report.
             const name = reportFileName(p, countryRec?.iso3 ?? '', TODAY, undefined, kind === 'final').replace(/\.xlsx$/, `${extra === 'none' ? '' : extra === 'twelve' ? ' and forecast' : ` and ${extra} ${no ?? ''}`.trimEnd()}.xlsx`);
             download(name, reportPack(p, wb, TODAY, { logo: pngData(brand?.logo) ?? undefined, sign1: brand?.sign1, sign2: brand?.sign2, kind }, extra, no));
-          }}>⬇ Report workbook</button></span>}
+          }}><Ico n="download" />Report workbook</button></span>}
         <button class="btn" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import newer workbook</button>
       </div>
 
@@ -293,7 +294,7 @@ function DiffView({ p, a, b }: { p: Project; a: WorkbookSummary; b: WorkbookSumm
       </div>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div class="seg">{(['all', 'new', 'raised', 'spent', 'reduced', 'closed', 'gone'] as const).map((x) => <button aria-pressed={k === x} onClick={() => setK(x)}>{x === 'all' ? `All ${D.pos.length}` : `${KIND[x][0]} ${n(x)}`}</button>)}</div>
-        <button class="btn" onClick={xlsx}>⬇ Excel</button></div>
+        <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
       <table class="range-lines"><thead><tr><th>PO</th><th>Line</th><th>Description</th><th>Supplier</th><th class="r">Spent before → now</th><th class="r">Spent + committed before → now</th><th>Change</th></tr></thead>
         <tbody>{rows.map((x) => <tr><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description}</td><td>{x.supplier}</td><td class="num r">{full(x.spentBefore)} → {full(x.spentNow)}</td><td class="num r">{full(x.scBefore)} → {full(x.scNow)}</td><td><span class={`badge ${KIND[x.kind][1]}`}>{KIND[x.kind][0]}</span></td></tr>)}</tbody></table>
       <h3 style={{ margin: '8px 0 0' }}>By line</h3>

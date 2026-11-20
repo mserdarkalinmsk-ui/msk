@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { Sparkline } from '../ui/Sparkline';
 import { spendPoints } from '../domain/calc';
 import { useState } from 'preact/hooks';
@@ -40,7 +41,7 @@ export function CashPlan() {
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Cash by project</h2><p>Spent against money received · pace = spending of the last six months of reports · click a project to enter the payments received</p></div>
           <label class="muted" style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>Next request when used ≥<input type="number" min="10" max="100" step="5" value={th} style={{ width: '60px' }} onChange={(e) => setTh(Number((e.target as HTMLInputElement).value) || 70)} />%</label>
-          <button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+          <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="card-b table-scroll"><table class="mini cp-t"><thead><tr><th>Project</th><th class="r">Contribution</th><th class="r">Received</th><th class="r">Spent</th><th class="r">Cash left</th><th style={{ width: '16%' }}>Used of received</th><th class="r">Pace / month</th><th>Cash runs out</th><th>Next payment</th></tr></thead>
           <tbody>{R.map((r) => <>
             <tr class="click" onClick={() => setOpen(open === r.p.id ? '' : r.p.id)}>

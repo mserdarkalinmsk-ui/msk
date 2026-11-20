@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, setFramework, setPoKind, useStore } from '../data/store';
 import { providerSummary, supKey, topShare, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
@@ -135,7 +136,7 @@ export function Providers() {
       <div class="sp-bar">
         <div class="cm-chips"><span class="muted">Year</span><button class={`chip${!year ? ' on' : ''}`} onClick={() => setYear('')}>All</button>{years.map((y) => <button class={`chip${year === y ? ' on' : ''}`} aria-pressed={year === y} onClick={() => setYear(year === y ? '' : y)}>{y}</button>)}</div>
         <div class="cm-chips"><span class="muted">Add</span>{KINDS.filter((k) => k.optional).map((k) => { const v = sum(every.filter((x) => x.kind === k.k && inYear(x))); return <button class={`chip${on.has(k.k) ? ' on' : ''}`} aria-pressed={on.has(k.k)} onClick={() => toggle(k.k)} title={on.has(k.k) ? 'Counted — click to leave out' : 'Not counted — click to add'}>{on.has(k.k) ? '✓ ' : '+ '}{k.label} <small class="muted">{short(v)}</small></button>; })}</div>
-        <button class="btn" style={{ marginLeft: 'auto' }} onClick={brief} title="Country and kind totals, top 10 providers — one A4 page (Save as PDF)">⎙ One-page summary</button><button class="btn" onClick={xlsx}>⤓ Excel</button>
+        <button class="btn" style={{ marginLeft: 'auto' }} onClick={brief} title="Country and kind totals, top 10 providers — one A4 page (Save as PDF)"><Ico n="print" />One-page summary</button><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button>
       </div>
       <div class="grid g-12" style={{ marginTop: '12px', gap: '12px' }}>
         <section class="card span-12">

@@ -1,3 +1,4 @@
+import { Ico } from './Ico';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { chartTable } from './chartTable';
 import { download } from './xlsxwrite';
@@ -221,7 +222,7 @@ function FigureTable({ label, option, height }: { label: string; option: Props['
   const xlsx = () => download(`${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'chart'}.xlsx`, [{ name: label.slice(0, 31) || 'Chart', money, rows: [T.cols.map((v) => ({ v, st: 'head' as const })), ...T.rows.map((r) => r.map((v) => v ?? ''))] }]);
   return (
     <div class="chart-tbl" style={{ maxHeight: `${Math.max(height, 240)}px` }}>
-      <div class="chart-tbl-h"><span class="muted">{T.rows.length} row{T.rows.length === 1 ? '' : 's'} · the figures drawn in the chart</span><button type="button" class="btn ghost" onClick={xlsx}>⤓ Excel</button></div>
+      <div class="chart-tbl-h"><span class="muted">{T.rows.length} row{T.rows.length === 1 ? '' : 's'} · the figures drawn in the chart</span><button type="button" class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div>
       <table class="mini"><thead><tr>{T.cols.map((c, i) => <th class={i ? 'r' : ''}>{c}</th>)}</tr></thead>
         <tbody>{T.rows.map((r) => <tr>{r.map((v, i) => (i ? <td class="r num">{typeof v === 'number' ? (whole[i] ? nf0 : nf2).format(v) : v ?? '—'}</td> : <td>{T.time && typeof v === 'string' ? new Date(v + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : v}</td>))}</tr>)}</tbody></table>
     </div>

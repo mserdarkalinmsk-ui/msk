@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { paceTone } from '../domain/rules';
 import { useState } from 'preact/hooks';
 import { filtered, go, set, useStore } from '../data/store';
@@ -38,8 +39,8 @@ export function ProjectsBody({ P, country }: { P: Project[]; country?: string })
     <>
       <div class="toolbar">
         <div class="seg" role="group" aria-label="View">
-          <button aria-pressed={view === 'cards'} onClick={() => { setView('cards'); save('pl-projects-view', 'cards'); }}>▦ Cards</button>
-          <button aria-pressed={view === 'list'} onClick={() => { setView('list'); save('pl-projects-view', 'list'); }}>☰ List</button>
+          <button aria-pressed={view === 'cards'} onClick={() => { setView('cards'); save('pl-projects-view', 'cards'); }}><Ico n="grid" />Cards</button>
+          <button aria-pressed={view === 'list'} onClick={() => { setView('list'); save('pl-projects-view', 'list'); }}><Ico n="reports" />List</button>
         </div>
         {view === 'cards' && <select class="select" value={sort} aria-label="Sort" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; setSort(v); save('pl-projects-sort', v); }}>{SORTS.map((x) => <option value={x.id}>Sort: {x.label}</option>)}</select>}
         <span class="muted" style={{ fontSize: '13px' }}>{P.length} projects</span>

@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { Analysis } from './Analysis';
 import { Story } from './Story';
 import { CostPortfolio } from '../ui/CostPanel';
@@ -85,8 +86,8 @@ export function Reports() {
       <div class="tabs no-print" role="tablist">
         {GROUPS.map((x) => <button role="tab" aria-selected={x === g} onClick={() => x !== g && setTab(x.tabs[0].views[0][0])}>{x.label}</button>)}
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
-          <button class="btn" onClick={excel} title="All projects, budget lines, staff, alerts and calendar in one workbook">⤓ Excel</button>
-          <button class="btn" onClick={() => print()}>⎙ PDF</button>
+          <button class="btn" onClick={excel} title="All projects, budget lines, staff, alerts and calendar in one workbook"><Ico n="download" />Excel</button>
+          <button class="btn" onClick={() => print()}><Ico n="print" />PDF</button>
         </span>
       </div>
       <div class="subtabs no-print" role="tablist" aria-label={g.label}>{g.tabs.map((t) => <button role="tab" aria-selected={t === cur} onClick={() => t !== cur && setTab(t.views[0][0])}>{t.label}</button>)}</div>

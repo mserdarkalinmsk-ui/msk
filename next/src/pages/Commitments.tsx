@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import type { Project } from '../domain/types';
@@ -115,7 +116,7 @@ export function Commitments() {
           <div class="card-b"><ul class="cm-sup">{sup.map(([n, v]) => <li><span title={n}>{n}</span><span class="cm-bar"><i style={{ width: `${sup[0] ? v / sup[0][1] * 100 : 0}%` }} /></span><b class="num">{short(v)}</b></li>)}</ul></div></section>
         <section class="card span-12">
           <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Open purchase orders</h2><p>From the latest report workbook of each project · {rows.length} shown</p></div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}><div class="seg"><button aria-pressed={only === 'nostaff'} onClick={() => setOnly('nostaff')}>Excluding staff</button><button aria-pressed={only === 'all'} onClick={() => setOnly('all')}>All</button><button aria-pressed={only === 'flag'} onClick={() => setOnly('flag')}>To review ({flagged.length})</button></div><button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}><div class="seg"><button aria-pressed={only === 'nostaff'} onClick={() => setOnly('nostaff')}>Excluding staff</button><button aria-pressed={only === 'all'} onClick={() => setOnly('all')}>All</button><button aria-pressed={only === 'flag'} onClick={() => setOnly('flag')}>To review ({flagged.length})</button></div><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
           <div class="card-b table-scroll"><table class="mini cm-t"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description / supplier</th><th>Encumbered</th><th class="r">Amount</th><th class="r">Paid</th><th class="r">Open</th><th>Review</th></tr></thead>
             <tbody>{rows.slice(0, 300).map((x) => <tr class="click" onClick={() => go(`project/${x.p.id}/pos`)} style={{ borderLeft: `4px solid ${BUCKETS[x.bucket].color}` }}>
               <td><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td><div class="cm-d">{x.description || x.nature}</div><small class="muted">{x.supplier}</small></td>

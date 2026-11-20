@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { capacity, endOf, gapDrivers, HEAD_LABEL, portfolioWalk, trendOf } from '../domain/analysis';
@@ -129,7 +130,7 @@ export function Story() {
         <button class="btn" disabled={cur === N - 1} onClick={() => setCur(cur + 1)} aria-label="Next slide">›</button>
         <button class="btn ghost" onClick={() => go('reports/analysis')}>The figures behind it ›</button>
         <button class="btn" onClick={full}>⛶ Full screen</button>
-        <button class="btn primary" onClick={() => print()}>⎙ PDF</button>
+        <button class="btn primary" onClick={() => print()}><Ico n="print" />PDF</button>
       </div>
       <div class="st-deck" data-cur={cur} ref={deck}>
         <Slide i={1} n={N} scope={scope} kicker="Where we stand" msg={msg[0]} sub={`${R.length} projects · figures of the latest financial reports to ${date(TODAY.toISOString().slice(0, 10))}`}>

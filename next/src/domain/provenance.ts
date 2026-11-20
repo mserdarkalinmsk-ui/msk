@@ -1,3 +1,4 @@
+import { dayMonYear } from './dt';
 import { asOf, burnGap, elapsed, forecastRate, HEADINGS, latestReport, lineCommitted, lineExposure, lines, money, n } from './calc';
 import { isExtraction } from './extraction';
 import { outcome } from './insights';
@@ -30,7 +31,7 @@ export interface Trace {
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const day = (s?: string) => (s ? s.slice(0, 10) : '');
-const nice = (s: string) => new Date(s.slice(0, 10) + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const nice = (s: string) => dayMonYear(new Date(s.slice(0, 10) + 'T00:00:00Z'));
 const fmt = (v: number) => r2(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** The file behind the current figures: name, sheet, the date the figures stand at and when it was loaded. */

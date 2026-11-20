@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { rules } from '../domain/rules';
 import { flexOf, nearOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
@@ -51,7 +52,7 @@ export function Heatmap() {
       </section>
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h"><div><h2>Budget headings — all projects</h2><p>{mode === 'sc' ? 'Spent + committed' : 'Spent'} as a share of each heading's approved budget · the darker, the more is used · click a cell to open the project against its approved budget</p></div>
-          <div class="tools" style={{ display: 'flex', gap: '8px' }}><div class="seg"><button aria-pressed={mode === 'sc'} onClick={() => setMode('sc')}>Spent + committed</button><button aria-pressed={mode === 'spent'} onClick={() => setMode('spent')}>Spent</button></div><button class="btn" onClick={xlsx}>⤓ Excel</button></div></div>
+          <div class="tools" style={{ display: 'flex', gap: '8px' }}><div class="seg"><button aria-pressed={mode === 'sc'} onClick={() => setMode('sc')}>Spent + committed</button><button aria-pressed={mode === 'spent'} onClick={() => setMode('spent')}>Spent</button></div><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
         <div class="table-wrap" style={{ padding: '0 16px 8px' }}><table class="hm">
           <thead><tr><th>Project</th>{HS.map((h) => <th>{h}. {HEADINGS[h]}</th>)}</tr></thead>
           <tbody>{R.map((r) => <tr><th><button class="hm-p" onClick={() => openProject(r.p.id, 'summary')}><b>{plabel(r.p)}</b><span>{r.p.name}</span></button></th>

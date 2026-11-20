@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import type { Project } from '../domain/types';
 import { annualPlan } from '../domain/annual';
 import { TODAY } from '../today';
@@ -20,7 +21,7 @@ export function AnnualPlanCard({ p }: { p: Project }) {
   return (
     <div class="grid g-12">
       <section class="card span-12">
-        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual budget plan</h2><p>Project years as the financial reports count them (year 1 starts on {dmy(A.label[1]?.from ?? p.start)}) · spent in past years from the dated invoices and GL entries of the latest report · still to pay until {dmy(p.end)}: open commitments in the next three months, the free balance spread evenly over the months left</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual budget plan</h2><p>Project years as the financial reports count them (year 1 starts on {dmy(A.label[1]?.from ?? p.start)}) · spent in past years from the dated invoices and GL entries of the latest report · still to pay until {dmy(p.end)}: open commitments in the next three months, the free balance spread evenly over the months left</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="card-b">
           <div class="ap-years">{A.years.map((y) => <div class={y < cur ? 'past' : y === cur ? 'cur' : ''} title={span(y)}><span>{nm(y)}{y === cur ? ' · rest of year' : ''}<small style={{ display: 'block', fontSize: '11px', fontWeight: 400 }}>{span(y)}</small></span><b class="num">{short(y < cur ? A.past[y] ?? 0 : A.total[y])}</b><small>{y < cur ? 'spent' : y === cur ? `${short(A.past[y] ?? 0)} spent so far` : 'to pay'}</small></div>)}</div>
           <Chart height={220} label="Spending by year" option={(t) => yearsOption(t, A, cur)} />
@@ -61,7 +62,7 @@ export function AnnualPortfolio({ projects }: { projects: Project[] }) {
     <>
       <section class="hero" aria-label="Annual plan">{Y.slice(0, 4).map((y, i) => <div class={`kpi${i ? '' : ' lead'}`}><span class="label">{y}{y === thisYear ? ' · rest of year' : ''}</span><span class="value">{short(tot(y))}</span><span class="ctx">cash to pay across {R.filter((x) => (x.A.total[y] ?? 0) > 1).length} projects</span><div class="meter"><span style={{ width: `${tot(y) / max * 100}%`, background: 'var(--c1)' }} /></div></div>)}</section>
       <section class="card" style={{ marginTop: '16px' }}>
-        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual cash plan by project</h2><p>By calendar year — projects start on different days, so only calendar years add up across them · each project's own page shows its project years · open commitments in the next three months, the free balance spread evenly until each project's end date</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}>⤓ Excel</button></div>
+        <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Annual cash plan by project</h2><p>By calendar year — projects start on different days, so only calendar years add up across them · each project's own page shows its project years · open commitments in the next three months, the free balance spread evenly until each project's end date</p></div><button class="btn" style={{ marginLeft: 'auto' }} onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="card-b table-scroll"><table class="mini ap-plan">
           <thead><tr><th>Project</th><th>Ends</th>{Y.map((y) => <th class="r">{y}</th>)}<th class="r">Total</th></tr></thead>
           <tbody>{R.map((x) => { const m = Math.max(1, ...Y.map((y) => x.A.total[y] ?? 0)); return <tr><td><b>{lab(x.p)}</b> <span class="muted">{x.p.name.slice(0, 50)}</span></td><td class="num">{dmy(x.p.end)}</td>{Y.map((y) => { const v = x.A.total[y] ?? 0; return <td class="r num" style={{ background: v > 1 ? `color-mix(in srgb,var(--c1) ${Math.round(6 + v / m * 30)}%,var(--surface))` : undefined }}>{v > 1 ? full(v) : ''}</td>; })}<td class="r num"><b>{full(Y.reduce((a, y) => a + (x.A.total[y] ?? 0), 0))}</b></td></tr>; })}</tbody>

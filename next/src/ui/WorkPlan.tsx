@@ -1,3 +1,4 @@
+import { Ico } from './Ico';
 import { useRef, useState } from 'preact/hooks';
 import { downloadDocx } from './docxwrite';
 import { base, Chart } from './Chart';
@@ -36,7 +37,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
     save(same ? plans.map((y) => (y.id === w.id ? w : y)) : [...plans, w]); setSel(w.id);
     setMsg(`${file.name}: WP ${w.no} · ${got.acts.length} activities · ${full(got.planned)}${got.bh && p.bh && !p.bh.includes(got.bh.replace(/\D/g, '')) ? ` · budget head ${got.bh} differs from ${p.bh}` : ''}`);
   };
-  const picker = <label class="btn">⬆ Import WorkPlan file<input type="file" accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) void importFile(f); (e.target as HTMLInputElement).value = ''; }} /></label>;
+  const picker = <label class="btn"><Ico n="upload" />Import WorkPlan file<input type="file" accept=".xlsx,.xlsm" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) void importFile(f); (e.target as HTMLInputElement).value = ''; }} /></label>;
   const add = () => { const w = { ...nextPlan(plans, TODAY), snap: snapshot(wb) }; save([...plans, w]); setSel(w.id); };
   if (!plans.length) return (
     <div class="empty-page" style={{ padding: '32px' }}><div><h2>No Work Plan yet</h2>
@@ -54,14 +55,14 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       <div class="tools" style={{ padding: '0 20px 12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div class="seg">{plans.map((x) => <button aria-pressed={x.id === wp.id} onClick={() => setSel(x.id)}>{wpName(x)}</button>)}</div>
         {picker}<button class="btn" onClick={add}>+ Next Work Plan</button>
-        <button class="btn primary" onClick={() => { if (exportOk(p, 'the Work Plan follow-up')) download(`${p.bh ?? p.code}-WP${wp.no}-follow-up.xlsx`, [wpSheet(p, f), ...wpExtraSheets(wp, plans, wb)]); }}>⬇ WP follow-up</button>
+        <button class="btn primary" onClick={() => { if (exportOk(p, 'the Work Plan follow-up')) download(`${p.bh ?? p.code}-WP${wp.no}-follow-up.xlsx`, [wpSheet(p, f), ...wpExtraSheets(wp, plans, wb)]); }}><Ico n="download" />WP follow-up</button>
         <button class="btn" title="Follow-up table, activities not carried out and the notes as an editable Word document" onClick={() => {
           if (!exportOk(p, 'the Work Plan follow-up') || !box.current) return;
           const d = document.createElement('div'), esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
           const prevT = box.current.querySelector('.wp-prev table'), prevH = box.current.querySelector('.wp-prev summary')?.textContent ?? '';
           d.innerHTML = wpWordTable(p, f) + (prevT ? `<h2>${esc(prevH)}</h2>${prevT.outerHTML}` : '');
           downloadDocx(`${p.bh ?? p.code}-WP${wp.no}-follow-up.docx`, d, `WP ${wp.no} follow-up`, [brand?.logo, brand?.logo2]);
-        }}>⬇ Word</button>
+        }}><Ico n="download" />Word</button>
         <button class="btn" onClick={() => window.print()}>🖨 Print</button>
         <button class="btn ghost" onClick={() => { if (confirm(`Delete WP ${wp.no}?`) && isAdmin(`delete WP ${wp.no}`)) { save(plans.filter((x) => x.id !== wp.id)); setSel(''); } }}>Delete WP {wp.no}</button>
       </div>
@@ -101,7 +102,7 @@ export function WorkPlanView({ p, wb }: { p: Project; wb: WorkbookSummary }) {
       <WpPrevActs wp={wp} plans={plans} />
       {wp.acts?.length ? <WpDetail wp={wp} plans={plans} wb={wb} /> : null}
       <div class="wp-notes">
-        <label class="n1"><span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>FOMA notes<button type="button" class="btn ghost" style={{ padding: '2px 8px', fontSize: '12px' }} title="Draft the note from the figures, carried-over activities and lines above what is left" onClick={() => { const t = fomaDraft(f, wp, plans, wb); if (!wp.notes || confirm('Replace the FOMA notes with a draft from the figures?')) upd({ notes: t }); }}>✎ Draft from figures</button></span><textarea rows={3} value={wp.notes ?? ''} onChange={(e) => upd({ notes: (e.target as HTMLTextAreaElement).value })} /></label>
+        <label class="n1"><span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>FOMA notes<button type="button" class="btn ghost" style={{ padding: '2px 8px', fontSize: '12px' }} title="Draft the note from the figures, carried-over activities and lines above what is left" onClick={() => { const t = fomaDraft(f, wp, plans, wb); if (!wp.notes || confirm('Replace the FOMA notes with a draft from the figures?')) upd({ notes: t }); }}><Ico n="edit" />Draft from figures</button></span><textarea rows={3} value={wp.notes ?? ''} onChange={(e) => upd({ notes: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Project Teams — comments<textarea rows={3} value={wp.teams ?? ''} onChange={(e) => upd({ teams: (e.target as HTMLTextAreaElement).value })} /></label>
         <label>Head of Operations — comments<textarea rows={3} value={wp.hoo ?? ''} onChange={(e) => upd({ hoo: (e.target as HTMLTextAreaElement).value })} /></label>
       </div>
@@ -236,7 +237,7 @@ function WpPrevActs({ wp, plans }: { wp: WP; plans: WP[] }) {
       <table class="wp-t"><thead><tr><th>Activity ID</th><th>Activity</th><th class="num">Planned in WP {prev.no}</th><th class="num">In WP {wp.no}</th><th>What happened</th><th>Status noted</th></tr></thead>
         <tbody>{rows.map((r) => <tr><td class="num">{r.a.id}</td><td>{r.a.name}</td><td class="num">{full(r.a.amount)}</td><td class="num">{r.now ? full(r.now.amount) : '—'}</td>
           <td><span class={`badge ${FATE[r.fate][1]}`}>{FATE[r.fate][0]}</span></td><td class="muted" style={{ fontSize: '12px', maxWidth: '360px' }}>{r.note}</td></tr>)}</tbody></table>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}><button class="btn" onClick={() => download(`WP${prev.no}-activities-not-done.xlsx`, [{ name: `WP ${prev.no} not done`, widths: [12, 60, 16, 16, 30, 60], rows: [['Activity ID', 'Activity', `Planned in WP ${prev.no}`, `In WP ${wp.no}`, 'What happened', 'Status noted'].map((v) => ({ v, st: 'head' as const })), ...rows.map((r) => [r.a.id, r.a.name, { v: r.a.amount, st: 'money' as const }, { v: r.now?.amount ?? '', st: 'money' as const }, FATE[r.fate][0], r.note])] }])}>⬇ This list (Excel)</button>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}><button class="btn" onClick={() => download(`WP${prev.no}-activities-not-done.xlsx`, [{ name: `WP ${prev.no} not done`, widths: [12, 60, 16, 16, 30, 60], rows: [['Activity ID', 'Activity', `Planned in WP ${prev.no}`, `In WP ${wp.no}`, 'What happened', 'Status noted'].map((v) => ({ v, st: 'head' as const })), ...rows.map((r) => [r.a.id, r.a.name, { v: r.a.amount, st: 'money' as const }, { v: r.now?.amount ?? '', st: 'money' as const }, FATE[r.fate][0], r.note])] }])}><Ico n="download" />This list (Excel)</button>
       <p class="muted" style={{ fontSize: '12px', margin: 0 }}>"Not in this WP — check": planned in WP {prev.no}, not repeated in WP {wp.no} and no status given — confirm with the project team whether it was carried out.</p></div></details>);
 }
 

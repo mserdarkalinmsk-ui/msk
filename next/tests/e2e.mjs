@@ -560,7 +560,7 @@ async function page(opts) {
   await p.click('.tabs button:has-text("Plan & revise")'); await p.waitForTimeout(400);
   await p.click('.subtabs button:has-text("Forecast"), .tabs button:has-text("Forecast")'); await p.waitForTimeout(800);
   await p.click('button:has-text("Reports")'); await p.waitForTimeout(500);
-  const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 5000 }).catch(() => null), p.click('button:text-is("⎙ PDF") >> nth=-1')]);
+  const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 5000 }).catch(() => null), p.click('button:text-is("PDF") >> nth=-1')]);
   await p.waitForTimeout(800);
   check(!!pop && (await pop.title()).includes('</title>') && !(await p.evaluate(() => window.__xss)), 'PDF print window keeps a project code with markup in its title as text');
   await ctx.close();

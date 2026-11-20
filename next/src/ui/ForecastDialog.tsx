@@ -1,3 +1,5 @@
+import { MON } from '../domain/dt';
+import { Ico } from './Ico';
 import { effective, resolvedLines, withCountryPolicy } from '../domain/forecastPlan';
 import { flexOf, pctOf } from '../domain/flex';
 import { exportOk } from './exportGate';
@@ -54,10 +56,10 @@ export function ForecastDialog({ p, close }: { p: Project; close: () => void }) 
             <label class="fc-l" for="fc-no">Number (from PMM → Documents → Contract; ask the RFO for notifications)</label>
             <input id="fc-no" value={o.changeNo ?? ''} placeholder="e.g. 2" onInput={(e) => up({ changeNo: (e.target as HTMLInputElement).value || undefined })} />
           </>}
-          {o.programme === 'VC' && <small class="muted">The rounded proposal is titled “Revised ({TODAY.toLocaleString('en-GB', { month: 'short', year: '2-digit' }).toUpperCase().replace(' ', '-')})”; the variation sheet has no justification column (VCs).</small>}
+          {o.programme === 'VC' && <small class="muted">The rounded proposal is titled “Revised ({`${MON[TODAY.getUTCMonth()]} ${String(TODAY.getUTCFullYear()).slice(2)}`.toUpperCase().replace(' ', '-')})”; the variation sheet has no justification column (VCs).</small>}
           <div class="fc-sum">Actuals as at <b>{date(per.asAt)}</b> · planned from <b>{date(per.from)}</b> to <b>{date(per.to)}</b>{o.kind === 'payment' && <> · revision {date(per.revFrom)} → {date(per.revTo)}</>}{o.kind === 'extension' && per.extTo && <> · extension {date(per.extFrom)} → {date(per.extTo)}</>}</div>
         </div>
-        <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok} onClick={go}>⤓ Download</button></div>
+        <div class="drawer-f"><button class="btn" onClick={close}>Cancel</button><button class="btn primary" disabled={!ok} onClick={go}><Ico n="download" />Download</button></div>
       </div>
     </>
   );

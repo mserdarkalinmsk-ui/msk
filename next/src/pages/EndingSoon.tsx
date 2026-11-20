@@ -1,3 +1,4 @@
+import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
 import { filtered, go, useStore } from '../data/store';
 import { ending } from '../domain/cash';
@@ -31,7 +32,7 @@ export function EndingSoon() {
       <section class="card" style={{ marginTop: '16px' }}>
         <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Spending needed to the end date</h2><p>Needed per month = budget not yet spent ÷ months left · pace = the forecast pace of spending, as on the project page</p></div>
           <div class="seg" style={{ marginLeft: 'auto' }}>{[6, 12, 18].map((m) => <button aria-pressed={within === m} onClick={() => setWithin(m)}>{m} months</button>)}</div>
-          <button class="btn" onClick={xlsx}>⤓ Excel</button></div>
+          <button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div>
         <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Ends</th><th class="r">Months left</th><th class="r">Left to use</th><th style={{ width: '22%' }}>Needed vs pace (per month)</th><th class="r">Unspent at the end</th></tr></thead>
           <tbody>{R.map((r) => { const mx = Math.max(r.need, r.pace, 1); return <tr class="click" onClick={() => go(`project/${r.p.id}/summary`)} style={{ borderLeft: `4px solid ${TONE[r.level]}` }}>
             <td><b>{lab(r.p)}</b><small class="muted"> {cname(r.p.country)}</small><div class="muted" style={{ fontSize: '12px' }}>{r.p.name.slice(0, 70)}</div></td>
