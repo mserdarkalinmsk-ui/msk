@@ -1,10 +1,9 @@
 import { SourceLine } from '../ui/SourceLine';
 import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
-import { BudgetBody } from './Budget';
 import { MapView, shapeFor, type MapMode } from '../ui/MapView';
 import { mapData, ModeSwitch } from './MapPage';
-import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, deskSlug, type DeskTab } from './CountryDesk';
+import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, deskSlug, OfficeServices, slugTab, useView, ViewBar, type DeskTab } from './CountryDesk';
 import { deleteOfficeReport, go, set, setOfficeCountry, setOfficeNote, useStore } from '../data/store';
 import { LS_BH, OB_BH, type Fund, type Office, type OfficeNote, officeCountry, officePace, officeView, transferPlan } from '../domain/office';
 import { downloadDocx } from '../ui/docxwrite';
@@ -15,6 +14,8 @@ const RED = 'var(--critical)', AMB = 'var(--c4)', GRN = 'var(--good)';
 const FUND: Record<Fund, { label: string; short: string; color: string }> = { ob: { label: `Ordinary Budget (BH ${OB_BH})`, short: 'OB', color: '#1d5fa8' }, ls: { label: `LS & Pagoda (BH ${LS_BH})`, short: 'LS & Pagoda', color: '#7b2d8e' } };
 const pc = (v: number) => (Number.isFinite(v) ? `${Math.round(v * 100)}%` : '—');
 const neg = (v: number) => (v < -0.5 ? { color: RED } : undefined);
+
+const OFFICE_VIEWS = ['Office budget', 'Office services'] as const;
 
 /** Programme offices' own running-cost budgets — Ordinary Budget and LS & Pagoda — one box per country, kept apart from projects. */
 export function Offices() {
@@ -28,10 +29,11 @@ export function Offices() {
   // The country and its tab are in the address (#/countries/<country>/<tab>): a reload, a link or the back button keep them.
   const route = useStore((s) => s.route), parts = route.split('/'), ctry = parts[1] ?? '';
   const lastTab = () => { try { const t = localStorage.getItem('pl-desk-tab') as DeskTab; return DESK_TABS.includes(t) ? t : 'Overview'; } catch { return 'Overview' as DeskTab; } };
-  const tab: DeskTab = DESK_TABS.find((t) => deskSlug(t) === parts[2]) ?? lastTab();
+  const tab: DeskTab = slugTab(parts[2]) ?? lastTab();
   const setCtry = (x: string) => go(`countries/${x}/${deskSlug(tab)}`);
   const setTab = (t: DeskTab) => { try { localStorage.setItem('pl-desk-tab', t); } catch { /* the address still changes */ } go(`countries/${c}/${deskSlug(t)}`); };
   const [mapOpen, setMapOpen] = useState(!ctry);
+  const [ov, setOv] = useView('pl-office-view', OFFICE_VIEWS);
   const shown = cf ? O.filter((o) => o.country === cf) : O;
   const picked = shown.find((x) => x.id === oid);
   // Country boxes: every country with an office, plus portfolio countries still without an office budget.
@@ -76,12 +78,12 @@ export function Offices() {
   return <div class="offices">{Boxes}<Hero />
     {tab === 'Overview' && <SourceLine P={P} />}
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
-    {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
     {tab === 'Projects' && <CountryProjects name={cname(c)} cid={c} P={P} />}
-    {tab === 'Budget lines' && <BudgetBody P={P} />}
-    {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
-    {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
-    {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}
+    {tab === 'Office' && <><ViewBar views={OFFICE_VIEWS} v={ov} set={setOv} label="Office" />
+      {ov === 'Office budget' ? (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice) : <div class="grid g-12"><OfficeServices cid={c} offices={here} /></div>}</>}
+    {tab === 'People' && <CountryStaff name={cname(c)} cid={c} P={P} />}
+    {tab === 'Contracts & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
+    {tab === 'Calendar' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}
   </div>;
 }
 

@@ -204,7 +204,7 @@ async function page(opts) {
   await p.emulateMedia({ media: 'print' });
   check(!(await p.locator('.side').isVisible()) && await p.locator('.pack').isVisible(), 'print view shows only the pack');
   await p.emulateMedia({ media: 'screen' });
-  // the deadlines of every country: under each country's Deadlines tab, and at their own address for all countries
+  // the deadlines of every country: under each country's Calendar tab, and at their own address for all countries
   await p.goto(url + '#/reports/calendar'); await p.waitForSelector('.ag-e'); await p.waitForTimeout(300);
   check(await p.locator('.seg.views button[aria-pressed="true"]:has-text("Calendar")').count() === 1, 'deadlines open on the calendar view');
   check(await p.locator('.ag-e').count() >= 6, 'calendar lists open deadlines');
@@ -616,14 +616,24 @@ async function page(opts) {
   const { p, errors, ctx } = await page({ viewport: { width: 1440, height: 900 } });
   await p.goto(url + '#/offices'); await p.waitForSelector('.cd-tabs');
   const tabs = await p.locator('.cd-tabs button').allTextContents();
-  await p.click('.cd-tabs button:text-is("Staff")'); await p.waitForTimeout(200);
-  check(/#\/countries\/[^/]+\/staff$/.test(p.url()), `a country's tab is in the address (${p.url().split('#')[1]})`);
+  await p.click('.cd-tabs button:text-is("People")'); await p.waitForTimeout(200);
+  check(/#\/countries\/[^/]+\/people$/.test(p.url()), `a country's tab is in the address (${p.url().split('#')[1]})`);
   await p.reload(); await p.waitForSelector('.cd-tabs');
-  check((await p.locator('.cd-tabs [aria-selected=true]').textContent()) === 'Staff', 'the country tab is kept after a reload');
+  check((await p.locator('.cd-tabs [aria-selected=true]').textContent()) === 'People', 'the country tab is kept after a reload');
+  // the address of an earlier tab still opens its place
+  await p.goto(p.url().replace(/\/people$/, '/tenders')); await p.waitForTimeout(300);
+  check((await p.locator('.cd-tabs [aria-selected=true]').textContent()) === 'Contracts & suppliers', 'an earlier address (tenders) opens Contracts & suppliers');
+  await p.goBack(); await p.waitForTimeout(200);
   await p.goBack(); await p.waitForTimeout(300);
-  check(tabs.join('|') === 'Overview|Office budget|Projects|Budget lines|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
+  check(tabs.join('|') === 'Overview|Projects|Office|People|Contracts & suppliers|Calendar', `country desk tabs (${tabs.join(', ')})`);
   for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
-  await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.click('.cd-views button:has-text("Providers")'); await p.waitForSelector('.sp-mini, .card-b p.muted');
+  // projects by budget line, and the office's services, are views of their tabs
+  await p.click('.cd-tabs button:text-is("Projects")'); await p.click('.cd-views button:has-text("By budget line")'); await p.waitForTimeout(300);
+  check(await p.locator('.cd-views button[aria-pressed=true]:has-text("By budget line")').count() === 1 && await p.locator('main table').count() > 0, 'projects by budget line, under Projects');
+  await p.click('.cd-views button:has-text("Projects")');
+  await p.click('.cd-tabs button:text-is("Office")'); await p.click('.cd-views button:has-text("Office services")'); await p.waitForTimeout(200);
+  check(await p.locator('h2:text-is("Office services")').count() === 1, 'the office services, under Office');
+  await p.click('.cd-tabs button:text-is("Contracts & suppliers")'); await p.click('.cd-views button:has-text("Providers")'); await p.waitForSelector('.sp-mini, .card-b p.muted');
   if (await p.locator('.sp-proj').count()) {
     const tot = await p.locator('.sp-mini-k b').first().textContent(), rows = await p.locator('.sp-proj tbody tr:not(.tot)').count();
     check(rows > 1 && (await p.locator('.sp-proj tr.tot').textContent()).includes(tot), `providers: each project's share, and the total (${rows} projects)`);
@@ -651,7 +661,7 @@ async function page(opts) {
   await p.click('.cc-form button:text-is("Cancel")');
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
   // Staff: everyone, the core team, the project staff… one view at a time; a core team contract ending soon is warned
-  await p.click('.cd-tabs button:text-is("Staff")'); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.cc-form');
+  await p.click('.cd-tabs button:text-is("People")'); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.cc-form');
   const deskOf = new URL(p.url()).hash.split('/')[2]; // this country, by its address: a country saved later moves in the list
   await f(1, 'Alpha, One'); await f(2, 'Office assistant'); await f(5, '2026-11-25');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);

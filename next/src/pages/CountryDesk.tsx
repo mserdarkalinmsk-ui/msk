@@ -28,16 +28,20 @@ import { date, full, pct, short } from '../ui/format';
 import { events, type Ev } from './Agenda';
 import { allPeople, StaffBoard } from './People';
 import { ProjectsBody } from './Projects';
+import { BudgetBody } from './Budget';
 import { poReports, reviewOf } from './POReview';
 import { reportDiff } from '../domain/reportDiff';
 import { ProviderBrief } from './Providers';
 import { Firm, Who } from '../ui/EntityPanel';
 
-/** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
-export const DESK_TABS = ['Overview', 'Office budget', 'Projects', 'Budget lines', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
+/** The tabs of a country, in the order of the questions asked of it: how is it doing; the money of the projects, then of
+ *  the office; the people; the contracts and suppliers (one place for the office's and the projects'); what is coming. */
+export const DESK_TABS = ['Overview', 'Projects', 'Office', 'People', 'Contracts & suppliers', 'Calendar'] as const;
 export type DeskTab = (typeof DESK_TABS)[number];
-/** A tab's part of the address: "Tenders & suppliers" → "tenders". */
-export const deskSlug = (t: DeskTab) => ({ Overview: 'overview', 'Office budget': 'office-budget', Projects: 'projects', 'Budget lines': 'budget', 'Tenders & suppliers': 'tenders', Staff: 'staff', Deadlines: 'deadlines' } as const)[t];
+/** A tab's part of the address: "Contracts & suppliers" → "contracts". */
+export const deskSlug = (t: DeskTab) => ({ Overview: 'overview', Projects: 'projects', Office: 'office', People: 'people', 'Contracts & suppliers': 'contracts', Calendar: 'calendar' } as const)[t];
+/** The tab of an address part, the addresses of the earlier tabs included (links and bookmarks keep working). */
+export const slugTab = (s?: string): DeskTab | undefined => DESK_TABS.find((t) => deskSlug(t) === s) ?? ({ 'office-budget': 'Office', budget: 'Projects', staff: 'People', tenders: 'Contracts & suppliers', deadlines: 'Calendar' } as Record<string, DeskTab>)[s ?? ''];
 
 const now = () => TODAY.toISOString().slice(0, 10);
 const active = (p: Project) => p.start <= now() && p.end >= now();
@@ -72,7 +76,7 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
   return <>
     {years.length > 1 && <div class="cd-year"><span>Year</span><div class="seg" role="group" aria-label="Year">{years.slice(-4).map((y) => <button aria-pressed={Y === y} onClick={() => setYr(y)}>{y}</button>)}</div></div>}
     <section class="bud2" aria-label={`Budgets in ${name}`}>
-      <button class="bud bud-ob" onClick={() => setTab('Office budget')}>
+      <button class="bud bud-ob" onClick={() => setTab('Office')}>
         <span class="bud-h">Office budget<small>the office's running costs: Ordinary Budget and LS & Pagoda{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
         {Ts.length ? <><b class="bud-v" title={full(ob.b)}>{short(ob.b)}</b>
           <Bar parts={[[ob.sc, 'var(--c1)'], [ob.pl, 'color-mix(in srgb, var(--c1) 35%, transparent)']]} of={ob.b} />
@@ -91,14 +95,14 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
         <dl><dt>Used in {Y}</dt><dd title="office spent + committed, and the projects' spending of the year">{full(ob.sc + spentY)}</dd><dt>Office</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
     </section>
     <div class="po-kpi cd-kpi cd-kpi3">
-      <Tile k="ten" color="var(--c4)" icon="flag" label="Tenders & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Tenders & suppliers')} />
-      <Tile k="stf" color="var(--c7)" icon="people" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
-      <Tile k="dl" color="var(--c8)" icon="clock" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
+      <Tile k="ten" color="var(--c4)" icon="flag" label="Contracts & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Contracts & suppliers')} />
+      <Tile k="stf" color="var(--c7)" icon="people" label="People" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('People')} />
+      <Tile k="dl" color="var(--c8)" icon="clock" label="Calendar" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Calendar')} />
     </div>
     <LookingAhead name={name} P={P} officeLeft={Ts.length ? ob.b - ob.sc - ob.pl : null} year={Y} setTab={setTab} />
     <div class="cd-two">
       <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
-      <section class="card cu"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days</p></div>{E.length > 6 && <div class="tools"><button class="btn ghost" onClick={() => setTab('Deadlines')}>All {E.length} ›</button></div>}</div>
+      <section class="card cu"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days</p></div>{E.length > 6 && <div class="tools"><button class="btn ghost" onClick={() => setTab('Calendar')}>All {E.length} ›</button></div>}</div>
         <div class="card-b">{E.length ? <ul class="cd-ev">{E.slice(0, 6).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
     </div>
     <SinceLastReports name={name} P={P} offices={offices} />
@@ -111,7 +115,7 @@ function LookingAhead({ name, P, officeLeft, year, setTab }: { name: string; P: 
   const unused = R.reduce((a, x) => a + x.o.unused, 0), over = R.reduce((a, x) => a + x.o.overrun, 0);
   return <section class="card la"><div class="card-h"><div><h2>Looking ahead in {name}</h2><p>The office at the end of {year}, and each running project at its end if it keeps its current pace of spending</p></div></div>
     <div class="card-b la-g">
-      <button class="la-k" onClick={() => setTab('Office budget')}><span>Office at the end of {year}</span>{officeLeft == null ? <b class="muted">—</b> : <b style={{ color: officeLeft < -0.5 ? 'var(--critical)' : 'var(--good)' }}>{officeLeft < -0.5 ? `short by ${full(-officeLeft)}` : `${full(officeLeft)} left`}</b>}<small>after what is foreseen to the year end</small></button>
+      <button class="la-k" onClick={() => setTab('Office')}><span>Office at the end of {year}</span>{officeLeft == null ? <b class="muted">—</b> : <b style={{ color: officeLeft < -0.5 ? 'var(--critical)' : 'var(--good)' }}>{officeLeft < -0.5 ? `short by ${full(-officeLeft)}` : `${full(officeLeft)} left`}</b>}<small>after what is foreseen to the year end</small></button>
       <div class="la-k"><span>Projects at their end</span><b style={{ color: unused > 0.5 ? 'var(--serious)' : 'var(--good)' }}>{unused > 0.5 ? `${short(unused)} may stay unused` : 'budgets used in full'}</b><small>{over > 0.5 ? `and ${short(over)} above budget on others · ` : ''}at the current pace</small></div>
       <ul class="la-l">{R.map(({ p, o }) => <li onClick={() => open(p)}><b>{plabel(p)}</b><span class="la-bar"><i style={{ width: `${Math.min(100, o.utilisation * 100)}%`, background: o.utilisation < 0.85 ? 'var(--serious)' : o.utilisation > 1 ? 'var(--critical)' : 'var(--good)' }} /></span><span class="num">{pct(o.utilisation)}</span><small class="muted">{o.unused > 0.5 ? `${short(o.unused)} unused` : o.overrun > 0.5 ? `${short(o.overrun)} over` : 'on track'}</small></li>)}</ul>
     </div></section>;
@@ -145,9 +149,9 @@ function CountryAlerts({ name, cid, P, setTab, offices }: { name: string; cid: s
   type Item = { sev: keyof typeof rank; who: string; what: string; detail: string; go: () => void };
   const items: Item[] = [
     ...openAlerts(alerts(P, TODAY), marks, TODAY).map((a) => { const p = P.find((x) => x.id === a.projectId)!; return { sev: a.severity, who: plabel(p), what: a.title, detail: a.detail, go: () => open(p) }; }),
-    ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}ends ${date(d.end)}`, go: () => setTab('Tenders & suppliers') })),
-    ...contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => (mine.has(k) || c.country === cid) && c.cap)), TODAY, ceilingUse).flatMap((d) => { const sv = ceilingSeverity(d.used, d.cap); return sv ? [{ sev: sv, who: 'Contract', what: `${d.name}: ${pct(d.cap ? d.used / d.cap : 0)} of its ceiling ordered`, detail: `${full(d.used)} of ${full(d.cap!)}`, go: () => setTab('Tenders & suppliers') }] : []; }),
-    ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('Staff') })),
+    ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}ends ${date(d.end)}`, go: () => setTab('Contracts & suppliers') })),
+    ...contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => (mine.has(k) || c.country === cid) && c.cap)), TODAY, ceilingUse).flatMap((d) => { const sv = ceilingSeverity(d.used, d.cap); return sv ? [{ sev: sv, who: 'Contract', what: `${d.name}: ${pct(d.cap ? d.used / d.cap : 0)} of its ceiling ordered`, detail: `${full(d.used)} of ${full(d.cap!)}`, go: () => setTab('Contracts & suppliers') }] : []; }),
+    ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('People') })),
   ].sort((a, b) => rank[a.sev] - rank[b.sev]);
   const [all, setAll] = useState(false);
   const n = (k: keyof typeof rank) => items.filter((x) => x.sev === k).length;
@@ -175,52 +179,63 @@ export function CountryProjects({ name, cid, P }: { name: string; cid: string; P
     return <div class="bud" style={{ '--k': k } as never}><span class="bud-h">{title}<small>{x.n} project{x.n === 1 ? '' : 's'} · {x.run} running</small></span><b class="bud-v" title={full(x.b)}>{short(x.b)}</b>
       <Bar parts={[[x.s, k], [x.c, `color-mix(in srgb, ${k} 40%, transparent)`]]} of={x.b} />
       <dl><dt>Spent</dt><dd>{full(x.s)} <small>({pct(x.b ? x.s / x.b : 0)})</small></dd><dt>Committed</dt><dd>{full(x.c)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(x.b - x.s - x.c)}</b></dd></dl></div>; };
+  const [v, setV] = useView('pl-proj-view', PROJECT_VIEWS);
   return <>
+    <ViewBar views={PROJECT_VIEWS} v={v} set={setV} label="Projects" />
+    {v === 'By budget line' ? <BudgetBody P={P} /> : <>
     <section class="bud2" aria-label={`Extraordinary budget and voluntary contributions in ${name}`}>
       <Card g="JP" title="Joint programmes" k="var(--c3)" /><Card g="VC" title="Voluntary contributions" k="var(--c2)" /><Card g="all" title={`All projects in ${name}`} k="var(--c7)" />
     </section>
-    <ProjectsBody P={P} country={cid} />
+    <ProjectsBody P={P} country={cid} /></>}
   </>;
 }
 
 export function CountryTenders({ name, cid, P, offices }: { name: string; cid: string; P: Project[]; offices: Office[] }) {
-  const FW = useStore((s) => s.ledger.frameworks) ?? {};
-  const rep = offices[0]?.reports.at(-1), OS = rep ? officeServices(rep) : [];
-  const [pre, setPre] = useState<Prefill | null>(null);
-  const okey = (line: string, sup: string) => `office:${cid}:${line}:${supKey(sup)}`;
+  const [pre] = useState<Prefill | null>(() => { const x = pending; pending = null; return x; });
   const cname = () => name;
   const [v, setV] = useView('pl-tender-view', TENDER_VIEWS);
-  return <><ViewBar views={TENDER_VIEWS} v={v} set={setV} label="Tenders and suppliers" />
+  useEffect(() => { if (pre) { setV('Contracts'); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80); } }, []);
+  return <><ViewBar views={TENDER_VIEWS} v={v} set={setV} label="Contracts and suppliers" />
   <div class="grid g-12">
     {v === 'Providers' && <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
       <div class="card-b"><CountryProviders P={P} cname={cname} /></div></section>}
     {v === 'Contracts' && <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />}
-    {v === 'Office contracts' && <section class="card span-12"><div class="card-h"><div><h2>Office contracts</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
+  </div></>;
+}
+
+/** The office's own services by budget line (rent, cleaning, security…), each with its contract or a way to add it. */
+export function OfficeServices({ cid, offices }: { cid: string; offices: Office[] }) {
+  const FW = useStore((s) => s.ledger.frameworks) ?? {};
+  const rep = offices[0]?.reports.at(-1), OS = rep ? officeServices(rep) : [];
+  const okey = (line: string, sup: string) => `office:${cid}:${line}:${supKey(sup)}`;
+  return <section class="card span-12"><div class="card-h"><div><h2>Office services</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned; it is kept under Contracts &amp; suppliers with the projects' contracts. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
       {OS.length > 0 && <div class="card-b table-scroll"><table class="mini os-t"><thead><tr><th>Budget line</th><th>Service</th><th>Supplier</th><th class="r">Orders</th><th>Orders cover to</th><th class="r">Spent + committed</th><th class="r">Still open</th><th>Contract</th></tr></thead>
         <tbody>{OS.map((x, i) => { const k = okey(x.line, x.supplier), c = FW[k] ?? FW[supKey(x.supplier)], due = c?.end || c?.openEnded ? contractsDue({ [k]: c }, TODAY)[0] : undefined;
           return <tr class={i && OS[i - 1].line === x.line ? 'same' : ''}><td>{i && OS[i - 1].line === x.line ? '' : <><span class="num">{x.line}</span> <span class="muted">{x.lineName}</span></>}</td>
-            <td><b>{x.kind}</b></td><td>{x.supplier}</td>
+            <td><b>{x.kind}</b></td><td><Firm name={x.supplier} /></td>
             <td class="r num" title={[...new Set(x.orders.map((o) => o.description))].join('\n')}>{x.orders.length}</td>
             <td class="num" title={x.coverText}>{x.covers ? date(x.covers) : '—'}</td>
             <td class="r num">{full(x.amount)}</td><td class="r num">{x.open > 0.5 ? full(x.open) : ''}</td>
             <td>{due ? <span class={`badge ${due.openEnded ? 'neutral' : SEV_BADGE[due.severity]}`} title={due.openEnded ? 'No end date: nothing to warn' : `${c!.ref ?? ''} ends ${date(due.end)}`}>{dueText(due)}</span>
               : x.directDebit ? <span class="badge neutral" title="Paid by direct debit: a standing service with no end date, so nothing to warn">open-ended · direct debit</span>
-              : <button class="btn ghost os-add" onClick={() => { setPre({ n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }); setV('Contracts'); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
-    </section>}
-  </div></>;
+              : <button class="btn ghost os-add" onClick={() => { pending = { n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }; go(`countries/${cid}/contracts`); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
+    </section>;
 }
 
 /** A tab split into views opened one at a time, the last one remembered (long pages stay short). */
-function useView<T extends string>(key: string, views: readonly T[]): [T, (v: T) => void] {
+export function useView<T extends string>(key: string, views: readonly T[]): [T, (v: T) => void] {
   const [v, setV] = useState<T>(() => { try { const x = localStorage.getItem(key) as T; return views.includes(x) ? x : views[0]; } catch { return views[0]; } });
   return [v, (x: T) => { setV(x); try { localStorage.setItem(key, x); } catch { /* the view still changes */ } }];
 }
-function ViewBar<T extends string>({ views, v, set, label, counts = {} }: { views: readonly T[]; v: T; set: (x: T) => void; label: string; counts?: Partial<Record<T, number>> }) {
+export function ViewBar<T extends string>({ views, v, set, label, counts = {} }: { views: readonly T[]; v: T; set: (x: T) => void; label: string; counts?: Partial<Record<T, number>> }) {
   return <div class="seg of-views cd-views" role="tablist" aria-label={label}>{views.map((x) => <button role="tab" aria-pressed={v === x} onClick={() => set(x)}>{x}{counts[x] != null ? <span class="tab-n">{counts[x]}</span> : null}</button>)}</div>;
 }
 const STAFF_VIEWS = ['Everyone', 'Core team', 'Project staff', 'Staff plan', 'Salary scale'] as const;
-const TENDER_VIEWS = ['Contracts', 'Office contracts', 'Providers'] as const;
+const TENDER_VIEWS = ['Contracts', 'Providers'] as const;
+const PROJECT_VIEWS = ['Projects', 'By budget line'] as const;
+/** An office service whose contract is to be added: handed from the Office tab to the contract form. */
+let pending: Prefill | null = null;
 
 export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const everyone = allPeople(P);

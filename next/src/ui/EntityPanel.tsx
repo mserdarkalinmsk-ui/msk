@@ -48,7 +48,7 @@ export function ProviderPanel({ k, close }: { k: string; close: () => void }) {
           </dl>
           {c.doc && <button class="btn ghost" onClick={() => openAttachment(c.doc!)}><Ico n="docs" />Open the signed contract</button>}
         </div>; })
-        : <p class="muted">No contract entered for this provider. {country && <button class="linkish" onClick={() => { close(); go(`countries/${country}/tenders`); }}>Add it under Tenders &amp; suppliers ›</button>}</p>}
+        : <p class="muted">No contract entered for this provider. {country && <button class="linkish" onClick={() => { close(); go(`countries/${country}/contracts`); }}>Add it under Tenders &amp; suppliers ›</button>}</p>}
       {C.projects.length > 0 && <><h3>By project</h3>
         <div class="tw"><table class="mini"><thead><tr><th>Project</th><th>Lines</th><th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th></tr></thead>
           <tbody>{C.projects.map((s) => { const p = pj(s.id); return <tr class="click" onClick={() => { close(); go(`project/${s.id}/pos`); }}><td><b>{p ? plabel(p) : s.id}</b></td><td class="muted wrap">{s.lines.join(', ')}</td><td class="r num">{s.n}</td><td class="r num">{full(s.spent)}</td><td class="r num">{full(s.open)}</td><td class="r num"><b>{full(s.sc)}</b></td></tr>; })}</tbody></table></div></>}
@@ -72,7 +72,7 @@ export function PersonPanel({ k, close }: { k: string; close: () => void }) {
       {C.core.length > 0 && <><h3>Core team</h3>{C.core.map(({ country, m }) => { const p = P.find((x: Project) => x.id === m.project);
         return <div class="en-c"><div class="en-c-h"><b>{m.position}</b>{m.grade && <span class="muted">grade {m.grade}</span>}{left(m.end)}</div>
           <dl><dt>Office</dt><dd>{cn(country)}</dd><dt>Contract</dt><dd>{m.start ? date(m.start) : '—'} – {coreEnd(m, date)}</dd><dt>Paid from</dt><dd>{m.fund === 'project' && p ? `${plabel(p)}${m.share ? ` · ${m.share}%` : ''}` : FUND_LABEL[m.fund ?? 'ob']}</dd>{m.note && <><dt>Note</dt><dd>{m.note}</dd></>}</dl>
-          <button class="linkish" onClick={() => { close(); go(`countries/${country}/staff`); }}>Open the core team ›</button></div>; })}</>}
+          <button class="linkish" onClick={() => { close(); go(`countries/${country}/people`); }}>Open the core team ›</button></div>; })}</>}
       {C.roles.length > 0 && <><h3>On projects</h3>
         <div class="tw"><table class="mini"><thead><tr><th>Project</th><th>Position</th><th>Base</th><th class="r">FTE</th><th>Contract</th><th>Status</th></tr></thead>
           <tbody>{C.roles.map((r) => <tr class="click" onClick={() => { close(); go(`project/${r.project.id}/staff`); }}><td><b>{plabel(r.project as Project)}</b></td><td>{r.position}</td><td>{r.base === 'HQ' ? 'SxB / HQ' : r.base}</td><td class="r num">{r.fte != null ? r.fte.toFixed(2) : '—'}</td>
