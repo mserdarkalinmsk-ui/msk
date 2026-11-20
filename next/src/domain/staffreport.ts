@@ -29,7 +29,10 @@ export function staffLines(p: Project, today: Date): StaffLine[] {
   const monthsToEnd = Math.max(0, (end - today.getTime()) / 2_629_800_000);
   return L.filter((l) => /^1\.\d+\.1\.\d+$/.test(l.code) && (l.approved ?? 0) > 0).map((l) => {
     const on = R.filter((a) => a.code === l.code && a.status !== 'Ended'); // incl. payroll-only people whose contract dates are unknown
-    const fte = on.reduce((s, a) => s + (a.fte ?? 1), 0);
+    // A line funds a share of a post ("Project assistant (15%)"): its months are counted at that share, so the people on it
+    // need no more of the line than the share, however much of their time they give to the project overall.
+    const share = /\((\d{1,3}(?:[.,]\d+)?)\s*%\)/.exec(l.description ?? '');
+    const fte = Math.min(on.reduce((s, a) => s + (a.fte ?? 1), 0), share ? Number(share[1].replace(',', '.')) / 100 : Infinity);
     const budgetMonths = l.approvedUnits ?? 0, usedMonths = l.reportedUnits ?? 0;
     const remaining = Math.max(0, budgetMonths - usedMonths), need = fte * monthsToEnd;
     return {

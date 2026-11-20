@@ -34,7 +34,7 @@ function LinesT({ rows, multi }: { rows: StaffLine[]; multi: boolean }) {
     { key: 'bm', label: 'Budget months', width: 110, align: 'r', sum: true, format: m1, value: (x) => x.budgetMonths },
     { key: 'um', label: 'Used', width: 80, align: 'r', sum: true, format: m1, value: (x) => x.usedMonths },
     { key: 'rm', label: 'Remaining', width: 96, align: 'r', sum: true, format: m1, value: (x) => x.remainingMonths },
-    { key: 'nd', label: 'Needed to end', width: 110, align: 'r', sum: true, format: m1, value: (x) => x.need, render: (x) => <span title={`${x.fteOnLine} FTE × ${x.monthsToEnd.toFixed(1)} months`}>{m1(x.need)}</span> },
+    { key: 'nd', label: 'Needed to end', width: 110, align: 'r', sum: true, format: m1, value: (x) => x.need, render: (x) => <span title={`${+x.fteOnLine.toFixed(2)} FTE on the line (capped at the share the line funds) × ${x.monthsToEnd.toFixed(1)} months to the end`}>{m1(x.need)}</span> },
     { key: 'g', label: 'Months gap', width: 110, align: 'r', value: (x) => x.gap, render: (x) => !x.budgetMonths ? '—' : <span class={`badge ${x.gap < -0.5 ? 'critical' : x.gap > 3 ? 'neutral' : 'good'}`}>{x.gap > 0 ? '+' : ''}{x.gap.toFixed(1)}</span> },
     { key: 'br', label: 'Budget rate', width: 106, align: 'r', format: full, value: (x) => x.budgetRate || null },
     { key: 'ar', label: 'Actual rate', width: 106, align: 'r', value: (x) => x.actualRate || null, render: (x) => !x.actualRate ? '—' : <span style={{ color: x.budgetRate && x.actualRate > x.budgetRate * 1.15 ? 'var(--warn)' : undefined, fontWeight: x.budgetRate && x.actualRate > x.budgetRate * 1.15 ? 700 : undefined }}>{full(x.actualRate)}</span> },
