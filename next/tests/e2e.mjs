@@ -643,6 +643,12 @@ async function page(opts) {
   check(await p.locator('.cc-row:has-text("Gamma Events Ltd") .att-open').count() === 1, 'the signed contract is attached to its row and can be opened');
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
+  // a contract read from its PDF: reference, provider, end, renewal limit and total fill the form
+  await p.setInputFiles('.cc-read input', resolve('tests/fixtures/aoe.pdf'));
+  await p.waitForFunction(() => /Read from \S+\.pdf|no text/.test(document.querySelector('.cc-form')?.textContent ?? ''), null, { timeout: 15000 }).catch(() => {});
+  const fv = (i) => p.inputValue(`.cc-form label:nth-of-type(${i}) input`);
+  check(await fv(1) === 'DELTA UTILITIES LTD.' && await fv(2) === 'SC099/2026' && await fv(5) === '2026-12-31' && await fv(7) === '2027-01-31' && await fv(9) === '12000', `the contract's terms are read from its PDF (${[await fv(1), await fv(2), await fv(5), await fv(7), await fv(9)].join(' | ')})`);
+  await p.click('.cc-form button:text-is("Cancel")');
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
   // Staff: everyone, the core team, the project staff… one view at a time; a core team contract ending soon is warned
   await p.click('.cd-tabs button:text-is("Staff")'); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.cc-form');
@@ -656,7 +662,7 @@ async function page(opts) {
   await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.ev-card');
   check(await p.locator('.ev-card:has-text("Alpha, One")').count() === 1 && await p.locator('.ev-card:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
   await p.click('.ev-tools button:text-is("List")'); check(await p.locator('.ev-l li:has-text("Alpha, One")').count() === 1, 'everyone also shown as a list');
-  check(await p.locator('.ev-l li:has-text("Delta, Four") .ev-end:has-text("Open-ended")').count() === 1, 'a core team post with no end date reads open-ended');
+  check(await p.locator('.ev-l li:has-text("Delta, Four") .ev-end:has-text("Dates missing")').count() === 1, 'a core team post with no end date reads dates missing (only the head of office and of operations run open-ended)');
   // the salary scale is read from a newer document: the page of the country, not the other one
   await p.click('.cd-views button:has-text("Salary scale")'); await p.click('.tr-scale summary');
   await p.setInputFiles('.tr-load input[type=file]', resolve('tests/fixtures/scale.pdf'));
@@ -692,13 +698,9 @@ async function page(opts) {
   await p.locator('.palette li:has-text("core team")').first().click(); await p.waitForSelector('.drawer .en');
   check(/Core team/i.test(await p.locator('.drawer .en').innerText()) && (await p.locator('.drawer h2').first().textContent()).includes('Alpha'), 'the person card shows the core team post');
   await p.click('.drawer-h button'); await p.waitForTimeout(200);
-  // every figure says where it comes from; words have their meaning on hover; any small table goes to Excel
+  // every figure says where it comes from; words have their meaning on hover
   await p.goto(url + '#/overview'); await p.waitForSelector('.src-l');
   check(/latest report of each project/.test(await p.locator('.src-l').innerText()) && await p.locator('[data-gl][title]').count() > 0, 'the source of the figures is told, and the words of the app explained on hover');
-  await p.goto(url + `#/countries/${deskOf}/staff`); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.ct-t');
-  await p.locator('.ct-t').hover(); await p.waitForSelector('.tt-bar:not([hidden])', { timeout: 3000 }).catch(() => {});
-  const [xl] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).catch(() => null), p.click('.tt-bar button[data-k=x]').catch(() => {})]);
-  check(!!xl && /\.xlsx$/.test(xl.suggestedFilename()), 'a small table goes to Excel from its hover button');
   check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

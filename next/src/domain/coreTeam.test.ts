@@ -25,10 +25,10 @@ describe('core team', () => {
       [{ name: 'ALPHA,One', display: 'One ALPHA', position: 'Project assistant', end: '2026-12-31', status: 'Active', project: prj }, { name: 'BETA,Two', display: 'Two BETA', position: 'Driver', end: '2026-12-31', status: 'Active', project: prj }, { name: 'GAMMA,Three', display: 'Three GAMMA', position: 'Officer', end: '2027-06-30', status: 'Active', project: prj }], (p) => p.code);
     expect(L.map((x) => [x.name, x.roles.length, x.ends, !!x.check])).toEqual([['Alpha, One', 1, '2026-12-31', true], ['Beta, Two', 1, '2026-12-31', false], ['Three GAMMA', 1, '2027-06-30', false]]);
   });
-  it('says why a person has no end date: the office post runs on, SxB staff carry no dates, else the dates are missing', () => {
+  it('says why a person has no end date: head of office and of operations run on, SxB staff carry no dates, else the dates are missing', () => {
     const prj = { id: 'p1', code: 'P1' };
-    const L = countryPeople([{ id: 'c1', name: 'Alpha, One', position: 'Head of office', fund: 'ob' }],
+    const L = countryPeople([{ id: 'c1', name: 'Alpha, One', position: 'Head of office', fund: 'ob' }, { id: 'c2', name: 'Delta, Four', position: 'Driver', fund: 'ob' }, { id: 'c3', name: 'Epsilon, Five', position: 'HEAD OF OPERATIONS', fund: 'ob' }],
       [{ name: 'BETA,Two', display: 'Two BETA', position: 'Expert', end: '', status: 'Dates missing', base: 'HQ', project: prj }, { name: 'GAMMA,Three', display: 'Three GAMMA', position: 'Officer', end: '', status: 'Dates missing', base: 'Local', project: prj }], (p) => p.code);
-    expect(L.map((x) => x.noEnd)).toEqual(['open', 'missing', 'sxb']);
+    expect(L.map((x) => [x.name, x.noEnd])).toEqual([['Alpha, One', 'open'], ['Delta, Four', 'missing'], ['Epsilon, Five', 'open'], ['Three GAMMA', 'missing'], ['Two BETA', 'sxb']]);
   });
 });

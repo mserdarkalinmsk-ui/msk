@@ -55,6 +55,10 @@ export function coreFromRows(rows: string[][]): CoreMember[] {
 
 /* ---------- one list of the people of a country ---------- */
 /** Who a name is, whatever the order or the accents: "YILMAZ, Ayse" and "Ayşe Yılmaz" are the same person. */
+/** The posts that run with no end date: the head of the office and the head of operations. Any other post without an end date has its date missing. */
+export const openPost = (m: Pick<CoreMember, 'position' | 'end'>) => !m.end && /\bhead\s+of\s+(?:the\s+)?(?:office|operations?)\b/i.test(m.position);
+/** How a core team contract's end reads: its date, open-ended (head of office / operations), or missing. */
+export const coreEnd = (m: Pick<CoreMember, 'position' | 'end'>, fmt: (d: string) => string) => m.end ? fmt(m.end) : openPost(m) ? 'open-ended' : 'end date missing';
 export const personKeyOf = (name: string) => name.toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/\p{M}/gu, '').split(/[^a-z0-9]+/).filter(Boolean).sort().join(' ');
 export interface ProjectRole { project: string; projectId: string; position: string; end: string; status: string; base?: string }
 export interface CountryPerson { key: string; name: string; core?: CoreMember; roles: ProjectRole[]; ends: string; check?: string; /** with no end date: why — the office's own post runs on, SxB staff have no contract dates in the reports, otherwise the dates are missing */ noEnd?: 'open' | 'sxb' | 'missing' }
@@ -73,7 +77,7 @@ export function countryPeople(core: CoreMember[], staff: { name: string; display
   for (const x of by.values()) {
     const ends = [x.core?.end, ...x.roles.filter((r) => r.status === 'Active').map((r) => r.end)].filter(Boolean) as string[];
     x.ends = ends.sort()[0] ?? '';
-    if (!x.ends) x.noEnd = x.core ? 'open' : x.roles.some((r) => r.base === 'HQ') ? 'sxb' : 'missing';
+    if (!x.ends) x.noEnd = x.core ? (openPost(x.core) ? 'open' : 'missing') : x.roles.some((r) => r.base === 'HQ') ? 'sxb' : 'missing';
     if (x.core && x.roles.length) {
       const on = x.roles.map((r) => r.projectId);
       if (x.core.fund !== 'project') x.check = `On the core team paid by the office, and on the staff list of ${[...new Set(x.roles.map((r) => r.project))].join(', ')}: check how the post is charged.`;

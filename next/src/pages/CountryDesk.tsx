@@ -7,7 +7,9 @@ import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeveri
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
-import { countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { readDocument, readPages } from '../ui/docread';
+import { contractTerms, type ContractTerms } from '../domain/contractRead';
+import { coreEnd, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
 import { alerts, outcome } from '../domain/insights';
@@ -299,7 +301,7 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
       <div><b>{L.filter((x) => x.core).length}</b><span>core team</span></div>
       <div><b>{L.filter((x) => x.roles.length).length}</b><span>on projects</span></div>
       <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><b>{ending.length}</b><span>contracts ending within 90 days{endDays.length === 1 ? `, all on ${date(endDays[0])}` : ''}{soon ? ' · showing' : ''}</span></button>
-      {nn('open') > 0 && <div title="Core team posts with no end date"><b>{nn('open')}</b><span>open-ended</span></div>}
+      {nn('open') > 0 && <div title="Head of office and head of operations: posts with no end date"><b>{nn('open')}</b><span>open-ended</span></div>}
       {nn('sxb') > 0 && <div title="Staff seconded by SxB / HQ: the reports carry no contract dates for them"><b>{nn('sxb')}</b><span>SxB staff</span></div>}
       {nn('missing') > 0 && <div title="On a project's staff list with no contract dates: add them on the project's Staff tab"><b>{nn('missing')}</b><span>dates missing</span></div>}
       {checks > 0 && <div class="ev-chk"><b>{checks}</b><span>to check</span></div>}
@@ -314,7 +316,7 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
             <span class="ev-ring" style={{ '--p': String(left) } as never} title={x.ends ? `Contract ends ${date(x.ends)}` : NO_END[x.noEnd ?? 'missing']}><span class="ev-av">{initials(x.name)}</span></span>
             <b class="ev-n"><Who name={x.name} k={x.key} /></b>
             <small class="ev-r">{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ') || '—'}</small>
-            <span class="ev-chips">{x.core && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
+            <span class="ev-chips">{x.core && x.core.fund !== 'other' && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
               {[...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g).map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
             {x.check && <em class="ev-c">{x.check}</em>}
             <span class="ev-f">{x.ends ? <><span class="num">until {date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
@@ -323,7 +325,7 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
           return <li class={x.check ? 'chk' : ''}>
             <span class="ev-av" style={{ background: x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' }}>{initials(x.name)}</span>
             <span class="ev-who"><b><Who name={x.name} k={x.key} /></b><small>{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ')}</small>{x.check && <em>{x.check}</em>}</span>
-            <span class="ev-chips">{x.core && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
+            <span class="ev-chips">{x.core && x.core.fund !== 'other' && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
               {[...new Set(x.roles.map((r) => r.project))].map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
             <span class="ev-end">{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
           </li>; })}</ul>}</div>; })}
@@ -374,7 +376,7 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
         <tbody>{D.map(({ m, days, severity }) => { const p = P.find((x) => x.id === m.project), seen = m.fund === 'project' ? onProject(m) : null;
           return <tr class={onTeam(m, TODAY) ? '' : 'muted'}><td><b>{m.name}</b>{m.note && <small class="muted cd-n">{m.note}</small>}</td><td>{m.position}</td><td class="num">{m.grade ?? '—'}</td>
             <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : FUND_LABEL[m.fund ?? 'ob']}</td>
-            <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {m.end ? date(m.end) : 'open-ended'}</td>
+            <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {coreEnd(m, date)}</td>
             <td>{days == null ? <span class="muted">no end date</span> : <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</td>
             <td style={{ whiteSpace: 'nowrap' }}><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}><Ico n="edit" /></button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
         : <p class="muted">No one on the core team of {name} yet. Add the office's own staff above: name, position, contract dates and what pays for the post.</p>}
@@ -401,6 +403,13 @@ export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; 
 
 /** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
 /** A contract to add, filled in from an office service. */
+/** The known name closest to a name read from a document (most words in common), when at least half of its words match. */
+function closest(name: string, known: string[]) {
+  const w = (s: string) => new Set(supKey(s).split(/[^a-z0-9]+/).filter((x) => x.length > 2));
+  const a = w(name); let best: string | undefined, score = 0.5;
+  for (const k of known) { const b = w(k), n = [...a].filter((x) => b.has(x)).length / Math.max(1, Math.min(a.size, b.size)); if (n > score) { score = n; best = k; } }
+  return best;
+}
 const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR' };
 /** Whole months a contract covers, its first day to its last (1 Jan – 31 Dec = 12). */
 const monthsOf = (a: string, b: string) => Math.max(1, Math.round(((Date.parse(b) - Date.parse(a)) / 864e5 + 1) / 30.4375));
@@ -420,13 +429,29 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);
   const [f, setF] = useState(EMPTY_C);
   const [edit, setEdit] = useState(''), [meta, setMeta] = useState<{ line?: string; kind?: string }>({});
+  const [doc, setDoc] = useState<Attachment | null>(null), [readMsg, setReadMsg] = useState('');
   // an office service chosen in the table: its supplier, budget line and kind; the end its orders cover, to confirm
   useEffect(() => { if (pre) { setF({ ...EMPTY_C, sup: pre.sup, end: pre.end }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
   const save = () => {
     const name = f.sup.trim(); if (!name || (!f.end && !f.open)) return;
     const k = edit || supKey(name);
-    setFramework(k, { name, ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }), ...(f.renew && !f.open && f.renew > f.end ? { renewBy: f.renew } : {}), ...(+f.fee > 0 ? { fee: Math.round(+f.fee * 100) / 100 } : {}), ...(+f.total > 0 ? { total: Math.round(+f.total * 100) / 100 } : {}), ...(+f.fee > 0 || +f.total > 0 ? { cur: f.cur } : {}) });
-    setF(EMPTY_C); setEdit(''); setMeta({});
+    const att = doc ?? FW[k]?.doc;
+    setFramework(k, { name, ...(att ? { doc: att } : {}), ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }), ...(f.renew && !f.open && f.renew > f.end ? { renewBy: f.renew } : {}), ...(+f.fee > 0 ? { fee: Math.round(+f.fee * 100) / 100 } : {}), ...(+f.total > 0 ? { total: Math.round(+f.total * 100) / 100 } : {}), ...(+f.fee > 0 || +f.total > 0 ? { cur: f.cur } : {}) });
+    setF(EMPTY_C); setEdit(''); setMeta({}); setDoc(null); setReadMsg('');
+  };
+  // the terms read from the contract itself (a PDF or Word with text); a scan is attached and its terms typed
+  const readContract = async (e: Event) => {
+    const inp = e.target as HTMLInputElement, file = inp.files?.[0]; inp.value = ''; if (!file) return;
+    const att = await readAttachment(file); if (typeof att === 'string') { setReadMsg(att); return; }
+    setDoc(att); setReadMsg('Reading…');
+    let t: ContractTerms = {};
+    // a PDF read line by line in page order (a label and its value stay together); Word as paragraphs and tables
+    try { t = contractTerms(/\.pdf$/i.test(file.name) ? (await readPages(file)).map((x) => x.text).join(' ') : (({ paragraphs: P0, tables }) => [...P0, ...tables.flat(2)].join(' '))(await readDocument(file))); } catch { /* attached all the same */ }
+    // the provider as the orders spell it, when the contract's spelling is close enough
+    const known = t.provider ? closest(t.provider, [...new Set(names.values())]) : undefined;
+    setF((f0) => ({ ...f0, sup: f0.sup || known || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur }));
+    const got = [t.ref && 'reference', t.provider && 'provider', t.end && 'end date', t.renewBy && 'renewal limit', t.total && 'total', t.fee && 'monthly fee'].filter(Boolean);
+    setReadMsg(got.length ? `Read from ${file.name}: ${got.join(', ')}. Check them, then save; the file is kept with the contract.` : `${file.name} has no text that can be read (a scanned copy): it is kept with the contract. Type the dates and amounts from it.`);
   };
   const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? 'EUR' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
   // the calendar: three months back, fifteen ahead
@@ -452,7 +477,9 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <label>Currency<select class="select" value={f.cur} onChange={(e) => setF({ ...f, cur: (e.target as HTMLSelectElement).value })}>{['EUR', 'TRY', 'USD'].map((c) => <option>{c}</option>)}</select></label>
         {+f.fee > 0 && f.start && f.end && !f.open && <p class="cc-meta">{f.fee} {f.cur} a month over {monthsOf(f.start, f.end)} months = <b>{amt(+f.fee * monthsOf(f.start, f.end), f.cur)}</b>{+f.total > 0 && Math.abs(+f.total - +f.fee * monthsOf(f.start, f.end)) > 0.5 ? <> · the total typed differs ({amt(+f.total, f.cur)}): fees that change during the period</> : null}</p>}
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
-        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF(EMPTY_C); }}>Cancel</button>}
+        {(edit || doc) && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF(EMPTY_C); setDoc(null); setReadMsg(''); }}>Cancel</button>}
+        <label class="btn ghost cc-read" title="The contract as PDF or Word: its reference, provider, end, renewal limit and total are read; a scan is attached"><Ico n="upload" />Read from the contract<input type="file" accept=".pdf,.docx" hidden onChange={readContract} /></label>
+        {readMsg && <p class="cc-meta">{readMsg}</p>}
         {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
       </form>
       {D.length ? <div class="cc-cal">
