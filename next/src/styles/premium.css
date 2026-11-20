@@ -141,3 +141,6 @@ details.em-method[open] > summary::before { content: '▾'; }
 .sp-proj { margin: 0 0 16px; }
 .sp-proj tr.tot td { border-top: 2px solid var(--line-strong); }
 .sp-pj { display: block; font-size: 11.5px; }
+/* contract calendar: the stretch it may still be renewed to, as an outline after the bar */
+.cc-track em.cc-renew, .s-serious .cc-track em.cc-renew, .s-critical .cc-track em.cc-renew { background: transparent; border: 1.5px dashed color-mix(in srgb, var(--ink-3) 70%, transparent); box-shadow: none; border-radius: 0 8px 8px 0; }
+.cc-form .select { height: 34px; }

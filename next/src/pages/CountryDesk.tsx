@@ -392,6 +392,10 @@ export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; 
 
 /** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
 /** A contract to add, filled in from an office service. */
+const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR' };
+/** Whole months a contract covers, its first day to its last (1 Jan – 31 Dec = 12). */
+const monthsOf = (a: string, b: string) => Math.max(1, Math.round(((Date.parse(b) - Date.parse(a)) / 864e5 + 1) / 30.4375));
+const amt = (v: number, cur = 'EUR') => cur === 'EUR' ? full(v) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`;
 export interface Prefill { n: number; key: string; sup: string; line: string; kind: string; end: string }
 export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: string; cid: string; P: Project[]; pre?: Prefill | null; offices?: Office[] }) {
   const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
@@ -405,17 +409,17 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);
-  const [f, setF] = useState({ sup: '', ref: '', cap: '', start: '', end: '', open: false });
+  const [f, setF] = useState(EMPTY_C);
   const [edit, setEdit] = useState(''), [meta, setMeta] = useState<{ line?: string; kind?: string }>({});
   // an office service chosen in the table: its supplier, budget line and kind; the end its orders cover, to confirm
-  useEffect(() => { if (pre) { setF({ sup: pre.sup, ref: '', cap: '', start: '', end: pre.end, open: false }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
+  useEffect(() => { if (pre) { setF({ ...EMPTY_C, sup: pre.sup, end: pre.end }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
   const save = () => {
     const name = f.sup.trim(); if (!name || (!f.end && !f.open)) return;
     const k = edit || supKey(name);
-    setFramework(k, { name, ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }) });
-    setF({ sup: '', ref: '', cap: '', start: '', end: '', open: false }); setEdit(''); setMeta({});
+    setFramework(k, { name, ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }), ...(f.renew && !f.open && f.renew > f.end ? { renewBy: f.renew } : {}), ...(+f.fee > 0 ? { fee: Math.round(+f.fee * 100) / 100 } : {}), ...(+f.total > 0 ? { total: Math.round(+f.total * 100) / 100 } : {}), ...(+f.fee > 0 || +f.total > 0 ? { cur: f.cur } : {}) });
+    setF(EMPTY_C); setEdit(''); setMeta({});
   };
-  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
+  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? 'EUR' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
   // the calendar: three months back, fifteen ahead
   const t0 = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 3, 1)), months = Array.from({ length: 18 }, (_, i) => new Date(Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + i, 1)));
   const t1 = Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + 18, 1), span = t1 - t0.getTime();
@@ -433,19 +437,25 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <label>Starts<input type="date" value={f.start} onInput={(e) => setF({ ...f, start: (e.target as HTMLInputElement).value })} /></label>
         <label>Ends<input type="date" value={f.open ? '' : f.end} disabled={f.open} onInput={(e) => setF({ ...f, end: (e.target as HTMLInputElement).value })} required={!f.open} /></label>
         <label class="cc-open"><input type="checkbox" checked={f.open} onChange={(e) => setF({ ...f, open: (e.target as HTMLInputElement).checked })} /> Open-ended (no end date)</label>
+        <label title="“May not be renewed beyond”: the last date the contract can be extended to">Renewable until<input type="date" value={f.open ? '' : f.renew} min={f.end || undefined} disabled={f.open} onInput={(e) => setF({ ...f, renew: (e.target as HTMLInputElement).value })} /></label>
+        <label>Monthly fee<input type="number" min="0" step="0.01" value={f.fee} onInput={(e) => setF({ ...f, fee: (e.target as HTMLInputElement).value })} /></label>
+        <label title="The total of the contract for its period (e.g. 12 months)">Total for the period<input type="number" min="0" step="0.01" value={f.total} onInput={(e) => setF({ ...f, total: (e.target as HTMLInputElement).value })} /></label>
+        <label>Currency<select class="select" value={f.cur} onChange={(e) => setF({ ...f, cur: (e.target as HTMLSelectElement).value })}>{['EUR', 'TRY', 'USD'].map((c) => <option>{c}</option>)}</select></label>
+        {+f.fee > 0 && f.start && f.end && !f.open && <p class="cc-meta">{f.fee} {f.cur} a month over {monthsOf(f.start, f.end)} months = <b>{amt(+f.fee * monthsOf(f.start, f.end), f.cur)}</b>{+f.total > 0 && Math.abs(+f.total - +f.fee * monthsOf(f.start, f.end)) > 0.5 ? <> · the total typed differs ({amt(+f.total, f.cur)}): fees that change during the period</> : null}</p>}
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
-        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF({ sup: '', ref: '', cap: '', start: '', end: '', open: false }); }}>Cancel</button>}
+        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF(EMPTY_C); }}>Cancel</button>}
         {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
       </form>
       {D.length ? <div class="cc-cal">
         <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : MON[m.getUTCMonth()]}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
         {D.map((d) => { const a = x(d.start ?? t0.toISOString()), b = d.openEnded ? 100 : x(d.end), w90 = d.openEnded ? 101 : x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
           return <div class={`cc-row s-${d.severity}${d.openEnded ? ' open' : ''}`}>
-            <span class="cc-n"><b>{d.name}</b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small></span>
+            <span class="cc-n"><b>{d.name}</b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small></span>
             <div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }} />)}
               {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
+              {FW[d.key]?.renewBy && !d.openEnded && x(FW[d.key].renewBy!) > b && <em class="cc-renew" title={`Renewable until ${date(FW[d.key].renewBy!)}`} style={{ left: `${b}%`, width: `${x(FW[d.key].renewBy!) - b}%` }} />}
               <u style={{ left: `${x(TODAY.toISOString())}%` }} /></div>
-            <span class="cc-s"><span class={`badge ${d.openEnded ? 'neutral' : SEV_BADGE[d.severity]}`} title={d.openEnded ? 'No end date: nothing to warn' : `ends ${date(d.end)}`}>{dueText(d)}</span><small class="num muted">{d.openEnded ? 'no end date' : date(d.end)}</small>
+            <span class="cc-s"><span class={`badge ${d.openEnded ? 'neutral' : SEV_BADGE[d.severity]}`} title={d.openEnded ? 'No end date: nothing to warn' : `ends ${date(d.end)}`}>{dueText(d)}</span><small class="num muted">{d.openEnded ? 'no end date' : date(d.end)}{FW[d.key]?.renewBy ? <> · renewable to {date(FW[d.key].renewBy!)}</> : null}</small>
               <Attach doc={FW[d.key]?.doc} label={`the contract with ${d.name}`} save={(doc) => setFramework(d.key, { ...FW[d.key], doc })} />
               <button class="btn ghost" title="Change" onClick={() => load(d)}><Ico n="edit" /></button>
               <button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove the contract with ${d.name}?`) && isAdmin('remove a contract')) setFramework(d.key, null); }}>✕</button></span>

@@ -1,7 +1,7 @@
 import type { Severity } from './calc';
 
 /** A contract with a provider (a framework contract or a tender's award), as the user entered it: ceiling, dates, reference. */
-export interface Contract { cap?: number; start?: string; end?: string; ref?: string; name?: string; /** country it was entered for, when its provider has no order there yet */ country?: string; /** an office contract: the office budget line it is paid from, and what it is (rent, security…) */ line?: string; kind?: string; /** no end date (a direct debit, a standing service): shown, never warned */ openEnded?: boolean; /** the signed contract, attached by the user */ doc?: import('../ui/attach').Attachment }
+export interface Contract { cap?: number; start?: string; end?: string; ref?: string; name?: string; /** country it was entered for, when its provider has no order there yet */ country?: string; /** an office contract: the office budget line it is paid from, and what it is (rent, security…) */ line?: string; kind?: string; /** no end date (a direct debit, a standing service): shown, never warned */ openEnded?: boolean; /** the signed contract, attached by the user */ doc?: import('../ui/attach').Attachment; /** the date beyond which it may not be renewed ("may not be renewed beyond") */ renewBy?: string; /** the fee per month and the total for the period, in `cur` (the contract's own currency) */ fee?: number; total?: number; cur?: string }
 export interface ContractDue { openEnded?: boolean; key: string; country?: string; line?: string; kind?: string; name: string; ref?: string; start?: string; end: string; days: number; severity: Severity | 'ok' | 'ended'; cap?: number; used: number }
 
 const day = 864e5;
