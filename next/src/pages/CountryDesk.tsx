@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
-import { contractAlerts, contractsDue, dueText, SEV_BADGE, type ContractDue } from '../domain/contracts';
+import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
@@ -79,21 +79,24 @@ export function CountryOverview({ name, cid, P, offices, setTab }: { name: strin
       <Tile k="stf" color="var(--c7)" icon="☺" label="Staff" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('Staff')} />
       <Tile k="dl" color="var(--c8)" icon="◷" label="Deadlines" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Deadlines')} />
     </div>
-    <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} />
+    <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
     <section class="card"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days: reports, contracts, activities and project ends</p></div></div>
       <div class="card-b">{E.length ? <ul class="cd-ev two">{E.slice(0, 12).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
   </>;
 }
 
 /** Everything open in the country in one list: the projects' alerts, contracts with providers and core team contracts ending. */
-function CountryAlerts({ name, cid, P, setTab }: { name: string; cid: string; P: Project[]; setTab: (t: DeskTab) => void }) {
+function CountryAlerts({ name, cid, P, setTab, offices }: { name: string; cid: string; P: Project[]; setTab: (t: DeskTab) => void; offices: Office[] }) {
   const marks = useStore((s) => s.ledger.alertMarks), FW = useStore((s) => s.ledger.frameworks) ?? {}, core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], set = useStore((s) => s.ledger.poKinds) ?? {};
   const mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
+  const PO = providerPOs(P, set), entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
+  const ceilingUse = (k: string) => { const c = FW[k]; if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; } return { used: PO.filter((x) => x.kind && supKey(x.supplier) === k).reduce((a, x) => a + x.value, 0) }; };
   const rank = { critical: 0, serious: 1, warning: 2 } as const;
   type Item = { sev: keyof typeof rank; who: string; what: string; detail: string; go: () => void };
   const items: Item[] = [
     ...openAlerts(alerts(P, TODAY), marks, TODAY).map((a) => { const p = P.find((x) => x.id === a.projectId)!; return { sev: a.severity, who: plabel(p), what: a.title, detail: a.detail, go: () => open(p) }; }),
     ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}ends ${date(d.end)}`, go: () => setTab('Tenders & suppliers') })),
+    ...contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => (mine.has(k) || c.country === cid) && c.cap)), TODAY, ceilingUse).flatMap((d) => { const sv = ceilingSeverity(d.used, d.cap); return sv ? [{ sev: sv, who: 'Contract', what: `${d.name}: ${pct(d.cap ? d.used / d.cap : 0)} of its ceiling ordered`, detail: `${full(d.used)} of ${full(d.cap!)}`, go: () => setTab('Tenders & suppliers') }] : []; }),
     ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('Staff') })),
   ].sort((a, b) => rank[a.sev] - rank[b.sev]);
   const [all, setAll] = useState(false);
@@ -145,7 +148,7 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
     <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
       <div class="card-b"><ProviderBrief P={P} cname={cname} rows={6} /></div></section>
-    <ContractCalendar name={name} cid={cid} P={P} pre={pre} />
+    <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />
     <section class="card span-12"><div class="card-h"><div><h2>Office contracts</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
       {OS.length > 0 && <div class="card-b table-scroll"><table class="mini os-t"><thead><tr><th>Budget line</th><th>Service</th><th>Supplier</th><th class="r">Orders</th><th>Orders cover to</th><th class="r">Spent + committed</th><th class="r">Still open</th><th>Contract</th></tr></thead>
         <tbody>{OS.map((x, i) => { const k = okey(x.line, x.supplier), c = FW[k] ?? FW[supKey(x.supplier)], due = c?.end || c?.openEnded ? contractsDue({ [k]: c }, TODAY)[0] : undefined;
@@ -249,11 +252,15 @@ export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; 
 /** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
 /** A contract to add, filled in from an office service. */
 export interface Prefill { n: number; key: string; sup: string; line: string; kind: string; end: string }
-export function ContractCalendar({ name, cid, P, pre }: { name: string; cid: string; P: Project[]; pre?: Prefill | null }) {
+export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: string; cid: string; P: Project[]; pre?: Prefill | null; offices?: Office[] }) {
   const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
   const L = providerPOs(P, set);
   const names = new Map<string, string>(); for (const x of L) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
-  const use = (k: string) => ({ name: names.get(k), used: L.filter((x) => x.kind && supKey(x.supplier) === k).reduce((a, x) => a + x.value, 0) });
+  // an office contract is used by the office's own orders on its line; a provider's, by the projects' orders
+  const entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
+  const use = (k: string) => { const c = FW[k];
+    if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { name: c.name, used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; }
+    return { name: names.get(k), used: L.filter((x) => x.kind && supKey(x.supplier) === k).reduce((a, x) => a + x.value, 0) }; };
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);

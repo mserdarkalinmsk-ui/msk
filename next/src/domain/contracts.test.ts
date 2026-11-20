@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contractAlerts, contractsDue, contractSeverity, daysTo } from './contracts';
+import { contractAlerts, contractsDue, contractSeverity, daysTo, officeContractUse, ceilingSeverity } from './contracts';
 
 const T = new Date(Date.UTC(2026, 10, 19));
 describe('contract end warnings', () => {
@@ -17,5 +17,12 @@ describe('contract end warnings', () => {
     const D = contractsDue({ a: { openEnded: true, name: 'Water' }, b: { end: '2026-12-01' } }, T);
     expect(D.map((d) => [d.key, d.severity])).toEqual([['b', 'critical'], ['a', 'ok']]);
     expect(contractAlerts(D).map((d) => d.key)).toEqual(['b']);
+  });
+  it('an office contract counts the office\'s own orders on its line from its supplier', () => {
+    const E = [{ line: '1.10', supplier: 'Guard Co', spent: 1000, committed: 500 }, { line: '1.10', supplier: 'Other', spent: 70, committed: 0 }, { line: '1.6', supplier: 'Guard Co', spent: 30, committed: 0 }];
+    expect(officeContractUse(E, '1.10', (s) => s === 'Guard Co')).toBe(1500);
+  });
+  it('warns as a contract nears its ceiling', () => {
+    expect([[70, 100], [80, 100], [90, 100], [100, 100], [5, 0]].map(([u, c]) => ceilingSeverity(u, c))).toEqual([null, 'warning', 'serious', 'critical', null]);
   });
 });

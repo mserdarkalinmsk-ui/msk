@@ -35,3 +35,13 @@ export const contractAlerts = (D: ContractDue[]) => D.filter((d) => d.severity !
 /** What the user is told about a contract's end: in days, coloured by how close it is. */
 export const SEV_BADGE: Record<ContractDue['severity'], string> = { critical: 'critical', serious: 'serious', warning: 'warning', ok: 'good', ended: 'neutral' };
 export const dueText = (d: ContractDue) => d.openEnded ? 'open-ended' : d.days < 0 ? `ended ${-d.days} d ago` : d.days === 0 ? 'ends today' : `${d.days} d left`;
+
+/** What was ordered on an office contract: the office report's orders on its budget line from its supplier (spent + still open). */
+export function officeContractUse(entries: { line: string; supplier: string; spent: number; committed: number }[], line: string, supplier: (s: string) => boolean): number {
+  return Math.round(entries.filter((e) => e.line === line && supplier(e.supplier)).reduce((a, e) => a + e.spent + e.committed, 0) * 100) / 100;
+}
+/** How close a contract is to its ceiling: 80% a warning, 90% serious, the ceiling reached critical. */
+export function ceilingSeverity(used: number, cap?: number): 'critical' | 'serious' | 'warning' | null {
+  if (!cap || cap <= 0) return null; const r = used / cap;
+  return r >= 1 ? 'critical' : r >= 0.9 ? 'serious' : r >= 0.8 ? 'warning' : null;
+}
