@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { BudgetBody } from './Budget';
 import { MapView, shapeFor, type MapMode } from '../ui/MapView';
 import { mapData, ModeSwitch } from './MapPage';
 import { CountryDeadlines, CountryOverview, CountryProjects, CountryStaff, CountryTenders, DESK_TABS, deskSlug, type DeskTab } from './CountryDesk';
@@ -74,6 +75,7 @@ export function Offices() {
     {tab === 'Overview' && <CountryOverview name={cname(c)} cid={c} P={P} offices={here} setTab={setTab} />}
     {tab === 'Office budget' && (o ? <OfficeDetail key={o.id} o={o} rid={rid} setRid={setRid} line={line} setLine={setLine} openOnly={openOnly} setOpenOnly={setOpenOnly} fund={fund} setFund={setFund} cname={cname} countries={countries.map((x) => x.id)} /> : NoOffice)}
     {tab === 'Projects' && <CountryProjects name={cname(c)} cid={c} P={P} />}
+    {tab === 'Budget lines' && <BudgetBody P={P} />}
     {tab === 'Tenders & suppliers' && <CountryTenders name={cname(c)} cid={c} P={P} offices={here} />}
     {tab === 'Staff' && <CountryStaff name={cname(c)} cid={c} P={P} />}
     {tab === 'Deadlines' && <CountryDeadlines name={cname(c)} cid={c} P={P} />}

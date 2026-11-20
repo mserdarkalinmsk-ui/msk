@@ -620,7 +620,7 @@ async function page(opts) {
   await p.reload(); await p.waitForSelector('.cd-tabs');
   check((await p.locator('.cd-tabs [aria-selected=true]').textContent()) === 'Staff', 'the country tab is kept after a reload');
   await p.goBack(); await p.waitForTimeout(300);
-  check(tabs.join('|') === 'Overview|Office budget|Projects|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
+  check(tabs.join('|') === 'Overview|Office budget|Projects|Budget lines|Tenders & suppliers|Staff|Deadlines', `country desk tabs (${tabs.join(', ')})`);
   for (const t of tabs) { await p.click(`.cd-tabs button:text-is("${t}")`); await p.waitForTimeout(150); }
   await p.click('.cd-tabs button:text-is("Tenders & suppliers")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);

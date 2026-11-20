@@ -29,10 +29,10 @@ import { reportDiff } from '../domain/reportDiff';
 import { ProviderBrief } from './Providers';
 
 /** The tabs of a country under Countries: the office's own budget sits in Finance, the rest gathers the country's projects. */
-export const DESK_TABS = ['Overview', 'Office budget', 'Projects', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
+export const DESK_TABS = ['Overview', 'Office budget', 'Projects', 'Budget lines', 'Tenders & suppliers', 'Staff', 'Deadlines'] as const;
 export type DeskTab = (typeof DESK_TABS)[number];
 /** A tab's part of the address: "Tenders & suppliers" → "tenders". */
-export const deskSlug = (t: DeskTab) => ({ Overview: 'overview', 'Office budget': 'office-budget', Projects: 'projects', 'Tenders & suppliers': 'tenders', Staff: 'staff', Deadlines: 'deadlines' } as const)[t];
+export const deskSlug = (t: DeskTab) => ({ Overview: 'overview', 'Office budget': 'office-budget', Projects: 'projects', 'Budget lines': 'budget', 'Tenders & suppliers': 'tenders', Staff: 'staff', Deadlines: 'deadlines' } as const)[t];
 
 const now = () => TODAY.toISOString().slice(0, 10);
 const active = (p: Project) => p.start <= now() && p.end >= now();

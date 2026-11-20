@@ -14,7 +14,7 @@ export const ROUTES = [
   { id: 'overview', label: 'Overview', icon: 'M3 12h4l3-8 4 16 3-8h4', ready: true },
   { id: 'countries', label: 'Countries', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9M12 3C9.5 5.5 8.2 8.5 8.2 12s1.3 6.5 3.8 9', ready: true },
   { id: 'projects', label: 'Projects', icon: 'M4 6h16M4 12h16M4 18h10', ready: true, hidden: true },
-  { id: 'budget', label: 'Budget', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2', ready: true },
+  { id: 'budget', label: 'Budget', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2', ready: true, hidden: true },
   { id: 'people', label: 'Staff', icon: 'M16 19a4 4 0 0 0-8 0M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', ready: true, hidden: true },
   { id: 'map', label: 'Map', icon: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14', ready: true, hidden: true },
   { id: 'reports', label: 'Reports', icon: 'M6 3h9l4 4v14H6zM14 3v5h5', ready: true },
@@ -58,7 +58,7 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
         <div class="brand">{ledger.brand?.logo && !logoBad ? <img class="brand-logo" src={ledger.brand.logo} alt={ledger.brand.name ?? "Logo"} onError={() => setLogoBad(true)} /> : <i>{initials(appTitle)}</i>}<span>{ledger.brand?.title || 'Portfolio Ledger'}{ledger.brand?.name && <small class="brand-org">{ledger.brand.name}</small>}</span></div>
         <nav class="nav">
           {ROUTES.filter((r) => !('hidden' in r)).map((r) => (
-            <a href={`#/${r.id}`} aria-current={route === r.id || route.startsWith(r.id + '/') || (r.id === 'countries' && /^(project\/|projects$|offices|people$|map$)/.test(route)) ? 'page' : undefined} class={r.ready ? '' : 'soon'} onClick={() => setOpen(false)}>
+            <a href={`#/${r.id}`} aria-current={route === r.id || route.startsWith(r.id + '/') || (r.id === 'countries' && /^(project\/|projects$|offices|people$|map$|budget$)/.test(route)) ? 'page' : undefined} class={r.ready ? '' : 'soon'} onClick={() => setOpen(false)}>
               <Icon d={r.icon} />{r.label}
               {r.id === 'overview' && flags > 0 && <span class="badge serious count">{flags}</span>}
 

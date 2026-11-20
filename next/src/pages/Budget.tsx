@@ -1,3 +1,4 @@
+import type { Project } from '../domain/types';
 import { cells } from './Heatmap';
 import { flexOf, pctOf } from '../domain/flex';
 import { useState } from 'preact/hooks';
@@ -20,7 +21,12 @@ export const usedTone = (u: number) => (u > 1.1 ? 'critical' : u > 1 ? 'serious'
 
 export function Budget() {
   const state = useStore((s) => s);
-  const P = filtered(state);
+  return <BudgetBody P={filtered(state)} filters />;
+}
+
+/** Every budget line of the projects given: the Budget page, and a country's Budget tab. */
+export function BudgetBody({ P, filters }: { P: Project[]; filters?: boolean }) {
+  const state = useStore((s) => s);
   const [cat, setCat] = useState('');
   const all = lineRows(P);
   const R = cat ? all.filter((r) => category(r) === cat) : all;
@@ -29,10 +35,10 @@ export function Budget() {
   const over = all.filter((r) => r.approved && r.exposure > r.approved);
   const cname = (id: string) => state.ledger.countries.find((c) => c.id === id)?.name ?? id;
 
-  if (!P.length) return <><Filters /><div class="card empty-page"><div><h2>No projects match</h2></div></div></>;
+  if (!P.length) return <>{filters && <Filters />}<div class="card empty-page"><div><h2>No projects match</h2></div></div></>;
   return (
     <>
-      <Filters />
+      {filters && <Filters />}
       <section class="hero" aria-label="Budget figures">
         <div class="kpi lead">
           <span class="label">Spent + committed against approved lines</span>
