@@ -629,6 +629,7 @@ async function page(opts) {
     check(rows > 1 && (await p.locator('.sp-proj tr.tot').textContent()).includes(tot), `providers: each project's share, and the total (${rows} projects)`);
     await p.locator('.sp-proj tbody tr:not(.tot)').first().click();
     check(await p.locator('.sp-proj').count() === 0 && await p.locator('.sp-scope button[aria-pressed=true]:not(:text-is("All projects"))').count() === 1 && (await p.locator('.sp-mini-k b').first().textContent()) !== tot, 'providers of one project alone');
+    check(await p.locator('.sp-grp').count() > 0 && await p.locator('.sp-grp[open]').count() === 0, 'every provider listed by kind, the groups closed');
   } else check(await p.locator('.sp-scope').count() === 0 && await p.locator('.sp-mini, .card-b p.muted').count() > 0, 'providers of a country with one project: no project split');
   await p.click('.cd-views button:has-text("Contracts")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);

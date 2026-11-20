@@ -144,3 +144,15 @@ details.em-method[open] > summary::before { content: '▾'; }
 /* contract calendar: the stretch it may still be renewed to, as an outline after the bar */
 .cc-track em.cc-renew, .s-serious .cc-track em.cc-renew, .s-critical .cc-track em.cc-renew { background: transparent; border: 1.5px dashed color-mix(in srgb, var(--ink-3) 70%, transparent); box-shadow: none; border-radius: 0 8px 8px 0; }
 .cc-form .select { height: 34px; }
+/* every provider, one closed group per kind */
+.sp-list { margin-top: 20px; }
+.sp-list h3 { font-size: 14px; margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; }
+.sp-list h3 small { font-weight: 400; font-size: 12px; }
+.sp-grp { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: var(--surface); }
+.sp-grp summary { display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; cursor: pointer; font-size: 13px; }
+.sp-grp summary .num { font-weight: 600; min-width: 120px; text-align: right; }
+.sp-grp[open] summary { border-bottom: 1px solid var(--line); }
+.sp-grp table { margin: 0; }
+.sp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+@media print { .sp-grp:not([open]) { display: none; } }
+.sp-grp td.muted { white-space: nowrap; } .sp-grp .num { font-family: inherit; }

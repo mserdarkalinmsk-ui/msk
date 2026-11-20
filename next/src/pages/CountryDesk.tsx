@@ -181,15 +181,10 @@ export function CountryProjects({ name, cid, P }: { name: string; cid: string; P
 }
 
 export function CountryTenders({ name, cid, P, offices }: { name: string; cid: string; P: Project[]; offices: Office[] }) {
-  const set = useStore((s) => s.ledger.poKinds) ?? {};
-  // procurement only: staff salaries, per diems and travel of missions, and petty cash are not bought from providers
-  const notBought = new Set(KINDS.filter((k) => k.optional).map((k) => k.k));
-  const L = providerPOs(P, set), S = suppliers(L).filter((x) => !notBought.has(x.kind)).slice(0, 25);
   const FW = useStore((s) => s.ledger.frameworks) ?? {};
   const rep = offices[0]?.reports.at(-1), OS = rep ? officeServices(rep) : [];
   const [pre, setPre] = useState<Prefill | null>(null);
   const okey = (line: string, sup: string) => `office:${cid}:${line}:${supKey(sup)}`;
-  const kl = (k: string) => KINDS.find((x) => x.k === k)?.label ?? k;
   const cname = () => name;
   const [v, setV] = useView('pl-tender-view', TENDER_VIEWS);
   return <><ViewBar views={TENDER_VIEWS} v={v} set={setV} label="Tenders and suppliers" />
@@ -210,9 +205,6 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
               : x.directDebit ? <span class="badge neutral" title="Paid by direct debit: a standing service with no end date, so nothing to warn">open-ended · direct debit</span>
               : <button class="btn ghost os-add" onClick={() => { setPre({ n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }); setV('Contracts'); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
     </section>}
-    {v === 'Providers' && S.length > 0 && <section class="card span-12"><div class="card-h"><div><h2>Largest providers</h2><p>By spent + committed, every project of {name} · staff salaries, mission per diems and travel, and petty cash are not procurement and are left out</p></div></div>
-      <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Provider</th><th>Kind</th><th class="r">Orders</th><th class="r">Projects</th><th class="r">Spent</th><th class="r">Spent + committed</th></tr></thead>
-        <tbody>{S.map((x) => <tr><td>{x.supplier}</td><td class="muted">{kl(x.kind)}</td><td class="r num">{x.pos}</td><td class="r num">{x.projects.size}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc)}</td></tr>)}</tbody></table></div></section>}
   </div></>;
 }
 
@@ -252,13 +244,29 @@ function CountryProviders({ P, cname }: { P: Project[]; cname: (id: string) => s
   const [pj, setPj] = useState('all');
   const R = P.map((p) => ({ p, S: providerSummary([p], set, 1) })).filter((x) => x.S.total > 0).sort((a, b) => b.S.total - a.S.total);
   const T = R.reduce((a, x) => a + x.S.total, 0), one = R.find((x) => x.p.id === pj);
+  const lab = (id: string) => plabel(P.find((q) => q.id === id) ?? ({ code: '?' } as Project));
   return <>
     {R.length > 1 && <div class="seg sp-scope" role="group" aria-label="Projects">{[['all', 'All projects'], ...R.map((x) => [x.p.id, plabel(x.p)])].map(([k, l]) => <button aria-pressed={(one ? pj : 'all') === k} onClick={() => setPj(k)}>{l}</button>)}</div>}
     {!one && R.length > 1 && <table class="mini sp-proj"><thead><tr><th>Project</th><th class="r">POs</th><th class="r">Providers</th><th class="r">Amount</th><th class="r">Share</th><th>Largest provider</th></tr></thead>
       <tbody>{R.map(({ p, S }) => <tr class="click" onClick={() => setPj(p.id)}><td><b>{plabel(p)}</b></td><td class="r num">{S.pos}</td><td class="r num">{S.providers}</td><td class="r num">{full(S.total)}</td><td class="r num">{Math.round(S.total / T * 100)}%</td><td class="muted">{S.top[0]?.supplier ?? '—'}</td></tr>)}
         <tr class="tot"><td><b>Total</b></td><td class="r num">{R.reduce((a, x) => a + x.S.pos, 0)}</td><td /><td class="r num"><b>{full(T)}</b></td><td class="r num">100%</td><td /></tr></tbody></table>}
-    <ProviderBrief P={one ? [one.p] : P} cname={cname} rows={6} lab={one ? undefined : (id) => plabel(P.find((q) => q.id === id) ?? ({ code: '?' } as Project))} />
+    <ProviderBrief P={one ? [one.p] : P} cname={cname} rows={6} lab={one ? undefined : lab} />
+    <ProviderList P={one ? [one.p] : P} lab={one ? undefined : lab} />
   </>;
+}
+
+/** Every provider of the projects shown, one group per kind (largest first), each provider with its projects and what is still open. */
+function ProviderList({ P, lab }: { P: Project[]; lab?: (id: string) => string }) {
+  const set = useStore((x) => x.ledger.poKinds) ?? {};
+  const S = suppliers(providerPOs(P, set)).filter((x) => x.kind && !KINDS.find((k) => k.k === x.kind)?.optional);
+  const G = [...new Set(S.map((x) => x.kind))].map((k) => ({ k, label: KINDS.find((x) => x.k === k)?.label ?? k, R: S.filter((x) => x.kind === k) })).map((g) => ({ ...g, sc: g.R.reduce((a, x) => a + x.sc, 0), sp: g.R.reduce((a, x) => a + x.spent, 0) })).sort((a, b) => b.sc - a.sc);
+  if (!G.length) return null;
+  return <div class="sp-list"><h3>All providers, by kind <small class="muted">{S.length} · click a kind to open it</small></h3>
+    {G.map((g) => <details class="sp-grp">
+      <summary><i class="sp-dot" style={{ background: KINDS.find((x) => x.k === g.k)?.color }} /><b>{g.label}</b><span class="muted">{g.R.length} provider{g.R.length > 1 ? 's' : ''}</span><span class="num">{full(g.sc)}</span></summary>
+      <table class="mini"><thead><tr><th>Provider</th>{lab && <th>Projects</th>}<th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th></tr></thead>
+        <tbody>{g.R.map((x) => <tr><td>{x.supplier}</td>{lab && <td class="muted">{[...x.projects.keys()].map(lab).join(', ')}</td>}<td class="r num">{x.pos}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc - x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td></tr>)}</tbody></table>
+    </details>)}</div>;
 }
 
 const NO_END = { open: 'Open-ended', sxb: 'SxB staff', missing: 'Dates missing' } as const;
