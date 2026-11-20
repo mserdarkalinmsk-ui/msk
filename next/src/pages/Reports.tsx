@@ -39,36 +39,33 @@ import { get } from '../data/store';
 type Tab = 'cost' | 'close' | 'transfer' | 'bcheck' | 'vs' | 'changed' | 'ending' | 'cash' | 'providers' | 'annual' | 'closure' | 'units' | 'pack' | 'deck' | 'studio' | 'compare' | 'commit' | 'changes' | 'alerts' | 'results' | 'calendar' | 'compliance' | 'health' | 'history' | 'checklist' | 'wp' | 'staffpo' | 'heat' | 'gaps' | 'outlook' | 'analysis' | 'story';
 /** A tab answers one question; when two or three screens answer it, they are views of the tab (a switch above it). */
 interface TabDef { label: string; views: [Tab, string][] }
+// Grouped by purpose, as the month runs: work the month, make what goes out, look further.
 const GROUPS: { label: string; tabs: TabDef[] }[] = [
-  { label: 'This month', tabs: [
+  { label: 'The month', tabs: [
     { label: 'Monthly close', views: [['close', 'Monthly close']] },
     { label: 'What changed', views: [['changed', 'Since a day'], ['changes', 'Month comparison']] },
+    { label: 'Alerts', views: [['alerts', 'Alerts']] },
+    { label: 'Data checks', views: [['gaps', 'Missing data'], ['health', 'Data health'], ['bcheck', 'Budget check']] },
+    { label: 'Change history', views: [['history', 'Change history']] },
+  ] },
+  { label: 'Outputs', tabs: [
     { label: 'Monthly pack', views: [['story', 'Portfolio story'], ['pack', 'Monthly pack'], ['deck', 'Full presentation']] },
     { label: 'Project report', views: [['studio', 'Project report']] },
+    { label: 'Expenditure monitoring', views: [['compare', 'Expenditure monitoring']] },
   ] },
-  { label: 'Ahead', tabs: [
+  { label: 'Analysis', tabs: [
     { label: 'Analysis', views: [['analysis', 'Analysis']] },
     { label: 'Outlook', views: [['outlook', 'Outlook']] },
     { label: 'Spending on track', views: [['cost', 'Spending on track']] },
     { label: 'Cash plan', views: [['cash', 'Cash plan']] },
     { label: 'Annual plan', views: [['annual', 'Annual plan']] },
-  ] },
-  { label: 'Budget', tabs: [
-    { label: 'Expenditure monitoring', views: [['compare', 'Expenditure monitoring']] },
     { label: 'Compare projects', views: [['heat', 'Headings heat map'], ['vs', 'Side by side']] },
     { label: 'Budget changes', views: [['transfer', 'Budget changes']] },
     { label: 'Purchase orders', views: [['commit', 'Open commitments'], ['staffpo', 'Staff POs']] },
     { label: 'Unit costs', views: [['units', 'Unit costs']] },
-  ] },
-  { label: 'Follow-up', tabs: [
-    { label: 'Alerts', views: [['alerts', 'Alerts']] },
     { label: 'Work Plans', views: [['wp', 'Work Plans']] },
     { label: 'Results', views: [['results', 'Results'], ['compliance', 'Compliance & results']] },
     { label: 'Closure', views: [['closure', 'Closure']] },
-  ] },
-  { label: 'Data', tabs: [
-    { label: 'Data checks', views: [['gaps', 'Missing data'], ['health', 'Data health'], ['bcheck', 'Budget check']] },
-    { label: 'Change history', views: [['history', 'Change history']] },
   ] },
 ];
 // Each country has these under its own tabs (Deadlines, Tenders & suppliers): out of the Reports bar, their addresses still open them for every country.

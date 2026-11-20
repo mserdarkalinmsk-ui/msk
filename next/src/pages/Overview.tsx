@@ -1,7 +1,5 @@
-import { plabel } from '../domain/label';
 import { paceBand, paceTone } from '../domain/rules';
 import { staffCount, staffSplit } from '../domain/staff';
-import { MoneyFlow } from '../ui/Visuals';
 import { OverviewCountries } from './CountryDesk';
 import { BudgetHealth } from './BudgetHealth';
 import { deleteProjects, filtered, go, set, updateProject, useStore } from '../data/store';
@@ -77,7 +75,6 @@ export function Overview() {
   const open = (id: string) => set({ drawer: { kind: 'project', id } });
   const final = S.at(-1);
   const [sm, setSm] = useState<'cumulative' | 'remaining' | 'monthly' | 'country'>('cumulative');
-  const [pm, setPm] = useState<'spent' | 'exposure' | 'gap'>('spent');
   const [bm, setBm] = useState<'country' | 'sector' | 'funding'>('country');
   const keyOf = (p: Project) => (bm === 'country' ? p.country : bm === 'sector' ? p.sector ?? '' : p.funding ?? '');
 
@@ -180,13 +177,8 @@ export function Overview() {
           <div class="card-b"><Chart height={300} label="Budget waterfall" option={(t) => waterfallOption(t, T)} /></div>
         </section>
 
-        <section class="card span-7">
-          <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Pacing by project</h2><p>{pm === 'gap' ? 'Spend share minus time share — left of zero is behind schedule' : 'Share of budget used; the tick marks time elapsed'} · click a bar for details</p></div>
-            <div class="tools"><div class="seg">{(['spent', 'exposure', 'gap'] as const).map((m) => <button aria-pressed={pm === m} onClick={() => setPm(m)}>{m === 'spent' ? 'Spent' : m === 'exposure' ? '+ Committed' : 'Gap'}</button>)}</div></div></div>
-          <div class="card-b"><Chart height={Math.max(180, P.length * 40 + 40)} label="Pacing by project" onClick={(e) => e.data?.id && open(e.data.id)} option={(t) => pm === 'gap' ? gapOption(t, P) : pacingOption(t, P, pm === 'exposure')} /></div>
-        </section>
 
-        <section class="card span-5">
+        <section class="card span-12">
           <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Budget by {bm}</h2><p>Click a bar to filter the page</p></div>
             <div class="tools"><div class="seg">{(['country', 'sector', 'funding'] as const).map((m) => <button aria-pressed={bm === m} onClick={() => setBm(m)}>{m[0].toUpperCase() + m.slice(1)}</button>)}</div></div></div>
           <div class="card-b">
@@ -203,9 +195,8 @@ export function Overview() {
         </section>
 
 
-        <MoneyFlow P={P} countries={countries} />
         <section class="card span-12" style={{ overflow: 'hidden' }}>
-          <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>Projects</h2><p>Double-click name or status to edit · drag column edges to resize</p></div></div>
+          <div class="card-h" style={{ paddingBottom: '12px' }}><div><h2>All projects</h2><p>The register of every project · open one for its detail, or its country for the place · Double-click name or status to edit · drag column edges to resize</p></div></div>
           <ProjectTable rows={P} cname={cname} maxHeight={360} />
         </section>
       </div>
@@ -282,18 +273,6 @@ function byCountryOption(t: Tokens, P: Project[], countries: { id: string; name:
   };
 }
 
-function gapOption(t: Tokens, P: Project[]) {
-  const R = P.map((p) => ({ p, g: burnGap(p, TODAY) })).sort((a, b) => a.g - b.g);
-  return {
-    ...base(t), grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => `<b>${esc(R[x.dataIndex].p.code)}</b> ${esc(R[x.dataIndex].p.name)}<br/>${signedPct(R[x.dataIndex].g)}` },
-    xAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => signedPct(v) } },
-    yAxis: { type: 'category', data: R.map((r) => plabel(r.p)), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
-    series: [{ type: 'bar', barWidth: 14, data: R.map((r) => ({ value: r.g, id: r.p.id, itemStyle: { color: paceTone(r.g) === 'serious' ? t.serious : paceTone(r.g) === 'warning' ? t.warn : t.c[0], borderRadius: r.g < 0 ? [4, 0, 0, 4] : [0, 4, 4, 0] } })),
-      label: { show: true, position: 'outside', color: t.ink2, fontFamily: t.mono, fontSize: 11, formatter: (x: any) => signedPct(x.value) },
-      markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: t.ink3, type: 'solid' }, data: [{ xAxis: 0 }] } }],
-  };
-}
 
 export const axisMoney = (v: number) => (v === 0 ? '0' : Math.abs(v) >= 1e6 ? `€${+(v / 1e6).toFixed(1)}M` : `€${+(v / 1e3).toFixed(0)}K`);
 export const axisX = (t: Tokens) => ({ axisLine: { lineStyle: { color: t.line } }, axisTick: { show: false }, axisLabel: { color: t.ink3, fontSize: 11, hideOverlap: true }, splitLine: { show: false } });
@@ -331,34 +310,6 @@ export function spendOption(t: Tokens, S: ReturnType<typeof portfolioSeries>, bu
   };
 }
 
-function pacingOption(t: Tokens, P: Project[], exposure = false) {
-  const R = P.map((p) => { const m = money(p); const b = m.budget ? m.spent / m.budget : 0, c = m.budget ? m.committed / m.budget : 0; return { p, b, c, el: elapsed(p, TODAY), g: exposure ? b + c - elapsed(p, TODAY) : burnGap(p, TODAY) }; })
-    .sort((a, b) => a.g - b.g).reverse();
-  const tone = (g: number) => (paceTone(g) === 'serious' ? t.serious : paceTone(g) === 'warning' ? t.warn : t.c[0]);
-  return {
-    ...base(t),
-    grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
-    tooltip: { ...(base(t).tooltip as object), trigger: 'item', formatter: (x: any) => { const r = R[x.dataIndex]; return `<b>${esc(r.p.code)}</b> ${esc(r.p.name)}<br/>Spent <b>${pct(r.b)}</b> · committed ${pct(r.c)}<br/>Time elapsed <b>${pct(r.el)}</b> → ${signedPct(r.g)}`; } },
-    xAxis: { type: 'value', max: 1, ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: (v: number) => pct(v) } },
-    yAxis: { type: 'category', inverse: true, data: R.map((r) => plabel(r.p)), ...axisX(t), axisLabel: { color: t.ink2, fontFamily: t.mono, fontSize: 12 } },
-    series: [
-      { type: 'bar', stack: 's', barWidth: 14, data: R.map((r) => ({ value: r.b, id: r.p.id, itemStyle: { color: tone(r.g), borderRadius: [4, 0, 0, 4] } })),
-},
-      { type: 'bar', stack: 's', barWidth: 14, data: R.map((r) => ({ value: r.c, id: r.p.id, itemStyle: { color: tone(r.g), opacity: 0.35, borderRadius: [0, 4, 4, 0] } })),
-},
-      { type: 'custom', silent: true, data: R.map((r, i) => [r.el, i]), z: 5,
-        renderItem: (_: any, api: any) => {
-          const i = api.value(1), r = R[i];
-          const [x, y] = api.coord([r.el, i]);
-          const [xe] = api.coord([Math.min(1, r.b + r.c), i]);
-          return { type: 'group', children: [
-            { type: 'rect', shape: { x: x - 1, y: y - 12, width: 2.5, height: 24, r: 1 }, style: { fill: t.ink } },
-            { type: 'text', x: Math.max(x, xe) + 10, y, style: { text: signedPct(r.g), fill: tone(r.g) === t.c[0] ? t.ink2 : tone(r.g), font: `600 11.5px ${t.mono}`, verticalAlign: 'middle' } },
-          ] };
-        } },
-    ],
-  };
-}
 
 function countryOption(t: Tokens, G: { key: string; budget: number; spent: number; committed: number }[]) {
   const mk = (name: string, f: (g: (typeof G)[number]) => number, color: string, r: number[]) =>

@@ -75,7 +75,6 @@ async function page(opts) {
 
   // Chart modes
   for (const m of ['Monthly', 'By country', 'Cumulative']) { await p.click(`.seg button:text-is("${m}")`); await p.waitForTimeout(250); }
-  for (const m of ['Gap', '+ Committed', 'Spent']) { await p.click(`.seg button:text-is("${m}")`); await p.waitForTimeout(150); }
   await p.click('.seg button:text-is("Sector")'); await p.waitForTimeout(250);
   check(await p.locator('h2:text-is("Budget by sector")').count() === 1, 'breakdown switches to sector');
   await p.click('.seg button:text-is("Country")');
@@ -297,7 +296,7 @@ async function page(opts) {
   check(await p.locator('.alerts li').count() < nAll, 'alert centre filters by severity');
   check(await p.locator('.wl-areas button:has-text("Staff")').count() + await p.locator('.wl-areas button:has-text("Reporting")').count() >= 1, 'alerts grouped by area');
   await p.screenshot({ path: `${shots}/alerts.png`, fullPage: true });
-  await p.click('.tabs button:has-text("This month")'); await p.waitForTimeout(200);
+  await p.click('.tabs button:has-text("The month")'); await p.waitForTimeout(200);
   await p.click('.subtabs button:has-text("What changed")'); await p.waitForTimeout(200);
   await p.click('.seg.views button:has-text("Month comparison")'); await p.waitForTimeout(200);
   check(await p.locator('.mc-t tbody tr').count() >= 1, 'month comparison lists projects');
@@ -541,8 +540,10 @@ async function page(opts) {
   await p.fill('#f-start', '2025-01-01'); await p.fill('#f-end', '2027-12-31');
   await p.selectOption('#f-country', 'ge'); await p.selectOption('#f-sector', 'Democracy');
   await p.click('.drawer-f .btn.primary'); await p.waitForTimeout(500); await p.keyboard.press('Escape');
-  const c = p.locator('[aria-label="Pacing by project"]').first();
-  await c.scrollIntoViewIfNeeded(); await p.click('.seg button:text-is("Gap")'); await p.waitForTimeout(600);
+  // a chart whose tooltip names the project: where each project ends (Reports › Analysis › Outlook)
+  await p.goto(url + '#/reports/outlook'); await p.waitForTimeout(800);
+  const c = p.locator('[aria-label="Projected use of the budget at the end date"]').first();
+  await c.scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
   const bx = await c.boundingBox(); let seen = false;
   for (let k = 0; k < 120 && !seen; k++) {
     await p.mouse.move(bx.x + 60 + Math.floor(k / 12) * 50, bx.y + 10 + (k % 12) * (bx.height / 12), { steps: 2 }); await p.waitForTimeout(60);
