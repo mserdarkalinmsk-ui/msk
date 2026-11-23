@@ -205,9 +205,14 @@ async function page(opts) {
   check(!(await p.locator('.side').isVisible()) && await p.locator('.pack').isVisible(), 'print view shows only the pack');
   await p.emulateMedia({ media: 'screen' });
   // the deadlines of every country: under each country's Calendar tab, and at their own address for all countries
-  await p.goto(url + '#/reports/calendar'); await p.waitForSelector('.ag-e'); await p.waitForTimeout(300);
+  await p.goto(url + '#/reports/calendar'); await p.waitForSelector('.cv'); await p.waitForTimeout(300);
   check(await p.locator('.seg.views button[aria-pressed="true"]:has-text("Calendar")').count() === 1, 'deadlines open on the calendar view');
-  check(await p.locator('.ag-e').count() >= 6, 'calendar lists open deadlines');
+  // a calendar seen by month, week, year or as a list
+  await p.click('.cv-views button:text-is("Month")'); check(await p.locator('.cv-grid .cv-day').count() === 42 && await p.locator('.cv-day.today').count() === 1, 'calendar: the month grid, today marked');
+  await p.click('.cv-views button:text-is("Week")'); check(await p.locator('.cv-wcol').count() === 7, 'calendar: the week in seven days');
+  await p.click('.cv-views button:text-is("Year")'); check(await p.locator('.cv-mini').count() === 12 && await p.locator('.cv-mg i.ev').count() > 0, 'calendar: the year in twelve months, the dated days marked');
+  await p.click('.cv-views button:text-is("List")'); await p.waitForTimeout(200);
+  check(await p.locator('.cv-list .ag-e').count() >= 6, 'calendar lists open deadlines');
   await p.screenshot({ path: `${shots}/calendar.png`, fullPage: true });
   // CoE workbook dropped on the global import: recognised and offered to its project via Smart import
   await p.goto(url + '#/overview'); await p.waitForSelector('.hero');

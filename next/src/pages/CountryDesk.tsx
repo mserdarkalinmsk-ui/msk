@@ -25,7 +25,7 @@ import { StaffReport } from './StaffReport';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { date, full, pct, short } from '../ui/format';
-import { events, type Ev } from './Agenda';
+import { CAL_KINDS, calItems, events, type Ev } from './Agenda';
 import { allPeople, StaffBoard } from './People';
 import { ProjectsBody } from './Projects';
 import { BudgetBody } from './Budget';
@@ -33,6 +33,7 @@ import { poReports, reviewOf } from './POReview';
 import { reportDiff } from '../domain/reportDiff';
 import { ProviderBrief } from './Providers';
 import { Firm, Who } from '../ui/EntityPanel';
+import { CalendarView } from '../ui/CalendarView';
 
 /** The tabs of a country, in the order of the questions asked of it: how is it doing; the money of the projects, then of
  *  the office; the people; the contracts and suppliers (one place for the office's and the projects'); what is coming. */
@@ -426,21 +427,12 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
     </div></section>;
 }
 
+/** What falls when in a country: reports, staff, core team and provider contracts, activities and project ends, on a calendar. */
 export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
-  const core = coreDue(useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], TODAY).filter((d) => d.days != null && d.days >= -30 && d.days <= 365);
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
   const FW = useStore((s) => s.ledger.frameworks) ?? {}, set = useStore((s) => s.ledger.poKinds) ?? {};
-  const E = events(P).filter((e) => (e.day >= now() && daysUntil(e.day, TODAY) <= 365) || (e.kind === 'report' && e.tone === 'bad'));
-  const names = new Map(providerPOs(P, set).map((x) => [supKey(x.supplier), x.supplier.trim()]));
-  const mine = new Set(names.keys());
-  const fw = Object.entries(FW).filter(([k, f]) => mine.has(k) && f.end && f.end >= now() && daysUntil(f.end, TODAY) <= 365);
-  const months = [...new Set(E.map((e) => e.day.slice(0, 7)))].sort();
-  return <section class="card"><div class="card-h"><div><h2>Deadlines in {name}</h2><p>Overdue reports and the next 12 months: report deadlines, staff contract ends, planned activity ends and project ends · click a line to open the project</p></div></div>
-    <div class="card-b">
-      {core.length > 0 && <p class="cd-fw">Core team contracts ending: {core.map((d) => <span class={`badge ${SEV_BADGE[d.severity as ContractDue['severity']]}`}>{d.m.name} · {date(d.m.end!)}</span>)}</p>}
-      {fw.length > 0 && <p class="cd-fw">Framework contracts ending: {fw.map(([k, f]) => <span class="badge warning">{names.get(k) ?? k} · {date(f.end!)}</span>)}</p>}
-      {E.length ? months.map((m) => <div class="cd-m"><h3>{date(m + '-01').replace(/^\d+\s/, '')}</h3><ul class="cd-ev">{E.filter((e) => e.day.startsWith(m)).map((e) => <EvRow e={e} />)}</ul></div>)
-        : <p class="muted">Nothing dated in the next 12 months.</p>}
-    </div></section>;
+  const items = calItems(P, [[cid, core]], FW, set);
+  return <CalendarView items={items} kinds={CAL_KINDS} title={`Calendar of ${name}`} />;
 }
 
 

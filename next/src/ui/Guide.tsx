@@ -4,6 +4,11 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-23b', date: '23 Nov 2026 (later)', items: [
+    'Calendar by week, month, year or as a list, under each country and in Reports; items of one kind on one day are one entry; the overdue ones gathered at the top of the list.',
+    'Everyone: who the people are in one bar, and compact person cards; project staff counted once, with no repeated or misleading figure.',
+    'Event management is only for event companies; each provider’s kind can be changed from the list.',
+  ] },
   { id: '2026-11-23', date: '23 Nov 2026', items: [
     'Country page in six tabs: Overview · Projects (with By budget line) · Office (budget and services) · People · Contracts & suppliers · Calendar.',
     'Contracts read from their PDF or Word: drop the contract on the form; its reference, provider, end, renewal limit and total are filled in.',

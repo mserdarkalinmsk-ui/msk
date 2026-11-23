@@ -1,21 +1,19 @@
-import { useState } from 'preact/hooks';
-import { filtered, go, useStore } from '../data/store';
+import { filtered, useStore } from '../data/store';
 import { addMonths, deadlines, planStats } from '../domain/calc';
 import { roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, month } from '../ui/format';
+import { date } from '../ui/format';
+import { CalendarView, type CalItem, type CalKind } from '../ui/CalendarView';
+import { providerPOs, supKey } from '../domain/providers';
+import { daysUntil } from '../domain/staff';
+import type { CoreMember } from '../domain/coreTeam';
+import type { Contract } from '../domain/contracts';
 import { downloadIcs } from '../ui/WeekDigest';
 import { plabel } from '../domain/label';
 
 type Kind = 'report' | 'contract' | 'activity' | 'project';
 export interface Ev { day: string; kind: Kind; p: Project; title: string; sub: string; tone: 'bad' | 'warn' | 'info' | 'good' }
-const KIND: Record<Kind, { label: string; color: string; tab?: string }> = {
-  report: { label: 'Reports', color: 'var(--critical)', tab: 'Reports' },
-  contract: { label: 'Staff contracts', color: 'var(--c7)', tab: 'Staff' },
-  activity: { label: 'Activities', color: 'var(--c4)', tab: 'Activity plan' },
-  project: { label: 'Project ends', color: 'var(--c1)' },
-};
 const lab = (p: Project) => (plabel(p));
 
 /** Everything with a date: report deadlines, staff contract ends, planned activity ends and project end dates. */
@@ -36,37 +34,37 @@ export function events(P: Project[]): Ev[] {
   return out.sort((a, b) => a.day.localeCompare(b.day));
 }
 
+/** The kinds of the calendar, in the order of their entries on a day. */
+export const CAL_KINDS: CalKind[] = [
+  { k: 'report', label: 'Reports due', color: 'var(--c1)', many: (n) => `${n} reports due` },
+  { k: 'contract', label: 'Staff contracts end', color: 'var(--c4)', many: (n) => `${n} staff contracts end` },
+  { k: 'core', label: 'Core team contracts end', color: 'var(--c7)', many: (n) => `${n} core team contracts end` },
+  { k: 'provider', label: 'Provider contracts end', color: 'var(--c3)', many: (n) => `${n} provider contracts end` },
+  { k: 'activity', label: 'Activities end', color: 'var(--c2)', many: (n) => `${n} activities end` },
+  { k: 'project', label: 'Projects end', color: 'var(--ink-2)', many: (n) => `${n} projects end` },
+];
+/** Every dated item of these projects and of the core teams and provider contracts of their countries. */
+export function calItems(P: Project[], cores: [string, CoreMember[]][], FW: Record<string, Contract>, set: Record<string, string>): CalItem[] {
+  const names = new Map(providerPOs(P, set).map((x) => [supKey(x.supplier), x.supplier.trim()]));
+  const cs = new Set(P.map((p) => p.country)), countryOf = (k: string) => P.find((p) => providerPOs([p], set).some((x) => supKey(x.supplier) === k))?.country;
+  const TAB: Record<string, string> = { report: 'reports', contract: 'staff', activity: 'plan', project: 'summary' };
+  const soon = (d: string) => (daysUntil(d, TODAY) <= 30 ? 'bad' as const : 'warn' as const);
+  return [
+    ...events(P).map((e) => ({ day: e.day, kind: e.kind, title: e.kind === 'report' ? `${lab(e.p)} · ${e.title} due` : e.kind === 'contract' ? e.title : e.kind === 'activity' ? `${lab(e.p)} · ${e.title}` : `${lab(e.p)} ends`,
+      sub: e.kind === 'contract' ? `${lab(e.p)} · ${e.sub}` : e.sub, where: lab(e.p), tone: e.tone === 'bad' ? 'bad' as const : e.tone === 'warn' ? 'warn' as const : 'info' as const, go: `project/${e.p.id}/${TAB[e.kind]}` })),
+    ...cores.flatMap(([cid, M]) => M.filter((m) => m.end).map((m) => ({ day: m.end!, kind: 'core', title: m.name, sub: m.position, where: 'core team', tone: soon(m.end!), go: `countries/${cid}/people` }))),
+    ...Object.entries(FW).filter(([k, f]) => f.end && (names.has(k) || (f.country && cs.has(f.country)))).flatMap(([k, f]) => { const c = f.country ?? countryOf(k), n = f.name || names.get(k) || k, to = c ? `countries/${c}/contracts` : 'countries';
+      return [{ day: f.end!, kind: 'provider', title: `${n} — contract ends`, sub: f.ref, where: n, tone: soon(f.end!), go: to },
+        ...(f.renewBy ? [{ day: f.renewBy, kind: 'provider', title: `${n} — last renewal date`, sub: f.ref, where: n, tone: 'info' as const, go: to }] : [])]; }),
+  ];
+}
+
 export function Agenda() {
   const s = useStore((x) => x);
   const P = filtered(s);
-  const [on, setOn] = useState<Record<Kind, boolean>>({ report: true, contract: true, activity: true, project: true });
-  const [span, setSpan] = useState(6);
-  const E = events(P).filter((e) => on[e.kind]);
-  const now = TODAY.toISOString().slice(0, 7);
-  const overdue = E.filter((e) => e.day.slice(0, 7) < now && e.tone === 'bad' && e.kind !== 'activity');
-  const lateBy = [...E.filter((e) => e.day.slice(0, 7) < now && e.kind === 'activity').reduce((m, e) => m.set(e.p.id, [...(m.get(e.p.id) ?? []), e]), new Map<string, Ev[]>()).values()];
-  const months = Array.from({ length: span }, (_, i) => addMonths(now + '-01', i).slice(0, 7));
-  const open = (e: Ev) => { go(`project/${e.p.id}`); const t = KIND[e.kind].tab; if (t) setTimeout(() => dispatchEvent(new CustomEvent('pl-tab', { detail: t })), 60); };
-  const chip = (e: Ev) => (
-    <button class={`ag-e t-${e.tone}`} style={{ borderLeftColor: KIND[e.kind].color }} onClick={() => open(e)} title={`${lab(e.p)} · ${e.title} · ${date(e.day)}`}>
-      <span class="num ag-d">{e.day.slice(8, 10)}</span><b>{lab(e.p)}</b><span class="ag-t">{e.title}</span><small class="muted">{e.sub}</small>
-    </button>);
-  return (
-    <section class="card">
-      <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>Calendar</h2><p>Report deadlines, staff contract ends, planned activity ends and project end dates · click an item to open it</p></div>
-        <div class="tools" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginLeft: 'auto' }}>
-          {(Object.keys(KIND) as Kind[]).map((k) => <button class="chip" aria-pressed={on[k]} onClick={() => setOn({ ...on, [k]: !on[k] })}><i class="ag-dot" style={{ background: KIND[k].color }} />{KIND[k].label}</button>)}
-          <button class="btn" onClick={() => downloadIcs(E.filter((e) => e.day >= TODAY.toISOString().slice(0, 10)))} title="Import into Outlook, Google or phone calendar">📅 .ics</button>
-          <div class="seg">{[3, 6, 12].map((n) => <button aria-pressed={span === n} onClick={() => setSpan(n)}>{n} mo</button>)}</div>
-        </div></div>
-      <div class="card-b">
-        {(overdue.length > 0 || lateBy.length > 0) && <div class="ag-over"><h3>Overdue</h3><div class="ag-list">{overdue.map(chip)}{lateBy.map((L) => <button class="ag-e t-warn" style={{ borderLeftColor: KIND.activity.color }} onClick={() => open(L[0])}><span class="num ag-d">{L.length}</span><b>{lab(L[0].p)}</b><span class="ag-t">activities past their planned end</span><small class="muted">oldest {date(L[0].day)}</small></button>)}</div></div>}
-        <div class="ag-grid">{months.map((m) => { const X = E.filter((e) => e.day.slice(0, 7) === m); return (
-          <div class={`ag-m${m === now ? ' cur' : ''}`}>
-            <div class="ag-h"><b>{month(m + '-01')}</b><span class="ag-n">{(Object.keys(KIND) as Kind[]).map((k) => { const c = X.filter((e) => e.kind === k).length; return c ? <span style={{ background: KIND[k].color }}>{c}</span> : null; })}</span></div>
-            <div class="ag-list">{X.length ? X.map(chip) : <p class="muted" style={{ fontSize: '12px', margin: '4px 0' }}>Nothing scheduled</p>}</div>
-          </div>); })}</div>
-      </div>
-    </section>
-  );
+  const cs = new Set(P.map((p) => p.country));
+  const items = calItems(P, Object.entries(s.ledger.coreTeam ?? {}).filter(([c]) => cs.has(c)), s.ledger.frameworks ?? {}, s.ledger.poKinds ?? {});
+  const E = events(P);
+  return <CalendarView items={items} kinds={CAL_KINDS} title="Calendar"
+    extra={<button class="btn" onClick={() => downloadIcs(E.filter((e) => e.day >= TODAY.toISOString().slice(0, 10)))} title="Import into Outlook, Google or a phone calendar">Add to my calendar (.ics)</button>} />;
 }
