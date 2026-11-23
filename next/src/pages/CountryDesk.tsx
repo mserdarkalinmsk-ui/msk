@@ -2,7 +2,8 @@ import { MON } from '../domain/dt';
 import { Ico, type IcoName } from '../ui/Ico';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { officeServices } from '../domain/officeServices';
+import { officeServices, serviceKind } from '../domain/officeServices';
+import { impliedRate, yearCost } from '../domain/contractFx';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
@@ -460,6 +461,17 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     // a contract written in another language (or read from a scan) is the provider whose name is the same company
     const sk = contractSupKey(k, c?.name, names);
     return { name: names.get(sk), used: L.filter((x) => x.kind && supKey(x.supplier) === sk).reduce((a, x) => a + x.value, 0) }; };
+  // an office contract against its budget line: its cost this year in euros, at the rate its own orders were booked at
+  const rep = offices[0]?.reports.at(-1);
+  const fx = (k: string) => { const c = FW[k]; if (!c?.line || !rep) return null;
+    const sk = k.split(':').slice(3).join(':'), l = rep.lines.find((x) => x.code === c.line);
+    const O = rep.entries.filter((e) => e.line === c.line && supKey(e.supplier) === sk && (!c.kind || serviceKind(e.description, l?.description ?? '') === c.kind)).map((e) => ({ description: e.description, amount: e.spent + e.committed, fund: e.fund }));
+    const r = impliedRate(c, O), y = yearCost(c, rep.year), eur = !c.cur || c.cur === 'EUR';
+    const B = l ? (O[0] ? l[O[0].fund].budget : l.ob.budget + l.ls.budget) : 0;
+    if (y == null || (!eur && !r)) return c.cur && !eur && (c.fee || c.total) ? { text: `in ${c.cur}: no order on line ${c.line} names the months it pays, so its euro value is not known`, over: false, share: '' } : null;
+    const e = eur ? y : y / r!.rate, m = c.fee && !eur ? c.fee / r!.rate : 0;
+    return { over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (from ${r.n} order${r.n === 1 ? '' : 's'})` : '', m ? `≈ ${full(m)} a month` : '',
+      `${rep.year} ${eur ? '' : '≈ '}${full(e)}${B > 0 ? ` vs line ${c.line} budget ${full(B)}` : ` · line ${c.line} has no budget`}`].filter(Boolean).join(' · ') }; };
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);
@@ -608,7 +620,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : MON[m.getUTCMonth()]}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
         {D.map((d) => { const a = x(d.start ?? t0.toISOString()), b = d.openEnded ? 100 : x(d.end), w90 = d.openEnded ? 101 : x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
           return <div class={`cc-row s-${d.severity}${d.openEnded ? ' open' : ''}`}>
-            <span class="cc-n"><b><Firm name={d.name} /></b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', FW[d.key]?.renewEvery ? `renewed ${everyText(FW[d.key].renewEvery)}` : '', FW[d.key]?.autoRenew ? 'renews automatically' : '', FW[d.key]?.noticeDays ? `notice ${FW[d.key].noticeDays} d${noticeBy(d.end, FW[d.key].noticeDays) ? ` — by ${date(noticeBy(d.end, FW[d.key].noticeDays))}` : ''}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small>{FW[d.key]?.history && <span class="cc-hist">{FW[d.key].history!.map((h) => <em>{stepName(h.kind, h.no)}{h.effective ? ` · ${date(h.effective)}` : ''}</em>)}</span>}</span>
+            <span class="cc-n"><b><Firm name={d.name} /></b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', FW[d.key]?.renewEvery ? `renewed ${everyText(FW[d.key].renewEvery)}` : '', FW[d.key]?.autoRenew ? 'renews automatically' : '', FW[d.key]?.noticeDays ? `notice ${FW[d.key].noticeDays} d${noticeBy(d.end, FW[d.key].noticeDays) ? ` — by ${date(noticeBy(d.end, FW[d.key].noticeDays))}` : ''}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small>{(() => { const v = fx(d.key); return v && <small class={`cc-fx${v.over ? ' over' : ''}`} title="The office report holds no exchange rate: it is read from the orders, the contract's monthly fee × the months each order pays ÷ its amount in euros">{v.text}{v.share && <b> · {v.share}{v.over ? ' — over the budget' : ''}</b>}</small>; })()}{FW[d.key]?.history && <span class="cc-hist">{FW[d.key].history!.map((h) => <em>{stepName(h.kind, h.no)}{h.effective ? ` · ${date(h.effective)}` : ''}</em>)}</span>}</span>
             <div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }} />)}
               {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
               {FW[d.key]?.renewBy && !d.openEnded && x(FW[d.key].renewBy!) > b && <em class="cc-renew" title={`Renewable until ${date(FW[d.key].renewBy!)}`} style={{ left: `${b}%`, width: `${x(FW[d.key].renewBy!) - b}%` }} />}

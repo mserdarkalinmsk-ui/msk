@@ -4,6 +4,9 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-23f', date: '23 Nov 2026 (evening)', items: [
+    'Office contracts in lira against the office budget in euros: the rate is read from the office report itself — the contract\'s monthly fee × the months each order pays ÷ its amount in euros — and the year\'s cost is shown against its budget line, in red when it is more than the line holds. Contracts in euros are compared directly.',
+  ] },
   { id: '2026-11-23e', date: '23 Nov 2026 (late)', items: [
     'Tenders: each tender with the providers it selected, split into lots or not, checked against its threshold (80%, 90%, reached) — under a country and on each project.',
     'Several contracts at once: drop them together, each is read and listed with what it is (contract, amendment, rider), then the ticked ones are saved; scans are read side by side, much faster.',
