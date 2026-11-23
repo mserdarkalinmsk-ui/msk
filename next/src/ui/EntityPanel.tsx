@@ -49,6 +49,10 @@ export function ProviderPanel({ k, close }: { k: string; close: () => void }) {
             {c.line && <><dt>Office budget line</dt><dd>{c.line}{c.kind ? ` · ${c.kind}` : ''}</dd></>}
           </dl>
           {c.doc && <button class="btn ghost" onClick={() => openAttachment(c.doc!)}><Ico n="docs" />Open the signed contract</button>}
+          {c.fees && c.fees.length > 1 && <p class="en-fees">Monthly fee by date: {c.fees.map((x) => `${amt(x.fee, c.cur)} from ${date(x.from)}`).join(' · ')}</p>}
+          {c.history && c.history.length > 0 && <ol class="en-hist">{c.history.map((h) => <li><b>{h.kind === 'original' ? 'Contract' : `${h.kind.charAt(0).toUpperCase()}${h.kind.slice(1)}${h.no ? ` ${h.no}` : ''}`}</b>{h.effective && <span class="muted"> · from {date(h.effective)}</span>}
+            {h.changes.length > 0 && <small>{h.changes.map((x) => `${x.label}: ${x.from == null ? '—' : /end|renewBy/.test(x.field) ? date(String(x.from)) : x.field === 'fee' || x.field === 'total' ? amt(Number(x.from), c.cur) : String(x.from)} → ${/end|renewBy/.test(x.field) ? date(String(x.to)) : x.field === 'fee' || x.field === 'total' ? amt(Number(x.to), c.cur) : String(x.to)}`).join(' · ')}</small>}
+            {h.doc && <button class="linkish" onClick={() => openAttachment(h.doc!)}>open the document</button>}</li>)}</ol>}
         </div>; })
         : <p class="muted">No contract entered for this provider. {country && <button class="linkish" onClick={() => { close(); go(`countries/${country}/contracts`); }}>Add it under Tenders &amp; suppliers ›</button>}</p>}
       {C.projects.length > 0 && <><h3>By project</h3>

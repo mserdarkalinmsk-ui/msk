@@ -4,6 +4,10 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-23d', date: '23 Nov 2026 (night)', items: [
+    'Riders, amendments and addenda: drop one on the contract form — the contract it changes is found by its reference or provider, what it changes is shown, and once applied it becomes the next step of the contract (history kept, documents kept, the monthly fee by date).',
+    'A contract with a notice period is warned on the last day to give notice while that day is ahead, then on its end.',
+  ] },
   { id: '2026-11-23c', date: '23 Nov 2026 (evening)', items: [
     'Scanned contracts are read too: drop the signed PDF; its pages are read in this browser (the reader is downloaded once from the internet; the document never leaves the computer). Check each figure before saving.',
     'Core team in one table: a missing end date or fund is typed in its own row.',

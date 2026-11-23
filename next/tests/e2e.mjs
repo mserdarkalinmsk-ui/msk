@@ -666,6 +666,15 @@ async function page(opts) {
   const fv = (i) => p.inputValue(`.cc-form label:nth-of-type(${i}) input`);
   check(await fv(1) === 'DELTA UTILITIES LTD.' && await fv(2) === 'SC099/2026' && await fv(5) === '2026-12-31' && await fv(7) === '2027-01-31' && await fv(9) === '12000', `the contract's terms are read from its PDF (${[await fv(1), await fv(2), await fv(5), await fv(7), await fv(9)].join(' | ')})`);
   await p.click('.cc-form button:text-is("Cancel")');
+  // an amendment to a contract in the app: what it changes is shown, then applied as the contract's next step
+  await f(1, 'Epsilon Rent'); await f(2, 'LC9/2030'); await f(4, '2026-01-01'); await f(5, '2027-06-30'); await f(8, '1800'); await p.selectOption('.cc-form label:has-text("Currency") select', 'TRY');
+  await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
+  await p.setInputFiles('.cc-read input', resolve('tests/fixtures/amend.pdf')); await p.waitForSelector('.am-rev', { timeout: 15000 }).catch(() => {});
+  const rev = await p.locator('.am-rev').innerText().catch(() => '');
+  check(/Amendment 2 to LC9\/2030/.test(rev) && /Ends/.test(rev) && /30 Jun 2028/.test(rev) && /2,000\.00 TRY/.test(rev), `an amendment shows what it changes before it is applied (${rev.replace(/\s+/g, ' ').slice(0, 160)})`);
+  await p.click('.am-rev button:text-is("Apply to the contract")'); await p.waitForTimeout(300);
+  const row = await p.locator('.cc-row:has-text("Epsilon Rent")').innerText();
+  check(/Contract/.test(row) && /Amendment 2/.test(row) && /30 Jun 2028/.test(row) && /2,000\.00 TRY a month/.test(row), 'the amendment becomes the next step of the contract: new end, new fee, history kept');
   // a scan has no text: its pages are read as images by a reader fetched on first use; where it cannot be fetched
   // (no internet, a blocked network) the file is kept and the user is told to type the terms
   const nErr = errors.length; await p.route(/cdn\.jsdelivr\.net/, (r) => r.abort());

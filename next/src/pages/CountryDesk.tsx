@@ -3,7 +3,7 @@ import { Ico, type IcoName } from '../ui/Ico';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
-import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
+import { amendmentDiff, applyAmendment, contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
@@ -150,7 +150,7 @@ function CountryAlerts({ name, cid, P, setTab, offices }: { name: string; cid: s
   type Item = { sev: keyof typeof rank; who: string; what: string; detail: string; go: () => void };
   const items: Item[] = [
     ...openAlerts(alerts(P, TODAY), marks, TODAY).map((a) => { const p = P.find((x) => x.id === a.projectId)!; return { sev: a.severity, who: plabel(p), what: a.title, detail: a.detail, go: () => open(p) }; }),
-    ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}ends ${date(d.end)}`, go: () => setTab('Contracts & suppliers') })),
+    ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}${d.noticeBy ? `last day to give notice ${date(d.noticeBy)} · ` : ''}ends ${date(d.end)}`, go: () => setTab('Contracts & suppliers') })),
     ...contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => (mine.has(k) || c.country === cid) && c.cap)), TODAY, ceilingUse).flatMap((d) => { const sv = ceilingSeverity(d.used, d.cap); return sv ? [{ sev: sv, who: 'Contract', what: `${d.name}: ${pct(d.cap ? d.used / d.cap : 0)} of its ceiling ordered`, detail: `${full(d.used)} of ${full(d.cap!)}`, go: () => setTab('Contracts & suppliers') }] : []; }),
     ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('People') })),
   ].sort((a, b) => rank[a.sev] - rank[b.sev]);
@@ -447,6 +447,8 @@ function closest(name: string, known: string[]) {
   for (const k of known) { const b = w(k), n = a.filter((x) => b.some((y) => like(x, y))).length / Math.max(1, Math.min(a.length, b.length)); if (n > score) { score = n; best = k; } }
   return best;
 }
+/** A document of a contract by its kind and number. */
+const stepName = (k: string, no?: number) => (k === 'original' ? 'Contract' : `${k.charAt(0).toUpperCase()}${k.slice(1)}${no ? ` ${no}` : ''}`);
 const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR', every: '', auto: false, notice: '' };
 /** How a contract is renewed, in words. */
 const everyText = (v?: string) => !v ? '' : v === 'month' ? 'monthly' : v === 'quarter' ? 'quarterly' : v === 'year' ? 'yearly' : `every ${v} months`;
@@ -486,23 +488,38 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     if (!file) return;
     if (!/\.(pdf|docx)$/i.test(file.name)) { setReadMsg(`${file.name}: drop the contract as PDF or Word (.docx).`); return; }
     const att = await readAttachment(file); if (typeof att === 'string') { setReadMsg(att); return; }
-    setDoc(att); setReadMsg('Reading…');
+    setDoc(att); setReadMsg('Reading…'); setAmend(null);
     let t: ContractTerms = {};
     // a PDF read line by line in page order (a label and its value stay together); Word as paragraphs and tables
     try { t = contractTerms(/\.pdf$/i.test(file.name) ? (await readPages(file)).map((x) => x.text).join(' ') : (({ paragraphs: P0, tables }) => [...P0, ...tables.flat(2)].join(' '))(await readDocument(file))); } catch { /* attached all the same */ }
-    // the provider as the orders spell it, when the contract's spelling is close enough
-    const known = t.provider ? closest(t.provider, allNames) : undefined;
-    setF((f0) => ({ ...f0, sup: f0.sup || known || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur, every: t.renewEvery ?? f0.every, auto: t.autoRenew ?? f0.auto, notice: t.noticeDays ? String(t.noticeDays) : f0.notice }));
     // nothing in the text layer (a scan, or only an e-signature stamp): the pages are read as images
     let ocr = false;
     if (/\.pdf$/i.test(file.name) && !t.ref && !t.end && !t.provider) {
       try { const txt = await ocrPdf(file, 6, setReadMsg); t = contractTerms(txt); ocr = true; }
       catch (x) { setReadMsg(`${file.name} is a scanned copy and ${(x as Error).message}: it is kept with the contract. Type the dates and amounts from it.`); return; }
     }
-    if (ocr) setF((f0) => ({ ...f0, sup: f0.sup || (t.provider ? closest(t.provider, allNames) : undefined) || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur, every: t.renewEvery ?? f0.every, auto: t.autoRenew ?? f0.auto, notice: t.noticeDays ? String(t.noticeDays) : f0.notice }));
+    const scan = ocr ? ' (a scanned copy, read from its image: check each figure)' : '';
+    // a rider, amendment or addendum: the contract it changes, found by its reference or its provider
+    if (t.amend) {
+      const norm = (r?: string) => (r ?? '').replace(/\s+/g, '').toUpperCase();
+      const byRef = Object.entries(FW).find(([, c]) => t.ref && norm(c.ref) === norm(t.ref));
+      const who = t.provider ? closest(t.provider, Object.values(FW).map((c) => c.name ?? '').filter(Boolean)) : undefined;
+      const base = byRef ?? Object.entries(FW).find(([, c]) => who && c.name === who);
+      if (base) { setAmend({ key: base[0], t, doc: att, file: file.name, scan }); setReadMsg(''); return; }
+      setReadMsg(`${file.name} is ${t.amend.kind === 'amendment' ? 'an amendment' : `a ${t.amend.kind}`} to ${t.ref ?? 'a contract'} that is not in the app yet: enter the contract first (or save this one as the contract) — its terms are in the form below.`);
+    }
+    // the provider as the orders spell it, when the contract's spelling is close enough
+    const known = t.provider ? closest(t.provider, allNames) : undefined;
+    setF((f0) => ({ ...f0, sup: f0.sup || known || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur, every: t.renewEvery ?? f0.every, auto: t.autoRenew ?? f0.auto, notice: t.noticeDays ? String(t.noticeDays) : f0.notice }));
+    if (t.amend) return;
     const got = [t.ref && 'reference', t.provider && 'provider', t.end && 'end date', t.renewBy && 'renewal limit', t.total && 'total', t.fee && 'monthly fee', t.renewEvery && 'renewal step', t.autoRenew && 'automatic renewal', t.noticeDays && 'notice period'].filter(Boolean);
-    setReadMsg(got.length ? `Read from ${file.name}${ocr ? ' (a scanned copy, read from its image: check each figure)' : ''}: ${got.join(', ')}. Check them, then save; the file is kept with the contract.` : `${file.name} has no text that can be read (a scanned copy): it is kept with the contract. Type the dates and amounts from it.`);
+    setReadMsg(got.length ? `Read from ${file.name}${scan}: ${got.join(', ')}. Check them, then save; the file is kept with the contract.` : `${file.name} has no text that can be read (a scanned copy): it is kept with the contract. Type the dates and amounts from it.`);
   };
+  // a later document to apply: what it changes, then applied as the contract's next step
+  const [amend, setAmend] = useState<{ key: string; t: ContractTerms; doc: Attachment; file: string; scan: string } | null>(null);
+  const applyIt = () => { if (!amend) return; const c = FW[amend.key], a = amend.t.amend!;
+    setFramework(amend.key, applyAmendment(c, amend.t, { kind: a.kind, ...(a.no ? { no: a.no } : {}), ...(a.effective ? { effective: a.effective } : {}), at: TODAY.toISOString().slice(0, 10), ...(amend.t.ref ? { ref: amend.t.ref } : {}), doc: amend.doc }));
+    setAmend(null); setDoc(null); setReadMsg(`${stepName(a.kind, a.no)} applied to the contract with ${c.name ?? amend.key}; the document is kept in its history.`); };
   const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? 'EUR', every: c.renewEvery ?? '', auto: !!c.autoRenew, notice: c.noticeDays ? String(c.noticeDays) : '' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
   // the calendar: three months back, fifteen ahead
   const t0 = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 3, 1)), months = Array.from({ length: 18 }, (_, i) => new Date(Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + i, 1)));
@@ -513,6 +530,11 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     <p>Framework contracts and tender awards with {name}'s providers: a warning 90 days before the end, serious at 60, critical at 30 and for a month after. Contracts due also appear in the alert count of the bell.</p></div>
     {due.length > 0 && <span class="badge critical">{due.length} ending soon</span>}</div>
     <div class="card-b">
+      {amend && (() => { const c = FW[amend.key], a = amend.t.amend!, D = amendmentDiff(c, amend.t), fv = (k: string, v: unknown) => v == null || v === '' ? '—' : k === 'end' || k === 'renewBy' ? date(String(v)) : k === 'fee' || k === 'total' ? amt(Number(v), amend.t.cur ?? c.cur) : k === 'renewEvery' ? everyText(String(v)) : typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v);
+        return <div class="am-rev"><div class="am-h"><b>{stepName(a.kind, a.no)} to {c.ref ?? 'the contract'} — {c.name}</b><span>{a.effective ? `applies from ${date(a.effective)}` : 'no effective date read'} · {amend.file}{amend.scan}</span></div>
+          {D.length ? <table class="mini am-t"><thead><tr><th>Term</th><th>In force</th><th>With this {a.kind}</th></tr></thead><tbody>{D.map((x) => <tr><td>{x.label}</td><td class="muted">{fv(x.field, x.from)}</td><td><b>{fv(x.field, x.to)}</b></td></tr>)}</tbody></table> : <p class="muted">No term read that differs from the contract in force: the document is added to its history.</p>}
+          {amend.t.fees && <p class="am-fees">Monthly fee by date: {amend.t.fees.map((x) => `${amt(x.fee, amend.t.cur ?? c.cur)} from ${date(x.from)}`).join(' · ')}</p>}
+          <div class="am-a"><button class="btn primary" type="button" onClick={applyIt}>Apply to the contract</button><button class="btn ghost" type="button" onClick={() => { setAmend(null); setDoc(null); }}>Cancel</button></div></div>; })()}
       <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <label>Provider<input list="cc-sup" value={f.sup} onInput={(e) => setF({ ...f, sup: (e.target as HTMLInputElement).value })} placeholder="Choose or type the provider" required /></label>
         <datalist id="cc-sup">{[...new Set(names.values())].sort().map((n) => <option value={n} />)}</datalist>
@@ -542,7 +564,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : MON[m.getUTCMonth()]}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
         {D.map((d) => { const a = x(d.start ?? t0.toISOString()), b = d.openEnded ? 100 : x(d.end), w90 = d.openEnded ? 101 : x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
           return <div class={`cc-row s-${d.severity}${d.openEnded ? ' open' : ''}`}>
-            <span class="cc-n"><b><Firm name={d.name} /></b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', FW[d.key]?.renewEvery ? `renewed ${everyText(FW[d.key].renewEvery)}` : '', FW[d.key]?.autoRenew ? 'renews automatically' : '', FW[d.key]?.noticeDays ? `notice ${FW[d.key].noticeDays} d${noticeBy(d.end, FW[d.key].noticeDays) ? ` — by ${date(noticeBy(d.end, FW[d.key].noticeDays))}` : ''}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small></span>
+            <span class="cc-n"><b><Firm name={d.name} /></b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', FW[d.key]?.renewEvery ? `renewed ${everyText(FW[d.key].renewEvery)}` : '', FW[d.key]?.autoRenew ? 'renews automatically' : '', FW[d.key]?.noticeDays ? `notice ${FW[d.key].noticeDays} d${noticeBy(d.end, FW[d.key].noticeDays) ? ` — by ${date(noticeBy(d.end, FW[d.key].noticeDays))}` : ''}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small>{FW[d.key]?.history && <span class="cc-hist">{FW[d.key].history!.map((h) => <em>{stepName(h.kind, h.no)}{h.effective ? ` · ${date(h.effective)}` : ''}</em>)}</span>}</span>
             <div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }} />)}
               {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
               {FW[d.key]?.renewBy && !d.openEnded && x(FW[d.key].renewBy!) > b && <em class="cc-renew" title={`Renewable until ${date(FW[d.key].renewBy!)}`} style={{ left: `${b}%`, width: `${x(FW[d.key].renewBy!) - b}%` }} />}

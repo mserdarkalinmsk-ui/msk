@@ -353,3 +353,16 @@ details.em-method[open] > summary::before { content: '▾'; }
 .cc-row { grid-template-columns: minmax(220px, 28%) 1fr 300px; }
 .cc-s small { white-space: nowrap; }
 .cc-n small { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.4; }
+/* a rider, amendment or addendum: what it changes, before it is applied */
+.am-rev { border: 1px solid color-mix(in srgb, var(--c1) 40%, var(--line)); background: color-mix(in srgb, var(--c1) 5%, var(--surface)); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: grid; gap: 10px; }
+.am-h { display: grid; gap: 2px; } .am-h span { font-size: 12.5px; color: var(--ink-3); }
+.am-t { max-width: 640px; }
+.am-fees { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.am-a { display: flex; gap: 8px; }
+/* the documents of a contract, on its row and in the provider's card */
+.cc-hist { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.cc-hist em { font-style: normal; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.en-fees { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.en-hist { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; }
+.en-hist small { display: block; color: var(--ink-2); font-size: 12px; }
+.en-hist .linkish { font-size: 12px; }
