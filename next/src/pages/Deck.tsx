@@ -176,7 +176,7 @@ export function Deck() {
 
       <section class="slide sl-cover">
         <div class="sl-cv">
-          {s.ledger.brand?.logo && <img class="sl-logo" src={s.ledger.brand.logo} alt="" />}
+          {s.ledger.brand?.logo && <img class="sl-logo" src={s.ledger.brand.logo} alt="" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />}
           <div class="sl-k">{mg ? 'Management review' : 'Progress report to the donor'} · {date(today)}</div>
           <h1>{scope === 'Portfolio' ? 'Joint programme portfolio' : scope}</h1>
           <p class="sl-lead">Financial and operational status of {P.length} project{P.length > 1 ? 's' : ''} in {nCountries} countr{nCountries > 1 ? 'ies' : 'y'}</p>

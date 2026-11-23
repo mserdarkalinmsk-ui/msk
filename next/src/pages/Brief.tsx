@@ -42,7 +42,7 @@ export function Brief({ id }: { id: string }) {
       </div>
       <article class="brief">
         <header class="br-h">
-          <div class="br-org">{L.brand?.logo && <img src={L.brand.logo} alt="" />}<div><b>{L.brand?.title ?? ''}</b><span>{L.brand?.name ?? ''}</span></div></div>
+          <div class="br-org">{L.brand?.logo && <img src={L.brand.logo} alt="" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />}<div><b>{L.brand?.title ?? ''}</b><span>{L.brand?.name ?? ''}</span></div></div>
           <div class="br-id"><span>{ids}</span><span>{country}{p.sector ? ` · ${p.sector}` : ''}</span></div>
         </header>
         <h1 class="br-t">{p.name}</h1>

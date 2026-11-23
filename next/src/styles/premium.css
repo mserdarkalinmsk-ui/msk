@@ -245,3 +245,14 @@ details.em-method[open] > summary::before { content: '▾'; }
 .gd-news { border-left: 2px solid var(--line-strong); padding: 2px 0 2px 14px; margin-bottom: 12px; font-size: 13px; }
 .gd-news ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 4px; }
 .gd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c1); margin-left: 6px; display: inline-block; }
+/* the monthly pack on paper: long tables flow on to the next page (no half-empty pages), a heading stays with what
+   follows it, a row is never cut, a chart or a short block is kept whole */
+@media print {
+  .pack-s { break-inside: auto; }
+  .pack-s:has(.chart, svg), .pack-s.pack-sum, .pack-s:not(:has(table)) { break-inside: avoid; }
+  .pack-s h3, .pack-s .pack-h { break-after: avoid; }
+  .pack-s tr, .pack-s li { break-inside: avoid; }
+}
+/* a bar with its value: the bar in its own track, the figures in one right-aligned column */
+.delta-bar { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; align-items: center; }
+.delta-bar b { text-align: right; }
