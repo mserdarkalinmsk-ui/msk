@@ -153,23 +153,37 @@ function loadTesseract(): Promise<Tess> {
     document.head.appendChild(s);
   });
 }
+type Worker = Awaited<ReturnType<Tess['createWorker']>>;
+// several recognisers side by side (every core but one, up to six), kept ready between documents and closed after a
+// minute without work: the pages of a document, and several documents, are read at the same time
+const POOL = Math.max(1, Math.min(6, (globalThis.navigator?.hardwareConcurrency || 2) - 1));
+let pool: Promise<Worker[]> | null = null, idle: ReturnType<typeof setTimeout> | undefined;
+const freeW: Worker[] = [], queue: ((w: Worker) => void)[] = [];
+const acquire = () => new Promise<Worker>((res) => { clearTimeout(idle); const w = freeW.pop(); if (w) res(w); else queue.push(res); });
+const release = (w: Worker) => { const q = queue.shift(); if (q) { q(w); return; } freeW.push(w);
+  if (freeW.length === POOL) { clearTimeout(idle); idle = setTimeout(() => { if (freeW.length === POOL && pool) { const W = freeW.splice(0); pool = null; for (const x of W) void x.terminate(); } }, 60000); } };
+function workers(T: Tess): Promise<Worker[]> {
+  return pool ??= Promise.all(Array.from({ length: POOL }, () => T.createWorker('eng', 1, { workerPath: `${TESS}/worker.min.js`, corePath: TESS_CORE, langPath: TESS_LANG })))
+    .then((W) => { W.forEach(release); return W; }, (e) => { pool = null; throw e; });
+}
 /** The text of a scanned PDF, page by page (the first `max` pages), recognised in the browser. */
 export async function ocrPdf(f: File, max = 6, progress?: (msg: string) => void): Promise<string> {
   const T = await loadTesseract();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(await f.arrayBuffer()), isEvalSupported: false }).promise;
-  const worker = await T.createWorker('eng', 1, { workerPath: `${TESS}/worker.min.js`, corePath: TESS_CORE, langPath: TESS_LANG });
-  const out: string[] = [];
+  const [doc] = await Promise.all([pdfjs.getDocument({ data: new Uint8Array(await f.arrayBuffer()), isEvalSupported: false }).promise, workers(T)]);
   try {
-    const n = Math.min(doc.numPages, max);
-    for (let i = 1; i <= n; i++) {
-      progress?.(`Reading the scanned page ${i} of ${n}…`);
-      const page = await doc.getPage(i), vp = page.getViewport({ scale: 2 });
-      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
-      await page.render({ canvasContext: c.getContext('2d')!, viewport: vp } as never).promise;
-      out.push((await worker.recognize(c)).data.text);
-    }
-  } finally { await worker.terminate(); await doc.destroy(); }
-  return out.join('\n');
+    const n = Math.min(doc.numPages, max); let done = 0;
+    progress?.(`Reading the scanned pages (${n})…`);
+    // each page is drawn when a recogniser is free, so only as many pages as recognisers are held in memory
+    const jobs = Array.from({ length: n }, async (_, i) => { const w = await acquire();
+      try {
+        const page = await doc.getPage(i + 1), vp = page.getViewport({ scale: 2 });
+        const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+        await page.render({ canvasContext: c.getContext('2d')!, viewport: vp } as never).promise;
+        const text = (await w.recognize(c)).data.text; c.width = c.height = 0;
+        progress?.(`Reading the scanned pages: ${++done} of ${n}…`); return text;
+      } finally { release(w); } });
+    return (await Promise.all(jobs)).join('\n');
+  } finally { await doc.destroy(); }
 }

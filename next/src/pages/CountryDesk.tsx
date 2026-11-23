@@ -3,7 +3,7 @@ import { Ico, type IcoName } from '../ui/Ico';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
-import { amendmentDiff, applyAmendment, contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
+import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
@@ -17,7 +17,7 @@ import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
 import { plabel } from '../domain/label';
 import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
-import { providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
+import { closestName, contractSupKey, providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
 import { daysUntil, n2, renewals, type Base } from '../domain/staff';
 import { SalarySection } from '../ui/CountryPanel';
 import { StaffPlanTable } from './StaffPlan';
@@ -32,6 +32,7 @@ import { BudgetBody } from './Budget';
 import { poReports, reviewOf } from './POReview';
 import { reportDiff } from '../domain/reportDiff';
 import { ProviderBrief } from './Providers';
+import { TenderBoard } from './Tenders';
 import { Firm, Who } from '../ui/EntityPanel';
 import { CalendarView } from '../ui/CalendarView';
 
@@ -201,6 +202,7 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
     {v === 'Providers' && <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
       <div class="card-b"><CountryProviders P={P} cname={cname} /></div></section>}
+    {v === 'Tenders' && <div class="span-12"><TenderBoard cid={cid} P={P} /></div>}
     {v === 'Contracts' && <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />}
   </div></>;
 }
@@ -233,7 +235,7 @@ export function ViewBar<T extends string>({ views, v, set, label, counts = {} }:
   return <div class="seg of-views cd-views" role="tablist" aria-label={label}>{views.map((x) => <button role="tab" aria-pressed={v === x} onClick={() => set(x)}>{x}{counts[x] != null ? <span class="tab-n">{counts[x]}</span> : null}</button>)}</div>;
 }
 const STAFF_VIEWS = ['Everyone', 'Core team', 'Project staff', 'Staff plan', 'Salary scale'] as const;
-const TENDER_VIEWS = ['Contracts', 'Providers'] as const;
+const TENDER_VIEWS = ['Contracts', 'Tenders', 'Providers'] as const;
 const PROJECT_VIEWS = ['Projects', 'By budget line'] as const;
 /** An office service whose contract is to be added: handed from the Office tab to the contract form. */
 let pending: Prefill | null = null;
@@ -284,7 +286,7 @@ function ProviderList({ P, lab }: { P: Project[]; lab?: (id: string) => string }
     {G.map((g) => <details class="sp-grp">
       <summary><i class="sp-dot" style={{ background: KINDS.find((x) => x.k === g.k)?.color }} /><b>{g.label}</b><span class="muted">{g.R.length} provider{g.R.length > 1 ? 's' : ''}</span><span class="num">{full(g.sc)}</span></summary>
       <table class="mini"><thead><tr><th>Provider</th>{lab && <th>Projects</th>}<th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th><th>Kind</th></tr></thead>
-        <tbody>{g.R.map((x) => <tr><td><Firm name={x.supplier} /></td>{lab && <td class="muted">{[...x.projects.keys()].map(lab).join(', ')}</td>}<td class="r num">{x.pos}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc - x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td>
+        <tbody>{g.R.map((x) => <tr><td><Firm name={x.supplier} only={P.length === 1 ? P[0].id : undefined} /></td>{lab && <td class="muted">{[...x.projects.keys()].map(lab).join(', ')}</td>}<td class="r num">{x.pos}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc - x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td>
           <td><select class="select sp-kind" aria-label={`Kind of ${x.supplier}`} title="Change the kind of every order of this provider" value={set[`sup|${supKey(x.supplier)}`] ?? ''} onChange={(e) => setPoKind(`sup|${supKey(x.supplier)}`, (e.target as HTMLSelectElement).value)}>
             <option value="">{KINDS.find((k) => k.k === x.kind)?.label ?? x.kind} (automatic)</option>{KINDS.filter((k) => !k.optional).map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td></tr>)}</tbody></table>
     </details>)}</div>;
@@ -436,17 +438,7 @@ export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; 
 
 /** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
 /** A contract to add, filled in from an office service. */
-/** The known name closest to a name read from a document (most words alike), when more than half of its words match. */
-function closest(name: string, known: string[]) {
-  // a scan reads ü as "ii" and drops letters: words are alike when they differ by at most two letters
-  const fold = (t: string) => t.toLocaleLowerCase('tr').normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i').replace(/ii/g, 'u');
-  const w = (s: string) => [...new Set(fold(supKey(s)).split(/[^a-z0-9]+/).filter((x) => x.length > 2))];
-  const lev = (a: string, b: string) => { const d = Array.from({ length: b.length + 1 }, (_, j) => j); for (let i = 1; i <= a.length; i++) { let p = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1)); p = t; } } return d[b.length]; };
-  const like = (x: string, y: string) => x === y || (Math.min(x.length, y.length) >= 5 && lev(x, y) <= 2);
-  const a = w(name); let best: string | undefined, score = 0.5;
-  for (const k of known) { const b = w(k), n = a.filter((x) => b.some((y) => like(x, y))).length / Math.max(1, Math.min(a.length, b.length)); if (n > score) { score = n; best = k; } }
-  return best;
-}
+const closest = closestName;
 /** A document of a contract by its kind and number. */
 const stepName = (k: string, no?: number) => (k === 'original' ? 'Contract' : `${k.charAt(0).toUpperCase()}${k.slice(1)}${no ? ` ${no}` : ''}`);
 const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR', every: '', auto: false, notice: '' };
@@ -465,7 +457,9 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   const entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
   const use = (k: string) => { const c = FW[k];
     if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { name: c.name, used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; }
-    return { name: names.get(k), used: L.filter((x) => x.kind && supKey(x.supplier) === k).reduce((a, x) => a + x.value, 0) }; };
+    // a contract written in another language (or read from a scan) is the provider whose name is the same company
+    const sk = contractSupKey(k, c?.name, names);
+    return { name: names.get(sk), used: L.filter((x) => x.kind && supKey(x.supplier) === sk).reduce((a, x) => a + x.value, 0) }; };
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);
@@ -484,6 +478,49 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   // the terms read from the contract itself (a PDF or Word with text); a scan is attached and its terms typed
   const [over, setOver] = useState(false);
   const allNames = [...new Set([...names.values(), ...offices.flatMap((o) => (o.reports.at(-1)?.entries ?? []).map((e) => e.supplier.trim())).filter(Boolean)])];
+  /** The terms of one contract file: its text, else its pages read as images. */
+  const termsOf = async (file: File, say: (m: string) => void): Promise<{ t: ContractTerms; ocr: boolean; err?: string }> => {
+    let t: ContractTerms = {};
+    try { t = contractTerms(/\.pdf$/i.test(file.name) ? (await readPages(file)).map((x) => x.text).join(' ') : (({ paragraphs: P0, tables }) => [...P0, ...tables.flat(2)].join(' '))(await readDocument(file))); } catch { /* attached all the same */ }
+    if (/\.pdf$/i.test(file.name) && !t.ref && !t.end && !t.provider) {
+      try { return { t: contractTerms(await ocrPdf(file, 6, say)), ocr: true }; } catch (x) { return { t, ocr: false, err: (x as Error).message }; }
+    }
+    return { t, ocr: false };
+  };
+  // several files at once: each read, listed with what it is, then saved together (contracts first, then their amendments)
+  const [batch, setBatch] = useState<{ file: string; att: Attachment; t: ContractTerms; ocr: boolean; err?: string; on: boolean }[] | null>(null);
+  const readMany = async (files: File[]) => {
+    const F = files.filter((f) => /\.(pdf|docx)$/i.test(f.name)); if (!F.length) { setReadMsg('Drop contracts as PDF or Word (.docx).'); return; }
+    if (F.length === 1) { void readContract(F[0]); return; }
+    setAmend(null); setBatch(null); const out: (NonNullable<typeof batch>[number] | null)[] = F.map(() => null); let done = 0, next = 0;
+    setReadMsg(`Reading ${F.length} documents…`);
+    // three at a time: the text ones are read at once, the scans share the recognisers
+    const one = async () => { while (next < F.length) { const i = next++, f = F[i];
+      const att = await readAttachment(f); if (typeof att === 'string') { setReadMsg(att); done++; continue; }
+      const r = await termsOf(f, () => {});
+      out[i] = { file: f.name, att, ...r, on: !!(r.t.provider || r.t.ref) }; setReadMsg(`Read ${++done} of ${F.length} documents…`); } };
+    await Promise.all([one(), one(), one()]);
+    setReadMsg(''); setBatch(out.filter((x): x is NonNullable<typeof x> => !!x));
+  };
+  const norm = (r?: string) => (r ?? '').replace(/\s+/g, '').toUpperCase();
+  const saveBatch = () => { if (!batch) return;
+    const today = TODAY.toISOString().slice(0, 10), work: Record<string, Contract> = { ...FW };
+    const pick = batch.filter((x) => x.on);
+    // contracts first, then riders / amendments / addenda by the date they apply from
+    const order = [...pick.filter((x) => !x.t.amend), ...pick.filter((x) => x.t.amend).sort((a, b) => (a.t.amend!.effective ?? '').localeCompare(b.t.amend!.effective ?? ''))];
+    let n = 0;
+    for (const x of order) { const t = x.t;
+      const who = t.amend && t.provider ? closest(t.provider, Object.values(work).map((c) => c.name ?? '').filter(Boolean)) : undefined;
+      const base = t.amend && (Object.entries(work).find(([, c]) => t.ref && norm(c.ref) === norm(t.ref)) ?? Object.entries(work).find(([, c]) => who && c.name === who));
+      if (t.amend && base) { const a = t.amend; work[base[0]] = applyAmendment(base[1], t, { kind: a.kind, ...(a.no ? { no: a.no } : {}), ...(a.effective ? { effective: a.effective } : {}), at: today, ...(t.ref ? { ref: t.ref } : {}), doc: x.att }); setFramework(base[0], work[base[0]]); n++; continue; }
+      const name = (t.provider ? closest(t.provider, allNames) : undefined) ?? t.provider; if (!name && !t.ref) continue;
+      const k = names.has(supKey(name ?? '')) ? supKey(name!) : supKey(name ?? t.ref!);
+      work[k] = { name: name ?? t.ref, country: cid, doc: x.att, ...(t.ref ? { ref: t.ref } : {}), ...(t.start ? { start: t.start } : {}), ...(t.end ? { end: t.end } : {}), ...(t.renewBy ? { renewBy: t.renewBy } : {}),
+        ...(t.fee ? { fee: t.fee } : {}), ...(t.fees ? { fees: t.fees } : {}), ...(t.total ? { total: t.total } : {}), ...(t.cur && (t.fee || t.total) ? { cur: t.cur } : {}), ...(t.renewEvery ? { renewEvery: t.renewEvery } : {}), ...(t.autoRenew ? { autoRenew: true } : {}), ...(t.noticeDays ? { noticeDays: t.noticeDays } : {}) } as Contract;
+      setFramework(k, work[k]); n++;
+    }
+    setReadMsg(`${n} of ${batch.length} document${batch.length > 1 ? 's' : ''} saved; each is kept with its contract.${batch.length - n ? ' The others were left out: open them one by one and type their terms.' : ''}`); setBatch(null);
+  };
   const readContract = async (file?: File) => {
     if (!file) return;
     if (!/\.(pdf|docx)$/i.test(file.name)) { setReadMsg(`${file.name}: drop the contract as PDF or Word (.docx).`); return; }
@@ -530,6 +567,13 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     <p>Framework contracts and tender awards with {name}'s providers: a warning 90 days before the end, serious at 60, critical at 30 and for a month after. Contracts due also appear in the alert count of the bell.</p></div>
     {due.length > 0 && <span class="badge critical">{due.length} ending soon</span>}</div>
     <div class="card-b">
+      {batch && <div class="am-rev cc-batch"><div class="am-h"><b>{batch.length} documents read</b><span>Tick the ones to save: contracts first, then their riders and amendments by date. Check each figure; a scanned copy may be misread.</span></div>
+        <table class="mini"><thead><tr><th /><th>Document</th><th>What it is</th><th>Provider</th><th>Reference</th><th>Ends</th><th class="r">Total</th></tr></thead>
+          <tbody>{batch.map((x, i) => <tr class={x.on ? '' : 'muted'}><td><input type="checkbox" checked={x.on} disabled={!x.t.provider && !x.t.ref} onChange={(e) => setBatch(batch.map((y, j) => (j === i ? { ...y, on: (e.target as HTMLInputElement).checked } : y)))} /></td>
+            <td>{x.file}{x.ocr && <small class="muted"> · scanned</small>}</td>
+            <td>{x.t.amend ? `${stepName(x.t.amend.kind, x.t.amend.no)}${x.t.amend.effective ? ` · from ${date(x.t.amend.effective)}` : ''}` : x.t.provider || x.t.ref ? 'Contract' : <span class="badge warning">{x.err ? 'scan: reader not available' : 'nothing read'}</span>}</td>
+            <td>{x.t.provider ?? '—'}</td><td class="num">{x.t.ref ?? '—'}</td><td class="num">{x.t.end ? date(x.t.end) : '—'}</td><td class="r num">{x.t.total ? amt(x.t.total, x.t.cur) : x.t.fee ? `${amt(x.t.fee, x.t.cur)} / month` : '—'}</td></tr>)}</tbody></table>
+        <div class="am-a"><button class="btn primary" type="button" disabled={!batch.some((x) => x.on)} onClick={saveBatch}>Save the {batch.filter((x) => x.on).length} ticked</button><button class="btn ghost" type="button" onClick={() => setBatch(null)}>Cancel</button></div></div>}
       {amend && (() => { const c = FW[amend.key], a = amend.t.amend!, D = amendmentDiff(c, amend.t), fv = (k: string, v: unknown) => v == null || v === '' ? '—' : k === 'end' || k === 'renewBy' ? date(String(v)) : k === 'fee' || k === 'total' ? amt(Number(v), amend.t.cur ?? c.cur) : k === 'renewEvery' ? everyText(String(v)) : typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v);
         return <div class="am-rev"><div class="am-h"><b>{stepName(a.kind, a.no)} to {c.ref ?? 'the contract'} — {c.name}</b><span>{a.effective ? `applies from ${date(a.effective)}` : 'no effective date read'} · {amend.file}{amend.scan}</span></div>
           {D.length ? <table class="mini am-t"><thead><tr><th>Term</th><th>In force</th><th>With this {a.kind}</th></tr></thead><tbody>{D.map((x) => <tr><td>{x.label}</td><td class="muted">{fv(x.field, x.from)}</td><td><b>{fv(x.field, x.to)}</b></td></tr>)}</tbody></table> : <p class="muted">No term read that differs from the contract in force: the document is added to its history.</p>}
@@ -554,9 +598,9 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
         {(edit || doc) && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF(EMPTY_C); setDoc(null); setReadMsg(''); }}>Cancel</button>}
         <label class={`drop cc-read${over ? ' on' : ''}`} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }} onDragLeave={() => setOver(false)}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); readContract(e.dataTransfer?.files?.[0]); }}>
-          <input type="file" accept=".pdf,.docx" hidden onChange={(e) => { const i = e.target as HTMLInputElement; readContract(i.files?.[0]); i.value = ''; }} />
-          <Ico n="upload" /><span><strong>Drop the contract here</strong> or click to choose it (PDF or Word) · its terms fill the form below</span></label>
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); void readMany([...(e.dataTransfer?.files ?? [])]); }}>
+          <input type="file" accept=".pdf,.docx" multiple hidden onChange={(e) => { const i = e.target as HTMLInputElement; void readMany([...(i.files ?? [])]); i.value = ''; }} />
+          <Ico n="upload" /><span><strong>Drop contracts here</strong> — one or many, with their riders and amendments — or click to choose them (PDF or Word) · their terms are read</span></label>
         {readMsg && <p class="cc-meta">{readMsg}</p>}
         {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
       </form>

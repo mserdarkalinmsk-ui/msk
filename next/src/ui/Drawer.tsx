@@ -79,7 +79,7 @@ export function Drawer() {
         {d.kind === 'period' && <PeriodPanel t={d.t} from={d.from} ids={d.ids} close={close} />}
         {d.kind === 'safety' && <SafetyPanel close={close} />}
         {d.kind === 'guide' && <GuidePanel close={close} />}
-        {d.kind === 'provider' && <ProviderPanel k={d.key} close={close} />}
+        {d.kind === 'provider' && <ProviderPanel key={`${d.key}|${d.only ?? ''}`} k={d.key} only={d.only} close={close} />}
         {d.kind === 'person' && <PersonPanel k={d.key} close={close} />}
         {d.kind === 'points' && <PointsPanel title={d.title} text={d.text} items={d.items} close={close} />}
       </div>

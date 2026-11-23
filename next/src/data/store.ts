@@ -21,7 +21,7 @@ export interface State {
   ledger: Ledger;
   route: string;
   filters: Filters;
-  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'rules' } | { kind: 'trace'; projectId: string; figure?: import('../domain/provenance').Figure; line?: string; field?: import('../domain/provenance').LineField } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'share' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'smart-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] } | { kind: 'period'; t: number; from: number; ids: string[] } | { kind: 'safety' } | { kind: 'guide' } | { kind: 'provider'; key: string } | { kind: 'person'; key: string } | { kind: 'points'; title: string; text: string; items: { id: string; label: string; why: string; group?: string; tone?: 'bad' | 'warn' | 'good' | 'info'; to?: string }[] };
+  drawer: null | { kind: 'project'; id: string } | { kind: 'new-project'; country?: string; prefill?: Partial<Project>; thenReport?: boolean } | { kind: 'import' } | { kind: 'rules' } | { kind: 'trace'; projectId: string; figure?: import('../domain/provenance').Figure; line?: string; field?: import('../domain/provenance').LineField } | { kind: 'countries'; edit?: string } | { kind: 'report'; projectId: string } | { kind: 'risk'; projectId: string; id?: string } | { kind: 'contract'; projectId: string; key: string } | { kind: 'appearance' } | { kind: 'share' } | { kind: 'documents'; projectId: string } | { kind: 'portfolio-import'; files: File[] } | { kind: 'smart-import'; files: File[] } | { kind: 'alert'; projectId: string; alertKind: string; ids: string[] } | { kind: 'period'; t: number; from: number; ids: string[] } | { kind: 'safety' } | { kind: 'guide' } | { kind: 'provider'; key: string; only?: string } | { kind: 'person'; key: string } | { kind: 'points'; title: string; text: string; items: { id: string; label: string; why: string; group?: string; tone?: 'bad' | 'warn' | 'good' | 'info'; to?: string }[] };
   palette: boolean;
   theme: 'light' | 'dark' | 'auto';
   toasts: Toast[];
@@ -456,6 +456,12 @@ export function setFramework(key: string, f: import('../domain/contracts').Contr
   const L = draft(state.ledger), m = { ...(L.frameworks ?? {}) };
   if (f && (f.cap || f.end || f.ref || f.start || f.openEnded)) m[key] = f; else delete m[key];
   L.frameworks = m; commit(L, f ? `Contract saved${f.name ? `: ${f.name}` : ''}` : 'Contract removed');
+}
+/** Saves a tender (its providers, threshold, projects), or removes it. */
+export function setTender(t: import('../domain/tenders').Tender | null, id?: string) {
+  const L = draft(state.ledger), m = { ...(L.tenders ?? {}) };
+  if (t) m[t.id] = t; else if (id) delete m[id];
+  L.tenders = m; commit(L, t ? `Tender saved: ${t.name}` : 'Tender removed');
 }
 /** Adds or changes a member of a country office's core team. */
 export function setCoreMember(country: string, m: import('../domain/coreTeam').CoreMember) {

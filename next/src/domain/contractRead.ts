@@ -46,11 +46,14 @@ export function contractTerms(text: string): ContractTerms {
   if (at >= 0) {
     const W = T.slice(Math.max(0, at - 250), at + 400), mid = Math.min(250, at);
     const LEGAL = /[A-ZÇĞİÖŞÜ0-9][A-ZÇĞİÖŞÜ0-9&'’.,\- ]{2,120}?\b(?:LTD\.?\s*ŞT[İIi]\.?|LTD\.?\s*ST[Ii]\.?|LTD\.?|LIMITED(?:\s+COMPANY)?|A\.\s?Ş\.?|A\.\s?S\.|AŞ|INC\.?|LLC|GMBH|SARL|SRL|COMPANY|ŞT[İI]\.?)(?=\s|$|[,;])/g;
-    const hits = [...W.matchAll(LEGAL)].map((m) => ({ s: m[0].replace(/^.*\b(?:address\d?|person|Name)\s+/i, '').trim(), d: Math.abs(m.index! - mid) }));
-    const best = hits.sort((a, b) => a.d - b.d)[0];
+    // a name printed in Title Case: capitalised words up to its legal form ("Gamma Turizm Organizasyon A.Ş.")
+    const TITLE = /(?<![\p{L}\d])[A-ZÇĞİÖŞÜ][\p{L}\d&'’.\-]*(?:\s+(?:ve\s+|and\s+|&\s+)?[A-ZÇĞİÖŞÜ][\p{L}\d&'’.\-]*){0,10}?\s+(?:Ltd\.?\s*Şti\.?|Ltd\.?\s*Sti\.?|A\.\s?Ş\.?|A\.\s?S\.|Ltd\.?|Limited|Inc\.?|LLC|GmbH|SARL|S\.A\.)(?=\s|$|[,;])/gu;
+    const hits = [...W.matchAll(LEGAL), ...W.matchAll(TITLE)].map((m) => ({ s: m[0].replace(/^.*\b(?:address\d?|person|Name)\s+/i, '').replace(/^(?:and|ve)\s+/i, '').trim(), d: Math.abs(m.index! - mid) }));
+    const best = hits.filter((h) => !/^(?:Name|and|address\d?)$/i.test(h.s) && h.s.split(/\s+/).length > 1).sort((a, b) => a.d - b.d)[0];
     if (best) out.provider = best.s;
   }
   if (!out.provider && prov) out.provider = prov[1].trim().replace(/[,;]$/, '');
+  if (out.provider) out.provider = out.provider.replace(/^[^\p{L}\d]+|[^\p{L}\d.]+$/gu, '').replace(/\s+[^\p{L}\d\s]{1,2}(?=\s|$)/gu, '').trim() || undefined;
   // no label read (a scan of the provider table): the company named most often on the first pages, other than the Council
   if (!out.provider) {
     const L2 = /[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ0-9&'’.,\- ]{4,120}?\b(?:LTD\.?\s*ŞT[İIi]\.?|LTD\.?\s*ST[Ii]\.?|LTD\.?|LIMITED(?:\s+COMPANY)?|A\.\s?Ş\.?|A\.\s?S\.|INC\.?|LLC|GMBH|SARL|SRL)(?=\s|$|[,;])/g;
@@ -67,7 +70,8 @@ export function contractTerms(text: string): ContractTerms {
   if (per) { out.start ??= isoAny(per[1]); out.end ??= isoAny(per[2]); }
   const eff = new RegExp(String.raw`with\s+effect\s+from\s+${ANYDATE}`, 'i').exec(T); if (eff) out.start ??= isoAny(eff[1]);
   const end = dateNear(T, /concluded\s+until\s*:?/i); if (end) out.end = end;
-  const ren = dateNear(T, /(?:may\s+not\s+be\s+renewed\s+beyond|renewed\s+(?:until|up\s+to))\s*:?/i); if (ren) out.renewBy = ren;
+  const RENEW = /(?:(?:may|shall|will|can)\s+not\s+be\s+renewed\s+beyond|renewed\s+(?:until|up\s+to))\s*:?/i;
+  const ren = dateNear(T, RENEW) ?? isoAny(new RegExp(RENEW.source + String.raw`\s*${ANYDATE}`, 'i').exec(T)?.[1]); if (ren) out.renewBy = ren;
   const start = new RegExp(String.raw`(?:takes\s+effect|starts?|commenc\w+)\s+(?:on|from|as\s+from)\s+${DATE}`, 'i').exec(T); if (start) out.start = iso(start);
   // the total: "TOTAL … 1.133.553,63 TRY" (the first amount after the word, with its currency)
   // several totals (purchase, monthly fees, all services): the largest is the contract's total
@@ -89,6 +93,8 @@ export function contractTerms(text: string): ContractTerms {
   if (/tacit(?:ly)?\s+renew|renewed\s+tacitly|automatically\s+(?:renewed|extended)|renew(?:ed|s)?\s+automatically|unless\s+(?:either|one\s+of\s+the)\s+part(?:y|ies)\s+(?:gives|serves)\s+notice/i.test(T)) out.autoRenew = true;
   const nW: Record<string, number> = { one: 1, two: 2, three: 3, six: 6, thirty: 30, sixty: 60, ninety: 90, fifteen: 15 };
   const nt = /(?:(?:a|with|by|giving|of|upon)\s+)?(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?['’]?\s+(?:prior\s+|written\s+|advance\s+)*notice|notice\s+(?:period\s+)?of\s+(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?/i.exec(T);
+  const nb = nt ? null : /(?:at\s+the\s+latest|at\s+least|no\s+later\s+than)?\s*(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?\s+(?:before|prior\s+to)\s+the\s+(?:renewal|end|expiry|expiration|termination)/i.exec(T);
+  if (nb) { const w = nb[1].toLowerCase(), n = nW[w] ?? +w, u = nb[2].toLowerCase(); out.noticeDays = u === 'month' ? n * 30 : u === 'week' ? n * 7 : n; }
   if (nt) { const w = (nt[1] ?? nt[3]).toLowerCase(), u = (nt[2] ?? nt[4]).toLowerCase(), n = nW[w] ?? +w; out.noticeDays = u === 'month' ? n * 30 : u === 'week' ? n * 7 : n; }
   // a rider, an amendment or an addendum to a contract: its number and the date it applies from
   const am = /\b(?:(\d{1,2})(?:st|nd|rd|th)?\s+)?(AMENDMENT|RIDER|ADDENDUM)(?:\s+(?:No\.?|Number)\s*(\d{1,2}))?\s+TO\s+THE\b/i.exec(T);

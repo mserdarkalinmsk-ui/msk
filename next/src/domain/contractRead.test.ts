@@ -68,4 +68,14 @@ describe('extension options', () => {
     expect(contractTerms('Either party may terminate with 30 days’ written notice.').noticeDays).toBe(30);
     expect(contractTerms('The parties sign the act.')).toEqual({});
   });
+  it('reads a provider printed in Title Case, wherever the label falls, and drops the marks a scan leaves', () => {
+    const name = 'Gamma Uluslararası Turizm Kongre Organizasyon A.Ş.';
+    for (const t of [`Name and address3 ${name} Delta Mah. Kappa Cad. No: 13`, `Name and ${name} address3 Delta Mah. Kappa Cad. No: 13`, `${name} Name and address3 Delta Mah. Kappa Cad. No: 13`])
+      expect(contractTerms(t).provider).toBe(name);
+    expect(contractTerms('Name and address ’ Omega Kongre Hizmetleri A.S. > ~ Delta Mah. No: 2').provider).toBe('Omega Kongre Hizmetleri A.S.');
+  });
+  it('reads a framework agreement that renews tacitly each year up to a last date, with notice before the renewal', () => {
+    const t = contractTerms('This Framework Agreement takes effect as from the date of its signature by both parties and is concluded until: 30/06/2029 At the end of its initial term, the Framework Agreement shall be tacitly renewed for a further term of one year, and shall renew each year thereafter, unless either party notifies the other in writing of its intention to terminate the contract at the latest 3 months before the renewal date. The contract shall not be renewed beyond 30 June 2031 and shall end on this date.');
+    expect(t).toMatchObject({ end: '2029-06-30', renewBy: '2031-06-30', renewEvery: '12', autoRenew: true, noticeDays: 90 });
+  });
 });

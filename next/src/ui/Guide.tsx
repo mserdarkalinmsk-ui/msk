@@ -4,6 +4,12 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-23e', date: '23 Nov 2026 (late)', items: [
+    'Tenders: each tender with the providers it selected, split into lots or not, checked against its threshold (80%, 90%, reached) — under a country and on each project.',
+    'Several contracts at once: drop them together, each is read and listed with what it is (contract, amendment, rider), then the ticked ones are saved; scans are read side by side, much faster.',
+    'A contract in Turkish finds its provider in the orders, which are in English: its totals now show on its card. Each project lists its contracts with its own orders alone.',
+    'A provider opened while one project is chosen shows that project alone; “All projects” is one click away.',
+    'Framework agreements: the last date of renewal ("shall not be renewed beyond") and the notice before each renewal are read as well.'] },
   { id: '2026-11-23d', date: '23 Nov 2026 (night)', items: [
     'Riders, amendments and addenda: drop one on the contract form — the contract it changes is found by its reference or provider, what it changes is shown, and once applied it becomes the next step of the contract (history kept, documents kept, the monthly fee by date).',
     'A contract with a notice period is warned on the last day to give notice while that day is ahead, then on its end.',

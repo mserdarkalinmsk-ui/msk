@@ -645,7 +645,28 @@ async function page(opts) {
     await p.locator('.sp-proj tbody tr:not(.tot)').first().click();
     check(await p.locator('.sp-proj').count() === 0 && await p.locator('.sp-scope button[aria-pressed=true]:not(:text-is("All projects"))').count() === 1 && (await p.locator('.sp-mini-k b').first().textContent()) !== tot, 'providers of one project alone');
     check(await p.locator('.sp-grp').count() > 0 && await p.locator('.sp-grp[open]').count() === 0, 'every provider listed by kind, the groups closed');
-  } else check(await p.locator('.sp-scope').count() === 0 && await p.locator('.sp-mini, .card-b p.muted').count() > 0, 'providers of a country with one project: no project split');
+    // a provider opened while one project is chosen: that project's orders alone, every project a click away
+    await p.locator('.sp-grp summary').first().click(); await p.locator('.sp-grp[open] .ent').first().click(); await p.waitForSelector('.drawer .en-k');
+    const one = await p.locator('.drawer-h p.muted').textContent();
+    const pr = await p.locator('.drawer .en table.mini').first().locator('tbody tr').count();
+    check(/ only$/.test(one) && pr <= 1, `a provider's card opened from one project shows that project alone (${one})`);
+    if (await p.locator('.en-scope').count()) { await p.click('.en-scope button:text-is("All projects")'); check(/\d+ projects?$/.test(await p.locator('.drawer-h p.muted').textContent()), 'and every project with one click'); }
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  } else {
+    check(await p.locator('.sp-scope').count() === 0 && await p.locator('.sp-mini, .card-b p.muted').count() > 0, 'providers of a country with one project: no project split');
+    if (await p.locator('.sp-grp').count()) { await p.locator('.sp-grp summary').first().click(); await p.locator('.sp-grp[open] .ent').first().click(); await p.waitForSelector('.drawer .en-k');
+      check(/ only$/.test(await p.locator('.drawer-h p.muted').textContent()), "a provider's card opened from one project shows that project alone"); await p.keyboard.press('Escape'); await p.waitForTimeout(200); }
+  }
+  // tenders: a tender with its selected providers, checked against its threshold; lots when it has them
+  await p.click('.cd-views button:has-text("Tenders")'); await p.click('.tn button:text-is("+ New tender")');
+  await p.fill('.tn-form label:has-text("Tender") input', 'Roster Alpha'); await p.selectOption('.tn-form label:has-text("Kind") select', ''); await p.fill('.tn-form label:has-text("Threshold") input', '100');
+  await p.click('.tn-form button[type=submit]'); await p.waitForSelector('.tn-c');
+  // a provider this country ordered from reaches a 100 € threshold; with none, a new name has nothing ordered yet
+  const opt = await p.locator('.tn-c datalist option').count() ? await p.locator('.tn-c datalist option').first().getAttribute('value') : null;
+  await p.fill('.tn-add input', opt ?? 'Alpha Consulting'); await p.click('.tn-add button'); await p.waitForTimeout(300);
+  check(await p.locator('.tn-c .tn-t tbody tr').count() === 1 && await p.locator(`.tn-c .badge.${opt ? 'critical' : 'good'}`).count() >= 1, 'a tender adds up its selected providers and says when the threshold is reached');
+  await p.click('.tn-c button:has-text("+ Split into lots")'); await p.fill('.tn-lf input >> nth=0', 'Lot 2 — trainers'); await p.click('.tn-lf button[type=submit]'); await p.waitForTimeout(300);
+  check(await p.locator('.tn-lot').count() === 2 && await p.locator('.tn-lot').first().locator('.tn-t tbody tr').count() === 1, 'a tender split into lots: the providers already selected become Lot 1');
   await p.click('.cd-views button:has-text("Contracts")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);
   await f(1, 'Gamma Events Ltd'); await f(2, 'FWC-T1'); await f(3, '50000'); await f(4, '2025-01-01'); await f(5, '2026-10-31');
@@ -675,6 +696,14 @@ async function page(opts) {
   await p.click('.am-rev button:text-is("Apply to the contract")'); await p.waitForTimeout(300);
   const row = await p.locator('.cc-row:has-text("Epsilon Rent")').innerText();
   check(/Contract/.test(row) && /Amendment 2/.test(row) && /30 Jun 2028/.test(row) && /2,000\.00 TRY a month/.test(row), 'the amendment becomes the next step of the contract: new end, new fee, history kept');
+  // several documents at once: each read and listed with what it is, then the ticked ones saved
+  await p.setInputFiles('.cc-read input', [resolve('tests/fixtures/aoe.pdf'), resolve('tests/fixtures/amend.pdf')]);
+  await p.waitForSelector('.cc-batch', { timeout: 20000 }).catch(() => {});
+  const bt = await p.locator('.cc-batch').innerText().catch(() => '');
+  check(/2 documents read/.test(bt) && /Contract/.test(bt) && /Amendment 2/.test(bt) && /SC099\/2026/.test(bt), 'several contracts dropped at once are listed with what each is');
+  await p.locator('.cc-batch tbody tr:has-text("aoe.pdf") input[type=checkbox]').uncheck();
+  await p.click('.cc-batch button:has-text("Save the 1 ticked")'); await p.waitForTimeout(300);
+  check(/1 of 2 documents saved/.test(await p.locator('.cc-form').innerText()) && await p.locator('.cc-row:has-text("Epsilon Rent") .cc-hist em').count() === 3, 'the ticked amendment is applied to its contract');
   // a scan has no text: its pages are read as images by a reader fetched on first use; where it cannot be fetched
   // (no internet, a blocked network) the file is kept and the user is told to type the terms
   const nErr = errors.length; await p.route(/cdn\.jsdelivr\.net/, (r) => r.abort());

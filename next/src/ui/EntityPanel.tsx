@@ -17,21 +17,25 @@ import { download } from './xlsxwrite';
 const amt = (v: number, cur = 'EUR') => cur === 'EUR' ? full(v) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`;
 const kindLabel = (k: string) => KINDS.find((x) => x.k === k)?.label ?? k;
 /** Opens the card of a provider (by its key) or of a person (by their name key). */
-export const openProvider = (key: string) => set({ drawer: { kind: 'provider', key }, palette: false });
+export const openProvider = (key: string, only?: string) => set({ drawer: { kind: 'provider', key, ...(only ? { only } : {}) }, palette: false });
 export const openPerson = (key: string) => set({ drawer: { kind: 'person', key }, palette: false });
 
 /** Everything about one provider: what it is, its contract, what each project ordered, and every order. */
-export function ProviderPanel({ k, close }: { k: string; close: () => void }) {
+export function ProviderPanel({ k, only, close }: { k: string; only?: string; close: () => void }) {
   const L = useStore((s) => s.ledger), P = L.projects;
   const [more, setMore] = useState(false);
-  const C = providerCard(providerPOs(P, L.poKinds ?? {}, true), k, L.frameworks ?? {});
+  // opened from one project: what that project ordered alone; every project a click away
+  const [scope, setScope] = useState(only ?? '');
+  const all = providerPOs(P, L.poKinds ?? {}, true), C0 = providerCard(all, k, L.frameworks ?? {});
+  const C = C0 && scope ? { ...(providerCard(all.filter((x) => x.p.id === scope), C0.key, L.frameworks ?? {}) ?? { ...C0, pos: [], projects: [], total: { n: 0, amount: 0, spent: 0, sc: 0, open: 0 } }), name: C0.name, kinds: C0.kinds, contracts: C0.contracts } : C0;
   if (!C) return <><div class="drawer-h"><h2>Provider</h2><X close={close} /></div><div class="drawer-b"><p class="muted">No order or contract of this provider in the data.</p></div></>;
   const pj = (id: string) => P.find((p) => p.id === id);
   const country = pj(C.projects[0]?.id ?? '')?.country ?? C.contracts[0]?.c.country;
   const xlsx = () => download(`${C.name.slice(0, 40)}-orders.xlsx`, [{ name: 'Orders', money: [6, 7, 8], rows: [['Date', 'Project', 'PO', 'Line', 'Description', 'Status', 'Ordered', 'Spent', 'Spent + committed'], ...C.pos.map((x) => [x.date, plabel(x.p), x.po, x.line, x.description, x.status, x.amount, x.spent, x.value])] }]);
   const D = contractsDue(Object.fromEntries(C.contracts.map((x) => [x.key, x.c])), TODAY);
   return <>
-    <div class="drawer-h"><div><h2>{C.name}</h2><p class="muted">{C.kinds.map(kindLabel).join(' · ') || 'Provider'} · {C.projects.length} project{C.projects.length === 1 ? '' : 's'}</p></div><X close={close} /></div>
+    <div class="drawer-h"><div><h2>{C.name}</h2><p class="muted">{C.kinds.map(kindLabel).join(' · ') || 'Provider'} · {scope ? `${plabel(pj(scope) ?? ({ code: scope } as never))} only` : `${C.projects.length} project${C.projects.length === 1 ? '' : 's'}`}</p>
+      {only && C0!.projects.length > 1 && <div class="seg en-scope" role="group" aria-label="Projects"><button aria-pressed={scope === only} onClick={() => setScope(only)}>{plabel(pj(only) ?? ({ code: only } as never))}</button><button aria-pressed={!scope} onClick={() => setScope('')}>All projects</button></div>}</div><X close={close} /></div>
     <div class="drawer-b en">
       <div class="en-k"><div><b>{C.total.n}</b><span>orders</span></div><div><b>{full(C.total.spent)}</b><span>spent</span></div><div><b>{full(C.total.open)}</b><span>still open</span></div><div><b>{full(C.total.sc)}</b><span>spent + committed</span></div></div>
       <h3>Contract</h3>
@@ -87,8 +91,8 @@ export function PersonPanel({ k, close }: { k: string; close: () => void }) {
 }
 
 /** A provider's name that opens its card. */
-export function Firm({ name }: { name: string }) {
-  const open = (e: Event) => { e.stopPropagation(); openProvider(supKey(name)); };
+export function Firm({ name, only }: { name: string; /** the project the card is opened from: its orders alone */ only?: string }) {
+  const open = (e: Event) => { e.stopPropagation(); openProvider(supKey(name), only); };
   return <span class="ent" role="button" tabIndex={0} title="Open the provider's card" onClick={open} onKeyDown={(e) => { if (e.key === 'Enter') open(e); }}>{name}</span>;
 }
 /** A person's name that opens their card. */

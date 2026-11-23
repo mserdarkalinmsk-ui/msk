@@ -217,6 +217,6 @@ export function ProviderBrief({ P, cname, rows = 8, lab }: { P: Project[]; cname
       <table class="mini"><thead><tr><th>Kind</th><th class="r">POs</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
         <tbody>{S.kinds.map((k) => <tr><td><Dot k={k.k} />{k.label}</td><td class="r num">{k.n}</td><td class="r num">{full(k.v)}</td><td class="r num">{Math.round(k.v / S.total * 100)}%</td></tr>)}</tbody></table>
       <table class="mini"><thead><tr><th>Largest providers</th><th>Kind</th><th class="r">Amount</th><th class="r">Share</th></tr></thead>
-        <tbody>{S.top.map((x) => <tr><td><Firm name={x.supplier} />{lab && S.projects > 1 && <small class="muted sp-pj">{[...x.projects.keys()].map(lab).join(', ')}</small>}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
+        <tbody>{S.top.map((x) => <tr><td><Firm name={x.supplier} only={P.length === 1 ? P[0].id : undefined} />{lab && S.projects > 1 && <small class="muted sp-pj">{[...x.projects.keys()].map(lab).join(', ')}</small>}</td><td class="muted">{kl(x.kind).label}</td><td class="r num">{full(x.sc)}</td><td class="r num">{Math.round(x.sc / S.total * 100)}%</td></tr>)}</tbody></table>
     </div></div>;
 }

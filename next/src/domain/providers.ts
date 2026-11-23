@@ -134,6 +134,34 @@ function supKeyOf(s: string) {
     .replace(/(?<=^|\s)(a ?s|aş|a ?ş|inc|ltd|limited|sti|şti|org|co|corp|llc|gmbh|sarl|sa|srl|tic|ticaret|san|sanayi|ve)(?=\s|$)/g, ' ').replace(/(?<=^|\s)(a ?s|aş|inc|ltd|sti|şti|org)(?=\s|$)/g, ' ')
     .replace(/\s+/g, ' ').trim();
 }
+/** Turkish words of company names with the English the orders use ("Kongre Hizmetleri" = "Congress Services"). */
+const TR_EN: Record<string, string> = { kongre: 'congress', toplanti: 'meeting', toplantilar: 'meetings', hizmetleri: 'services', hizmet: 'service', hizmetler: 'services', uluslararasi: 'international',
+  turizm: 'tourism', organizasyon: 'organization', organizasyonlari: 'organization', matbaa: 'print', matbaacilik: 'printing', baski: 'print', basim: 'printing', reklam: 'advertising', reklamcilik: 'advertising',
+  danismanlik: 'consulting', egitim: 'training', ceviri: 'translation', tercume: 'translation', ticaret: 'trade', yayincilik: 'publishing', yayin: 'publishing', otomotiv: 'automotive',
+  seyahat: 'travel', guvenlik: 'security', temizlik: 'cleaning', bilisim: 'it', yazilim: 'software', muhasebe: 'accounting', denetim: 'audit', hukuk: 'law', etkinlik: 'event', etkinlikleri: 'events' };
+const foldName = (t: string) => t.toLocaleLowerCase('tr').normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i');
+const nameWords = (s: string) => [...new Set(foldName(supKey(s)).split(/[^a-z0-9]+/).filter((x) => x.length > 2).map((x) => TR_EN[x] ?? TR_EN[x.replace(/ii/g, 'u')] ?? x))];
+const lev = (a: string, b: string) => { const d = Array.from({ length: b.length + 1 }, (_, j) => j); for (let i = 1; i <= a.length; i++) { let p = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1)); p = t; } } return d[b.length]; };
+// a scan reads ü as "ii" and drops letters: words are alike when they differ by at most two letters
+const like = (x: string, y: string) => x === y || x.replace(/ii/g, 'u') === y || (Math.min(x.length, y.length) >= 5 && lev(x, y) <= 2);
+/**
+ * The known name that is the same company as a name read from a document: more than half of the words alike (in
+ * Turkish or English), or the same first word when no other known name starts with it.
+ */
+export function closestName(name: string, known: string[]): string | undefined {
+  const a = nameWords(name); if (!a.length) return undefined;
+  let best: string | undefined, score = 0.5;
+  for (const k of known) { const b = nameWords(k), n = a.filter((x) => b.some((y) => like(x, y))).length / Math.max(1, Math.min(a.length, b.length)); if (n > score) { score = n; best = k; } }
+  if (best) return best;
+  const first = a[0]; if (first.length < 4) return undefined;
+  const same = [...new Set(known.filter((k) => { const b = nameWords(k); return b.length > 0 && like(b[0], first); }).map(supKey))];
+  return same.length === 1 ? known.find((k) => supKey(k) === same[0]) : undefined;
+}
+/** The provider key of the orders a contract belongs to: its own key, else the provider whose name is the same company. */
+export function contractSupKey(k: string, name: string | undefined, known: Map<string, string>): string {
+  if (known.has(k) || !name) return k;
+  const n = closestName(name, [...known.values()]); return n ? supKey(n) : k;
+}
 /** Concentration: the largest provider's share of a kind (procurement spread). */
 export function topShare(L: ProviderPO[]): { name: string; share: number } | null {
   const m = new Map<string, { name: string; v: number }>(); let t = 0;

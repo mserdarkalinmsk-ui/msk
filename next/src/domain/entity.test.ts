@@ -17,6 +17,13 @@ describe('provider and person cards', () => {
     expect(C.total).toEqual({ n: 3, amount: 1750, spent: 900, sc: 1750, open: 850 });
     expect(C.contracts.map((x) => x.key)).toEqual([k]);
   });
+  it('finds the orders of a contract written in Turkish, from the contract or from the provider', () => {
+    const L = [po(p1, '7', 'OMEGA CONGRESS MEETING SERVICES', '5.7', 300, 100, '2026-02-01')] as unknown as ProviderPO[];
+    const FW = { 'omega kongre toplanti hizmetleri': { name: 'Omega Kongre Toplanti Hizmetleri A.S.', end: '2029-06-30' } };
+    const C = providerCard(L, 'omega kongre toplanti hizmetleri', FW)!;
+    expect([C.total.n, C.total.sc, C.contracts.length]).toEqual([1, 300, 1]);
+    expect(providerCard(L, providerIndex(L)[0].key, FW)!.contracts.length).toBe(1);
+  });
   it('gathers a person: project contracts and the core team, under any order of the names', () => {
     const a = { name: 'ALPHA,One', display: 'One ALPHA', position: 'Assistant', end: '2026-12-31', project: p1 } as unknown as Person;
     const C = personCard([a], { tr: [{ id: 'c', name: 'Alpha, One', position: 'Head of office' }] }, 'alpha one')!;

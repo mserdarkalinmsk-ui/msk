@@ -80,3 +80,16 @@ describe('event management companies', () => {
     expect(kind(providerPOs([p], { [`sup|${supKey('BETA YOUTH CENTRE')}`]: 'events' }), 'BETA YOUTH CENTRE')).toBe('events');
   });
 });
+
+describe('closestName', () => {
+  it('finds the provider of the orders from a contract written in Turkish, or read from a scan', async () => {
+    const { closestName, contractSupKey, supKey } = await import('./providers');
+    const known = ['OMEGA CONGRESS MEETING SERVICES', 'SIGMA INTERNATIONAL TOURISM CONGRESS ORGANIZATION INC.- ANKARA', 'OMICRON PRINT AND INTERNET SERVICES ORG.LTD.STI.'];
+    expect(closestName('Omega Kongre Toplanti Hizmetleri Otomotiv ve Turizm A.S.', known)).toBe(known[0]);
+    expect(closestName('Sigma Uluslararası Turizm Kongre Organizasyon A.Ş.', known)).toBe(known[1]);
+    expect(closestName('Zeta Danismanlik Ltd. Şti.', known)).toBeUndefined();
+    const M = new Map(known.map((n) => [supKey(n), n]));
+    expect(contractSupKey(supKey('Omega Kongre Toplanti Hizmetleri A.S.'), 'Omega Kongre Toplanti Hizmetleri A.S.', M)).toBe(supKey(known[0]));
+  });
+});
+
