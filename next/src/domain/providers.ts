@@ -7,7 +7,7 @@ import type { PO } from './workbook';
  * Visibility, Research and Publication by what they buy (the PO wording), not by the budget code they are posted on.
  * The budget code only decides when the wording says nothing. A user's choice for a PO always wins.
  */
-export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'grants' | 'perdiem' | 'staff' | 'petty';
+export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'other' | 'grants' | 'perdiem' | 'staff' | 'petty';
 export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
   { k: 'events', label: 'Event management', color: 'var(--ink-3)' },
   { k: 'interp', label: 'Translation / interpretation', color: '#0e7490' },
@@ -16,6 +16,7 @@ export const KINDS: { k: Kind; label: string; color: string; optional?: boolean;
   { k: 'visibility', label: 'Visibility', color: 'var(--critical)' },
   { k: 'research', label: 'Research', color: 'var(--c3)' },
   { k: 'publication', label: 'Publication', color: 'var(--warn)' },
+  { k: 'other', label: 'Other services', color: 'var(--plan)' },
   // Groups that can be added to the totals on request.
   { k: 'grants', label: 'Grants (6.1, 6.2)', color: 'var(--good)' },
   { k: 'perdiem', label: 'Per diem & travel (1.3, 2.x, OM)', color: '#a16207', optional: true },
@@ -105,8 +106,12 @@ function applyChoices(out: ProviderPO[], set: Record<string, string>, all: boole
   // A provider known for interpretation (any of its POs reads as interpretation) is an interpretation firm: its
   // other POs (technical equipment, booths under 5.7, a "conference" PO) count as interpretation too.
   const interp = new Set(out.filter((x) => x.auto === 'interp').map((x) => supKey(x.supplier)));
+  // An event management company is one used again and again (or named as one): a provider paid once or twice from an
+  // event line (a venue, a training centre, a person's costs) is another service, not an event company.
+  const nPO = new Map<string, number>(); for (const x of out) nPO.set(supKey(x.supplier), (nPO.get(supKey(x.supplier)) ?? 0) + 1);
   for (const x of out) {
     if (x.auto && interp.has(supKey(x.supplier)) && ['events', 'consult', 'intl'].includes(x.auto)) x.auto = 'interp';
+    if (x.auto === 'events' && !EVENT_CO.test(x.supplier) && (nPO.get(supKey(x.supplier)) ?? 0) < 3) x.auto = 'other';
     // Choices: a PO's own choice, then the choice made for the whole provider, then the automatic kind.
     const u = set[x.key] ?? set[`sup|${supKey(x.supplier)}`] ?? set[`sup|${x.supplier.trim().toLowerCase()}`];
     x.kind = u === 'none' ? null : isKind(u) ? u : x.auto;

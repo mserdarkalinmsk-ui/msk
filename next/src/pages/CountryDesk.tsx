@@ -4,7 +4,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
 import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
-import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, useStore } from '../data/store';
+import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { readDocument, readPages } from '../ui/docread';
@@ -282,8 +282,10 @@ function ProviderList({ P, lab }: { P: Project[]; lab?: (id: string) => string }
   return <div class="sp-list"><h3>All providers, by kind <small class="muted">{S.length} · click a kind to open it</small></h3>
     {G.map((g) => <details class="sp-grp">
       <summary><i class="sp-dot" style={{ background: KINDS.find((x) => x.k === g.k)?.color }} /><b>{g.label}</b><span class="muted">{g.R.length} provider{g.R.length > 1 ? 's' : ''}</span><span class="num">{full(g.sc)}</span></summary>
-      <table class="mini"><thead><tr><th>Provider</th>{lab && <th>Projects</th>}<th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th></tr></thead>
-        <tbody>{g.R.map((x) => <tr><td><Firm name={x.supplier} /></td>{lab && <td class="muted">{[...x.projects.keys()].map(lab).join(', ')}</td>}<td class="r num">{x.pos}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc - x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td></tr>)}</tbody></table>
+      <table class="mini"><thead><tr><th>Provider</th>{lab && <th>Projects</th>}<th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th><th>Kind</th></tr></thead>
+        <tbody>{g.R.map((x) => <tr><td><Firm name={x.supplier} /></td>{lab && <td class="muted">{[...x.projects.keys()].map(lab).join(', ')}</td>}<td class="r num">{x.pos}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc - x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td>
+          <td><select class="select sp-kind" aria-label={`Kind of ${x.supplier}`} title="Change the kind of every order of this provider" value={set[`sup|${supKey(x.supplier)}`] ?? ''} onChange={(e) => setPoKind(`sup|${supKey(x.supplier)}`, (e.target as HTMLSelectElement).value)}>
+            <option value="">{KINDS.find((k) => k.k === x.kind)?.label ?? x.kind} (automatic)</option>{KINDS.filter((k) => !k.optional).map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td></tr>)}</tbody></table>
     </details>)}</div>;
 }
 
@@ -306,35 +308,41 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
   const checks = L.filter((x) => x.check).length, nn = (k: CountryPerson['noEnd']) => L.filter((x) => x.noEnd === k).length;
   // when every contract in the window ends the same day (yearly contracts), say so: the count is one renewal, not twenty surprises
   const endDays = [...new Set(ending.map((x) => x.ends))];
+  const sxb = (x: CountryPerson) => !x.core && x.roles.some((r) => r.base === 'HQ');
+  const mix = [{ l: 'core team', n: L.filter((x) => x.core).length, c: 'var(--ink-2)' }, { l: 'local project staff', n: L.filter((x) => !x.core && x.roles.length && !sxb(x)).length, c: 'var(--c1)' }, { l: 'SxB staff', n: L.filter(sxb).length, c: 'var(--c7)' }];
+  // positions written in capitals in the lists read as the rest of the page
+  const soft = (t: string) => (/[A-Z]{3}/.test(t) && !/[a-z]/.test(t) ? t.charAt(0) + t.slice(1).toLowerCase() : t);
   return <section class="card ev">
     <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Everyone in {name}</h2><p>Each person once — the core team and the project contracts of the same person together</p></div>
       <div class="tools ev-tools"><input class="input" type="search" placeholder="Find a person or a role" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Find a person" />
         <div class="seg" role="group" aria-label="Group by">{([['project', 'By project'], ['end', 'By contract end'], ['name', 'A–Z']] as const).map(([k, l]) => <button aria-pressed={by === k} onClick={() => setBy(k)}>{l}</button>)}</div>
         <div class="seg" role="group" aria-label="Show as">{([['cards', 'Cards'], ['list', 'List']] as const).map(([k, l]) => <button aria-pressed={mode === k} onClick={() => setMode(k)}>{l}</button>)}</div></div></div>
-    <div class="ev-sum">
-      <div><b>{L.length}</b><span>people</span></div>
-      <div><b>{L.filter((x) => x.core).length}</b><span>core team</span></div>
-      <div><b>{L.filter((x) => x.roles.length).length}</b><span>on projects</span></div>
-      <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><b>{ending.length}</b><span>contracts ending within 90 days{endDays.length === 1 ? `, all on ${date(endDays[0])}` : ''}{soon ? ' · showing' : ''}</span></button>
-      {nn('open') > 0 && <div title="Head of office and head of operations: posts with no end date"><b>{nn('open')}</b><span>open-ended</span></div>}
-      {nn('sxb') > 0 && <div title="Staff seconded by SxB / HQ: the reports carry no contract dates for them"><b>{nn('sxb')}</b><span>SxB staff</span></div>}
-      {nn('missing') > 0 && <div title="On a project's staff list with no contract dates: add them on the project's Staff tab"><b>{nn('missing')}</b><span>dates missing</span></div>}
-      {checks > 0 && <div class="ev-chk"><b>{checks}</b><span>to check</span></div>}
-      <span class="ev-bar" aria-label="People by project">{projs.map((pr) => { const n = L.filter((x) => x.roles.some((r) => r.project === pr)).length; return <i style={{ flex: n, background: col(pr) }} title={`${pr}: ${n}`} />; })}</span>
+    {/* who the people are, as one bar with its parts named; then where their contracts stand */}
+    <div class="ev-ov">
+      <div class="ev-tot"><b>{L.length}</b><span>people</span></div>
+      <div class="ev-mix">
+        <div class="ev-mix-bar" aria-hidden="true">{mix.filter((m) => m.n).map((m) => <i style={{ flex: m.n, background: m.c }} title={`${m.l}: ${m.n}`} />)}</div>
+        <div class="ev-mix-l">{mix.filter((m) => m.n).map((m) => <span><i style={{ background: m.c }} /><b>{m.n}</b> {m.l}</span>)}</div>
+      </div>
+      <div class="ev-st">
+        {ending.length > 0 && <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><i class="ev-st-d warn" /><span><b>{ending.length}</b> contract{ending.length > 1 ? 's' : ''} end within 90 days{endDays.length === 1 ? <>, all on {date(endDays[0])}</> : ''}</span><em>{soon ? 'Show everyone' : 'Show them'}</em></button>}
+        {nn('missing') > 0 && <div><i class="ev-st-d bad" /><span><b>{nn('missing')}</b> without contract dates — complete them under Core team or the project's Staff tab</span></div>}
+        {nn('open') > 0 && <div><i class="ev-st-d" /><span><b>{nn('open')}</b> open-ended: head of office, head of operations</span></div>}
+        {checks > 0 && <div class="ev-chk"><i class="ev-st-d bad" /><span><b>{checks}</b> to check: on the core team and on a project's staff list</span></div>}
+      </div>
     </div>
     <div class="card-b">{groups.map((g) => { const R = shown.filter((x) => key(x) === g).sort((a, b2) => by === 'end' ? (a.ends || '9').localeCompare(b2.ends || '9') : a.name.localeCompare(b2.name));
       return <div class="ev-g"><h3><span class="ev-dot" style={{ background: by === 'project' && g !== 'Core team' ? col(g) : 'var(--ink-3)' }} />{g}<small>{R.length}</small></h3>
-        {mode === 'cards' ? <div class="ev-board">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project, tone = d == null ? 'open' : d < 0 ? 'ended' : d <= 30 ? 'critical' : d <= 60 ? 'serious' : d <= 90 ? 'warning' : 'ok';
-          // the ring fills as the contract runs out: a full ring is a year or more left
-          const left = d == null ? 1 : Math.max(0, Math.min(1, d / 365));
+        {mode === 'cards' ? <div class="ev-board">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project, tone = d == null ? (x.noEnd === 'missing' ? 'missing' : 'open') : d < 0 ? 'ended' : d <= 30 ? 'critical' : d <= 60 ? 'serious' : d <= 90 ? 'warning' : 'ok';
+          const chips = [...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g);
           return <article class={`ev-card t-${tone}${x.check ? ' chk' : ''}`} style={{ '--k': x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' } as never}>
-            <span class="ev-ring" style={{ '--p': String(left) } as never} title={x.ends ? `Contract ends ${date(x.ends)}` : NO_END[x.noEnd ?? 'missing']}><span class="ev-av">{initials(x.name)}</span></span>
-            <b class="ev-n"><Who name={x.name} k={x.key} /></b>
-            <small class="ev-r">{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ') || '—'}</small>
-            <span class="ev-chips">{x.core && (x.core.fund !== 'other' || x.core.fundText) && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : fundLabel(x.core)}</span>}
-              {[...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g).map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
-            {x.check && <em class="ev-c">{x.check}</em>}
-            <span class="ev-f">{x.ends ? <><span class="num">until {date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
+            <span class="ev-av" aria-hidden="true">{initials(x.name)}</span>
+            <span class="ev-who"><b class="ev-n"><Who name={x.name} k={x.key} /></b>
+              <small class="ev-r">{[x.core && soft(x.core.position), ...[...new Set(x.roles.map((r) => soft(r.position)))]].filter(Boolean).join(' · ') || '—'}</small>
+              {(x.core || chips.length > 0) && <span class="ev-chips">{x.core && <span class="ev-chip core">Core team{(x.core.fund !== 'other' || x.core.fundText) ? ` · ${x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : fundLabel(x.core)}` : ''}</span>}
+                {chips.map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>}
+              {x.check && <em class="ev-c">{x.check}</em>}</span>
+            <span class="ev-f" title={x.ends ? `Contract ends ${date(x.ends)}` : NO_END[x.noEnd ?? 'missing']}>{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class="ev-days">{d} d</span> : d != null && d < 0 ? <span class="ev-days">ended</span> : null}</> : <span class="ev-ne">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
           </article>; })}</div>
         : <ul class="ev-l">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project;
           return <li class={x.check ? 'chk' : ''}>

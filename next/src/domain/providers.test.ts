@@ -66,3 +66,17 @@ describe('provider summary', () => {
     expect(S.top[0].supplier).toBe('GAMA CONGRESS');
   });
 });
+
+import { providerPOs } from './providers';
+describe('event management companies', () => {
+  it('are the providers used again and again (or named as one); a venue or a person paid once from an event line is another service', () => {
+    const po = (po: string, description: string, supplier: string) => ({ po, line: '5.7', description, nature: '', supplier, amount: 100, spent: 100, balance: 0, sc: 100, status: 'OPEN', date: '2026-03-01', units: null, unitType: '' });
+    const wb = { pos: [po('1', 'Conference', 'ALPHA PRINT LTD'), po('2', 'Workshop', 'ALPHA PRINT LTD'), po('3', 'Training', 'ALPHA PRINT LTD'), po('4', 'Venue for the training', 'BETA YOUTH CENTRE'), po('5', 'Conference', 'GAMMA CONGRESS SERVICES'), po('6', 'Costs', 'DELTA ONE')] };
+    const p = { id: 'a', code: 'A', name: 'A', country: 'tr', start: '2025-01-01', end: '2027-01-01', budget: 1, reportingPeriods: [{ id: 'r', name: 'r', type: 'x', date: '2026-03-31', snapshot: { lines: [], workbook: wb } }] } as never;
+    const kind = (L: ReturnType<typeof providerPOs>, s: string) => L.find((x) => x.supplier === s)?.kind;
+    const L = providerPOs([p]);
+    expect(['ALPHA PRINT LTD', 'BETA YOUTH CENTRE', 'GAMMA CONGRESS SERVICES', 'DELTA ONE'].map((s) => kind(L, s))).toEqual(['events', 'other', 'events', 'other']);
+    // the user's choice for a provider wins
+    expect(kind(providerPOs([p], { [`sup|${supKey('BETA YOUTH CENTRE')}`]: 'events' }), 'BETA YOUTH CENTRE')).toBe('events');
+  });
+});

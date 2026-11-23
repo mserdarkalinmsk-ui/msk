@@ -1,3 +1,4 @@
+import { personKeyOf } from '../domain/coreTeam';
 import { SalarySection } from '../ui/CountryPanel';
 import { StaffPlanTable } from './StaffPlan';
 import { useState } from 'preact/hooks';
@@ -38,22 +39,25 @@ export function People() {
 }
 
 export function StaffBoard({ people: A, showProject }: { people: Person[]; showProject?: boolean }) {
-  const active = A.filter((a) => a.status === 'Active');
   const due = renewals(A, TODAY, 120);
-  const review = A.filter((a) => a.review);
+  // SxB / HQ staff have no contract dates in the reports: nothing to confirm about them
+  const review = A.filter((a) => a.review && !(a.base === 'HQ' && a.status === 'Dates missing'));
   const from = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 6, 1));
   const C = coverage(A, from, 24);
-  const fte = active.reduce((s, a) => s + (a.fte ?? 0), 0);
+  // people, not contracts: someone on two projects counts once (as under Everyone)
+  const uniq = (L: Person[]) => new Set(L.map((a) => personKeyOf(a.name))).size;
+  const on = A.filter((a) => a.status !== 'Ended'), hq = uniq(on.filter((a) => a.base === 'HQ')), local = on.filter((a) => a.base !== 'HQ');
+  const localIn = uniq(local.filter((a) => a.status === 'Active')), later = uniq(A.filter((a) => a.status === 'Upcoming'));
+  const dueDays = [...new Set(due.map((a) => a.end))];
   return (
     <>
       <section class="hero" aria-label="Staff figures">
-        <div class="kpi lead"><span class="label">Within contract today</span><span class="value">{active.length}</span>
-          <span class="ctx"><b>{fte.toFixed(1)} FTE</b> · {active.filter((a) => a.base === 'Local').length} local · {active.filter((a) => a.base === 'HQ').length} SxB/HQ</span>
+        <div class="kpi lead"><span class="label">On the projects</span><span class="value">{uniq(on)}</span>
+          <span class="ctx">{localIn} local under contract today{hq ? ` · ${hq} SxB / HQ` : ''}{later ? ` · ${later} starting later` : ''}</span>
           <div class="spark" /></div>
-        <div class="kpi"><span class="label">Renewals due ≤ 120 days {due.length > 0 && <span class={`badge ${daysTone(daysUntil(due[0].end, TODAY))}`}>{due.length}</span>}</span>
-          <span class="value">{due.length}</span><span class="ctx">{due.length ? <>first: <b>{due[0].display}</b> on {date(due[0].end)}</> : 'none in the next four months'}</span></div>
-        <div class="kpi"><span class="label">Records to confirm</span><span class="value" style={{ color: review.length ? 'var(--warn)' : undefined }}>{review.length}</span><span class="ctx">missing dates or unclear source rows</span></div>
-        <div class="kpi"><span class="label">Starting later</span><span class="value">{A.filter((a) => a.status === 'Upcoming').length}</span><span class="ctx">contracts with a future start</span></div>
+        <div class="kpi"><span class="label">Contracts ending within 120 days</span>
+          <span class="value" style={{ color: due.length ? 'var(--warn)' : undefined }}>{due.length}</span><span class="ctx">{!due.length ? 'none in the next four months' : dueDays.length === 1 ? `all on ${date(dueDays[0])} — one renewal round` : <>the first on <b>{date(due[0].end)}</b> ({due[0].display})</>}</span></div>
+        <div class="kpi"><span class="label">Records to confirm</span><span class="value" style={{ color: review.length ? 'var(--warn)' : undefined }}>{review.length}</span><span class="ctx">{review.length ? 'local staff with missing dates or an unclear source row' : 'every local contract has its dates'}</span></div>
       </section>
       <div class="grid g-12">
         <section class="card span-8">
