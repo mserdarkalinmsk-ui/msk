@@ -55,7 +55,9 @@ export function calItems(P: Project[], cores: [string, CoreMember[]][], FW: Reco
     ...cores.flatMap(([cid, M]) => M.filter((m) => m.end).map((m) => ({ day: m.end!, kind: 'core', title: m.name, sub: m.position, where: 'core team', tone: soon(m.end!), go: `countries/${cid}/people` }))),
     ...Object.entries(FW).filter(([k, f]) => f.end && (names.has(k) || (f.country && cs.has(f.country)))).flatMap(([k, f]) => { const c = f.country ?? countryOf(k), n = f.name || names.get(k) || k, to = c ? `countries/${c}/contracts` : 'countries';
       return [{ day: f.end!, kind: 'provider', title: `${n} — contract ends`, sub: f.ref, where: n, tone: soon(f.end!), go: to },
-        ...(f.renewBy ? [{ day: f.renewBy, kind: 'provider', title: `${n} — last renewal date`, sub: f.ref, where: n, tone: 'info' as const, go: to }] : [])]; }),
+        ...(f.renewBy ? [{ day: f.renewBy, kind: 'provider', title: `${n} — last renewal date`, sub: f.ref, where: n, tone: 'info' as const, go: to }] : []),
+        // the last day to give notice (to stop it, or to ask for its renewal)
+        ...(f.noticeDays ? [{ day: new Date(Date.parse(f.end!) - f.noticeDays * 864e5).toISOString().slice(0, 10), kind: 'provider', title: `${n} — last day to give notice`, sub: `${f.noticeDays} days before the end${f.autoRenew ? ' · renews automatically otherwise' : ''}`, where: n, tone: soon(new Date(Date.parse(f.end!) - f.noticeDays * 864e5).toISOString().slice(0, 10)), go: to }] : [])]; }),
   ];
 }
 

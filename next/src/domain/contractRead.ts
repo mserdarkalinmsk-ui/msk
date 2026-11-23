@@ -3,7 +3,7 @@
  * provider, the end ("concluded until"), the last date it may be renewed to ("may not be renewed beyond"), the total
  * and its currency. A scanned copy has no text: nothing is read and the user types the terms.
  */
-export interface ContractTerms { ref?: string; provider?: string; start?: string; end?: string; renewBy?: string; total?: number; fee?: number; cur?: string }
+export interface ContractTerms { ref?: string; provider?: string; start?: string; end?: string; renewBy?: string; total?: number; fee?: number; cur?: string; /** extension options: the step of each renewal, renewal without a new signature, the notice before the end (days) */ renewEvery?: string; autoRenew?: boolean; noticeDays?: number }
 
 const DATE = String.raw`(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d\d)`;
 const MONTH = 'January|February|March|April|May|June|July|August|September|October|November|December';
@@ -81,5 +81,14 @@ export function contractTerms(text: string): ContractTerms {
   // a rent: "316,125 TRY monthly rent", "monthly rent of 8.000,00 TRY" — the last one written is the one in force
   const rents = [...T.matchAll(new RegExp(String.raw`${AMT}\s*(TRY|TL|EUR|€|USD|\$)\s+monthly\s+rent|monthly\s+rent\s+(?:of\s+)?${AMT}\s*(TRY|TL|EUR|€|USD|\$)`, 'gi'))];
   const r = rents.at(-1); if (!out.fee && r) { const v = money(r[1] ?? r[3]); if (v) { out.fee = v; out.cur ??= CUR(r[2] ?? r[4]); } }
+  // extension options: "may be renewed [annually]", "extended for a further period of 12 months", tacit renewal, notice
+  const step = /renewed\s*\[?\s*(monthly|quarterly|annually|yearly|every\s+year|each\s+year)\s*\]?/i.exec(T);
+  if (step) out.renewEvery = /month/i.test(step[1]) ? 'month' : /quarter/i.test(step[1]) ? 'quarter' : 'year';
+  const ext = /(?:extended|renewed|prolonged)\s+(?:once\s+|twice\s+|up\s+to\s+\w+\s+times\s+)?(?:for\s+)?(?:a\s+|an\s+)?(?:further|additional|new|subsequent)?\s*(?:fixed\s+)?(?:period|term)s?\s+of\s+(\d{1,2}|one|two|three|six|twelve)\s*(?:\(\d+\)\s*)?(month|year)s?/i.exec(T);
+  if (ext) { const W: Record<string, number> = { one: 1, two: 2, three: 3, six: 6, twelve: 12 }; const n = W[ext[1].toLowerCase()] ?? +ext[1]; out.renewEvery = String(/year/i.test(ext[2]) ? n * 12 : n); }
+  if (/tacit(?:ly)?\s+renew|renewed\s+tacitly|automatically\s+(?:renewed|extended)|renew(?:ed|s)?\s+automatically|unless\s+(?:either|one\s+of\s+the)\s+part(?:y|ies)\s+(?:gives|serves)\s+notice/i.test(T)) out.autoRenew = true;
+  const nW: Record<string, number> = { one: 1, two: 2, three: 3, six: 6, thirty: 30, sixty: 60, ninety: 90, fifteen: 15 };
+  const nt = /(?:(?:a|with|by|giving|of|upon)\s+)?(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?['’]?\s+(?:prior\s+|written\s+|advance\s+)*notice|notice\s+(?:period\s+)?of\s+(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?/i.exec(T);
+  if (nt) { const w = (nt[1] ?? nt[3]).toLowerCase(), u = (nt[2] ?? nt[4]).toLowerCase(), n = nW[w] ?? +w; out.noticeDays = u === 'month' ? n * 30 : u === 'week' ? n * 7 : n; }
   return out;
 }

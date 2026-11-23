@@ -7,6 +7,7 @@ export const NEWS: { id: string; date: string; items: string[] }[] = [
   { id: '2026-11-23c', date: '23 Nov 2026 (evening)', items: [
     'Scanned contracts are read too: drop the signed PDF; its pages are read in this browser (the reader is downloaded once from the internet; the document never leaves the computer). Check each figure before saving.',
     'Core team in one table: a missing end date or fund is typed in its own row.',
+    'Extension options read from the contract and kept with it: how it is renewed (monthly, yearly, every N months), renewal without a new signature, the notice to give — and the last day to give notice on the calendar.',
   ] },
   { id: '2026-11-23b', date: '23 Nov 2026 (later)', items: [
     'Calendar by week, month, year or as a list, under each country and in Reports; items of one kind on one day are one entry; the overdue ones gathered at the top of the list.',

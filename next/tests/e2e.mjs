@@ -649,10 +649,12 @@ async function page(opts) {
   await p.click('.cd-views button:has-text("Contracts")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);
   await f(1, 'Gamma Events Ltd'); await f(2, 'FWC-T1'); await f(3, '50000'); await f(4, '2025-01-01'); await f(5, '2026-10-31');
-  await f(7, '2027-01-31'); await f(8, '1000'); await p.selectOption('.cc-form select', 'TRY');
+  await f(7, '2027-01-31'); await f(8, '1000'); await p.selectOption('.cc-form label:has-text("Currency") select', 'TRY');
+  await p.selectOption('.cc-form label:has-text("Renewed") select', 'year'); await p.fill('.cc-form label:has-text("Notice") input', '60');
   check(/22 months = <b>|22 months = 22,000\.00 TRY/.test(await p.locator('.cc-form .cc-meta').last().innerText()), 'the monthly fee is multiplied over the contract period');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(/1,000\.00 TRY a month/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()) && await p.locator('.cc-row:has-text("Gamma Events Ltd") em.cc-renew').count() === 1, 'the fee and the renewal limit are kept and drawn on the calendar');
+  check(/renewed yearly/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()) && /notice 60 d — by 1 Sep 2026/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()), 'the renewal step and the notice deadline are kept with the contract');
   check(await p.locator('.cc-row.s-critical:has-text("Gamma Events Ltd") .badge:has-text("20 d left")').count() === 1, 'a contract ending in 20 days is on the calendar as critical');
   await p.setInputFiles('.cc-row:has-text("Gamma Events Ltd") .att-c input', resolve('tests/fixtures/contract.pdf')); await p.waitForTimeout(400);
   check(await p.locator('.cc-row:has-text("Gamma Events Ltd") .att-open').count() === 1, 'the signed contract is attached to its row and can be opened');

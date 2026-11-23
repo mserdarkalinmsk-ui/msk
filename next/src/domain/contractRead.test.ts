@@ -11,7 +11,7 @@ The Framework Contract may be renewed [annually] with the written agreement of t
 
 describe('contract terms read from its text', () => {
   it('reads the reference, provider, end, renewal limit and total of an Act of Engagement', () => {
-    expect(contractTerms(AOE)).toEqual({ ref: 'SC099/2026', provider: 'ALPHA ACCOUNTING SERVICES LTD.', end: '2026-12-31', renewBy: '2027-01-31', total: 123456.78, cur: 'TRY' });
+    expect(contractTerms(AOE)).toEqual({ ref: 'SC099/2026', provider: 'ALPHA ACCOUNTING SERVICES LTD.', end: '2026-12-31', renewBy: '2027-01-31', total: 123456.78, cur: 'TRY', renewEvery: 'year' });
   });
   it('finds the provider by its legal form when the label sits between the lines of the address', () => {
     expect(contractTerms('Legal personality Natural person DELTA UTILITIES LTD. ŞTİ. Example Mah. Test Bul. No:1, Name and address 06000 Ankara, Türkiye Representative ONE ALPHA').provider).toBe('DELTA UTILITIES LTD. ŞTİ.');
@@ -54,5 +54,18 @@ concluded until: iy t The Framework Contract may be renewed [annually] with the 
   it('does not take a sub-period of a rent revision for the contract period, nor a monthly rent for a total', () => {
     const t = contractTerms('for the period from 1 January 2031 until 15 March 2031, the total monthly rent applicable to the full premises shall amount to: 70,000 TRY monthly rent. As from 15 March 2031 the monthly rent shall amount to 40,000 TRY monthly rent.');
     expect([t.end, t.total, t.fee]).toEqual([undefined, undefined, 40000]);
+  });
+});
+
+describe('extension options', () => {
+  it('reads the step of each renewal, an extension period, tacit renewal and the notice to give', () => {
+    expect(contractTerms('The Framework Contract may be renewed [annually] with the written agreement of the parties.').renewEvery).toBe('year');
+    expect(contractTerms('may be renewed [monthly] with the written agreement').renewEvery).toBe('month');
+    expect(contractTerms('The lease may be extended for a further period of two (2) years.').renewEvery).toBe('24');
+    const t = contractTerms('The contract shall be tacitly renewed for one year unless either party gives notice in writing at least sixty (60) days prior notice before the end.');
+    expect([t.autoRenew, t.noticeDays]).toEqual([true, 60]);
+    expect(contractTerms('with a notice period of 3 months').noticeDays).toBe(90);
+    expect(contractTerms('Either party may terminate with 30 days’ written notice.').noticeDays).toBe(30);
+    expect(contractTerms('The parties sign the act.')).toEqual({});
   });
 });

@@ -347,3 +347,9 @@ details.em-method[open] > summary::before { content: '▾'; }
 .ct-in { height: 30px; font: inherit; font-size: 12.5px; padding: 0 8px; border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--warn) 6%, var(--surface)); color: var(--ink); }
 .ct-todo td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
 .ct-act { white-space: nowrap; text-align: right; }
+.cc-form label.cc-chk { display: flex; align-items: center; gap: 6px; height: 34px; font-weight: 500; }
+.cc-form label.cc-chk input { min-width: 0; height: auto; }
+/* contract calendar: the status column on one line */
+.cc-row { grid-template-columns: minmax(220px, 28%) 1fr 300px; }
+.cc-s small { white-space: nowrap; }
+.cc-n small { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.4; }

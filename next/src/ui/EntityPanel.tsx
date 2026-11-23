@@ -41,6 +41,8 @@ export function ProviderPanel({ k, close }: { k: string; close: () => void }) {
           <dl>
             <dt>Period</dt><dd>{c.start ? date(c.start) : '—'} – {c.openEnded ? 'open-ended' : c.end ? date(c.end) : '—'}</dd>
             {c.renewBy && <><dt>Renewable until</dt><dd>{date(c.renewBy)}</dd></>}
+            {(c.renewEvery || c.autoRenew) && <><dt>Renewal</dt><dd>{[c.renewEvery && (c.renewEvery === 'month' ? 'monthly' : c.renewEvery === 'quarter' ? 'quarterly' : c.renewEvery === 'year' ? 'yearly' : `every ${c.renewEvery} months`), c.autoRenew && 'automatic unless notice is given'].filter(Boolean).join(' · ')}</dd></>}
+            {c.noticeDays != null && <><dt>Notice</dt><dd>{c.noticeDays} days{c.end ? ` — by ${date(new Date(Date.parse(c.end) - c.noticeDays * 864e5).toISOString().slice(0, 10))}` : ''}</dd></>}
             {c.fee != null && <><dt>Monthly fee</dt><dd class="num">{amt(c.fee, c.cur)}</dd></>}
             {c.total != null && <><dt>Total for the period</dt><dd class="num">{amt(c.total, c.cur)}</dd></>}
             {c.cap != null && <><dt>Ceiling</dt><dd class="num">{full(c.cap)}{!c.line && C.total.sc ? <span class="muted"> · {pct(C.total.sc / c.cap)} ordered</span> : null}</dd></>}
