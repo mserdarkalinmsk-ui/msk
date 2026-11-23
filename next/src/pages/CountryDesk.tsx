@@ -7,7 +7,7 @@ import { contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeveri
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
-import { readDocument, readPages } from '../ui/docread';
+import { ocrPdf, readDocument, readPages } from '../ui/docread';
 import { contractTerms, type ContractTerms } from '../domain/contractRead';
 import { fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
@@ -436,11 +436,15 @@ export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; 
 
 /** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
 /** A contract to add, filled in from an office service. */
-/** The known name closest to a name read from a document (most words in common), when at least half of its words match. */
+/** The known name closest to a name read from a document (most words alike), when more than half of its words match. */
 function closest(name: string, known: string[]) {
-  const w = (s: string) => new Set(supKey(s).split(/[^a-z0-9]+/).filter((x) => x.length > 2));
+  // a scan reads ü as "ii" and drops letters: words are alike when they differ by at most two letters
+  const fold = (t: string) => t.toLocaleLowerCase('tr').normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i').replace(/ii/g, 'u');
+  const w = (s: string) => [...new Set(fold(supKey(s)).split(/[^a-z0-9]+/).filter((x) => x.length > 2))];
+  const lev = (a: string, b: string) => { const d = Array.from({ length: b.length + 1 }, (_, j) => j); for (let i = 1; i <= a.length; i++) { let p = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1)); p = t; } } return d[b.length]; };
+  const like = (x: string, y: string) => x === y || (Math.min(x.length, y.length) >= 5 && lev(x, y) <= 2);
   const a = w(name); let best: string | undefined, score = 0.5;
-  for (const k of known) { const b = w(k), n = [...a].filter((x) => b.has(x)).length / Math.max(1, Math.min(a.size, b.size)); if (n > score) { score = n; best = k; } }
+  for (const k of known) { const b = w(k), n = a.filter((x) => b.some((y) => like(x, y))).length / Math.max(1, Math.min(a.length, b.length)); if (n > score) { score = n; best = k; } }
   return best;
 }
 const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR' };
@@ -474,6 +478,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   };
   // the terms read from the contract itself (a PDF or Word with text); a scan is attached and its terms typed
   const [over, setOver] = useState(false);
+  const allNames = [...new Set([...names.values(), ...offices.flatMap((o) => (o.reports.at(-1)?.entries ?? []).map((e) => e.supplier.trim())).filter(Boolean)])];
   const readContract = async (file?: File) => {
     if (!file) return;
     if (!/\.(pdf|docx)$/i.test(file.name)) { setReadMsg(`${file.name}: drop the contract as PDF or Word (.docx).`); return; }
@@ -483,10 +488,17 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     // a PDF read line by line in page order (a label and its value stay together); Word as paragraphs and tables
     try { t = contractTerms(/\.pdf$/i.test(file.name) ? (await readPages(file)).map((x) => x.text).join(' ') : (({ paragraphs: P0, tables }) => [...P0, ...tables.flat(2)].join(' '))(await readDocument(file))); } catch { /* attached all the same */ }
     // the provider as the orders spell it, when the contract's spelling is close enough
-    const known = t.provider ? closest(t.provider, [...new Set(names.values())]) : undefined;
+    const known = t.provider ? closest(t.provider, allNames) : undefined;
     setF((f0) => ({ ...f0, sup: f0.sup || known || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur }));
+    // nothing in the text layer (a scan, or only an e-signature stamp): the pages are read as images
+    let ocr = false;
+    if (/\.pdf$/i.test(file.name) && !t.ref && !t.end && !t.provider) {
+      try { const txt = await ocrPdf(file, 6, setReadMsg); t = contractTerms(txt); ocr = true; }
+      catch (x) { setReadMsg(`${file.name} is a scanned copy and ${(x as Error).message}: it is kept with the contract. Type the dates and amounts from it.`); return; }
+    }
+    if (ocr) setF((f0) => ({ ...f0, sup: f0.sup || (t.provider ? closest(t.provider, allNames) : undefined) || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur }));
     const got = [t.ref && 'reference', t.provider && 'provider', t.end && 'end date', t.renewBy && 'renewal limit', t.total && 'total', t.fee && 'monthly fee'].filter(Boolean);
-    setReadMsg(got.length ? `Read from ${file.name}: ${got.join(', ')}. Check them, then save; the file is kept with the contract.` : `${file.name} has no text that can be read (a scanned copy): it is kept with the contract. Type the dates and amounts from it.`);
+    setReadMsg(got.length ? `Read from ${file.name}${ocr ? ' (a scanned copy, read from its image: check each figure)' : ''}: ${got.join(', ')}. Check them, then save; the file is kept with the contract.` : `${file.name} has no text that can be read (a scanned copy): it is kept with the contract. Type the dates and amounts from it.`);
   };
   const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? 'EUR' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
   // the calendar: three months back, fifteen ahead

@@ -133,3 +133,43 @@ export async function readDocument(f: File): Promise<Doc> {
   if (/\.(doc|xls)$/i.test(f.name)) throw new Error(`${f.name}: old Office format — save as .docx / .xlsx`);
   return { name: f.name, kind: 'text', paragraphs: (await f.text()).split(/\r?\n/).filter(Boolean), tables: [] };
 }
+
+/* ---------- reading a scanned document (OCR) ----------
+   The text recogniser (Tesseract, open source) is fetched on first use from the public package CDN and runs in this
+   browser: the document itself never leaves the computer. Where the network blocks the CDN, nothing is read and the
+   user types the terms. */
+const TESS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist';
+const TESS_CORE = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1';
+const TESS_LANG = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int';
+type Tess = { createWorker: (lang: string, oem?: number, o?: object) => Promise<{ recognize: (img: HTMLCanvasElement) => Promise<{ data: { text: string } }>; terminate: () => Promise<void> }> };
+let tessLoad: Promise<Tess> | null = null;
+function loadTesseract(): Promise<Tess> {
+  const g = globalThis as unknown as { Tesseract?: Tess };
+  if (g.Tesseract) return Promise.resolve(g.Tesseract);
+  return tessLoad ??= new Promise<Tess>((res, rej) => {
+    const s = document.createElement('script'); s.src = `${TESS}/tesseract.min.js`; s.async = true;
+    s.onload = () => (g.Tesseract ? res(g.Tesseract) : rej(new Error('the text reader did not load')));
+    s.onerror = () => { tessLoad = null; rej(new Error('the text reader could not be downloaded (no internet, or the network blocks it)')); };
+    document.head.appendChild(s);
+  });
+}
+/** The text of a scanned PDF, page by page (the first `max` pages), recognised in the browser. */
+export async function ocrPdf(f: File, max = 6, progress?: (msg: string) => void): Promise<string> {
+  const T = await loadTesseract();
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(await f.arrayBuffer()), isEvalSupported: false }).promise;
+  const worker = await T.createWorker('eng', 1, { workerPath: `${TESS}/worker.min.js`, corePath: TESS_CORE, langPath: TESS_LANG });
+  const out: string[] = [];
+  try {
+    const n = Math.min(doc.numPages, max);
+    for (let i = 1; i <= n; i++) {
+      progress?.(`Reading the scanned page ${i} of ${n}…`);
+      const page = await doc.getPage(i), vp = page.getViewport({ scale: 2 });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await page.render({ canvasContext: c.getContext('2d')!, viewport: vp } as never).promise;
+      out.push((await worker.recognize(c)).data.text);
+    }
+  } finally { await worker.terminate(); await doc.destroy(); }
+  return out.join('\n');
+}

@@ -664,6 +664,15 @@ async function page(opts) {
   const fv = (i) => p.inputValue(`.cc-form label:nth-of-type(${i}) input`);
   check(await fv(1) === 'DELTA UTILITIES LTD.' && await fv(2) === 'SC099/2026' && await fv(5) === '2026-12-31' && await fv(7) === '2027-01-31' && await fv(9) === '12000', `the contract's terms are read from its PDF (${[await fv(1), await fv(2), await fv(5), await fv(7), await fv(9)].join(' | ')})`);
   await p.click('.cc-form button:text-is("Cancel")');
+  // a scan has no text: its pages are read as images by a reader fetched on first use; where it cannot be fetched
+  // (no internet, a blocked network) the file is kept and the user is told to type the terms
+  const nErr = errors.length; await p.route(/cdn\.jsdelivr\.net/, (r) => r.abort());
+  await p.setInputFiles('.cc-read input', resolve('tests/fixtures/scan.pdf'));
+  await p.waitForFunction(() => /scanned copy/.test(document.querySelector('.cc-form')?.textContent ?? ''), null, { timeout: 20000 }).catch(() => {});
+  check(/scanned copy and the text reader could not be downloaded/.test(await p.locator('.cc-form').innerText()), 'a scanned contract whose reader cannot be fetched is kept, the user told to type its terms');
+  errors.splice(nErr, errors.length - nErr, ...errors.slice(nErr).filter((e) => !/ERR_FAILED/.test(e))); // the download refused on purpose above
+  await p.unroute(/cdn\.jsdelivr\.net/);
+  await p.click('.cc-form button:text-is("Cancel")');
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
   // Staff: everyone, the core team, the project staff… one view at a time; a core team contract ending soon is warned
   await p.click('.cd-tabs button:text-is("People")'); await p.click('.cd-views button:has-text("Core team")'); await p.click('.cc button:text-is("+ Add a person")'); await p.waitForSelector('.cc-form');

@@ -31,3 +31,28 @@ describe('contract terms read from its text', () => {
   });
   it('reads nothing from a scan (no text)', () => { expect(contractTerms('')).toEqual({}); });
 });
+
+describe('contract terms read from a scan', () => {
+  // the kind of text a scan gives of an Act of Engagement — invented content, with a scan's typical mistakes
+  const SCAN = `Contract No. > XY123/2031 | ACT OF ENGAGEMENT Name and address ALPHA SERVICES LTD. Example Mah. | Service fee End of each month 2.000,00 TRY |
+: TOTAL FOR 12 MONTHS OF | | 2031 24.680,50 TRY | (including VAT) This Framework Contract takes effect as from the date of its signature by both parties and is 30/06/2031
+concluded until: iy t The Framework Contract may be renewed [annually] with the written agreement of the parties. It 311112032 | may not be renewed beyond: } Contract No. > XY12312031 Contract No. > XYl23/2031 Contract No. > $Y999/2031 Contract No. > XY123/2031`;
+  it('finds dates written before their labels, slashes read as digits, and the most frequent reading of the reference', () => {
+    expect(contractTerms(SCAN)).toMatchObject({ ref: 'XY123/2031', end: '2031-06-30', total: 24680.5, cur: 'TRY' });
+  });
+  it('finds the provider when a scan cuts the label, or reads no label at all', () => {
+    expect(contractTerms('Legal person | Name and = BETA ADVISORY SERVICES LTD. STi. address | Example Mah. No:1').provider).toBe('BETA ADVISORY SERVICES LTD. STi.');
+    expect(contractTerms('COUNCIL OF EUROPE ACT OF ENGAGEMENT 0 Natural person GAMMA ALARM SYSTEMS A.S. Consortium Representative One ALPHA Account holder KE) GAMMA ALARM SYSTEMS A.S.').provider).toBe('GAMMA ALARM SYSTEMS A.S.');
+  });
+  it('reads a renewal limit whose slashes the scan turned into ones', () => {
+    expect(contractTerms('may be renewed. It 150312032 | may not be renewed beyond: }').renewBy).toBe('2032-03-15');
+  });
+  it('never reads a year and an amount as one number, nor the total of the monthly fees as a monthly fee', () => {
+    const t = contractTerms('Total for purchasing March 2031 4.200,00 TRY Total for monthly fee March 2031 - March 2032 900,00 TRY Total for all services | until 1 March 2032 | 5.100,00 TRY');
+    expect([t.total, t.fee]).toEqual([5100, undefined]);
+  });
+  it('does not take a sub-period of a rent revision for the contract period, nor a monthly rent for a total', () => {
+    const t = contractTerms('for the period from 1 January 2031 until 15 March 2031, the total monthly rent applicable to the full premises shall amount to: 70,000 TRY monthly rent. As from 15 March 2031 the monthly rent shall amount to 40,000 TRY monthly rent.');
+    expect([t.end, t.total, t.fee]).toEqual([undefined, undefined, 40000]);
+  });
+});

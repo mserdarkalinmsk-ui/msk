@@ -24,7 +24,9 @@ Turkish, short and concrete. Code, comments, commit messages and the app's own t
 5. **Payments and purchase orders stay on their own budget line**; nothing is silently moved between lines.
 6. **No bubble charts, no 3D charts.** Charts follow the one chart language in `src/ui/Chart.tsx` (`polish`).
 7. **Deleting anything needs the admin password** (as the app already does); never weaken that.
-8. **No new npm packages.** Use what is in `package.json`.
+8. **No new npm packages.** Use what is in `package.json`. One exception, approved by the user: the OCR reader for scanned
+   contracts (Tesseract) is fetched at runtime from the public CDN on first use (`src/ui/docread.ts`, `ocrPdf`); it runs in
+   the browser and the document never leaves the computer.
 
 ## Quality gates — a change is finished only when all pass
 
