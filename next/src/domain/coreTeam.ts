@@ -6,9 +6,12 @@ export interface CoreMember {
   /** what pays for the post: Ordinary Budget, LS & Pagoda, or a project (then `project` and its share) */
   fund?: 'ob' | 'ls' | 'project' | 'other';
   project?: string; share?: number; note?: string;
+  /** what the list said pays for the post, when it is none of the funds the app knows */ fundText?: string;
   /** the employment contract, attached by the user */ doc?: import('../ui/attach').Attachment;
 }
 export const FUND_LABEL: Record<NonNullable<CoreMember['fund']>, string> = { ob: 'Ordinary Budget', ls: 'LS & Pagoda', project: 'Charged to a project', other: 'Other' };
+/** What pays for the post, in words: the fund the app knows, or what the list wrote. */
+export const fundLabel = (m: Pick<CoreMember, 'fund' | 'fundText'>) => m.fund === 'other' && m.fundText ? m.fundText : FUND_LABEL[m.fund ?? 'ob'];
 
 export interface CoreDue { m: CoreMember; days: number | null; severity: ContractDue['severity'] | 'none' }
 /** Each member with the time left on the contract, warned 90, 60 and 30 days before its end (as contracts with providers). */
@@ -36,7 +39,7 @@ export function sheetDate(v: string): string {
   const m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/); if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
   return /^\d{4}-\d{2}-\d{2}/.test(t) ? t.slice(0, 10) : '';
 }
-const fundOf = (v: string): CoreMember['fund'] => /pagoda|\bls\b|0128/i.test(v) ? 'ls' : /ordinary|\bob\b|0127/i.test(v) ? 'ob' : /project|bh\s*\d|vc|jp/i.test(v) ? 'project' : v.trim() ? 'other' : 'ob';
+const fundOf = (v: string): CoreMember['fund'] => /pagoda|\bls\b|l\s*&\s*s|0128/i.test(v) ? 'ls' : /ordinary|\bob\b|0127|olağan|olagan/i.test(v) ? 'ob' : /project|bh\s*\d|vc|jp/i.test(v) ? 'project' : v.trim() ? 'other' : 'ob';
 /**
  * The core team from a sheet: the first row naming a name and a position column is the heading; every row below with a
  * name is a member. Nothing is guessed: a column that is not there stays empty.
@@ -49,7 +52,7 @@ export function coreFromRows(rows: string[][]): CoreMember[] {
   const get = (r: string[], k: string) => { const i = col.get(k); return i == null ? '' : String(r[i] ?? '').trim(); };
   return rows.slice(hi + 1).filter((r) => get(r, 'name')).map((r, n) => {
     const s = sheetDate(get(r, 'start')), e = sheetDate(get(r, 'end')), g = get(r, 'grade'), note = get(r, 'note');
-    return { id: `ct${Date.now().toString(36)}${n}`, name: get(r, 'name'), position: get(r, 'position') || '—', fund: fundOf(get(r, 'fund')), ...(g ? { grade: g } : {}), ...(s ? { start: s } : {}), ...(e ? { end: e } : {}), ...(note ? { note } : {}) };
+    return { id: `ct${Date.now().toString(36)}${n}`, name: get(r, 'name'), position: get(r, 'position') || '—', fund: fundOf(get(r, 'fund')), ...(fundOf(get(r, 'fund')) === 'other' ? { fundText: get(r, 'fund') } : {}), ...(g ? { grade: g } : {}), ...(s ? { start: s } : {}), ...(e ? { end: e } : {}), ...(note ? { note } : {}) };
   });
 }
 

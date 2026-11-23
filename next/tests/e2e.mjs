@@ -669,10 +669,14 @@ async function page(opts) {
   p.once('dialog', (d) => d.accept());
   await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForTimeout(800);
   check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
+  // a post without an end date (not the head of office or of operations) is listed to complete, and completed in place
+  check(await p.locator('.tc li:has-text("Delta, Four")').count() === 1, 'a core team post missing its end date is listed to complete');
+  await p.fill('.tc li:has-text("Delta, Four") input[type=date]', '2027-03-31'); await p.click('.tc li:has-text("Delta, Four") button'); await p.waitForTimeout(300);
+  check(await p.locator('.tc li:has-text("Delta, Four")').count() === 0 && await p.locator('.ct-t tr:has-text("Delta, Four")').textContent().then((t) => t.includes('31 Mar 2027')), 'the end date completed in place is saved');
   await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.ev-card');
   check(await p.locator('.ev-card:has-text("Alpha, One")').count() === 1 && await p.locator('.ev-card:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
   await p.click('.ev-tools button:text-is("List")'); check(await p.locator('.ev-l li:has-text("Alpha, One")').count() === 1, 'everyone also shown as a list');
-  check(await p.locator('.ev-l li:has-text("Delta, Four") .ev-end:has-text("Dates missing")').count() === 1, 'a core team post with no end date reads dates missing (only the head of office and of operations run open-ended)');
+  check(await p.locator('.ev-l li:has-text("Delta, Four") .ev-end:has-text("31 Mar 2027")').count() === 1, 'the completed end date shows on Everyone');
   // the salary scale is read from a newer document: the page of the country, not the other one
   await p.click('.cd-views button:has-text("Salary scale")'); await p.click('.tr-scale summary');
   await p.setInputFiles('.tr-load input[type=file]', resolve('tests/fixtures/scale.pdf'));
@@ -711,6 +715,13 @@ async function page(opts) {
   // every figure says where it comes from; words have their meaning on hover
   await p.goto(url + '#/overview'); await p.waitForSelector('.src-l');
   check(/latest report of each project/.test(await p.locator('.src-l').innerText()) && await p.locator('[data-gl][title]').count() > 0, 'the source of the figures is told, and the words of the app explained on hover');
+  // the guide and the data-safety steps open from the menu
+  await p.click('.side-foot button:has-text("Guide")'); await p.waitForSelector('.gd-steps');
+  check(await p.locator('.gd-steps li').count() === 5 && await p.locator('.gd-news').count() > 0, 'the guide shows the month in five steps and what is new');
+  await p.click('.drawer-h button'); await p.waitForTimeout(200);
+  await p.click('.bk-status'); await p.waitForSelector('.sf-steps');
+  check(await p.locator('.sf-steps li').count() === 3 && await p.locator('.drawer .ds').count() === 1, 'the backup status opens the three steps of data safety');
+  await p.click('.drawer-h button'); await p.waitForTimeout(200);
   check(errors.length === 0, 'offices desk: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }

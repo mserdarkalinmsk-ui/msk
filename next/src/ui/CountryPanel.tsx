@@ -102,16 +102,21 @@ export function SalaryScale({ c }: { c: Country }) {
   const seed = projects.find((p) => p.country === c.id && p.forecastDraft?.infl && Object.keys(p.forecastDraft.infl).length > 1)?.forecastDraft?.infl;
   const s = c.salaryPolicy ?? { ...(seed ?? {}), on: true };
   const ev = salaryPath(`${new Date().getUTCFullYear() + 3}-12`, s).events.filter((e) => e.month > CPI_LAST).slice(0, 6);
-  return <section class="card fe-inf on" style={{ marginTop: '16px' }}>
-    <div class="card-h"><div><h2>📈 {c.name} — local salary scale</h2><p>Raises follow CPI: compounded since the last raise above {s.threshold ?? 7}% → {s.raise ?? 7}% raise from the next month; June triggers and the gap of the financial year go to the January catch-up · used by the forecast of every {c.name} project</p></div></div>
-    <div class="card-b fe-inf-b">
-      <PolicyFields s={s} set={(x) => upsertCountry({ ...c, salaryPolicy: { ...s, ...x, on: true } })} />
-      {ev.length > 0 && <p class="muted" style={{ fontSize: '12px', margin: '8px 0 0' }}>Next raises: {ev.map((e) => `${e.month} +${e.pct.toFixed(2)}%${e.kind === 'official' ? ' (decided, CCR)' : e.projected ? ' (projected)' : ''}`).join(' · ')}</p>}
-      {(() => { const x = ccrOf(c.iso3, c.name); return x && <div class="ccr-box">
-        <b>Decided: annual adjustment at 1 January 2027</b>
-        <span>Adjustment index {x.index.toFixed(1)} (CPI {x.cpi.toFixed(1)}{x.ppp ? `, PPP effect ${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}` : ''}){x.special ? ` less the special adjustments already granted (${x.special.toFixed(1)}: 1 Oct 2025, 1 Feb 2026, 1 May 2026)` : ''} → <b>{x.net > 100 ? '+' : ''}{(x.net - 100).toFixed(1)}%</b> on the scale in force at 31 Dec 2026. The projection uses it in place of the January catch-up.</span>
-        <small>{CCR_SOURCE}.</small>
-      </div>; })()}
+  const x = ccrOf(c.iso3, c.name);
+  return <section class="card fe-inf on sal" style={{ marginTop: '16px' }}>
+    <div class="card-h"><div><h2>{c.name} — local salary scale</h2><p>The scale of the local staff, how it rises with inflation, and the adjustment decided for next year · used by the forecast of every {c.name} project</p></div></div>
+    <div class="card-b">
+      <div class="sal-g">
+        {x && <div class="sal-dec"><span class="sal-k">Decided · 1 January 2027</span>
+          <b class="sal-v">{x.net > 100 ? '+' : x.net < 100 ? '−' : ''}{Math.abs(x.net - 100).toFixed(1)}%</b>
+          <span>on the scale in force at 31 Dec 2026</span>
+          <small>Adjustment index {x.index.toFixed(1)} (CPI {x.cpi.toFixed(1)}{x.ppp ? `, PPP ${x.ppp > 0 ? '+' : ''}${x.ppp.toFixed(1)}` : ''}){x.special ? ` less the special adjustments already granted (${x.special.toFixed(1)})` : ''}. The projection uses it in place of the January catch-up. {CCR_SOURCE}.</small></div>}
+        <div class="sal-pol"><span class="sal-k">Raises during the year</span>
+          <p>CPI compounded since the last raise above {s.threshold ?? 7}% gives a {s.raise ?? 7}% raise from the next month; June triggers and the gap of the financial year go to the January catch-up.</p>
+          <PolicyFields s={s} set={(v) => upsertCountry({ ...c, salaryPolicy: { ...s, ...v, on: true } })} />
+          {ev.length > 0 && <div class="sal-next"><span>Next raises</span>{ev.map((e) => <em class={e.kind === 'official' ? 'off' : ''} title={e.kind === 'official' ? 'decided (CCR)' : e.projected ? 'projected' : ''}>{e.month} <b>+{e.pct.toFixed(2)}%</b></em>)}</div>}
+        </div>
+      </div>
       {(c.iso3 === 'TUR' || /t[üu]rkiye|turkey/i.test(c.name)) && <TrScale c={c} />}
     </div>
   </section>;

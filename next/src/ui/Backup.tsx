@@ -176,6 +176,23 @@ export function DataSafety() {
   );
 }
 
+/** Data safety on its own: where the data is, the three steps that keep it safe, and the controls. */
+export function SafetyPanel({ close }: { close: () => void }) {
+  const s = useSafety(), st = s.folder;
+  const steps: [boolean, string, string][] = [
+    [!!s.last || !!st?.ok, 'A first backup file', 'One file with everything. Keep it outside this computer (OneDrive, a shared drive).'],
+    [!!st?.ok, 'Automatic backup to a folder', 'Choose the folder once: after every change a copy is saved there, one file per day, the last 60 days kept.'],
+    [s.protected, 'A password on the copies (optional)', 'Needed when the copies go to a shared drive or by e-mail: without it anyone with the file can read it.'],
+  ];
+  return <>
+    <div class="drawer-h"><div><h2>Keep your data safe</h2><p class="muted">Your projects, reports and documents live in this browser. These steps keep a copy outside it.</p></div><button class="btn icon ghost" style={{ marginLeft: 'auto' }} aria-label="Close" onClick={close}>✕</button></div>
+    <div class="drawer-b">
+      <ol class="sf-steps">{steps.map(([done, t, d], i) => <li class={done ? 'done' : ''}><i>{done ? '✓' : i + 1}</i><div><b>{t}</b><span>{d}</span></div></li>)}</ol>
+      <DataSafety />
+      <p class="muted" style={{ fontSize: '12px' }}>On a new computer or after the browser's data was cleared, open the app and choose “Restore from backup folder”: everything comes back as it was.</p>
+    </div></>;
+}
+
 /** First opening in a browser with nothing saved: offer to bring the data back before anyone starts over. */
 export function FreshStart() {
   const fresh = useStore((s) => s.fresh && !(s.ledger.audit?.length));

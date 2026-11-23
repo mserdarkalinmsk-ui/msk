@@ -4,7 +4,7 @@ import { personCard, providerCard } from '../domain/entity';
 import { KINDS, providerPOs, supKey } from '../domain/providers';
 import { contractsDue, dueText, SEV_BADGE } from '../domain/contracts';
 import { daysUntil, roster } from '../domain/staff';
-import { coreEnd, FUND_LABEL, personKeyOf } from '../domain/coreTeam';
+import { coreEnd, fundLabel, personKeyOf } from '../domain/coreTeam';
 import { plabel } from '../domain/label';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
@@ -71,7 +71,7 @@ export function PersonPanel({ k, close }: { k: string; close: () => void }) {
     <div class="drawer-b en">
       {C.core.length > 0 && <><h3>Core team</h3>{C.core.map(({ country, m }) => { const p = P.find((x: Project) => x.id === m.project);
         return <div class="en-c"><div class="en-c-h"><b>{m.position}</b>{m.grade && <span class="muted">grade {m.grade}</span>}{left(m.end)}</div>
-          <dl><dt>Office</dt><dd>{cn(country)}</dd><dt>Contract</dt><dd>{m.start ? date(m.start) : '—'} – {coreEnd(m, date)}</dd><dt>Paid from</dt><dd>{m.fund === 'project' && p ? `${plabel(p)}${m.share ? ` · ${m.share}%` : ''}` : FUND_LABEL[m.fund ?? 'ob']}</dd>{m.note && <><dt>Note</dt><dd>{m.note}</dd></>}</dl>
+          <dl><dt>Office</dt><dd>{cn(country)}</dd><dt>Contract</dt><dd>{m.start ? date(m.start) : '—'} – {coreEnd(m, date)}</dd><dt>Paid from</dt><dd>{m.fund === 'project' && p ? `${plabel(p)}${m.share ? ` · ${m.share}%` : ''}` : fundLabel(m)}</dd>{m.note && <><dt>Note</dt><dd>{m.note}</dd></>}</dl>
           <button class="linkish" onClick={() => { close(); go(`countries/${country}/people`); }}>Open the core team ›</button></div>; })}</>}
       {C.roles.length > 0 && <><h3>On projects</h3>
         <div class="tw"><table class="mini"><thead><tr><th>Project</th><th>Position</th><th>Base</th><th class="r">FTE</th><th>Contract</th><th>Status</th></tr></thead>

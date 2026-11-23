@@ -9,7 +9,7 @@ import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { readDocument, readPages } from '../ui/docread';
 import { contractTerms, type ContractTerms } from '../domain/contractRead';
-import { coreEnd, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { coreEnd, fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
 import { alerts, outcome } from '../domain/insights';
@@ -331,7 +331,7 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
             <span class="ev-ring" style={{ '--p': String(left) } as never} title={x.ends ? `Contract ends ${date(x.ends)}` : NO_END[x.noEnd ?? 'missing']}><span class="ev-av">{initials(x.name)}</span></span>
             <b class="ev-n"><Who name={x.name} k={x.key} /></b>
             <small class="ev-r">{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ') || '—'}</small>
-            <span class="ev-chips">{x.core && x.core.fund !== 'other' && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
+            <span class="ev-chips">{x.core && (x.core.fund !== 'other' || x.core.fundText) && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : fundLabel(x.core)}</span>}
               {[...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g).map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
             {x.check && <em class="ev-c">{x.check}</em>}
             <span class="ev-f">{x.ends ? <><span class="num">until {date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
@@ -340,7 +340,7 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
           return <li class={x.check ? 'chk' : ''}>
             <span class="ev-av" style={{ background: x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' }}>{initials(x.name)}</span>
             <span class="ev-who"><b><Who name={x.name} k={x.key} /></b><small>{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ')}</small>{x.check && <em>{x.check}</em>}</span>
-            <span class="ev-chips">{x.core && x.core.fund !== 'other' && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : FUND_LABEL[x.core.fund ?? 'ob']}</span>}
+            <span class="ev-chips">{x.core && (x.core.fund !== 'other' || x.core.fundText) && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : fundLabel(x.core)}</span>}
               {[...new Set(x.roles.map((r) => r.project))].map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
             <span class="ev-end">{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
           </li>; })}</ul>}</div>; })}
@@ -349,6 +349,23 @@ function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Proje
 }
 
 const EMPTY = { name: '', position: '', grade: '', start: '', end: '', fund: 'ob', project: '', share: '', note: '' };
+/** A screen with nothing in it yet: what it will hold and the one thing to do. */
+export function Empty({ icon, title, text, children }: { icon: IcoName; title: string; text: string; children?: ComponentChildren }) {
+  return <div class="es"><span class="es-i" aria-hidden="true"><Ico n={icon} size={22} /></span><h3>{title}</h3><p>{text}</p>{children && <div class="es-a">{children}</div>}</div>;
+}
+
+/** The core team's missing facts, each filled in place: end dates (the heads of office and operations run open-ended) and what pays for a post. */
+function ToComplete({ M, cid }: { M: CoreMember[]; cid: string }) {
+  const R = M.filter((m) => (!m.end && !openPost(m)) || (m.fund === 'other' && !m.fundText));
+  const [v, setV] = useState<Record<string, string>>({});
+  if (!R.length) return null;
+  return <div class="tc"><div class="tc-h"><b>To complete</b><span>{R.length} post{R.length > 1 ? 's' : ''} without an end date or a fund — fill them in here; only the head of office and the head of operations run open-ended.</span></div>
+    <ul>{R.map((m) => <li><span class="tc-n"><Who name={m.name} /><small>{m.position}</small></span>
+      {!m.end && !openPost(m) && <label>Contract ends<input type="date" value={v[`${m.id}e`] ?? ''} onInput={(e) => setV({ ...v, [`${m.id}e`]: (e.target as HTMLInputElement).value })} /></label>}
+      {m.fund === 'other' && !m.fundText && <label>Paid from<select class="select" value={v[`${m.id}f`] ?? ''} onChange={(e) => setV({ ...v, [`${m.id}f`]: (e.target as HTMLSelectElement).value })}><option value="">—</option>{Object.entries(FUND_LABEL).filter(([k]) => k !== 'other' && k !== 'project').map(([k, l]) => <option value={k}>{l}</option>)}</select></label>}
+      <button class="btn" disabled={!v[`${m.id}e`] && !v[`${m.id}f`]} onClick={() => { setCoreMember(cid, { ...m, ...(v[`${m.id}e`] ? { end: v[`${m.id}e`] } : {}), ...(v[`${m.id}f`] ? { fund: v[`${m.id}f`] as CoreMember['fund'] } : {}) }); setV({ ...v, [`${m.id}e`]: '', [`${m.id}f`]: '' }); }}>Save</button></li>)}</ul></div>;
+}
+
 /** The office's own team: entered by hand, with contract ends warned like contracts with providers. */
 function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const M = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
@@ -387,14 +404,17 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
         <button class="btn primary" type="submit" disabled={!f.name.trim() || !f.position.trim()}>{edit ? 'Save changes' : '+ Add to the team'}</button>
         {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setF(EMPTY); }}>Cancel</button>}
       </form>
+      <ToComplete M={M} cid={cid} />
       {D.length ? <div class="table-scroll"><table class="mini ct-t"><thead><tr><th>Name</th><th>Position</th><th>Grade</th><th>Paid from</th><th>Contract</th><th>Ends</th><th /></tr></thead>
         <tbody>{D.map(({ m, days, severity }) => { const p = P.find((x) => x.id === m.project), seen = m.fund === 'project' ? onProject(m) : null;
           return <tr class={onTeam(m, TODAY) ? '' : 'muted'}><td><b>{m.name}</b>{m.note && <small class="muted cd-n">{m.note}</small>}</td><td>{m.position}</td><td class="num">{m.grade ?? '—'}</td>
-            <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : FUND_LABEL[m.fund ?? 'ob']}</td>
+            <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : fundLabel(m)}</td>
             <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {coreEnd(m, date)}</td>
             <td>{days == null ? <span class="muted">no end date</span> : <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</td>
             <td style={{ whiteSpace: 'nowrap' }}><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}><Ico n="edit" /></button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
-        : <p class="muted">No one on the core team of {name} yet. Add the office's own staff above: name, position, contract dates and what pays for the post.</p>}
+        : <Empty icon="people" title={`No core team for ${name} yet`} text="The office's own staff, outside the projects: their contract ends are warned like those of providers, 90, 60 and 30 days ahead.">
+            <label class="btn primary" title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by"><Ico n="upload" />Import the list from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label>
+            <span class="muted">or add each person with the form above</span></Empty>}
     </div></section>;
 }
 
@@ -516,7 +536,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
               <button class="btn ghost" title="Change" onClick={() => load(d)}><Ico n="edit" /></button>
               <button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove the contract with ${d.name}?`) && isAdmin('remove a contract')) setFramework(d.key, null); }}>✕</button></span>
           </div>; })}
-      </div> : <p class="muted">No contract with an end date yet for {name}. Add one above: the provider, the reference of the tender or contract, its ceiling and its end date.</p>}
+      </div> : <Empty icon="flag" title={`No contract on the calendar for ${name} yet`} text="Drop a contract above, or type its provider, reference and end date: it is then warned 90, 60 and 30 days before it ends, here, in the country's alerts and in the bell." />}
       {noEnd.length > 0 && <p class="muted" style={{ fontSize: '12.5px' }}>Without an end date, so not on the calendar: {noEnd.map(([k]) => names.get(k) ?? k).join(', ')}.</p>}
     </div></section>;
 }

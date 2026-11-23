@@ -1,3 +1,4 @@
+import { newsUnseen } from './Guide';
 import { StatusTray } from './StatusTray';
 import { PageIndex } from './PageIndex';
 import { BackupBanner, BackupStatus, FreshStart } from './Backup';
@@ -70,7 +71,8 @@ export function Shell({ title, crumb, actions, children }: { title: string; crum
         <div class="side-foot">
           <small class="muted build" title="Version of this app — compare when something seems missing">Build {__BUILD__} UTC</small>
           <button class="btn ghost" onClick={() => set({ drawer: { kind: 'import' } })}><Icon d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />Import / backup</button>
-          {!READONLY && <BackupStatus onOpen={() => set({ drawer: { kind: 'import' } })} />}
+          {!READONLY && <BackupStatus onOpen={() => set({ drawer: { kind: 'safety' } })} />}
+          <button class="btn ghost" onClick={() => set({ drawer: { kind: 'guide' } })}><Icon d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01" />Guide &amp; what’s new{newsUnseen() && <span class="gd-dot" aria-label="new" />}</button>
           <button class="btn ghost" onClick={() => set({ drawer: { kind: 'share' } })}><Icon d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13" />Share a copy</button>
           {!READONLY && <button class="btn ghost" onClick={() => set({ drawer: { kind: 'rules' } })}><Icon d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M16 4v4M10 10v4M18 16v4" />Rules &amp; thresholds</button>}
           <button class="btn ghost" onClick={() => set({ drawer: { kind: 'appearance' } })}><Icon d="M12 3a9 9 0 0 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.6 4.6 0 0 0 22 9.8C22 6 17.5 3 12 3zM7 12a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />Appearance</button>
