@@ -98,7 +98,7 @@ export function polish(o: any, t?: Tokens, narrow = false, width = 0): any {
       if (x.barMaxWidth == null && x.barWidth == null) x.barMaxWidth = 24;
       if (x.itemStyle.borderRadius == null) x.itemStyle.borderRadius = x.stack ? 0 : yCat ? [0, 4, 4, 0] : [4, 4, 0, 0];
       // touching parts of a stack are told apart by a 2px gap in the surface colour, never by a drawn border
-      if (x.stack && t && x.itemStyle.borderWidth == null) Object.assign(x.itemStyle, { borderColor: t.surface, borderWidth: 1 });
+      if (x.stack && t && x.itemStyle.borderWidth == null) Object.assign(x.itemStyle, { borderColor: t.surface, borderWidth: 2 });
       if (!x.stack && c && HEX.test(c) && !x.__flat) x.itemStyle.color = bDepth(c, yCat);
       x.emphasis = { focus: 'series', ...x.emphasis };
     } else if (x.type === 'line') {

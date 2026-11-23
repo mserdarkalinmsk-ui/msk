@@ -130,8 +130,8 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
         </section>
 
         {wb.monthly.length > 0 && (
-          <section class="card span-7">
-            <div class="card-h"><div><h2>Monthly postings</h2><p>Invoices on purchase orders and direct GL postings by accounting month, with the running total</p></div></div>
+          <section class="card span-7" style={{ alignSelf: 'start' }}>
+            <div class="card-h"><div><h2>Monthly postings</h2><p>Invoices on purchase orders and direct GL postings by accounting month · hover a month for its running total</p></div></div>
             <div class="card-b"><Chart height={280} label="Monthly postings" option={(t) => monthlyOption(t, wb)} /></div>
           </section>
         )}
@@ -250,13 +250,14 @@ function monthlyOption(t: Tokens, wb: WorkbookSummary) {
   const M = wb.monthly.map((x) => ({ ...x, t: Date.parse(x.month + '-15'), total: x.invoices + x.gl, cum: (run += x.invoices + x.gl) }));
   return {
     ...base(t),
-    grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+    legend: { top: 0, left: 0, data: ['Invoices on POs', 'Direct GL postings'] },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any[]) => { const x = M[ps[0].dataIndex]; return `<b>${month(x.t)}</b><br/>Invoices ${full(x.invoices)}<br/>GL postings ${full(x.gl)}<br/>Month <b>${full(x.total)}</b> · running ${full(x.cum)}`; } },
     xAxis: { type: 'category', data: M.map((x) => month(x.t)), ...axisX(t), axisLabel: { ...axisX(t).axisLabel, interval: 'auto' } },
     yAxis: { type: 'value', ...axisY(t), axisLabel: { ...axisY(t).axisLabel, formatter: axisMoney } },
     series: [
-      { name: 'Invoices', type: 'bar', stack: 'm', data: M.map((x) => x.invoices), itemStyle: { color: t.c[0] }, barWidth: '60%' },
-      { name: 'GL', type: 'bar', stack: 'm', data: M.map((x) => x.gl), itemStyle: { color: t.c[2], borderRadius: [3, 3, 0, 0] } },
+      { name: 'Invoices on POs', type: 'bar', stack: 'm', data: M.map((x) => x.invoices), itemStyle: { color: t.c[0] }, barWidth: '60%' },
+      { name: 'Direct GL postings', type: 'bar', stack: 'm', data: M.map((x) => x.gl), itemStyle: { color: t.c[2], borderRadius: [3, 3, 0, 0] } },
     ],
   };
 }

@@ -76,8 +76,11 @@ export function Overview() {
   const open = (id: string) => set({ drawer: { kind: 'project', id } });
   const final = S.at(-1);
   const [sm, setSm] = useState<'cumulative' | 'remaining' | 'monthly' | 'country'>('cumulative');
-  const [bm, setBm] = useState<'country' | 'sector' | 'funding'>('country');
-  const keyOf = (p: Project) => (bm === 'country' ? p.country : bm === 'sector' ? p.sector ?? '' : p.funding ?? '');
+  const [bm0, setBm] = useState<'country' | 'sector' | 'funding'>('country');
+  const keyFor = (m: string) => (p: Project) => (m === 'country' ? p.country : m === 'sector' ? p.sector ?? '' : p.funding ?? '');
+  // a breakdown with a single group is one bar: it is not offered (one country → by sector and funding only)
+  const byModes = (['country', 'sector', 'funding'] as const).filter((m) => new Set(P.map(keyFor(m))).size > 1);
+  const bm = byModes.includes(bm0) ? bm0 : byModes[0] ?? 'country', keyOf = keyFor(bm);
 
   if (!P.length) return <><Filters /><div class="card empty-page"><div><h2>No projects match</h2><p>Change the filters or add a project.</p></div></div></>;
 
@@ -180,9 +183,9 @@ export function Overview() {
         </section>
 
 
-        <section class="card span-12">
+        {byModes.length > 0 && <section class="card span-12">
           <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Budget by {bm}</h2><p>Click a bar to filter the page</p></div>
-            <div class="tools"><div class="seg">{(['country', 'sector', 'funding'] as const).map((m) => <button aria-pressed={bm === m} onClick={() => setBm(m)}>{m[0].toUpperCase() + m.slice(1)}</button>)}</div></div></div>
+            <div class="tools"><div class="seg">{byModes.map((m) => <button aria-pressed={bm === m} onClick={() => setBm(m)}>{m[0].toUpperCase() + m.slice(1)}</button>)}</div></div></div>
           <div class="card-b">
             <div class="legend" style={{ marginBottom: '4px' }}>
               <span><i style={{ background: 'var(--c1)' }} />Spent</span><span><i style={{ background: 'var(--s-committed)' }} />Committed</span><span><i style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }} />Uncommitted</span>
@@ -194,7 +197,7 @@ export function Overview() {
               else set((s) => ({ filters: { ...s.filters, q: s.filters.q === e.name ? '' : e.name } }));
             }} option={(t) => countryOption(t, groupBy(P, keyOf).map((g) => ({ ...g, key: bm === 'country' ? cname(g.key) : g.key })))} />
           </div>
-        </section>
+        </section>}
 
 
         <section class="card span-12" style={{ overflow: 'hidden' }}>
@@ -318,14 +321,16 @@ function countryOption(t: Tokens, G: { key: string; budget: number; spent: numbe
     ({ name, type: 'bar', stack: 'b', barWidth: 18, data: G.map(f), itemStyle: { color, borderRadius: r, borderColor: t.surface, borderWidth: 1 }, emphasis: { focus: 'series' } });
   return {
     ...base(t),
-    grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 120, top: 8, bottom: 8, containLabel: true },
     tooltip: { ...(base(t).tooltip as object), trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => full(v) },
     xAxis: { type: 'value', ...axisY(t) },
     yAxis: { type: 'category', inverse: true, data: G.map((g) => g.key), ...axisX(t), axisLabel: { color: t.ink2, fontSize: 12 } },
     series: [
       mk('Spent', (g) => g.spent, t.c[0], [4, 0, 0, 4]),
       mk('Committed', (g) => g.committed, t.committed, [0, 0, 0, 0]),
-      { ...mk('Uncommitted', (g) => Math.max(0, g.budget - g.spent - g.committed), t.surface2, [0, 4, 4, 0]), __flat: true, itemStyle: { color: t.surface2, borderColor: t.line, borderWidth: 1, borderRadius: [0, 4, 4, 0] } },
+      // the end of each bar says the budget and the share used: one label per bar, in text ink, not the series colour
+      { ...mk('Uncommitted', (g) => Math.max(0, g.budget - g.spent - g.committed), t.surface2, [0, 4, 4, 0]), __flat: true, itemStyle: { color: t.surface2, borderColor: t.line, borderWidth: 1, borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', distance: 8, color: t.ink2, fontSize: 11.5, fontFamily: t.font, formatter: (p: { dataIndex: number }) => { const g = G[p.dataIndex]; return g.budget ? `${short(g.budget)} · ${Math.round(((g.spent + g.committed) / g.budget) * 100)}% used` : ''; } } },
     ],
   };
 }
