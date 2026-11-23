@@ -666,7 +666,7 @@ async function page(opts) {
   await p.click('.cc-form button:text-is("Cancel")');
   await p.screenshot({ path: `${shots}/contract-calendar.png`, fullPage: true });
   // Staff: everyone, the core team, the project staff… one view at a time; a core team contract ending soon is warned
-  await p.click('.cd-tabs button:text-is("People")'); await p.click('.cd-views button:has-text("Core team")'); await p.waitForSelector('.cc-form');
+  await p.click('.cd-tabs button:text-is("People")'); await p.click('.cd-views button:has-text("Core team")'); await p.click('.cc button:text-is("+ Add a person")'); await p.waitForSelector('.cc-form');
   const deskOf = new URL(p.url()).hash.split('/')[2]; // this country, by its address: a country saved later moves in the list
   await f(1, 'Alpha, One'); await f(2, 'Office assistant'); await f(5, '2026-11-25');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
@@ -675,9 +675,9 @@ async function page(opts) {
   await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForTimeout(800);
   check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
   // a post without an end date (not the head of office or of operations) is listed to complete, and completed in place
-  check(await p.locator('.tc li:has-text("Delta, Four")').count() === 1, 'a core team post missing its end date is listed to complete');
-  await p.fill('.tc li:has-text("Delta, Four") input[type=date]', '2027-03-31'); await p.click('.tc li:has-text("Delta, Four") button'); await p.waitForTimeout(300);
-  check(await p.locator('.tc li:has-text("Delta, Four")').count() === 0 && await p.locator('.ct-t tr:has-text("Delta, Four")').textContent().then((t) => t.includes('31 Mar 2027')), 'the end date completed in place is saved');
+  check(await p.locator('.ct-t tr.ct-todo:has-text("Delta, Four") input[type=date]').count() === 1, 'a core team post missing its end date asks for it in its own row');
+  await p.fill('.ct-t tr:has-text("Delta, Four") input[type=date]', '2027-03-31'); await p.waitForTimeout(300);
+  check(await p.locator('.ct-t tr:has-text("Delta, Four") input[type=date]').count() === 0 && await p.locator('.ct-t tr:has-text("Delta, Four")').textContent().then((t) => t.includes('31 Mar 2027')), 'the end date typed in the row is saved');
   await p.click('.cd-views button:has-text("Everyone")'); await p.waitForSelector('.ev-card');
   check(await p.locator('.ev-card:has-text("Alpha, One")').count() === 1 && await p.locator('.ev-card:has-text("Gamma, Three")').count() === 1, 'everyone of the country listed once, core team and project staff together');
   await p.click('.ev-tools button:text-is("List")'); check(await p.locator('.ev-l li:has-text("Alpha, One")').count() === 1, 'everyone also shown as a list');

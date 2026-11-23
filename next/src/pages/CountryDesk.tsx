@@ -9,7 +9,7 @@ import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { readDocument, readPages } from '../ui/docread';
 import { contractTerms, type ContractTerms } from '../domain/contractRead';
-import { coreEnd, fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
 import { alerts, outcome } from '../domain/insights';
@@ -363,22 +363,10 @@ export function Empty({ icon, title, text, children }: { icon: IcoName; title: s
   return <div class="es"><span class="es-i" aria-hidden="true"><Ico n={icon} size={22} /></span><h3>{title}</h3><p>{text}</p>{children && <div class="es-a">{children}</div>}</div>;
 }
 
-/** The core team's missing facts, each filled in place: end dates (the heads of office and operations run open-ended) and what pays for a post. */
-function ToComplete({ M, cid }: { M: CoreMember[]; cid: string }) {
-  const R = M.filter((m) => (!m.end && !openPost(m)) || (m.fund === 'other' && !m.fundText));
-  const [v, setV] = useState<Record<string, string>>({});
-  if (!R.length) return null;
-  return <div class="tc"><div class="tc-h"><b>To complete</b><span>{R.length} post{R.length > 1 ? 's' : ''} without an end date or a fund — fill them in here; only the head of office and the head of operations run open-ended.</span></div>
-    <ul>{R.map((m) => <li><span class="tc-n"><Who name={m.name} /><small>{m.position}</small></span>
-      {!m.end && !openPost(m) && <label>Contract ends<input type="date" value={v[`${m.id}e`] ?? ''} onInput={(e) => setV({ ...v, [`${m.id}e`]: (e.target as HTMLInputElement).value })} /></label>}
-      {m.fund === 'other' && !m.fundText && <label>Paid from<select class="select" value={v[`${m.id}f`] ?? ''} onChange={(e) => setV({ ...v, [`${m.id}f`]: (e.target as HTMLSelectElement).value })}><option value="">—</option>{Object.entries(FUND_LABEL).filter(([k]) => k !== 'other' && k !== 'project').map(([k, l]) => <option value={k}>{l}</option>)}</select></label>}
-      <button class="btn" disabled={!v[`${m.id}e`] && !v[`${m.id}f`]} onClick={() => { setCoreMember(cid, { ...m, ...(v[`${m.id}e`] ? { end: v[`${m.id}e`] } : {}), ...(v[`${m.id}f`] ? { fund: v[`${m.id}f`] as CoreMember['fund'] } : {}) }); setV({ ...v, [`${m.id}e`]: '', [`${m.id}f`]: '' }); }}>Save</button></li>)}</ul></div>;
-}
-
 /** The office's own team: entered by hand, with contract ends warned like contracts with providers. */
 function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
   const M = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
-  const [f, setF] = useState(EMPTY), [edit, setEdit] = useState('');
+  const [f, setF] = useState(EMPTY), [edit, setEdit] = useState(''), [adding, setAdding] = useState(false);
   const D = coreDue(M, TODAY), on = M.filter((m) => onTeam(m, TODAY));
   const v = (k: keyof typeof EMPTY) => ({ value: f[k], onInput: (e: Event) => setF({ ...f, [k]: (e.target as HTMLInputElement).value }) });
   const save = () => {
@@ -398,9 +386,16 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
   const load = (m: CoreMember) => { setF({ name: m.name, position: m.position, grade: m.grade ?? '', start: m.start ?? '', end: m.end ?? '', fund: m.fund ?? 'ob', project: m.project ?? '', share: m.share ? String(m.share) : '', note: m.note ?? '' }); setEdit(m.id); };
   // a post charged to a project: is the person on that project's staff list?
   const onProject = (m: CoreMember) => { const p = P.find((x) => x.id === m.project); if (!p) return null; const k = n2(m.name); return allPeople([p]).some((a) => n2(a.name) === k || n2(a.display) === k); };
-  return <section class="card cc"><div class="card-h"><div><h2>Core Team</h2><p>The office's own team in {name}, outside the projects: {on.length} on the team today. Contract ends are warned 90, 60 and 30 days ahead, here, under Deadlines and in the bell's count.</p></div><div class="tools"><label class="btn ghost" title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by"><Ico n="upload" />Import from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label></div></div>
+  const todo = M.filter((m) => (!m.end && !openPost(m)) || (m.fund === 'other' && !m.fundText)).length, open = M.filter((m) => openPost(m)).length;
+  const soft = (t: string) => (/[A-Z]{3}/.test(t) && !/[a-z]/.test(t) ? t.charAt(0) + t.slice(1).toLowerCase() : t);
+  const initials = (n: string) => n.replace(/,/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const formOpen = adding || !!edit;
+  const Import = ({ primary }: { primary?: boolean }) => <label class={`btn ${primary ? 'primary' : 'ghost'}`} title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by"><Ico n="upload" />Import from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label>;
+  return <section class="card cc"><div class="card-h"><div><h2>Core team</h2><p>The office's own staff in {name}, outside the projects · contract ends are warned 90, 60 and 30 days ahead, here, in the calendar and in the bell</p></div>
+      <div class="tools"><Import />{!formOpen && <button class="btn primary" onClick={() => setAdding(true)}>+ Add a person</button>}</div></div>
     <div class="card-b">
-      <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
+      {M.length > 0 && <div class="ct-sum"><span><b>{on.length}</b> on the team today</span>{open > 0 && <span><b>{open}</b> open-ended (head of office, head of operations)</span>}{todo > 0 && <span class="todo"><b>{todo}</b> to complete: an end date or what pays for the post — fill them in the table</span>}</div>}
+      {formOpen && <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); setAdding(false); }}>
         <label>Name<input {...v('name')} placeholder="Surname, Name" required /></label>
         <label>Position<input {...v('position')} placeholder="e.g. Head of Office" required /></label>
         <label>Grade<input {...v('grade')} style={{ minWidth: '70px', width: '80px' }} /></label>
@@ -411,19 +406,22 @@ function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] })
           <label>Share %<input type="number" min="0" max="100" {...v('share')} style={{ minWidth: '70px', width: '80px' }} /></label></>}
         <label>Note<input {...v('note')} /></label>
         <button class="btn primary" type="submit" disabled={!f.name.trim() || !f.position.trim()}>{edit ? 'Save changes' : '+ Add to the team'}</button>
-        {edit && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setF(EMPTY); }}>Cancel</button>}
-      </form>
-      <ToComplete M={M} cid={cid} />
-      {D.length ? <div class="table-scroll"><table class="mini ct-t"><thead><tr><th>Name</th><th>Position</th><th>Grade</th><th>Paid from</th><th>Contract</th><th>Ends</th><th /></tr></thead>
-        <tbody>{D.map(({ m, days, severity }) => { const p = P.find((x) => x.id === m.project), seen = m.fund === 'project' ? onProject(m) : null;
-          return <tr class={onTeam(m, TODAY) ? '' : 'muted'}><td><b>{m.name}</b>{m.note && <small class="muted cd-n">{m.note}</small>}</td><td>{m.position}</td><td class="num">{m.grade ?? '—'}</td>
-            <td>{m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : fundLabel(m)}</td>
-            <td class="num" style={{ whiteSpace: 'nowrap' }}>{m.start ? date(m.start) : '—'} – {coreEnd(m, date)}</td>
-            <td>{days == null ? <span class="muted">no end date</span> : <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</td>
-            <td style={{ whiteSpace: 'nowrap' }}><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}><Ico n="edit" /></button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
-        : <Empty icon="people" title={`No core team for ${name} yet`} text="The office's own staff, outside the projects: their contract ends are warned like those of providers, 90, 60 and 30 days ahead.">
-            <label class="btn primary" title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by"><Ico n="upload" />Import the list from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label>
-            <span class="muted">or add each person with the form above</span></Empty>}
+        <button class="btn ghost" type="button" onClick={() => { setEdit(''); setF(EMPTY); setAdding(false); }}>Cancel</button>
+      </form>}
+      {D.length ? <div class="table-scroll"><table class="mini ct-t"><thead><tr><th>Person</th><th>Grade</th><th>Paid from</th><th>Contract</th><th /></tr></thead>
+        <tbody>{D.map(({ m, days, severity }) => { const p = P.find((x) => x.id === m.project), seen = m.fund === 'project' ? onProject(m) : null, noFund = m.fund === 'other' && !m.fundText, noEnd = !m.end && !openPost(m);
+          return <tr class={`${onTeam(m, TODAY) ? '' : 'muted'}${noFund || noEnd ? ' ct-todo' : ''}`}>
+            <td><span class="ct-p"><span class="ct-av" aria-hidden="true">{initials(m.name)}</span><span><b><Who name={m.name} /></b><small>{soft(m.position)}{m.note ? ` · ${m.note}` : ''}</small></span></span></td>
+            <td class="num">{m.grade ?? <span class="muted">—</span>}</td>
+            <td>{noFund ? <select class="select ct-in" aria-label={`What pays for the post of ${m.name}`} value="" onChange={(e) => { const k = (e.target as HTMLSelectElement).value; if (k) setCoreMember(cid, { ...m, fund: k as CoreMember['fund'] }); }}><option value="">Choose…</option>{Object.entries(FUND_LABEL).filter(([k]) => k !== 'other' && k !== 'project').map(([k, l]) => <option value={k}>{l}</option>)}</select>
+              : m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : fundLabel(m)}</td>
+            <td><span class="ct-c">{m.start && <span class="num">{date(m.start)} –</span>}
+              {m.end ? <><span class="num">{date(m.end)}</span>{days != null && <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</>
+                : noEnd ? <input type="date" class="ct-in" aria-label={`Contract end of ${m.name}`} title="Type the end date: it is saved at once" onChange={(e) => { const d = (e.target as HTMLInputElement).value; if (d) setCoreMember(cid, { ...m, end: d }); }} />
+                : <span class="muted">open-ended</span>}</span></td>
+            <td class="ct-act"><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}><Ico n="edit" /></button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
+        : !formOpen && <Empty icon="people" title={`No core team for ${name} yet`} text="The office's own staff, outside the projects: their contract ends are warned like those of providers, 90, 60 and 30 days ahead.">
+            <Import primary /><button class="btn" onClick={() => setAdding(true)}>+ Add a person</button></Empty>}
     </div></section>;
 }
 
