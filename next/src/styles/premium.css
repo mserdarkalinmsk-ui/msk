@@ -401,3 +401,9 @@ details.em-method[open] > summary::before { content: '▾'; }
 .tn-addlot { justify-self: start; font-size: 12.5px; }
 .pc-c { margin-bottom: 16px; }
 .en-scope { margin-top: 10px; }
+/* contracts ahead: renewals, payments by month, what is missing */
+.ca-pay td:first-child, .ca-pay th:first-child { position: sticky; left: 0; background: var(--surface); min-width: 200px; }
+.ca-pay .ca-ren-c { font-style: italic; color: var(--ink-3); }
+.ca-pay tfoot td { font-weight: 600; }
+.ca-note { margin: 8px 0 0; font-size: 12.5px; }
+.ca-gaps { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }

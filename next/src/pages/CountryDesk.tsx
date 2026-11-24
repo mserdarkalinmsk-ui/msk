@@ -4,7 +4,8 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices, serviceKind } from '../domain/officeServices';
 import { impliedRate, nextYearCost, orderChecks, yearCost } from '../domain/contractFx';
-import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
+import { contractGaps, monthsFrom, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
+import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
@@ -17,7 +18,7 @@ import { alerts, outcome } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
 import { plabel } from '../domain/label';
-import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
+import { LS_BH, OB_BH, officeView, type Office, type OfficeReport } from '../domain/office';
 import { closestName, contractSupKey, providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
 import { daysUntil, n2, renewals, type Base } from '../domain/staff';
 import { SalarySection } from '../ui/CountryPanel';
@@ -203,6 +204,7 @@ export function CountryTenders({ name, cid, P, offices }: { name: string; cid: s
     {v === 'Providers' && <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
       <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
       <div class="card-b"><CountryProviders P={P} cname={cname} /></div></section>}
+    {v === 'Ahead' && <div class="span-12"><ContractsAhead cid={cid} P={P} offices={offices} /></div>}
     {v === 'Tenders' && <div class="span-12"><TenderBoard cid={cid} P={P} /></div>}
     {v === 'Contracts' && <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />}
   </div></>;
@@ -227,6 +229,46 @@ export function OfficeServices({ cid, offices }: { cid: string; offices: Office[
     </section>;
 }
 
+/** The office report's orders of an office contract: its line, its supplier, the same kind of service. */
+function officeOrders(rep: OfficeReport, k: string, c: Contract) {
+  const sk = k.split(':').slice(3).join(':'), l = rep.lines.find((x) => x.code === c.line);
+  return rep.entries.filter((e) => e.line === c.line && supKey(e.supplier) === sk && (!c.kind || serviceKind(e.description, l?.description ?? '') === c.kind)).map((e) => ({ description: e.description, amount: e.spent + e.committed, fund: e.fund }));
+}
+/** The country's contracts, each with the rate its orders were booked at when it is an office contract in another currency. */
+function useCountryContracts(cid: string, P: Project[], offices: Office[]) {
+  const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
+  const names = new Map<string, string>(); for (const x of providerPOs(P, set)) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
+  const rep = offices[0]?.reports.at(-1);
+  return Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid).map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
+}
+const MON3 = (m: string) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}`;
+const inEur = (v: number, toEur?: number, cur = 'EUR') => (toEur ? full(v * toEur) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`);
+/** What the contracts ask of the months ahead: renewals to decide, payments month by month, papers still missing. */
+export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[]; offices: Office[] }) {
+  const I = useCountryContracts(cid, P, offices);
+  const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
+  const eurNote = (toEur?: number, cur?: string) => !toEur && cur && cur !== 'EUR' ? <small class="muted"> · no rate yet</small> : null;
+  return <div class="grid g-12 ca">
+    <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div></div>
+      <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /></tr></thead>
+        <tbody>{R.map((r) => <tr><td><Firm name={r.name} /></td><td class="num">{date(r.end)}</td><td class="num">{r.noticeBy ? <>notice by <b>{date(r.noticeBy)}</b></> : date(r.end)}</td>
+          <td>{r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${date(r.renewBy)}` : 'a new contract or tender'}</td>
+          <td class="r num">{r.year != null ? inEur(r.year, r.cur === 'EUR' ? 1 : undefined, r.cur) : '—'}</td><td class="r num">{r.year != null && r.toEur ? full(r.year * r.toEur) : r.cur !== 'EUR' ? <span class="muted">no rate yet</span> : '—'}</td>
+          <td><span class={`badge ${r.days < 0 ? 'neutral' : SEV_BADGE[contractSeverity(r.days)]}`}>{r.days < 0 ? `ended ${-r.days} d ago` : r.days === 0 ? 'today' : `${r.days} d`}</span></td></tr>)}</tbody></table>
+        : <p class="muted">No contract ends or needs notice in the next six months.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>Payments month by month</h2><p>The monthly fee of each contract over the next twelve months, in euros where its rate is known. Months after a contract's signed end are shown only when it renews (in italics): they are what renewing would add.</p></div></div>
+      <div class="card-b table-scroll">{plan.length ? <table class="mini ca-pay"><thead><tr><th>Contract</th>{months.map((m) => <th class="r">{MON3(m)}</th>)}</tr></thead>
+        <tbody>{plan.map((r) => <tr><td><Firm name={r.name} />{r.line ? <small class="muted"> · line {r.line}</small> : null}{eurNote(r.toEur, r.cur)}</td>
+          {r.cells.map((x) => <td class={`r num${x.renewal ? ' ca-ren-c' : ''}`} title={x.renewal ? 'Only if renewed' : ''}>{x.v ? inEur(x.v, r.toEur, r.cur) : ''}</td>)}</tr>)}</tbody>
+        <tfoot><tr class="tot"><td>As signed</td>{S.signed.map((v) => <td class="r num">{full(v)}</td>)}</tr>
+          {S.withRenewals.some((v, i) => Math.abs(v - S.signed[i]) > 0.005) && <tr class="tot"><td>With renewals</td>{S.withRenewals.map((v) => <td class="r num">{full(v)}</td>)}</tr>}</tfoot></table>
+        : <p class="muted">No contract with a monthly fee yet: type the fee in a contract, or drop it to have it read.</p>}
+        {S.unknown > 0 && <p class="muted ca-note">{S.unknown} contract{S.unknown > 1 ? 's are' : ' is'} in another currency without a rate from its orders, so left out of the totals.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>What the contracts still lack</h2><p>To follow a contract fully: its signed copy and those of its amendments, an end date, its fee, and for a contract in lira an order that names the months it pays.</p></div></div>
+      <div class="card-b">{G.length ? <ul class="ca-gaps">{G.map((g) => <li><b><Firm name={g.name} /></b> — {g.missing.join(', ')}</li>)}</ul> : <p class="muted">Every contract has its papers and terms.</p>}</div></section>
+  </div>;
+}
+
 /** A tab split into views opened one at a time, the last one remembered (long pages stay short). */
 export function useView<T extends string>(key: string, views: readonly T[]): [T, (v: T) => void] {
   const [v, setV] = useState<T>(() => { try { const x = localStorage.getItem(key) as T; return views.includes(x) ? x : views[0]; } catch { return views[0]; } });
@@ -236,7 +278,7 @@ export function ViewBar<T extends string>({ views, v, set, label, counts = {} }:
   return <div class="seg of-views cd-views" role="tablist" aria-label={label}>{views.map((x) => <button role="tab" aria-pressed={v === x} onClick={() => set(x)}>{x}{counts[x] != null ? <span class="tab-n">{counts[x]}</span> : null}</button>)}</div>;
 }
 const STAFF_VIEWS = ['Everyone', 'Core team', 'Project staff', 'Staff plan', 'Salary scale'] as const;
-const TENDER_VIEWS = ['Contracts', 'Tenders', 'Providers'] as const;
+const TENDER_VIEWS = ['Contracts', 'Ahead', 'Tenders', 'Providers'] as const;
 const PROJECT_VIEWS = ['Projects', 'By budget line'] as const;
 /** An office service whose contract is to be added: handed from the Office tab to the contract form. */
 let pending: Prefill | null = null;
@@ -464,8 +506,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   // an office contract against its budget line: its cost this year in euros, at the rate its own orders were booked at
   const rep = offices[0]?.reports.at(-1);
   const fx = (k: string) => { const c = FW[k]; if (!c?.line || !rep) return null;
-    const sk = k.split(':').slice(3).join(':'), l = rep.lines.find((x) => x.code === c.line);
-    const O = rep.entries.filter((e) => e.line === c.line && supKey(e.supplier) === sk && (!c.kind || serviceKind(e.description, l?.description ?? '') === c.kind)).map((e) => ({ description: e.description, amount: e.spent + e.committed, fund: e.fund }));
+    const l = rep.lines.find((x) => x.code === c.line), O = officeOrders(rep, k, c);
     const r = impliedRate(c, O), y = yearCost(c, rep.year), eur = !c.cur || c.cur === 'EUR';
     const B = l ? (O[0] ? l[O[0].fund].budget : l.ob.budget + l.ls.budget) : 0;
     if (y == null || (!eur && !r)) return c.cur && !eur && (c.fee || c.total) ? { text: `in ${c.cur}: no order on line ${c.line} names the months it pays, so its euro value is not known`, over: false, share: '', next: '', checks: [] } : null;

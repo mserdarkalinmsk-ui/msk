@@ -701,6 +701,13 @@ async function page(opts) {
     check(d3 && d3.suggestedFilename() === 'contract.pdf', 'restored in a new browser, the attached contract opens'); await c2.close(); }
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
+  // what the contracts ask of the months ahead: renewals to decide, payments month by month, papers missing
+  await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.ca');
+  check(await p.locator('.ca-ren tr:has-text("Gamma Events Ltd") .badge').count() === 1 && /1,000\.00 TRY|12,000\.00 TRY/.test(await p.locator('.ca-ren tr:has-text("Gamma Events Ltd")').innerText()), 'a contract ending soon is among the renewals to decide, with a year more at its fee');
+  check(await p.locator('.ca-pay tr:has-text("Gamma Events Ltd") td.num').count() === 12 && await p.locator('.ca-note').count() === 1, 'its payments month by month, left out of the euro totals without a rate');
+  check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
+  check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');
+  await p.click('.cd-views button:has-text("Contracts")'); await p.waitForTimeout(200);
   // a contract read from its PDF: reference, provider, end, renewal limit and total fill the form
   await p.setInputFiles('.cc-read input', resolve('tests/fixtures/aoe.pdf'));
   await p.waitForFunction(() => /Read from \S+\.pdf|no text/.test(document.querySelector('.cc-form')?.textContent ?? ''), null, { timeout: 15000 }).catch(() => {});
