@@ -73,3 +73,29 @@ export function contractGaps(items: { key: string; name: string; c: Contract; ra
     return { key, name, missing: m };
   }).filter((g) => g.missing.length);
 }
+
+export interface Pace { used: number; cap: number; /** ordered per month over the last six months */ perMonth: number; /** the month the ceiling is reached at that pace */ reach?: string; /** reached before the contract ends */ beforeEnd: boolean }
+/** How fast a contract's ceiling is used: the orders of the last six months, carried on. */
+export function ceilingPace(cap: number, orders: { date: string; value: number }[], today: Date, end?: string): Pace {
+  const used = Math.round(orders.reduce((a, o) => a + o.value, 0) * 100) / 100;
+  const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 6, today.getUTCDate())).toISOString().slice(0, 10);
+  const perMonth = Math.round(orders.filter((o) => o.date >= from && o.date <= today.toISOString().slice(0, 10)).reduce((a, o) => a + o.value, 0) / 6 * 100) / 100;
+  if (used >= cap) return { used, cap, perMonth, reach: today.toISOString().slice(0, 7), beforeEnd: true };
+  if (perMonth <= 0) return { used, cap, perMonth, beforeEnd: false };
+  const n = Math.ceil((cap - used) / perMonth), reach = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + n, 1)).toISOString().slice(0, 7);
+  return { used, cap, perMonth, reach, beforeEnd: !end || reach <= end.slice(0, 7) };
+}
+
+export interface LineNeed { line: string; /** next year in euros, of the contracts whose euro value is known */ eur: number; contracts: string[]; /** contracts in another currency with no rate yet */ unknown: string[] }
+/** Next year's cost of the office contracts by budget line, for the budget proposal. */
+export function needByLine(items: { name: string; c: Contract; rate?: number }[], year: number, cost: (c: Contract, y: number) => number | undefined): LineNeed[] {
+  const by = new Map<string, LineNeed>();
+  for (const { name, c, rate } of items) {
+    if (!c.line) continue;
+    const v = cost(c, year); if (!v) continue;
+    const r = by.get(c.line) ?? { line: c.line, eur: 0, contracts: [], unknown: [] }, eur = !c.cur || c.cur === 'EUR';
+    if (eur || rate) { r.eur += eur ? v : v / rate!; r.contracts.push(name); } else r.unknown.push(name);
+    by.set(c.line, r);
+  }
+  return [...by.values()].map((r) => ({ ...r, eur: Math.round(r.eur * 100) / 100 })).sort((a, b) => a.line.localeCompare(b.line, 'en', { numeric: true }));
+}

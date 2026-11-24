@@ -4,6 +4,11 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-24c', date: '24 Nov 2026 (evening)', items: [
+    'Ahead, for the budget proposal: the office contracts\' cost next year by budget line, beside the line\'s budget this year, in red where it is more.',
+    'Ahead, the providers\' ceilings: what the projects ordered against each contract\'s ceiling, the pace of the last six months, and the month the ceiling is reached at that pace — flagged when it comes before the contract ends.',
+    'Ahead prints on its own (Print), and goes to Excel with every table.',
+  ] },
   { id: '2026-11-24b', date: '24 Nov 2026 (later)', items: [
     'Contracts & suppliers → Ahead: the renewals to decide in the next six months (by the notice deadline, with what a year more would cost), the payments of every contract month by month for twelve months (in euros where the rate is known, renewals in italics), and what each contract still lacks — its signed copy, an amendment\'s copy, an end date, its fee. All three go to Excel.',
     'A contract in lira shows how far the rate moved between its orders (the lowest and highest), next to the rate used.',

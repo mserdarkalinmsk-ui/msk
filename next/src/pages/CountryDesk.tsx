@@ -4,7 +4,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices, serviceKind } from '../domain/officeServices';
 import { impliedRate, nextYearCost, orderChecks, yearCost } from '../domain/contractFx';
-import { contractGaps, monthsFrom, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
+import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
@@ -239,25 +239,33 @@ function officeOrders(rep: OfficeReport, k: string, c: Contract) {
 function useCountryContracts(cid: string, P: Project[], offices: Office[]) {
   const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
   const names = new Map<string, string>(); for (const x of providerPOs(P, set)) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
-  const rep = offices[0]?.reports.at(-1);
-  return Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid).map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
+  const rep = offices[0]?.reports.at(-1), L = providerPOs(P, set);
+  const items = Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid).map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
+  // a provider's contract and the projects' orders it covers (a contract written in another language is the same company)
+  const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value })); };
+  return { items, rep, ordersOf };
 }
 const MON3 = (m: string) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}`;
 const inEur = (v: number, toEur?: number, cur = 'EUR') => (toEur ? full(v * toEur) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`);
 /** What the contracts ask of the months ahead: renewals to decide, payments month by month, papers still missing. */
 export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[]; offices: Office[] }) {
-  const I = useCountryContracts(cid, P, offices);
+  const { items: I, rep, ordersOf } = useCountryContracts(cid, P, offices);
+  const ny = TODAY.getUTCFullYear() + 1, N = needByLine(I, ny, nextYearCost);
+  const lineOf = (code: string) => rep?.lines.find((l) => l.code === code);
+  const caps = I.filter((x) => x.c.cap && !x.c.line).map((x) => ({ ...x, p: ceilingPace(x.c.cap!, ordersOf(x.key, x.c), TODAY, x.c.end) })).sort((a, b) => (a.p.reach ?? '9').localeCompare(b.p.reach ?? '9'));
   const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
   const xlsx = () => download('contracts-ahead.xlsx', [
     { name: 'Renewals', money: [5, 6], rows: [['Provider', 'Ends', 'Notice by', 'Renewal', 'Currency', 'A year more', 'In euros'], ...R.map((r) => [r.name, r.end, r.noticeBy ?? '', r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${r.renewBy}` : 'a new contract or tender', r.cur, r.year ?? null, r.year != null && r.toEur ? Math.round(r.year * r.toEur * 100) / 100 : null])] },
     { name: 'Payments', money: months.map((_, i) => i + 3), rows: [['Contract', 'Line', 'Currency', ...months], ...plan.map((r) => [r.name, r.line ?? '', r.toEur ? 'EUR' : r.cur, ...r.cells.map((x) => (x.v ? Math.round(x.v * (r.toEur ?? 1) * 100) / 100 : null))]),
       ['As signed (EUR)', '', 'EUR', ...S.signed], ['With renewals (EUR)', '', 'EUR', ...S.withRenewals]] },
+    { name: `Next year by line`, money: [1, 2], rows: [['Budget line', `Budget ${rep?.year ?? ny - 1}`, `Contracts ${ny}`, 'Contracts', 'Not counted (no rate yet)'], ...N.map((n) => { const l = lineOf(n.line); return [`${n.line} ${l?.description ?? ''}`.trim(), l ? l.ob.budget + l.ls.budget : null, n.eur, n.contracts.join(', '), n.unknown.join(', ')]; })] },
+    { name: 'Ceilings', money: [1, 2, 4], rows: [['Provider', 'Ceiling', 'Ordered', 'Used', 'Per month (6 months)', 'Ceiling reached', 'Contract ends'], ...caps.map(({ name, c, p }) => [name, p.cap, p.used, Math.round(p.used / p.cap * 1000) / 10 + '%', p.perMonth, p.reach ?? '', c.end ?? (c.openEnded ? 'open-ended' : '')])] },
     { name: 'Missing', rows: [['Contract', 'Still lacks'], ...G.map((g) => [g.name, g.missing.join(', ')])] },
   ]);
   const eurNote = (toEur?: number, cur?: string) => !toEur && cur && cur !== 'EUR' ? <small class="muted"> · no rate yet</small> : null;
   return <div class="grid g-12 ca">
     <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div>
-      <div class="tools"><button class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
+      <div class="tools"><button class="btn ghost" onClick={() => window.print()}><Ico n="print" />Print</button><button class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
       <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /></tr></thead>
         <tbody>{R.map((r) => <tr><td><Firm name={r.name} /></td><td class="num">{date(r.end)}</td><td class="num">{r.noticeBy ? <>notice by <b>{date(r.noticeBy)}</b></> : date(r.end)}</td>
           <td>{r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${date(r.renewBy)}` : 'a new contract or tender'}</td>
@@ -272,6 +280,19 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
           {S.withRenewals.some((v, i) => Math.abs(v - S.signed[i]) > 0.005) && <tr class="tot"><td>With renewals</td>{S.withRenewals.map((v) => <td class="r num">{full(v)}</td>)}</tr>}</tfoot></table>
         : <p class="muted">No contract with a monthly fee yet: type the fee in a contract, or drop it to have it read.</p>}
         {S.unknown > 0 && <p class="muted ca-note">{S.unknown} contract{S.unknown > 1 ? 's are' : ' is'} in another currency without a rate from its orders, so left out of the totals.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>Office contracts next year, by budget line</h2><p>For the {ny} budget proposal: what the office's contracts will cost next year at the fee in force (carried on when they renew), beside the line's budget this year. A contract in lira is in euros at the rate its orders were booked at.</p></div></div>
+      <div class="card-b table-scroll">{N.length ? <table class="mini ca-line"><thead><tr><th>Budget line</th><th class="r">Budget {rep?.year ?? ny - 1}</th><th class="r">Contracts {ny}</th><th>Contracts</th></tr></thead>
+        <tbody>{N.map((n) => { const l = lineOf(n.line), B = l ? l.ob.budget + l.ls.budget : 0; return <tr><td><span class="num">{n.line}</span> <span class="muted">{l?.description ?? ''}</span></td><td class="r num">{B ? full(B) : '—'}</td>
+          <td class={`r num${B && n.eur > B + 0.5 ? ' ca-over' : ''}`}>{full(n.eur)}</td><td>{n.contracts.join(', ')}{n.unknown.length ? <span class="muted"> · not counted, no rate yet: {n.unknown.join(', ')}</span> : null}</td></tr>; })}</tbody>
+        <tfoot><tr class="tot"><td>Total</td><td class="r num">{full(N.reduce((a, n) => { const l = lineOf(n.line); return a + (l ? l.ob.budget + l.ls.budget : 0); }, 0))}</td><td class="r num">{full(N.reduce((a, n) => a + n.eur, 0))}</td><td /></tr></tfoot></table>
+        : <p class="muted">No office contract with a fee yet: add the office's contracts from Office → Office services.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>Ceilings of the providers' contracts</h2><p>What the projects ordered from each provider against its contract's ceiling, and when the ceiling is reached if the last six months' orders go on at the same pace — flagged when that comes before the contract ends.</p></div></div>
+      <div class="card-b table-scroll">{caps.length ? <table class="mini ca-cap"><thead><tr><th>Provider</th><th class="r">Ceiling</th><th class="r">Ordered</th><th class="r">Used</th><th class="r">Per month (6 months)</th><th>Ceiling reached</th><th>Contract ends</th></tr></thead>
+        <tbody>{caps.map(({ name, c, p }) => { const sv = ceilingSeverity(p.used, p.cap); return <tr><td><Firm name={name} /></td><td class="r num">{full(p.cap)}</td><td class="r num">{full(p.used)}</td>
+          <td class="r num">{sv ? <span class={`badge ${SEV_BADGE[sv]}`}>{pct(p.used / p.cap)}</span> : pct(p.used / p.cap)}</td><td class="r num">{p.perMonth ? full(p.perMonth) : '—'}</td>
+          <td>{p.reach ? <span class={p.beforeEnd ? 'ca-over' : ''}>{p.used >= p.cap ? 'reached' : MON3(p.reach)}{p.beforeEnd && p.used < p.cap ? ' — before the end' : ''}</span> : <span class="muted">no recent orders</span>}</td>
+          <td class="num">{c.openEnded ? 'open-ended' : c.end ? date(c.end) : '—'}</td></tr>; })}</tbody></table>
+        : <p class="muted">No provider contract with a ceiling: type the ceiling (€) in a contract to follow it here.</p>}</div></section>
     <section class="card span-12"><div class="card-h"><div><h2>What the contracts still lack</h2><p>To follow a contract fully: its signed copy and those of its amendments, an end date, its fee, and for a contract in lira an order that names the months it pays.</p></div></div>
       <div class="card-b">{G.length ? <ul class="ca-gaps">{G.map((g) => <li><b><Firm name={g.name} /></b> — {g.missing.join(', ')}</li>)}</ul> : <p class="muted">Every contract has its papers and terms.</p>}</div></section>
   </div>;

@@ -46,3 +46,24 @@ describe('what the contracts ask of the months ahead', () => {
     ]);
   });
 });
+
+describe('ceilings and the next budget', () => {
+  it('carries the last six months of orders on to the month the ceiling is reached', async () => {
+    const { ceilingPace } = await import('./contractPlan');
+    const O = [{ date: '2025-01-10', value: 40000 }, { date: '2026-07-01', value: 6000 }, { date: '2026-10-01', value: 6000 }];
+    expect(ceilingPace(100000, O, T, '2027-12-31')).toEqual({ used: 52000, cap: 100000, perMonth: 2000, reach: '2028-11', beforeEnd: false });
+    expect(ceilingPace(60000, O, T, '2027-12-31')).toMatchObject({ reach: '2027-03', beforeEnd: true });
+    expect(ceilingPace(50000, O, T)).toMatchObject({ reach: '2026-11', beforeEnd: true });
+    expect(ceilingPace(100000, [{ date: '2025-01-10', value: 1 }], T)).toMatchObject({ perMonth: 0, beforeEnd: false });
+  });
+  it('adds up next year by budget line, in euros where the rate is known', async () => {
+    const { needByLine } = await import('./contractPlan');
+    const N = needByLine([
+      { name: 'Alpha', c: { line: '1.1', cur: 'TRY', fee: 90000 }, rate: 45 },
+      { name: 'Beta', c: { line: '1.10', cur: 'EUR', fee: 1000 } },
+      { name: 'Gamma', c: { line: '1.10', cur: 'TRY', fee: 4500 } },
+      { name: 'Delta', c: { cur: 'EUR', fee: 1 } },
+    ], 2027, (c) => (c.fee ?? 0) * 12);
+    expect(N).toEqual([{ line: '1.1', eur: 24000, contracts: ['Alpha'], unknown: [] }, { line: '1.10', eur: 12000, contracts: ['Beta'], unknown: ['Gamma'] }]);
+  });
+});
