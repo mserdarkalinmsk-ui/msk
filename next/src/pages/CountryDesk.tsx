@@ -8,6 +8,7 @@ import { contractGaps, monthsFrom, paymentPlan, planTotals, renewals as toRenew 
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
+import { download } from '../ui/xlsxwrite';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { ocrPdf, readDocument, readPages } from '../ui/docread';
 import { contractTerms, type ContractTerms } from '../domain/contractRead';
@@ -247,9 +248,16 @@ const inEur = (v: number, toEur?: number, cur = 'EUR') => (toEur ? full(v * toEu
 export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[]; offices: Office[] }) {
   const I = useCountryContracts(cid, P, offices);
   const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
+  const xlsx = () => download('contracts-ahead.xlsx', [
+    { name: 'Renewals', money: [5, 6], rows: [['Provider', 'Ends', 'Notice by', 'Renewal', 'Currency', 'A year more', 'In euros'], ...R.map((r) => [r.name, r.end, r.noticeBy ?? '', r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${r.renewBy}` : 'a new contract or tender', r.cur, r.year ?? null, r.year != null && r.toEur ? Math.round(r.year * r.toEur * 100) / 100 : null])] },
+    { name: 'Payments', money: months.map((_, i) => i + 3), rows: [['Contract', 'Line', 'Currency', ...months], ...plan.map((r) => [r.name, r.line ?? '', r.toEur ? 'EUR' : r.cur, ...r.cells.map((x) => (x.v ? Math.round(x.v * (r.toEur ?? 1) * 100) / 100 : null))]),
+      ['As signed (EUR)', '', 'EUR', ...S.signed], ['With renewals (EUR)', '', 'EUR', ...S.withRenewals]] },
+    { name: 'Missing', rows: [['Contract', 'Still lacks'], ...G.map((g) => [g.name, g.missing.join(', ')])] },
+  ]);
   const eurNote = (toEur?: number, cur?: string) => !toEur && cur && cur !== 'EUR' ? <small class="muted"> · no rate yet</small> : null;
   return <div class="grid g-12 ca">
-    <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div></div>
+    <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div>
+      <div class="tools"><button class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
       <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /></tr></thead>
         <tbody>{R.map((r) => <tr><td><Firm name={r.name} /></td><td class="num">{date(r.end)}</td><td class="num">{r.noticeBy ? <>notice by <b>{date(r.noticeBy)}</b></> : date(r.end)}</td>
           <td>{r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${date(r.renewBy)}` : 'a new contract or tender'}</td>
@@ -512,7 +520,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     if (y == null || (!eur && !r)) return c.cur && !eur && (c.fee || c.total) ? { text: `in ${c.cur}: no order on line ${c.line} names the months it pays, so its euro value is not known`, over: false, share: '', next: '', checks: [] } : null;
     const e = eur ? y : y / r!.rate, m = c.fee && !eur ? c.fee / r!.rate : 0;
     const ny = nextYearCost(c, rep.year + 1), ne = ny ? (eur ? ny : ny / r!.rate) : 0, chk = orderChecks(c, O, r?.rate);
-    return { checks: chk, next: ne ? `${rep.year + 1} ≈ ${full(ne)} at the fee in force${!eur ? ' and this rate' : ''}` : '', over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (from ${r.n} order${r.n === 1 ? '' : 's'})` : '', m ? `≈ ${full(m)} a month` : '',
+    return { checks: chk, next: ne ? `${rep.year + 1} ≈ ${full(ne)} at the fee in force${!eur ? ' and this rate' : ''}` : '', over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (from ${r.n} order${r.n === 1 ? '' : 's'}${r.hi / r.lo > 1.01 ? `, ${r.lo.toLocaleString('en-GB', { maximumFractionDigits: 2 })} to ${r.hi.toLocaleString('en-GB', { maximumFractionDigits: 2 })}` : ''})` : '', m ? `≈ ${full(m)} a month` : '',
       `${rep.year} ${eur ? '' : '≈ '}${full(e)}${B > 0 ? ` vs line ${c.line} budget ${full(B)}` : ` · line ${c.line} has no budget`}`].filter(Boolean).join(' · ') }; };
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);

@@ -19,7 +19,8 @@ describe('contracts in another currency against the office budget', () => {
     expect(feeAt(c, '2026-05')).toBe(360000);
     // Q1 at 300,000 × 3 = 900,000 TRY for €20,000 → 45; Q2 at 360,000 × 3 for €24,000 → 45
     const r = impliedRate(c, [{ description: 'Rent Jan-Feb-Mar 2026', amount: 20000 }, { description: 'Rent Q2 2026', amount: 24000 }, { description: 'Rent', amount: 5 }]);
-    expect(r).toEqual({ rate: 45, n: 2 });
+    expect(r).toEqual({ rate: 45, n: 2, lo: 45, hi: 45 });
+    expect(impliedRate({ cur: 'TRY', fee: 90000 }, [{ description: 'Rent Q1 2026', amount: 6000 }, { description: 'Rent Q2 2026', amount: 5400 }, { description: 'Rent Q3 2026', amount: 5000 }])).toEqual({ rate: 50, n: 3, lo: 45, hi: 54 });
     expect(impliedRate({ cur: 'EUR', fee: 100 }, [{ description: 'Rent Q1 2026', amount: 300 }])).toBeUndefined();
     expect(impliedRate({ cur: 'TRY', fee: 100 }, [{ description: 'Rent', amount: 300 }])).toBeUndefined();
   });

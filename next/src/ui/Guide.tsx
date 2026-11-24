@@ -5,7 +5,8 @@ import { X } from './CloseX';
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
   { id: '2026-11-24b', date: '24 Nov 2026 (later)', items: [
-    'Contracts & suppliers → Ahead: the renewals to decide in the next six months (by the notice deadline, with what a year more would cost), the payments of every contract month by month for twelve months (in euros where the rate is known, renewals in italics), and what each contract still lacks — its signed copy, an amendment\'s copy, an end date, its fee.',
+    'Contracts & suppliers → Ahead: the renewals to decide in the next six months (by the notice deadline, with what a year more would cost), the payments of every contract month by month for twelve months (in euros where the rate is known, renewals in italics), and what each contract still lacks — its signed copy, an amendment\'s copy, an end date, its fee. All three go to Excel.',
+    'A contract in lira shows how far the rate moved between its orders (the lowest and highest), next to the rate used.',
   ] },
   { id: '2026-11-24a', date: '24 Nov 2026', items: [
     'Attached contracts take far less room: each file is kept once, apart from the data, so saving, the daily restore points and the folder backup no longer copy it again. "Back up now" still makes one complete file with the documents in it; the folder backup writes each document once into its "documents" subfolder.',

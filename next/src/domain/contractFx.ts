@@ -29,14 +29,15 @@ export function feeAt(c: Contract, ym: string): number | undefined {
   return f?.fee ?? (c.fees?.length && c.fees[0].from.slice(0, 7) > ym ? c.fees[0].fee : c.fee);
 }
 
-export interface ImpliedRate { /** units of the contract's currency per euro */ rate: number; /** orders it was read from */ n: number }
+export interface ImpliedRate { /** units of the contract's currency per euro */ rate: number; /** orders it was read from */ n: number; /** the lowest and highest rate among them: how much the currency moved between orders */ lo: number; hi: number }
 /** The rate the orders were booked at: the median over the orders that name their period (one odd order does not move it). */
 export function impliedRate(c: Contract, orders: { description: string; amount: number }[]): ImpliedRate | undefined {
   if (!c.cur || c.cur === 'EUR' || !(c.fee || c.fees?.length)) return undefined;
   const R = orders.flatMap((o) => { const p = orderPeriod(o.description), fee = p && feeAt(c, p.from); return p && fee && o.amount > 0.5 ? [fee * p.months / o.amount] : []; }).sort((a, b) => a - b);
   if (!R.length) return undefined;
   const m = R.length >> 1, rate = R.length % 2 ? R[m] : (R[m - 1] + R[m]) / 2;
-  return { rate: Math.round(rate * 10000) / 10000, n: R.length };
+  const r4 = (v: number) => Math.round(v * 10000) / 10000;
+  return { rate: r4(rate), n: R.length, lo: r4(R[0]), hi: r4(R.at(-1)!) };
 }
 
 /** What a contract costs in a calendar year, in its own currency: each month it runs, at the fee in force then. */

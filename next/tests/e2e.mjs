@@ -707,6 +707,7 @@ async function page(opts) {
   check(await p.locator('.ca-pay tr:has-text("Gamma Events Ltd") td.num').count() === 12 && await p.locator('.ca-note').count() === 1, 'its payments month by month, left out of the euro totals without a rate');
   check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');
+  { const [x] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).catch(() => null), p.click('.ca .tools button:has-text("Excel")')]); check(x && x.suggestedFilename() === 'contracts-ahead.xlsx', 'the months ahead go to Excel'); }
   await p.click('.cd-views button:has-text("Contracts")'); await p.waitForTimeout(200);
   // a contract read from its PDF: reference, provider, end, renewal limit and total fill the form
   await p.setInputFiles('.cc-read input', resolve('tests/fixtures/aoe.pdf'));
