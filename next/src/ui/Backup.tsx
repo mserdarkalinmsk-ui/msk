@@ -1,6 +1,7 @@
 import { MON } from '../domain/dt';
 import { useEffect, useState } from 'preact/hooks';
-import { get, kv, onSaved, replaceLedger, set, toast, useStore } from '../data/store';
+import { get, getDoc, kv, onSaved, putDoc, replaceLedger, set, toast, useStore } from '../data/store';
+import { atts } from '../data/docs';
 import { migrateBackup } from '../domain/insights';
 import { validateLedger } from '../domain/calc';
 import type { Ledger } from '../domain/types';
@@ -14,14 +15,18 @@ const write = (k: string, v: string) => { try { localStorage.setItem(k, v); } ca
 
 /* ---------- password protection ---------- */
 // With a password set, every backup (the file and the folder copies) is encrypted: without it the file cannot be read.
-let pw: string | null | undefined;
+let pw: string | null | undefined, typed: string | null = null;
 async function password(): Promise<string | null> { if (pw === undefined) pw = (await kv<string>('backup-pw')) ?? null; return pw; }
 export async function setBackupPassword(p: string | null) { pw = p; await kv('backup-pw', p); write('pl-backup-protected', p ? '1' : ''); changed(); if (await folder()) await writeToFolder(); }
 interface ProtectedBackup { app: 'portfolio-ledger'; protected: true; at: string; projects: number; enc: Sealed }
 const isProtected = (x: unknown): x is ProtectedBackup => !!x && typeof x === 'object' && (x as ProtectedBackup).protected === true && !!(x as ProtectedBackup).enc;
 /** The backup as it is written: plain JSON, or encrypted when a password is set. */
-async function payload(pretty?: boolean): Promise<Blob> {
-  const L = get().ledger, text = JSON.stringify(L, null, pretty ? 2 : undefined), p = await password();
+async function payload(pretty?: boolean, withDocs = true): Promise<Blob> {
+  const L0 = get().ledger, p = await password();
+  // a backup file is whole: the attached documents travel with it (the folder copy keeps them as files of their own)
+  const docs: Record<string, string> = {};
+  if (withDocs) for (const a of atts(L0)) if (a.id && !docs[a.id]) { const d = await getDoc(a.id); if (d) docs[a.id] = d; }
+  const L = Object.keys(docs).length ? { ...L0, docs } : L0, text = JSON.stringify(L, null, pretty ? 2 : undefined);
   if (!p) return new Blob([text], { type: 'application/json' });
   const { seal } = await import('./crypto');
   const out: ProtectedBackup = { app: 'portfolio-ledger', protected: true, at: new Date().toISOString(), projects: L.projects.length, enc: await seal(text, p) };
@@ -40,6 +45,7 @@ export async function readBackup(text: string): Promise<unknown | null> {
   let plain: string | null = null;
   const got = await askPassword({ title: 'Protected backup', text: `This backup${j.at ? ` of ${new Date(j.at).toLocaleDateString('en-GB', { dateStyle: 'medium' })}` : ''} is encrypted. Enter the password it was saved with.`, ok: 'Open',
     check: async (v) => ((plain = await open(j.enc, v)) == null ? 'Wrong password.' : null) });
+  if (got != null && plain != null) typed = got;
   return got == null || plain == null ? null : JSON.parse(plain);
 }
 
@@ -54,7 +60,7 @@ onSaved(() => scheduleFolderBackup());
 
 /* ---------- automatic backup to a folder (Chrome / Edge) ---------- */
 // The folder handle is kept with the data; the browser asks again for permission after it is restarted.
-type Dir = { name: string; queryPermission(o: object): Promise<string>; requestPermission(o: object): Promise<string>; getFileHandle(n: string, o?: object): Promise<{ createWritable(): Promise<{ write(b: Blob): Promise<void>; close(): Promise<void> }>; getFile(): Promise<File> }>; values(): AsyncIterable<{ kind: string; name: string }>; removeEntry(n: string): Promise<void> };
+type Dir = { name: string; queryPermission(o: object): Promise<string>; requestPermission(o: object): Promise<string>; getFileHandle(n: string, o?: object): Promise<{ createWritable(): Promise<{ write(b: Blob): Promise<void>; close(): Promise<void> }>; getFile(): Promise<File> }>; values(): AsyncIterable<{ kind: string; name: string }>; removeEntry(n: string): Promise<void>; getDirectoryHandle(n: string, o?: object): Promise<Dir> };
 const RW = { mode: 'readwrite' };
 const FILE = /^portfolio-ledger-(\d{4}-\d{2}-\d{2})\.json$/;
 export const folderSupported = () => typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker === 'function' && window.top === window.self;
@@ -86,7 +92,8 @@ async function writeToFolder(): Promise<boolean> {
   try {
     if ((await d.queryPermission(RW)) !== 'granted') return false;
     const day = new Date().toISOString().slice(0, 10), f = await d.getFileHandle(`portfolio-ledger-${day}.json`, { create: true });
-    const blob = await payload(), w = await f.createWritable(); await w.write(blob); await w.close();
+    const blob = await payload(false, false), w = await f.createWritable(); await w.write(blob); await w.close();
+    await docsToFolder(d);
     // Read back: the copy counts only when the file on disk has the size that was written.
     const back = await f.getFile().catch(() => null);
     write('pl-backup-verified', back && back.size === blob.size ? '1' : '');
@@ -95,6 +102,31 @@ async function writeToFolder(): Promise<boolean> {
     for (const n of old.sort().slice(0, Math.max(0, old.length - 60))) await d.removeEntry(n).catch(() => {});
     changed(); return true;
   } catch { return false; }
+}
+/** The attached documents, each written once into the folder's "documents" subfolder (encrypted like the backup when a password is set). */
+const inFolder = new Set<string>();
+async function docsToFolder(d: Dir) {
+  const ids = [...new Set(atts(get().ledger).map((a) => a.id).filter((x): x is string => !!x))].filter((id) => !inFolder.has(id));
+  if (!ids.length) return;
+  const sub = await d.getDirectoryHandle('documents', { create: true }), p = await password();
+  for (const id of ids) {
+    const name = `${id}${p ? '.sealed' : ''}.b64`;
+    if (await sub.getFileHandle(name).then(() => true, () => false)) { inFolder.add(id); continue; }
+    const data = await getDoc(id); if (!data) continue;
+    const text = p ? JSON.stringify(await (await import('./crypto')).seal(data, p)) : data;
+    const w = await (await sub.getFileHandle(name, { create: true })).createWritable(); await w.write(new Blob([text], { type: 'text/plain' })); await w.close();
+    inFolder.add(id);
+  }
+}
+/** Puts the folder's documents back into this browser (a new computer, or cleared browser data). */
+async function docsFromFolder(d: Dir) {
+  const sub = await d.getDirectoryHandle('documents').catch(() => null); if (!sub) return;
+  for await (const e of sub.values()) {
+    const m = e.kind === 'file' && /^([0-9a-f]{24})(\.sealed)?\.b64$/.exec(e.name); if (!m) continue;
+    let data: string | null = await (await (await sub.getFileHandle(e.name)).getFile()).text();
+    if (m[2]) { const p = (await password()) ?? typed; data = p ? await (await import('./crypto')).open(JSON.parse(data) as Sealed, p) : null; }
+    if (data) await putDoc(m[1], data);
+  }
 }
 /** Called after every saved change: the folder copy follows 20 seconds after the last change. */
 export function scheduleFolderBackup() { clearTimeout(timer); timer = setTimeout(() => { void writeToFolder(); }, 20_000); }
@@ -109,6 +141,7 @@ export async function restoreFromFolder() {
     if (validateLedger(ledger).length) { toast(`${last} could not be read`); return; }
     const L = ledger as Ledger;
     if (!confirm(`Restore ${last}: ${L.projects.length} projects, ${L.projects.reduce((a, p) => a + (p.reportingPeriods?.length ?? 0), 0)} reports?`)) return;
+    await docsFromFolder(d);
     replaceLedger(L, `Restored from backup ${last}`); set({ fresh: false });
   } catch (e) { if ((e as Error).name !== 'AbortError') toast('The folder could not be read'); }
 }

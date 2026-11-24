@@ -679,6 +679,26 @@ async function page(opts) {
   check(await p.locator('.cc-row.s-critical:has-text("Gamma Events Ltd") .badge:has-text("20 d left")').count() === 1, 'a contract ending in 20 days is on the calendar as critical');
   await p.setInputFiles('.cc-row:has-text("Gamma Events Ltd") .att-c input', resolve('tests/fixtures/contract.pdf')); await p.waitForTimeout(400);
   check(await p.locator('.cc-row:has-text("Gamma Events Ltd") .att-open').count() === 1, 'the signed contract is attached to its row and can be opened');
+  // the file is kept once, apart from the data: the saved data holds a reference, the file opens from the document store
+  await p.waitForTimeout(600);
+  const kept = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('portfolio-ledger-next'); r.onsuccess = () => { const s = r.result.transaction('kv').objectStore('kv'), k = s.getAllKeys(); k.onsuccess = () => {
+    const K = k.result.map(String), mk = K.find((x) => x.endsWith(':m')), m = s.get(mk); m.onsuccess = () => { const d = Object.values(m.result.frameworks ?? {}).map((c) => c.doc).find((x) => x?.name === 'contract.pdf');
+      res({ id: d?.id, inline: !!d?.data, stored: K.some((x) => d?.id && x.endsWith(':doc:' + d.id)), size: JSON.stringify(m.result).length }); }; }; }; }));
+  check(!!kept.id && !kept.inline && kept.stored, `an attached document is stored apart, the data keeps its reference (${JSON.stringify(kept)})`);
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).catch(() => null), p.click('.cc-row:has-text("Gamma Events Ltd") .att-open')]);
+  check(dl && dl.suggestedFilename() === 'contract.pdf', 'and it opens from there');
+  // a backup file is whole: the document travels with it and opens again in another browser
+  await p.click('.side-foot button:has-text("Import / backup")'); await p.waitForSelector('.ds');
+  const [bk2] = await Promise.all([p.waitForEvent('download'), p.click('.ds button:has-text("Back up now")')]);
+  const B2 = JSON.parse((await import('node:fs')).readFileSync(await bk2.path(), 'utf8'));
+  check(!!B2.docs?.[kept.id] && !JSON.stringify(B2.frameworks).includes(B2.docs[kept.id]), 'a backup file carries the attached document once, beside the data');
+  writeFileSync(`${shots}/with-doc.json`, JSON.stringify(B2)); await p.keyboard.press('Escape');
+  { const c2 = await browser.newContext({ acceptDownloads: true }); await c2.addInitScript(() => localStorage.setItem('pl-digest-seen', 'off')); const q = await c2.newPage();
+    await q.goto(url + '#/overview'); await q.waitForSelector('.hero'); await q.click('text=Import / backup'); await q.setInputFiles('.drawer .drop input', `${shots}/with-doc.json`); await q.waitForTimeout(600);
+    await q.click('.drawer button:has-text("Replace data")'); await q.waitForTimeout(600);
+    await q.goto(p.url()); await q.waitForSelector('.cc-row:has-text("Gamma Events Ltd") .att-open');
+    const [d3] = await Promise.all([q.waitForEvent('download', { timeout: 5000 }).catch(() => null), q.click('.cc-row:has-text("Gamma Events Ltd") .att-open')]);
+    check(d3 && d3.suggestedFilename() === 'contract.pdf', 'restored in a new browser, the attached contract opens'); await c2.close(); }
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
   // a contract read from its PDF: reference, provider, end, renewal limit and total fill the form

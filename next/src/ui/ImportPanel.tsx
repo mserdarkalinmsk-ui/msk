@@ -5,7 +5,7 @@ import { readOfficeFile } from './officeImport';
 import { DataSafety, readBackup } from './Backup';
 
 import { useEffect, useState } from 'preact/hooks';
-import { checkpoint, get, go, isAdmin, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
+import { checkpoint, get, go, isAdmin, putDoc, replaceLedger, resetDemo, restorePoints, set, upsertOfficeReport, useStore } from '../data/store';
 import { validateLedger } from '../domain/calc';
 import { normalizeSector, validUrl, type Ledger } from '../domain/types';
 
@@ -17,6 +17,8 @@ import { migrateBackup } from '../domain/insights';
 import { X } from './CloseX';
 import { plabel } from '../domain/label';
 import { dmy } from '../domain/dt';
+/** A full backup carries its attached documents: they are kept in this browser at once (replacing or merging both use them). */
+async function keepDocs(x: unknown) { const o = x as { docs?: Record<string, string> } | null; if (!o?.docs || typeof o.docs !== 'object') return; for (const [id, d] of Object.entries(o.docs)) if (typeof d === 'string') await putDoc(id, d); delete o.docs; }
 
 const FIELDS = [
   { key: 'code', label: 'Code', req: true, alias: ['code', 'project code', 'id', 'kod'] },
@@ -62,7 +64,7 @@ export function ImportPanel({ close }: { close: () => void }) {
     if (wb) { set({ drawer: { kind: 'smart-import', files: [file] } }); return; }
     const text = await file.text();
     if (/\.json$/i.test(file.name) || text.trim().startsWith('{')) {
-      try { const raw = await readBackup(text); if (raw == null) return; const { ledger: data, from } = migrateBackup(raw); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
+      try { const raw = await readBackup(text); if (raw == null) return; const { ledger: data, from } = migrateBackup(raw); await keepDocs(data); setJson({ data: data as Ledger, errs: validateLedger(data), from }); } catch { setErr('This file is not valid JSON.'); }
       return;
     }
     let R: string[][];

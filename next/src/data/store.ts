@@ -14,6 +14,7 @@ import { officeCountry } from '../domain/office';
 import { lockOf } from '../domain/close';
 import { pruneMarks } from '../domain/worklist';
 import { customRules, setRules } from '../domain/rules';
+import { atts, liftDocs } from './docs';
 
 export interface Filters { country: string; sector: string; q: string }
 export interface Toast { id: number; text: string; undo?: () => void }
@@ -188,6 +189,27 @@ export async function checkpoint(label: string) {
   const keys = st.getAllKeys(IDBKeyRange.bound(`${KEY}:pre:`, `${KEY}:pre:\uffff`));
   keys.onsuccess = () => { const K = (keys.result as string[]).sort(); for (const x of K.slice(0, Math.max(0, K.length - 10))) st.delete(x); };
 }
+/* ---------- attached documents: each file kept once, by id, apart from the data (data/docs) ---------- */
+const DK = () => `${KEY}:doc:`;
+/** Stores a document; false when the browser refused it. */
+export async function putDoc(id: string, data: string): Promise<boolean> {
+  const db = await open(); if (!db || READONLY) return false;
+  return new Promise((res) => { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(data, DK() + id); tx.oncomplete = () => res(true); tx.onabort = tx.onerror = () => res(false); });
+}
+export async function getDoc(id: string): Promise<string | undefined> {
+  const db = await open(); if (!db) return undefined;
+  return new Promise((res) => { const r = db.transaction(STORE).objectStore(STORE).get(DK() + id); r.onsuccess = () => res(r.result as string | undefined); r.onerror = () => res(undefined); });
+}
+/** Moves documents written into the ledger (older data, a full backup, a fallback) to the document store; the ledger keeps references. */
+async function liftInto(docs: Map<string, string>, extra?: Record<string, string>) {
+  for (const [id, d] of [...docs, ...Object.entries(extra ?? {})]) if (!(await putDoc(id, d))) return false;
+  return true;
+}
+async function liftCurrent() {
+  if (READONLY || !atts(state.ledger).some((a) => a.data)) return;
+  const before = state.ledger, { ledger, docs } = await liftDocs(before);
+  if (state.ledger === before && await liftInto(docs) && state.ledger === before) { set({ ledger }); persist(ledger); }
+}
 /** A small value kept with the data in this browser (e.g. the backup folder). */
 export async function kv<T>(key: string, value?: T | null): Promise<T | undefined> {
   const db = await open(); if (!db) return undefined;
@@ -243,6 +265,7 @@ export async function load() {
   }
   if (!stored) await openEmbed();
   set({ ready: true });
+  void liftCurrent();
 }
 
 /**
@@ -561,7 +584,12 @@ export const setStaffOverride = (pid: string, key: string, o: import('../domain/
   const O = p.staffOverrides ?? (p.staffOverrides = {});
   if (o) O[key] = { ...o, updatedAt: new Date().toISOString() }; else delete O[key];
 }, o ? 'Contract details saved' : 'Contract details cleared');
-export function replaceLedger(l: Ledger, message: string) { const L = clone(l); L.projects = L.projects.map(normalizeProject); commit(L, message); }
+export function replaceLedger(l: Ledger, message: string) {
+  // a full backup carries its documents along: they go to the document store, the ledger keeps the references
+  const { docs, ...rest } = l as Ledger & { docs?: Record<string, string> };
+  const L = clone(rest as Ledger); L.projects = L.projects.map(normalizeProject); commit(L, message);
+  void liftInto(new Map(), docs).then(() => liftCurrent());
+}
 export function resetDemo() { commit(clone(seed as unknown as Ledger), 'Start data restored'); }
 
 /* ---------- navigation & theme ---------- */
