@@ -741,7 +741,7 @@ async function page(opts) {
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.ct-t tr:has-text("Alpha, One") .badge:has-text("45 d left")').count() === 1, 'core team member added, with the days left');
   p.once('dialog', (d) => d.accept());
-  await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForTimeout(800);
+  await p.setInputFiles('.cc label.btn input[type=file]', resolve('tests/fixtures/core-team.xlsx')); await p.waitForSelector('.ct-t tr:has-text("Delta, Four")', { timeout: 8000 }).catch(() => {});
   check(await p.locator('.ct-t tr:has-text("Gamma, Three") .badge:has-text("19 d left")').count() === 1 && await p.locator('.ct-t tr:has-text("Delta, Four")').count() === 1, 'core team read from an Excel list, dates and all');
   // a post without an end date (not the head of office or of operations) is listed to complete, and completed in place
   check(await p.locator('.ct-t tr.ct-todo:has-text("Delta, Four") input[type=date]').count() === 1, 'a core team post missing its end date asks for it in its own row');

@@ -51,3 +51,25 @@ export function yearCost(c: Contract, year: number): number | undefined {
   }
   return undefined;
 }
+
+export interface OrderCheck { description: string; amount: number; expected: number }
+/**
+ * Orders that do not match the contract: an order in euros against a contract in euros should be the fee × the months it
+ * pays; against a contract in another currency, at the rate the other orders were booked at. Off by more than 3% is listed.
+ */
+export function orderChecks(c: Contract, orders: { description: string; amount: number }[], rate?: number): OrderCheck[] {
+  const eur = !c.cur || c.cur === 'EUR';
+  if (!eur && !rate) return [];
+  return orders.flatMap((o) => {
+    const p = orderPeriod(o.description), fee = p && feeAt(c, p.from); if (!p || !fee || o.amount <= 0.5) return [];
+    const expected = Math.round(fee * p.months / (eur ? 1 : rate!) * 100) / 100;
+    return Math.abs(o.amount - expected) > expected * 0.03 ? [{ description: o.description, amount: Math.round(o.amount * 100) / 100, expected }] : [];
+  });
+}
+
+/** Next year's cost at the fee in force: a contract renewed yearly, or renewable until a later date, is taken to run on to that date. */
+export function nextYearCost(c: Contract, year: number): number | undefined {
+  const runs = c.renewBy && (!c.end || c.renewBy > c.end) ? c.renewBy : c.autoRenew || c.openEnded ? `${year}-12-31` : c.end;
+  if (runs && runs < `${year}-01-01`) return 0;
+  return yearCost({ ...c, end: runs && runs > `${year}-12-31` ? `${year}-12-31` : runs }, year);
+}

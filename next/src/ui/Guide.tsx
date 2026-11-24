@@ -4,6 +4,11 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-24a', date: '24 Nov 2026', items: [
+    'Attached contracts take far less room: each file is kept once, apart from the data, so saving, the daily restore points and the folder backup no longer copy it again. "Back up now" still makes one complete file with the documents in it; the folder backup writes each document once into its "documents" subfolder.',
+    'Office contracts are checked against their orders: an order that is not the monthly fee × the months it pays (at the rate the other orders were booked at, for a contract in lira) is listed under the contract.',
+    'Next year\'s cost of each office contract, at the fee in force, carried on when the contract renews — for the next budget proposal.',
+  ] },
   { id: '2026-11-23f', date: '23 Nov 2026 (evening)', items: [
     'Office contracts in lira against the office budget in euros: the rate is read from the office report itself — the contract\'s monthly fee × the months each order pays ÷ its amount in euros — and the year\'s cost is shown against its budget line, in red when it is more than the line holds. Contracts in euros are compared directly.',
   ] },

@@ -33,3 +33,22 @@ describe('contracts in another currency against the office budget', () => {
     expect(yearCost({ start: '2026-01-01', end: '2026-12-31' }, 2026)).toBeUndefined();
   });
 });
+
+describe('orders checked against the contract, and next year', () => {
+  it('lists the orders that do not match the fee × the months they pay', async () => {
+    const { orderChecks } = await import('./contractFx');
+    const eur = { cur: 'EUR', fee: 1000 };
+    expect(orderChecks(eur, [{ description: 'Guard service Q1 2026', amount: 3000 }, { description: 'Guard service Q2 2026', amount: 3600 }, { description: 'Guard extra', amount: 50 }]))
+      .toEqual([{ description: 'Guard service Q2 2026', amount: 3600, expected: 3000 }]);
+    const tl = { cur: 'TRY', fee: 90000 };
+    expect(orderChecks(tl, [{ description: 'Rent Q1 2026', amount: 6000 }, { description: 'Rent Q2 2026', amount: 6050 }], 45)).toEqual([]);
+    expect(orderChecks(tl, [{ description: 'Rent Q1 2026', amount: 6000 }], undefined)).toEqual([]);
+  });
+  it('costs next year at the fee in force, carried on when the contract is renewed', async () => {
+    const { nextYearCost } = await import('./contractFx');
+    expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2026-12-31' }, 2027)).toBe(0);
+    expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2026-12-31', autoRenew: true }, 2027)).toBe(1200);
+    expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2026-12-31', renewBy: '2027-06-30' }, 2027)).toBe(600);
+    expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2028-12-31' }, 2027)).toBe(1200);
+  });
+});
