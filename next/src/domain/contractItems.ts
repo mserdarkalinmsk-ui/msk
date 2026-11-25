@@ -23,7 +23,8 @@ export function countryContracts(FW: Record<string, Contract>, P: Project[], poK
   for (const x of L) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
   const rep = offices[0]?.reports.at(-1);
   const items: CItem[] = Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)
-    .map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
+    .map(([k0, c0]) => { const { key, c } = asOfficeContract(offices, cid, k0, c0);
+      return { key, c, name: c.name || names.get(k0) || k0, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }; });
   // a contract written in another language (or read from a scan) is the provider whose name is the same company
   const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return [...L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value, po: x.po, description: x.description, project: x.p.code })),
     ...(c.line ? [] : officeEntriesFor(offices, key, c).map((e) => ({ date: e.date, value: e.amount, po: e.doc, description: e.description, project: 'Office' })))]; };
@@ -72,4 +73,19 @@ export function officeEntriesFor(offices: Office[], key: string, c: Contract): (
     if (known.has(sk)) out.push(...E.filter((e) => supKey(e.supplier) === sk).map((e) => ({ ...e, office: o.name })));
   }
   return out.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/**
+ * A contract the office pays from its own budget, though entered as a provider's: the office report's orders from the
+ * same provider give its budget line (the one with the most spent and committed) and what the service is, so the
+ * office's sums — still to order, next year by line, the forecast check — count it as they count an office contract.
+ */
+export function asOfficeContract(offices: Office[], cid: string, key: string, c: Contract): { key: string; c: Contract } {
+  if (c.line) return { key, c };
+  const E = officeEntriesFor(offices.filter((o) => o.country === cid), key, c);
+  if (!E.length) return { key, c };
+  const by = new Map<string, number>(); for (const e of E) by.set(e.line, (by.get(e.line) ?? 0) + e.amount);
+  const line = [...by].sort((a, b) => b[1] - a[1])[0][0], top = E.find((e) => e.line === line)!;
+  const rep = offices.find((o) => o.country === cid)?.reports.at(-1), lineName = rep?.lines.find((l) => l.code === line)?.description ?? '';
+  return { key: `office:${cid}:${line}:${supKey(top.supplier)}`, c: { ...c, line, kind: serviceKind(top.description, lineName) } };
 }

@@ -7,8 +7,8 @@ import { month } from '../ui/format';
 import { events } from './Agenda';
 import { officeRows } from './OfficeSummary';
 
-const GROUPS: Task['group'][] = ['Data', 'Reports', 'Staff', 'Offices', 'Close the month'];
-const ICON: Record<Task['group'], IcoName> = { Data: 'download', Reports: 'reports', Staff: 'people', Offices: 'grid', 'Close the month': 'flag' };
+const GROUPS: Task['group'][] = ['Data', 'Reports', 'Staff', 'Contracts', 'Offices', 'Close the month'];
+const ICON: Record<Task['group'], IcoName> = { Data: 'download', Reports: 'reports', Staff: 'people', Contracts: 'flag', Offices: 'grid', 'Close the month': 'flag' };
 
 /** This month's checklist: what the data says is still to do, ticked automatically when the data proves it. */
 export function Checklist({ fold }: { fold?: boolean } = {}) {

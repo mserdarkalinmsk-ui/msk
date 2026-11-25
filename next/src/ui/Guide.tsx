@@ -4,6 +4,10 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-26d', date: '26 Nov 2026 (night)', items: [
+    'A provider\'s contract that the office pays from its own budget (a car rental) is counted on the office budget line its orders use — no need to enter it again from Office services: its line and service show on the calendar, and it takes part in still to order, next year by line and the forecast check.',
+    'The month\'s checklist (Reports → Monthly close) has a Contracts group: renewals and notices to decide within 90 days, ceilings reached before the end, office lines the forecast under-plans, and contracts whose papers are missing — each opens the country\'s contracts.',
+  ] },
   { id: '2026-11-26c', date: '26 Nov 2026 (evening)', items: [
     'What the office itself ordered under a contract — a car rental, an accountant — is counted from the office report: the firm\'s card lists those orders ("Ordered by the office") and adds them to its totals, and the contract calendar\'s "ordered" includes them.',
     'Contracts read from a scan: a date written with commas (01,07,2025) is no longer taken for a fee, and an arrow read as a letter no longer starts the first row; a date that cannot be (a five-digit year) is not saved and is listed under "What the contracts still lack".',

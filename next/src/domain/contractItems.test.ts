@@ -26,4 +26,18 @@ describe('contracts watched across the portfolio', () => {
     expect(officeEntriesFor(offices, 'omega grup turizm tasimacilik', { name: 'Omega Grup Turizm Taşımacılık' }).length).toBe(2);
     expect(officeEntriesFor(offices, 'nobody', { name: 'Nobody Ltd' })).toEqual([]);
   });
+  it('a provider contract the office pays is counted on the office budget line its orders use', async () => {
+    const { asOfficeContract, stillToOrder, officeOrders } = await import('./contractItems');
+    const e = (line: string, description: string, spent: number) => ({ line, doc: 'X', description, supplier: 'OMEGA GROUP TOURISM TRANSPORT', amount: spent, spent, committed: 0, status: '', date: '2026-02-10', fund: 'ob' as const, gl: false });
+    const rep = { id: 'r', date: '2026-04-30', year: 2026, file: 'r.xlsx', importedAt: '', office: 'Alpha Office', hasPlan: true, lines: [{ code: '3.1', heading: '3', description: 'Car rental', ob: { budget: 1, sc: 0, planned: 0 }, ls: { budget: 0, sc: 0, planned: 0 } }],
+      entries: [e('3.1', 'Car Rental and Petrol Cost for the 1st Quarter of 2026', 6000), e('3.2', 'Taxi', 50)] };
+    const offices = [{ id: 'o', name: 'Alpha Office', country: 'tr', reports: [rep] }];
+    const c = { name: 'OMEGA GROUP TOURISM TRANSPORT', start: '2025-07-01', end: '2027-06-30', fee: 2000 };
+    const x = asOfficeContract(offices, 'tr', 'omega group tourism transport', c);
+    expect(x.key).toBe('office:tr:3.1:omega group tourism transport');
+    expect(x.c).toMatchObject({ line: '3.1', kind: 'Vehicle rental and fuel' });
+    expect(officeOrders(rep, x.key, x.c).length).toBe(1);
+    expect(stillToOrder(x.c, officeOrders(rep, x.key, x.c), 2026)).toMatchObject({ from: '2026-04', months: 9 });
+    expect(asOfficeContract(offices, 'ge', 'omega group tourism transport', c).c.line).toBeUndefined();
+  });
 });

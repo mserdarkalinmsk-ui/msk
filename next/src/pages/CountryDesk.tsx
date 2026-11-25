@@ -4,7 +4,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
 import { impliedRate, nextYearCost, orderChecks, orderPeriod, yearCost } from '../domain/contractFx';
-import { ceilingsAtRisk, countryContracts, officeEntriesFor, officeOrders, stillToOrder } from '../domain/contractItems';
+import { asOfficeContract, ceilingsAtRisk, countryContracts, officeEntriesFor, officeOrders, stillToOrder } from '../domain/contractItems';
 import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, get, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
@@ -561,14 +561,16 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     return { name: names.get(sk), used: Math.round((L.filter((x) => x.kind && supKey(x.supplier) === sk).reduce((a, x) => a + x.value, 0) + (c ? officeEntriesFor(offices, k, c).reduce((a, e) => a + e.amount, 0) : 0)) * 100) / 100 }; };
   // an office contract against its budget line: its cost this year in euros, at the rate its own orders were booked at
   const rep = offices[0]?.reports.at(-1);
-  const fx = (k: string) => { const c = FW[k]; if (!c?.line || !rep) return null;
+  const fx = (k0: string) => { if (!FW[k0] || !rep) return null;
+    // a provider's contract the office pays is read on the office line its orders use
+    const { key: k, c } = asOfficeContract(offices, cid, k0, FW[k0]); if (!c.line) return null;
     const l = rep.lines.find((x) => x.code === c.line), O = officeOrders(rep, k, c);
     const r = impliedRate(c, O), y = yearCost(c, rep.year), eur = !c.cur || c.cur === 'EUR';
     const B = l ? (O[0] ? l[O[0].fund].budget : l.ob.budget + l.ls.budget) : 0;
     if (y == null || (!eur && !r)) return c.cur && !eur && (c.fee || c.total) ? { text: `in ${c.cur}: no order on line ${c.line} names the months it pays, so its euro value is not known`, over: false, share: '', next: '', checks: [] } : null;
     const e = eur ? y : y / r!.rate, m = c.fee && !eur ? c.fee / r!.rate : 0;
     const ny = nextYearCost(c, rep.year + 1), ne = ny ? (eur ? ny : ny / r!.rate) : 0, chk = orderChecks(c, O, r?.rate);
-    return { checks: chk, next: ne ? `${rep.year + 1} ≈ ${full(ne)} at the fee in force${!eur ? ' and this rate' : ''}` : '', over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (from ${r.n} order${r.n === 1 ? '' : 's'}${r.hi / r.lo > 1.01 ? `, ${r.lo.toLocaleString('en-GB', { maximumFractionDigits: 2 })} to ${r.hi.toLocaleString('en-GB', { maximumFractionDigits: 2 })}` : ''})` : '', m ? `≈ ${full(m)} a month` : '',
+    return { checks: chk, next: ne ? `${rep.year + 1} ≈ ${full(ne)} at the fee in force${!eur ? ' and this rate' : ''}` : '', over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!FW[k0].line ? `paid from office line ${c.line} (${c.kind})` : '', !eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (from ${r.n} order${r.n === 1 ? '' : 's'}${r.hi / r.lo > 1.01 ? `, ${r.lo.toLocaleString('en-GB', { maximumFractionDigits: 2 })} to ${r.hi.toLocaleString('en-GB', { maximumFractionDigits: 2 })}` : ''})` : '', m ? `≈ ${full(m)} a month` : '',
       `${rep.year} ${eur ? '' : '≈ '}${full(e)}${B > 0 ? ` vs line ${c.line} budget ${full(B)}` : ` · line ${c.line} has no budget`}`].filter(Boolean).join(' · ') }; };
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
