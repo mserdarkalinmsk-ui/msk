@@ -409,3 +409,5 @@ details.em-method[open] > summary::before { content: '▾'; }
 .ca-gaps { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
 .cah .ca-over { color: var(--critical); font-weight: 600; }
 @media print { .cah .tools, .cd-views { display: none !important; } .cah .card { break-inside: avoid; } .ca-pay td:first-child, .ca-pay th:first-child { position: static; } }
+.ca-short { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--critical-soft); font-size: 13px; }
+.ca-short ul { margin: 4px 0 0; padding-left: 18px; }

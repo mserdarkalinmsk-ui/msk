@@ -4,6 +4,10 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-25b', date: '25 Nov 2026 (later)', items: [
+    'Ahead, still to order: the lines where the office forecast plans less than the contracts still need this year are named, with the amount not planned.',
+    'Renewals to decide: a notice letter in Word for each contract — the contract will not be renewed beyond its end, with its reference and notice period, in your letter template when one is set.',
+  ] },
   { id: '2026-11-25a', date: '25 Nov 2026', items: [
     'Ahead, still to order this year: for each office contract, the months after the last one its orders pay, to the end of the year, at the fee in force — beside what is left on its budget line after spent, committed and planned.',
     'The monthly pack has a "Contracts to decide" section: contracts ending or due for notice within 90 days, and providers\' ceilings reached before the contract ends at the recent pace, by country.',

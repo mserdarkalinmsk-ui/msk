@@ -704,6 +704,9 @@ async function page(opts) {
   // what the contracts ask of the months ahead: renewals to decide, payments month by month, papers missing
   await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.cah');
   check(await p.locator('.ca-ren tr:has-text("Gamma Events Ltd") .badge').count() === 1 && /1,000\.00 TRY|12,000\.00 TRY/.test(await p.locator('.ca-ren tr:has-text("Gamma Events Ltd")').innerText()), 'a contract ending soon is among the renewals to decide, with a year more at its fee');
+  { const [w] = await Promise.all([p.waitForEvent('download', { timeout: 8000 }).catch(() => null), p.click('.ca-ren tr:has-text("Gamma Events Ltd") .ca-letter')]);
+    const { default: JSZip } = await import('jszip'); const xml = w ? await (await JSZip.loadAsync((await import('node:fs')).readFileSync(await w.path()))).file('word/document.xml').async('string') : '';
+    check(/-notice-[\d-]+\.docx$/.test(w?.suggestedFilename() ?? '') && xml.includes('notice of non-renewal') && xml.includes('FWC-T1') && xml.includes('Gamma Events Ltd'), `a notice letter for a contract to decide, in Word, with its reference (${w?.suggestedFilename()}, ${xml.length} chars)`); }
   check(await p.locator('.ca-pay tr:has-text("Gamma Events Ltd") td.num').count() === 12 && await p.locator('.ca-note').count() === 1, 'its payments month by month, left out of the euro totals without a rate');
   check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');

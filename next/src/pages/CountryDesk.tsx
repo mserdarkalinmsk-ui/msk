@@ -7,9 +7,10 @@ import { impliedRate, nextYearCost, orderChecks, yearCost } from '../domain/cont
 import { ceilingsAtRisk, countryContracts, officeOrders, stillToOrder } from '../domain/contractItems';
 import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
-import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
+import { addCoreMembers, get, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { download } from '../ui/xlsxwrite';
+import { noticeLetterDocx } from '../ui/ContractLetter';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { ocrPdf, readDocument, readPages } from '../ui/docread';
 import { contractTerms, type ContractTerms } from '../domain/contractRead';
@@ -249,13 +250,16 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
   const leftOn = (code: string) => { const l = lineOf(code); return l ? Math.round((l.ob.budget + l.ls.budget - l.ob.sc - l.ls.sc - l.ob.planned - l.ls.planned) * 100) / 100 : undefined; };
   const todo = rep ? I.filter((x) => x.c.line).map((x) => { const s = stillToOrder(x.c, officeOrders(rep, x.key, x.c), rep.year), eurC = !x.c.cur || x.c.cur === 'EUR';
     return { ...x, s, eur: eurC ? s.amount : x.rate ? Math.round(s.amount / x.rate * 100) / 100 : undefined, left: leftOn(x.c.line!) }; }).filter((t) => t.s.months > 0) : [];
+  // the office forecast's planned spending on each line, against what its contracts still need this year (in euros)
+  const short = (() => { const by = new Map<string, number>(); for (const t of todo) if (t.eur != null) by.set(t.c.line!, (by.get(t.c.line!) ?? 0) + t.eur);
+    return [...by].map(([line, need]) => { const l = lineOf(line); return { line, need: Math.round(need * 100) / 100, planned: l ? Math.round((l.ob.planned + l.ls.planned) * 100) / 100 : 0 }; }).filter((x) => x.need > x.planned + 0.5); })();
   const caps = I.filter((x) => x.c.cap && !x.c.line).map((x) => ({ ...x, p: ceilingPace(x.c.cap!, ordersOf(x.key, x.c), TODAY, x.c.end) })).sort((a, b) => (a.p.reach ?? '9').localeCompare(b.p.reach ?? '9'));
   const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
   const xlsx = () => download('contracts-ahead.xlsx', [
     { name: 'Renewals', money: [5, 6], rows: [['Provider', 'Ends', 'Notice by', 'Renewal', 'Currency', 'A year more', 'In euros'], ...R.map((r) => [r.name, r.end, r.noticeBy ?? '', r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${r.renewBy}` : 'a new contract or tender', r.cur, r.year ?? null, r.year != null && r.toEur ? Math.round(r.year * r.toEur * 100) / 100 : null])] },
     { name: 'Payments', money: months.map((_, i) => i + 3), rows: [['Contract', 'Line', 'Currency', ...months], ...plan.map((r) => [r.name, r.line ?? '', r.toEur ? 'EUR' : r.cur, ...r.cells.map((x) => (x.v ? Math.round(x.v * (r.toEur ?? 1) * 100) / 100 : null))]),
       ['As signed (EUR)', '', 'EUR', ...S.signed], ['With renewals (EUR)', '', 'EUR', ...S.withRenewals]] },
-    { name: 'Still to order', money: [4, 5, 6], rows: [['Contract', 'Budget line', 'From', 'Months', 'Amount (contract currency)', 'In euros', 'Left on the line'], ...todo.map((t) => [t.name, t.c.line ?? '', t.s.from ?? '', t.s.months, t.s.amount, t.eur ?? null, t.left ?? null])] },
+    { name: 'Still to order', money: [4, 5, 6], rows: [['Contract', 'Budget line', 'From', 'Months', 'Amount (contract currency)', 'In euros', 'Left on the line'], ...todo.map((t) => [t.name, t.c.line ?? '', t.s.from ?? '', t.s.months, t.s.amount, t.eur ?? null, t.left ?? null]), [], ['Not in the office forecast'], ['Budget line', 'Contracts still need', 'Forecast plans', 'Not planned'], ...short.map((x) => [x.line, x.need, x.planned, Math.round((x.need - x.planned) * 100) / 100])] },
     { name: `Next year by line`, money: [1, 2], rows: [['Budget line', `Budget ${rep?.year ?? ny - 1}`, `Contracts ${ny}`, 'Contracts', 'Not counted (no rate yet)'], ...N.map((n) => { const l = lineOf(n.line); return [`${n.line} ${l?.description ?? ''}`.trim(), l ? l.ob.budget + l.ls.budget : null, n.eur, n.contracts.join(', '), n.unknown.join(', ')]; })] },
     { name: 'Ceilings', money: [1, 2, 4], rows: [['Provider', 'Ceiling', 'Ordered', 'Used', 'Per month (6 months)', 'Ceiling reached', 'Contract ends'], ...caps.map(({ name, c, p }) => [name, p.cap, p.used, Math.round(p.used / p.cap * 1000) / 10 + '%', p.perMonth, p.reach ?? '', c.end ?? (c.openEnded ? 'open-ended' : '')])] },
     { name: 'Missing', rows: [['Contract', 'Still lacks'], ...G.map((g) => [g.name, g.missing.join(', ')])] },
@@ -264,11 +268,12 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
   return <div class="grid g-12 cah">
     <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div>
       <div class="tools"><button class="btn ghost" onClick={() => window.print()}><Ico n="print" />Print</button><button class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
-      <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /></tr></thead>
+      <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /><th /></tr></thead>
         <tbody>{R.map((r) => <tr><td><Firm name={r.name} /></td><td class="num">{date(r.end)}</td><td class="num">{r.noticeBy ? <>notice by <b>{date(r.noticeBy)}</b></> : date(r.end)}</td>
           <td>{r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${date(r.renewBy)}` : 'a new contract or tender'}</td>
           <td class="r num">{r.year != null ? inEur(r.year, r.cur === 'EUR' ? 1 : undefined, r.cur) : '—'}</td><td class="r num">{r.year != null && r.toEur ? full(r.year * r.toEur) : r.cur !== 'EUR' ? <span class="muted">no rate yet</span> : '—'}</td>
-          <td><span class={`badge ${r.days < 0 ? 'neutral' : SEV_BADGE[contractSeverity(r.days)]}`}>{r.days < 0 ? `ended ${-r.days} d ago` : r.days === 0 ? 'today' : `${r.days} d`}</span></td></tr>)}</tbody></table>
+          <td><span class={`badge ${r.days < 0 ? 'neutral' : SEV_BADGE[contractSeverity(r.days)]}`}>{r.days < 0 ? `ended ${-r.days} d ago` : r.days === 0 ? 'today' : `${r.days} d`}</span></td>
+          <td>{r.days >= 0 && <button class="btn ghost ca-letter" title="A Word letter to the provider: the contract will not be renewed beyond its end (in your letter template when one is set)" onClick={() => { const x = I.find((i) => i.key === r.key); if (x) void noticeLetterDocx(r.name, x.c, get().ledger); }}><Ico n="download" />Notice letter</button>}</td></tr>)}</tbody></table>
         : <p class="muted">No contract ends or needs notice in the next six months.</p>}</div></section>
     <section class="card span-12"><div class="card-h"><div><h2>Payments month by month</h2><p>The monthly fee of each contract over the next twelve months, in euros where its rate is known. Months after a contract's signed end are shown only when it renews (in italics): they are what renewing would add.</p></div></div>
       <div class="card-b table-scroll">{plan.length ? <table class="mini ca-pay"><thead><tr><th>Contract</th>{months.map((m) => <th class="r">{MON3(m)}</th>)}</tr></thead>
@@ -283,7 +288,9 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
         <tbody>{todo.map((t) => <tr><td><Firm name={t.name} /></td><td><span class="num">{t.c.line}</span> <span class="muted">{lineOf(t.c.line!)?.description ?? ''}</span></td><td class="num">{MON3(t.s.from!)}</td><td class="r num">{t.s.months}</td>
           <td class="r num">{inEur(t.s.amount, t.c.cur && t.c.cur !== 'EUR' ? undefined : 1, t.c.cur ?? 'EUR')}</td><td class={`r num${t.eur != null && t.left != null && t.eur > t.left + 0.5 ? ' ca-over' : ''}`}>{t.eur != null ? full(t.eur) : <span class="muted">no rate yet</span>}</td>
           <td class="r num">{t.left != null ? full(t.left) : '—'}</td></tr>)}</tbody></table>
-        : <p class="muted">Every office contract's months are ordered to the end of {rep.year}, or no office contract has a fee yet.</p>}</div></section>}
+        : <p class="muted">Every office contract's months are ordered to the end of {rep.year}, or no office contract has a fee yet.</p>}
+        {short.length > 0 && <div class="ca-short"><b>Not in the office forecast:</b><ul>{short.map((x) => <li><span class="num">{x.line}</span> {lineOf(x.line)?.description ?? ''} — the contracts still need {full(x.need)}, the forecast plans {full(x.planned)}: <b class="ca-over">{full(x.need - x.planned)} not planned</b></li>)}</ul></div>}
+        {todo.length > 0 && !short.length && <p class="muted ca-note">The office forecast plans enough on each line for what the contracts still need this year.</p>}</div></section>}
     <section class="card span-12"><div class="card-h"><div><h2>Office contracts next year, by budget line</h2><p>For the {ny} budget proposal: what the office's contracts will cost next year at the fee in force (carried on when they renew), beside the line's budget this year. A contract in lira is in euros at the rate its orders were booked at.</p></div></div>
       <div class="card-b table-scroll">{N.length ? <table class="mini ca-line"><thead><tr><th>Budget line</th><th class="r">Budget {rep?.year ?? ny - 1}</th><th class="r">Contracts {ny}</th><th>Contracts</th></tr></thead>
         <tbody>{N.map((n) => { const l = lineOf(n.line), B = l ? l.ob.budget + l.ls.budget : 0; return <tr><td><span class="num">{n.line}</span> <span class="muted">{l?.description ?? ''}</span></td><td class="r num">{B ? full(B) : '—'}</td>
