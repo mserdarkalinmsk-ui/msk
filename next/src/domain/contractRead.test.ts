@@ -79,3 +79,36 @@ describe('extension options', () => {
     expect(t).toMatchObject({ end: '2029-06-30', renewBy: '2031-06-30', renewEvery: '12', autoRenew: true, noticeDays: 90 });
   });
 });
+
+describe('a framework contract with a table of monthly fees, read from a scan', () => {
+  // the layout of a car rental Act of Engagement: the currency heads the column, the rows carry none
+  const scan = `A. Terms of reference/Table of unit fees The Council of Europe Programme Office in Alpha will rent a car for the use of the Office between the dates 01.07.2025 to 30.06.2027.
+    Fees The fees indicated below will be applicable throughout the duration of the Framework Contract. Prices are indicated in Turkish Lira without VAT.
+    The Provider shall indicate its proposed fee(s) in the box(es) below. Monthly fee Type(s) of Units ▼ (TRY)
+    Car rental services for the period of 01.07.2025 — 30.06.2027 | 1,500
+    Fuel chip provision for fuel consumption of 01.07.2025 – 30.06.2027 500
+    Grand Total (Monthly) 2,000
+    OPTION 3 This Framework Contract takes effect as from the date of its signature by both parties and is concluded until: 30/06/2027
+    At the end of its initial term, the Framework Contract will be tacitly renewed every six months and shall renew each 6 (six) months thereafter, unless either party notifies the other in writing of its intention to terminate the contract at the latest 2 (two) months before the renewal date. The contract shall not be renewed beyond 30.06.2028 and shall end on this date.`;
+  it('reads each fee of the table, the monthly total and its currency', () => {
+    const t = contractTerms(scan);
+    expect(t.fee).toBe(2000);
+    expect(t.cur).toBe('TRY');
+    expect(t.items).toEqual([{ label: 'Car rental services', fee: 1500 }, { label: 'Fuel chip provision for fuel consumption', fee: 500 }]);
+  });
+  it('reads the period, the renewal every six months and the notice written as "2 (two) months"', () => {
+    const t = contractTerms(scan);
+    expect(t).toMatchObject({ start: '2025-07-01', end: '2027-06-30', renewBy: '2028-06-30', autoRenew: true, renewEvery: '6', noticeDays: 60 });
+  });
+  it('adds the rows up when the total is not read', () => {
+    const t = contractTerms(scan.replace('Grand Total (Monthly) 2,000', ''));
+    expect(t.fee).toBe(2000);
+    expect(t.items?.length).toBe(2);
+  });
+  it('a scan read column by column (labels, then amounts): the total is kept, rows that do not add up are not', () => {
+    const t = contractTerms(scan.replace('Car rental services for the period of 01.07.2025 — 30.06.2027 | 1,500\n    Fuel chip provision for fuel consumption of 01.07.2025 – 30.06.2027 500',
+      'Car rental services for the period of 01.07.2025 — 30.06.2027 Fuel chip provision for fuel consumption of 01.07.2025 – 30.06.2027 1,500 500'));
+    expect(t.fee).toBe(2000);
+    expect(t.items).toBeUndefined();
+  });
+});

@@ -433,3 +433,4 @@ main .badge[title], main span[title], main small[title], main b[title] { cursor:
 /* the monthly pack: codes whole, project names in a column wide enough to read */
 .pack-al b { white-space: nowrap; }
 .pack-t td:first-child { min-width: 190px; }
+.en-item { padding-left: 12px; color: var(--ink-3); font-weight: 400; }

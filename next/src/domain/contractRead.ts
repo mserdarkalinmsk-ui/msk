@@ -3,7 +3,7 @@
  * provider, the end ("concluded until"), the last date it may be renewed to ("may not be renewed beyond"), the total
  * and its currency. A scanned copy has no text: nothing is read and the user types the terms.
  */
-export interface ContractTerms { ref?: string; provider?: string; start?: string; end?: string; renewBy?: string; total?: number; fee?: number; cur?: string; /** extension options: the step of each renewal, renewal without a new signature, the notice before the end (days) */ renewEvery?: string; autoRenew?: boolean; noticeDays?: number; /** a later document to a contract: its kind and number, and the date it applies from */ amend?: { kind: 'amendment' | 'rider' | 'addendum'; no?: number; effective?: string }; /** monthly fees by the date they apply from */ fees?: { from: string; fee: number }[] }
+export interface ContractTerms { /** the rows of a table of fees (car rental, fuel…), each with its monthly fee */ items?: { label: string; fee: number }[]; ref?: string; provider?: string; start?: string; end?: string; renewBy?: string; total?: number; fee?: number; cur?: string; /** extension options: the step of each renewal, renewal without a new signature, the notice before the end (days) */ renewEvery?: string; autoRenew?: boolean; noticeDays?: number; /** a later document to a contract: its kind and number, and the date it applies from */ amend?: { kind: 'amendment' | 'rider' | 'addendum'; no?: number; effective?: string }; /** monthly fees by the date they apply from */ fees?: { from: string; fee: number }[] }
 
 const DATE = String.raw`(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d\d)`;
 const MONTH = 'January|February|March|April|May|June|July|August|September|October|November|December';
@@ -29,10 +29,12 @@ export function money(s: string): number | undefined {
   return Number.isFinite(v) && v > 0 ? v : undefined;
 }
 const AMT = String.raw`(?<![\d.,])(\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\d{2})?|\d+[.,]\d{2})`;
+/** An amount in a table of fees, where a plain number ("500") is a fee too: the dates are taken out first. */
+const ROWAMT = String.raw`(?<![\d.,])(\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\d{2})?|\d+[.,]\d{2}|\d{2,7})(?![\d.,]?\d)`;
 const CUR = (s: string) => /TRY|TL|₺|lira/i.test(s) ? 'TRY' : /USD|\$/i.test(s) ? 'USD' : 'EUR';
 
 export function contractTerms(text: string): ContractTerms {
-  const T = text.replace(/[►▶▸]/g, ' ').replace(/\s+/g, ' ');
+  const T = text.replace(/[►▶▸▼▾]/g, ' ').replace(/\s+/g, ' ');
   const out: ContractTerms = {};
   // the reference: its most frequent reading over the pages (a scan reads it differently on some of them)
   const refs = [...T.matchAll(/Contract\s*(?:No\.?|number|n°)[\s,.:>»$|]*([A-Z$8][A-Z0-9]{0,5}[\s-]?[0-9O]{2,5}\s*\/\s*20\d\d|[A-Z0-9][A-Z0-9\/\-.]{3,})/gi)]
@@ -68,6 +70,9 @@ export function contractTerms(text: string): ContractTerms {
   // the duration of the contract itself, not a sub-period of a rent revision
   const per = new RegExp(String.raw`(?:extended|fixed\s+period|duration|term\s+of)[^.]{0,60}?(?:starting\s+)?from\s+${ANYDATE}\s+(?:until|to|till|through)\s+${ANYDATE}`, 'i').exec(T);
   if (per) { out.start ??= isoAny(per[1]); out.end ??= isoAny(per[2]); }
+  // "will rent a car … between the dates 01.07.2025 to 30.06.2027"
+  const btw = new RegExp(String.raw`between\s+(?:the\s+dates\s+)?${ANYDATE}\s+(?:to|and|until|-|–)\s+${ANYDATE}`, 'i').exec(T);
+  if (btw) { out.start ??= isoAny(btw[1]); out.end ??= isoAny(btw[2]); }
   const eff = new RegExp(String.raw`with\s+effect\s+from\s+${ANYDATE}`, 'i').exec(T); if (eff) out.start ??= isoAny(eff[1]);
   const end = dateNear(T, /concluded\s+until\s*:?/i); if (end) out.end = end;
   const RENEW = /(?:(?:may|shall|will|can)\s+not\s+be\s+renewed\s+beyond|renewed\s+(?:until|up\s+to))\s*:?/i;
@@ -82,18 +87,37 @@ export function contractTerms(text: string): ContractTerms {
   // a monthly fee, not the total of the monthly fees
   const fee = new RegExp(String.raw`(?<!total\s+for\s+)(?:monthly\s+fee|fee\s+per\s+month).{0,40}?${AMT}\s*(TRY|TL|EUR|€|USD|\$)`, 'i').exec(T);
   if (fee) { const v = money(fee[1]); if (v) { out.fee = v; out.cur ??= CUR(fee[2]); } }
+  // a table of fees: the currency heads the column ("Monthly fee (TRY)"), the rows carry none, a monthly grand total ends it
+  const head = /monthly\s+fees?\b.{0,40}?\(\s*(TRY|TL|EUR|€|USD|\$)\s*\)/i.exec(T);
+  if (head) {
+    const from = head.index + head[0].length, rest = T.slice(from, from + 900);
+    const gt = new RegExp(String.raw`grand\s+total\s*(?:\(\s*monthly\s*\))?\s*[:|]?\s*${ROWAMT}`, 'i').exec(rest.replace(new RegExp(DATE, 'g'), ' '));
+    // the rows: a label and its amount, the dates of the period left out (a date is not a fee)
+    const R0 = rest.replace(new RegExp(DATE, 'g'), ' '), seg = (gt ? R0.slice(0, gt.index) : R0.split(/\b(?:OPTION|This\s+Framework|At\s+the\s+end)\b/i)[0]).replace(/[|—–]/g, ' ');
+    const items = [...seg.matchAll(new RegExp(String.raw`([A-Za-zÇĞİÖŞÜçğıöşü][A-Za-zÇĞİÖŞÜçğıöşü ,/&'’().\-]{3,100}?)\s+${ROWAMT}`, 'g'))]
+      .map((m) => ({ label: m[1].replace(/^(?:.*\bUnits\b\s*)/i, '').replace(/[\s\-–(]+$/, '').replace(/(?:\s+(?:for\s+the\s+period(?:\s+of)?|for\s+the|of|for|from|during))+\s*$/i, '').trim(), fee: money(m[2]) }))
+      .filter((x): x is { label: string; fee: number } => !!x.fee && x.label.length > 2);
+    const total = gt ? money(gt[1]) : undefined, sum = Math.round(items.reduce((a, x) => a + x.fee, 0) * 100) / 100;
+    const fee = total ?? (items.length ? sum : undefined);
+    // the rows are kept only when they add up to the total read (a scan read column by column pairs them wrongly)
+    const rowsOk = items.length > 0 && (!total || Math.abs(sum - total) < 0.5);
+    if (fee && !out.fee) { out.fee = fee; out.cur = CUR(head[1]); if (rowsOk) out.items = items; }
+  }
   // a rent: "316,125 TRY monthly rent", "monthly rent of 8.000,00 TRY" — the last one written is the one in force
   const rents = [...T.matchAll(new RegExp(String.raw`${AMT}\s*(TRY|TL|EUR|€|USD|\$)\s+monthly\s+rent|monthly\s+rent\s+(?:of\s+)?${AMT}\s*(TRY|TL|EUR|€|USD|\$)`, 'gi'))];
   const r = rents.at(-1); if (!out.fee && r) { const v = money(r[1] ?? r[3]); if (v) { out.fee = v; out.cur ??= CUR(r[2] ?? r[4]); } }
   // extension options: "may be renewed [annually]", "extended for a further period of 12 months", tacit renewal, notice
   const step = /renewed\s*\[?\s*(monthly|quarterly|annually|yearly|every\s+year|each\s+year)\s*\]?/i.exec(T);
   if (step) out.renewEvery = /month/i.test(step[1]) ? 'month' : /quarter/i.test(step[1]) ? 'quarter' : 'year';
-  const ext = /(?:extended|renewed|prolonged)\s+(?:once\s+|twice\s+|up\s+to\s+\w+\s+times\s+)?(?:for\s+)?(?:a\s+|an\s+)?(?:further|additional|new|subsequent)?\s*(?:fixed\s+)?(?:period|term)s?\s+of\s+(\d{1,2}|one|two|three|six|twelve)\s*(?:\(\d+\)\s*)?(month|year)s?/i.exec(T);
+  const ext = /(?:extended|renewed|prolonged)\s+(?:once\s+|twice\s+|up\s+to\s+\w+\s+times\s+)?(?:for\s+)?(?:a\s+|an\s+)?(?:further|additional|new|subsequent)?\s*(?:fixed\s+)?(?:period|term)s?\s+of\s+(\d{1,2}|one|two|three|six|twelve)\s*(?:\([a-z0-9]+\)\s*)?(month|year)s?/i.exec(T);
+  // "tacitly renewed every six months", "renewed each 6 (six) months"
+  const every = /renew(?:ed|s)?\s+(?:every|each)\s+(\d{1,2}|one|two|three|six|twelve)\s*(?:\([a-z0-9]+\)\s*)?(month|year)s?/i.exec(T);
+  if (every && !step) { const W: Record<string, number> = { one: 1, two: 2, three: 3, six: 6, twelve: 12 }; const n = W[every[1].toLowerCase()] ?? +every[1]; out.renewEvery = /year/i.test(every[2]) ? String(n * 12) : n === 12 ? 'year' : n === 3 ? 'quarter' : n === 1 ? 'month' : String(n); }
   if (ext) { const W: Record<string, number> = { one: 1, two: 2, three: 3, six: 6, twelve: 12 }; const n = W[ext[1].toLowerCase()] ?? +ext[1]; out.renewEvery = String(/year/i.test(ext[2]) ? n * 12 : n); }
   if (/tacit(?:ly)?\s+renew|renewed\s+tacitly|automatically\s+(?:renewed|extended)|renew(?:ed|s)?\s+automatically|unless\s+(?:either|one\s+of\s+the)\s+part(?:y|ies)\s+(?:gives|serves)\s+notice/i.test(T)) out.autoRenew = true;
   const nW: Record<string, number> = { one: 1, two: 2, three: 3, six: 6, thirty: 30, sixty: 60, ninety: 90, fifteen: 15 };
-  const nt = /(?:(?:a|with|by|giving|of|upon)\s+)?(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?['’]?\s+(?:prior\s+|written\s+|advance\s+)*notice|notice\s+(?:period\s+)?of\s+(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?/i.exec(T);
-  const nb = nt ? null : /(?:at\s+the\s+latest|at\s+least|no\s+later\s+than)?\s*(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\(\d+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?\s+(?:before|prior\s+to)\s+the\s+(?:renewal|end|expiry|expiration|termination)/i.exec(T);
+  const nt = /(?:(?:a|with|by|giving|of|upon)\s+)?(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\([a-z0-9]+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?['’]?\s+(?:prior\s+|written\s+|advance\s+)*notice|notice\s+(?:period\s+)?of\s+(?:at\s+least\s+)?(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\([a-z0-9]+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?/i.exec(T);
+  const nb = nt ? null : /(?:at\s+the\s+latest|at\s+least|no\s+later\s+than)?\s*(\d{1,3}|one|two|three|six|fifteen|thirty|sixty|ninety)\s*(?:\([a-z0-9]+\)\s*)?(?:calendar\s+|working\s+)?(day|month|week)s?\s+(?:before|prior\s+to)\s+the\s+(?:renewal|end|expiry|expiration|termination)/i.exec(T);
   if (nb) { const w = nb[1].toLowerCase(), n = nW[w] ?? +w, u = nb[2].toLowerCase(); out.noticeDays = u === 'month' ? n * 30 : u === 'week' ? n * 7 : n; }
   if (nt) { const w = (nt[1] ?? nt[3]).toLowerCase(), u = (nt[2] ?? nt[4]).toLowerCase(), n = nW[w] ?? +w; out.noticeDays = u === 'month' ? n * 30 : u === 'week' ? n * 7 : n; }
   // a rider, an amendment or an addendum to a contract: its number and the date it applies from

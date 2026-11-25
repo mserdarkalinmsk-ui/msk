@@ -4,6 +4,10 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-26b', date: '26 Nov 2026 (later)', items: [
+    'Contracts whose fees sit in a table — "Monthly fee (TRY)" heading the column, a row for each service (car rental, fuel…), a "Grand Total (Monthly)" — are read: the monthly fee, its currency and each row, shown with the contract and on the firm\'s card. Rows are kept only when they add up to the total.',
+    'Also read from such a contract: the period "between the dates … to …", a renewal "every six months", and a notice written as "2 (two) months before the renewal date".',
+  ] },
   { id: '2026-11-26a', date: '26 Nov 2026', items: [
     'The one-page brief and the budget lines\' time mark also measure the time gone at the report\'s date, as every other screen; a test now holds all of them to the same figure.',
     'The monthly pack prints with whole project codes in its alerts and readable project names in "What changed".',
