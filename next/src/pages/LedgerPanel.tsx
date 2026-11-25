@@ -9,7 +9,7 @@ import { budgetRefs, organisedSheets } from '../domain/organised';
 import type { Project } from '../domain/types';
 import type { Entry, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
-import { elapsed, projectYear, projectYearOf, yearsStart } from '../domain/calc';
+import { asOf, elapsed, projectYear, projectYearOf, yearsStart } from '../domain/calc';
 import { DataTable, type Column } from '../ui/DataTable';
 import { base, Chart } from '../ui/Chart';
 import { axisX, axisY } from './Overview';
@@ -172,7 +172,7 @@ function YearTable({ p, wb, E }: { p: Project; wb: WorkbookSummary; E: Entry[] }
   const [shut, setShut] = useState<string[]>([]);
   const YC = ['#9db4e8', '#5b86e5', '#2c5fd0', '#1b3f99', '#132c6b', '#0b1c45'];
   const ya = (l: L, y: string) => l.years[y]?.amount ?? 0, ysc = (l: L, y: string) => (l.years[y]?.amount ?? 0) + (l.years[y]?.committed ?? 0);
-  const el = elapsed(p, TODAY);
+  const el = elapsed(p, asOf(p, TODAY));
   /** Units above the budgeted number (now, or at the current pace by the end) are reported to the donor by notification — as on the statement. */
   const unitTag = (l: L) => { const bu = l.budget.units; if (!bu || !l.units) return null; const uu = l.units / bu, pj = el > 0.05 && !oneOff(l.description, l.unit) ? l.units / el / bu : uu, now = uu > 1.0001;
     return now || pj > 1.0001 ? <span class={`chg chg-not${now ? ' now' : ''}`} style={{ marginLeft: 0 }} title={`${now ? `${nf(l.units)} ${l.unit || 'units'} used of ${nf(bu)} budgeted (+${((uu - 1) * 100).toFixed(1)}%)` : `At the current pace ${Math.round(pj * bu)} ${l.unit || 'units'} by the end, of ${nf(bu)} budgeted`} — a change in the number of units is reported to the donor by notification.`}>{now ? '' : 'Risk: '}Notification · units</span> : null; };

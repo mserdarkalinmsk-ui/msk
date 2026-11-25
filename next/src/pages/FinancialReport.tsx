@@ -8,7 +8,7 @@ import { reportFileName } from '../domain/forecastTemplate';
 import { reportPack, type PackExtra } from '../domain/reportPack';
 import { exportOk } from '../ui/exportGate';
 import { download, pngData } from '../ui/xlsxwrite';
-import { byPeriodThenImport, elapsed, latestReport, lines, yearsStart } from '../domain/calc';
+import { byPeriodThenImport, elapsed, latestReport, lines, parseDate, yearsStart } from '../domain/calc';
 import type { Project } from '../domain/types';
 import type { WbLine, WorkbookSummary } from '../domain/workbook';
 import { TODAY } from '../today';
@@ -64,7 +64,8 @@ export function FinancialReport({ p, view: v0 }: { p: Project; view?: 'lines' | 
   const openPO = wb.pos.filter((x) => /open/i.test(x.status) && x.balance > 0.5).sort((a, b) => b.balance - a.balance);
   const funding = wb.movements.filter((x) => x.funding);
   const received = funding.reduce((s, x) => s + x.amount, 0);
-  const el = elapsed(p, TODAY);
+  // the statement is that of the report: the time gone is measured at its date
+  const el = elapsed(p, rep.date && parseDate(rep.date) < TODAY ? parseDate(rep.date) : TODAY);
   const warn = wb.checks.filter((c) => c.level !== 'info' && !(wb.meta.levyTaken && /^Administrative costs are 7% of direct costs/.test(c.text)));
   const after = E ? E.actual + (E.sc - E.actual) + (E.planned ?? 0) : 0;
   return (

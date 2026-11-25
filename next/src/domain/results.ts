@@ -1,4 +1,4 @@
-import { elapsed, money } from './calc';
+import { asOf, elapsed, money } from './calc';
 import type { Indicator } from './documents';
 import { progress, tidy } from './logframe';
 import type { Project } from './types';
@@ -25,7 +25,7 @@ export function indState(x: Indicator, time: number): { prog: number | null; sta
 export function resultRows(P: Project[], today: Date): { rows: ResultRow[]; inds: IndRow[] } {
   const inds: IndRow[] = [];
   const rows = P.map((p) => {
-    const time = elapsed(p, today), m = money(p), spend = m.budget ? m.exposure / m.budget : 0;
+    const time = elapsed(p, asOf(p, today)), m = money(p), spend = m.budget ? m.exposure / m.budget : 0;
     const I = (p.indicators ?? []).map((x) => {
       const s = indState(x, time);
       const stale = !x.asOf || (today.getTime() - Date.parse(x.asOf)) / DAY > 183;

@@ -1,6 +1,6 @@
 import { roster } from '../domain/staff';
 import { filtered, go, useStore } from '../data/store';
-import { attention, elapsed, latestReport, money } from '../domain/calc';
+import { asOf, attention, elapsed, latestReport, money } from '../domain/calc';
 import type { Project } from '../domain/types';
 import { wpName } from '../domain/workplan';
 import { TODAY } from '../today';
@@ -62,7 +62,7 @@ export function QuickAccess({ p }: { p: Project }) {
   const tile = (slug: string, title: string, big: string, sub: string, tone = '') => <button class={`qa-tile ${tone}`} onClick={() => openProject(p.id, slug)}><span class="t">{title}</span><b>{big || '—'}</b><small>{sub}</small>{tone && tone !== 'good' ? <i class="flag" /> : null}<i class="go">›</i></button>;
   return (
     <section class="span-12 qa"><div class="qa-h"><h3>Go to</h3><span class="muted">every area of the project, one click away</span></div><div class="qa-grid">
-      {tile('statement', 'Financial statement', E ? pct(E.budget ? E.actual / E.budget : 0) : pct(m.budget ? m.spent / m.budget : 0), `${short(E?.actual ?? m.spent)} spent · ${pct(elapsed(p, TODAY))} of time`)}
+      {tile('statement', 'Financial statement', E ? pct(E.budget ? E.actual / E.budget : 0) : pct(m.budget ? m.spent / m.budget : 0), `${short(E?.actual ?? m.spent)} spent · ${pct(elapsed(p, asOf(p, TODAY)))} of time`)}
       {tile('wp', 'Work Plan', r ? `${wpName(r.wp)} · ${r.V.label}` : '—', r ? `${full(r.wp.planned)} planned` : 'no Work Plan yet', r ? r.V.level : '')}
       {tile('budget', 'vs approved budget', p.approvedBudget ? short(p.approvedBudget.total) : '—', p.approvedBudget ? 'lines, headings, flexibility' : 'load the approved budget')}
       {tile('checks', 'Entry checks', warn ? String(warn) : '✓', warn ? 'points to review in the report' : 'nothing to review', warn ? 'warning' : 'good')}

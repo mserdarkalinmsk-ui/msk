@@ -49,7 +49,7 @@ export function Gaps() {
         <div class="table-scroll"><table class="gap-t">
           <thead><tr><th>Project</th><th class="r">Missing</th>{NEEDS.map((n) => <th title={n.hint}>{n.label}</th>)}</tr></thead>
           <tbody>{rows.map((r) => <tr>
-            <td><b>{plabel(r.p)} · </b><span class="gap-n">{r.p.name}</span><small>{programmeOf(r.p) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'}{latestReport(r.p) ? ` · report ${date(latestReport(r.p)!.date)}` : ''}</small></td>
+            <td><b>{plabel(r.p)}</b> <span class="gap-n">{r.p.name}</span><small>{programmeOf(r.p) === 'VC' ? 'Voluntary Contribution' : 'Joint Programme'}{latestReport(r.p) ? ` · report ${date(latestReport(r.p)!.date)}` : ''}</small></td>
             <td class="r num"><b style={{ color: r.miss ? 'var(--serious)' : 'var(--good)' }}>{r.miss}</b></td>
             {r.v.map((x, i) => <td class={`gap-c ${x === 'n/a' ? 'na' : x ? 'yes' : 'no'}`}><button title={`${NEEDS[i].label}: ${x === 'n/a' ? 'does not apply' : x ? 'on file' : `missing — ${NEEDS[i].hint}`}`} onClick={() => go(`project/${r.p.id}/${NEEDS[i].slug}`)}>{x === 'n/a' ? '—' : x ? '✓' : '✕'}</button></td>)}
           </tr>)}</tbody>

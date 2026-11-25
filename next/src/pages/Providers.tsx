@@ -143,12 +143,12 @@ export function Providers() {
         <section class="card span-12">
           <div class="card-h" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}><div><h2>By project and kind{year ? ` — ${year}` : ''}</h2><p>Spent + committed · click a figure to see its providers{cols.length < active.length ? ` · kinds with no PO hidden: ${active.filter((k) => !cols.includes(k)).map((k) => k.label).join(', ')}` : ''}</p></div>
             {(kind || proj) && <button class="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => { setKind(''); setProj(''); }}>Clear selection</button>}</div>
-          <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th>{cols.map((k) => <th class={`r click${kind === k.k ? ' sel' : ''}`} onClick={() => { setKind(kind === k.k ? '' : k.k); setProj(''); }}><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
+          <div class="card-b table-scroll">{every.length > 0 && <table class="mini"><thead><tr><th>Project</th>{cols.map((k) => <th class={`r click${kind === k.k ? ' sel' : ''}`} onClick={() => { setKind(kind === k.k ? '' : k.k); setProj(''); }}><Dot k={k.k} />{k.label}</th>)}<th class="r">Total</th></tr></thead>
             <tbody>{projects.map((p) => <tr class={proj === p.id ? 'sel' : ''}>
               <td class="click" onClick={() => { setProj(proj === p.id ? '' : p.id); setKind(''); }}><b>{lab(p)}</b><small class="muted"> {cname(p.country)}</small></td>
               {cols.map((k) => { const v = cell(p, k.k); return <td class={`r num${v ? ' click' : ''}`} style={{ outline: proj === p.id && kind === k.k ? '2px solid var(--accent, var(--c1))' : undefined }} onClick={() => v && (setProj(p.id), setKind(k.k))}>{v ? full(v) : <span class="muted">—</span>}</td>; })}
               <td class="r num"><b>{full(cell(p, null))}</b></td></tr>)}</tbody>
-            <tfoot><tr><td><b>Total</b></td>{cols.map((k) => <td class="r num"><b>{full(cell(null, k.k))}</b></td>)}<td class="r num"><b>{full(total)}</b></td></tr></tfoot></table>
+            <tfoot><tr><td><b>Total</b></td>{cols.map((k) => <td class="r num"><b>{full(cell(null, k.k))}</b></td>)}<td class="r num"><b>{full(total)}</b></td></tr></tfoot></table>}
             {!every.length && <p class="muted">No purchase orders yet — load the report workbooks or system extractions (with the “Purchase Orders” sheet).</p>}</div>
         </section>
         <section class="card span-12">

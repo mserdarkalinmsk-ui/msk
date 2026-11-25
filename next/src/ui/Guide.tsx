@@ -4,6 +4,10 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-25c', date: '25 Nov 2026 (evening)', items: [
+    'One date for every comparison: a project\'s story line, its financial statement, the ledger\'s unit pace, My desk and the results now measure the time gone at the date of the report their spending comes from — as the rest of the page already did — so "40% spent with 55% of time gone" and the figures beside it agree.',
+    'Tables: figures, dates and project codes stay on one line everywhere; the cash plan\'s percentage sits after its bar, clear of the threshold mark; the providers\' table is not shown empty before any order is loaded.',
+  ] },
   { id: '2026-11-25b', date: '25 Nov 2026 (later)', items: [
     'Ahead, still to order: the lines where the office forecast plans less than the contracts still need this year are named, with the amount not planned.',
     'Renewals to decide: a notice letter in Word for each contract — the contract will not be renewed beyond its end, with its reference and notice period, in your letter template when one is set.',

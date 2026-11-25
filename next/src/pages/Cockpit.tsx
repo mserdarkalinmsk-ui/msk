@@ -1,5 +1,5 @@
 import { flexOf, pctOf, programmeOf } from '../domain/flex';
-import { category, deadlines, planStats, elapsed, money, parseDate, reportsByDate } from '../domain/calc';
+import { asOf, burnGap, category, deadlines, planStats, elapsed, money, parseDate, reportsByDate } from '../domain/calc';
 import { outcome } from '../domain/insights';
 import { tidy } from '../domain/logframe';
 import { roster } from '../domain/staff';
@@ -13,9 +13,10 @@ const DAY = 86_400_000;
 /** One-glance project story: a sentence, the time track with every milestone, and four numbers. */
 export function Cockpit({ p }: { p: Project }) {
   if (p.datesTbc) return null;
-  const m = money(p), o = outcome(p, TODAY), el = elapsed(p, TODAY);
+  // spending is that of the latest report, so the time gone is measured at the same date (as the rest of the page does)
+  const m = money(p), o = outcome(p, TODAY), el = elapsed(p, asOf(p, TODAY));
   const s = parseDate(p.start).getTime(), e = parseDate(p.end).getTime(), at = (t: number) => `${Math.max(0, Math.min(100, (t - s) / (e - s) * 100))}%`;
-  const used = m.budget ? m.spent / m.budget : 0, gap = used - el;
+  const used = m.budget ? m.spent / m.budget : 0, gap = burnGap(p, TODAY);
   const D = deadlines(p, TODAY), next = D.find((d) => d.status !== 'submitted');
   const R = reportsByDate(p).filter((r) => !/approved budget/i.test(r.type));
   const monthsLeft = Math.max(0, Math.round((e - TODAY.getTime()) / DAY / 30.44));

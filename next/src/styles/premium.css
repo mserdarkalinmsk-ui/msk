@@ -412,3 +412,10 @@ details.em-method[open] > summary::before { content: '▾'; }
 .ca-short { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--critical-soft); font-size: 13px; }
 .ca-short ul { margin: 4px 0 0; padding-left: 18px; }
 @media (max-width: 600px) { .ca-pay td:first-child, .ca-pay th:first-child { min-width: 120px; max-width: 140px; } }
+/* figures, dates and codes stay on one line in every table */
+main table td.num, main table td.r, main table th.r { white-space: nowrap; }
+main table td > b:first-child { white-space: nowrap; }
+/* the cash bar: the percentage sits after the bar, clear of the threshold mark */
+.cp-bar { margin-right: 34px; }
+.cp-bar span { right: auto; left: calc(100% + 4px); font-weight: 600; }
+.cp-t td.r small { display: block; }
