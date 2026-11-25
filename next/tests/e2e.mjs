@@ -323,7 +323,9 @@ async function page(opts) {
   check((await p.locator('.ck-story').textContent()).includes('spent'), 'project story written');
   { const story = await p.locator('.ck-story').textContent(), kpi = await p.locator('.kpi:has-text("time elapsed")').first().textContent();
     const a = story.match(/(\d+)% of time gone/)?.[1], b = kpi.match(/time elapsed (\d+)%/)?.[1];
-    check(!!a && a === b, `the story and the figures measure the time gone at the same date (${a}% / ${b}%)`); }
+    check(!!a && a === b, `the story and the figures measure the time gone at the same date (${a}% / ${b}%)`);
+    await p.goto(url + '#/brief/lang'); await p.waitForSelector('.br-sub'); const c = (await p.locator('.br-sub').textContent()).match(/(\d+)% of the time gone/)?.[1];
+    check(c === b, `the one-page brief reads the same time gone (${c}% / ${b}%)`); await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); }
   check(await p.locator('.fc-big').count() === 1, 'end-of-project forecast shown');
   check(await p.locator('table.hd tbody tr').count() >= 3, 'budget headings vs approved budget');
   check(await p.locator('.rd-list li').count() === 10, 'project file checklist');

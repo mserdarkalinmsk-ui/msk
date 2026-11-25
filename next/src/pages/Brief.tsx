@@ -1,6 +1,6 @@
 import { Ico } from '../ui/Ico';
 import { go, useStore } from '../data/store';
-import { burnGap, elapsed, money } from '../domain/calc';
+import { asOf, burnGap, elapsed, money } from '../domain/calc';
 import { flexOf, pctOf } from '../domain/flex';
 import { alerts } from '../domain/insights';
 import { plabel } from '../domain/label';
@@ -21,7 +21,7 @@ export function Brief({ id }: { id: string }) {
   const p = useStore((s) => s.ledger.projects.find((x) => x.id === id));
   const L = useStore((s) => s.ledger);
   if (!p) return <div class="card empty-page"><div><h2>Project not found</h2></div></div>;
-  const m = money(p), el = elapsed(p, TODAY), gap = burnGap(p, TODAY), wb = reportWorkbook(p), rep = latestWorkbook(p);
+  const m = money(p), el = elapsed(p, asOf(p, TODAY)), gap = burnGap(p, TODAY), wb = reportWorkbook(p), rep = latestWorkbook(p);
   const heads = wb ? headsOf(wb) : [];
   const flex = flexOf(p), staff = staffCount([p], TODAY);
   const country = L.countries.find((c) => c.id === p.country)?.name ?? p.country;

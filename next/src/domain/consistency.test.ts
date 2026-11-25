@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import seed from '../data/seed.json';
 import demo from '../data/demo.json';
-import { lineRows, lines, money, totals } from './calc';
+import { asOf, burnGap, elapsed, lineRows, lines, money, totals } from './calc';
+import { resultRows } from './results';
 import { headings } from './insights';
 import { portfolioStatement } from './statement';
 import type { Project } from './types';
@@ -55,6 +56,15 @@ describe.each(sets)('cross-screen consistency (%s)', (_, P) => {
       const o = outcome(p, T), sc = runScenario(p, PRESETS[0], T);
       near(sc.projected, o.projected);
       const [e] = ending([p], T, 1000); if (e) near(e.unspent, o.unused);
+    }
+  });
+  it('the time gone is read at the date of the latest report everywhere: the project card, the portfolio and the results', () => {
+    const T = new Date(Date.UTC(2026, 10, 25));
+    for (const p of P.filter((x) => !x.datesTbc)) {
+      const el = elapsed(p, asOf(p, T)), m = money(p);
+      expect(burnGap(p, T)).toBeCloseTo((m.budget ? m.spent / m.budget : 0) - el, 6);
+      expect(totals([p], T).elapsed).toBeCloseTo(el, 6);
+      const r = resultRows([p], T).rows[0]; if (r) expect(r.time).toBeCloseTo(el, 6);
     }
   });
 });

@@ -430,3 +430,6 @@ main .badge[title], main span[title], main small[title], main b[title] { cursor:
 .cah tr.ca-more > td { background: var(--surface-2); padding: 10px 14px 14px 28px; }
 .ca-sub { font-size: 12.5px; }
 .ca-sub td:nth-child(4) { white-space: normal; }
+/* the monthly pack: codes whole, project names in a column wide enough to read */
+.pack-al b { white-space: nowrap; }
+.pack-t td:first-child { min-width: 190px; }

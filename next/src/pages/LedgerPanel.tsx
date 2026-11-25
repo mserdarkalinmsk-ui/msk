@@ -29,7 +29,7 @@ export function LedgerPanel({ p, wb, mode }: { p: Project; wb: WorkbookSummary; 
   const leaf = wb.lines.filter((l) => l.leaf);
   const R = useMemo(() => spendBetween(E, from, to, budgetRefs(wb.lines)), [E, from, to, wb.lines]);
   const sc = useMemo(() => new Map(leaf.map((l) => [l.code, l.sc ?? 0])), [wb]);
-  const F = useMemo(() => findErrors(E, { flex: flexOf(p), budget: budgetRefs(leaf).map((b) => (b.unit ? b : { ...b, unit: p.approvedBudget?.lines.find((l) => l.code === b.code)?.unit ?? undefined })), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos, sc, asAt: wb.meta.situationDate, elapsed: elapsed(p, TODAY), units: leaf.filter((l) => l.budget.units && l.actual.units != null).map((l) => ({ code: l.code, description: l.description, unit: l.unit, budget: l.budget.units!, used: l.actual.units! })) }), [E, wb, p.start, p.end]);
+  const F = useMemo(() => findErrors(E, { flex: flexOf(p), budget: budgetRefs(leaf).map((b) => (b.unit ? b : { ...b, unit: p.approvedBudget?.lines.find((l) => l.code === b.code)?.unit ?? undefined })), start: p.start, end: p.end, bh: wb.meta.bh ?? p.bh, pos: wb.pos, sc, asAt: wb.meta.situationDate, elapsed: elapsed(p, asOf(p, TODAY)), units: leaf.filter((l) => l.budget.units && l.actual.units != null).map((l) => ({ code: l.code, description: l.description, unit: l.unit, budget: l.budget.units!, used: l.actual.units! })) }), [E, wb, p.start, p.end]);
   const C = useMemo(() => compareBudget(E, budgetRefs(leaf), sc, from, to, flexOf(p)), [E, wb, from, to, flexOf(p)]);
   const hasBudget = leaf.some((l) => l.budget.cost);
   const name = new Map(wb.lines.map((l) => [l.code, l.description]));
