@@ -2,8 +2,9 @@ import { MON } from '../domain/dt';
 import { Ico, type IcoName } from '../ui/Ico';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { officeServices, serviceKind } from '../domain/officeServices';
+import { officeServices } from '../domain/officeServices';
 import { impliedRate, nextYearCost, orderChecks, yearCost } from '../domain/contractFx';
+import { ceilingsAtRisk, countryContracts, officeOrders, stillToOrder } from '../domain/contractItems';
 import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
@@ -19,7 +20,7 @@ import { alerts, outcome } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
 import { plabel } from '../domain/label';
-import { LS_BH, OB_BH, officeView, type Office, type OfficeReport } from '../domain/office';
+import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
 import { closestName, contractSupKey, providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
 import { daysUntil, n2, renewals, type Base } from '../domain/staff';
 import { SalarySection } from '../ui/CountryPanel';
@@ -148,14 +149,17 @@ function SinceLastReports({ name, P, offices }: { name: string; P: Project[]; of
 function CountryAlerts({ name, cid, P, setTab, offices }: { name: string; cid: string; P: Project[]; setTab: (t: DeskTab) => void; offices: Office[] }) {
   const marks = useStore((s) => s.ledger.alertMarks), FW = useStore((s) => s.ledger.frameworks) ?? {}, core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], set = useStore((s) => s.ledger.poKinds) ?? {};
   const mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
-  const PO = providerPOs(P, set), entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
-  const ceilingUse = (k: string) => { const c = FW[k]; if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; } return { used: PO.filter((x) => x.kind && supKey(x.supplier) === k).reduce((a, x) => a + x.value, 0) }; };
+  const entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
+  const CC = countryContracts(FW, P, set, offices, cid);
+  const ceilingUse = (k: string) => { const c = FW[k]; if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; } return { used: CC.ordersOf(k, c ?? {}).reduce((a, x) => a + x.value, 0) }; };
   const rank = { critical: 0, serious: 1, warning: 2 } as const;
+  const atRisk = ceilingsAtRisk(CC.items, CC.ordersOf, TODAY).filter((x) => !ceilingSeverity(x.p.used, x.p.cap));
   type Item = { sev: keyof typeof rank; who: string; what: string; detail: string; go: () => void };
   const items: Item[] = [
     ...openAlerts(alerts(P, TODAY), marks, TODAY).map((a) => { const p = P.find((x) => x.id === a.projectId)!; return { sev: a.severity, who: plabel(p), what: a.title, detail: a.detail, go: () => open(p) }; }),
     ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}${d.noticeBy ? `last day to give notice ${date(d.noticeBy)} · ` : ''}ends ${date(d.end)}`, go: () => setTab('Contracts & suppliers') })),
     ...contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => (mine.has(k) || c.country === cid) && c.cap)), TODAY, ceilingUse).flatMap((d) => { const sv = ceilingSeverity(d.used, d.cap); return sv ? [{ sev: sv, who: 'Contract', what: `${d.name}: ${pct(d.cap ? d.used / d.cap : 0)} of its ceiling ordered`, detail: `${full(d.used)} of ${full(d.cap!)}`, go: () => setTab('Contracts & suppliers') }] : []; }),
+    ...atRisk.map((x) => ({ sev: 'warning' as const, who: 'Contract', what: `${x.name}: ceiling reached by ${MON3(x.p.reach!)} at the current pace`, detail: `${full(x.p.used)} of ${full(x.p.cap)} ordered · ${full(x.p.perMonth)} a month over six months · contract ends ${x.c.end ? date(x.c.end) : '—'}`, go: () => go(`countries/${cid}/contracts`) })),
     ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('People') })),
   ].sort((a, b) => rank[a.sev] - rank[b.sev]);
   const [all, setAll] = useState(false);
@@ -230,20 +234,10 @@ export function OfficeServices({ cid, offices }: { cid: string; offices: Office[
     </section>;
 }
 
-/** The office report's orders of an office contract: its line, its supplier, the same kind of service. */
-function officeOrders(rep: OfficeReport, k: string, c: Contract) {
-  const sk = k.split(':').slice(3).join(':'), l = rep.lines.find((x) => x.code === c.line);
-  return rep.entries.filter((e) => e.line === c.line && supKey(e.supplier) === sk && (!c.kind || serviceKind(e.description, l?.description ?? '') === c.kind)).map((e) => ({ description: e.description, amount: e.spent + e.committed, fund: e.fund }));
-}
-/** The country's contracts, each with the rate its orders were booked at when it is an office contract in another currency. */
+/** The country's contracts, each with its rate when it is an office contract in another currency (domain/contractItems). */
 function useCountryContracts(cid: string, P: Project[], offices: Office[]) {
   const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
-  const names = new Map<string, string>(); for (const x of providerPOs(P, set)) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
-  const rep = offices[0]?.reports.at(-1), L = providerPOs(P, set);
-  const items = Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid).map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
-  // a provider's contract and the projects' orders it covers (a contract written in another language is the same company)
-  const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value })); };
-  return { items, rep, ordersOf };
+  return countryContracts(FW, P, set, offices, cid);
 }
 const MON3 = (m: string) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}`;
 const inEur = (v: number, toEur?: number, cur = 'EUR') => (toEur ? full(v * toEur) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`);
@@ -252,18 +246,22 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
   const { items: I, rep, ordersOf } = useCountryContracts(cid, P, offices);
   const ny = TODAY.getUTCFullYear() + 1, N = needByLine(I, ny, nextYearCost);
   const lineOf = (code: string) => rep?.lines.find((l) => l.code === code);
+  const leftOn = (code: string) => { const l = lineOf(code); return l ? Math.round((l.ob.budget + l.ls.budget - l.ob.sc - l.ls.sc - l.ob.planned - l.ls.planned) * 100) / 100 : undefined; };
+  const todo = rep ? I.filter((x) => x.c.line).map((x) => { const s = stillToOrder(x.c, officeOrders(rep, x.key, x.c), rep.year), eurC = !x.c.cur || x.c.cur === 'EUR';
+    return { ...x, s, eur: eurC ? s.amount : x.rate ? Math.round(s.amount / x.rate * 100) / 100 : undefined, left: leftOn(x.c.line!) }; }).filter((t) => t.s.months > 0) : [];
   const caps = I.filter((x) => x.c.cap && !x.c.line).map((x) => ({ ...x, p: ceilingPace(x.c.cap!, ordersOf(x.key, x.c), TODAY, x.c.end) })).sort((a, b) => (a.p.reach ?? '9').localeCompare(b.p.reach ?? '9'));
   const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
   const xlsx = () => download('contracts-ahead.xlsx', [
     { name: 'Renewals', money: [5, 6], rows: [['Provider', 'Ends', 'Notice by', 'Renewal', 'Currency', 'A year more', 'In euros'], ...R.map((r) => [r.name, r.end, r.noticeBy ?? '', r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${r.renewBy}` : 'a new contract or tender', r.cur, r.year ?? null, r.year != null && r.toEur ? Math.round(r.year * r.toEur * 100) / 100 : null])] },
     { name: 'Payments', money: months.map((_, i) => i + 3), rows: [['Contract', 'Line', 'Currency', ...months], ...plan.map((r) => [r.name, r.line ?? '', r.toEur ? 'EUR' : r.cur, ...r.cells.map((x) => (x.v ? Math.round(x.v * (r.toEur ?? 1) * 100) / 100 : null))]),
       ['As signed (EUR)', '', 'EUR', ...S.signed], ['With renewals (EUR)', '', 'EUR', ...S.withRenewals]] },
+    { name: 'Still to order', money: [4, 5, 6], rows: [['Contract', 'Budget line', 'From', 'Months', 'Amount (contract currency)', 'In euros', 'Left on the line'], ...todo.map((t) => [t.name, t.c.line ?? '', t.s.from ?? '', t.s.months, t.s.amount, t.eur ?? null, t.left ?? null])] },
     { name: `Next year by line`, money: [1, 2], rows: [['Budget line', `Budget ${rep?.year ?? ny - 1}`, `Contracts ${ny}`, 'Contracts', 'Not counted (no rate yet)'], ...N.map((n) => { const l = lineOf(n.line); return [`${n.line} ${l?.description ?? ''}`.trim(), l ? l.ob.budget + l.ls.budget : null, n.eur, n.contracts.join(', '), n.unknown.join(', ')]; })] },
     { name: 'Ceilings', money: [1, 2, 4], rows: [['Provider', 'Ceiling', 'Ordered', 'Used', 'Per month (6 months)', 'Ceiling reached', 'Contract ends'], ...caps.map(({ name, c, p }) => [name, p.cap, p.used, Math.round(p.used / p.cap * 1000) / 10 + '%', p.perMonth, p.reach ?? '', c.end ?? (c.openEnded ? 'open-ended' : '')])] },
     { name: 'Missing', rows: [['Contract', 'Still lacks'], ...G.map((g) => [g.name, g.missing.join(', ')])] },
   ]);
   const eurNote = (toEur?: number, cur?: string) => !toEur && cur && cur !== 'EUR' ? <small class="muted"> · no rate yet</small> : null;
-  return <div class="grid g-12 ca">
+  return <div class="grid g-12 cah">
     <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div>
       <div class="tools"><button class="btn ghost" onClick={() => window.print()}><Ico n="print" />Print</button><button class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
       <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /></tr></thead>
@@ -280,6 +278,12 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
           {S.withRenewals.some((v, i) => Math.abs(v - S.signed[i]) > 0.005) && <tr class="tot"><td>With renewals</td>{S.withRenewals.map((v) => <td class="r num">{full(v)}</td>)}</tr>}</tfoot></table>
         : <p class="muted">No contract with a monthly fee yet: type the fee in a contract, or drop it to have it read.</p>}
         {S.unknown > 0 && <p class="muted ca-note">{S.unknown} contract{S.unknown > 1 ? 's are' : ' is'} in another currency without a rate from its orders, so left out of the totals.</p>}</div></section>
+    {rep && <section class="card span-12"><div class="card-h"><div><h2>Still to order in {rep.year}</h2><p>For each office contract, the months after the last one its orders pay, to the end of the year (or of the contract, unless it renews), at the fee in force — beside what is left on its budget line after spent, committed and planned.</p></div></div>
+      <div class="card-b table-scroll">{todo.length ? <table class="mini ca-todo"><thead><tr><th>Contract</th><th>Budget line</th><th>From</th><th class="r">Months</th><th class="r">Amount</th><th class="r">In euros</th><th class="r">Left on the line</th></tr></thead>
+        <tbody>{todo.map((t) => <tr><td><Firm name={t.name} /></td><td><span class="num">{t.c.line}</span> <span class="muted">{lineOf(t.c.line!)?.description ?? ''}</span></td><td class="num">{MON3(t.s.from!)}</td><td class="r num">{t.s.months}</td>
+          <td class="r num">{inEur(t.s.amount, t.c.cur && t.c.cur !== 'EUR' ? undefined : 1, t.c.cur ?? 'EUR')}</td><td class={`r num${t.eur != null && t.left != null && t.eur > t.left + 0.5 ? ' ca-over' : ''}`}>{t.eur != null ? full(t.eur) : <span class="muted">no rate yet</span>}</td>
+          <td class="r num">{t.left != null ? full(t.left) : '—'}</td></tr>)}</tbody></table>
+        : <p class="muted">Every office contract's months are ordered to the end of {rep.year}, or no office contract has a fee yet.</p>}</div></section>}
     <section class="card span-12"><div class="card-h"><div><h2>Office contracts next year, by budget line</h2><p>For the {ny} budget proposal: what the office's contracts will cost next year at the fee in force (carried on when they renew), beside the line's budget this year. A contract in lira is in euros at the rate its orders were booked at.</p></div></div>
       <div class="card-b table-scroll">{N.length ? <table class="mini ca-line"><thead><tr><th>Budget line</th><th class="r">Budget {rep?.year ?? ny - 1}</th><th class="r">Contracts {ny}</th><th>Contracts</th></tr></thead>
         <tbody>{N.map((n) => { const l = lineOf(n.line), B = l ? l.ob.budget + l.ls.budget : 0; return <tr><td><span class="num">{n.line}</span> <span class="muted">{l?.description ?? ''}</span></td><td class="r num">{B ? full(B) : '—'}</td>

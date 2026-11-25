@@ -4,6 +4,11 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-25a', date: '25 Nov 2026', items: [
+    'Ahead, still to order this year: for each office contract, the months after the last one its orders pay, to the end of the year, at the fee in force — beside what is left on its budget line after spent, committed and planned.',
+    'The monthly pack has a "Contracts to decide" section: contracts ending or due for notice within 90 days, and providers\' ceilings reached before the contract ends at the recent pace, by country.',
+    'A country\'s "Needs attention" list warns when a provider\'s ceiling will be reached before its contract ends at the pace of the last six months; a contract written in Turkish now counts its provider\'s English-named orders there too.',
+  ] },
   { id: '2026-11-24c', date: '24 Nov 2026 (evening)', items: [
     'Ahead, for the budget proposal: the office contracts\' cost next year by budget line, beside the line\'s budget this year, in red where it is more.',
     'Ahead, the providers\' ceilings: what the projects ordered against each contract\'s ceiling, the pace of the last six months, and the month the ceiling is reached at that pace — flagged when it comes before the contract ends.',

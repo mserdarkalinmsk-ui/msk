@@ -702,14 +702,18 @@ async function page(opts) {
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
   // what the contracts ask of the months ahead: renewals to decide, payments month by month, papers missing
-  await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.ca');
+  await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.cah');
   check(await p.locator('.ca-ren tr:has-text("Gamma Events Ltd") .badge').count() === 1 && /1,000\.00 TRY|12,000\.00 TRY/.test(await p.locator('.ca-ren tr:has-text("Gamma Events Ltd")').innerText()), 'a contract ending soon is among the renewals to decide, with a year more at its fee');
   check(await p.locator('.ca-pay tr:has-text("Gamma Events Ltd") td.num').count() === 12 && await p.locator('.ca-note').count() === 1, 'its payments month by month, left out of the euro totals without a rate');
   check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');
   check(/€50,000\.00/.test(await p.locator('.ca-cap tr:has-text("Gamma Events Ltd")').innerText().catch(() => '')), 'a provider contract with a ceiling is followed against what was ordered, with the pace');
-  check(await p.locator('h2:has-text("Office contracts next year, by budget line")').count() === 1 && await p.locator('.ca .tools button:has-text("Print")').count() === 1, 'next year by budget line, and the page prints');
-  { const [x] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).catch(() => null), p.click('.ca .tools button:has-text("Excel")')]); check(x && x.suggestedFilename() === 'contracts-ahead.xlsx', 'the months ahead go to Excel'); }
+  // the monthly pack lists the contracts to decide, and the country's attention list the same contract
+  { const back = p.url(); await p.goto(url.replace(/#.*$/, '') + '#/reports/pack'); await p.waitForSelector('.pack');
+    check(await p.locator('.pack-ct tr:has-text("Gamma Events Ltd")').count() === 1, 'the monthly pack lists a contract to decide');
+    await p.goto(back); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Contracts & suppliers")'); await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.cah'); }
+  check(await p.locator('h2:has-text("Office contracts next year, by budget line")').count() === 1 && await p.locator('.cah .tools button:has-text("Print")').count() === 1, 'next year by budget line, and the page prints');
+  { const [x] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).catch(() => null), p.click('.cah .tools button:has-text("Excel")')]); check(x && x.suggestedFilename() === 'contracts-ahead.xlsx', 'the months ahead go to Excel'); }
   await p.click('.cd-views button:has-text("Contracts")'); await p.waitForTimeout(200);
   // a contract read from its PDF: reference, provider, end, renewal limit and total fill the form
   await p.setInputFiles('.cc-read input', resolve('tests/fixtures/aoe.pdf'));

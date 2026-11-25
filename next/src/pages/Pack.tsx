@@ -13,10 +13,12 @@ import { perfTrend, warningScore } from '../domain/monitor';
 import { renewals, roster } from '../domain/staff';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, month, short } from '../ui/format';
+import { date, full, month, short } from '../ui/format';
 import { Compare } from './Studio';
 import { decisions, type Decision, KIND_INFO, kindUnit } from '../domain/decisions';
 import { plabel } from '../domain/label';
+import { contractWatch, countryContracts } from '../domain/contractItems';
+import { MON } from '../domain/dt';
 
 /** Monitoring band of a performance ratio, as in the CoE monitoring sheet. */
 const band = bandOf;
@@ -109,6 +111,33 @@ function DecisionGroups({ D }: { D: Decision[] }) {
     </details>; })}</div>;
 }
 
+/** What the contracts ask for this month, by country: renewals to decide within 90 days, ceilings reached before the end at the recent pace. */
+const monY = (m: string) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;
+function PackContracts({ P }: { P: Project[] }) {
+  const L = useStore((x) => x.ledger), FW = L.frameworks ?? {}, kinds = L.poKinds ?? {}, cid = useStore((x) => x.filters.country);
+  const ids = cid ? [cid] : L.countries.map((c) => c.id);
+  type Row = { id: string; cn: string; name: string; what: string; how: string; days: number };
+  const rows: Row[] = [];
+  for (const id of ids) {
+    const CC = countryContracts(FW, P.filter((p) => p.country === id), kinds, (L.offices ?? []).filter((o) => o.country === id), id);
+    const W = contractWatch(CC.items, CC.ordersOf, TODAY), cn = L.countries.find((c) => c.id === id)?.name ?? id;
+    for (const r of W.renew) {
+      const what = r.noticeBy ? `notice by ${date(r.noticeBy)}` : r.days < 0 ? `ended ${date(r.end)}` : `ends ${date(r.end)}`;
+      const how = r.autoRenew ? 'renews automatically unless notice is given' : r.renewBy ? `renewable until ${date(r.renewBy)}` : 'a new contract or tender';
+      rows.push({ id, cn, name: r.name, what, how, days: r.days });
+    }
+    for (const x of W.caps) {
+      const what = x.p.used >= x.p.cap ? `ceiling ${full(x.p.cap)} reached` : `ceiling ${full(x.p.cap)} reached by ${monY(x.p.reach ?? '')}`;
+      rows.push({ id, cn, name: x.name, what, how: `${full(x.p.used)} ordered · contract ends ${x.c.end ? date(x.c.end) : '—'}`, days: 999 });
+    }
+  }
+  rows.sort((a, b) => a.days - b.days);
+  if (!rows.length) return null;
+  return <section class="pack-s"><h3>Contracts to decide</h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Contracts ending or due for notice within 90 days, and providers' ceilings reached before the contract ends at the pace of the last six months</p>
+    <table class="mini pack-t pack-ct"><thead><tr><th>Country</th><th>Contract</th><th>When</th><th>What it means</th></tr></thead>
+      <tbody>{rows.map((r) => <tr class="click" onClick={() => go(`countries/${r.id}/contracts`)}><td>{r.cn}</td><td><b>{r.name}</b></td><td class="num">{r.what}</td><td class="muted">{r.how}</td></tr>)}</tbody></table></section>;
+}
+
 export function MonthlyPack() {
   const s = useStore((x) => x);
   const P = filtered(s).filter((p) => !p.datesTbc);
@@ -155,6 +184,7 @@ export function MonthlyPack() {
             </tr>); })}</tbody>
         </table>
       </section>
+      <PackContracts P={P} />
       {(s.ledger.offices ?? []).length > 0 && <section class="pack-s"><h3>Office running costs</h3><OfficeSummary variant="pack" /></section>}
       <section class="pack-s"><h3>Service providers <button class="linkish no-print pack-more" onClick={() => go('reports/providers')}>see all ›</button></h3><p class="muted" style={{ margin: '-4px 0 8px', fontSize: '13px' }}>Event management, interpretation, consultants, visibility, research, publication and grants — purchase orders of the latest report workbooks</p><ProviderBrief P={P} cname={cname} /></section>
       {A.length > 0 && <section class="pack-s"><h3>Top alerts <button class="linkish no-print pack-more" onClick={() => go('reports/alerts')}>all {nAll} alerts ›</button></h3>
