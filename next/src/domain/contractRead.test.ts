@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contractTerms, money } from './contractRead';
+import { contractTerms, money, realDate } from './contractRead';
 
 // the wording of an Act of Engagement, with invented content
 const AOE = `Contract No. ► SC099/2026 Project ID / Sector ► PROGRAMME OFFICE ACT OF ENGAGEMENT (Direct Award / Framework contract)
@@ -110,5 +110,13 @@ describe('a framework contract with a table of monthly fees, read from a scan', 
       'Car rental services for the period of 01.07.2025 — 30.06.2027 Fuel chip provision for fuel consumption of 01.07.2025 – 30.06.2027 1,500 500'));
     expect(t.fee).toBe(2000);
     expect(t.items).toBeUndefined();
+  });
+});
+
+describe('what a scan adds around a table of fees', () => {
+  it('drops the arrow read as a letter before the first row, and a date that cannot be', () => {
+    const t = contractTerms('Monthly fee Type(s) of Units V (TRY) v Car rental services for the period of 01,07,2025 — 30.06.2027 1,500 Fuel chip provision of 01.07.2025 — 30.06.2027 500 Grand Total (Monthly) 2,000');
+    expect(t.items?.[0].label).toBe('Car rental services');
+    expect([realDate('92031-06-30'), realDate('2028-02-30'), realDate('2028-13-01'), realDate('2028-06-30')]).toEqual([false, true, false, true]);
   });
 });

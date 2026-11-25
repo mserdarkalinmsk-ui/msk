@@ -29,9 +29,14 @@ export function money(s: string): number | undefined {
   return Number.isFinite(v) && v > 0 ? v : undefined;
 }
 const AMT = String.raw`(?<![\d.,])(\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\d{2})?|\d+[.,]\d{2})`;
+/** A date in a table of fees, as a scan may read it: 01.07.2025, 01/07/2025, or with commas, 01,07,2025. */
+const TABLE_DATE = /(?<!\d)\d{1,2}[.,\/\-]\d{1,2}[.,\/\-]20\d\d(?!\d)/g;
 /** An amount in a table of fees, where a plain number ("500") is a fee too: the dates are taken out first. */
 const ROWAMT = String.raw`(?<![\d.,])(\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\d{2})?|\d+[.,]\d{2}|\d{2,7})(?![\d.,]?\d)`;
 const CUR = (s: string) => /TRY|TL|₺|lira/i.test(s) ? 'TRY' : /USD|\$/i.test(s) ? 'USD' : 'EUR';
+
+/** A date that can be: a year of this century, a real month and day (a scan or a typing slip gives "92031-06-30"). */
+export const realDate = (d?: string) => !!d && /^20\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d);
 
 export function contractTerms(text: string): ContractTerms {
   const T = text.replace(/[►▶▸▼▾]/g, ' ').replace(/\s+/g, ' ');
@@ -91,11 +96,11 @@ export function contractTerms(text: string): ContractTerms {
   const head = /monthly\s+fees?\b.{0,40}?\(\s*(TRY|TL|EUR|€|USD|\$)\s*\)/i.exec(T);
   if (head) {
     const from = head.index + head[0].length, rest = T.slice(from, from + 900);
-    const gt = new RegExp(String.raw`grand\s+total\s*(?:\(\s*monthly\s*\))?\s*[:|]?\s*${ROWAMT}`, 'i').exec(rest.replace(new RegExp(DATE, 'g'), ' '));
+    const gt = new RegExp(String.raw`grand\s+total\s*(?:\(\s*monthly\s*\))?\s*[:|]?\s*${ROWAMT}`, 'i').exec(rest.replace(TABLE_DATE, ' '));
     // the rows: a label and its amount, the dates of the period left out (a date is not a fee)
-    const R0 = rest.replace(new RegExp(DATE, 'g'), ' '), seg = (gt ? R0.slice(0, gt.index) : R0.split(/\b(?:OPTION|This\s+Framework|At\s+the\s+end)\b/i)[0]).replace(/[|—–]/g, ' ');
+    const R0 = rest.replace(TABLE_DATE, ' '), seg = (gt ? R0.slice(0, gt.index) : R0.split(/\b(?:OPTION|This\s+Framework|At\s+the\s+end)\b/i)[0]).replace(/[|—–]/g, ' ');
     const items = [...seg.matchAll(new RegExp(String.raw`([A-Za-zÇĞİÖŞÜçğıöşü][A-Za-zÇĞİÖŞÜçğıöşü ,/&'’().\-]{3,100}?)\s+${ROWAMT}`, 'g'))]
-      .map((m) => ({ label: m[1].replace(/^(?:.*\bUnits\b\s*)/i, '').replace(/[\s\-–(]+$/, '').replace(/(?:\s+(?:for\s+the\s+period(?:\s+of)?|for\s+the|of|for|from|during))+\s*$/i, '').trim(), fee: money(m[2]) }))
+      .map((m) => ({ label: m[1].replace(/^(?:.*\bUnits\b\s*)/i, '').replace(/^(?:[vV¥Y*•|>]\s+)+(?=[A-Z])/, '').replace(/[\s\-–(]+$/, '').replace(/(?:\s+(?:for\s+the\s+period(?:\s+of)?|for\s+the|of|for|from|during))+\s*$/i, '').trim(), fee: money(m[2]) }))
       .filter((x): x is { label: string; fee: number } => !!x.fee && x.label.length > 2);
     const total = gt ? money(gt[1]) : undefined, sum = Math.round(items.reduce((a, x) => a + x.fee, 0) * 100) / 100;
     const fee = total ?? (items.length ? sum : undefined);
@@ -131,5 +136,6 @@ export function contractTerms(text: string): ContractTerms {
     const before = [...T.slice(Math.max(0, m.index! - 300), m.index!).matchAll(new RegExp(String.raw`from\s+${ANYDATE}`, 'gi'))].at(-1);
     return before ? { from: isoAny(before[1])!, fee: money(m[1])! } : null; }).filter((x): x is { from: string; fee: number } => !!x && !!x.from && !!x.fee);
   if (F.length > 1) out.fees = [...new Map(F.map((x) => [x.from, x])).values()].sort((a, b) => a.from.localeCompare(b.from));
+  for (const k of ['start', 'end', 'renewBy'] as const) if (out[k] && !realDate(out[k])) delete out[k];
   return out;
 }

@@ -1,7 +1,7 @@
 import type { Contract } from './contracts';
-import type { OfficeReport, Office } from './office';
+import type { OfficeEntry, OfficeReport, Office } from './office';
 import type { Project } from './types';
-import { serviceKind } from './officeServices';
+import { notContract, serviceKind } from './officeServices';
 import { contractSupKey, providerPOs, supKey } from './providers';
 import { feeAt, impliedRate, orderPeriod } from './contractFx';
 import { ceilingPace, renewals, type Pace, type Renewal } from './contractPlan';
@@ -25,7 +25,8 @@ export function countryContracts(FW: Record<string, Contract>, P: Project[], poK
   const items: CItem[] = Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)
     .map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
   // a contract written in another language (or read from a scan) is the provider whose name is the same company
-  const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value, po: x.po, description: x.description, project: x.p.code })); };
+  const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return [...L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value, po: x.po, description: x.description, project: x.p.code })),
+    ...(c.line ? [] : officeEntriesFor(offices, key, c).map((e) => ({ date: e.date, value: e.amount, po: e.doc, description: e.description, project: 'Office' })))]; };
   return { items, rep, ordersOf, names };
 }
 
@@ -53,4 +54,22 @@ export function stillToOrder(c: Contract, orders: { description: string }[], yea
   let months = 0, amount = 0;
   for (let m = from; m <= stop; m = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 1)).toISOString().slice(0, 7)) { const f = feeAt(c, m); if (f) { months++; amount += f; } }
   return months ? { from, months, amount: Math.round(amount * 100) / 100 } : { months: 0, amount: 0 };
+}
+
+/**
+ * The office's own orders under a contract, from the latest office report of each office: an office contract's line and
+ * supplier; any other contract's supplier wherever the office ordered from it (a car rental, an accountant) — the office
+ * report, not the projects' purchase orders, holds what the office spends.
+ */
+export function officeEntriesFor(offices: Office[], key: string, c: Contract): (OfficeEntry & { office: string })[] {
+  const out: (OfficeEntry & { office: string })[] = [];
+  for (const o of offices) {
+    const rep = o.reports.at(-1); if (!rep) continue;
+    if (c.line) { if (key.startsWith(`office:${o.country}:`)) { const sk = key.split(':').slice(3).join(':'), l = rep.lines.find((x) => x.code === c.line);
+      out.push(...rep.entries.filter((e) => e.line === c.line && supKey(e.supplier) === sk && (!c.kind || serviceKind(e.description, l?.description ?? '') === c.kind)).map((e) => ({ ...e, office: o.name }))); } continue; }
+    const E = rep.entries.filter((e) => !notContract(e.supplier, e.description));
+    const known = new Map(E.map((e) => [supKey(e.supplier), e.supplier.trim()])), sk = contractSupKey(key, c.name, known);
+    if (known.has(sk)) out.push(...E.filter((e) => supKey(e.supplier) === sk).map((e) => ({ ...e, office: o.name })));
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date));
 }

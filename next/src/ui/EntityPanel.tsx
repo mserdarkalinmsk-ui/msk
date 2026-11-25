@@ -9,6 +9,7 @@ import { plabel } from '../domain/label';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
 import { openAttachment } from './attach';
+import { officeEntriesFor } from '../domain/contractItems';
 import { X } from './CloseX';
 import { date, full, pct } from './format';
 import { Ico } from './Ico';
@@ -30,14 +31,18 @@ export function ProviderPanel({ k, only, close }: { k: string; only?: string; cl
   const C = C0 && scope ? { ...(providerCard(all.filter((x) => x.p.id === scope), C0.key, L.frameworks ?? {}) ?? { ...C0, pos: [], projects: [], total: { n: 0, amount: 0, spent: 0, sc: 0, open: 0 } }), name: C0.name, kinds: C0.kinds, contracts: C0.contracts } : C0;
   if (!C) return <><div class="drawer-h"><h2>Provider</h2><X close={close} /></div><div class="drawer-b"><p class="muted">No order or contract of this provider in the data.</p></div></>;
   const pj = (id: string) => P.find((p) => p.id === id);
+  // what the office itself ordered under the provider's contracts (car rental, an accountant…): from the office report
+  const OE = scope ? [] : [...new Map(C.contracts.flatMap(({ key, c }) => officeEntriesFor(L.offices ?? [], key, c)).map((e) => [`${e.office}|${e.doc}|${e.line}|${e.description}|${e.amount}`, e])).values()];
+  const oe = { n: OE.length, spent: OE.reduce((a, e) => a + e.spent, 0), open: OE.reduce((a, e) => a + e.committed, 0), sc: OE.reduce((a, e) => a + e.amount, 0) };
   const country = pj(C.projects[0]?.id ?? '')?.country ?? C.contracts[0]?.c.country;
   const xlsx = () => download(`${C.name.slice(0, 40)}-orders.xlsx`, [{ name: 'Orders', money: [6, 7, 8], rows: [['Date', 'Project', 'PO', 'Line', 'Description', 'Status', 'Ordered', 'Spent', 'Spent + committed'], ...C.pos.map((x) => [x.date, plabel(x.p), x.po, x.line, x.description, x.status, x.amount, x.spent, x.value])] }]);
   const D = contractsDue(Object.fromEntries(C.contracts.map((x) => [x.key, x.c])), TODAY);
   return <>
-    <div class="drawer-h"><div><h2>{C.name}</h2><p class="muted">{C.kinds.map(kindLabel).join(' · ') || 'Provider'} · {scope ? `${plabel(pj(scope) ?? ({ code: scope } as never))} only` : `${C.projects.length} project${C.projects.length === 1 ? '' : 's'}`}</p>
+    <div class="drawer-h"><div><h2>{C.name}</h2><p class="muted">{C.kinds.map(kindLabel).join(' · ') || 'Provider'} · {scope ? `${plabel(pj(scope) ?? ({ code: scope } as never))} only` : `${C.projects.length} project${C.projects.length === 1 ? '' : 's'}${OE.length ? ' and the office' : ''}`}</p>
       {only && C0!.projects.length > 1 && <div class="seg en-scope" role="group" aria-label="Projects"><button aria-pressed={scope === only} onClick={() => setScope(only)}>{plabel(pj(only) ?? ({ code: only } as never))}</button><button aria-pressed={!scope} onClick={() => setScope('')}>All projects</button></div>}</div><X close={close} /></div>
     <div class="drawer-b en">
-      <div class="en-k"><div><b>{C.total.n}</b><span>orders</span></div><div><b>{full(C.total.spent)}</b><span>spent</span></div><div><b>{full(C.total.open)}</b><span>still open</span></div><div><b>{full(C.total.sc)}</b><span>spent + committed</span></div></div>
+      <div class="en-k"><div><b>{C.total.n + oe.n}</b><span>orders</span></div><div><b>{full(C.total.spent + oe.spent)}</b><span>spent</span></div><div><b>{full(C.total.open + oe.open)}</b><span>still open</span></div><div><b>{full(C.total.sc + oe.sc)}</b><span>spent + committed</span></div></div>
+      {OE.length > 0 && C.pos.length > 0 && <p class="muted en-split">Projects {full(C.total.sc)} · office {full(oe.sc)}</p>}
       <h3>Contract</h3>
       {C.contracts.length ? C.contracts.map(({ key, c }) => { const d = D.find((x) => x.key === key);
         return <div class="en-c">
@@ -60,6 +65,10 @@ export function ProviderPanel({ k, only, close }: { k: string; only?: string; cl
             {h.doc && <button class="linkish" onClick={() => openAttachment(h.doc!)}>open the document</button>}</li>)}</ol>}
         </div>; })
         : <p class="muted">No contract entered for this provider. {country && <button class="linkish" onClick={() => { close(); go(`countries/${country}/contracts`); }}>Add it under Tenders &amp; suppliers ›</button>}</p>}
+      {OE.length > 0 && <><h3>Ordered by the office <small class="muted">from the office report, newest first</small></h3>
+        <div class="tw"><table class="mini en-po"><thead><tr><th>Date</th><th>Office</th><th>Line</th><th>Description</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th></tr></thead>
+          <tbody>{OE.map((e) => <tr><td class="num">{e.date ? date(e.date) : '—'}</td><td>{e.office}</td><td class="num">{e.line}</td><td>{e.description}</td><td class="r num">{full(e.spent)}</td><td class="r num">{e.committed > 0.5 ? full(e.committed) : ''}</td><td class="r num">{full(e.amount)}</td></tr>)}</tbody>
+          <tfoot><tr class="tot"><td colSpan={4}>Total</td><td class="r num">{full(oe.spent)}</td><td class="r num">{full(oe.open)}</td><td class="r num">{full(oe.sc)}</td></tr></tfoot></table></div></>}
       {C.projects.length > 0 && <><h3>By project</h3>
         <div class="tw"><table class="mini"><thead><tr><th>Project</th><th>Lines</th><th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th></tr></thead>
           <tbody>{C.projects.map((s) => { const p = pj(s.id); return <tr class="click" onClick={() => { close(); go(`project/${s.id}/pos`); }}><td><b>{p ? plabel(p) : s.id}</b></td><td class="muted wrap">{s.lines.join(', ')}</td><td class="r num">{s.n}</td><td class="r num">{full(s.spent)}</td><td class="r num">{full(s.open)}</td><td class="r num"><b>{full(s.sc)}</b></td></tr>; })}</tbody></table></div></>}

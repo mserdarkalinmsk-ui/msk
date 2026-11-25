@@ -4,7 +4,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
 import { impliedRate, nextYearCost, orderChecks, orderPeriod, yearCost } from '../domain/contractFx';
-import { ceilingsAtRisk, countryContracts, officeOrders, stillToOrder } from '../domain/contractItems';
+import { ceilingsAtRisk, countryContracts, officeEntriesFor, officeOrders, stillToOrder } from '../domain/contractItems';
 import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, get, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
@@ -13,7 +13,7 @@ import { download } from '../ui/xlsxwrite';
 import { noticeLetterDocx } from '../ui/ContractLetter';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { ocrPdf, readDocument, readPages } from '../ui/docread';
-import { contractTerms, type ContractTerms } from '../domain/contractRead';
+import { contractTerms, realDate, type ContractTerms } from '../domain/contractRead';
 import { fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
@@ -557,7 +557,8 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { name: c.name, used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; }
     // a contract written in another language (or read from a scan) is the provider whose name is the same company
     const sk = contractSupKey(k, c?.name, names);
-    return { name: names.get(sk), used: L.filter((x) => x.kind && supKey(x.supplier) === sk).reduce((a, x) => a + x.value, 0) }; };
+    // and the office's own orders from the same provider (a car rental, an accountant): they are in the office report
+    return { name: names.get(sk), used: Math.round((L.filter((x) => x.kind && supKey(x.supplier) === sk).reduce((a, x) => a + x.value, 0) + (c ? officeEntriesFor(offices, k, c).reduce((a, e) => a + e.amount, 0) : 0)) * 100) / 100 }; };
   // an office contract against its budget line: its cost this year in euros, at the rate its own orders were booked at
   const rep = offices[0]?.reports.at(-1);
   const fx = (k: string) => { const c = FW[k]; if (!c?.line || !rep) return null;
@@ -581,6 +582,9 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   useEffect(() => { if (pre) { setF({ ...EMPTY_C, sup: pre.sup, end: pre.end }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
   const save = () => {
     const name = f.sup.trim(); if (!name || (!f.end && !f.open)) return;
+    // a date field accepts a five-digit year ("92031"): such a slip is not saved
+    const bad = ([['start', f.start], ['end', f.open ? '' : f.end], ['renewable until', f.renew]] as const).filter(([, v]) => v && !realDate(v));
+    if (bad.length) { setReadMsg(`Check the ${bad.map(([k]) => k).join(' and ')} date: ${bad.map(([, v]) => v).join(', ')} is not a date.`); return; }
     const k = edit || supKey(name);
     const att = doc ?? FW[k]?.doc;
     const rows = items && +f.fee > 0 && Math.abs(items.reduce((a, x) => a + x.fee, 0) - +f.fee) < 0.5 ? items : FW[k]?.items && +f.fee === FW[k].fee ? FW[k].items : undefined;
