@@ -67,3 +67,10 @@ describe('ceilings and the next budget', () => {
     expect(N).toEqual([{ line: '1.1', eur: 24000, contracts: ['Alpha'], unknown: [] }, { line: '1.10', eur: 12000, contracts: ['Beta'], unknown: ['Gamma'] }]);
   });
 });
+
+describe('a line whose only contract has no rate yet', () => {
+  it('counts nothing for it, and names the contract instead', async () => {
+    const { needByLine } = await import('./contractPlan');
+    expect(needByLine([{ name: 'Gamma', c: { line: '1.2', cur: 'TRY', fee: 4500 } }], 2027, (c) => (c.fee ?? 0) * 12)).toEqual([{ line: '1.2', eur: 0, contracts: [], unknown: ['Gamma'] }]);
+  });
+});

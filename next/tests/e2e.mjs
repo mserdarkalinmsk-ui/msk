@@ -711,6 +711,12 @@ async function page(opts) {
   check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');
   check(/€50,000\.00/.test(await p.locator('.ca-cap tr:has-text("Gamma Events Ltd")').innerText().catch(() => '')), 'a provider contract with a ceiling is followed against what was ordered, with the pace');
+  // the alert centre opens the contract calendar on its own tab
+  { const back = p.url(); await p.goto(url.replace(/#.*$/, '') + '#/reports/alerts'); await p.waitForSelector('.wl');
+    if (await p.locator('button:has-text("Open the contract calendar")').count()) { await p.click('button:has-text("Open the contract calendar")'); await p.waitForSelector('.cd-tabs');
+      check((await p.locator('.cd-tabs [aria-selected=true]').textContent()) === 'Contracts & suppliers', 'the alert centre opens the contract calendar on its tab'); }
+    else check(false, 'the alert centre lists the contracts ending soon');
+    await p.goto(back); await p.waitForSelector('.cd-tabs'); await p.click('.cd-tabs button:text-is("Contracts & suppliers")'); await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.cah'); }
   // the monthly pack lists the contracts to decide, and the country's attention list the same contract
   { const back = p.url(); await p.goto(url.replace(/#.*$/, '') + '#/reports/pack'); await p.waitForSelector('.pack');
     check(await p.locator('.pack-ct tr:has-text("Gamma Events Ltd")').count() === 1, 'the monthly pack lists a contract to decide');
