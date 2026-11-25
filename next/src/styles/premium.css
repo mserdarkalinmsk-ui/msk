@@ -419,3 +419,14 @@ main table td > b:first-child { white-space: nowrap; }
 .cp-bar { margin-right: 34px; }
 .cp-bar span { right: auto; left: calc(100% + 4px); font-weight: 600; }
 .cp-t td.r small { display: block; }
+/* hints that open on a click (ui/tapTip): marked so they are found, shown in a small box */
+main td[title]:not(.click), .drawer td[title]:not(.click) { cursor: help; text-decoration: underline dotted color-mix(in srgb, var(--ink-3) 60%, transparent); text-underline-offset: 3px; }
+main .badge[title], main span[title], main small[title], main b[title] { cursor: help; }
+.tap-tip { position: absolute; z-index: 1000; max-width: min(420px, calc(100vw - 16px)); padding: 8px 11px; border-radius: 8px; background: var(--ink); color: var(--surface); font-size: 12.5px; line-height: 1.45; white-space: pre-line; box-shadow: 0 8px 24px rgba(0, 0, 0, .22); pointer-events: auto; }
+@media print { .tap-tip { display: none; } }
+.cah tr.click { cursor: pointer; }
+.cah tr.click.sel td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ca-tw { display: inline-block; width: 14px; color: var(--ink-3); font-size: 11px; }
+.cah tr.ca-more > td { background: var(--surface-2); padding: 10px 14px 14px 28px; }
+.ca-sub { font-size: 12.5px; }
+.ca-sub td:nth-child(4) { white-space: normal; }

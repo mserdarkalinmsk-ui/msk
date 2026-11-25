@@ -4,6 +4,7 @@ import { Brief } from './pages/Brief';
 import { SelfCheck } from './ui/SelfCheck';
 import { WeekDigest } from './ui/WeekDigest';
 import { render } from 'preact';
+import { installTapTips } from './ui/tapTip';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/styles.css';
@@ -84,6 +85,7 @@ function App() {
 }
 
 applyPrefs();
+installTapTips();
 render(<App />, document.getElementById('app')!);
 load();
 // Charts are not needed for the first paint: fetch the library right after it.

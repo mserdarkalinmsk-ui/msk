@@ -311,6 +311,14 @@ async function page(opts) {
   check(dl.suggestedFilename().endsWith('.xlsx') && statSync(path).size > 2000 && readFileSync(path).subarray(0, 2).toString() === 'PK', 'portfolio Excel export downloads');
   writeFileSync(`${shots}/portfolio.xlsx`, readFileSync(path));
   // project: words, forecast, scenario, history
+  // what a table shows on hover opens on a click too (touch screens have no hover)
+  await p.goto(url + '#/budget'); await p.waitForSelector('main table'); await p.waitForTimeout(400);
+  { const hint = p.locator('main td[title]:not(.click)').first(); const t = await hint.getAttribute('title').catch(() => null);
+    if (t) { const titles = await hint.evaluate((e) => [e, ...e.querySelectorAll('[title]')].map((x) => x.getAttribute('title').trim()));
+      await hint.click(); await p.waitForTimeout(150); const tip = await p.locator('.tap-tip').textContent().catch(() => '');
+      check(!!tip && titles.includes(tip), `a hint shown on hover opens on a click (${tip ? tip.slice(0, 40) : 'no box'})`);
+      await p.keyboard.press('Escape'); check(await p.locator('.tap-tip').count() === 0, 'and closes with Escape'); }
+    else check(false, 'the budget page has hints on its cells'); }
   await p.goto(url + '#/project/lang'); await p.waitForSelector('.ph-title'); await p.waitForTimeout(300);
   check((await p.locator('.ck-story').textContent()).includes('spent'), 'project story written');
   { const story = await p.locator('.ck-story').textContent(), kpi = await p.locator('.kpi:has-text("time elapsed")').first().textContent();
@@ -714,6 +722,10 @@ async function page(opts) {
   check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');
   check(/€50,000\.00/.test(await p.locator('.ca-cap tr:has-text("Gamma Events Ltd")').innerText().catch(() => '')), 'a provider contract with a ceiling is followed against what was ordered, with the pace');
+  await p.locator('.ca-cap tbody tr.click:has-text("Gamma Events Ltd") td:nth-child(2)').click(); await p.waitForTimeout(200);
+  check(await p.locator('.ca-cap tr.ca-more').count() === 1, 'a ceiling row opens on a click to the orders behind it');
+  await p.locator('.ca-cap tbody tr.click:has-text("Gamma Events Ltd") td:nth-child(2)').click(); await p.waitForTimeout(150);
+  check(await p.locator('.ca-cap tr.ca-more').count() === 0, 'and closes on a second click');
   // the alert centre opens the contract calendar on its own tab
   { const back = p.url(); await p.goto(url.replace(/#.*$/, '') + '#/reports/alerts'); await p.waitForSelector('.wl');
     if (await p.locator('button:has-text("Open the contract calendar")').count()) { await p.click('button:has-text("Open the contract calendar")'); await p.waitForSelector('.cd-tabs');

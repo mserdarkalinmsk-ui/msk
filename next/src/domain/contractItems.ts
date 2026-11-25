@@ -25,7 +25,7 @@ export function countryContracts(FW: Record<string, Contract>, P: Project[], poK
   const items: CItem[] = Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)
     .map(([key, c]) => ({ key, c, name: c.name || names.get(key) || key, rate: c.line && rep ? impliedRate(c, officeOrders(rep, key, c))?.rate : undefined }));
   // a contract written in another language (or read from a scan) is the provider whose name is the same company
-  const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value })); };
+  const ordersOf = (key: string, c: Contract) => { const sk = contractSupKey(key, c.name, names); return L.filter((x) => x.kind && supKey(x.supplier) === sk).map((x) => ({ date: x.date, value: x.value, po: x.po, description: x.description, project: x.p.code })); };
   return { items, rep, ordersOf, names };
 }
 

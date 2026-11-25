@@ -3,7 +3,7 @@ import { Ico, type IcoName } from '../ui/Ico';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { officeServices } from '../domain/officeServices';
-import { impliedRate, nextYearCost, orderChecks, yearCost } from '../domain/contractFx';
+import { impliedRate, nextYearCost, orderChecks, orderPeriod, yearCost } from '../domain/contractFx';
 import { ceilingsAtRisk, countryContracts, officeOrders, stillToOrder } from '../domain/contractItems';
 import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
 import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
@@ -21,7 +21,7 @@ import { alerts, outcome } from '../domain/insights';
 import { openAlerts } from '../domain/worklist';
 import { programmeOf } from '../domain/flex';
 import { plabel } from '../domain/label';
-import { LS_BH, OB_BH, officeView, type Office } from '../domain/office';
+import { LS_BH, OB_BH, officeView, type Office, type OfficeReport } from '../domain/office';
 import { closestName, contractSupKey, providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
 import { daysUntil, n2, renewals, type Base } from '../domain/staff';
 import { SalarySection } from '../ui/CountryPanel';
@@ -242,9 +242,17 @@ function useCountryContracts(cid: string, P: Project[], offices: Office[]) {
 }
 const MON3 = (m: string) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}`;
 const inEur = (v: number, toEur?: number, cur = 'EUR') => (toEur ? full(v * toEur) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`);
+/** The orders of an office contract with the months each pays: what "still to order" is counted from. */
+function OrdersPaid({ rep, k, c }: { rep: OfficeReport; k: string; c: Contract }) {
+  const O = officeOrders(rep, k, c);
+  if (!O.length) return <p class="muted">No order on line {c.line} from this supplier in the office report of {date(rep.date)}: every month from the contract's start is still to order.</p>;
+  return <table class="mini ca-sub"><thead><tr><th>Order</th><th>Months it pays</th><th class="r">Spent + committed</th></tr></thead>
+    <tbody>{O.map((o) => { const per = orderPeriod(o.description); return <tr><td>{o.description}</td><td class="num">{per ? `${per.months} from ${MON3(per.from)}` : <span class="muted">not named — not counted</span>}</td><td class="r num">{full(o.amount)}</td></tr>; })}</tbody></table>;
+}
 /** What the contracts ask of the months ahead: renewals to decide, payments month by month, papers still missing. */
 export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[]; offices: Office[] }) {
   const { items: I, rep, ordersOf } = useCountryContracts(cid, P, offices);
+  const [openK, setOpenK] = useState(''), toggle = (k: string) => setOpenK(openK === k ? '' : k);
   const ny = TODAY.getUTCFullYear() + 1, N = needByLine(I, ny, nextYearCost);
   const lineOf = (code: string) => rep?.lines.find((l) => l.code === code);
   const leftOn = (code: string) => { const l = lineOf(code); return l ? Math.round((l.ob.budget + l.ls.budget - l.ob.sc - l.ls.sc - l.ob.planned - l.ls.planned) * 100) / 100 : undefined; };
@@ -285,24 +293,31 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
         {S.unknown > 0 && <p class="muted ca-note">{S.unknown} contract{S.unknown > 1 ? 's are' : ' is'} in another currency without a rate from its orders, so left out of the totals.</p>}</div></section>
     {rep && <section class="card span-12"><div class="card-h"><div><h2>Still to order in {rep.year}</h2><p>For each office contract, the months after the last one its orders pay, to the end of the year (or of the contract, unless it renews), at the fee in force — beside what is left on its budget line after spent, committed and planned.</p></div></div>
       <div class="card-b table-scroll">{todo.length ? <table class="mini ca-todo"><thead><tr><th>Contract</th><th>Budget line</th><th>From</th><th class="r">Months</th><th class="r">Amount</th><th class="r">In euros</th><th class="r">Left on the line</th></tr></thead>
-        <tbody>{todo.map((t) => <tr><td><Firm name={t.name} /></td><td><span class="num">{t.c.line}</span> <span class="muted">{lineOf(t.c.line!)?.description ?? ''}</span></td><td class="num">{MON3(t.s.from!)}</td><td class="r num">{t.s.months}</td>
+        <tbody>{todo.map((t) => <><tr class={`click${openK === "todo:" + t.key ? " sel" : ""}`} onClick={(e) => { if (!(e.target as Element).closest('.ent')) toggle('todo:' + t.key); }}><td><span class="ca-tw">{openK === 'todo:' + t.key ? '▾' : '▸'}</span><Firm name={t.name} /></td><td><span class="num">{t.c.line}</span> <span class="muted">{lineOf(t.c.line!)?.description ?? ''}</span></td><td class="num">{MON3(t.s.from!)}</td><td class="r num">{t.s.months}</td>
           <td class="r num">{inEur(t.s.amount, t.c.cur && t.c.cur !== 'EUR' ? undefined : 1, t.c.cur ?? 'EUR')}</td><td class={`r num${t.eur != null && t.left != null && t.eur > t.left + 0.5 ? ' ca-over' : ''}`}>{t.eur != null ? full(t.eur) : <span class="muted">no rate yet</span>}</td>
-          <td class="r num">{t.left != null ? full(t.left) : '—'}</td></tr>)}</tbody></table>
+          <td class="r num">{t.left != null ? full(t.left) : '—'}</td></tr>
+          {openK === 'todo:' + t.key && <tr class="ca-more"><td colSpan={7}><OrdersPaid rep={rep} k={t.key} c={t.c} /></td></tr>}</>)}</tbody></table>
         : <p class="muted">Every office contract's months are ordered to the end of {rep.year}, or no office contract has a fee yet.</p>}
         {short.length > 0 && <div class="ca-short"><b>Not in the office forecast:</b><ul>{short.map((x) => <li><span class="num">{x.line}</span> {lineOf(x.line)?.description ?? ''} — the contracts still need {full(x.need)}, the forecast plans {full(x.planned)}: <b class="ca-over">{full(x.need - x.planned)} not planned</b></li>)}</ul></div>}
         {todo.length > 0 && !short.length && <p class="muted ca-note">The office forecast plans enough on each line for what the contracts still need this year.</p>}</div></section>}
     <section class="card span-12"><div class="card-h"><div><h2>Office contracts next year, by budget line</h2><p>For the {ny} budget proposal: what the office's contracts will cost next year at the fee in force (carried on when they renew), beside the line's budget this year. A contract in lira is in euros at the rate its orders were booked at.</p></div></div>
       <div class="card-b table-scroll">{N.length ? <table class="mini ca-line"><thead><tr><th>Budget line</th><th class="r">Budget {rep?.year ?? ny - 1}</th><th class="r">Contracts {ny}</th><th>Contracts</th></tr></thead>
-        <tbody>{N.map((n) => { const l = lineOf(n.line), B = l ? l.ob.budget + l.ls.budget : 0; return <tr><td><span class="num">{n.line}</span> <span class="muted">{l?.description ?? ''}</span></td><td class="r num">{B ? full(B) : '—'}</td>
-          <td class={`r num${B && n.eur > B + 0.5 ? ' ca-over' : ''}`}>{n.contracts.length ? full(n.eur) : '—'}</td><td>{n.contracts.join(', ')}{n.unknown.length ? <span class="muted"> · not counted, no rate yet: {n.unknown.join(', ')}</span> : null}</td></tr>; })}</tbody>
+        <tbody>{N.map((n) => { const l = lineOf(n.line), B = l ? l.ob.budget + l.ls.budget : 0, on = openK === 'line:' + n.line; return <><tr class={`click${on ? ' sel' : ''}`} onClick={(e) => { if (!(e.target as Element).closest('.ent')) toggle('line:' + n.line); }}><td><span class="ca-tw">{on ? '▾' : '▸'}</span><span class="num">{n.line}</span> <span class="muted">{l?.description ?? ''}</span></td><td class="r num">{B ? full(B) : '—'}</td>
+          <td class={`r num${B && n.eur > B + 0.5 ? ' ca-over' : ''}`}>{n.contracts.length ? full(n.eur) : '—'}</td><td>{n.contracts.join(', ')}{n.unknown.length ? <span class="muted"> · not counted, no rate yet: {n.unknown.join(', ')}</span> : null}</td></tr>
+          {on && <tr class="ca-more"><td colSpan={4}><table class="mini ca-sub"><thead><tr><th>Contract</th><th class="r">Fee in force</th><th>Runs</th><th class="r">{ny} in its currency</th><th class="r">{ny} in euros</th></tr></thead>
+            <tbody>{I.filter((x) => x.c.line === n.line).map((x) => { const v = nextYearCost(x.c, ny) ?? 0, eurC = !x.c.cur || x.c.cur === 'EUR'; return <tr><td>{x.name}</td><td class="r num">{x.c.fee ? inEur(x.c.fee, eurC ? 1 : undefined, x.c.cur ?? 'EUR') : '—'}</td>
+              <td>{x.c.openEnded ? 'open-ended' : x.c.autoRenew ? `renews · ends ${x.c.end ? date(x.c.end) : '—'}` : x.c.renewBy ? `renewable until ${date(x.c.renewBy)}` : x.c.end ? `ends ${date(x.c.end)}` : '—'}</td>
+              <td class="r num">{inEur(v, eurC ? 1 : undefined, x.c.cur ?? 'EUR')}</td><td class="r num">{eurC ? full(v) : x.rate ? full(v / x.rate) : <span class="muted">no rate yet</span>}</td></tr>; })}</tbody></table></td></tr>}</>; })}</tbody>
         <tfoot><tr class="tot"><td>Total</td><td class="r num">{full(N.reduce((a, n) => { const l = lineOf(n.line); return a + (l ? l.ob.budget + l.ls.budget : 0); }, 0))}</td><td class="r num">{full(N.reduce((a, n) => a + n.eur, 0))}</td><td /></tr></tfoot></table>
         : <p class="muted">No office contract with a fee yet: add the office's contracts from Office → Office services.</p>}</div></section>
     <section class="card span-12"><div class="card-h"><div><h2>Ceilings of the providers' contracts</h2><p>What the projects ordered from each provider against its contract's ceiling, and when the ceiling is reached if the last six months' orders go on at the same pace — flagged when that comes before the contract ends.</p></div></div>
       <div class="card-b table-scroll">{caps.length ? <table class="mini ca-cap"><thead><tr><th>Provider</th><th class="r">Ceiling</th><th class="r">Ordered</th><th class="r">Used</th><th class="r">Per month (6 months)</th><th>Ceiling reached</th><th>Contract ends</th></tr></thead>
-        <tbody>{caps.map(({ name, c, p }) => { const sv = ceilingSeverity(p.used, p.cap); return <tr><td><Firm name={name} /></td><td class="r num">{full(p.cap)}</td><td class="r num">{full(p.used)}</td>
+        <tbody>{caps.map(({ key, name, c, p }) => { const sv = ceilingSeverity(p.used, p.cap), O = openK === 'cap:' + key ? ordersOf(key, c) : []; return <><tr class={`click${openK === 'cap:' + key ? ' sel' : ''}`} onClick={(e) => { if (!(e.target as Element).closest('.ent')) toggle('cap:' + key); }}><td><span class="ca-tw">{openK === 'cap:' + key ? '▾' : '▸'}</span><Firm name={name} /></td><td class="r num">{full(p.cap)}</td><td class="r num">{full(p.used)}</td>
           <td class="r num">{sv ? <span class={`badge ${SEV_BADGE[sv]}`}>{pct(p.used / p.cap)}</span> : pct(p.used / p.cap)}</td><td class="r num">{p.perMonth ? full(p.perMonth) : '—'}</td>
           <td>{p.reach ? <span class={p.beforeEnd ? 'ca-over' : ''}>{p.used >= p.cap ? 'reached' : MON3(p.reach)}{p.beforeEnd && p.used < p.cap ? ' — before the end' : ''}</span> : <span class="muted">no recent orders</span>}</td>
-          <td class="num">{c.openEnded ? 'open-ended' : c.end ? date(c.end) : '—'}</td></tr>; })}</tbody></table>
+          <td class="num">{c.openEnded ? 'open-ended' : c.end ? date(c.end) : '—'}</td></tr>
+          {openK === 'cap:' + key && <tr class="ca-more"><td colSpan={7}>{O.length ? <table class="mini ca-sub"><thead><tr><th>Date</th><th>Project</th><th>PO</th><th>Description</th><th class="r">Ordered</th></tr></thead>
+            <tbody>{[...O].sort((a, b) => b.date.localeCompare(a.date)).map((o) => <tr><td class="num">{o.date ? date(o.date) : '—'}</td><td class="num">{o.project}</td><td class="num">{o.po}</td><td>{o.description}</td><td class="r num">{full(o.value)}</td></tr>)}</tbody></table> : <p class="muted">No order from this provider in the projects' latest reports.</p>}</td></tr>}</>; })}</tbody></table>
         : <p class="muted">No provider contract with a ceiling: type the ceiling (€) in a contract to follow it here.</p>}</div></section>
     <section class="card span-12"><div class="card-h"><div><h2>What the contracts still lack</h2><p>To follow a contract fully: its signed copy and those of its amendments, an end date, its fee, and for a contract in lira an order that names the months it pays.</p></div></div>
       <div class="card-b">{G.length ? <ul class="ca-gaps">{G.map((g) => <li><b><Firm name={g.name} /></b> — {g.missing.join(', ')}</li>)}</ul> : <p class="muted">Every contract has its papers and terms.</p>}</div></section>

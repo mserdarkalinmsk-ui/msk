@@ -4,6 +4,10 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-25d', date: '25 Nov 2026 (night)', items: [
+    'What a table shows only when the mouse rests on it — the orders behind a count, how a figure is worked out, what a badge means — now opens on a click too, in a small box (Escape or a click elsewhere closes it). Such cells are underlined with dots.',
+    'Ahead: a row of "Still to order" opens on the orders it is counted from and the months each pays; a budget line of next year opens on its contracts, fees and euros; a ceiling opens on every order placed with the provider.',
+  ] },
   { id: '2026-11-25c', date: '25 Nov 2026 (evening)', items: [
     'One date for every comparison: a project\'s story line, its financial statement, the ledger\'s unit pace, My desk and the results now measure the time gone at the date of the report their spending comes from — as the rest of the page already did — so "40% spent with 55% of time gone" and the figures beside it agree.',
     'Tables: figures, dates and project codes stay on one line everywhere; the cash plan\'s percentage sits after its bar, clear of the threshold mark; the providers\' table is not shown empty before any order is loaded.',
