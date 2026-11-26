@@ -1,0 +1,101 @@
+import { Ico, type IcoName } from '../ui/Ico';
+import { useMemo, useState } from 'preact/hooks';
+import { set } from '../data/store';
+import { byPeriodThenImport } from '../domain/calc';
+import { enrichExtraction } from '../domain/extraction';
+import { PO_GROUP, PO_KIND, poReview, type PoFinding, type PoGroup, type PoReport, type PoReview } from '../domain/poReview';
+import type { Project } from '../domain/types';
+import type { WorkbookSummary } from '../domain/workbook';
+import { DataTable, type Column } from '../ui/DataTable';
+import { date, full } from '../ui/format';
+import { download } from '../ui/xlsxwrite';
+
+/** The report workbooks of a project, oldest first, extractions completed from the approved budget. */
+export function poReports(p: Project): PoReport[] {
+  return [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook?.pos?.length).sort(byPeriodThenImport).map((r) => {
+    const w0 = r.snapshot!.workbook as WorkbookSummary, wb = w0.meta.extraction ? enrichExtraction(w0, p) : w0;
+    const d = wb.meta.situationDate || wb.meta.asAt || r.date;
+    return { date: d, label: r.name || (d ? date(d) : 'report'), wb };
+  });
+}
+const cache = new WeakMap<Project, { rp: unknown; ab: unknown; R: PoReview }>();
+/** The review of a project, kept until its reports or approved budget change. */
+export function reviewOf(p: Project): PoReview {
+  const c = cache.get(p);
+  if (c && c.rp === p.reportingPeriods && c.ab === p.approvedBudget) return c.R;
+  const R = poReview(poReports(p), (p.approvedBudget?.lines ?? []).map((l) => ({ code: l.code, unit: l.unit, description: l.description }))); cache.set(p, { rp: p.reportingPeriods, ab: p.approvedBudget, R }); return R;
+}
+/** Findings worth a look (not the notes): the count on the tab. */
+export const poToCheck = (p: Project) => reviewOf(p).findings.filter((f) => f.level !== 'info').length;
+
+const ICON: Record<PoGroup, IcoName> = { line: 'swap', unit: 'target', amount: 'euro', change: 'cycle' };
+const TONE = { bad: ['critical', 'Check'], warn: ['warning', 'Look'], info: ['neutral', 'Note'] } as const;
+
+export function POReview({ p }: { p: Project }) {
+  const R = reviewOf(p);
+  const [g, setG] = useState<'all' | PoGroup>('all');
+  const [minor, setMinor] = useState(false);
+  const [yr, setYr] = useState('all');
+  const [open, setOpen] = useState<string>('');
+  const years = useMemo(() => [...new Set(R.findings.map((f) => f.year).filter(Boolean))].sort(), [R]);
+  const Y = useMemo(() => R.findings.filter((f) => yr === 'all' || f.year === yr), [R, yr]);
+  const F = useMemo(() => Y.filter((f) => (g === 'all' || f.group === g) && (minor || f.level !== 'info')), [Y, g, minor]);
+  if (!R.latest) return (
+    <div class="card empty-page"><div><h2>No purchase orders to review yet</h2>
+      <p>Import a report workbook or a system extraction with its “Purchase Orders” sheet. Each new report is then checked order by order and compared with the one before.</p>
+      <button class="btn primary" onClick={() => set({ drawer: { kind: 'report', projectId: p.id } })}>Import a report</button></div></div>);
+  const n = (x: PoGroup, lv?: PoFinding['level']) => Y.filter((f) => f.group === x && (lv ? f.level === lv : f.level !== 'info')).length;
+  const minorN = Y.filter((f) => f.level === 'info' && (g === 'all' || f.group === g)).length;
+  const cols: Column<PoFinding>[] = [
+    { key: 'lv', label: 'Level', width: 76, value: (f) => ({ bad: 0, warn: 1, info: 2 })[f.level], render: (f) => <span class={`badge ${TONE[f.level][0]}`}>{TONE[f.level][1]}</span> },
+    { key: 'k', label: 'Finding', width: 210, value: (f) => PO_KIND[f.kind].label },
+    { key: 'y', label: 'Year', width: 64, value: (f) => f.year, render: (f) => <span class="num muted">{f.year || '—'}</span> },
+    { key: 'po', label: 'PO', width: 90, value: (f) => f.po, render: (f) => <span class="num">{f.po}</span> },
+    { key: 'line', label: 'Line', width: 74, value: (f) => f.line, render: (f) => <span class="num muted">{f.line}</span> },
+    { key: 'f', label: 'Probably should be', width: 150, value: (f) => f.fix ?? '', render: (f) => f.fix ? <b>{f.fix}</b> : <span class="muted">—</span> },
+    { key: 't', label: 'What the report shows', width: 540, value: (f) => f.text },
+    { key: 'd', label: 'Description', width: 260, value: (f) => f.description },
+    { key: 's', label: 'Supplier', width: 200, value: (f) => f.supplier },
+    { key: 'a', label: 'Amount', width: 120, align: 'r', format: full, value: (f) => f.amount },
+  ];
+  const xlsx = () => download(`${p.bh ?? p.code}-po-review-${R.latest!.date}.xlsx`, [
+    { name: 'PO review', money: [8], rows: [['Level', 'Group', 'Finding', 'Year', 'PO', 'Line', 'Supplier', 'Description', 'Amount', 'What the report shows', 'Probably should be'], ...R.findings.map((f) => [TONE[f.level][1], PO_GROUP[f.group], PO_KIND[f.kind].label, f.year, f.po, f.line, f.supplier, f.description, f.amount, f.text, f.fix ?? ''])] }]);
+  const H = open ? R.history(open) : [];
+  return (
+    <div class="po-review">
+      <section class="card">
+        <div class="card-h"><div><h2>PO review</h2>
+          <p>{R.pos} purchase orders in {R.latest.label}, each checked against its budget line{R.previous ? <>; every report compared with the one before, back to the first of {R.reports}</> : ' — load the next report to see what changed'}. Orders finally closed are left out{R.finallyClosed ? ` (${R.finallyClosed})` : ''}: nothing on them can be corrected. Click a row for the order's history in every report.</p></div>
+          <div class="tools"><button class="btn" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
+        <div class="po-kpi">
+          {(['line', 'unit', 'amount', 'change'] as const).map((x) => { const b = n(x, 'bad'), w = n(x, 'warn'), i = n(x, 'info'), t = b + w + i; return (
+            <button class={`po-k po-${x}${g === x ? ' on' : ''}${b + w ? '' : ' calm'}`} aria-pressed={g === x} onClick={() => setG(g === x ? 'all' : x)}>
+              <span class="po-k-h"><i aria-hidden="true"><Ico n={ICON[x]} size={14} /></i>{PO_GROUP[x]}</span>
+              <b>{b + w}</b>
+              <em>{b ? <><strong>{b}</strong> to check · </> : ''}{w ? `${w} to look at · ` : ''}{i} notes</em>
+              <span class="po-k-bar" aria-hidden="true">{t ? <><u class="bad" style={{ flex: b }} /><u class="warn" style={{ flex: w }} /><u class="info" style={{ flex: i }} /></> : <u class="none" style={{ flex: 1 }} />}</span>
+            </button>); })}
+          <div class="po-k po-reports"><span class="po-k-h"><i aria-hidden="true"><Ico n="reports" size={14} /></i>Reports followed</span><b>{R.reports}</b><em>{R.previous ? `latest: ${R.latest.label}` : 'one report so far'}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></div>
+        </div>
+        <div class="tools" style={{ padding: '0 20px 10px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* years come from the orders themselves; past three they go into a list so the bar does not grow */}
+          {years.length > 1 && (years.length <= 3
+            ? <div class="seg" role="group" aria-label="Year raised">{['all', ...years].map((y) => <button aria-pressed={yr === y} onClick={() => setYr(y)}>{y === 'all' ? 'All years' : y}</button>)}</div>
+            : <select class="po-year" aria-label="Year raised" value={yr} onChange={(e) => setYr((e.target as HTMLSelectElement).value)}>{['all', ...[...years].reverse()].map((y) => <option value={y}>{y === 'all' ? 'All years' : `Raised in ${y}`}</option>)}</select>)}
+          <div class="seg" role="group" aria-label="Show">{(['all', 'line', 'unit', 'amount', 'change'] as const).map((x) => <button aria-pressed={g === x} onClick={() => setG(x)}>{x === 'all' ? 'All' : PO_GROUP[x]}</button>)}</div>
+          <label class="chk"><input type="checkbox" checked={minor} onChange={(e) => setMinor((e.target as HTMLInputElement).checked)} /> Include notes ({minorN})</label>
+        </div>
+        {F.length ? <DataTable rows={F} columns={cols} rowKey={(f) => `${f.kind}|${f.po}|${f.line}|${f.text}`} onOpen={(f) => setOpen(f.po === open ? '' : f.po)} title={`${p.bh ?? p.code}-po-review`} storageKey="pl-cols-poreview" maxHeight={560}
+          groupBy={[{ label: 'year', key: (f) => f.year || '—' }, { label: 'finding', key: (f) => PO_KIND[f.kind].label }, { label: 'line', key: (f) => f.line }, { label: 'supplier', key: (f) => f.supplier }]} />
+          : <p class="muted" style={{ padding: '4px 20px 20px' }}>{R.findings.length ? 'Nothing here at this level. Tick “Include notes” to see the minor ones.' : 'No finding: every order agrees with its budget line and with the previous report.'}</p>}
+      </section>
+      {open && <section class="card" style={{ marginTop: '16px' }}>
+        <div class="card-h"><div><h2>PO {open} in every report</h2><p>Figures as each report gives them, one row per line of the order; a figure changed since the previous report is marked. Units show once something is spent.</p></div><div class="tools"><button class="btn ghost" onClick={() => setOpen('')}>Close</button></div></div>
+        <ul class="po-says">{R.findings.filter((f) => f.po === open).map((f) => <li><span class={`badge ${TONE[f.level][0]}`}>{TONE[f.level][1]}</span> <b>{PO_KIND[f.kind].label}</b> · line {f.line}: {f.text}{f.fix ? <> <b>Probably: {f.fix}</b></> : null}</li>)}</ul>
+        <div class="table-wrap" style={{ padding: '0 20px 16px' }}><table class="mini po-hist"><thead><tr><th>Report</th><th>Line</th><th class="r">Ordered</th><th class="r">Spent</th><th class="r">Open balance</th><th class="r">Units</th><th>Unit</th><th>Status</th><th>Description</th></tr></thead>
+          <tbody>{H.map((h, i) => { const o = H.slice(0, i).reverse().find((y) => y.line === h.line && y.label !== h.label); const c = (k: keyof typeof h) => o && o[k] !== h[k] ? 'ch' : ''; return (
+            <tr><td>{h.label}</td><td class={`num ${c('line')}`}>{h.line}</td><td class={`r num ${c('amount')}`}>{full(h.amount)}</td><td class={`r num ${c('spent')}`}>{full(h.spent)}</td><td class={`r num ${c('balance')}`}>{full(h.balance)}</td><td class={`r num ${c('units')}`} title={!h.units && h.spent < 0.005 ? 'Units come with the spending: none yet while the order is only committed' : undefined}>{h.units ? h.units : h.spent < 0.005 ? <span class="muted" style={{ whiteSpace: 'nowrap' }}>not yet</span> : 0}</td><td class={c('unitType')}>{h.unitType || '—'}</td><td class={c('status')}>{h.status}</td><td class={c('description')}>{h.description}</td></tr>); })}</tbody></table></div>
+      </section>}
+    </div>
+  );
+}

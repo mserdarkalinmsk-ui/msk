@@ -1,0 +1,212 @@
+import { byUpload, lineExposure, lines, n } from './calc';
+import type { Project } from './types';
+import type { PO } from './workbook';
+
+/**
+ * Service providers: purchase orders sorted into Event management, Consultants (national / international),
+ * Visibility, Research and Publication by what they buy (the PO wording), not by the budget code they are posted on.
+ * The budget code only decides when the wording says nothing. A user's choice for a PO always wins.
+ */
+export type Kind = 'events' | 'interp' | 'consult' | 'intl' | 'visibility' | 'research' | 'publication' | 'other' | 'grants' | 'perdiem' | 'staff' | 'petty';
+export const KINDS: { k: Kind; label: string; color: string; optional?: boolean; on?: boolean }[] = [
+  { k: 'events', label: 'Event management', color: 'var(--ink-3)' },
+  { k: 'interp', label: 'Translation / interpretation', color: '#0e7490' },
+  { k: 'consult', label: 'Consultant — national', color: 'var(--c1)' },
+  { k: 'intl', label: 'Consultant — international', color: 'var(--c7)' },
+  { k: 'visibility', label: 'Visibility', color: 'var(--critical)' },
+  { k: 'research', label: 'Research', color: 'var(--c3)' },
+  { k: 'publication', label: 'Publication', color: 'var(--warn)' },
+  { k: 'other', label: 'Other services', color: 'var(--plan)' },
+  // Groups that can be added to the totals on request.
+  { k: 'grants', label: 'Grants (6.1, 6.2)', color: 'var(--good)' },
+  { k: 'perdiem', label: 'Per diem & travel (1.3, 2.x, OM)', color: '#a16207', optional: true },
+  { k: 'staff', label: 'Staff salaries', color: '#94a3b8', optional: true },
+  { k: 'petty', label: 'Petty cash, direct debit & internal', color: '#78716c', optional: true },
+];
+export const isKind = (v: unknown): v is Kind => KINDS.some((x) => x.k === v);
+
+// Order matters: a PO naming a consultant is a consultant even when it is "for the research study".
+const RULES: [Kind | 'person', RegExp][] = [
+  ['interp', /interpr|translat|çeviri|\bçevir|tercüm|sözlü çeviri|simultan|consecutive|ardıl|booth|kabin|headset|kulaklık/i],
+  // A PO that says it organises an event is event management, whatever the event is about (a study, a training).
+  ['events', /event management|event organi[sz]|organi[sz](?:ation|ing|e) (?:of|the)|organisation of|organizasyon/i],
+  ['person', /consult|\bexpert|danışman|uzman|trainer|eğitmen|facilitator|moderat|rapporteur|\bfees?\b|honorari/i],
+  ['research', /research|\bstudy\b|studies|survey|assessment|analys[ie]s|mapping|baseline|needs? analysis|evaluation|araştırma|anket|inceleme|değerlendirme|çalışması/i],
+  ['publication', /publicat|printing|\bprint|layout|typesett|editing|\bbook|booklet|manual|handbook|guide(?:line)?s?\b|yayın|basım|baskı|matbaa|kitap|kılavuz|el kitabı|dizgi/i],
+  ['visibility', /visib|promot|banner|roll-?up|poster|leaflet|brochure|flyer|video|film|photo|social media|communicat|branding|give-?away|merchandis|website|campaign|görünürlük|tanıtım|afiş|broşür|kampanya|iletişim/i],
+  ['events', /event|conference|seminar|workshop|meeting|training|venue|catering|coffee|lunch|dinner|accommodation|hotel|room rent|organi[sz]ation of|round ?table|ceremony|toplantı|etkinlik|konferans|çalıştay|eğitim|organizasyon|otel|konaklama|yemek/i],
+];
+const INTL = /international|foreign|uluslararası|yabancı|abroad/i;
+const PETTY = /petty cash|caisse|avance de fonds|cash advance/i; // advances to the office, not a provider
+const STAFF = /^1\.[12]\.1(\.|$)/, PERDIEM = /^1\.3\.[12](\.|$)/, GRANTS = /^6\.[12](\.|$)/;
+const PERDIEM_T = /per ?diem|\bDSA\b|daily subsistence|subsistence allowance|harcırah|indemnit[éy]s? journali|frais de mission/i;
+const TRAVEL = /^2(\.|$)/, TRAVEL_T = /travel|ticket|flight|airfare|bilet|seyahat|uçak|yolculuk/i;
+const MISSION = /\bOM\b|ordre de mission|mission order|görev emri|\bmission\b/i;
+const EVENT_CO = /congress|organi[sz]ation|organizasyon|event|tourism|turizm|travel|seyahat|hotel|otel|kongre/i;
+const STAFF_T = /\bPAIE\b|payroll|salar(y|ies)|personnel temporaire|maaş|bordro/i;
+/** Kind of a PO from its wording, then from its budget line's code and wording; null when it buys none of these. */
+export function kindOf(text: string, code = '', lineText = '', supplier = ''): Kind | null {
+  // Groups first: they never count as a service, whatever else the wording says.
+  if (PETTY.test(text) || /service interne|internal service|internal recharge|direct debit|pr[ée]l[èe]vement|otomatik [öo]deme/i.test(`${text} ${supplier}`)) return 'petty';
+  if (STAFF.test(code) || STAFF_T.test(text)) return 'staff';
+  const byText = (t: string): Kind | null => {
+    for (const [k, re] of RULES) if (re.test(t)) return k === 'person' ? (INTL.test(t) || /^1\.2(\.|$)/.test(code) ? 'intl' : 'consult') : k;
+    return null;
+  };
+  // Travel and per diem lines (1.3.1, 1.3.2): mission orders (OM) and costs of experts are not counted; an event
+  // management company paid from these lines (venue, travel of participants) counts as event management.
+  // Travel (heading 2) is treated like the per diem lines: people's trips stay out, event companies count.
+  if (PERDIEM.test(code) || TRAVEL.test(code) || (TRAVEL_T.test(text) && /consult|expert|staff|participant|uzman|danışman|katılımcı/i.test(text))) {
+    if (MISSION.test(text) || PERDIEM_T.test(text) || /consult|expert|danışman|uzman/i.test(text)) return 'perdiem';
+    const k = byText(text);
+    if (k === 'visibility' || k === 'research' || k === 'publication') return k;
+    // Only a real event service: an event company, or the PO organises the event (not a participant's trip to it).
+    return EVENT_CO.test(supplier) || /organi[sz]|organizasyon|conference|konferans|venue|catering|congress|kongre|accommodation|konaklama|hotel|otel/i.test(text) ? 'events' : 'perdiem';
+  }
+  if (PERDIEM_T.test(text)) return 'perdiem';
+  if (GRANTS.test(code) || /\bgrant|sub-?grant|hibe/i.test(text)) return 'grants';
+  // Translation (5.5.1) and interpretation (5.5.2) lines decide before the wording ("translation of the study").
+  if (/^5\.5\.[12](\.|$)/.test(code) || /translat|interpr|terc[üu]m|[çc]evir/i.test(supplier)) return 'interp';
+  const own = byText(text); if (own) return own;
+  if (/^1\.1\.[23](\.|$)/.test(code)) return 'consult';
+  if (/^1\.2\.[23](\.|$)/.test(code)) return 'intl';
+  if (/^5\.7(\.|$)/.test(code)) return 'events';
+  return lineText ? byText(lineText) : null;
+}
+
+export const poKey = (p: Project, x: Pick<PO, 'po' | 'line' | 'description'>) => `${p.id}|${x.po}|${x.line}|${x.description}`;
+export interface ProviderPO extends PO { p: Project; kind: Kind | null; auto: Kind | null; key: string; value: number }
+/**
+ * Purchase orders of the latest report workbook of each project, with their kind. `set` holds the user's
+ * corrections (a kind, or 'none' to leave a PO out); with `all`, POs of no kind come too (to correct them).
+ */
+/** The automatic kind of each PO depends only on the project: kept per project object (a changed project is a new one). */
+const autoCache = new WeakMap<Project, ProviderPO[]>();
+export function providerPOs(P: Project[], set: Record<string, string> = {}, all = false): ProviderPO[] {
+  const out = P.flatMap((p) => {
+    let c = autoCache.get(p);
+    if (!c) { c = autoPOs(p); autoCache.set(p, c); }
+    return c.map((x) => ({ ...x }));
+  });
+  return applyChoices(out, set, all);
+}
+function autoPOs(p: Project): ProviderPO[] {
+  {
+    const wb = [...(p.reportingPeriods ?? [])].filter((r) => r.snapshot?.workbook).sort(byUpload).at(-1)?.snapshot?.workbook;
+    if (!wb?.pos?.length) return [];
+    const N = p.approvedBudget?.names ?? {}, byCode = new Map(lines(p).map((l) => [l.code, l.description ?? '']));
+    return wb.pos.flatMap((x) => {
+      const value = x.sc || x.amount; if (!value) return [];
+      const key = poKey(p, x), auto = kindOf(`${x.description} ${x.nature} ${PETTY.test(x.supplier) ? x.supplier : ''}`, x.line, `${N[x.line] ?? ''} ${byCode.get(x.line) ?? ''}`, x.supplier);
+      return [{ ...x, p, kind: auto, auto, key, value } as ProviderPO];
+    });
+  }
+}
+function applyChoices(out: ProviderPO[], set: Record<string, string>, all: boolean): ProviderPO[] {
+  // A provider known for interpretation (any of its POs reads as interpretation) is an interpretation firm: its
+  // other POs (technical equipment, booths under 5.7, a "conference" PO) count as interpretation too.
+  const interp = new Set(out.filter((x) => x.auto === 'interp').map((x) => supKey(x.supplier)));
+  // An event management company is one used again and again (or named as one): a provider paid once or twice from an
+  // event line (a venue, a training centre, a person's costs) is another service, not an event company.
+  const nPO = new Map<string, number>(); for (const x of out) nPO.set(supKey(x.supplier), (nPO.get(supKey(x.supplier)) ?? 0) + 1);
+  for (const x of out) {
+    if (x.auto && interp.has(supKey(x.supplier)) && ['events', 'consult', 'intl'].includes(x.auto)) x.auto = 'interp';
+    if (x.auto === 'events' && !EVENT_CO.test(x.supplier) && (nPO.get(supKey(x.supplier)) ?? 0) < 3) x.auto = 'other';
+    // Choices: a PO's own choice, then the choice made for the whole provider, then the automatic kind.
+    const u = set[x.key] ?? set[`sup|${supKey(x.supplier)}`] ?? set[`sup|${x.supplier.trim().toLowerCase()}`];
+    x.kind = u === 'none' ? null : isKind(u) ? u : x.auto;
+  }
+  return out.filter((x) => x.kind || all);
+}
+/**
+ * One key per company, however the name was typed: case, punctuation, the legal form (A.S., INC., LTD. STI …),
+ * a city after a dash and "(Fournisseur …)" notes are ignored, so "ZETA … INC.- ANKARA" and "ZETA … INC." merge.
+ */
+const keyCache = new Map<string, string>();
+export function supKey(s: string) {
+  let k = keyCache.get(s);
+  if (k == null) { if (keyCache.size > 20000) keyCache.clear(); k = supKeyOf(s); keyCache.set(s, k); }
+  return k;
+}
+function supKeyOf(s: string) {
+  return s.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/\s*[-–]\s*(ankara|istanbul|izmir|kyiv|tbilisi|strasbourg)\b.*$/i, ' ')
+    .replace(/[.,;:'"’()\-–_/&]+/g, ' ')
+    .replace(/(?<=^|\s)(a ?s|aş|a ?ş|inc|ltd|limited|sti|şti|org|co|corp|llc|gmbh|sarl|sa|srl|tic|ticaret|san|sanayi|ve)(?=\s|$)/g, ' ').replace(/(?<=^|\s)(a ?s|aş|inc|ltd|sti|şti|org)(?=\s|$)/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+/** Turkish words of company names with the English the orders use ("Kongre Hizmetleri" = "Congress Services"). */
+const TR_EN: Record<string, string> = { kongre: 'congress', toplanti: 'meeting', toplantilar: 'meetings', hizmetleri: 'services', hizmet: 'service', hizmetler: 'services', uluslararasi: 'international',
+  turizm: 'tourism', organizasyon: 'organization', organizasyonlari: 'organization', matbaa: 'print', matbaacilik: 'printing', baski: 'print', basim: 'printing', reklam: 'advertising', reklamcilik: 'advertising',
+  danismanlik: 'consulting', egitim: 'training', ceviri: 'translation', tercume: 'translation', ticaret: 'trade', yayincilik: 'publishing', yayin: 'publishing', otomotiv: 'automotive',
+  seyahat: 'travel', guvenlik: 'security', temizlik: 'cleaning', bilisim: 'it', yazilim: 'software', muhasebe: 'accounting', denetim: 'audit', hukuk: 'law', etkinlik: 'event', etkinlikleri: 'events' };
+const foldName = (t: string) => t.toLocaleLowerCase('tr').normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i');
+const nameWords = (s: string) => [...new Set(foldName(supKey(s)).split(/[^a-z0-9]+/).filter((x) => x.length > 2).map((x) => TR_EN[x] ?? TR_EN[x.replace(/ii/g, 'u')] ?? x))];
+const lev = (a: string, b: string) => { const d = Array.from({ length: b.length + 1 }, (_, j) => j); for (let i = 1; i <= a.length; i++) { let p = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1)); p = t; } } return d[b.length]; };
+// a scan reads ü as "ii" and drops letters: words are alike when they differ by at most two letters
+const like = (x: string, y: string) => x === y || x.replace(/ii/g, 'u') === y || (Math.min(x.length, y.length) >= 5 && lev(x, y) <= 2);
+/**
+ * The known name that is the same company as a name read from a document: more than half of the words alike (in
+ * Turkish or English), or the same first word when no other known name starts with it.
+ */
+export function closestName(name: string, known: string[]): string | undefined {
+  const a = nameWords(name); if (!a.length) return undefined;
+  let best: string | undefined, score = 0.5;
+  for (const k of known) { const b = nameWords(k), n = a.filter((x) => b.some((y) => like(x, y))).length / Math.max(1, Math.min(a.length, b.length)); if (n > score) { score = n; best = k; } }
+  if (best) return best;
+  const first = a[0]; if (first.length < 4) return undefined;
+  const same = [...new Set(known.filter((k) => { const b = nameWords(k); return b.length > 0 && like(b[0], first); }).map(supKey))];
+  return same.length === 1 ? known.find((k) => supKey(k) === same[0]) : undefined;
+}
+/** The provider key of the orders a contract belongs to: its own key, else the provider whose name is the same company. */
+export function contractSupKey(k: string, name: string | undefined, known: Map<string, string>): string {
+  if (known.has(k) || !name) return k;
+  const n = closestName(name, [...known.values()]); return n ? supKey(n) : k;
+}
+/** Concentration: the largest provider's share of a kind (procurement spread). */
+export function topShare(L: ProviderPO[]): { name: string; share: number } | null {
+  const m = new Map<string, { name: string; v: number }>(); let t = 0;
+  for (const x of L) { const k = supKey(x.supplier); const g = m.get(k) ?? { name: x.supplier, v: 0 }; g.v += x.value; t += x.value; m.set(k, g); }
+  const top = [...m.values()].sort((a, b) => b.v - a.v)[0];
+  return top && t > 0 && m.size > 1 ? { name: top.name, share: top.v / t } : top && m.size === 1 && t > 0 ? { name: top.name, share: 1 } : null;
+}
+export interface SupplierRow { supplier: string; kind: Kind; pos: number; spent: number; sc: number; projects: Map<string, number>; max: number }
+/** Suppliers per kind, summed over the projects; `max` is the largest amount in a single project. */
+export function suppliers(L: ProviderPO[]): SupplierRow[] {
+  const m = new Map<string, SupplierRow>();
+  for (const x of L) {
+    if (!x.kind) continue;
+    const name = x.supplier.trim() || '(no supplier)', k = `${x.kind}|${name.toLowerCase()}`;
+    const g = m.get(k) ?? { supplier: name, kind: x.kind, pos: 0, spent: 0, sc: 0, projects: new Map(), max: 0 };
+    g.pos++; g.spent += x.spent; g.sc += x.value;
+    g.projects.set(x.p.id, (g.projects.get(x.p.id) ?? 0) + x.value); g.max = Math.max(g.max, g.projects.get(x.p.id)!);
+    m.set(k, g);
+  }
+  return [...m.values()].sort((a, b) => b.sc - a.sc);
+}
+
+/* ---------- budget ceilings by code (consultants and 5.7), for comparison ---------- */
+export interface CeilingRow { p: Project; code: string; description: string; kind: Kind; unit: string; units: number | null; rate: number | null; approved: number; exposure: number; remaining: number; used: number }
+const codeKind = (c: string): Kind | null => (/^1\.1\.[23](\.|$)/.test(c) ? 'consult' : /^1\.2\.[23](\.|$)/.test(c) ? 'intl' : /^5\.7(\.|$)/.test(c) ? 'events' : null);
+export function ceilings(P: Project[]): CeilingRow[] {
+  return P.flatMap((p) => lines(p).flatMap((l) => {
+    const kind = codeKind(l.code); if (!kind) return [];
+    const approved = n(l.approved), exposure = lineExposure(l);
+    if (!approved && !exposure) return [];
+    return [{ p, code: l.code, description: l.description || `Line ${l.code}`, kind, unit: l.unit ?? '', units: l.approvedUnits ?? null, rate: l.unitRate ?? null, approved, exposure, remaining: approved - exposure, used: approved ? exposure / approved : Infinity }];
+  }));
+}
+
+/** Service providers in short for the monthly pack and the presentation: the main kinds only (no salaries,
+ *  per diems or petty cash), by country, by kind and the largest providers. */
+export function providerSummary(P: Project[], set: Record<string, string> = {}, top = 10) {
+  const L = providerPOs(P, set).filter((x) => x.kind && !KINDS.find((k) => k.k === x.kind)?.optional);
+  const total = L.reduce((a, x) => a + x.value, 0);
+  const by = <K,>(f: (x: ProviderPO) => K) => [...L.reduce((m, x) => m.set(f(x), (m.get(f(x)) ?? 0) + x.value), new Map<K, number>())].sort((a, b) => b[1] - a[1]);
+  return {
+    total, pos: L.length, providers: new Set(L.map((x) => supKey(x.supplier))).size, projects: new Set(L.map((x) => x.p.id)).size,
+    countries: by((x) => x.p.country).map(([c, v]) => ({ c, v })),
+    kinds: by((x) => x.kind as Kind).map(([k, v]) => ({ k, v, label: KINDS.find((x) => x.k === k)!.label, n: L.filter((x) => x.kind === k).length })),
+    top: suppliers(L).slice(0, top),
+  };
+}
+export type ProviderSummary = ReturnType<typeof providerSummary>;

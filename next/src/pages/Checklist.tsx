@@ -1,0 +1,55 @@
+import { Ico, type IcoName } from '../ui/Ico';
+import { useState } from 'preact/hooks';
+import { filtered, get, go, set, setCheck, useStore } from '../data/store';
+import { monthTasks, type Task } from '../domain/checklist';
+import { TODAY } from '../today';
+import { month } from '../ui/format';
+import { events } from './Agenda';
+import { officeRows } from './OfficeSummary';
+
+const GROUPS: Task['group'][] = ['Data', 'Reports', 'Staff', 'Contracts', 'Offices', 'Close the month'];
+const ICON: Record<Task['group'], IcoName> = { Data: 'download', Reports: 'reports', Staff: 'people', Contracts: 'flag', Offices: 'grid', 'Close the month': 'flag' };
+
+/** This month's checklist: what the data says is still to do, ticked automatically when the data proves it. */
+export function Checklist({ fold }: { fold?: boolean } = {}) {
+  const s = useStore((x) => x);
+  const P = filtered(s), m = TODAY.toISOString().slice(0, 7);
+  const L = { ...s.ledger, projects: P };
+  const T = monthTasks(L, TODAY, { events: events(P), officeRequests: officeRows(get().ledger.offices ?? []).map((r) => ({ o: r.o, request: r.request, date: r.r.date })) });
+  const ticks = s.ledger.checklist?.[m] ?? {};
+  const isDone = (t: Task) => (t.auto ? !!t.done : !!ticks[t.key]);
+  // a long group shows its first six (the open ones first) until asked for all
+  const [more, setMore] = useState<Set<string>>(new Set());
+  const done = T.filter(isDone).length, pct = T.length ? done / T.length : 1;
+  const groups = GROUPS.map((g) => { const G = T.filter((t) => t.group === g); if (!G.length) return null; const d = G.filter(isDone).length; return (
+        <section class="card ck-g">
+          <div class="card-h"><div><h2><span class="ck-i"><Ico n={ICON[g]} size={14} /></span>{g}</h2><p>{d} of {G.length} done</p></div></div>
+          <ul class="ck-l">{G.sort((a, b) => Number(isDone(a)) - Number(isDone(b)) || (a.due ?? '9').localeCompare(b.due ?? '9')).slice(0, more.has(g) ? undefined : 6).map((t) => { const ok = isDone(t); return (
+            <li class={ok ? 'done' : ''}>
+              <label class="ck-box"><input type="checkbox" checked={ok} disabled={t.auto} onChange={(e) => setCheck(m, t.key, (e.target as HTMLInputElement).checked)} title={t.auto ? 'Ticks itself from the data' : 'Tick when done'} /></label>
+              <div class="ck-t"><b>{t.title}</b><small class="muted">{t.detail}</small></div>
+              {t.auto && <span class="badge neutral">auto</span>}
+              {t.due && !ok && t.due < TODAY.toISOString().slice(0, 10) && <span class="badge critical">overdue</span>}
+              {(t.pid || t.to || t.importer) && !ok && <button class="linkish no-print ck-go" onClick={() => (t.importer ? set({ drawer: { kind: 'import' } }) : go(t.to ?? `project/${t.pid}`))}>{t.importer ? 'Import →' : 'Open →'}</button>}
+            </li>); })}</ul>
+          {G.length > 6 && <div class="ll-more no-print"><button onClick={() => { const n = new Set(more); n.has(g) ? n.delete(g) : n.add(g); setMore(n); }}>{more.has(g) ? 'Show fewer' : `Show all ${G.length}`}</button></div>}
+        </section>); });
+  // Inside the monthly close: the month's to-do list folded into one card, open while something is left.
+  if (fold) return (
+    <details class="card ck-fold" open={done < T.length}>
+      <summary><span class="ck-ring sm" style={{ '--p': `${Math.round(pct * 100)}` } as Record<string, string>}><b>{Math.round(pct * 100)}%</b></span>
+        <span><b>To do this month · {done} of {T.length} done</b><small class="muted">Fresh reports, data issues, deadlines and contracts in the next 45 days, office budgets — items marked auto tick themselves from the data</small></span></summary>
+      <div class="ck ck-in">{groups}</div>
+    </details>
+  );
+  return (
+    <div class="ck">
+      <section class="card ck-h">
+        <div><div class="muted ck-k">Monthly checklist · {month(TODAY.getTime())}</div><h2>{done} of {T.length} done</h2>
+          <p class="muted">Built from the data: a fresh report for every running project, open data issues, deadlines and contracts in the next 45 days, office budgets and the monthly close. Items marked <span class="badge neutral">auto</span> tick themselves when the data shows they are done.</p></div>
+        <div class="ck-ring" style={{ '--p': `${Math.round(pct * 100)}` } as Record<string, string>}><b>{Math.round(pct * 100)}%</b></div>
+      </section>
+      {groups}
+    </div>
+  );
+}

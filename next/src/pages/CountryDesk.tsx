@@ -1,0 +1,822 @@
+import { MON } from '../domain/dt';
+import { Ico, type IcoName } from '../ui/Ico';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
+import { officeServices } from '../domain/officeServices';
+import { impliedRate, nextYearCost, orderChecks, orderPeriod, yearCost } from '../domain/contractFx';
+import { asOfficeContract, ceilingsAtRisk, countryContracts, officeEntriesFor, officeOrders, stillToOrder } from '../domain/contractItems';
+import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
+import { type Contract, amendmentDiff, capEur, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
+import { addCoreMembers, get, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
+import { readXlsx } from '../ui/xlsx';
+import { download } from '../ui/xlsxwrite';
+import { noticeLetterDocx } from '../ui/ContractLetter';
+import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
+import { ocrPdf, readDocument, readPages } from '../ui/docread';
+import { cleanItemLabel, contractTerms, realDate, type ContractTerms } from '../domain/contractRead';
+import { fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
+import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
+import { spentInYear } from '../domain/yearSpend';
+import { alerts, outcome } from '../domain/insights';
+import { openAlerts } from '../domain/worklist';
+import { programmeOf } from '../domain/flex';
+import { plabel } from '../domain/label';
+import { LS_BH, OB_BH, officeView, type Office, type OfficeReport } from '../domain/office';
+import { closestName, contractSupKey, providerPOs, providerSummary, suppliers, supKey, KINDS } from '../domain/providers';
+import { daysUntil, n2, renewals, type Base } from '../domain/staff';
+import { SalarySection } from '../ui/CountryPanel';
+import { StaffPlanTable } from './StaffPlan';
+import { StaffReport } from './StaffReport';
+import type { Project } from '../domain/types';
+import { TODAY } from '../today';
+import { date, full, inCur, pct, short } from '../ui/format';
+import { CAL_KINDS, calItems, events, type Ev } from './Agenda';
+import { allPeople, StaffBoard } from './People';
+import { ProjectsBody } from './Projects';
+import { BudgetBody } from './Budget';
+import { poReports, reviewOf } from './POReview';
+import { reportDiff } from '../domain/reportDiff';
+import { ProviderBrief } from './Providers';
+import { TenderBoard } from './Tenders';
+import { Firm, Who } from '../ui/EntityPanel';
+import { CalendarView } from '../ui/CalendarView';
+
+/** The tabs of a country, in the order of the questions asked of it: how is it doing; the money of the projects, then of
+ *  the office; the people; the contracts and suppliers (one place for the office's and the projects'); what is coming. */
+export const DESK_TABS = ['Overview', 'Projects', 'Office', 'People', 'Contracts & suppliers', 'Calendar'] as const;
+export type DeskTab = (typeof DESK_TABS)[number];
+/** A tab's part of the address: "Contracts & suppliers" → "contracts". */
+export const deskSlug = (t: DeskTab) => ({ Overview: 'overview', Projects: 'projects', Office: 'office', People: 'people', 'Contracts & suppliers': 'contracts', Calendar: 'calendar' } as const)[t];
+/** The tab of an address part, the addresses of the earlier tabs included (links and bookmarks keep working). */
+export const slugTab = (s?: string): DeskTab | undefined => DESK_TABS.find((t) => deskSlug(t) === s) ?? ({ 'office-budget': 'Office', budget: 'Projects', staff: 'People', tenders: 'Contracts & suppliers', deadlines: 'Calendar' } as Record<string, DeskTab>)[s ?? ''];
+
+const now = () => TODAY.toISOString().slice(0, 10);
+const active = (p: Project) => p.start <= now() && p.end >= now();
+const KIND_LABEL: Record<Ev['kind'], string> = { report: 'Report due', contract: 'Staff contract ends', activity: 'Activity ends', project: 'Project ends' };
+const open = (p: Project, slug = '') => go(`project/${p.id}${slug ? '/' + slug : ''}`);
+
+/** One coloured tile; a click opens its tab. */
+function Tile({ k, color, icon, label, value, sub, onClick }: { k: string; color: string; icon: IcoName; label: string; value: ComponentChildren; sub: ComponentChildren; onClick?: () => void }) {
+  return <button class={`po-k cd-k cd-${k}`} style={{ '--k': color } as never} onClick={onClick}>
+    <span class="po-k-h"><i aria-hidden="true"><Ico n={icon} size={14} /></i>{label}</span><b>{value}</b><em>{sub}</em><span class="po-k-bar" aria-hidden="true"><u class="none" style={{ flex: 1 }} /></span></button>;
+}
+
+export function CountryOverview({ name, cid, P, offices, setTab }: { name: string; cid: string; P: Project[]; offices: Office[]; setTab: (t: DeskTab) => void }) {
+  const set = useStore((s) => s.ledger.poKinds) ?? {};
+  const A = P.filter(active), M = P.map(money);
+  const budget = M.reduce((a, m) => a + m.budget, 0), spent = M.reduce((a, m) => a + m.spent, 0);
+  const people = allPeople(P).filter((a) => a.status === 'Active'), ending = renewals(people, TODAY, 60);
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], coreOn = core.filter((m) => onTeam(m, TODAY)), coreEnd = coreDue(core, TODAY).filter((d) => d.days != null && d.days >= 0 && d.days <= 60);
+  const S = providerSummary(P, set, 3);
+  const E = events(P).filter((e) => e.day >= now() && daysUntil(e.day, TODAY) <= 90), late = events(P).filter((e) => e.kind === 'report' && e.tone === 'bad');
+  const FW = useStore((s) => s.ledger.frameworks) ?? {}, mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
+  const due = contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY));
+  // the year looked at: the office budget is yearly, the projects run over years — both read for the same calendar year
+  const thisYear = TODAY.getUTCFullYear();
+  const years = [...new Set([...offices.flatMap((o) => o.reports.map((r) => r.year)), ...P.flatMap((p) => { const a = +p.start.slice(0, 4), b = Math.min(+p.end.slice(0, 4), thisYear); return Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i); })])].filter((y) => y <= thisYear).sort();
+  const [yr, setYr] = useState(thisYear);
+  const Y = years.includes(yr) ? yr : years.at(-1) ?? thisYear;
+  const Ts = offices.flatMap((o) => { const r = [...o.reports].filter((x) => x.year === Y).sort((a, b) => a.date.localeCompare(b.date)).at(-1); return r ? [{ r, T: officeView(r).T }] : []; });
+  const inYear = P.map((p) => spentInYear(p, Y)), spentY = inYear.reduce((a, x) => a + x.v, 0), basis = inYear.some((x) => x.basis === 'reports') ? 'from the reports around the year' : 'from the dated postings';
+  const ob = Ts.reduce((a, { T }) => ({ b: a.b + T.ob.budget + T.ls.budget, sc: a.sc + T.ob.sc + T.ls.sc, pl: a.pl + T.ob.planned + T.ls.planned, ob: a.ob + T.ob.budget, ls: a.ls + T.ls.budget }), { b: 0, sc: 0, pl: 0, ob: 0, ls: 0 });
+  const committed = M.reduce((a, m) => a + m.committed, 0);
+  return <>
+    {years.length > 1 && <div class="cd-year"><span>Year</span><div class="seg" role="group" aria-label="Year">{years.slice(-4).map((y) => <button aria-pressed={Y === y} onClick={() => setYr(y)}>{y}</button>)}</div></div>}
+    <section class="bud2" aria-label={`Budgets in ${name}`}>
+      <button class="bud bud-ob" onClick={() => setTab('Office')}>
+        <span class="bud-h">Office budget<small>the office's running costs: Ordinary Budget and LS & Pagoda{Ts[0] ? ` · ${Ts[0].r.year}, situation ${date(Ts[0].r.date)}` : ''}</small></span>
+        {Ts.length ? <><b class="bud-v" title={full(ob.b)}>{short(ob.b)}</b>
+          <Bar parts={[[ob.sc, 'var(--c1)'], [ob.pl, 'color-mix(in srgb, var(--c1) 35%, transparent)']]} of={ob.b} />
+          <dl><dt>Ordinary Budget · BH {offices[0]?.bh ?? OB_BH}</dt><dd>{full(ob.ob)}</dd><dt>LS & Pagoda · BH {LS_BH}</dt><dd>{full(ob.ls)}</dd><dt>Spent + committed</dt><dd>{full(ob.sc)} <small>({pct(ob.b ? ob.sc / ob.b : 0)})</small></dd><dt>Foreseen to year end</dt><dd>{full(ob.pl)}</dd><dt><b>Left after the forecast</b></dt><dd style={{ color: ob.b - ob.sc - ob.pl < -0.5 ? 'var(--critical)' : undefined }}><b>{full(ob.b - ob.sc - ob.pl)}</b></dd></dl></>
+          : <p class="muted">{offices.length ? `No office report for ${Y}.` : `No office budget imported for ${name}.`}</p>}
+      </button>
+      <button class="bud bud-eb" onClick={() => setTab('Projects')}>
+        <span class="bud-h">Projects<small>extraordinary budget: joint programmes and voluntary contributions · {A.length} running{P.length > A.length ? ` of ${P.length}` : ''}</small></span>
+        {P.length ? <><b class="bud-v" title={full(budget)}>{short(budget)}</b>
+          <Bar parts={[[spent, 'var(--c3)'], [committed, 'color-mix(in srgb, var(--c3) 40%, transparent)']]} of={budget} />
+          <dl><dt><b>Spent in {Y}</b></dt><dd title={basis}><b>{full(spentY)}</b></dd><dt>Spent to date</dt><dd>{full(spent)} <small>({pct(budget ? spent / budget : 0)})</small></dd><dt>Committed</dt><dd>{full(committed)}</dd><dt>Not yet committed</dt><dd>{full(budget - spent - committed)}</dd></dl></>
+          : <p class="muted">No project in {name}.</p>}
+      </button>
+      <div class="bud bud-all"><span class="bud-h">In {name}<small>office and projects together</small></span><b class="bud-v" title={full(ob.b + budget)}>{short(ob.b + budget)}</b>
+        <Bar parts={[[ob.b, 'var(--c1)'], [budget, 'var(--c3)']]} of={ob.b + budget} />
+        <dl><dt>Used in {Y}</dt><dd title="office spent + committed, and the projects' spending of the year">{full(ob.sc + spentY)}</dd><dt>Office</dt><dd>{pct(ob.b + budget ? ob.b / (ob.b + budget) : 0)}</dd><dt>Extraordinary</dt><dd>{pct(ob.b + budget ? budget / (ob.b + budget) : 0)}</dd></dl></div>
+    </section>
+    <div class="po-kpi cd-kpi cd-kpi3">
+      <Tile k="ten" color="var(--c4)" icon="flag" label="Contracts & suppliers" value={S.total ? short(S.total) : '—'} sub={<>{due.length ? <strong>{due.length} contract{due.length > 1 ? 's' : ''} ending soon · </strong> : ''}{S.total ? `${S.providers} providers · ${S.pos} orders` : 'no service-provider order yet'}</>} onClick={() => setTab('Contracts & suppliers')} />
+      <Tile k="stf" color="var(--c7)" icon="people" label="People" value={`${coreOn.length + people.length}`} sub={`${coreOn.length} core team · ${people.length} on projects · ${coreEnd.length + ending.length} contract${coreEnd.length + ending.length === 1 ? '' : 's'} ending within 60 days`} onClick={() => setTab('People')} />
+      <Tile k="dl" color="var(--c8)" icon="clock" label="Calendar" value={`${E.length}`} sub={`in the next 90 days${late.length ? ` · ${late.length} report${late.length > 1 ? 's' : ''} overdue` : ''}`} onClick={() => setTab('Calendar')} />
+    </div>
+    <LookingAhead name={name} P={P} officeLeft={Ts.length ? ob.b - ob.sc - ob.pl : null} year={Y} setTab={setTab} />
+    <div class="cd-two">
+      <CountryAlerts name={name} cid={cid} P={P} setTab={setTab} offices={offices} />
+      <section class="card cu"><div class="card-h"><div><h2>Coming up</h2><p>The next 90 days</p></div>{E.length > 6 && <div class="tools"><button class="btn ghost" onClick={() => setTab('Calendar')}>All {E.length} ›</button></div>}</div>
+        <div class="card-b">{E.length ? <ul class="cd-ev">{E.slice(0, 6).map((e) => <EvRow e={e} />)}</ul> : <p class="muted">Nothing dated in the next 90 days.</p>}</div></section>
+    </div>
+    <SinceLastReports name={name} P={P} offices={offices} />
+  </>;
+}
+
+/** Where the country is heading: the office's result at the year end, and each running project's use of its budget at its current pace. */
+function LookingAhead({ name, P, officeLeft, year, setTab }: { name: string; P: Project[]; officeLeft: number | null; year: number; setTab: (t: DeskTab) => void }) {
+  const R = P.filter(active).filter((p) => !p.datesTbc).map((p) => ({ p, o: outcome(p, TODAY) })).filter((x) => x.o.basis !== 'no data').sort((a, b) => a.o.utilisation - b.o.utilisation);
+  const unused = R.reduce((a, x) => a + x.o.unused, 0), over = R.reduce((a, x) => a + x.o.overrun, 0);
+  return <section class="card la"><div class="card-h"><div><h2>Looking ahead in {name}</h2><p>The office at the end of {year}, and each running project at its end if it keeps its current pace of spending</p></div></div>
+    <div class="card-b la-g">
+      <button class="la-k" onClick={() => setTab('Office')}><span>Office at the end of {year}</span>{officeLeft == null ? <b class="muted">—</b> : <b style={{ color: officeLeft < -0.5 ? 'var(--critical)' : 'var(--good)' }}>{officeLeft < -0.5 ? `short by ${full(-officeLeft)}` : `${full(officeLeft)} left`}</b>}<small>after what is foreseen to the year end</small></button>
+      <div class="la-k"><span>Projects at their end</span><b style={{ color: unused > 0.5 ? 'var(--serious)' : 'var(--good)' }}>{unused > 0.5 ? `${short(unused)} may stay unused` : 'budgets used in full'}</b><small>{over > 0.5 ? `and ${short(over)} above budget on others · ` : ''}at the current pace</small></div>
+      <ul class="la-l">{R.map(({ p, o }) => <li onClick={() => open(p)}><b>{plabel(p)}</b><span class="la-bar"><i style={{ width: `${Math.min(100, o.utilisation * 100)}%`, background: o.utilisation < 0.85 ? 'var(--serious)' : o.utilisation > 1 ? 'var(--critical)' : 'var(--good)' }} /></span><span class="num">{pct(o.utilisation)}</span><small class="muted">{o.unused > 0.5 ? `${short(o.unused)} unused` : o.overrun > 0.5 ? `${short(o.overrun)} over` : 'on track'}</small></li>)}</ul>
+    </div></section>;
+}
+
+/** What the latest report of each project brought, against the one before: spending, orders, and the lines and units to check. */
+function SinceLastReports({ name, P, offices }: { name: string; P: Project[]; offices: Office[] }) {
+  // every report counts for the dates and the spending; the orders come from the reports that carry a purchase-order sheet
+  const R = P.map((p) => { const L = reportsByDate(p).filter((r) => r.snapshot?.lines?.length && !budgetOnly(r)), a = L.at(-2), b = L.at(-1); if (!b) return null;
+    const W = poReports(p), D = W.length > 1 ? reportDiff(W.at(-2)!.wb, W.at(-1)!.wb) : null, F = reviewOf(p).findings.filter((f) => (f.group === 'line' || f.group === 'unit') && f.level !== 'info');
+    return { p, to: b.name || date(b.date), from: a ? a.name || date(a.date) : undefined, spent: a ? reportTotals(b).actual - reportTotals(a).actual : null, d: D, flags: F.length, n: (k: string) => D?.pos.filter((x) => x.kind === k).length ?? 0 }; })
+    .filter(Boolean) as { p: Project; to: string; from?: string; spent: number | null; d: ReturnType<typeof reportDiff> | null; flags: number; n: (k: string) => number }[];
+  const off = offices.map((o) => { const a = o.reports.at(-2), b = o.reports.at(-1)!; // a system export carries no LS & Pagoda figures: then only the Ordinary Budget, which both reports carry, is compared
+    const both = !!a && a.hasPlan && b.hasPlan, sc = (r: typeof b) => officeView(r).T.ob.sc + (both ? officeView(r).T.ls.sc : 0); return { o, b, d: a ? sc(b) - sc(a) : null, from: a, both }; });
+  if (!R.length && !off.length) return null;
+  return <section class="card sl"><div class="card-h"><div><h2>Since the last reports in {name}</h2><p>Each project's latest report against the one before it · click a project for its PO review</p></div></div>
+    <div class="card-b table-scroll"><table class="mini"><thead><tr><th>Project</th><th>Latest report</th><th class="r" title="As the reports total it: administrative costs (line 10) included">Spent since the one before</th><th class="r">New orders</th><th class="r">Orders with more committed</th><th class="r">Lines and units to check</th></tr></thead>
+      <tbody>{R.map((x) => <tr class="click" onClick={() => open(x.p, 'poreview')}><td><b>{plabel(x.p)}</b></td><td>{x.to}{x.from ? <small class="muted"> · after {x.from}</small> : <small class="muted"> · the first</small>}</td>
+        <td class="r num">{x.spent != null ? full(x.spent) : '—'}</td><td class="r num">{x.d ? x.n('new') : '—'}</td><td class="r num">{x.d ? x.n('raised') : '—'}</td>
+        <td class="r">{x.flags ? <span class="badge warning">{x.flags}</span> : <span class="muted">0</span>}</td></tr>)}
+        {off.map((x) => <tr><td><b>{x.o.name}</b> <small class="muted">office</small></td><td>situation {date(x.b.date)}{x.from ? <small class="muted"> · after {date(x.from.date)}</small> : null}</td><td class="r num" title={x.both ? 'office spent + committed, both funds' : 'Ordinary Budget only: one of the two reports is a system export without LS & Pagoda'}>{x.d != null ? full(x.d) : '—'}{x.d != null && !x.both ? <small class="muted"> OB</small> : null}</td><td /><td /><td /></tr>)}</tbody></table></div></section>;
+}
+
+/** Everything open in the country in one list: the projects' alerts, contracts with providers and core team contracts ending. */
+function CountryAlerts({ name, cid, P, setTab, offices }: { name: string; cid: string; P: Project[]; setTab: (t: DeskTab) => void; offices: Office[] }) {
+  const marks = useStore((s) => s.ledger.alertMarks), FW = useStore((s) => s.ledger.frameworks) ?? {}, core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [], set = useStore((s) => s.ledger.poKinds) ?? {};
+  const mine = new Set(providerPOs(P, set).map((x) => supKey(x.supplier)));
+  const entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
+  const CC = countryContracts(FW, P, set, offices, cid);
+  const ceilingUse = (k: string) => { const c = FW[k]; if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; } return { used: CC.ordersOf(k, c ?? {}).reduce((a, x) => a + x.value, 0) }; };
+  const rank = { critical: 0, serious: 1, warning: 2 } as const;
+  const atRisk = ceilingsAtRisk(CC.items, CC.ordersOf, TODAY).filter((x) => !ceilingSeverity(x.p.used, x.p.cap));
+  type Item = { sev: keyof typeof rank; who: string; what: string; detail: string; go: () => void };
+  const items: Item[] = [
+    ...openAlerts(alerts(P, TODAY), marks, TODAY).map((a) => { const p = P.find((x) => x.id === a.projectId)!; return { sev: a.severity, who: plabel(p), what: a.title, detail: a.detail, go: () => open(p) }; }),
+    ...contractAlerts(contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => mine.has(k) || c.country === cid)), TODAY)).map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Contract', what: `${d.name}: ${dueText(d)}`, detail: `${d.ref ? d.ref + ' · ' : ''}${d.noticeBy ? `last day to give notice ${date(d.noticeBy)} · ` : ''}ends ${date(d.end)}`, go: () => setTab('Contracts & suppliers') })),
+    ...contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => (mine.has(k) || c.country === cid) && c.cap)), TODAY, ceilingUse).flatMap((d) => { const sv = ceilingSeverity(d.used, d.cap); return sv ? [{ sev: sv, who: 'Contract', what: `${d.name}: ${pct(d.cap ? d.used / d.cap : 0)} of its ceiling ordered`, detail: `${full(d.used)} of ${full(d.cap!)}`, go: () => setTab('Contracts & suppliers') }] : []; }),
+    ...atRisk.map((x) => ({ sev: 'warning' as const, who: 'Contract', what: `${x.name}: ceiling reached by ${MON3(x.p.reach!)} at the current pace`, detail: `${full(x.p.used)} of ${full(x.p.cap)} ordered · ${full(x.p.perMonth)} a month over six months · contract ends ${x.c.end ? date(x.c.end) : '—'}`, go: () => go(`countries/${cid}/contracts`) })),
+    ...coreDue(core, TODAY).filter((d) => d.severity === 'critical' || d.severity === 'serious' || d.severity === 'warning').map((d) => ({ sev: d.severity as keyof typeof rank, who: 'Core team', what: `${d.m.name}: contract ${d.days! < 0 ? 'ended' : 'ends'} ${date(d.m.end!)}`, detail: d.m.position, go: () => setTab('People') })),
+  ].sort((a, b) => rank[a.sev] - rank[b.sev]);
+  const [all, setAll] = useState(false);
+  const n = (k: keyof typeof rank) => items.filter((x) => x.sev === k).length;
+  return <section class="card ca"><div class="card-h"><div><h2>Needs attention in {name}</h2><p>{items.length ? `${n('critical')} critical · ${n('serious')} serious · ${n('warning')} to watch — projects, contracts with providers and the core team in one list` : 'Nothing open: no project alert, no contract or core team contract ending soon.'}</p></div></div>
+    {items.length > 0 && <div class="card-b"><ul class="ca-l">{(all ? items : items.slice(0, 8)).map((x) => <li class={`ca-i s-${x.sev}`} onClick={x.go}><span class={`badge ${x.sev}`}>{x.sev}</span><b>{x.who}</b><span>{x.what}<small class="muted">{x.detail}</small></span></li>)}</ul>
+      {items.length > 8 && <button class="btn ghost" onClick={() => setAll(!all)}>{all ? 'Show fewer' : `Show all ${items.length}`}</button>}</div>}</section>;
+}
+
+/** A stacked bar: each part's share of the whole. */
+function Bar({ parts, of }: { parts: [number, string][]; of: number }) {
+  return <span class="bud-bar">{parts.map(([v, c]) => <i style={{ width: `${of > 0 ? Math.max(0, Math.min(100, v / of * 100)) : 0}%`, background: c }} />)}</span>;
+}
+
+function EvRow({ e }: { e: Ev }) {
+  const d = daysUntil(e.day, TODAY);
+  return <li class={`cd-e t-${e.tone}`} onClick={() => open(e.p, e.kind === 'contract' ? 'staff' : e.kind === 'report' ? 'reports' : '')}>
+    <span class="num cd-d">{date(e.day)}</span><span><b>{plabel(e.p)}</b> · {KIND_LABEL[e.kind]}<small class="muted">{e.title !== 'Project ends' ? ` · ${e.title}` : ''}</small></span>
+    <span class={`badge ${d < 0 ? 'critical' : d <= 30 ? 'serious' : d <= 60 ? 'warning' : 'neutral'}`}>{d < 0 ? `${-d} d late` : d === 0 ? 'today' : `${d} d`}</span></li>;
+}
+
+/** The country's projects as on the Projects page, opened by a short overview of joint programmes and voluntary contributions. */
+export function CountryProjects({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const part = (g: 'JP' | 'VC' | 'all') => { const L = g === 'all' ? P : P.filter((p) => programmeOf(p) === g), M = L.map(money); return { n: L.length, run: L.filter(active).length, b: M.reduce((a, m) => a + m.budget, 0), s: M.reduce((a, m) => a + m.spent, 0), c: M.reduce((a, m) => a + m.committed, 0) }; };
+  const Card = ({ g, title, k }: { g: 'JP' | 'VC' | 'all'; title: string; k: string }) => { const x = part(g);
+    return <div class="bud" style={{ '--k': k } as never}><span class="bud-h">{title}<small>{x.n} project{x.n === 1 ? '' : 's'} · {x.run} running</small></span><b class="bud-v" title={full(x.b)}>{short(x.b)}</b>
+      <Bar parts={[[x.s, k], [x.c, `color-mix(in srgb, ${k} 40%, transparent)`]]} of={x.b} />
+      <dl><dt>Spent</dt><dd>{full(x.s)} <small>({pct(x.b ? x.s / x.b : 0)})</small></dd><dt>Committed</dt><dd>{full(x.c)}</dd><dt><b>Not yet committed</b></dt><dd><b>{full(x.b - x.s - x.c)}</b></dd></dl></div>; };
+  const [v, setV] = useView('pl-proj-view', PROJECT_VIEWS);
+  return <>
+    <ViewBar views={PROJECT_VIEWS} v={v} set={setV} label="Projects" />
+    {v === 'By budget line' ? <BudgetBody P={P} /> : <>
+    <section class="bud2" aria-label={`Extraordinary budget and voluntary contributions in ${name}`}>
+      <Card g="JP" title="Joint programmes" k="var(--c3)" /><Card g="VC" title="Voluntary contributions" k="var(--c2)" /><Card g="all" title={`All projects in ${name}`} k="var(--c7)" />
+    </section>
+    <ProjectsBody P={P} country={cid} /></>}
+  </>;
+}
+
+export function CountryTenders({ name, cid, P, offices }: { name: string; cid: string; P: Project[]; offices: Office[] }) {
+  const [pre] = useState<Prefill | null>(() => { const x = pending; pending = null; return x; });
+  const cname = () => name;
+  const [v, setV] = useView('pl-tender-view', TENDER_VIEWS);
+  useEffect(() => { if (pre) { setV('Contracts'); setTimeout(() => document.querySelector('.cc-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80); } }, []);
+  return <><ViewBar views={TENDER_VIEWS} v={v} set={setV} label="Contracts and suppliers" />
+  <div class="grid g-12">
+    {v === 'Providers' && <section class="card span-12"><div class="card-h"><div><h2>Service providers in {name}</h2><p>Orders placed with event organisers, interpreters, consultants, visibility, research and publication providers, from the latest report of each project. The app keeps no tender files: this is what the tenders led to.</p></div>
+      <div class="tools"><button class="btn" onClick={() => go('reports/providers')}>All providers ›</button></div></div>
+      <div class="card-b"><CountryProviders P={P} cname={cname} /></div></section>}
+    {v === 'Ahead' && <div class="span-12"><ContractsAhead cid={cid} P={P} offices={offices} /></div>}
+    {v === 'Tenders' && <div class="span-12"><TenderBoard cid={cid} P={P} /></div>}
+    {v === 'Contracts' && <ContractCalendar name={name} cid={cid} P={P} pre={pre} offices={offices} />}
+  </div></>;
+}
+
+/** The office's own services by budget line (rent, cleaning, security…), each with its contract or a way to add it. */
+export function OfficeServices({ cid, offices }: { cid: string; offices: Office[] }) {
+  const FW = useStore((s) => s.ledger.frameworks) ?? {};
+  const rep = offices[0]?.reports.at(-1), OS = rep ? officeServices(rep) : [];
+  const okey = (line: string, sup: string) => `office:${cid}:${line}:${supKey(sup)}`;
+  return <section class="card span-12"><div class="card-h"><div><h2>Office services</h2><p>{rep ? <>The office's own services by budget line, from the office report of {date(rep.date)}: what each is, read from its order descriptions, and the period the orders cover. Add the contract to have its end warned; it is kept under Contracts &amp; suppliers with the projects' contracts. Petty cash, missions and internal regularisations are left out.</> : 'No office budget imported for this country.'}</p></div></div>
+      {OS.length > 0 && <div class="card-b table-scroll"><table class="mini os-t"><thead><tr><th>Budget line</th><th>Service</th><th>Supplier</th><th class="r">Orders</th><th>Orders cover to</th><th class="r">Spent + committed</th><th class="r">Still open</th><th>Contract</th></tr></thead>
+        <tbody>{OS.map((x, i) => { const k = okey(x.line, x.supplier), c = FW[k] ?? FW[supKey(x.supplier)], due = c?.end || c?.openEnded ? contractsDue({ [k]: c }, TODAY)[0] : undefined;
+          return <tr class={i && OS[i - 1].line === x.line ? 'same' : ''}><td>{i && OS[i - 1].line === x.line ? '' : <><span class="num">{x.line}</span> <span class="muted">{x.lineName}</span></>}</td>
+            <td><b>{x.kind}</b></td><td><Firm name={x.supplier} /></td>
+            <td class="r num" title={[...new Set(x.orders.map((o) => o.description))].join('\n')}>{x.orders.length}</td>
+            <td class="num" title={x.coverText}>{x.covers ? date(x.covers) : '—'}</td>
+            <td class="r num">{full(x.amount)}</td><td class="r num">{x.open > 0.5 ? full(x.open) : ''}</td>
+            <td>{due ? <span class={`badge ${due.openEnded ? 'neutral' : SEV_BADGE[due.severity]}`} title={due.openEnded ? 'No end date: nothing to warn' : `${c!.ref ?? ''} ends ${date(due.end)}`}>{dueText(due)}</span>
+              : x.directDebit ? <span class="badge neutral" title="Paid by direct debit: a standing service with no end date, so nothing to warn">open-ended · direct debit</span>
+              : <button class="btn ghost os-add" onClick={() => { pending = { n: Date.now(), key: k, sup: x.supplier, line: x.line, kind: x.kind, end: x.covers ?? '' }; go(`countries/${cid}/contracts`); }}>+ Contract</button>}</td></tr>; })}</tbody></table></div>}
+    </section>;
+}
+
+/** The country's contracts, each with its rate when it is an office contract in another currency (domain/contractItems). */
+function useCountryContracts(cid: string, P: Project[], offices: Office[]) {
+  const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
+  return countryContracts(FW, P, set, offices, cid);
+}
+const MON3 = (m: string) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}`;
+const inEur = (v: number, toEur?: number, cur = 'EUR') => (toEur ? full(v * toEur) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`);
+/** The orders of an office contract with the months each pays: what "still to order" is counted from. */
+function OrdersPaid({ rep, k, c }: { rep: OfficeReport; k: string; c: Contract }) {
+  const O = officeOrders(rep, k, c);
+  if (!O.length) return <p class="muted">No order on line {c.line} from this supplier in the office report of {date(rep.date)}: every month from the contract's start is still to order.</p>;
+  return <table class="mini ca-sub"><thead><tr><th>Order</th><th>Months it pays</th><th class="r">Spent + committed</th></tr></thead>
+    <tbody>{O.map((o) => { const per = orderPeriod(o.description); return <tr><td>{o.description}</td><td class="num">{per ? `${per.months} from ${MON3(per.from)}` : <span class="muted">not named — not counted</span>}</td><td class="r num">{full(o.amount)}</td></tr>; })}</tbody></table>;
+}
+/** What the contracts ask of the months ahead: renewals to decide, payments month by month, papers still missing. */
+export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[]; offices: Office[] }) {
+  const { items: I, rep, ordersOf } = useCountryContracts(cid, P, offices);
+  const [openK, setOpenK] = useState(''), toggle = (k: string) => setOpenK(openK === k ? '' : k);
+  const ny = TODAY.getUTCFullYear() + 1, N = needByLine(I, ny, nextYearCost);
+  const lineOf = (code: string) => rep?.lines.find((l) => l.code === code);
+  const leftOn = (code: string) => { const l = lineOf(code); return l ? Math.round((l.ob.budget + l.ls.budget - l.ob.sc - l.ls.sc - l.ob.planned - l.ls.planned) * 100) / 100 : undefined; };
+  const todo = rep ? I.filter((x) => x.c.line).map((x) => { const s = stillToOrder(x.c, officeOrders(rep, x.key, x.c), rep.year), eurC = !x.c.cur || x.c.cur === 'EUR';
+    return { ...x, s, eur: eurC ? s.amount : x.rate ? Math.round(s.amount / x.rate * 100) / 100 : undefined, left: leftOn(x.c.line!) }; }).filter((t) => t.s.months > 0) : [];
+  // the office forecast's planned spending on each line, against what its contracts still need this year (in euros)
+  const short = (() => { const by = new Map<string, number>(); for (const t of todo) if (t.eur != null) by.set(t.c.line!, (by.get(t.c.line!) ?? 0) + t.eur);
+    return [...by].map(([line, need]) => { const l = lineOf(line); return { line, need: Math.round(need * 100) / 100, planned: l ? Math.round((l.ob.planned + l.ls.planned) * 100) / 100 : 0 }; }).filter((x) => x.need > x.planned + 0.5); })();
+  const caps = I.filter((x) => capEur(x.c, x.rate) && !x.c.line).map((x) => ({ ...x, p: ceilingPace(capEur(x.c, x.rate)!, ordersOf(x.key, x.c), TODAY, x.c.end) })).sort((a, b) => (a.p.reach ?? '9').localeCompare(b.p.reach ?? '9'));
+  const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
+  const xlsx = () => download('contracts-ahead.xlsx', [
+    { name: 'Renewals', money: [5, 6], rows: [['Provider', 'Ends', 'Notice by', 'Renewal', 'Currency', 'A year more', 'In euros'], ...R.map((r) => [r.name, r.end, r.noticeBy ?? '', r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${r.renewBy}` : 'a new contract or tender', r.cur, r.year ?? null, r.year != null && r.toEur ? Math.round(r.year * r.toEur * 100) / 100 : null])] },
+    { name: 'Payments', money: months.map((_, i) => i + 3), rows: [['Contract', 'Line', 'Currency', ...months], ...plan.map((r) => [r.name, r.line ?? '', r.toEur ? 'EUR' : r.cur, ...r.cells.map((x) => (x.v ? Math.round(x.v * (r.toEur ?? 1) * 100) / 100 : null))]),
+      ['As signed (EUR)', '', 'EUR', ...S.signed], ['With renewals (EUR)', '', 'EUR', ...S.withRenewals]] },
+    { name: 'Still to order', money: [4, 5, 6], rows: [['Contract', 'Budget line', 'From', 'Months', 'Amount (contract currency)', 'In euros', 'Left on the line'], ...todo.map((t) => [t.name, t.c.line ?? '', t.s.from ?? '', t.s.months, t.s.amount, t.eur ?? null, t.left ?? null]), [], ['Not in the office forecast'], ['Budget line', 'Contracts still need', 'Forecast plans', 'Not planned'], ...short.map((x) => [x.line, x.need, x.planned, Math.round((x.need - x.planned) * 100) / 100])] },
+    { name: `Next year by line`, money: [1, 2], rows: [['Budget line', `Budget ${rep?.year ?? ny - 1}`, `Contracts ${ny}`, 'Contracts', 'Not counted (no rate yet)'], ...N.map((n) => { const l = lineOf(n.line); return [`${n.line} ${l?.description ?? ''}`.trim(), l ? l.ob.budget + l.ls.budget : null, n.eur, n.contracts.join(', '), n.unknown.join(', ')]; })] },
+    { name: 'Ceilings', money: [1, 2, 4], rows: [['Provider', 'Ceiling', 'Ordered', 'Used', 'Per month (6 months)', 'Ceiling reached', 'Contract ends'], ...caps.map(({ name, c, p }) => [name, p.cap, p.used, Math.round(p.used / p.cap * 1000) / 10 + '%', p.perMonth, p.reach ?? '', c.end ?? (c.openEnded ? 'open-ended' : '')])] },
+    { name: 'Missing', rows: [['Contract', 'Still lacks'], ...G.map((g) => [g.name, g.missing.join(', ')])] },
+  ]);
+  const eurNote = (toEur?: number, cur?: string) => !toEur && cur && cur !== 'EUR' ? <small class="muted"> · no rate yet</small> : null;
+  return <div class="grid g-12 cah">
+    <section class="card span-12"><div class="card-h"><div><h2>Renewals to decide</h2><p>Contracts ending, or whose notice falls, within six months, soonest first: what a year more would cost at the fee in force at the end. A contract in lira is shown in euros at the rate its orders were booked at.</p></div>
+      <div class="tools"><button class="btn ghost" onClick={() => window.print()}><Ico n="print" />Print</button><button class="btn ghost" onClick={xlsx}><Ico n="download" />Excel</button></div></div>
+      <div class="card-b table-scroll">{R.length ? <table class="mini ca-ren"><thead><tr><th>Provider</th><th>Ends</th><th>Decide by</th><th>Renewal</th><th class="r">A year more</th><th class="r">In euros</th><th /><th /></tr></thead>
+        <tbody>{R.map((r) => <tr><td><Firm name={r.name} /></td><td class="num">{date(r.end)}</td><td class="num">{r.noticeBy ? <>notice by <b>{date(r.noticeBy)}</b></> : date(r.end)}</td>
+          <td>{r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${date(r.renewBy)}` : 'a new contract or tender'}</td>
+          <td class="r num">{r.year != null ? inEur(r.year, r.cur === 'EUR' ? 1 : undefined, r.cur) : '—'}</td><td class="r num">{r.year != null && r.toEur ? full(r.year * r.toEur) : r.cur !== 'EUR' ? <span class="muted">no rate yet</span> : '—'}</td>
+          <td><span class={`badge ${r.days < 0 ? 'neutral' : SEV_BADGE[contractSeverity(r.days)]}`}>{r.days < 0 ? `ended ${-r.days} d ago` : r.days === 0 ? 'today' : `${r.days} d`}</span></td>
+          <td>{r.days >= 0 && <button class="btn ghost ca-letter" title="A Word letter to the provider: the contract will not be renewed beyond its end (in your letter template when one is set)" onClick={() => { const x = I.find((i) => i.key === r.key); if (x) void noticeLetterDocx(r.name, x.c, get().ledger); }}><Ico n="download" />Notice letter</button>}</td></tr>)}</tbody></table>
+        : <p class="muted">No contract ends or needs notice in the next six months.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>Payments month by month</h2><p>The monthly fee of each contract over the next twelve months, in euros where its rate is known. Months after a contract's signed end are shown only when it renews (in italics): they are what renewing would add.</p></div></div>
+      <div class="card-b table-scroll">{plan.length ? <table class="mini ca-pay"><thead><tr><th>Contract</th>{months.map((m) => <th class="r">{MON3(m)}</th>)}</tr></thead>
+        <tbody>{plan.map((r) => <tr><td><Firm name={r.name} />{r.line ? <small class="muted"> · line {r.line}</small> : null}{eurNote(r.toEur, r.cur)}</td>
+          {r.cells.map((x) => <td class={`r num${x.renewal ? ' ca-ren-c' : ''}`} title={x.renewal ? 'Only if renewed' : ''}>{x.v ? inEur(x.v, r.toEur, r.cur) : ''}</td>)}</tr>)}</tbody>
+        <tfoot><tr class="tot"><td>As signed</td>{S.signed.map((v) => <td class="r num">{full(v)}</td>)}</tr>
+          {S.withRenewals.some((v, i) => Math.abs(v - S.signed[i]) > 0.005) && <tr class="tot"><td>With renewals</td>{S.withRenewals.map((v) => <td class="r num">{full(v)}</td>)}</tr>}</tfoot></table>
+        : <p class="muted">No contract with a monthly fee yet: type the fee in a contract, or drop it to have it read.</p>}
+        {S.unknown > 0 && <p class="muted ca-note">{S.unknown} contract{S.unknown > 1 ? 's are' : ' is'} in another currency without a rate from its orders, so left out of the totals.</p>}</div></section>
+    {rep && <section class="card span-12"><div class="card-h"><div><h2>Still to order in {rep.year}</h2><p>For each office contract, the months after the last one its orders pay, to the end of the year (or of the contract, unless it renews), at the fee in force — beside what is left on its budget line after spent, committed and planned.</p></div></div>
+      <div class="card-b table-scroll">{todo.length ? <table class="mini ca-todo"><thead><tr><th>Contract</th><th>Budget line</th><th>From</th><th class="r">Months</th><th class="r">Amount</th><th class="r">In euros</th><th class="r">Left on the line</th></tr></thead>
+        <tbody>{todo.map((t) => <><tr class={`click${openK === "todo:" + t.key ? " sel" : ""}`} onClick={(e) => { if (!(e.target as Element).closest('.ent')) toggle('todo:' + t.key); }}><td><span class="ca-tw">{openK === 'todo:' + t.key ? '▾' : '▸'}</span><Firm name={t.name} /></td><td><span class="num">{t.c.line}</span> <span class="muted">{lineOf(t.c.line!)?.description ?? ''}</span></td><td class="num">{MON3(t.s.from!)}</td><td class="r num">{t.s.months}</td>
+          <td class="r num">{inEur(t.s.amount, t.c.cur && t.c.cur !== 'EUR' ? undefined : 1, t.c.cur ?? 'EUR')}</td><td class={`r num${t.eur != null && t.left != null && t.eur > t.left + 0.5 ? ' ca-over' : ''}`}>{t.eur != null ? full(t.eur) : <span class="muted">no rate yet</span>}</td>
+          <td class="r num">{t.left != null ? full(t.left) : '—'}</td></tr>
+          {openK === 'todo:' + t.key && <tr class="ca-more"><td colSpan={7}><OrdersPaid rep={rep} k={t.key} c={t.c} /></td></tr>}</>)}</tbody></table>
+        : <p class="muted">Every office contract's months are ordered to the end of {rep.year}, or no office contract has a fee yet.</p>}
+        {short.length > 0 && <div class="ca-short"><b>Not in the office forecast:</b><ul>{short.map((x) => <li><span class="num">{x.line}</span> {lineOf(x.line)?.description ?? ''} — the contracts still need {full(x.need)}, the forecast plans {full(x.planned)}: <b class="ca-over">{full(x.need - x.planned)} not planned</b></li>)}</ul></div>}
+        {todo.length > 0 && !short.length && <p class="muted ca-note">The office forecast plans enough on each line for what the contracts still need this year.</p>}</div></section>}
+    <section class="card span-12"><div class="card-h"><div><h2>Office contracts next year, by budget line</h2><p>For the {ny} budget proposal: what the office's contracts will cost next year at the fee in force (carried on when they renew), beside the line's budget this year. A contract in lira is in euros at the rate its orders were booked at.</p></div></div>
+      <div class="card-b table-scroll">{N.length ? <table class="mini ca-line"><thead><tr><th>Budget line</th><th class="r">Budget {rep?.year ?? ny - 1}</th><th class="r">Contracts {ny}</th><th>Contracts</th></tr></thead>
+        <tbody>{N.map((n) => { const l = lineOf(n.line), B = l ? l.ob.budget + l.ls.budget : 0, on = openK === 'line:' + n.line; return <><tr class={`click${on ? ' sel' : ''}`} onClick={(e) => { if (!(e.target as Element).closest('.ent')) toggle('line:' + n.line); }}><td><span class="ca-tw">{on ? '▾' : '▸'}</span><span class="num">{n.line}</span> <span class="muted">{l?.description ?? ''}</span></td><td class="r num">{B ? full(B) : '—'}</td>
+          <td class={`r num${B && n.eur > B + 0.5 ? ' ca-over' : ''}`}>{n.contracts.length ? full(n.eur) : '—'}</td><td>{n.contracts.join(', ')}{n.unknown.length ? <span class="muted"> · not counted, no rate yet: {n.unknown.join(', ')}</span> : null}</td></tr>
+          {on && <tr class="ca-more"><td colSpan={4}><table class="mini ca-sub"><thead><tr><th>Contract</th><th class="r">Fee in force</th><th>Runs</th><th class="r">{ny} in its currency</th><th class="r">{ny} in euros</th></tr></thead>
+            <tbody>{I.filter((x) => x.c.line === n.line).map((x) => { const v = nextYearCost(x.c, ny) ?? 0, eurC = !x.c.cur || x.c.cur === 'EUR'; return <tr><td>{x.name}</td><td class="r num">{x.c.fee ? inEur(x.c.fee, eurC ? 1 : undefined, x.c.cur ?? 'EUR') : '—'}</td>
+              <td>{x.c.openEnded ? 'open-ended' : x.c.autoRenew ? `renews · ends ${x.c.end ? date(x.c.end) : '—'}` : x.c.renewBy ? `renewable until ${date(x.c.renewBy)}` : x.c.end ? `ends ${date(x.c.end)}` : '—'}</td>
+              <td class="r num">{inEur(v, eurC ? 1 : undefined, x.c.cur ?? 'EUR')}</td><td class="r num">{eurC ? full(v) : x.rate ? full(v / x.rate) : <span class="muted">no rate yet</span>}</td></tr>; })}</tbody></table></td></tr>}</>; })}</tbody>
+        <tfoot><tr class="tot"><td>Total</td><td class="r num">{full(N.reduce((a, n) => { const l = lineOf(n.line); return a + (l ? l.ob.budget + l.ls.budget : 0); }, 0))}</td><td class="r num">{full(N.reduce((a, n) => a + n.eur, 0))}</td><td /></tr></tfoot></table>
+        : <p class="muted">No office contract with a fee yet: add the office's contracts from Office → Office services.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>Ceilings of the providers' contracts</h2><p>What the projects ordered from each provider against its contract's ceiling, and when the ceiling is reached if the last six months' orders go on at the same pace — flagged when that comes before the contract ends.</p></div></div>
+      <div class="card-b table-scroll">{caps.length ? <table class="mini ca-cap"><thead><tr><th>Provider</th><th class="r">Ceiling</th><th class="r">Ordered</th><th class="r">Used</th><th class="r">Per month (6 months)</th><th>Ceiling reached</th><th>Contract ends</th></tr></thead>
+        <tbody>{caps.map(({ key, name, c, p }) => { const sv = ceilingSeverity(p.used, p.cap), O = openK === 'cap:' + key ? ordersOf(key, c) : []; return <><tr class={`click${openK === 'cap:' + key ? ' sel' : ''}`} onClick={(e) => { if (!(e.target as Element).closest('.ent')) toggle('cap:' + key); }}><td><span class="ca-tw">{openK === 'cap:' + key ? '▾' : '▸'}</span><Firm name={name} /></td><td class="r num">{full(p.cap)}</td><td class="r num">{full(p.used)}</td>
+          <td class="r num">{sv ? <span class={`badge ${SEV_BADGE[sv]}`}>{pct(p.used / p.cap)}</span> : pct(p.used / p.cap)}</td><td class="r num">{p.perMonth ? full(p.perMonth) : '—'}</td>
+          <td>{p.reach ? <span class={p.beforeEnd ? 'ca-over' : ''}>{p.used >= p.cap ? 'reached' : MON3(p.reach)}{p.beforeEnd && p.used < p.cap ? ' — before the end' : ''}</span> : <span class="muted">no recent orders</span>}</td>
+          <td class="num">{c.openEnded ? 'open-ended' : c.end ? date(c.end) : '—'}</td></tr>
+          {openK === 'cap:' + key && <tr class="ca-more"><td colSpan={7}>{O.length ? <table class="mini ca-sub"><thead><tr><th>Date</th><th>Project</th><th>PO</th><th>Description</th><th class="r">Ordered</th></tr></thead>
+            <tbody>{[...O].sort((a, b) => b.date.localeCompare(a.date)).map((o) => <tr><td class="num">{o.date ? date(o.date) : '—'}</td><td class="num">{o.project}</td><td class="num">{o.po}</td><td>{o.description}</td><td class="r num">{full(o.value)}</td></tr>)}</tbody></table> : <p class="muted">No order from this provider in the projects' latest reports.</p>}</td></tr>}</>; })}</tbody></table>
+        : <p class="muted">No provider contract with a ceiling: type the ceiling (€) in a contract to follow it here.</p>}</div></section>
+    <section class="card span-12"><div class="card-h"><div><h2>What the contracts still lack</h2><p>To follow a contract fully: its signed copy and those of its amendments, an end date, its fee, and for a contract in lira an order that names the months it pays.</p></div></div>
+      <div class="card-b">{G.length ? <ul class="ca-gaps">{G.map((g) => <li><b><Firm name={g.name} /></b> — {g.missing.join(', ')}</li>)}</ul> : <p class="muted">Every contract has its papers and terms.</p>}</div></section>
+  </div>;
+}
+
+/** A tab split into views opened one at a time, the last one remembered (long pages stay short). */
+export function useView<T extends string>(key: string, views: readonly T[]): [T, (v: T) => void] {
+  const [v, setV] = useState<T>(() => { try { const x = localStorage.getItem(key) as T; return views.includes(x) ? x : views[0]; } catch { return views[0]; } });
+  return [v, (x: T) => { setV(x); try { localStorage.setItem(key, x); } catch { /* the view still changes */ } }];
+}
+export function ViewBar<T extends string>({ views, v, set, label, counts = {} }: { views: readonly T[]; v: T; set: (x: T) => void; label: string; counts?: Partial<Record<T, number>> }) {
+  return <div class="seg of-views cd-views" role="tablist" aria-label={label}>{views.map((x) => <button role="tab" aria-pressed={v === x} onClick={() => set(x)}>{x}{counts[x] != null ? <span class="tab-n">{counts[x]}</span> : null}</button>)}</div>;
+}
+const STAFF_VIEWS = ['Everyone', 'Core team', 'Project staff', 'Staff plan', 'Salary scale'] as const;
+const TENDER_VIEWS = ['Contracts', 'Ahead', 'Tenders', 'Providers'] as const;
+const PROJECT_VIEWS = ['Projects', 'By budget line'] as const;
+/** An office service whose contract is to be added: handed from the Office tab to the contract form. */
+let pending: Prefill | null = null;
+
+export function CountryStaff({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const everyone = allPeople(P);
+  const [b, setB] = useState<'all' | Base>('all');
+  const people = everyone.filter((a) => b === 'all' || a.base === b);
+  const [v, setV] = useView('pl-staff-view', STAFF_VIEWS);
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
+  return <>
+    <ViewBar views={STAFF_VIEWS} v={v} set={setV} label="Staff" counts={{ 'Core team': core.length, 'Project staff': everyone.filter((a) => a.status === 'Active').length }} />
+    {v === 'Everyone' && (core.length || everyone.length ? <PeopleOfCountry name={name} cid={cid} P={P} /> : <div class="card empty-page"><div><h2>No one recorded in {name} yet</h2><p>Add the core team under “Core team”; project staff come from the reports.</p></div></div>)}
+    {v === 'Core team' && <CoreTeam name={name} cid={cid} P={P} />}
+    {v === 'Project staff' && <><section class="card"><div class="card-h" style={{ alignItems: 'center' }}><div><h2>Project staff in {name}</h2><p>Staff on the projects, read from the “Purchase Orders” sheet of each project's report workbook</p></div>
+      {everyone.length > 0 && <div class="seg" role="group" aria-label="Base">{(['all', 'Local', 'HQ'] as const).map((x) => <button aria-pressed={b === x} onClick={() => setB(x)}>{x === 'all' ? 'All staff' : x === 'HQ' ? 'SxB / HQ' : 'Local'}</button>)}</div>}</div></section>
+      {everyone.length ? <StaffBoard people={people} showProject /> : <div class="card empty-page"><div><h2>No project staff records for {name}</h2><p>Staff are read from the “Purchase Orders” sheet of each project's report workbook.</p></div></div>}</>}
+    {v === 'Staff plan' && <div class="grid g-12"><StaffPlanTable projects={P} /><StaffReport projects={P} /></div>}
+    {v === 'Salary scale' && <SalarySection countryIds={[cid]} />}
+  </>;
+}
+
+/** Everyone working for the country once: core team and project contracts of the same person together. */
+/** The country's providers in total, with what each project placed, or one project's alone. */
+function CountryProviders({ P, cname }: { P: Project[]; cname: (id: string) => string }) {
+  const set = useStore((x) => x.ledger.poKinds) ?? {};
+  const [pj, setPj] = useState('all');
+  const R = P.map((p) => ({ p, S: providerSummary([p], set, 1) })).filter((x) => x.S.total > 0).sort((a, b) => b.S.total - a.S.total);
+  const T = R.reduce((a, x) => a + x.S.total, 0), one = R.find((x) => x.p.id === pj);
+  const lab = (id: string) => plabel(P.find((q) => q.id === id) ?? ({ code: '?' } as Project));
+  return <>
+    {R.length > 1 && <div class="seg sp-scope" role="group" aria-label="Projects">{[['all', 'All projects'], ...R.map((x) => [x.p.id, plabel(x.p)])].map(([k, l]) => <button aria-pressed={(one ? pj : 'all') === k} onClick={() => setPj(k)}>{l}</button>)}</div>}
+    {!one && R.length > 1 && <table class="mini sp-proj"><thead><tr><th>Project</th><th class="r">POs</th><th class="r">Providers</th><th class="r">Amount</th><th class="r">Share</th><th>Largest provider</th></tr></thead>
+      <tbody>{R.map(({ p, S }) => <tr class="click" onClick={() => setPj(p.id)}><td><b>{plabel(p)}</b></td><td class="r num">{S.pos}</td><td class="r num">{S.providers}</td><td class="r num">{full(S.total)}</td><td class="r num">{Math.round(S.total / T * 100)}%</td><td class="muted">{S.top[0]?.supplier ?? '—'}</td></tr>)}
+        <tr class="tot"><td><b>Total</b></td><td class="r num">{R.reduce((a, x) => a + x.S.pos, 0)}</td><td /><td class="r num"><b>{full(T)}</b></td><td class="r num">100%</td><td /></tr></tbody></table>}
+    <ProviderBrief P={one ? [one.p] : P} cname={cname} rows={6} lab={one ? undefined : lab} />
+    <ProviderList P={one ? [one.p] : P} lab={one ? undefined : lab} />
+  </>;
+}
+
+/** Every provider of the projects shown, one group per kind (largest first), each provider with its projects and what is still open. */
+function ProviderList({ P, lab }: { P: Project[]; lab?: (id: string) => string }) {
+  const set = useStore((x) => x.ledger.poKinds) ?? {};
+  const S = suppliers(providerPOs(P, set)).filter((x) => x.kind && !KINDS.find((k) => k.k === x.kind)?.optional);
+  const G = [...new Set(S.map((x) => x.kind))].map((k) => ({ k, label: KINDS.find((x) => x.k === k)?.label ?? k, R: S.filter((x) => x.kind === k) })).map((g) => ({ ...g, sc: g.R.reduce((a, x) => a + x.sc, 0), sp: g.R.reduce((a, x) => a + x.spent, 0) })).sort((a, b) => b.sc - a.sc);
+  if (!G.length) return null;
+  return <div class="sp-list"><h3>All providers, by kind <small class="muted">{S.length} · click a kind to open it</small></h3>
+    {G.map((g) => <details class="sp-grp">
+      <summary><i class="sp-dot" style={{ background: KINDS.find((x) => x.k === g.k)?.color }} /><b>{g.label}</b><span class="muted">{g.R.length} provider{g.R.length > 1 ? 's' : ''}</span><span class="num">{full(g.sc)}</span></summary>
+      <table class="mini"><thead><tr><th>Provider</th>{lab && <th>Projects</th>}<th class="r">Orders</th><th class="r">Spent</th><th class="r">Still open</th><th class="r">Spent + committed</th><th>Kind</th></tr></thead>
+        <tbody>{g.R.map((x) => <tr><td><Firm name={x.supplier} only={P.length === 1 ? P[0].id : undefined} /></td>{lab && <td class="muted">{[...x.projects.keys()].map(lab).join(', ')}</td>}<td class="r num">{x.pos}</td><td class="r num">{full(x.spent)}</td><td class="r num">{full(x.sc - x.spent)}</td><td class="r num"><b>{full(x.sc)}</b></td>
+          <td><select class="select sp-kind" aria-label={`Kind of ${x.supplier}`} title="Change the kind of every order of this provider" value={set[`sup|${supKey(x.supplier)}`] ?? ''} onChange={(e) => setPoKind(`sup|${supKey(x.supplier)}`, (e.target as HTMLSelectElement).value)}>
+            <option value="">{KINDS.find((k) => k.k === x.kind)?.label ?? x.kind} (automatic)</option>{KINDS.filter((k) => !k.optional).map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select></td></tr>)}</tbody></table>
+    </details>)}</div>;
+}
+
+const NO_END = { open: 'Open-ended', sxb: 'SxB staff', missing: 'Dates missing' } as const;
+function PeopleOfCountry({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
+  const L = countryPeople(core, allPeople(P).filter((a) => a.status !== 'Ended'), (p) => plabel(p as Project));
+  const [by, setBy] = useState<'project' | 'end' | 'name'>('project'), [mode, setMode] = useState<'cards' | 'list'>('cards'), [q, setQ] = useState(''), [soon, setSoon] = useState(false);
+  if (!L.length) return null;
+  // each project its own colour, the same on the avatar, the chip and the bar
+  const projs = [...new Set(L.flatMap((x) => x.roles.map((r) => r.project)))].sort();
+  const col = (pr: string) => `var(--c${(projs.indexOf(pr) % 8) + 1})`;
+  const days = (x: CountryPerson) => (x.ends ? daysUntil(x.ends, TODAY) : null);
+  const ending = L.filter((x) => { const d = days(x); return d != null && d >= 0 && d <= 90; });
+  const shown = L.filter((x) => (!soon || ending.includes(x)) && (!q || `${x.name} ${x.core?.position ?? ''} ${x.roles.map((r) => `${r.position} ${r.project}`).join(' ')}`.toLowerCase().includes(q.toLowerCase())));
+  const key = (x: CountryPerson) => by === 'project' ? (x.core ? 'Core team' : x.roles[0]?.project ?? '—') : by === 'end' ? (x.ends ? (days(x)! < 0 ? 'Ended' : days(x)! <= 90 ? 'Ending within 90 days' : days(x)! <= 365 ? 'Ending within a year' : 'Later') : NO_END[x.noEnd ?? 'missing']) : x.name.replace(/^[^A-Za-zÇĞİÖŞÜçğıöşü]*/, '').charAt(0).toUpperCase();
+  const order = by === 'end' ? ['Ended', 'Ending within 90 days', 'Ending within a year', 'Later', NO_END.open, NO_END.sxb, NO_END.missing] : null;
+  const groups = [...new Set(shown.map(key))].sort((a, b2) => order ? order.indexOf(a) - order.indexOf(b2) : a === 'Core team' ? -1 : b2 === 'Core team' ? 1 : a.localeCompare(b2));
+  const initials = (n: string) => n.replace(/,/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const checks = L.filter((x) => x.check).length, nn = (k: CountryPerson['noEnd']) => L.filter((x) => x.noEnd === k).length;
+  // when every contract in the window ends the same day (yearly contracts), say so: the count is one renewal, not twenty surprises
+  const endDays = [...new Set(ending.map((x) => x.ends))];
+  const sxb = (x: CountryPerson) => !x.core && x.roles.some((r) => r.base === 'HQ');
+  const mix = [{ l: 'core team', n: L.filter((x) => x.core).length, c: 'var(--ink-2)' }, { l: 'local project staff', n: L.filter((x) => !x.core && x.roles.length && !sxb(x)).length, c: 'var(--c1)' }, { l: 'SxB staff', n: L.filter(sxb).length, c: 'var(--c7)' }];
+  // positions written in capitals in the lists read as the rest of the page
+  const soft = (t: string) => (/[A-Z]{3}/.test(t) && !/[a-z]/.test(t) ? t.charAt(0) + t.slice(1).toLowerCase() : t);
+  return <section class="card ev">
+    <div class="card-h" style={{ alignItems: 'center' }}><div><h2>Everyone in {name}</h2><p>Each person once — the core team and the project contracts of the same person together</p></div>
+      <div class="tools ev-tools"><input class="input" type="search" placeholder="Find a person or a role" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Find a person" />
+        <div class="seg" role="group" aria-label="Group by">{([['project', 'By project'], ['end', 'By contract end'], ['name', 'A–Z']] as const).map(([k, l]) => <button aria-pressed={by === k} onClick={() => setBy(k)}>{l}</button>)}</div>
+        <div class="seg" role="group" aria-label="Show as">{([['cards', 'Cards'], ['list', 'List']] as const).map(([k, l]) => <button aria-pressed={mode === k} onClick={() => setMode(k)}>{l}</button>)}</div></div></div>
+    {/* who the people are, as one bar with its parts named; then where their contracts stand */}
+    <div class="ev-ov">
+      <div class="ev-tot"><b>{L.length}</b><span>people</span></div>
+      <div class="ev-mix">
+        <div class="ev-mix-bar" aria-hidden="true">{mix.filter((m) => m.n).map((m) => <i style={{ flex: m.n, background: m.c }} title={`${m.l}: ${m.n}`} />)}</div>
+        <div class="ev-mix-l">{mix.filter((m) => m.n).map((m) => <span><i style={{ background: m.c }} /><b>{m.n}</b> {m.l}</span>)}</div>
+      </div>
+      <div class="ev-st">
+        {ending.length > 0 && <button class={`ev-soon${soon ? ' on' : ''}`} aria-pressed={soon} onClick={() => setSoon(!soon)}><i class="ev-st-d warn" /><span><b>{ending.length}</b> contract{ending.length > 1 ? 's' : ''} end within 90 days{endDays.length === 1 ? <>, all on {date(endDays[0])}</> : ''}</span><em>{soon ? 'Show everyone' : 'Show them'}</em></button>}
+        {nn('missing') > 0 && <div><i class="ev-st-d bad" /><span><b>{nn('missing')}</b> without contract dates — complete them under Core team or the project's Staff tab</span></div>}
+        {nn('open') > 0 && <div><i class="ev-st-d" /><span><b>{nn('open')}</b> open-ended: head of office, head of operations</span></div>}
+        {checks > 0 && <div class="ev-chk"><i class="ev-st-d bad" /><span><b>{checks}</b> to check: on the core team and on a project's staff list</span></div>}
+      </div>
+    </div>
+    <div class="card-b">{groups.map((g) => { const R = shown.filter((x) => key(x) === g).sort((a, b2) => by === 'end' ? (a.ends || '9').localeCompare(b2.ends || '9') : a.name.localeCompare(b2.name));
+      return <div class="ev-g"><h3><span class="ev-dot" style={{ background: by === 'project' && g !== 'Core team' ? col(g) : 'var(--ink-3)' }} />{g}<small>{R.length}</small></h3>
+        {mode === 'cards' ? <div class="ev-board">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project, tone = d == null ? (x.noEnd === 'missing' ? 'missing' : 'open') : d < 0 ? 'ended' : d <= 30 ? 'critical' : d <= 60 ? 'serious' : d <= 90 ? 'warning' : 'ok';
+          const chips = [...new Set(x.roles.map((r) => r.project))].filter((p2) => by !== 'project' || p2 !== g);
+          return <article class={`ev-card t-${tone}${x.check ? ' chk' : ''}`} style={{ '--k': x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' } as never}>
+            <span class="ev-av" aria-hidden="true">{initials(x.name)}</span>
+            <span class="ev-who"><b class="ev-n"><Who name={x.name} k={x.key} /></b>
+              <small class="ev-r">{[x.core && soft(x.core.position), ...[...new Set(x.roles.map((r) => soft(r.position)))]].filter(Boolean).join(' · ') || '—'}</small>
+              {(x.core || chips.length > 0) && <span class="ev-chips">{x.core && <span class="ev-chip core">Core team{(x.core.fund !== 'other' || x.core.fundText) ? ` · ${x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : fundLabel(x.core)}` : ''}</span>}
+                {chips.map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>}
+              {x.check && <em class="ev-c">{x.check}</em>}</span>
+            <span class="ev-f" title={x.ends ? `Contract ends ${date(x.ends)}` : NO_END[x.noEnd ?? 'missing']}>{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class="ev-days">{d} d</span> : d != null && d < 0 ? <span class="ev-days">ended</span> : null}</> : <span class="ev-ne">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
+          </article>; })}</div>
+        : <ul class="ev-l">{R.map((x) => { const d = days(x), pr = x.roles[0]?.project;
+          return <li class={x.check ? 'chk' : ''}>
+            <span class="ev-av" style={{ background: x.core ? 'var(--ink-2)' : pr ? col(pr) : 'var(--ink-3)' }}>{initials(x.name)}</span>
+            <span class="ev-who"><b><Who name={x.name} k={x.key} /></b><small>{[x.core && `${x.core.position} · core team`, ...[...new Set(x.roles.map((r) => r.position))]].filter(Boolean).join(' · ')}</small>{x.check && <em>{x.check}</em>}</span>
+            <span class="ev-chips">{x.core && (x.core.fund !== 'other' || x.core.fundText) && <span class="ev-chip core">{x.core.fund === 'project' ? `${plabel(P.find((p) => p.id === x.core!.project) ?? ({ code: '?' } as Project))}${x.core.share ? ` ${x.core.share}%` : ''}` : fundLabel(x.core)}</span>}
+              {[...new Set(x.roles.map((r) => r.project))].map((p2) => <span class="ev-chip" style={{ '--k': col(p2) } as never}>{p2}</span>)}</span>
+            <span class="ev-end">{x.ends ? <><span class="num">{date(x.ends)}</span>{d != null && d >= 0 && d <= 90 ? <span class={`badge ${d <= 30 ? 'critical' : d <= 60 ? 'serious' : 'warning'}`}>{d} days</span> : d != null && d < 0 ? <span class="badge neutral">ended</span> : null}</> : <span class="muted">{NO_END[x.noEnd ?? 'missing']}</span>}</span>
+          </li>; })}</ul>}</div>; })}
+      {!shown.length && <p class="muted">No one matches.</p>}</div>
+  </section>;
+}
+
+const EMPTY = { name: '', position: '', grade: '', start: '', end: '', fund: 'ob', project: '', share: '', note: '' };
+/** A screen with nothing in it yet: what it will hold and the one thing to do. */
+export function Empty({ icon, title, text, children }: { icon: IcoName; title: string; text: string; children?: ComponentChildren }) {
+  return <div class="es"><span class="es-i" aria-hidden="true"><Ico n={icon} size={22} /></span><h3>{title}</h3><p>{text}</p>{children && <div class="es-a">{children}</div>}</div>;
+}
+
+/** The office's own team: entered by hand, with contract ends warned like contracts with providers. */
+function CoreTeam({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const M = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
+  const [f, setF] = useState(EMPTY), [edit, setEdit] = useState(''), [adding, setAdding] = useState(false);
+  const D = coreDue(M, TODAY), on = M.filter((m) => onTeam(m, TODAY));
+  const v = (k: keyof typeof EMPTY) => ({ value: f[k], onInput: (e: Event) => setF({ ...f, [k]: (e.target as HTMLInputElement).value }) });
+  const save = () => {
+    if (!f.name.trim() || !f.position.trim()) return;
+    const m: CoreMember = { id: edit || `ct${Date.now().toString(36)}`, name: f.name.trim(), position: f.position.trim(), fund: f.fund as CoreMember['fund'],
+      ...(f.grade.trim() ? { grade: f.grade.trim() } : {}), ...(f.start ? { start: f.start } : {}), ...(f.end ? { end: f.end } : {}),
+      ...(f.fund === 'project' && f.project ? { project: f.project, ...(+f.share > 0 ? { share: Math.min(100, +f.share) } : {}) } : {}), ...(f.note.trim() ? { note: f.note.trim() } : {}) };
+    setCoreMember(cid, m); setF(EMPTY); setEdit('');
+  };
+  const importList = async (e: Event) => {
+    const inp = e.target as HTMLInputElement, file = inp.files?.[0]; inp.value = ''; if (!file) return;
+    try { const wb = await readXlsx(await file.arrayBuffer()), found = wb.sheets.map((sh) => coreFromRows(wb.read(sh))).find((L) => L.length) ?? [];
+      const n = found.length ? addCoreMembers(cid, found) : 0;
+      alert(found.length ? `${n} added to the core team of ${name}${found.length > n ? `; ${found.length - n} already on it` : ''}.` : 'No heading row with a name and a position column was found in this file.');
+    } catch { alert('This file could not be read as an Excel workbook.'); }
+  };
+  const load = (m: CoreMember) => { setF({ name: m.name, position: m.position, grade: m.grade ?? '', start: m.start ?? '', end: m.end ?? '', fund: m.fund ?? 'ob', project: m.project ?? '', share: m.share ? String(m.share) : '', note: m.note ?? '' }); setEdit(m.id); };
+  // a post charged to a project: is the person on that project's staff list?
+  const onProject = (m: CoreMember) => { const p = P.find((x) => x.id === m.project); if (!p) return null; const k = n2(m.name); return allPeople([p]).some((a) => n2(a.name) === k || n2(a.display) === k); };
+  const todo = M.filter((m) => (!m.end && !openPost(m)) || (m.fund === 'other' && !m.fundText)).length, open = M.filter((m) => openPost(m)).length;
+  const soft = (t: string) => (/[A-Z]{3}/.test(t) && !/[a-z]/.test(t) ? t.charAt(0) + t.slice(1).toLowerCase() : t);
+  const initials = (n: string) => n.replace(/,/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const formOpen = adding || !!edit;
+  const Import = ({ primary }: { primary?: boolean }) => <label class={`btn ${primary ? 'primary' : 'ghost'}`} title="A sheet with a heading row: Name, Position, Grade, Start, End, Funded by"><Ico n="upload" />Import from Excel<input type="file" accept=".xlsx" hidden onChange={importList} /></label>;
+  return <section class="card cc"><div class="card-h"><div><h2>Core team</h2><p>The office's own staff in {name}, outside the projects · contract ends are warned 90, 60 and 30 days ahead, here, in the calendar and in the bell</p></div>
+      <div class="tools"><Import />{!formOpen && <button class="btn primary" onClick={() => setAdding(true)}>+ Add a person</button>}</div></div>
+    <div class="card-b">
+      {M.length > 0 && <div class="ct-sum"><span><b>{on.length}</b> on the team today</span>{open > 0 && <span><b>{open}</b> open-ended (head of office, head of operations)</span>}{todo > 0 && <span class="todo"><b>{todo}</b> to complete: an end date or what pays for the post — fill them in the table</span>}</div>}
+      {formOpen && <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); setAdding(false); }}>
+        <label>Name<input {...v('name')} placeholder="Surname, Name" required /></label>
+        <label>Position<input {...v('position')} placeholder="e.g. Head of Office" required /></label>
+        <label>Grade<input {...v('grade')} style={{ minWidth: '70px', width: '80px' }} /></label>
+        <label>Starts<input type="date" {...v('start')} /></label>
+        <label>Ends<input type="date" {...v('end')} /></label>
+        <label>Paid from<select class="select" value={f.fund} onChange={(e) => setF({ ...f, fund: (e.target as HTMLSelectElement).value })}>{Object.entries(FUND_LABEL).map(([k, l]) => <option value={k}>{l}</option>)}</select></label>
+        {f.fund === 'project' && <><label>Project<select class="select" value={f.project} onChange={(e) => setF({ ...f, project: (e.target as HTMLSelectElement).value })}><option value="">—</option>{P.map((p) => <option value={p.id}>{plabel(p)}</option>)}</select></label>
+          <label>Share %<input type="number" min="0" max="100" {...v('share')} style={{ minWidth: '70px', width: '80px' }} /></label></>}
+        <label>Note<input {...v('note')} /></label>
+        <button class="btn primary" type="submit" disabled={!f.name.trim() || !f.position.trim()}>{edit ? 'Save changes' : '+ Add to the team'}</button>
+        <button class="btn ghost" type="button" onClick={() => { setEdit(''); setF(EMPTY); setAdding(false); }}>Cancel</button>
+      </form>}
+      {D.length ? <div class="table-scroll"><table class="mini ct-t"><thead><tr><th>Person</th><th>Grade</th><th>Paid from</th><th>Contract</th><th /></tr></thead>
+        <tbody>{D.map(({ m, days, severity }) => { const p = P.find((x) => x.id === m.project), seen = m.fund === 'project' ? onProject(m) : null, noFund = m.fund === 'other' && !m.fundText, noEnd = !m.end && !openPost(m);
+          return <tr class={`${onTeam(m, TODAY) ? '' : 'muted'}${noFund || noEnd ? ' ct-todo' : ''}`}>
+            <td><span class="ct-p"><span class="ct-av" aria-hidden="true">{initials(m.name)}</span><span><b><Who name={m.name} /></b><small>{soft(m.position)}{m.note ? ` · ${m.note}` : ''}</small></span></span></td>
+            <td class="num">{m.grade ?? <span class="muted">—</span>}</td>
+            <td>{noFund ? <select class="select ct-in" aria-label={`What pays for the post of ${m.name}`} value="" onChange={(e) => { const k = (e.target as HTMLSelectElement).value; if (k) setCoreMember(cid, { ...m, fund: k as CoreMember['fund'] }); }}><option value="">Choose…</option>{Object.entries(FUND_LABEL).filter(([k]) => k !== 'other' && k !== 'project').map(([k, l]) => <option value={k}>{l}</option>)}</select>
+              : m.fund === 'project' && p ? <>{plabel(p)}{m.share ? ` · ${m.share}%` : ''} {seen != null && <span class={`badge ${seen ? 'good' : 'warning'}`} title={seen ? 'The person is on the project\'s staff list' : 'Not found on the project\'s staff list: check the charging'}>{seen ? 'on the project' : 'not on its staff list'}</span>}</> : fundLabel(m)}</td>
+            <td><span class="ct-c">{m.start && <span class="num">{date(m.start)} –</span>}
+              {m.end ? <><span class="num">{date(m.end)}</span>{days != null && <span class={`badge ${SEV_BADGE[severity as ContractDue['severity']]}`}>{days < 0 ? `ended ${-days} d ago` : days === 0 ? 'ends today' : `${days} d left`}</span>}</>
+                : noEnd ? <input type="date" class="ct-in" aria-label={`Contract end of ${m.name}`} title="Type the end date: it is saved at once" onChange={(e) => { const d = (e.target as HTMLInputElement).value; if (d) setCoreMember(cid, { ...m, end: d }); }} />
+                : <span class="muted">open-ended</span>}</span></td>
+            <td class="ct-act"><Attach doc={m.doc} label={`the contract of ${m.name}`} save={(doc) => setCoreMember(cid, { ...m, doc })} /><button class="btn ghost" title="Change" onClick={() => load(m)}><Ico n="edit" /></button><button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove ${m.name} from the core team?`)) removeCoreMember(cid, m.id); }}>✕</button></td></tr>; })}</tbody></table></div>
+        : !formOpen && <Empty icon="people" title={`No core team for ${name} yet`} text="The office's own staff, outside the projects: their contract ends are warned like those of providers, 90, 60 and 30 days ahead.">
+            <Import primary /><button class="btn" onClick={() => setAdding(true)}>+ Add a person</button></Empty>}
+    </div></section>;
+}
+
+/** What falls when in a country: reports, staff, core team and provider contracts, activities and project ends, on a calendar. */
+export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; P: Project[] }) {
+  const core = useStore((s) => s.ledger.coreTeam?.[cid]) ?? [];
+  const FW = useStore((s) => s.ledger.frameworks) ?? {}, set = useStore((s) => s.ledger.poKinds) ?? {};
+  const items = calItems(P, [[cid, core]], FW, set);
+  return <CalendarView items={items} kinds={CAL_KINDS} title={`Calendar of ${name}`} />;
+}
+
+
+/** Contracts of the country's providers on a calendar: each from its start to its end, warned 90, 60 and 30 days before. */
+/** A contract to add, filled in from an office service. */
+const closest = closestName;
+/** A document of a contract by its kind and number. */
+const stepName = (k: string, no?: number) => (k === 'original' ? 'Contract' : `${k.charAt(0).toUpperCase()}${k.slice(1)}${no ? ` ${no}` : ''}`);
+/** The currency of the last contract saved: a country's contracts are mostly in one currency (lira in Türkiye). */
+const lastCur = () => { try { return localStorage.getItem('pl-contract-cur') || 'EUR'; } catch { return 'EUR'; } };
+const keepCur = (c: string) => { try { localStorage.setItem('pl-contract-cur', c); } catch { /* the choice is only not remembered */ } };
+const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR', every: '', auto: false, notice: '' };
+/** How a contract is renewed, in words. */
+const everyText = (v?: string) => !v ? '' : v === 'month' ? 'monthly' : v === 'quarter' ? 'quarterly' : v === 'year' ? 'yearly' : `every ${v} months`;
+const noticeBy = (end?: string, days?: number) => (end && days ? new Date(Date.parse(end) - days * 864e5).toISOString().slice(0, 10) : '');
+/** Whole months a contract covers, its first day to its last (1 Jan – 31 Dec = 12). */
+const monthsOf = (a: string, b: string) => Math.max(1, Math.round(((Date.parse(b) - Date.parse(a)) / 864e5 + 1) / 30.4375));
+const amt = (v: number, cur = 'EUR') => cur === 'EUR' ? full(v) : `${v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`;
+/** A contract against the office budget, as worked out for its row (see ContractCalendar). */
+interface FxInfo { line: string; kind?: string; lineName: string; derived: boolean; year: number; cur: string; B: number; reason?: string; rate?: { rate: number; n: number; lo: number; hi: number }; monthEur?: number; yearEur?: number; nextEur?: number; share?: number; over?: boolean; checks?: { description: string; amount: number; expected: number }[] }
+/** A compact amount for a label (65K TRY, €15.4K): the exact figure is in the row's details. */
+const cmp = (v: number, cur = 'EUR') => { const a = Math.abs(v), t = a >= 1e6 ? `${(a / 1e6).toFixed(a >= 1e7 ? 1 : 2)}M` : a >= 1e3 ? `${(a / 1e3).toFixed(a >= 1e5 ? 0 : 1).replace(/\.0$/, '')}K` : a.toFixed(0); return cur === 'EUR' ? `€${t}` : `${t} ${cur}`; };
+/** Everything about a contract on the calendar, opened from its row: terms, fees, the office line and its euros. */
+function ContractDetail({ c, d, v }: { c: Contract; d: ContractDue; v: FxInfo | null }) {
+  const nb = noticeBy(d.end, c.noticeDays), rows: [string, ComponentChildren][] = [
+    ['Period', `${c.start ? date(c.start) : '—'} – ${c.openEnded ? 'open-ended' : c.end ? date(c.end) : '—'}`],
+    ...(c.renewBy || c.renewEvery || c.autoRenew ? [['Renewal', [c.renewEvery ? `renewed ${everyText(c.renewEvery)}` : '', c.autoRenew ? 'automatically, unless notice is given' : '', c.renewBy ? `until ${realDate(c.renewBy) ? date(c.renewBy) : `${c.renewBy} (to check)`} at the latest` : ''].filter(Boolean).join(' · ')] as [string, ComponentChildren]] : []),
+    ...(c.noticeDays ? [['Notice', `${c.noticeDays} days${nb ? ` — by ${date(nb)}` : ''}`] as [string, ComponentChildren]] : []),
+    ...(c.fee ? [['Monthly fee', <>{amt(c.fee, c.cur)}{c.items && c.items.length > 1 && <ul class="cc-items">{c.items.map((x) => <li><span>{cleanItemLabel(x.label)}</span><span class="num">{amt(x.fee, c.cur)}</span></li>)}</ul>}</>] as [string, ComponentChildren]] : []),
+    ...(c.fees && c.fees.length > 1 ? [['Fee by date', c.fees.map((x) => `${amt(x.fee, c.cur)} from ${date(x.from)}`).join(' · ')] as [string, ComponentChildren]] : []),
+    ...(c.total ? [['Total for the period', amt(c.total, c.cur)] as [string, ComponentChildren]] : []),
+    ...(d.capRaw ? [['Ceiling', `${inCur(d.capRaw, d.capCur)}${d.cap == null ? ' — no rate to set it against the orders in euros' : d.used ? ` — ${pct(d.used / d.cap)} ordered` : ''}`] as [string, ComponentChildren]] : []),
+    ['Ordered', d.used ? `${full(d.used)} spent and committed` : 'nothing yet'],
+    ...(v ? [['Office budget', `line ${v.line} ${v.lineName}${v.kind ? ` · ${v.kind}` : ''}${v.derived ? ' — read from the office\'s own orders' : ''}`] as [string, ComponentChildren]] : []),
+    ...(v?.rate ? [['Rate', `1 € = ${v.rate.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${v.cur}, the latest of ${v.rate.n} period${v.rate.n > 1 ? 's' : ''} the office paid${v.rate.hi / v.rate.lo > 1.01 ? ` (${v.rate.lo.toLocaleString('en-GB', { maximumFractionDigits: 2 })} to ${v.rate.hi.toLocaleString('en-GB', { maximumFractionDigits: 2 })})` : ''}`] as [string, ComponentChildren]] : []),
+    ...(v?.yearEur != null ? [[`${v.year}`, <>{v.rate ? '≈ ' : ''}{full(v.yearEur)}{v.monthEur ? ` · ≈ ${full(v.monthEur)} a month` : ''}{v.B ? <> · line budget {full(v.B)} · <b class={v.over ? 'ca-over' : ''}>{pct(v.share ?? 0)}{v.over ? ' — over the budget' : ''}</b></> : ' · the line has no budget'}</>] as [string, ComponentChildren]] : []),
+    ...(v?.nextEur ? [[`${v.year + 1}`, `≈ ${full(v.nextEur)} at the fee in force${v.rate ? ' and this rate' : ''}`] as [string, ComponentChildren]] : []),
+    ...(v?.reason ? [['Euro value', `not known: ${v.reason}`] as [string, ComponentChildren]] : []),
+  ];
+  return <div class="cc-detail"><dl>{rows.map(([k, x]) => <><dt>{k}</dt><dd>{x}</dd></>)}</dl>
+    {v?.checks && v.checks.length > 0 && <div class="cc-diff"><b>{v.checks.length === 1 ? 'An order differs from the contract' : `${v.checks.length} orders differ from the contract`}</b>
+      <table class="mini"><thead><tr><th>Order</th><th class="r">Booked</th><th class="r">Expected</th></tr></thead><tbody>{v.checks.map((o) => <tr><td>{o.description}</td><td class="r num">{full(o.amount)}</td><td class="r num">{full(o.expected)}</td></tr>)}</tbody></table></div>}
+    {c.history && c.history.length > 0 && <p class="cc-hist">{c.history.map((h) => <em>{stepName(h.kind, h.no)}{h.effective ? ` · ${date(h.effective)}` : ''}</em>)}</p>}</div>;
+}
+export interface Prefill { n: number; key: string; sup: string; line: string; kind: string; end: string }
+export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: string; cid: string; P: Project[]; pre?: Prefill | null; offices?: Office[] }) {
+  const set = useStore((s) => s.ledger.poKinds) ?? {}, FW = useStore((s) => s.ledger.frameworks) ?? {};
+  const L = providerPOs(P, set);
+  const names = new Map<string, string>(); for (const x of L) if (x.kind && x.supplier.trim()) names.set(supKey(x.supplier), x.supplier.trim());
+  // an office contract is used by the office's own orders on its line; a provider's, by the projects' orders
+  const entries = offices.flatMap((o) => o.reports.at(-1)?.entries ?? []);
+  const use = (k: string) => { const c = FW[k];
+    if (c?.line) { const sk = k.split(':').slice(3).join(':'); return { name: c.name, used: officeContractUse(entries, c.line, (s) => supKey(s) === sk) }; }
+    // a contract written in another language (or read from a scan) is the provider whose name is the same company
+    const sk = contractSupKey(k, c?.name, names);
+    // and the office's own orders from the same provider (a car rental, an accountant): they are in the office report
+    return { name: names.get(sk), used: Math.round((L.filter((x) => x.kind && supKey(x.supplier) === sk).reduce((a, x) => a + x.value, 0) + (c ? officeEntriesFor(offices, k, c).reduce((a, e) => a + e.amount, 0) : 0)) * 100) / 100 }; };
+  // an office contract against its budget line: its cost this year in euros, at the rate its own orders were booked at
+  const rep = offices[0]?.reports.at(-1);
+  // a contract against the office budget: its line, the rate its orders were booked at, this year and next in euros, orders that differ
+  const fx = (k0: string): FxInfo | null => { if (!FW[k0] || !rep) return null;
+    // a provider's contract the office pays is read on the office line its orders use
+    const { key: k, c } = asOfficeContract(offices, cid, k0, FW[k0]); if (!c.line) return null;
+    const l = rep.lines.find((x) => x.code === c.line), O = officeOrders(rep, k, c);
+    const r = impliedRate(c, O), y = yearCost(c, rep.year), eur = !c.cur || c.cur === 'EUR';
+    const B = l ? (O[0] ? l[O[0].fund].budget : l.ob.budget + l.ls.budget) : 0;
+    const base = { line: c.line, kind: c.kind, lineName: l?.description ?? '', derived: !FW[k0].line, year: rep.year, cur: c.cur ?? 'EUR', B };
+    if (y == null || (!eur && !r)) return { ...base, reason: c.cur && !eur && (c.fee || c.total) ? (!c.fee && !c.fees?.length && (!c.start || !c.end) ? 'its start and end dates are needed to spread its total over the months' : `no order on line ${c.line} names the months it pays`) : '' };
+    const e = eur ? y : y / r!.rate, m = c.fee ? (eur ? c.fee : c.fee / r!.rate) : 0;
+    const ny = nextYearCost(c, rep.year + 1), ne = ny ? (eur ? ny : ny / r!.rate) : 0;
+    return { ...base, rate: eur ? undefined : r, monthEur: m, yearEur: e, nextEur: ne, share: B > 0 ? e / B : undefined, over: B > 0 && e > B + 0.5, checks: orderChecks(c, O, r?.rate) };
+  };
+  const [openRow, setOpenRow] = useState('');
+  // the country's contracts: those of its providers, and those entered here by name
+  const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
+  const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);
+  const [f, setF] = useState(() => ({ ...EMPTY_C, cur: lastCur() }));
+  const [edit, setEdit] = useState(''), [meta, setMeta] = useState<{ line?: string; kind?: string }>({});
+  const [doc, setDoc] = useState<Attachment | null>(null), [readMsg, setReadMsg] = useState('');
+  // the rows of a table of fees read from the contract: kept with it when the monthly fee is the one read
+  const [items, setItems] = useState<{ label: string; fee: number }[] | undefined>(undefined);
+  // an office service chosen in the table: its supplier, budget line and kind; the end its orders cover, to confirm
+  useEffect(() => { if (pre) { setF({ ...EMPTY_C, cur: lastCur(), sup: pre.sup, end: pre.end }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
+  const save = () => {
+    const name = f.sup.trim(); if (!name || (!f.end && !f.open)) return;
+    // a date field accepts a five-digit year ("92031"): such a slip is not saved
+    const bad = ([['start', f.start], ['end', f.open ? '' : f.end], ['renewable until', f.renew]] as const).filter(([, v]) => v && !realDate(v));
+    if (bad.length) { setReadMsg(`Check the ${bad.map(([k]) => k).join(' and ')} date: ${bad.map(([, v]) => v).join(', ')} is not a date.`); return; }
+    const k = edit || supKey(name);
+    const att = doc ?? FW[k]?.doc;
+    const rows = items && +f.fee > 0 && Math.abs(items.reduce((a, x) => a + x.fee, 0) - +f.fee) < 0.5 ? items : FW[k]?.items && +f.fee === FW[k].fee ? FW[k].items : undefined;
+    setFramework(k, { name, ...(rows ? { items: rows } : {}), ...(att ? { doc: att } : {}), ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }), ...(f.renew && !f.open && f.renew > f.end ? { renewBy: f.renew } : {}), ...(+f.fee > 0 ? { fee: Math.round(+f.fee * 100) / 100 } : {}), ...(+f.total > 0 ? { total: Math.round(+f.total * 100) / 100 } : {}), ...(+f.fee > 0 || +f.total > 0 || +f.cap > 0 ? { cur: f.cur } : {}), ...(f.every ? { renewEvery: f.every } : {}), ...(f.auto ? { autoRenew: true } : {}), ...(+f.notice > 0 ? { noticeDays: Math.round(+f.notice) } : {}) });
+    keepCur(f.cur); setF({ ...EMPTY_C, cur: f.cur }); setEdit(''); setMeta({}); setDoc(null); setReadMsg(''); setItems(undefined);
+  };
+  // the terms read from the contract itself (a PDF or Word with text); a scan is attached and its terms typed
+  const [over, setOver] = useState(false);
+  const allNames = [...new Set([...names.values(), ...offices.flatMap((o) => (o.reports.at(-1)?.entries ?? []).map((e) => e.supplier.trim())).filter(Boolean)])];
+  /** The terms of one contract file: its text, else its pages read as images. */
+  const termsOf = async (file: File, say: (m: string) => void): Promise<{ t: ContractTerms; ocr: boolean; err?: string }> => {
+    let t: ContractTerms = {};
+    try { t = contractTerms(/\.pdf$/i.test(file.name) ? (await readPages(file)).map((x) => x.text).join(' ') : (({ paragraphs: P0, tables }) => [...P0, ...tables.flat(2)].join(' '))(await readDocument(file))); } catch { /* attached all the same */ }
+    if (/\.pdf$/i.test(file.name) && !t.ref && !t.end && !t.provider) {
+      try { return { t: contractTerms(await ocrPdf(file, 6, say)), ocr: true }; } catch (x) { return { t, ocr: false, err: (x as Error).message }; }
+    }
+    return { t, ocr: false };
+  };
+  // several files at once: each read, listed with what it is, then saved together (contracts first, then their amendments)
+  const [batch, setBatch] = useState<{ file: string; att: Attachment; t: ContractTerms; ocr: boolean; err?: string; on: boolean }[] | null>(null);
+  const readMany = async (files: File[]) => {
+    const F = files.filter((f) => /\.(pdf|docx)$/i.test(f.name)); if (!F.length) { setReadMsg('Drop contracts as PDF or Word (.docx).'); return; }
+    if (F.length === 1) { void readContract(F[0]); return; }
+    setAmend(null); setBatch(null); const out: (NonNullable<typeof batch>[number] | null)[] = F.map(() => null); let done = 0, next = 0;
+    setReadMsg(`Reading ${F.length} documents…`);
+    // three at a time: the text ones are read at once, the scans share the recognisers
+    const one = async () => { while (next < F.length) { const i = next++, f = F[i];
+      const att = await readAttachment(f); if (typeof att === 'string') { setReadMsg(att); done++; continue; }
+      const r = await termsOf(f, () => {});
+      out[i] = { file: f.name, att, ...r, on: !!(r.t.provider || r.t.ref) }; setReadMsg(`Read ${++done} of ${F.length} documents…`); } };
+    await Promise.all([one(), one(), one()]);
+    setReadMsg(''); setBatch(out.filter((x): x is NonNullable<typeof x> => !!x));
+  };
+  const norm = (r?: string) => (r ?? '').replace(/\s+/g, '').toUpperCase();
+  const saveBatch = () => { if (!batch) return;
+    const today = TODAY.toISOString().slice(0, 10), work: Record<string, Contract> = { ...FW };
+    const pick = batch.filter((x) => x.on);
+    // contracts first, then riders / amendments / addenda by the date they apply from
+    const order = [...pick.filter((x) => !x.t.amend), ...pick.filter((x) => x.t.amend).sort((a, b) => (a.t.amend!.effective ?? '').localeCompare(b.t.amend!.effective ?? ''))];
+    let n = 0;
+    for (const x of order) { const t = x.t;
+      const who = t.amend && t.provider ? closest(t.provider, Object.values(work).map((c) => c.name ?? '').filter(Boolean)) : undefined;
+      const base = t.amend && (Object.entries(work).find(([, c]) => t.ref && norm(c.ref) === norm(t.ref)) ?? Object.entries(work).find(([, c]) => who && c.name === who));
+      if (t.amend && base) { const a = t.amend; work[base[0]] = applyAmendment(base[1], t, { kind: a.kind, ...(a.no ? { no: a.no } : {}), ...(a.effective ? { effective: a.effective } : {}), at: today, ...(t.ref ? { ref: t.ref } : {}), doc: x.att }); setFramework(base[0], work[base[0]]); n++; continue; }
+      const name = (t.provider ? closest(t.provider, allNames) : undefined) ?? t.provider; if (!name && !t.ref) continue;
+      const k = names.has(supKey(name ?? '')) ? supKey(name!) : supKey(name ?? t.ref!);
+      work[k] = { name: name ?? t.ref, country: cid, doc: x.att, ...(t.ref ? { ref: t.ref } : {}), ...(t.start ? { start: t.start } : {}), ...(t.end ? { end: t.end } : {}), ...(t.renewBy ? { renewBy: t.renewBy } : {}),
+        ...(t.fee ? { fee: t.fee } : {}), ...(t.items ? { items: t.items } : {}), ...(t.fees ? { fees: t.fees } : {}), ...(t.total ? { total: t.total } : {}), ...(t.cur && (t.fee || t.total) ? { cur: t.cur } : {}), ...(t.renewEvery ? { renewEvery: t.renewEvery } : {}), ...(t.autoRenew ? { autoRenew: true } : {}), ...(t.noticeDays ? { noticeDays: t.noticeDays } : {}) } as Contract;
+      setFramework(k, work[k]); n++;
+    }
+    setReadMsg(`${n} of ${batch.length} document${batch.length > 1 ? 's' : ''} saved; each is kept with its contract.${batch.length - n ? ' The others were left out: open them one by one and type their terms.' : ''}`); setBatch(null);
+  };
+  const readContract = async (file?: File) => {
+    if (!file) return;
+    if (!/\.(pdf|docx)$/i.test(file.name)) { setReadMsg(`${file.name}: drop the contract as PDF or Word (.docx).`); return; }
+    const att = await readAttachment(file); if (typeof att === 'string') { setReadMsg(att); return; }
+    setDoc(att); setReadMsg('Reading…'); setAmend(null);
+    let t: ContractTerms = {};
+    // a PDF read line by line in page order (a label and its value stay together); Word as paragraphs and tables
+    try { t = contractTerms(/\.pdf$/i.test(file.name) ? (await readPages(file)).map((x) => x.text).join(' ') : (({ paragraphs: P0, tables }) => [...P0, ...tables.flat(2)].join(' '))(await readDocument(file))); } catch { /* attached all the same */ }
+    // nothing in the text layer (a scan, or only an e-signature stamp): the pages are read as images
+    let ocr = false;
+    if (/\.pdf$/i.test(file.name) && !t.ref && !t.end && !t.provider) {
+      try { const txt = await ocrPdf(file, 6, setReadMsg); t = contractTerms(txt); ocr = true; }
+      catch (x) { setReadMsg(`${file.name} is a scanned copy and ${(x as Error).message}: it is kept with the contract. Type the dates and amounts from it.`); return; }
+    }
+    const scan = ocr ? ' (a scanned copy, read from its image: check each figure)' : '';
+    // a rider, amendment or addendum: the contract it changes, found by its reference or its provider
+    if (t.amend) {
+      const norm = (r?: string) => (r ?? '').replace(/\s+/g, '').toUpperCase();
+      const byRef = Object.entries(FW).find(([, c]) => t.ref && norm(c.ref) === norm(t.ref));
+      const who = t.provider ? closest(t.provider, Object.values(FW).map((c) => c.name ?? '').filter(Boolean)) : undefined;
+      const base = byRef ?? Object.entries(FW).find(([, c]) => who && c.name === who);
+      if (base) { setAmend({ key: base[0], t, doc: att, file: file.name, scan }); setReadMsg(''); return; }
+      setReadMsg(`${file.name} is ${t.amend.kind === 'amendment' ? 'an amendment' : `a ${t.amend.kind}`} to ${t.ref ?? 'a contract'} that is not in the app yet: enter the contract first (or save this one as the contract) — its terms are in the form below.`);
+    }
+    // the provider as the orders spell it, when the contract's spelling is close enough
+    const known = t.provider ? closest(t.provider, allNames) : undefined;
+    setItems(t.items);
+    setF((f0) => ({ ...f0, sup: f0.sup || known || t.provider || '', ref: t.ref ?? f0.ref, start: t.start ?? f0.start, end: t.end ?? f0.end, open: t.end ? false : f0.open, renew: t.renewBy ?? f0.renew, total: t.total ? String(t.total) : f0.total, fee: t.fee ? String(t.fee) : f0.fee, cur: t.cur ?? f0.cur, every: t.renewEvery ?? f0.every, auto: t.autoRenew ?? f0.auto, notice: t.noticeDays ? String(t.noticeDays) : f0.notice }));
+    if (t.amend) return;
+    const got = [t.ref && 'reference', t.provider && 'provider', t.end && 'end date', t.renewBy && 'renewal limit', t.total && 'total', t.fee && 'monthly fee', t.renewEvery && 'renewal step', t.autoRenew && 'automatic renewal', t.noticeDays && 'notice period'].filter(Boolean);
+    setReadMsg(got.length ? `Read from ${file.name}${scan}: ${got.join(', ')}. Check them, then save; the file is kept with the contract.` : `${file.name} has no text that can be read (a scanned copy): it is kept with the contract. Type the dates and amounts from it.`);
+  };
+  // a later document to apply: what it changes, then applied as the contract's next step
+  const [amend, setAmend] = useState<{ key: string; t: ContractTerms; doc: Attachment; file: string; scan: string } | null>(null);
+  const applyIt = () => { if (!amend) return; const c = FW[amend.key], a = amend.t.amend!;
+    setFramework(amend.key, applyAmendment(c, amend.t, { kind: a.kind, ...(a.no ? { no: a.no } : {}), ...(a.effective ? { effective: a.effective } : {}), at: TODAY.toISOString().slice(0, 10), ...(amend.t.ref ? { ref: amend.t.ref } : {}), doc: amend.doc }));
+    setAmend(null); setDoc(null); setReadMsg(`${stepName(a.kind, a.no)} applied to the contract with ${c.name ?? amend.key}; the document is kept in its history.`); };
+  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? lastCur(), every: c.renewEvery ?? '', auto: !!c.autoRenew, notice: c.noticeDays ? String(c.noticeDays) : '' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
+  // the calendar: three months back, fifteen ahead
+  const t0 = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 3, 1)), months = Array.from({ length: 18 }, (_, i) => new Date(Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + i, 1)));
+  const t1 = Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + 18, 1), span = t1 - t0.getTime();
+  const x = (iso: string) => Math.max(0, Math.min(100, (Date.parse(iso) - t0.getTime()) / span * 100));
+  const due = contractAlerts(D);
+  return <section class="card span-12 cc"><div class="card-h"><div><h2>Contract calendar</h2>
+    <p>Framework contracts and tender awards with {name}'s providers: a warning 90 days before the end, serious at 60, critical at 30 and for a month after. Contracts due also appear in the alert count of the bell.</p></div>
+    {due.length > 0 && <span class="badge critical">{due.length} ending soon</span>}</div>
+    <div class="card-b">
+      {batch && <div class="am-rev cc-batch"><div class="am-h"><b>{batch.length} documents read</b><span>Tick the ones to save: contracts first, then their riders and amendments by date. Check each figure; a scanned copy may be misread.</span></div>
+        <table class="mini"><thead><tr><th /><th>Document</th><th>What it is</th><th>Provider</th><th>Reference</th><th>Ends</th><th class="r">Total</th></tr></thead>
+          <tbody>{batch.map((x, i) => <tr class={x.on ? '' : 'muted'}><td><input type="checkbox" checked={x.on} disabled={!x.t.provider && !x.t.ref} onChange={(e) => setBatch(batch.map((y, j) => (j === i ? { ...y, on: (e.target as HTMLInputElement).checked } : y)))} /></td>
+            <td>{x.file}{x.ocr && <small class="muted"> · scanned</small>}</td>
+            <td>{x.t.amend ? `${stepName(x.t.amend.kind, x.t.amend.no)}${x.t.amend.effective ? ` · from ${date(x.t.amend.effective)}` : ''}` : x.t.provider || x.t.ref ? 'Contract' : <span class="badge warning">{x.err ? 'scan: reader not available' : 'nothing read'}</span>}</td>
+            <td>{x.t.provider ?? '—'}</td><td class="num">{x.t.ref ?? '—'}</td><td class="num">{x.t.end ? date(x.t.end) : '—'}</td><td class="r num">{x.t.total ? amt(x.t.total, x.t.cur) : x.t.fee ? `${amt(x.t.fee, x.t.cur)} / month` : '—'}</td></tr>)}</tbody></table>
+        <div class="am-a"><button class="btn primary" type="button" disabled={!batch.some((x) => x.on)} onClick={saveBatch}>Save the {batch.filter((x) => x.on).length} ticked</button><button class="btn ghost" type="button" onClick={() => setBatch(null)}>Cancel</button></div></div>}
+      {amend && (() => { const c = FW[amend.key], a = amend.t.amend!, D = amendmentDiff(c, amend.t), fv = (k: string, v: unknown) => v == null || v === '' ? '—' : k === 'end' || k === 'renewBy' ? date(String(v)) : k === 'fee' || k === 'total' ? amt(Number(v), amend.t.cur ?? c.cur) : k === 'renewEvery' ? everyText(String(v)) : typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v);
+        return <div class="am-rev"><div class="am-h"><b>{stepName(a.kind, a.no)} to {c.ref ?? 'the contract'} — {c.name}</b><span>{a.effective ? `applies from ${date(a.effective)}` : 'no effective date read'} · {amend.file}{amend.scan}</span></div>
+          {D.length ? <table class="mini am-t"><thead><tr><th>Term</th><th>In force</th><th>With this {a.kind}</th></tr></thead><tbody>{D.map((x) => <tr><td>{x.label}</td><td class="muted">{fv(x.field, x.from)}</td><td><b>{fv(x.field, x.to)}</b></td></tr>)}</tbody></table> : <p class="muted">No term read that differs from the contract in force: the document is added to its history.</p>}
+          {amend.t.fees && <p class="am-fees">Monthly fee by date: {amend.t.fees.map((x) => `${amt(x.fee, amend.t.cur ?? c.cur)} from ${date(x.from)}`).join(' · ')}</p>}
+          <div class="am-a"><button class="btn primary" type="button" onClick={applyIt}>Apply to the contract</button><button class="btn ghost" type="button" onClick={() => { setAmend(null); setDoc(null); }}>Cancel</button></div></div>; })()}
+      <form class="cc-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
+        <label>Provider<input list="cc-sup" value={f.sup} onInput={(e) => setF({ ...f, sup: (e.target as HTMLInputElement).value })} placeholder="Choose or type the provider" required /></label>
+        <datalist id="cc-sup">{[...new Set(names.values())].sort().map((n) => <option value={n} />)}</datalist>
+        <label>Reference<input value={f.ref} onInput={(e) => setF({ ...f, ref: (e.target as HTMLInputElement).value })} placeholder="Tender / contract no." /></label>
+        <label>Ceiling ({f.cur})<input type="number" min="0" step="0.01" value={f.cap} onInput={(e) => setF({ ...f, cap: (e.target as HTMLInputElement).value })} /></label>
+        <label>Starts<input type="date" value={f.start} onInput={(e) => setF({ ...f, start: (e.target as HTMLInputElement).value })} /></label>
+        <label>Ends<input type="date" value={f.open ? '' : f.end} disabled={f.open} onInput={(e) => setF({ ...f, end: (e.target as HTMLInputElement).value })} required={!f.open} /></label>
+        <label class="cc-open"><input type="checkbox" checked={f.open} onChange={(e) => setF({ ...f, open: (e.target as HTMLInputElement).checked })} /> Open-ended (no end date)</label>
+        <label title="“May not be renewed beyond”: the last date the contract can be extended to">Renewable until<input type="date" value={f.open ? '' : f.renew} min={f.end || undefined} disabled={f.open} onInput={(e) => setF({ ...f, renew: (e.target as HTMLInputElement).value })} /></label>
+        <label>Monthly fee<input type="number" min="0" step="0.01" value={f.fee} onInput={(e) => setF({ ...f, fee: (e.target as HTMLInputElement).value })} /></label>
+        <label title="The total of the contract for its period (e.g. 12 months)">Total for the period<input type="number" min="0" step="0.01" value={f.total} onInput={(e) => setF({ ...f, total: (e.target as HTMLInputElement).value })} /></label>
+        <label>Currency<select class="select" value={f.cur} onChange={(e) => setF({ ...f, cur: (e.target as HTMLSelectElement).value })}>{['EUR', 'TRY', 'USD'].map((c) => <option>{c}</option>)}</select></label>
+        <label title="How each renewal runs: read from the contract (“may be renewed [annually]”, “extended for a further period of …”)">Renewed<select class="select" value={f.every} onChange={(e) => setF({ ...f, every: (e.target as HTMLSelectElement).value })}><option value="">—</option><option value="month">monthly</option><option value="quarter">quarterly</option><option value="year">yearly</option>{f.every && !['month', 'quarter', 'year'].includes(f.every) && <option value={f.every}>every {f.every} months</option>}</select></label>
+        <label title="Days of notice to give before the end (to stop or to renew it)">Notice (days)<input type="number" min="0" step="1" value={f.notice} style={{ minWidth: '70px', width: '90px' }} onInput={(e) => setF({ ...f, notice: (e.target as HTMLInputElement).value })} /></label>
+        <label class="cc-chk" title="Renewed without a new signature unless notice is given"><input type="checkbox" checked={f.auto} onChange={(e) => setF({ ...f, auto: (e.target as HTMLInputElement).checked })} /> Renews automatically</label>
+        {+f.fee > 0 && f.start && f.end && !f.open && <p class="cc-meta">{f.fee} {f.cur} a month over {monthsOf(f.start, f.end)} months = <b>{amt(+f.fee * monthsOf(f.start, f.end), f.cur)}</b>{+f.total > 0 && Math.abs(+f.total - +f.fee * monthsOf(f.start, f.end)) > 0.5 ? <> · the total typed differs ({amt(+f.total, f.cur)}): fees that change during the period</> : null}</p>}
+        <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
+        {(edit || doc) && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF({ ...EMPTY_C, cur: lastCur() }); setDoc(null); setReadMsg(''); }}>Cancel</button>}
+        <label class={`drop cc-read${over ? ' on' : ''}`} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }} onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); void readMany([...(e.dataTransfer?.files ?? [])]); }}>
+          <input type="file" accept=".pdf,.docx" multiple hidden onChange={(e) => { const i = e.target as HTMLInputElement; void readMany([...(i.files ?? [])]); i.value = ''; }} />
+          <Ico n="upload" /><span><strong>Drop contracts here</strong> — one or many, with their riders and amendments — or click to choose them (PDF or Word) · their terms are read</span></label>
+        {readMsg && <p class="cc-meta">{readMsg}</p>}
+        {items && items.length > 1 && <p class="cc-meta">Fees read from the contract's table: {items.map((x) => `${x.label} ${amt(x.fee, f.cur)}`).join(' + ')} = <b>{amt(items.reduce((a, x) => a + x.fee, 0), f.cur)}</b> a month</p>}
+        {meta.line && <p class="cc-meta">Office contract · <b>{meta.kind}</b> · budget line {meta.line}{pre?.end && pre.key === edit ? <> · the end date is filled with the period its orders cover ({date(pre.end)}): check it against the contract</> : null}</p>}
+      </form>
+      {D.length ? <div class="cc-cal">
+        <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : MON[m.getUTCMonth()]}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
+        {D.map((d) => { const c = FW[d.key] ?? {}, v = fx(d.key); const a = x(d.start ?? t0.toISOString()), b = d.openEnded ? 100 : x(d.end), w90 = d.openEnded ? 101 : x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
+          return <><div class={`cc-row s-${d.severity}${d.openEnded ? ' open' : ''}`}>
+            <span class={`cc-n cc-sum${openRow === d.key ? ' on' : ''}`} onClick={(e) => { if (!(e.target as Element).closest('.ent, button, a')) setOpenRow(openRow === d.key ? '' : d.key); }} title="">
+              <span class="cc-nm"><span class="ca-tw">{openRow === d.key ? '▾' : '▸'}</span><b><Firm name={d.name} /></b>{c.ref && <small class="muted num">{c.ref}</small>}</span>
+              <span class="cc-chips">
+                {c.fee ? <em title={`The monthly fee in force${c.items && c.items.length > 1 ? `: ${c.items.map((x) => `${cleanItemLabel(x.label)} ${amt(x.fee, c.cur)}`).join(' + ')}` : ''}`}>{cmp(c.fee, c.cur)} / month</em> : c.total ? <em title="The total for the contract's period">{cmp(c.total, c.cur)} in total</em> : null}
+                {v && v.yearEur != null && <em class={v.over ? 'bad' : ''} title={`${v.year} at the fee in force${v.rate ? `, at 1 € = ${v.rate.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${v.cur} (the rate of the latest period the office paid)` : ''}, against office line ${v.line}${v.B ? ` (budget ${full(v.B)})` : ''}`}>{v.year} {short(v.yearEur)}{v.share != null ? ` · ${pct(v.share)} of line ${v.line}` : ''}</em>}
+                {d.used > 0 && <em title={`Spent and committed so far: the projects' orders${v ? ' and the office\'s own' : ''}${d.capRaw ? `, against a ceiling of ${inCur(d.capRaw, d.capCur)}` : ''}`}>ordered {short(d.used)}{r != null ? ` · ${pct(r)} of ceiling` : ''}</em>}
+                {!c.fee && !c.total && d.capRaw ? <em title={d.cap == null ? 'A ceiling in another currency: no rate to set it against the orders in euros' : 'The contract\'s ceiling'}>ceiling {cmp(d.capRaw, d.capCur)}</em> : null}
+                {v && v.checks && v.checks.length > 0 && <em class="warn" title={v.checks.map((o) => `${o.description}: ${full(o.amount)} booked, ${full(o.expected)} expected`).join('\n')}>{v.checks.length === 1 ? '1 order differs' : `${v.checks.length} orders differ`}</em>}
+                {v && v.reason && <em class="warn" title={`In ${v.cur}: ${v.reason}, so its euro value is not known`}>{/start and end/.test(v.reason) ? 'dates needed' : 'no rate yet'}</em>}
+                {c.history && c.history.length > 1 && <em title={c.history.map((h) => `${stepName(h.kind, h.no)}${h.effective ? ` · ${date(h.effective)}` : ''}`).join('\n')}>+{c.history.length - 1} {c.history.length - 1 === 1 ? stepName(c.history.at(-1)!.kind).toLowerCase() : 'documents'}</em>}
+                {[c.start, c.end, c.renewBy].some((x) => x && !realDate(x)) && <em class="warn" title="A date of this contract cannot be read: open it (✎) and correct it">date to check</em>}
+              </span>
+            </span>
+            <div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }} />)}
+              {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
+              {FW[d.key]?.renewBy && !d.openEnded && x(FW[d.key].renewBy!) > b && <em class="cc-renew" title={`Renewable until ${date(FW[d.key].renewBy!)}`} style={{ left: `${b}%`, width: `${x(FW[d.key].renewBy!) - b}%` }} />}
+              <u style={{ left: `${x(TODAY.toISOString())}%` }} /></div>
+            <span class="cc-s"><span class={`badge ${d.openEnded ? 'neutral' : SEV_BADGE[d.severity]}`} title={d.openEnded ? 'No end date: nothing to warn' : `ends ${date(d.end)}`}>{dueText(d)}</span><small class="num muted">{d.openEnded ? 'no end date' : date(d.end)}</small>
+              <Attach doc={FW[d.key]?.doc} label={`the contract with ${d.name}`} save={(doc) => setFramework(d.key, { ...FW[d.key], doc })} />
+              <button class="btn ghost" title="Change" onClick={() => load(d)}><Ico n="edit" /></button>
+              <button class="btn ghost" title="Remove (admin)" onClick={() => { if (confirm(`Remove the contract with ${d.name}?`) && isAdmin('remove a contract')) setFramework(d.key, null); }}>✕</button></span>
+          </div>{openRow === d.key && <ContractDetail c={c} d={d} v={v} />}</>; })}
+      </div> : <Empty icon="flag" title={`No contract on the calendar for ${name} yet`} text="Drop a contract above, or type its provider, reference and end date: it is then warned 90, 60 and 30 days before it ends, here, in the country's alerts and in the bell." />}
+      {noEnd.length > 0 && <p class="muted" style={{ fontSize: '12.5px' }}>Without an end date, so not on the calendar: {noEnd.map(([k]) => names.get(k) ?? k).join(', ')}.</p>}
+    </div></section>;
+}
+
+/** The Overview's country rows: each country in one line — office budget, projects, urgent alerts, next deadline — opening its desk. */
+export function OverviewCountries() {
+  const L = useStore((s) => s.ledger);
+  const cs = [...new Set([...(L.offices ?? []).map((o) => o.country), ...L.projects.map((p) => p.country)])];
+  const row = (cid: string) => {
+    const P = L.projects.filter((p) => p.country === cid), M = P.map(money), b = M.reduce((a, m) => a + m.budget, 0), sp = M.reduce((a, m) => a + m.spent, 0);
+    const O = (L.offices ?? []).filter((o) => o.country === cid).map((o) => officeView(o.reports.at(-1)!).T), ob = O.reduce((a, T) => a + T.ob.budget + T.ls.budget, 0), osc = O.reduce((a, T) => a + T.ob.sc + T.ls.sc, 0);
+    const urgent = openAlerts(alerts(P, TODAY), L.alertMarks, TODAY).filter((a) => a.severity !== 'warning').length;
+    const next = events(P).find((e) => e.day >= now() && e.kind !== 'activity');
+    return { cid, name: L.countries.find((c) => c.id === cid)?.name ?? cid, n: P.length, run: P.filter(active).length, b, sp, ob, osc, hasOffice: O.length > 0, urgent, next };
+  };
+  const R = cs.map(row).sort((a, b) => b.b + b.ob - (a.b + a.ob));
+  return <section class="card span-7"><div class="card-h"><div><h2>Countries</h2><p>Each country in one line · click to open it</p></div></div>
+    <div class="card-b table-scroll"><table class="mini ov-ct"><thead><tr><th>Country</th><th class="r">Office budget</th><th class="r">Projects</th><th class="r">Spent</th><th class="r">Urgent</th><th>Next deadline</th></tr></thead>
+      <tbody>{R.map((x) => <tr class="click" onClick={() => go(`countries/${x.cid}/overview`)}>
+        <td><b>{x.name}</b></td>
+        <td class="r num">{x.hasOffice ? <>{short(x.ob)} <small class="muted">{pct(x.ob ? x.osc / x.ob : 0)} used</small></> : <span class="muted">—</span>}</td>
+        <td class="r num">{x.run} <small class="muted">· {short(x.b)}</small></td>
+        <td class="r num">{pct(x.b ? x.sp / x.b : 0)}</td>
+        <td class="r">{x.urgent ? <span class="badge serious">{x.urgent}</span> : <span class="muted">0</span>}</td>
+        <td>{x.next ? <span>{date(x.next.day)} <small class="muted">· {plabel(x.next.p)} {KIND_LABEL[x.next.kind].toLowerCase()}</small></span> : <span class="muted">—</span>}</td></tr>)}</tbody></table></div></section>;
+}
+
+/** A paper clip: opens the attached document, or attaches one (replacing one asks for the admin password). */
+function Attach({ doc, label, save }: { doc?: Attachment; label: string; save: (d: Attachment) => void }) {
+  const pick = async (e: Event) => {
+    const inp = e.target as HTMLInputElement, f = inp.files?.[0]; inp.value = ''; if (!f) return;
+    if (doc && !isAdmin(`replace ${label}`)) return;
+    const a = await readAttachment(f); if (typeof a === 'string') return alert(a); save(a);
+  };
+  return <span class="att-c">{doc && <button class="btn ghost att-open" title={`Open ${doc.name} (${Math.round(doc.size / 1024)} KB, attached ${date(doc.at.slice(0, 10))})`} onClick={() => openAttachment(doc)}><Ico n="doc" /></button>}
+    <label class="btn ghost" title={doc ? `Replace ${label}` : `Attach ${label} (PDF, Word, scan — kept in this browser and in backups)`}><Ico n="attach" /><input type="file" hidden onChange={pick} /></label></span>;
+}
