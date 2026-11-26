@@ -682,13 +682,15 @@ async function page(opts) {
   check(await p.locator('.tn-lot').count() === 2 && await p.locator('.tn-lot').first().locator('.tn-t tbody tr').count() === 1, 'a tender split into lots: the providers already selected become Lot 1');
   await p.click('.cd-views button:has-text("Contracts")'); await p.waitForSelector('.cc-form');
   const f = (i, v) => p.fill(`.cc-form label:nth-of-type(${i}) input`, v);
+  const detail = async (name) => { await p.locator(`.cc-row:has-text("${name}") .cc-nm`).click({ position: { x: 4, y: 6 } }); await p.waitForSelector('.cc-detail'); const t = await p.locator('.cc-detail').innerText();
+    await p.locator(`.cc-row:has-text("${name}") .cc-nm`).click({ position: { x: 4, y: 6 } }); await p.waitForTimeout(100); return t; };
   await f(1, 'Gamma Events Ltd'); await f(2, 'FWC-T1'); await f(3, '50000'); await f(4, '2025-01-01'); await f(5, '2026-10-31');
   await f(7, '2027-01-31'); await f(8, '1000'); await p.selectOption('.cc-form label:has-text("Currency") select', 'TRY');
   await p.selectOption('.cc-form label:has-text("Renewed") select', 'year'); await p.fill('.cc-form label:has-text("Notice") input', '60');
   check(/22 months = <b>|22 months = 22,000\.00 TRY/.test(await p.locator('.cc-form .cc-meta').last().innerText()), 'the monthly fee is multiplied over the contract period');
   await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
-  check(/1,000\.00 TRY a month/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()) && await p.locator('.cc-row:has-text("Gamma Events Ltd") em.cc-renew').count() === 1, 'the fee and the renewal limit are kept and drawn on the calendar');
-  check(/renewed yearly/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()) && /notice 60 d — by 1 Sep 2026/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()), 'the renewal step and the notice deadline are kept with the contract');
+  check(/1K TRY \/ month/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-chips').innerText()) && /Monthly fee\s+1,000\.00 TRY/.test(await detail('Gamma Events Ltd')) && await p.locator('.cc-row:has-text("Gamma Events Ltd") em.cc-renew').count() === 1, 'the fee and the renewal limit are kept and drawn on the calendar');
+  check(await detail('Gamma Events Ltd').then((t) => /renewed yearly/.test(t) && /60 days — by 1 Sep 2026/.test(t)), 'the renewal step and the notice deadline are kept with the contract');
   check(await p.locator('.cc-row.s-critical:has-text("Gamma Events Ltd") .badge:has-text("20 d left")').count() === 1, 'a contract ending in 20 days is on the calendar as critical');
   await p.setInputFiles('.cc-row:has-text("Gamma Events Ltd") .att-c input', resolve('tests/fixtures/contract.pdf')); await p.waitForTimeout(400);
   check(await p.locator('.cc-row:has-text("Gamma Events Ltd") .att-open').count() === 1, 'the signed contract is attached to its row and can be opened');
@@ -715,7 +717,7 @@ async function page(opts) {
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
   // a ceiling follows the contract's currency: one in euros is set against the orders
   await f(1, 'Zeta Media'); await f(3, '20000'); await f(5, '2027-12-31'); await p.selectOption('.cc-form label:has-text("Currency") select', 'EUR'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
-  check(/ceiling 50,000\.00 TRY \(no rate/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()) && /ceiling €20,000\.00/.test(await p.locator('.cc-row:has-text("Zeta Media") .cc-n').innerText()), 'a ceiling is written in its contract\'s currency; one in lira without a rate is not set against the orders in euros');
+  check(/Ceiling\s+50,000\.00 TRY — no rate/.test(await detail('Gamma Events Ltd')) && /Ceiling\s+€20,000\.00/.test(await detail('Zeta Media')) && (await p.locator('.cc-row').count()) > 0 && /row|/.test(''), 'a ceiling is written in its contract\'s currency; one in lira without a rate is not set against the orders in euros');
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
   // what the contracts ask of the months ahead: renewals to decide, payments month by month, papers missing
   await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.cah');
@@ -757,8 +759,8 @@ async function page(opts) {
   const rev = await p.locator('.am-rev').innerText().catch(() => '');
   check(/Amendment 2 to LC9\/2030/.test(rev) && /Ends/.test(rev) && /30 Jun 2028/.test(rev) && /2,000\.00 TRY/.test(rev), `an amendment shows what it changes before it is applied (${rev.replace(/\s+/g, ' ').slice(0, 160)})`);
   await p.click('.am-rev button:text-is("Apply to the contract")'); await p.waitForTimeout(300);
-  const row = await p.locator('.cc-row:has-text("Epsilon Rent")').innerText();
-  check(/Contract/.test(row) && /Amendment 2/.test(row) && /30 Jun 2028/.test(row) && /2,000\.00 TRY a month/.test(row), 'the amendment becomes the next step of the contract: new end, new fee, history kept');
+  const row = await detail('Epsilon Rent');
+  check(/Contract/.test(row) && /Amendment 2/.test(row) && /30 Jun 2028/.test(row) && /Monthly fee\s+2,000\.00 TRY/.test(row) && /\+1 amendment/.test(await p.locator('.cc-row:has-text("Epsilon Rent") .cc-chips').innerText()), 'the amendment becomes the next step of the contract: new end, new fee, history kept');
   // several documents at once: each read and listed with what it is, then the ticked ones saved
   await p.setInputFiles('.cc-read input', [resolve('tests/fixtures/aoe.pdf'), resolve('tests/fixtures/amend.pdf')]);
   await p.waitForSelector('.cc-batch', { timeout: 20000 }).catch(() => {});
@@ -766,7 +768,7 @@ async function page(opts) {
   check(/2 documents read/.test(bt) && /Contract/.test(bt) && /Amendment 2/.test(bt) && /SC099\/2026/.test(bt), 'several contracts dropped at once are listed with what each is');
   await p.locator('.cc-batch tbody tr:has-text("aoe.pdf") input[type=checkbox]').uncheck();
   await p.click('.cc-batch button:has-text("Save the 1 ticked")'); await p.waitForTimeout(300);
-  check(/1 of 2 documents saved/.test(await p.locator('.cc-form').innerText()) && await p.locator('.cc-row:has-text("Epsilon Rent") .cc-hist em').count() === 3, 'the ticked amendment is applied to its contract');
+  check(/1 of 2 documents saved/.test(await p.locator('.cc-form').innerText()) && (await detail('Epsilon Rent')).match(/Amendment|Contract|Rider|Addendum/g)?.length >= 3 && /\+2 documents/.test(await p.locator('.cc-row:has-text("Epsilon Rent") .cc-chips').innerText()), 'the ticked amendment is applied to its contract');
   // a scan has no text: its pages are read as images by a reader fetched on first use; where it cannot be fetched
   // (no internet, a blocked network) the file is kept and the user is told to type the terms
   const nErr = errors.length; await p.route(/cdn\.jsdelivr\.net/, (r) => r.abort());

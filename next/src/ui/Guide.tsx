@@ -4,6 +4,9 @@ import { X } from './CloseX';
 /* The month in five steps, where things are, and what changed in the app. The list of changes is written by hand with
    each release; the newest entry first. A dot on the menu marks a release not yet opened. */
 export const NEWS: { id: string; date: string; items: string[] }[] = [
+  { id: '2026-11-26f', date: '26 Nov 2026 (night)', items: [
+    'The contract calendar reads at a glance: each row shows the provider, the reference and a few labels — the fee, this year against the office line (red when over), what was ordered, and a warning label when something needs a look (an order that differs, a rate or a date missing). A click on the row opens everything else: period, renewal, notice, the fee\'s rows, the rate, this year and next, the orders that differ, the amendments.',
+  ] },
   { id: '2026-11-26e', date: '26 Nov 2026 (late)', items: [
     'A contract\'s currency now covers its ceiling too ("Ceiling (TRY)"), and a new contract starts in the currency of the last one saved. A ceiling in lira is set against the orders (in euros) at the rate the office\'s orders were booked at; without such a rate it is shown as written, not compared.',
     'The rate of a contract in lira is the one of the latest period the office paid, and the orders of one period (the car, the fuel) are added up before it is read — one quarter split in two orders no longer gives an odd rate. A contract priced as a total is spread over its months.',
