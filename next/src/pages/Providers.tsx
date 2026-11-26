@@ -1,3 +1,4 @@
+import { capEur } from '../domain/contracts';
 import { Firm } from '../ui/EntityPanel';
 import { Ico } from '../ui/Ico';
 import { useState } from 'preact/hooks';
@@ -5,7 +6,7 @@ import { filtered, go, setFramework, setPoKind, useStore } from '../data/store';
 import { providerSummary, supKey, topShare, KINDS, providerPOs, suppliers, type Kind, type ProviderPO } from '../domain/providers';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, full, short } from '../ui/format';
+import { date, full, short, inCur } from '../ui/format';
 import { download } from '../ui/xlsxwrite';
 import { plabel } from '../domain/label';
 
@@ -85,10 +86,10 @@ export function Providers() {
                   <div class="sp-all"><span class="muted">Kind for all POs of this provider</span><select value={set[`sup|${supKey(g.name)}`] ?? ''} onChange={(e) => setPoKind(`sup|${supKey(g.name)}`, (e.target as HTMLSelectElement).value)}>
                   <option value="">Automatic (per PO)</option>{KINDS.map((k) => <option value={k.k}>{k.label}</option>)}<option value="none">Not a service provider</option></select><small class="muted">a choice made on a single PO below still wins</small></div>
                   {(() => { const k = supKey(g.name), f = FW[k] ?? {}; const save = (p: { cap?: number; end?: string; ref?: string }) => setFramework(k, { ...f, ...p }); return <div class="sp-all"><span class="muted">Framework contract</span>
-                    <label>ceiling € <input type="number" min="0" step="1000" style={{ width: '110px' }} value={f.cap ?? ''} onChange={(e) => save({ cap: Number((e.target as HTMLInputElement).value) || undefined })} /></label>
+                    <label>ceiling {f.cur && f.cur !== 'EUR' ? f.cur : '€'} <input type="number" min="0" step="1000" style={{ width: '110px' }} value={f.cap ?? ''} onChange={(e) => save({ cap: Number((e.target as HTMLInputElement).value) || undefined })} /></label>
                     <label>ends <input type="date" value={f.end ?? ''} onChange={(e) => save({ end: (e.target as HTMLInputElement).value || undefined })} /></label>
                     <label>ref. <input style={{ width: '130px' }} value={f.ref ?? ''} placeholder="contract no." onChange={(e) => save({ ref: (e.target as HTMLInputElement).value.trim() || undefined })} /></label>
-                    {f.cap ? <span>used <b>{full(fwUse(g.name))}</b> · left <b style={{ color: f.cap - fwUse(g.name) < 0 ? 'var(--critical)' : undefined }}>{full(f.cap - fwUse(g.name))}</b></span> : null}
+                    {capEur(f) ? <span>used <b>{full(fwUse(g.name))}</b> · left <b style={{ color: capEur(f)! - fwUse(g.name) < 0 ? 'var(--critical)' : undefined }}>{full(capEur(f)! - fwUse(g.name))}</b></span> : f.cap ? <span class="muted">ceiling in {f.cur}: no rate to set it against the orders in euros</span> : null}
                     {(f.cap || f.end || f.ref) && <button class="btn ghost" onClick={() => setFramework(k, null)}>Remove</button>}</div>; })()}<table class="mini"><thead><tr><th>Project</th><th>PO</th><th>Line</th><th>Description</th><th>Date</th><th>Kind</th><th class="r">Spent + committed</th></tr></thead>
                   <tbody>{g.L.map((x) => <tr><td class="click" onClick={() => go(`project/${x.p.id}/pos`)}><b>{lab(x.p)}</b></td><td class="num">{x.po}</td><td class="num">{x.line}</td><td>{x.description || x.nature}</td><td class="num" style={{ whiteSpace: 'nowrap' }}>{x.date ? date(x.date) : '—'}</td>
                     <td><select value={set[x.key] ?? ''} onChange={(e) => setPoKind(x.key, (e.target as HTMLSelectElement).value)} style={{ fontWeight: set[x.key] ? 700 : 400 }}>
@@ -98,8 +99,8 @@ export function Providers() {
   // Framework use counts every PO of the provider in the selected projects, all years and kinds.
   const fwUse = (name: string) => sum(every.filter((x) => x.kind && supKey(x.supplier) === supKey(name)));
   const today = TODAY.toISOString().slice(0, 10);
-  const FwLine = ({ name }: { name: string }) => { const f = FW[supKey(name)]; if (!f) return null; const u = fwUse(name), r = f.cap ? u / f.cap : 0, ended = f.end && f.end < today, soon = f.end && !ended && Date.parse(f.end) - Date.parse(today) < 90 * 864e5;
-    return <div class="sp-fw">{f.cap ? <><span class="sp-fwbar"><i style={{ width: `${Math.min(100, r * 100)}%`, background: r > 1 ? 'var(--critical)' : r > 0.9 ? 'var(--c4)' : 'var(--good)' }} /></span><span style={{ color: r > 1 ? 'var(--critical)' : r > 0.9 ? 'var(--warn)' : undefined }}>{Math.round(r * 100)}% of {short(f.cap)}</span></> : null}
+  const FwLine = ({ name }: { name: string }) => { const f = FW[supKey(name)]; if (!f) return null; const u = fwUse(name), ce = capEur(f), r = ce ? u / ce : 0, ended = f.end && f.end < today, soon = f.end && !ended && Date.parse(f.end) - Date.parse(today) < 90 * 864e5;
+    return <div class="sp-fw">{ce ? <><span class="sp-fwbar"><i style={{ width: `${Math.min(100, r * 100)}%`, background: r > 1 ? 'var(--critical)' : r > 0.9 ? 'var(--c4)' : 'var(--good)' }} /></span><span style={{ color: r > 1 ? 'var(--critical)' : r > 0.9 ? 'var(--warn)' : undefined }}>{Math.round(r * 100)}% of {short(ce)}</span></> : f.cap ? <span class="muted">ceiling {inCur(f.cap, f.cur)}</span> : null}
       {f.end && <span style={{ color: ended ? 'var(--critical)' : soon ? 'var(--warn)' : undefined }}>{ended ? 'ended' : 'ends'} {date(f.end)}</span>}{f.ref && <span class="muted">{f.ref}</span>}</div>; };
   // Years shown in the trend: the last four with POs, oldest first.
   const TY = [...years].sort().slice(-4);

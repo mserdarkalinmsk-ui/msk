@@ -713,6 +713,9 @@ async function page(opts) {
     const [d3] = await Promise.all([q.waitForEvent('download', { timeout: 5000 }).catch(() => null), q.click('.cc-row:has-text("Gamma Events Ltd") .att-open')]);
     check(d3 && d3.suggestedFilename() === 'contract.pdf', 'restored in a new browser, the attached contract opens'); await c2.close(); }
   await f(1, 'Delta Utilities'); await p.check('.cc-form label.cc-open input'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
+  // a ceiling follows the contract's currency: one in euros is set against the orders
+  await f(1, 'Zeta Media'); await f(3, '20000'); await f(5, '2027-12-31'); await p.selectOption('.cc-form label:has-text("Currency") select', 'EUR'); await p.click('.cc-form button[type=submit]'); await p.waitForTimeout(300);
+  check(/ceiling 50,000\.00 TRY \(no rate/.test(await p.locator('.cc-row:has-text("Gamma Events Ltd") .cc-n').innerText()) && /ceiling €20,000\.00/.test(await p.locator('.cc-row:has-text("Zeta Media") .cc-n').innerText()), 'a ceiling is written in its contract\'s currency; one in lira without a rate is not set against the orders in euros');
   check(await p.locator('.cc-row.open:has-text("Delta Utilities") .badge:has-text("open-ended")').count() === 1 && await p.locator('.cc-alerts, .cc-row.open .badge.critical').count() === 0, 'an open-ended contract is on the calendar without a date and without a warning');
   // what the contracts ask of the months ahead: renewals to decide, payments month by month, papers missing
   await p.click('.cd-views button:has-text("Ahead")'); await p.waitForSelector('.cah');
@@ -723,10 +726,10 @@ async function page(opts) {
   check(await p.locator('.ca-pay tr:has-text("Gamma Events Ltd") td.num').count() === 12 && await p.locator('.ca-note').count() === 1, 'its payments month by month, left out of the euro totals without a rate');
   check(await p.locator('.ca-gaps li:has-text("Delta Utilities")').count() === 1 && await p.locator('.ca-gaps li:has-text("Gamma Events Ltd")').count() === 0, 'what the contracts still lack: the one without its signed copy');
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the months ahead do not widen the page');
-  check(/€50,000\.00/.test(await p.locator('.ca-cap tr:has-text("Gamma Events Ltd")').innerText().catch(() => '')), 'a provider contract with a ceiling is followed against what was ordered, with the pace');
-  await p.locator('.ca-cap tbody tr.click:has-text("Gamma Events Ltd") td:nth-child(2)').click(); await p.waitForTimeout(200);
+  check(/€20,000\.00/.test(await p.locator('.ca-cap tr:has-text("Zeta Media")').innerText().catch(() => '')) && await p.locator('.ca-cap tr:has-text("Gamma Events Ltd")').count() === 0, 'a provider contract with a ceiling is followed against what was ordered, with the pace');
+  await p.locator('.ca-cap tbody tr.click:has-text("Zeta Media") td:nth-child(2)').click(); await p.waitForTimeout(200);
   check(await p.locator('.ca-cap tr.ca-more').count() === 1, 'a ceiling row opens on a click to the orders behind it');
-  await p.locator('.ca-cap tbody tr.click:has-text("Gamma Events Ltd") td:nth-child(2)').click(); await p.waitForTimeout(150);
+  await p.locator('.ca-cap tbody tr.click:has-text("Zeta Media") td:nth-child(2)').click(); await p.waitForTimeout(150);
   check(await p.locator('.ca-cap tr.ca-more').count() === 0, 'and closes on a second click');
   // the alert centre opens the contract calendar on its own tab
   { const back = p.url(); await p.goto(url.replace(/#.*$/, '') + '#/reports/alerts'); await p.waitForSelector('.wl');

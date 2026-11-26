@@ -26,3 +26,15 @@ describe('contract end warnings', () => {
     expect([[70, 100], [80, 100], [90, 100], [100, 100], [5, 0]].map(([u, c]) => ceilingSeverity(u, c))).toEqual([null, 'warning', 'serious', 'critical', null]);
   });
 });
+
+describe('a ceiling in the contract\'s own currency', () => {
+  it('is set against the orders in euros through the rate, and not at all without one', async () => {
+    const { capEur, contractsDue } = await import('./contracts');
+    expect(capEur({ cap: 1000 })).toBe(1000);
+    expect(capEur({ cap: 50000, cur: 'TRY' }, 50)).toBe(1000);
+    expect(capEur({ cap: 50000, cur: 'TRY' })).toBeUndefined();
+    const [d] = contractsDue({ a: { cap: 50000, cur: 'TRY', end: '2027-12-31' } }, new Date(Date.UTC(2026, 10, 26)), () => ({ used: 900 }));
+    expect(d).toMatchObject({ capRaw: 50000, capCur: 'TRY', used: 900 });
+    expect(d.cap).toBeUndefined();
+  });
+});

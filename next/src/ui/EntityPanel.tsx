@@ -2,7 +2,8 @@ import { useState } from 'preact/hooks';
 import { go, set, useStore } from '../data/store';
 import { personCard, providerCard } from '../domain/entity';
 import { KINDS, providerPOs, supKey } from '../domain/providers';
-import { contractsDue, dueText, SEV_BADGE } from '../domain/contracts';
+import { capEur, contractsDue, dueText, SEV_BADGE } from '../domain/contracts';
+import { cleanItemLabel } from '../domain/contractRead';
 import { daysUntil, roster } from '../domain/staff';
 import { coreEnd, fundLabel, personKeyOf } from '../domain/coreTeam';
 import { plabel } from '../domain/label';
@@ -53,9 +54,9 @@ export function ProviderPanel({ k, only, close }: { k: string; only?: string; cl
             {(c.renewEvery || c.autoRenew) && <><dt>Renewal</dt><dd>{[c.renewEvery && (c.renewEvery === 'month' ? 'monthly' : c.renewEvery === 'quarter' ? 'quarterly' : c.renewEvery === 'year' ? 'yearly' : `every ${c.renewEvery} months`), c.autoRenew && 'automatic unless notice is given'].filter(Boolean).join(' · ')}</dd></>}
             {c.noticeDays != null && <><dt>Notice</dt><dd>{c.noticeDays} days{c.end ? ` — by ${date(new Date(Date.parse(c.end) - c.noticeDays * 864e5).toISOString().slice(0, 10))}` : ''}</dd></>}
             {c.fee != null && <><dt>Monthly fee</dt><dd class="num">{amt(c.fee, c.cur)}</dd></>}
-            {c.items && c.items.length > 1 && c.items.map((x) => <><dt class="en-item">{x.label}</dt><dd class="num">{amt(x.fee, c.cur)}</dd></>)}
+            {c.items && c.items.length > 1 && c.items.map((x) => <><dt class="en-item">{cleanItemLabel(x.label)}</dt><dd class="num">{amt(x.fee, c.cur)}</dd></>)}
             {c.total != null && <><dt>Total for the period</dt><dd class="num">{amt(c.total, c.cur)}</dd></>}
-            {c.cap != null && <><dt>Ceiling</dt><dd class="num">{full(c.cap)}{!c.line && C.total.sc ? <span class="muted"> · {pct(C.total.sc / c.cap)} ordered</span> : null}</dd></>}
+            {c.cap != null && <><dt>Ceiling</dt><dd class="num">{amt(c.cap, c.cur)}{!c.line && C.total.sc && capEur(c) ? <span class="muted"> · {pct(C.total.sc / capEur(c)!)} ordered</span> : null}</dd></>}
             {c.line && <><dt>Office budget line</dt><dd>{c.line}{c.kind ? ` · ${c.kind}` : ''}</dd></>}
           </dl>
           {c.doc && <button class="btn ghost" onClick={() => openAttachment(c.doc!)}><Ico n="docs" />Open the signed contract</button>}

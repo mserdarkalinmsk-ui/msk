@@ -36,6 +36,9 @@ const ROWAMT = String.raw`(?<![\d.,])(\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\d{2})?|\d+[
 const CUR = (s: string) => /TRY|TL|₺|lira/i.test(s) ? 'TRY' : /USD|\$/i.test(s) ? 'USD' : 'EUR';
 
 /** A date that can be: a year of this century, a real month and day (a scan or a typing slip gives "92031-06-30"). */
+/** A row label of a table of fees, without the arrow a scan reads as a letter before it ("v Car rental"). */
+export const cleanItemLabel = (s: string) => s.replace(/^(?:[vVY¥*•|>]\s+)+(?=[A-Z])/, '').trim();
+
 export const realDate = (d?: string) => !!d && /^20\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d);
 
 export function contractTerms(text: string): ContractTerms {
@@ -100,8 +103,8 @@ export function contractTerms(text: string): ContractTerms {
     // the rows: a label and its amount, the dates of the period left out (a date is not a fee)
     const R0 = rest.replace(TABLE_DATE, ' '), seg = (gt ? R0.slice(0, gt.index) : R0.split(/\b(?:OPTION|This\s+Framework|At\s+the\s+end)\b/i)[0]).replace(/[|—–]/g, ' ');
     const items = [...seg.matchAll(new RegExp(String.raw`([A-Za-zÇĞİÖŞÜçğıöşü][A-Za-zÇĞİÖŞÜçğıöşü ,/&'’().\-]{3,100}?)\s+${ROWAMT}`, 'g'))]
-      .map((m) => ({ label: m[1].replace(/^(?:.*\bUnits\b\s*)/i, '').replace(/^(?:[vV¥Y*•|>]\s+)+(?=[A-Z])/, '').replace(/[\s\-–(]+$/, '').replace(/(?:\s+(?:for\s+the\s+period(?:\s+of)?|for\s+the|of|for|from|during))+\s*$/i, '').trim(), fee: money(m[2]) }))
-      .filter((x): x is { label: string; fee: number } => !!x.fee && x.label.length > 2);
+      .map((m) => ({ label: m[1].replace(/^(?:.*\bUnits\b\s*)/i, '').replace(/[\s\-–(]+$/, '').replace(/(?:\s+(?:for\s+the\s+period(?:\s+of)?|for\s+the|of|for|from|during))+\s*$/i, '').trim(), fee: money(m[2]) }))
+      .filter((x): x is { label: string; fee: number } => !!x.fee && x.label.length > 2).map((x) => ({ ...x, label: cleanItemLabel(x.label) }));
     const total = gt ? money(gt[1]) : undefined, sum = Math.round(items.reduce((a, x) => a + x.fee, 0) * 100) / 100;
     const fee = total ?? (items.length ? sum : undefined);
     // the rows are kept only when they add up to the total read (a scan read column by column pairs them wrongly)

@@ -30,14 +30,33 @@ export function feeAt(c: Contract, ym: string): number | undefined {
 }
 
 export interface ImpliedRate { /** units of the contract's currency per euro */ rate: number; /** orders it was read from */ n: number; /** the lowest and highest rate among them: how much the currency moved between orders */ lo: number; hi: number }
-/** The rate the orders were booked at: the median over the orders that name their period (one odd order does not move it). */
-export function impliedRate(c: Contract, orders: { description: string; amount: number }[]): ImpliedRate | undefined {
+/** The rate the orders were booked at: that of the latest period the orders name (the rate paid now), with the lowest and highest over all periods. */
+export function impliedRate(c0: Contract, orders: { description: string; amount: number }[]): ImpliedRate | undefined {
+  const c = withMonthlyFee(c0);
   if (!c.cur || c.cur === 'EUR' || !(c.fee || c.fees?.length)) return undefined;
-  const R = orders.flatMap((o) => { const p = orderPeriod(o.description), fee = p && feeAt(c, p.from); return p && fee && o.amount > 0.5 ? [fee * p.months / o.amount] : []; }).sort((a, b) => a - b);
+  // periods in order: the latest is the rate the office pays now, the one that converts what is still to come
+  const R = byPeriod(orders).flatMap((g) => { const fee = feeAt(c, g.from); return fee && g.amount > 0.5 ? [fee * g.months / g.amount] : []; });
   if (!R.length) return undefined;
-  const m = R.length >> 1, rate = R.length % 2 ? R[m] : (R[m - 1] + R[m]) / 2;
   const r4 = (v: number) => Math.round(v * 10000) / 10000;
-  return { rate: r4(rate), n: R.length, lo: r4(R[0]), hi: r4(R.at(-1)!) };
+  return { rate: r4(R.at(-1)!), n: R.length, lo: r4(Math.min(...R)), hi: r4(Math.max(...R)) };
+}
+
+/**
+ * The orders of one period together: an office often opens one order per item for the same quarter (the car, the fuel),
+ * and only together do they make the contract's fee for those months. Orders naming no period are left out.
+ */
+export function byPeriod(orders: { description: string; amount: number }[]): { from: string; months: number; amount: number; descriptions: string[] }[] {
+  const by = new Map<string, { from: string; months: number; amount: number; descriptions: string[] }>();
+  for (const o of orders) { const p = orderPeriod(o.description); if (!p || o.amount <= 0.5) continue;
+    const k = `${p.from}|${p.months}`, g = by.get(k) ?? { ...p, amount: 0, descriptions: [] }; g.amount += o.amount; g.descriptions.push(o.description); by.set(k, g); }
+  return [...by.values()].map((g) => ({ ...g, amount: Math.round(g.amount * 100) / 100 })).sort((a, b) => a.from.localeCompare(b.from));
+}
+
+/** A contract priced as a total over its period, given its average monthly fee (for the rate and the months still to order). */
+export function withMonthlyFee(c: Contract): Contract {
+  if (c.fee || c.fees?.length || !c.total || !c.start || !c.end) return c;
+  const n = (+c.end.slice(0, 4) - +c.start.slice(0, 4)) * 12 + +c.end.slice(5, 7) - +c.start.slice(5, 7) + 1;
+  return n > 0 ? { ...c, fee: Math.round(c.total / n * 100) / 100 } : c;
 }
 
 /** What a contract costs in a calendar year, in its own currency: each month it runs, at the fee in force then. */
@@ -58,13 +77,14 @@ export interface OrderCheck { description: string; amount: number; expected: num
  * Orders that do not match the contract: an order in euros against a contract in euros should be the fee × the months it
  * pays; against a contract in another currency, at the rate the other orders were booked at. Off by more than 3% is listed.
  */
-export function orderChecks(c: Contract, orders: { description: string; amount: number }[], rate?: number): OrderCheck[] {
-  const eur = !c.cur || c.cur === 'EUR';
+export function orderChecks(c0: Contract, orders: { description: string; amount: number }[], rate?: number): OrderCheck[] {
+  const c = withMonthlyFee(c0), eur = !c.cur || c.cur === 'EUR';
   if (!eur && !rate) return [];
-  return orders.flatMap((o) => {
-    const p = orderPeriod(o.description), fee = p && feeAt(c, p.from); if (!p || !fee || o.amount <= 0.5) return [];
-    const expected = Math.round(fee * p.months / (eur ? 1 : rate!) * 100) / 100;
-    return Math.abs(o.amount - expected) > expected * 0.03 ? [{ description: o.description, amount: Math.round(o.amount * 100) / 100, expected }] : [];
+  // the orders of a period together (one per item: the car, the fuel) against the fee × the months they pay
+  return byPeriod(orders).flatMap((g) => {
+    const fee = feeAt(c, g.from); if (!fee) return [];
+    const expected = Math.round(fee * g.months / (eur ? 1 : rate!) * 100) / 100;
+    return Math.abs(g.amount - expected) > expected * 0.03 ? [{ description: g.descriptions.join(' + '), amount: g.amount, expected }] : [];
   });
 }
 

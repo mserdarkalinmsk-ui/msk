@@ -3,6 +3,8 @@ const nf2 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFr
 /** Exact amounts everywhere carry their cents (€5,403,333.01); `short` stays for headline figures and charts. */
 // A value that rounds to zero is shown without a sign (never “−€0.00”).
 export const full = (v: number) => (v <= -0.005 ? '−€' : '€') + nf2.format(Math.abs(v));
+/** An amount in its own currency: euros as everywhere, another currency written after it (125,000.00 TRY). */
+export const inCur = (v: number, cur = 'EUR') => (cur === 'EUR' ? full(v) : `${v < 0 ? '−' : ''}${nf2.format(Math.abs(v))} ${cur}`);
 export function short(v: number) {
   const a = Math.abs(v), s = v < 0 && a >= 0.5 ? '−' : '';
   if (a >= 1e9) return `${s}€${(a / 1e9).toFixed(2)}B`;

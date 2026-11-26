@@ -6,14 +6,14 @@ import { officeServices } from '../domain/officeServices';
 import { impliedRate, nextYearCost, orderChecks, orderPeriod, yearCost } from '../domain/contractFx';
 import { asOfficeContract, ceilingsAtRisk, countryContracts, officeEntriesFor, officeOrders, stillToOrder } from '../domain/contractItems';
 import { ceilingPace, contractGaps, monthsFrom, needByLine, paymentPlan, planTotals, renewals as toRenew } from '../domain/contractPlan';
-import { type Contract, amendmentDiff, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
+import { type Contract, amendmentDiff, capEur, applyAmendment, contractAlerts, contractsDue, contractSeverity, dueText, officeContractUse, ceilingSeverity, SEV_BADGE, type ContractDue } from '../domain/contracts';
 import { addCoreMembers, get, go, isAdmin, removeCoreMember, setCoreMember, setFramework, setPoKind, useStore } from '../data/store';
 import { readXlsx } from '../ui/xlsx';
 import { download } from '../ui/xlsxwrite';
 import { noticeLetterDocx } from '../ui/ContractLetter';
 import { openAttachment, readAttachment, type Attachment } from '../ui/attach';
 import { ocrPdf, readDocument, readPages } from '../ui/docread';
-import { contractTerms, realDate, type ContractTerms } from '../domain/contractRead';
+import { cleanItemLabel, contractTerms, realDate, type ContractTerms } from '../domain/contractRead';
 import { fundLabel, openPost, countryPeople, type CountryPerson, coreDue, coreFromRows, FUND_LABEL, onTeam, type CoreMember } from '../domain/coreTeam';
 import { budgetOnly, money, reportsByDate, reportTotals } from '../domain/calc';
 import { spentInYear } from '../domain/yearSpend';
@@ -29,7 +29,7 @@ import { StaffPlanTable } from './StaffPlan';
 import { StaffReport } from './StaffReport';
 import type { Project } from '../domain/types';
 import { TODAY } from '../today';
-import { date, full, pct, short } from '../ui/format';
+import { date, full, inCur, pct, short } from '../ui/format';
 import { CAL_KINDS, calItems, events, type Ev } from './Agenda';
 import { allPeople, StaffBoard } from './People';
 import { ProjectsBody } from './Projects';
@@ -261,7 +261,7 @@ export function ContractsAhead({ cid, P, offices }: { cid: string; P: Project[];
   // the office forecast's planned spending on each line, against what its contracts still need this year (in euros)
   const short = (() => { const by = new Map<string, number>(); for (const t of todo) if (t.eur != null) by.set(t.c.line!, (by.get(t.c.line!) ?? 0) + t.eur);
     return [...by].map(([line, need]) => { const l = lineOf(line); return { line, need: Math.round(need * 100) / 100, planned: l ? Math.round((l.ob.planned + l.ls.planned) * 100) / 100 : 0 }; }).filter((x) => x.need > x.planned + 0.5); })();
-  const caps = I.filter((x) => x.c.cap && !x.c.line).map((x) => ({ ...x, p: ceilingPace(x.c.cap!, ordersOf(x.key, x.c), TODAY, x.c.end) })).sort((a, b) => (a.p.reach ?? '9').localeCompare(b.p.reach ?? '9'));
+  const caps = I.filter((x) => capEur(x.c, x.rate) && !x.c.line).map((x) => ({ ...x, p: ceilingPace(capEur(x.c, x.rate)!, ordersOf(x.key, x.c), TODAY, x.c.end) })).sort((a, b) => (a.p.reach ?? '9').localeCompare(b.p.reach ?? '9'));
   const R = toRenew(I, TODAY), months = monthsFrom(TODAY, 12), plan = paymentPlan(I, months), S = planTotals(plan), G = contractGaps(I);
   const xlsx = () => download('contracts-ahead.xlsx', [
     { name: 'Renewals', money: [5, 6], rows: [['Provider', 'Ends', 'Notice by', 'Renewal', 'Currency', 'A year more', 'In euros'], ...R.map((r) => [r.name, r.end, r.noticeBy ?? '', r.autoRenew ? 'renews automatically' : r.renewBy ? `renewable until ${r.renewBy}` : 'a new contract or tender', r.cur, r.year ?? null, r.year != null && r.toEur ? Math.round(r.year * r.toEur * 100) / 100 : null])] },
@@ -539,6 +539,9 @@ export function CountryDeadlines({ name, cid, P }: { name: string; cid: string; 
 const closest = closestName;
 /** A document of a contract by its kind and number. */
 const stepName = (k: string, no?: number) => (k === 'original' ? 'Contract' : `${k.charAt(0).toUpperCase()}${k.slice(1)}${no ? ` ${no}` : ''}`);
+/** The currency of the last contract saved: a country's contracts are mostly in one currency (lira in Türkiye). */
+const lastCur = () => { try { return localStorage.getItem('pl-contract-cur') || 'EUR'; } catch { return 'EUR'; } };
+const keepCur = (c: string) => { try { localStorage.setItem('pl-contract-cur', c); } catch { /* the choice is only not remembered */ } };
 const EMPTY_C = { sup: '', ref: '', cap: '', start: '', end: '', open: false, renew: '', fee: '', total: '', cur: 'EUR', every: '', auto: false, notice: '' };
 /** How a contract is renewed, in words. */
 const everyText = (v?: string) => !v ? '' : v === 'month' ? 'monthly' : v === 'quarter' ? 'quarterly' : v === 'year' ? 'yearly' : `every ${v} months`;
@@ -567,21 +570,21 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     const l = rep.lines.find((x) => x.code === c.line), O = officeOrders(rep, k, c);
     const r = impliedRate(c, O), y = yearCost(c, rep.year), eur = !c.cur || c.cur === 'EUR';
     const B = l ? (O[0] ? l[O[0].fund].budget : l.ob.budget + l.ls.budget) : 0;
-    if (y == null || (!eur && !r)) return c.cur && !eur && (c.fee || c.total) ? { text: `in ${c.cur}: no order on line ${c.line} names the months it pays, so its euro value is not known`, over: false, share: '', next: '', checks: [] } : null;
+    if (y == null || (!eur && !r)) return c.cur && !eur && (c.fee || c.total) ? { text: `in ${c.cur}: ${!c.fee && !c.fees?.length && (!c.start || !c.end) ? 'its start and end dates are needed to spread its total over the months' : `no order on line ${c.line} names the months it pays`}, so its euro value is not known`, over: false, share: '', next: '', checks: [] } : null;
     const e = eur ? y : y / r!.rate, m = c.fee && !eur ? c.fee / r!.rate : 0;
     const ny = nextYearCost(c, rep.year + 1), ne = ny ? (eur ? ny : ny / r!.rate) : 0, chk = orderChecks(c, O, r?.rate);
-    return { checks: chk, next: ne ? `${rep.year + 1} ≈ ${full(ne)} at the fee in force${!eur ? ' and this rate' : ''}` : '', over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!FW[k0].line ? `paid from office line ${c.line} (${c.kind})` : '', !eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (from ${r.n} order${r.n === 1 ? '' : 's'}${r.hi / r.lo > 1.01 ? `, ${r.lo.toLocaleString('en-GB', { maximumFractionDigits: 2 })} to ${r.hi.toLocaleString('en-GB', { maximumFractionDigits: 2 })}` : ''})` : '', m ? `≈ ${full(m)} a month` : '',
+    return { checks: chk, next: ne ? `${rep.year + 1} ≈ ${full(ne)} at the fee in force${!eur ? ' and this rate' : ''}` : '', over: B > 0 && e > B + 0.5, share: B > 0 ? pct(e / B) : '', text: [!FW[k0].line ? `paid from office line ${c.line} (${c.kind})` : '', !eur && r ? `1 € = ${r.rate.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${c.cur} (${r.n === 1 ? 'from its orders' : `the latest of ${r.n} periods`}${r.hi / r.lo > 1.01 ? `, ${r.lo.toLocaleString('en-GB', { maximumFractionDigits: 2 })} to ${r.hi.toLocaleString('en-GB', { maximumFractionDigits: 2 })}` : ''})` : '', m ? `≈ ${full(m)} a month` : '',
       `${rep.year} ${eur ? '' : '≈ '}${full(e)}${B > 0 ? ` vs line ${c.line} budget ${full(B)}` : ` · line ${c.line} has no budget`}`].filter(Boolean).join(' · ') }; };
   // the country's contracts: those of its providers, and those entered here by name
   const D = contractsDue(Object.fromEntries(Object.entries(FW).filter(([k, c]) => names.has(k) || c.country === cid)), TODAY, use);
   const noEnd = Object.entries(FW).filter(([k, c]) => names.has(k) && !c.end && !c.openEnded);
-  const [f, setF] = useState(EMPTY_C);
+  const [f, setF] = useState(() => ({ ...EMPTY_C, cur: lastCur() }));
   const [edit, setEdit] = useState(''), [meta, setMeta] = useState<{ line?: string; kind?: string }>({});
   const [doc, setDoc] = useState<Attachment | null>(null), [readMsg, setReadMsg] = useState('');
   // the rows of a table of fees read from the contract: kept with it when the monthly fee is the one read
   const [items, setItems] = useState<{ label: string; fee: number }[] | undefined>(undefined);
   // an office service chosen in the table: its supplier, budget line and kind; the end its orders cover, to confirm
-  useEffect(() => { if (pre) { setF({ ...EMPTY_C, sup: pre.sup, end: pre.end }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
+  useEffect(() => { if (pre) { setF({ ...EMPTY_C, cur: lastCur(), sup: pre.sup, end: pre.end }); setEdit(pre.key); setMeta({ line: pre.line, kind: pre.kind }); } }, [pre?.n]);
   const save = () => {
     const name = f.sup.trim(); if (!name || (!f.end && !f.open)) return;
     // a date field accepts a five-digit year ("92031"): such a slip is not saved
@@ -590,8 +593,8 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
     const k = edit || supKey(name);
     const att = doc ?? FW[k]?.doc;
     const rows = items && +f.fee > 0 && Math.abs(items.reduce((a, x) => a + x.fee, 0) - +f.fee) < 0.5 ? items : FW[k]?.items && +f.fee === FW[k].fee ? FW[k].items : undefined;
-    setFramework(k, { name, ...(rows ? { items: rows } : {}), ...(att ? { doc: att } : {}), ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }), ...(f.renew && !f.open && f.renew > f.end ? { renewBy: f.renew } : {}), ...(+f.fee > 0 ? { fee: Math.round(+f.fee * 100) / 100 } : {}), ...(+f.total > 0 ? { total: Math.round(+f.total * 100) / 100 } : {}), ...(+f.fee > 0 || +f.total > 0 ? { cur: f.cur } : {}), ...(f.every ? { renewEvery: f.every } : {}), ...(f.auto ? { autoRenew: true } : {}), ...(+f.notice > 0 ? { noticeDays: Math.round(+f.notice) } : {}) });
-    setF(EMPTY_C); setEdit(''); setMeta({}); setDoc(null); setReadMsg(''); setItems(undefined);
+    setFramework(k, { name, ...(rows ? { items: rows } : {}), ...(att ? { doc: att } : {}), ...(meta.line ? { line: meta.line, kind: meta.kind } : {}), ...(names.has(k) && !meta.line ? {} : { country: cid }), ...(f.ref.trim() ? { ref: f.ref.trim() } : {}), ...(+f.cap > 0 ? { cap: Math.round(+f.cap * 100) / 100 } : {}), ...(f.start ? { start: f.start } : {}), ...(f.open ? { openEnded: true } : { end: f.end }), ...(f.renew && !f.open && f.renew > f.end ? { renewBy: f.renew } : {}), ...(+f.fee > 0 ? { fee: Math.round(+f.fee * 100) / 100 } : {}), ...(+f.total > 0 ? { total: Math.round(+f.total * 100) / 100 } : {}), ...(+f.fee > 0 || +f.total > 0 || +f.cap > 0 ? { cur: f.cur } : {}), ...(f.every ? { renewEvery: f.every } : {}), ...(f.auto ? { autoRenew: true } : {}), ...(+f.notice > 0 ? { noticeDays: Math.round(+f.notice) } : {}) });
+    keepCur(f.cur); setF({ ...EMPTY_C, cur: f.cur }); setEdit(''); setMeta({}); setDoc(null); setReadMsg(''); setItems(undefined);
   };
   // the terms read from the contract itself (a PDF or Word with text); a scan is attached and its terms typed
   const [over, setOver] = useState(false);
@@ -676,7 +679,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
   const applyIt = () => { if (!amend) return; const c = FW[amend.key], a = amend.t.amend!;
     setFramework(amend.key, applyAmendment(c, amend.t, { kind: a.kind, ...(a.no ? { no: a.no } : {}), ...(a.effective ? { effective: a.effective } : {}), at: TODAY.toISOString().slice(0, 10), ...(amend.t.ref ? { ref: amend.t.ref } : {}), doc: amend.doc }));
     setAmend(null); setDoc(null); setReadMsg(`${stepName(a.kind, a.no)} applied to the contract with ${c.name ?? amend.key}; the document is kept in its history.`); };
-  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? 'EUR', every: c.renewEvery ?? '', auto: !!c.autoRenew, notice: c.noticeDays ? String(c.noticeDays) : '' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
+  const load = (d: ContractDue) => { const c = FW[d.key]; setF({ sup: d.name, ref: c.ref ?? '', cap: c.cap ? String(c.cap) : '', start: c.start ?? '', end: c.end ?? '', open: !!c.openEnded, renew: c.renewBy ?? '', fee: c.fee ? String(c.fee) : '', total: c.total ? String(c.total) : '', cur: c.cur ?? lastCur(), every: c.renewEvery ?? '', auto: !!c.autoRenew, notice: c.noticeDays ? String(c.noticeDays) : '' }); setEdit(d.key); setMeta({ line: c.line, kind: c.kind }); };
   // the calendar: three months back, fifteen ahead
   const t0 = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 3, 1)), months = Array.from({ length: 18 }, (_, i) => new Date(Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + i, 1)));
   const t1 = Date.UTC(t0.getUTCFullYear(), t0.getUTCMonth() + 18, 1), span = t1 - t0.getTime();
@@ -702,7 +705,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <label>Provider<input list="cc-sup" value={f.sup} onInput={(e) => setF({ ...f, sup: (e.target as HTMLInputElement).value })} placeholder="Choose or type the provider" required /></label>
         <datalist id="cc-sup">{[...new Set(names.values())].sort().map((n) => <option value={n} />)}</datalist>
         <label>Reference<input value={f.ref} onInput={(e) => setF({ ...f, ref: (e.target as HTMLInputElement).value })} placeholder="Tender / contract no." /></label>
-        <label>Ceiling (€)<input type="number" min="0" step="0.01" value={f.cap} onInput={(e) => setF({ ...f, cap: (e.target as HTMLInputElement).value })} /></label>
+        <label>Ceiling ({f.cur})<input type="number" min="0" step="0.01" value={f.cap} onInput={(e) => setF({ ...f, cap: (e.target as HTMLInputElement).value })} /></label>
         <label>Starts<input type="date" value={f.start} onInput={(e) => setF({ ...f, start: (e.target as HTMLInputElement).value })} /></label>
         <label>Ends<input type="date" value={f.open ? '' : f.end} disabled={f.open} onInput={(e) => setF({ ...f, end: (e.target as HTMLInputElement).value })} required={!f.open} /></label>
         <label class="cc-open"><input type="checkbox" checked={f.open} onChange={(e) => setF({ ...f, open: (e.target as HTMLInputElement).checked })} /> Open-ended (no end date)</label>
@@ -715,7 +718,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <label class="cc-chk" title="Renewed without a new signature unless notice is given"><input type="checkbox" checked={f.auto} onChange={(e) => setF({ ...f, auto: (e.target as HTMLInputElement).checked })} /> Renews automatically</label>
         {+f.fee > 0 && f.start && f.end && !f.open && <p class="cc-meta">{f.fee} {f.cur} a month over {monthsOf(f.start, f.end)} months = <b>{amt(+f.fee * monthsOf(f.start, f.end), f.cur)}</b>{+f.total > 0 && Math.abs(+f.total - +f.fee * monthsOf(f.start, f.end)) > 0.5 ? <> · the total typed differs ({amt(+f.total, f.cur)}): fees that change during the period</> : null}</p>}
         <button class="btn primary" type="submit" disabled={!f.sup.trim() || (!f.end && !f.open)}>{edit ? 'Save changes' : '+ Add contract'}</button>
-        {(edit || doc) && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF(EMPTY_C); setDoc(null); setReadMsg(''); }}>Cancel</button>}
+        {(edit || doc) && <button class="btn ghost" type="button" onClick={() => { setEdit(''); setMeta({}); setF({ ...EMPTY_C, cur: lastCur() }); setDoc(null); setReadMsg(''); }}>Cancel</button>}
         <label class={`drop cc-read${over ? ' on' : ''}`} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); void readMany([...(e.dataTransfer?.files ?? [])]); }}>
           <input type="file" accept=".pdf,.docx" multiple hidden onChange={(e) => { const i = e.target as HTMLInputElement; void readMany([...(i.files ?? [])]); i.value = ''; }} />
@@ -728,7 +731,7 @@ export function ContractCalendar({ name, cid, P, pre, offices = [] }: { name: st
         <div class="cc-row cc-head"><span /><div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }}>{m.getUTCMonth() === 0 ? m.getUTCFullYear() : MON[m.getUTCMonth()]}</i>)}<u style={{ left: `${x(TODAY.toISOString())}%` }} /></div><span /></div>
         {D.map((d) => { const a = x(d.start ?? t0.toISOString()), b = d.openEnded ? 100 : x(d.end), w90 = d.openEnded ? 101 : x(new Date(Date.parse(d.end) - 90 * 864e5).toISOString()), r = d.cap ? d.used / d.cap : null;
           return <div class={`cc-row s-${d.severity}${d.openEnded ? ' open' : ''}`}>
-            <span class="cc-n"><b><Firm name={d.name} /></b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.cap ? `ceiling ${full(d.cap)}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month${FW[d.key].items && FW[d.key].items!.length > 1 ? ` (${FW[d.key].items!.map((x) => `${x.label} ${amt(x.fee, FW[d.key].cur)}`).join(' + ')})` : ''}` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', FW[d.key]?.renewEvery ? `renewed ${everyText(FW[d.key].renewEvery)}` : '', FW[d.key]?.autoRenew ? 'renews automatically' : '', FW[d.key]?.noticeDays ? `notice ${FW[d.key].noticeDays} d${noticeBy(d.end, FW[d.key].noticeDays) ? ` — by ${date(noticeBy(d.end, FW[d.key].noticeDays))}` : ''}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small>{(() => { const v = fx(d.key); return v && <small class={`cc-fx${v.over ? ' over' : ''}`} title="The office report holds no exchange rate: it is read from the orders, the contract's monthly fee × the months each order pays ÷ its amount in euros">{v.text}{v.share && <b> · {v.share}{v.over ? ' — over the budget' : ''}</b>}{v.next && <> · {v.next}</>}{v.checks.length > 0 && <span class="cc-chk">{v.checks.length === 1 ? 'An order differs' : `${v.checks.length} orders differ`} from the contract: {v.checks.map((o) => `${o.description} — ${full(o.amount)} booked, ${full(o.expected)} expected`).join(' · ')}</span>}</small>; })()}{FW[d.key]?.history && <span class="cc-hist">{FW[d.key].history!.map((h) => <em>{stepName(h.kind, h.no)}{h.effective ? ` · ${date(h.effective)}` : ''}</em>)}</span>}</span>
+            <span class="cc-n"><b><Firm name={d.name} /></b><small class="muted">{[d.kind ? `${d.kind} · line ${d.line}` : '', d.ref, d.capRaw ? `ceiling ${inCur(d.capRaw, d.capCur)}${d.cap == null ? ' (no rate to set it against the orders in euros)' : ''}` : '', FW[d.key]?.fee ? `${amt(FW[d.key].fee!, FW[d.key].cur)} a month${FW[d.key].items && FW[d.key].items!.length > 1 ? ` (${FW[d.key].items!.map((x) => `${cleanItemLabel(x.label)} ${amt(x.fee, FW[d.key].cur)}`).join(' + ')})` : ''}` : '', FW[d.key]?.total ? `${amt(FW[d.key].total!, FW[d.key].cur)} in total` : '', FW[d.key]?.renewBy ? `renewable until ${date(FW[d.key].renewBy!)}` : '', FW[d.key]?.renewEvery ? `renewed ${everyText(FW[d.key].renewEvery)}` : '', FW[d.key]?.autoRenew ? 'renews automatically' : '', FW[d.key]?.noticeDays ? `notice ${FW[d.key].noticeDays} d${noticeBy(d.end, FW[d.key].noticeDays) ? ` — by ${date(noticeBy(d.end, FW[d.key].noticeDays))}` : ''}` : '', d.used ? `ordered ${full(d.used)}${r != null ? ` (${pct(r)})` : ''}` : ''].filter(Boolean).join(' · ')}</small>{(() => { const v = fx(d.key); return v && <small class={`cc-fx${v.over ? ' over' : ''}`} title="The office report holds no exchange rate: it is read from the orders, the contract's monthly fee × the months each order pays ÷ its amount in euros">{v.text}{v.share && <b> · {v.share}{v.over ? ' — over the budget' : ''}</b>}{v.next && <> · {v.next}</>}{v.checks.length > 0 && <span class="cc-chk">{v.checks.length === 1 ? 'An order differs' : `${v.checks.length} orders differ`} from the contract: {v.checks.map((o) => `${o.description} — ${full(o.amount)} booked, ${full(o.expected)} expected`).join(' · ')}</span>}</small>; })()}{FW[d.key]?.history && <span class="cc-hist">{FW[d.key].history!.map((h) => <em>{stepName(h.kind, h.no)}{h.effective ? ` · ${date(h.effective)}` : ''}</em>)}</span>}</span>
             <div class="cc-track">{months.map((m) => <i style={{ left: `${x(m.toISOString())}%` }} />)}
               {b > 0 && <em style={{ left: `${a}%`, width: `${Math.max(0.6, b - a)}%` }}><s style={{ left: `${b > a ? Math.max(0, (w90 - a) / (b - a) * 100) : 0}%` }} /></em>}
               {FW[d.key]?.renewBy && !d.openEnded && x(FW[d.key].renewBy!) > b && <em class="cc-renew" title={`Renewable until ${date(FW[d.key].renewBy!)}`} style={{ left: `${b}%`, width: `${x(FW[d.key].renewBy!) - b}%` }} />}

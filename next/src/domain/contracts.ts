@@ -5,7 +5,7 @@ export interface Contract { cap?: number; start?: string; end?: string; ref?: st
 /** One document in the life of a contract, with what it changed. */
 export interface ContractStep { kind: 'original' | 'amendment' | 'rider' | 'addendum'; no?: number; /** the date it applies from */ effective?: string; /** when it was recorded */ at: string; ref?: string; changes: StepChange[]; doc?: import('../ui/attach').Attachment }
 export interface StepChange { field: string; label: string; from?: string | number | boolean; to?: string | number | boolean }
-export interface ContractDue { /** the last day to give notice decides the warning while it is ahead */ noticeBy?: string; openEnded?: boolean; key: string; country?: string; line?: string; kind?: string; name: string; ref?: string; start?: string; end: string; days: number; severity: Severity | 'ok' | 'ended'; cap?: number; used: number }
+export interface ContractDue { /** the last day to give notice decides the warning while it is ahead */ noticeBy?: string; openEnded?: boolean; key: string; country?: string; line?: string; kind?: string; name: string; ref?: string; start?: string; end: string; days: number; severity: Severity | 'ok' | 'ended'; /** the ceiling in euros, to compare with what was ordered (none when it is in another currency without a rate) */ cap?: number; /** the ceiling as written in the contract, in its currency */ capRaw?: number; capCur?: string; used: number }
 
 const day = 864e5;
 /** Days from today to the end date (negative once ended). */
@@ -23,15 +23,21 @@ export function contractSeverity(days: number): ContractDue['severity'] {
   return 'ok';
 }
 
+/**
+ * A contract's ceiling in euros, the currency of the orders it is compared with: as written when the contract is in
+ * euros, through the rate its orders were booked at when it is in another currency, and none without such a rate.
+ */
+export const capEur = (c: Contract, rate?: number) => (!c.cap ? undefined : !c.cur || c.cur === 'EUR' ? c.cap : rate ? Math.round(c.cap / rate * 100) / 100 : undefined);
+
 /** Every contract with an end date, soonest first; `use` gives what was ordered from the provider (by its key). */
 export function contractsDue(C: Record<string, Contract>, today: Date, use: (key: string) => { name?: string; used: number } = () => ({ used: 0 })): ContractDue[] {
   return Object.entries(C).filter(([, c]) => c.end || c.openEnded).map(([key, c]) => {
     const u = use(key);
-    if (!c.end) return { key, openEnded: true, country: c.country, line: c.line, kind: c.kind, name: c.name || u.name || key, ref: c.ref, start: c.start, end: '', days: Infinity, severity: 'ok' as const, cap: c.cap, used: u.used };
+    if (!c.end) return { key, openEnded: true, country: c.country, line: c.line, kind: c.kind, name: c.name || u.name || key, ref: c.ref, start: c.start, end: '', days: Infinity, severity: 'ok' as const, cap: capEur(c), capRaw: c.cap, capCur: c.cur ?? 'EUR', used: u.used };
     // with a notice period the decision falls on the last day to give notice, while that day is still ahead
     const nb = c.noticeDays ? new Date(Date.parse(c.end) - c.noticeDays * day).toISOString().slice(0, 10) : '';
     const days = nb && daysTo(nb, today) >= 0 ? daysTo(nb, today) : daysTo(c.end, today);
-    return { key, ...(nb && daysTo(nb, today) >= 0 ? { noticeBy: nb } : {}), country: c.country, line: c.line, kind: c.kind, name: c.name || u.name || key, ref: c.ref, start: c.start, end: c.end!, days, severity: contractSeverity(days), cap: c.cap, used: u.used };
+    return { key, ...(nb && daysTo(nb, today) >= 0 ? { noticeBy: nb } : {}), country: c.country, line: c.line, kind: c.kind, name: c.name || u.name || key, ref: c.ref, start: c.start, end: c.end!, days, severity: contractSeverity(days), cap: capEur(c), capRaw: c.cap, capCur: c.cur ?? 'EUR', used: u.used };
   }).sort((a, b) => (a.end || '9').localeCompare(b.end || '9'));
 }
 /** The ones that need a decision now (warning, serious, critical). */

@@ -70,7 +70,8 @@ export function contractGaps(items: { key: string; name: string; c: Contract; ra
     if (!c.end && !c.openEnded) m.push('an end date');
     for (const [k, w] of [['start', 'start'], ['end', 'end'], ['renewBy', 'renewal limit']] as const) if (c[k] && !/^20\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(c[k]!)) m.push(`a readable ${w} date (it reads ${c[k]})`);
     if (c.line && !c.fee && !c.fees?.length && !c.total) m.push('its fee');
-    if (c.line && c.cur && c.cur !== 'EUR' && (c.fee || c.total) && !rate) m.push('an order naming the months it pays (for the rate)');
+    if (c.line && c.cur && c.cur !== 'EUR' && !c.fee && !c.fees?.length && c.total && (!c.start || !c.end)) m.push('its start and end dates (to spread its total over the months)');
+    else if (c.line && c.cur && c.cur !== 'EUR' && (c.fee || c.total) && !rate) m.push('an order naming the months it pays (for the rate)');
     return { key, name, missing: m };
   }).filter((g) => g.missing.length);
 }

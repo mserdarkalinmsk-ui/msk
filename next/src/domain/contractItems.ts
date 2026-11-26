@@ -1,9 +1,9 @@
-import type { Contract } from './contracts';
+import { capEur, type Contract } from './contracts';
 import type { OfficeEntry, OfficeReport, Office } from './office';
 import type { Project } from './types';
 import { notContract, serviceKind } from './officeServices';
 import { contractSupKey, providerPOs, supKey } from './providers';
-import { feeAt, impliedRate, orderPeriod } from './contractFx';
+import { feeAt, impliedRate, orderPeriod, withMonthlyFee } from './contractFx';
 import { ceilingPace, renewals, type Pace, type Renewal } from './contractPlan';
 
 /** The office report's orders of an office contract: its line, its supplier, the same kind of service. */
@@ -34,7 +34,7 @@ export function countryContracts(FW: Record<string, Contract>, P: Project[], poK
 /** Provider contracts whose ceiling is reached before they end at the pace of the last six months (or already reached). */
 export function ceilingsAtRisk(items: CItem[], ordersOf: (k: string, c: Contract) => { date: string; value: number }[], today: Date, within = 6): (CItem & { p: Pace })[] {
   const lim = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + within, 1)).toISOString().slice(0, 7);
-  return items.filter((x) => x.c.cap && !x.c.line).map((x) => ({ ...x, p: ceilingPace(x.c.cap!, ordersOf(x.key, x.c), today, x.c.end) }))
+  return items.filter((x) => capEur(x.c, x.rate) && !x.c.line).map((x) => ({ ...x, p: ceilingPace(capEur(x.c, x.rate)!, ordersOf(x.key, x.c), today, x.c.end) }))
     .filter((x) => x.p.beforeEnd && x.p.reach && x.p.reach <= lim);
 }
 /** What a country's contracts ask for this month: renewals to decide within `days`, and ceilings at risk. */
@@ -46,7 +46,8 @@ export function contractWatch(items: CItem[], ordersOf: (k: string, c: Contract)
  * What an office contract still needs ordered this year: the months after the last one its orders pay, to the end of the
  * year (or of the contract, unless it renews), at the fee in force — in its own currency.
  */
-export function stillToOrder(c: Contract, orders: { description: string }[], year: number): { from?: string; months: number; amount: number } {
+export function stillToOrder(c0: Contract, orders: { description: string }[], year: number): { from?: string; months: number; amount: number } {
+  const c = withMonthlyFee(c0);
   let last = '';
   for (const o of orders) { const p = orderPeriod(o.description); if (!p) continue; const d = new Date(Date.UTC(+p.from.slice(0, 4), +p.from.slice(5, 7) - 1 + p.months - 1, 1)).toISOString().slice(0, 7); if (d > last) last = d; }
   const start = c.start?.slice(0, 7) ?? `${year}-01`, next = last ? new Date(Date.UTC(+last.slice(0, 4), +last.slice(5, 7), 1)).toISOString().slice(0, 7) : start;

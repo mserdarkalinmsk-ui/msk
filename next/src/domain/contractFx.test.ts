@@ -20,7 +20,7 @@ describe('contracts in another currency against the office budget', () => {
     // Q1 at 300,000 × 3 = 900,000 TRY for €20,000 → 45; Q2 at 360,000 × 3 for €24,000 → 45
     const r = impliedRate(c, [{ description: 'Rent Jan-Feb-Mar 2026', amount: 20000 }, { description: 'Rent Q2 2026', amount: 24000 }, { description: 'Rent', amount: 5 }]);
     expect(r).toEqual({ rate: 45, n: 2, lo: 45, hi: 45 });
-    expect(impliedRate({ cur: 'TRY', fee: 90000 }, [{ description: 'Rent Q1 2026', amount: 6000 }, { description: 'Rent Q2 2026', amount: 5400 }, { description: 'Rent Q3 2026', amount: 5000 }])).toEqual({ rate: 50, n: 3, lo: 45, hi: 54 });
+    expect(impliedRate({ cur: 'TRY', fee: 90000 }, [{ description: 'Rent Q1 2026', amount: 6000 }, { description: 'Rent Q2 2026', amount: 5400 }, { description: 'Rent Q3 2026', amount: 5000 }])).toEqual({ rate: 54, n: 3, lo: 45, hi: 54 });
     expect(impliedRate({ cur: 'EUR', fee: 100 }, [{ description: 'Rent Q1 2026', amount: 300 }])).toBeUndefined();
     expect(impliedRate({ cur: 'TRY', fee: 100 }, [{ description: 'Rent', amount: 300 }])).toBeUndefined();
   });
@@ -51,5 +51,21 @@ describe('orders checked against the contract, and next year', () => {
     expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2026-12-31', autoRenew: true }, 2027)).toBe(1200);
     expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2026-12-31', renewBy: '2027-06-30' }, 2027)).toBe(600);
     expect(nextYearCost({ fee: 100, start: '2026-01-01', end: '2028-12-31' }, 2027)).toBe(1200);
+  });
+});
+
+describe('orders split by item for the same months', () => {
+  it('adds the orders of one period up before reading the rate (the car and the fuel on two orders)', async () => {
+    const { impliedRate, orderChecks } = await import('./contractFx');
+    const c = { cur: 'TRY', fee: 3000, items: [{ label: 'Car', fee: 2500 }, { label: 'Fuel', fee: 500 }] };
+    const O = [{ description: 'Car rental cost for the 1st Quarter of 2026', amount: 150 }, { description: 'Petrol cost for the 1st Quarter of 2026', amount: 30 },
+      { description: 'Car rental cost for the 2nd Quarter of 2026', amount: 150 }, { description: 'Petrol cost for the 2nd Quarter of 2026', amount: 30 }, { description: 'Replaced order Q1 2026', amount: 0 }];
+    expect(impliedRate(c, O)).toEqual({ rate: 50, n: 2, lo: 50, hi: 50 });
+    expect(orderChecks(c, O, 50)).toEqual([]);
+  });
+  it('a contract priced as a total gets its average month', async () => {
+    const { impliedRate, withMonthlyFee } = await import('./contractFx');
+    expect(withMonthlyFee({ total: 12000, start: '2026-01-01', end: '2026-12-31' }).fee).toBe(1000);
+    expect(impliedRate({ cur: 'TRY', total: 12000, start: '2026-01-01', end: '2026-12-31' }, [{ description: 'Alarm fee for the 2nd quarter of 2026', amount: 60 }])?.rate).toBe(50);
   });
 });
